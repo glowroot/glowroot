@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@ abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");
         tomcat.setPort(port);
-        Context context = tomcat.addWebapp("",
-                new File("src/test/resources/" + webapp).getAbsolutePath());
+        Context context =
+                tomcat.addWebapp("", new File("src/test/resources/" + webapp).getAbsolutePath());
 
         WebappLoader webappLoader =
                 new WebappLoader(InvokeSpringControllerInTomcat.class.getClassLoader());

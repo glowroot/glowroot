@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,10 @@ import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 
@@ -55,15 +53,8 @@ public class CentralConfigDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    private volatile @MonotonicNonNull ConfigRepository configRepository;
-
-    private final LoadingCache<CacheKey, Optional<Object>> cache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<CacheKey, Optional<Object>>() {
-                @Override
-                public Optional<Object> load(CacheKey key) throws Exception {
-                    return Optional.fromNullable(readInternal(key.key(), checkNotNull(key.type())));
-                }
-            });
+    private final LoadingCache<CacheKey, Optional<Object>> cache =
+            CacheBuilder.newBuilder().build(new CentralConfigCacheLoader());
 
     public CentralConfigDao(Session session) {
         this.session = session;
@@ -73,10 +64,6 @@ public class CentralConfigDao {
 
         insertPS = session.prepare("insert into central_config (key, value) values (?, ?)");
         readPS = session.prepare("select value from central_config where key = ?");
-    }
-
-    public void setConfigRepository(ConfigRepository configRepository) {
-        this.configRepository = configRepository;
     }
 
     void write(String key, Object config) throws JsonProcessingException {
@@ -93,27 +80,6 @@ public class CentralConfigDao {
         return clazz.cast(cache.getUnchecked(ImmutableCacheKey.of(key, clazz)).orNull());
     }
 
-    @Nullable
-    private <T> T readInternal(String key, Class<T> clazz) {
-        BoundStatement boundStatement = readPS.bind();
-        boundStatement.bind(key);
-        ResultSet results = session.execute(boundStatement);
-        Row row = results.one();
-        if (row == null) {
-            return null;
-        }
-        String value = row.getString(0);
-        if (value == null) {
-            return null;
-        }
-        try {
-            return mapper.readValue(value, clazz);
-        } catch (IOException e) {
-            logger.error("error parsing config node '{}': ", key, e);
-            return null;
-        }
-    }
-
     @Value.Immutable
     @Styles.AllParameters
     interface CacheKey {
@@ -126,5 +92,30 @@ public class CentralConfigDao {
         @Nullable
         @SuppressWarnings("immutables")
         Class<?> type();
+    }
+
+    private class CentralConfigCacheLoader extends CacheLoader<CacheKey, Optional<Object>> {
+        @Override
+        public Optional<Object> load(CacheKey key) throws Exception {
+            BoundStatement boundStatement = readPS.bind();
+            boundStatement.bind(key.key());
+            ResultSet results = session.execute(boundStatement);
+            Row row = results.one();
+            if (row == null) {
+                return Optional.absent();
+            }
+            String value = row.getString(0);
+            if (value == null) {
+                return Optional.absent();
+            }
+            try {
+                Object config = mapper.readValue(value, checkNotNull(key.type()));
+                // config is non-null b/c text "null" is never stored
+                return Optional.of(checkNotNull(config));
+            } catch (IOException e) {
+                logger.error("error parsing config node '{}': ", key, e);
+                return Optional.absent();
+            }
+        }
     }
 }

@@ -116,17 +116,17 @@ public class PermissionParser {
         return inAgentRollupId && !inQuotedAgentRollupId && (c == ',' || c == ':');
     }
 
-    public static String quoteIfNecessaryAndJoin(List<String> agentRollupIds) {
-        List<String> quotedIfNecessaryAgentRollupIds = Lists.newArrayList();
+    public static String quoteIfNeededAndJoin(List<String> agentRollupIds) {
+        List<String> quotedIfNeededAgentRollupIds = Lists.newArrayList();
         for (String agentRollupId : agentRollupIds) {
             if (agentRollupId.indexOf(',') != -1 || agentRollupId.indexOf(':') != -1) {
-                quotedIfNecessaryAgentRollupIds.add(
+                quotedIfNeededAgentRollupIds.add(
                         "\"" + agentRollupId.replace("\\", "\\\\").replace("\"", "\\\"") + "\"");
             } else {
-                quotedIfNecessaryAgentRollupIds.add(agentRollupId);
+                quotedIfNeededAgentRollupIds.add(agentRollupId);
             }
         }
-        return Joiner.on(',').join(quotedIfNecessaryAgentRollupIds);
+        return Joiner.on(',').join(quotedIfNeededAgentRollupIds);
     }
 
     public static boolean upgradeAgentPermissions(List<String> perms) {

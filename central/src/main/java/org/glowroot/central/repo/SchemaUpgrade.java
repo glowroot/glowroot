@@ -522,7 +522,7 @@ public class SchemaUpgrade {
                 parser.parse();
                 String perm = parser.getPermission();
                 agentPermissions.put(
-                        PermissionParser.quoteIfNecessaryAndJoin(parser.getAgentRollupIds()), perm);
+                        PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds()), perm);
                 if (perm.equals("agent:view")) {
                     needsUpgrade = true;
                 }

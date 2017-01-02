@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,12 +59,7 @@ class ServletPluginProperties {
     private static boolean captureSessionAttributeNamesContainsId;
 
     static {
-        configService.registerConfigListener(new ConfigListener() {
-            @Override
-            public void onChange() {
-                updateCache();
-            }
-        });
+        configService.registerConfigListener(new ServletPluginConfigListener());
     }
 
     private ServletPluginProperties() {}
@@ -111,52 +106,61 @@ class ServletPluginProperties {
         return captureSessionAttributeNamesContainsId;
     }
 
-    private static void updateCache() {
-        captureRequestParameters = buildPatternList(CAPTURE_REQUEST_PARAMS_PROPERTY_NAME);
-        maskRequestParameters = buildPatternList(MASK_REQUEST_PARAMS_PROPERTY_NAME);
-        captureRequestHeaders = buildPatternList(CAPTURE_REQUEST_HEADER_PROPERTY_NAME);
-        captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
-        captureResponseHeadersNonEmpty = !captureResponseHeaders.isEmpty();
-        sessionUserAttributePath =
-                configService.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value();
-        sessionUserAttributeIsId = sessionUserAttributePath.equals(HTTP_SESSION_ID_ATTR);
-        String captureSessionAttributesText =
-                configService.getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME).value();
-        captureSessionAttributePaths =
-                ImmutableSet.copyOf(splitter.split(captureSessionAttributesText));
-        captureSessionAttributeNames = buildCaptureSessionAttributeNames();
-        captureSessionAttributeNamesContainsId =
-                captureSessionAttributeNames.contains(HTTP_SESSION_ID_ATTR);
-    }
+    private static class ServletPluginConfigListener implements ConfigListener {
 
-    private static ImmutableList<Pattern> buildPatternList(String propertyName) {
-        String captureRequestParametersText = configService.getStringProperty(propertyName).value();
-        List<Pattern> captureParameters = Lists.newArrayList();
-        for (String parameter : splitter.split(captureRequestParametersText)) {
-            // converted to lower case for case-insensitive matching
-            captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
+        @Override
+        public void onChange() {
+            recalculateProperties();
         }
-        return ImmutableList.copyOf(captureParameters);
-    }
 
-    private static ImmutableSet<String> buildCaptureSessionAttributeNames() {
-        ImmutableSet.Builder<String> names = ImmutableSet.builder();
-        for (String captureSessionAttributePath : captureSessionAttributePaths) {
-            int index = captureSessionAttributePath.indexOf('.');
-            if (index == -1) {
-                names.add(captureSessionAttributePath);
-            } else {
-                names.add(captureSessionAttributePath.substring(0, index));
+        private static void recalculateProperties() {
+            captureRequestParameters = buildPatternList(CAPTURE_REQUEST_PARAMS_PROPERTY_NAME);
+            maskRequestParameters = buildPatternList(MASK_REQUEST_PARAMS_PROPERTY_NAME);
+            captureRequestHeaders = buildPatternList(CAPTURE_REQUEST_HEADER_PROPERTY_NAME);
+            captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
+            captureResponseHeadersNonEmpty = !captureResponseHeaders.isEmpty();
+            sessionUserAttributePath = configService
+                    .getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value();
+            sessionUserAttributeIsId = sessionUserAttributePath.equals(HTTP_SESSION_ID_ATTR);
+            String captureSessionAttributesText = configService
+                    .getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME).value();
+            captureSessionAttributePaths =
+                    ImmutableSet.copyOf(splitter.split(captureSessionAttributesText));
+            captureSessionAttributeNames = buildCaptureSessionAttributeNames();
+            captureSessionAttributeNamesContainsId =
+                    captureSessionAttributeNames.contains(HTTP_SESSION_ID_ATTR);
+        }
+
+        private static ImmutableList<Pattern> buildPatternList(String propertyName) {
+            String captureRequestParametersText =
+                    configService.getStringProperty(propertyName).value();
+            List<Pattern> captureParameters = Lists.newArrayList();
+            for (String parameter : splitter.split(captureRequestParametersText)) {
+                // converted to lower case for case-insensitive matching
+                captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
             }
+            return ImmutableList.copyOf(captureParameters);
         }
-        return names.build();
-    }
 
-    private static Pattern buildRegexPattern(String wildcardPattern) {
-        // convert * into .* and quote the rest of the text using \Q...\E
-        String regex = "\\Q" + wildcardPattern.replace("*", "\\E.*\\Q") + "\\E";
-        // strip off unnecessary \\Q\\E in case * appeared at beginning or end of part
-        regex = regex.replace("\\Q\\E", "");
-        return Pattern.compile(regex);
+        private static ImmutableSet<String> buildCaptureSessionAttributeNames() {
+            ImmutableSet.Builder<String> names = ImmutableSet.builder();
+            for (String captureSessionAttributePath : captureSessionAttributePaths) {
+                int index = captureSessionAttributePath.indexOf('.');
+                if (index == -1) {
+                    names.add(captureSessionAttributePath);
+                } else {
+                    names.add(captureSessionAttributePath.substring(0, index));
+                }
+            }
+            return names.build();
+        }
+
+        private static Pattern buildRegexPattern(String wildcardPattern) {
+            // convert * into .* and quote the rest of the text using \Q...\E
+            String regex = "\\Q" + wildcardPattern.replace("*", "\\E.*\\Q") + "\\E";
+            // strip off unnecessary \\Q\\E in case * appeared at beginning or end of part
+            regex = regex.replace("\\Q\\E", "");
+            return Pattern.compile(regex);
+        }
     }
 }

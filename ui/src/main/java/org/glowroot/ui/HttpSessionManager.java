@@ -97,7 +97,7 @@ class HttpSessionManager {
             if (!roles.isEmpty()) {
                 authentication = getAuthentication(username, roles, true);
             }
-        } else if (userConfig != null && validatePassword(password, userConfig.passwordHash())) {
+        } else if (validatePassword(password, userConfig.passwordHash())) {
             authentication = getAuthentication(userConfig.username(), userConfig.roles(), false);
         }
         if (authentication == null) {
@@ -243,10 +243,6 @@ class HttpSessionManager {
         }
     }
 
-    private long getTimeoutMillis() {
-        return MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
-    }
-
     private Set<String> authenticateAgainstLdapAndGetGlowrootRoles(String username, String password)
             throws Exception {
         LdapConfig ldapConfig = configRepository.getLdapConfig();
@@ -301,6 +297,10 @@ class HttpSessionManager {
 
         private void touch(long currentTimeMillis) {
             lastRequest = currentTimeMillis;
+        }
+
+        private long getTimeoutMillis() {
+            return MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
         }
     }
 

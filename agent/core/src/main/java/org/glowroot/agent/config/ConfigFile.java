@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,15 +177,13 @@ class ConfigFile {
                 }
                 permissions.add(permissionNode.asText());
             }
-            // TODO retain order when remove/add
-
-            if (PermissionParser.upgradeAgentPermissions(permissions)) {
-                // only apply below updates if upgrading from 0.9.1 to 0.9.2
-                if (permissions.contains("admin:view") && permissions.contains("admin:edit")) {
-                    permissions.remove("admin:view");
-                    permissions.remove("admin:edit");
-                    permissions.add("admin");
-                }
+            boolean upgraded = PermissionParser.upgradeAgentPermissions(permissions);
+            if (upgraded && permissions.contains("admin:view")
+                    && permissions.contains("admin:edit")) {
+                // only apply these updates if upgrading from 0.9.1 to 0.9.2
+                permissions.remove("admin:view");
+                permissions.remove("admin:edit");
+                permissions.add("admin");
             }
             permissionsArrayNode.removeAll();
             for (String permission : permissions) {

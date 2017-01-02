@@ -52,21 +52,11 @@ public class RoleDao {
 
     private final PreparedStatement readOnePS;
 
-    private final LoadingCache<String, Optional<RoleConfig>> cache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<String, Optional<RoleConfig>>() {
-                @Override
-                public Optional<RoleConfig> load(String name) throws Exception {
-                    return Optional.fromNullable(readInternal(name));
-                }
-            });
+    private final LoadingCache<String, Optional<RoleConfig>> cache =
+            CacheBuilder.newBuilder().build(new RoleConfigCacheLoader());
 
-    private final LoadingCache<String, List<RoleConfig>> allRolesCache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<String, List<RoleConfig>>() {
-                @Override
-                public List<RoleConfig> load(String dummy) throws Exception {
-                    return readInternal();
-                }
-            });
+    private final LoadingCache<String, List<RoleConfig>> allRolesCache =
+            CacheBuilder.newBuilder().build(new AllRolesCacheLoader());
 
     public RoleDao(Session session, KeyspaceMetadata keyspaceMetadata) {
         this.session = session;
@@ -119,29 +109,6 @@ public class RoleDao {
         allRolesCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
-    private List<RoleConfig> readInternal() {
-        ResultSet results = session.execute(readPS.bind());
-        List<RoleConfig> users = Lists.newArrayList();
-        for (Row row : results) {
-            users.add(buildRole(row));
-        }
-        return users;
-    }
-
-    private @Nullable RoleConfig readInternal(String name) {
-        BoundStatement boundStatement = readOnePS.bind();
-        boundStatement.setString(0, name);
-        ResultSet results = session.execute(boundStatement);
-        if (results.isExhausted()) {
-            return null;
-        }
-        Row row = results.one();
-        if (!results.isExhausted()) {
-            throw new IllegalStateException("Multiple role records for name: " + name);
-        }
-        return buildRole(row);
-    }
-
     private static ImmutableRoleConfig buildRole(Row row) {
         int i = 0;
         return ImmutableRoleConfig.builder()
@@ -149,5 +116,34 @@ public class RoleDao {
                 .name(checkNotNull(row.getString(i++)))
                 .permissions(row.getSet(i++, String.class))
                 .build();
+    }
+
+    private class RoleConfigCacheLoader extends CacheLoader<String, Optional<RoleConfig>> {
+        @Override
+        public Optional<RoleConfig> load(String name) throws Exception {
+            BoundStatement boundStatement = readOnePS.bind();
+            boundStatement.setString(0, name);
+            ResultSet results = session.execute(boundStatement);
+            if (results.isExhausted()) {
+                return Optional.absent();
+            }
+            Row row = results.one();
+            if (!results.isExhausted()) {
+                throw new IllegalStateException("Multiple role records for name: " + name);
+            }
+            return Optional.of(buildRole(row));
+        }
+    }
+
+    private class AllRolesCacheLoader extends CacheLoader<String, List<RoleConfig>> {
+        @Override
+        public List<RoleConfig> load(String dummy) throws Exception {
+            ResultSet results = session.execute(readPS.bind());
+            List<RoleConfig> users = Lists.newArrayList();
+            for (Row row : results) {
+                users.add(buildRole(row));
+            }
+            return users;
+        }
     }
 }

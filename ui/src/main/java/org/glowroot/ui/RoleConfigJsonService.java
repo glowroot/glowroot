@@ -120,6 +120,7 @@ class RoleConfigJsonService {
         try {
             configRepository.deleteRoleConfig(request.name().get());
         } catch (CannotDeleteLastRoleException e) {
+            logger.debug(e.getMessage(), e);
             return "{\"errorCannotDeleteLastRole\":true}";
         }
         return "{}";
@@ -219,7 +220,7 @@ class RoleConfigJsonService {
             }
             for (RolePermissionBlock permissionBlock : permissionBlocks()) {
                 String agentIds =
-                        PermissionParser.quoteIfNecessaryAndJoin(permissionBlock.agentRollupIds());
+                        PermissionParser.quoteIfNeededAndJoin(permissionBlock.agentRollupIds());
                 for (String permission : permissionBlock.permissions()) {
                     builder.addPermissions(
                             "agent:" + agentIds + ":" + permission.substring("agent:".length()));

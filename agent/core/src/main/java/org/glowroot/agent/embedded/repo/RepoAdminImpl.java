@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
-    public void resizeIfNecessary() throws Exception {
+    public void resizeIfNeeded() throws Exception {
         // resize() doesn't do anything if the new and old value are the same
         for (int i = 0; i < rollupCappedDatabases.size(); i++) {
             rollupCappedDatabases.get(i).resize(

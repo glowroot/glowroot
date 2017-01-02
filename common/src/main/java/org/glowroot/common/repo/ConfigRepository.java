@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.glowroot.common.config.WebConfig;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
@@ -43,6 +44,9 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
+
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public interface ConfigRepository {
 
@@ -56,13 +60,13 @@ public interface ConfigRepository {
     String LDAP_KEY = "ldap";
 
     long ROLLUP_0_INTERVAL_MILLIS =
-            Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000); // 1 minute
+            Long.getLong("glowroot.internal.rollup.0.intervalMillis", MINUTES.toMillis(1));
     long ROLLUP_1_INTERVAL_MILLIS =
-            Long.getLong("glowroot.internal.rollup.1.intervalMillis", 5 * 60 * 1000); // 5 minutes
+            Long.getLong("glowroot.internal.rollup.1.intervalMillis", MINUTES.toMillis(5));
     long ROLLUP_2_INTERVAL_MILLIS =
-            Long.getLong("glowroot.internal.rollup.2.intervalMillis", 30 * 60 * 1000); // 30 minutes
+            Long.getLong("glowroot.internal.rollup.2.intervalMillis", MINUTES.toMillis(30));
     long ROLLUP_3_INTERVAL_MILLIS =
-            Long.getLong("glowroot.internal.rollup.3.intervalMillis", 4 * 3600 * 1000); // 4 hours
+            Long.getLong("glowroot.internal.rollup.3.intervalMillis", HOURS.toMillis(4));
 
     @Nullable
     TransactionConfig getTransactionConfig(String agentId) throws IOException;
@@ -83,9 +87,7 @@ public interface ConfigRepository {
 
     List<AlertConfig> getAlertConfigs(String agentId) throws IOException;
 
-    List<AlertConfig> getTransactionAlertConfigs(String agentId) throws IOException;
-
-    List<AlertConfig> getGaugeAlertConfigs(String agentId) throws IOException;
+    List<AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind) throws IOException;
 
     @Nullable
     AlertConfig getAlertConfig(String agentId, String version) throws IOException;

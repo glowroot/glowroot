@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,11 +51,8 @@ import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncQueryEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncTraceEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopQueryEntry;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
@@ -190,7 +187,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return threadId;
     }
 
-    public boolean isCompleted() {
+    boolean isCompleted() {
         return traceEntryComponent.isCompleted();
     }
 
@@ -198,13 +195,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // checking threadContextHolder.get() to make sure this isn't an outer transaction on hold
         // while inner transaction is executing
         return !traceEntryComponent.isCompleted() && threadContextHolder.get() == this;
-    }
-
-    private boolean isCompleted(long captureTick) {
-        if (!traceEntryComponent.isCompleted()) {
-            return false;
-        }
-        return traceEntryComponent.getEndTick() >= captureTick;
     }
 
     public @Nullable TimerImpl getCurrentTimer() {
@@ -265,6 +255,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     boolean getCaptureThreadStats() {
         return threadStatsComponent != null;
+    }
+
+    private boolean isCompleted(long captureTick) {
+        if (!traceEntryComponent.isCompleted()) {
+            return false;
+        }
+        return traceEntryComponent.getEndTick() >= captureTick;
     }
 
     // only called by transaction thread
@@ -476,19 +473,19 @@ public class ThreadContextImpl implements ThreadContextPlus {
             MessageSupplier messageSupplier, TimerName timerName) {
         if (transactionType == null) {
             logger.error("startTransaction(): argument 'transactionType' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (transactionName == null) {
             logger.error("startTransaction(): argument 'transactionName' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (messageSupplier == null) {
             logger.error("startTransaction(): argument 'messageSupplier' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (timerName == null) {
             logger.error("startTransaction(): argument 'timerName' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         // ensure visibility of recent configuration updates
         transaction.getConfigService().readMemoryBarrier();
@@ -511,11 +508,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     public TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName) {
         if (messageSupplier == null) {
             logger.error("startTraceEntry(): argument 'messageSupplier' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (timerName == null) {
             logger.error("startTraceEntry(): argument 'timerName' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         long startTick = ticker.read();
         TimerImpl timer = startTimer(timerName, startTick);
@@ -531,11 +528,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
             TimerName timerName) {
         if (messageSupplier == null) {
             logger.error("startAsyncTraceEntry(): argument 'messageSupplier' must be non-null");
-            return NopAsyncTraceEntry.INSTANCE;
+            return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
         if (timerName == null) {
             logger.error("startAsyncTraceEntry(): argument 'timerName' must be non-null");
-            return NopAsyncTraceEntry.INSTANCE;
+            return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
         long startTick = ticker.read();
         TimerImpl syncTimer = startTimer(timerName, startTick);
@@ -553,19 +550,19 @@ public class ThreadContextImpl implements ThreadContextPlus {
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (queryType == null) {
             logger.error("startQueryEntry(): argument 'queryType' must be non-null");
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         if (queryText == null) {
             logger.error("startQueryEntry(): argument 'queryText' must be non-null");
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         if (queryMessageSupplier == null) {
             logger.error("startQueryEntry(): argument 'queryMessageSupplier' must be non-null");
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         if (timerName == null) {
             logger.error("startQueryEntry(): argument 'timerName' must be non-null");
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         long startTick = ticker.read();
         TimerImpl timer = startTimer(timerName, startTick);
@@ -585,19 +582,19 @@ public class ThreadContextImpl implements ThreadContextPlus {
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (queryType == null) {
             logger.error("startQueryEntry(): argument 'queryType' must be non-null");
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         if (queryText == null) {
             logger.error("startQueryEntry(): argument 'queryText' must be non-null");
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         if (queryMessageSupplier == null) {
             logger.error("startQueryEntry(): argument 'queryMessageSupplier' must be non-null");
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         if (timerName == null) {
             logger.error("startQueryEntry(): argument 'timerName' must be non-null");
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         long startTick = ticker.read();
         TimerImpl timer = startTimer(timerName, startTick);
@@ -617,20 +614,20 @@ public class ThreadContextImpl implements ThreadContextPlus {
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (queryType == null) {
             logger.error("startAsyncQueryEntry(): argument 'queryType' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
+            return NopTransactionService.ASYNC_QUERY_ENTRY;
         }
         if (queryText == null) {
             logger.error("startAsyncQueryEntry(): argument 'queryText' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
+            return NopTransactionService.ASYNC_QUERY_ENTRY;
         }
         if (queryMessageSupplier == null) {
             logger.error(
                     "startAsyncQueryEntry(): argument 'queryMessageSupplier' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
+            return NopTransactionService.ASYNC_QUERY_ENTRY;
         }
         if (timerName == null) {
             logger.error("startAsyncQueryEntry(): argument 'timerName' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
+            return NopTransactionService.ASYNC_QUERY_ENTRY;
         }
         long startTick = ticker.read();
         TimerImpl syncTimer = startTimer(timerName, startTick);
@@ -651,19 +648,19 @@ public class ThreadContextImpl implements ThreadContextPlus {
             MessageSupplier messageSupplier, TimerName timerName) {
         if (type == null) {
             logger.error("startServiceCallEntry(): argument 'type' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (text == null) {
             logger.error("startServiceCallEntry(): argument 'text' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (messageSupplier == null) {
             logger.error("startServiceCallEntry(): argument 'messageSupplier' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (timerName == null) {
             logger.error("startServiceCallEntry(): argument 'timerName' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         long startTick = ticker.read();
         TimerImpl timer = startTimer(timerName, startTick);
@@ -682,20 +679,20 @@ public class ThreadContextImpl implements ThreadContextPlus {
             MessageSupplier messageSupplier, TimerName timerName) {
         if (type == null) {
             logger.error("startAsyncServiceCallEntry(): argument 'type' must be non-null");
-            return NopAsyncTraceEntry.INSTANCE;
+            return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
         if (text == null) {
             logger.error("startAsyncServiceCallEntry(): argument 'text' must be non-null");
-            return NopAsyncTraceEntry.INSTANCE;
+            return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
         if (messageSupplier == null) {
             logger.error(
                     "startAsyncServiceCallEntry(): argument 'messageSupplier' must be non-null");
-            return NopAsyncTraceEntry.INSTANCE;
+            return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
         if (timerName == null) {
             logger.error("startAsyncServiceCallEntry(): argument 'timerName' must be non-null");
-            return NopAsyncTraceEntry.INSTANCE;
+            return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
         long startTick = ticker.read();
         TimerImpl syncTimer = startTimer(timerName, startTick);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
 
 public class ServiceRegistryImpl implements ServiceRegistry {
 
-    private static volatile @MonotonicNonNull ServiceRegistryImpl INSTANCE;
+    private static volatile @MonotonicNonNull ServiceRegistryImpl instance;
 
     private final GlowrootService glowrootService;
     private final TimerNameCache timerNameCache;
@@ -67,18 +67,18 @@ public class ServiceRegistryImpl implements ServiceRegistry {
     // called via reflection from org.glowroot.agent.plugin.api.Agent
     // also called via reflection from generated pointcut config advice
     public static @Nullable ServiceRegistry getInstance() {
-        return INSTANCE;
+        return instance;
     }
 
     // called via reflection from org.glowroot.agent.api.Glowroot
     // also called via reflection from generated pointcut config advice
     public static @Nullable GlowrootService getGlowrootService() {
-        return INSTANCE == null ? null : INSTANCE.glowrootService;
+        return instance == null ? null : instance.glowrootService;
     }
 
     public static void init(GlowrootService glowrootService, TimerNameCache timerNameCache,
             ConfigServiceFactory configServiceFactory) throws Exception {
-        INSTANCE = new ServiceRegistryImpl(glowrootService, timerNameCache, configServiceFactory);
+        instance = new ServiceRegistryImpl(glowrootService, timerNameCache, configServiceFactory);
     }
 
     public interface ConfigServiceFactory {

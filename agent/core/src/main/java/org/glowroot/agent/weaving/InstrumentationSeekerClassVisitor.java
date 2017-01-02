@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -220,17 +220,13 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             }
             if (name.equals("transactionType")) {
                 transactionType = (String) value;
-            } else if (name.equals("transactionName")) {
-                transactionNameTemplate = (String) value;
-            } else if (name.equals("transactionNameTemplate")) {
-                // supporting deprecated transactionNameTemplate
+            } else if (name.equals("transactionName") || name.equals("transactionNameTemplate")) {
+                // second condition above is supporting deprecated transactionNameTemplate
                 transactionNameTemplate = (String) value;
             } else if (name.equals("traceHeadline")) {
                 traceHeadline = (String) value;
-            } else if (name.equals("timer")) {
-                timerName = (String) value;
-            } else if (name.equals("timerName")) {
-                // supporting deprecated timerName
+            } else if (name.equals("timer") || name.equals("timerName")) {
+                // second condition above is supporting deprecated timerName
                 timerName = (String) value;
             }
         }
@@ -250,15 +246,11 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             if (name == null) {
                 return;
             }
-            if (name.equals("message")) {
+            if (name.equals("message") || name.equals("messageTemplate")) {
+                // second condition above is supporting deprecated messageTemplate
                 messageTemplate = (String) value;
-            } else if (name.equals("messageTemplate")) {
-                // supporting deprecated messageTemplate
-                messageTemplate = (String) value;
-            } else if (name.equals("timer")) {
-                timerName = (String) value;
-            } else if (name.equals("timerName")) {
-                // supporting deprecated timerName
+            } else if (name.equals("timer") || name.equals("timerName")) {
+                // second condition above is supporting deprecated timerName
                 timerName = (String) value;
             }
         }

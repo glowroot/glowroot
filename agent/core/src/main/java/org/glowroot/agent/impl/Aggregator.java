@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,8 @@ public class Aggregator {
     private int queueLength;
 
     private final RateLimitedLogger backPressureLogger = new RateLimitedLogger(Aggregator.class);
+
+    private volatile boolean closed;
 
     public Aggregator(Collector collector, ConfigService configService,
             long aggregateIntervalMillis, Clock clock) {
@@ -152,8 +154,8 @@ public class Aggregator {
 
     @OnlyUsedByTests
     public void close() throws InterruptedException {
-        // shutdownNow() is needed here to send interrupt to TransactionProcessor thread
-        processingExecutor.shutdownNow();
+        closed = true;
+        processingExecutor.shutdown();
         if (!processingExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
@@ -167,12 +169,9 @@ public class Aggregator {
 
         @Override
         public void run() {
-            while (true) {
+            while (!closed) {
                 try {
                     processOne();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
                 } catch (Throwable e) {
                     // log and continue processing
                     logger.error(e.getMessage(), e);
@@ -236,8 +235,7 @@ public class Aggregator {
                 flushActiveIntervalCollector();
                 activeIntervalCollector = new AggregateIntervalCollector(currentTime,
                         aggregateIntervalMillis,
-                        configService.getAdvancedConfig()
-                                .maxAggregateTransactionsPerType(),
+                        configService.getAdvancedConfig().maxAggregateTransactionsPerType(),
                         configService.getAdvancedConfig().maxAggregateQueriesPerType(),
                         configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
             }

@@ -92,7 +92,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class DownstreamServiceImpl extends DownstreamServiceImplBase {
+class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceImpl.class);
 
@@ -102,7 +102,7 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
     private final Map<String, ConnectedAgent> connectedAgents = Maps.newConcurrentMap();
     private final AgentDao agentDao;
 
-    public DownstreamServiceImpl(AgentDao agentDao) {
+    DownstreamServiceImpl(AgentDao agentDao) {
         this.agentDao = agentDao;
     }
 
@@ -111,7 +111,7 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
         return new ConnectedAgent(requestObserver);
     }
 
-    public void updateAgentConfigIfConnectedAndNeeded(String agentId) throws Exception {
+    void updateAgentConfigIfConnectedAndNeeded(String agentId) throws Exception {
         ConnectedAgent connectedAgent = connectedAgents.get(agentId);
         if (connectedAgent != null) {
             AgentConfigUpdate agentConfigUpdate = agentDao.readForAgentConfigUpdate(agentId);

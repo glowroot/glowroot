@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,9 @@ public class LogbackAspect {
             methodParameterTypes = {"ch.qos.logback.classic.spi.ILoggingEvent"},
             nestingGroup = "logging", timerName = TIMER_NAME)
     public static class CallAppendersAdvice {
+
         private static final TimerName timerName = Agent.getTimerName(CallAppendersAdvice.class);
+
         @OnBefore
         public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
                 @BindParameter @Nullable ILoggingEvent loggingEvent) {
@@ -99,6 +101,7 @@ public class LogbackAspect {
                     getLevelStr(lvl), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
+
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable LogAdviceTraveler traveler) {
             if (traveler == null) {
@@ -118,6 +121,10 @@ public class LogbackAspect {
                 traveler.traceEntry.end();
             }
         }
+
+        private static String nullToEmpty(@Nullable String s) {
+            return s == null ? "" : s;
+        }
     }
 
     // this is for logback prior to 0.9.16
@@ -125,7 +132,9 @@ public class LogbackAspect {
             methodParameterTypes = {"ch.qos.logback.classic.spi.LoggingEvent"},
             nestingGroup = "logging", timerName = TIMER_NAME)
     public static class CallAppenders0xAdvice {
+
         private static final TimerName timerName = Agent.getTimerName(CallAppenders0xAdvice.class);
+
         @OnBefore
         public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
                 @BindReceiver Object logger, @BindParameter @Nullable Object loggingEvent,
@@ -146,6 +155,7 @@ public class LogbackAspect {
                             getLevelStr(lvl), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
+
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable LogAdviceTraveler traveler) {
             if (traveler == null) {
@@ -165,10 +175,6 @@ public class LogbackAspect {
                 traveler.traceEntry.end();
             }
         }
-    }
-
-    private static String nullToEmpty(@Nullable String s) {
-        return s == null ? "" : s;
     }
 
     private static String getLevelStr(int lvl) {

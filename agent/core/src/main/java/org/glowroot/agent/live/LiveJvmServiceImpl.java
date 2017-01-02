@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,15 +83,12 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     private static final String HOT_SPOT_DIAGNOSTIC_MBEAN_NAME =
             "com.sun.management:type=HotSpotDiagnostic";
 
+    private static final @Nullable Long PROCESS_ID =
+            parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
+
     private static final ImmutableSet<String> numericAttributeTypes =
             ImmutableSet.of("long", "int", "double", "float", "java.lang.Long", "java.lang.Integer",
                     "java.lang.Double", "java.lang.Float");
-
-    private static final @Nullable Long processId;
-
-    static {
-        processId = parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
-    }
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final ThreadDumpService threadDumpService;
@@ -136,8 +133,9 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             checkNotNull(in);
             // Closer is used to simulate Java 7 try-with-resources
             Closer closer = Closer.create();
-            BufferedReader reader = closer.register(new BufferedReader(new InputStreamReader(in)));
             try {
+                BufferedReader reader =
+                        closer.register(new BufferedReader(new InputStreamReader(in)));
                 return CharStreams.toString(reader).trim();
             } catch (Throwable t) {
                 throw closer.rethrow(t);
@@ -204,8 +202,9 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             checkNotNull(in);
             // Closer is used to simulate Java 7 try-with-resources
             Closer closer = Closer.create();
-            BufferedReader reader = closer.register(new BufferedReader(new InputStreamReader(in)));
             try {
+                BufferedReader reader =
+                        closer.register(new BufferedReader(new InputStreamReader(in)));
                 return process(reader);
             } catch (Throwable t) {
                 throw closer.rethrow(t);
@@ -348,7 +347,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     public static @Nullable Long getProcessId() {
-        return processId;
+        return PROCESS_ID;
     }
 
     @VisibleForTesting
@@ -562,9 +561,8 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     private static void addNumericAttributes(MBeanAttributeInfo attribute, Object value,
             Set<String> attributeNames) {
         String attributeType = attribute.getType();
-        if (numericAttributeTypes.contains(attributeType)) {
-            attributeNames.add(attribute.getName());
-        } else if (attributeType.equals("java.lang.Object") && value instanceof Number) {
+        if (numericAttributeTypes.contains(attributeType)
+                || attributeType.equals("java.lang.Object") && value instanceof Number) {
             attributeNames.add(attribute.getName());
         } else if (attributeType.equals("java.lang.String") && value instanceof String) {
             try {

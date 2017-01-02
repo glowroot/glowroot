@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,12 +34,6 @@ public class Encryption {
 
     private Encryption() {}
 
-    public static SecretKey generateNewKey() throws NoSuchAlgorithmException {
-        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-        keyGen.init(128);
-        return keyGen.generateKey();
-    }
-
     public static String encrypt(String text, SecretKey secretKey) throws GeneralSecurityException {
         byte[] iv = new byte[16];
         secureRandom.nextBytes(iv);
@@ -58,5 +52,11 @@ public class Encryption {
         aesCipherForDecryption.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
         byte[] decryptedBytes = aesCipherForDecryption.doFinal(encryptedText);
         return new String(decryptedBytes, Charsets.UTF_8);
+    }
+
+    static SecretKey generateNewKey() throws NoSuchAlgorithmException {
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(128);
+        return keyGen.generateKey();
     }
 }

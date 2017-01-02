@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,14 +30,8 @@ public class Utils {
     }
 
     private static String getPercentileSuffix(String percentileText) {
-        if (percentileText.equals("11") || percentileText.endsWith(".11")
-                || percentileText.endsWith(",11")) {
-            return "th";
-        } else if (percentileText.equals("12") || percentileText.endsWith(".12")
-                || percentileText.endsWith(",12")) {
-            return "th";
-        } else if (percentileText.equals("13") || percentileText.endsWith(".13")
-                || percentileText.endsWith(",13")) {
+        if (isSpecialCase(percentileText, "11") || isSpecialCase(percentileText, "12")
+                || isSpecialCase(percentileText, "13")) {
             return "th";
         }
         switch (percentileText.charAt(percentileText.length() - 1)) {
@@ -61,5 +55,10 @@ public class Utils {
         int timeZoneOffset = timeZone == null ? 0 : timeZone.getOffset(captureTime);
         return (long) Math.ceil((captureTime + timeZoneOffset) / (double) intervalMillis)
                 * intervalMillis - timeZoneOffset;
+    }
+
+    private static boolean isSpecialCase(String percentileText, String teen) {
+        return percentileText.equals(teen) || percentileText.endsWith('.' + teen)
+                || percentileText.endsWith(',' + teen);
     }
 }

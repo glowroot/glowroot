@@ -191,6 +191,11 @@
      style="text-align: center; font-size: 20px; font-weight: 600;">
   You have been signed out
 </div>
+<div class="ng-cloak gt-button-message-error"
+     ng-if="navbarErrorMessage"
+     style="text-align: center; font-size: 20px; font-weight: 600;">
+  {{navbarErrorMessage}}
+</div>
 <div class="container" id="container">
   <!-- autoscroll=true behavior is overridden to scroll to top of page, see $uiViewScroll decorator in routes.js -->
   <div ui-view></div>

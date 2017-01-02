@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,9 @@ import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncQueryEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncTraceEntry;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAuxThreadContext;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopQueryEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
@@ -70,19 +67,19 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
             MessageSupplier messageSupplier, TimerName timerName) {
         if (transactionType == null) {
             logger.error("startTransaction(): argument 'transactionType' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (transactionName == null) {
             logger.error("startTransaction(): argument 'transactionName' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (messageSupplier == null) {
             logger.error("startTransaction(): argument 'messageSupplier' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (timerName == null) {
             logger.error("startTransaction(): argument 'timerName' must be non-null");
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (threadContext == null) {
             TraceEntry traceEntry = transactionService.startTransaction(transactionType,
@@ -98,7 +95,7 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     @Override
     public TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         return threadContext.startTraceEntry(messageSupplier, timerName);
     }
@@ -107,7 +104,7 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
             TimerName timerName) {
         if (threadContext == null) {
-            return NopAsyncQueryEntry.INSTANCE;
+            return NopTransactionService.ASYNC_QUERY_ENTRY;
         }
         return threadContext.startAsyncTraceEntry(messageSupplier, timerName);
     }
@@ -116,7 +113,7 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     public QueryEntry startQueryEntry(String queryType, String queryText,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (threadContext == null) {
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         return threadContext.startQueryEntry(queryType, queryText, queryMessageSupplier, timerName);
     }
@@ -125,7 +122,7 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (threadContext == null) {
-            return NopQueryEntry.INSTANCE;
+            return NopTransactionService.QUERY_ENTRY;
         }
         return threadContext.startQueryEntry(queryType, queryText, queryExecutionCount,
                 queryMessageSupplier, timerName);
@@ -135,7 +132,7 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
             QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (threadContext == null) {
-            return NopAsyncQueryEntry.INSTANCE;
+            return NopTransactionService.ASYNC_QUERY_ENTRY;
         }
         return threadContext.startAsyncQueryEntry(queryType, queryText, queryMessageSupplier,
                 timerName);
@@ -145,18 +142,16 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     public TraceEntry startServiceCallEntry(String type, String text,
             MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
-        return threadContext.startServiceCallEntry(type, text,
-                messageSupplier,
-                timerName);
+        return threadContext.startServiceCallEntry(type, text, messageSupplier, timerName);
     }
 
     @Override
     public AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
             MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
-            return NopAsyncTraceEntry.INSTANCE;
+            return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
         return threadContext.startAsyncServiceCallEntry(type, text, messageSupplier, timerName);
     }

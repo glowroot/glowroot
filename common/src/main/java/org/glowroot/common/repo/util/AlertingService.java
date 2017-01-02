@@ -51,6 +51,7 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -157,6 +158,9 @@ public class AlertingService {
             totalWeightedValue += gaugeValue.getValue() * gaugeValue.getWeight();
             totalWeight += gaugeValue.getWeight();
         }
+        // individual gauge value weights cannot be zero, and gaugeValues is non-empty
+        // (see above conditional), so totalWeight is guaranteed non-zero
+        checkState(totalWeight != 0);
         double average = totalWeightedValue / totalWeight;
         String version = Versions.getVersion(alertConfig);
         boolean previouslyTriggered = triggeredAlertRepository.exists(agentId, version);
@@ -302,7 +306,8 @@ public class AlertingService {
         numberFormat.setMaximumFractionDigits(20);
         if (value < 1000000) {
             return numberFormat
-                    .format(new BigDecimal(value).round(new MathContext(6, RoundingMode.HALF_UP)));
+                    .format(BigDecimal.valueOf(value)
+                            .round(new MathContext(6, RoundingMode.HALF_UP)));
         } else {
             return numberFormat.format(Math.round(value));
         }

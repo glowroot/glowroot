@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -548,11 +548,10 @@ class ClasspathCache {
     }
 
     private static @Nullable Location getLocationFromFile(File file) {
-        if (!file.exists()) {
-            return null;
-        } else if (file.isDirectory()) {
+        boolean exists = file.exists();
+        if (exists && file.isDirectory()) {
             return ImmutableLocation.builder().directory(file).build();
-        } else if (file.getName().endsWith(".jar")) {
+        } else if (exists && file.getName().endsWith(".jar")) {
             return ImmutableLocation.builder().jarFile(file).build();
         } else {
             return null;

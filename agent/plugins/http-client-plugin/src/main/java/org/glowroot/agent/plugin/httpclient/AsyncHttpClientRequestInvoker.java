@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,8 +66,9 @@ public class AsyncHttpClientRequestInvoker {
             try {
                 return Class.forName("com.ning.http.client.Request", false, clazz.getClassLoader());
             } catch (ClassNotFoundException f) {
-                // log original exception
+                // log outer exception at warn level, inner exception at debug level
                 logger.warn(e.getMessage(), e);
+                logger.debug(f.getMessage(), f);
             }
         }
         return null;

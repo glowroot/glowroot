@@ -177,34 +177,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AlertConfig> getTransactionAlertConfigs(String agentId)
+    public List<AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind)
             throws InvalidProtocolBufferException {
         List<AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : getAlertConfigs(agentId)) {
-            if (config.getKind() == AlertKind.TRANSACTION) {
-                configs.add(config);
-            }
-        }
-        return configs;
-    }
-
-    @Override
-    public List<AlertConfig> getGaugeAlertConfigs(String agentId)
-            throws InvalidProtocolBufferException {
-        List<AlertConfig> configs = Lists.newArrayList();
-        for (AlertConfig config : getAlertConfigs(agentId)) {
-            if (config.getKind() == AlertKind.GAUGE) {
-                configs.add(config);
-            }
-        }
-        return configs;
-    }
-
-    public List<AlertConfig> getHeartbeatAlertConfigs(String agentId)
-            throws InvalidProtocolBufferException {
-        List<AlertConfig> configs = Lists.newArrayList();
-        for (AlertConfig config : getAlertConfigs(agentId)) {
-            if (config.getKind() == AlertKind.HEARTBEAT) {
+            if (config.getKind() == alertKind) {
                 configs.add(config);
             }
         }
@@ -924,11 +901,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public SecretKey getSecretKey() throws Exception {
         return secretKey.get();
-    }
-
-    public @Nullable AgentConfig getAgentConfig(String agentId)
-            throws InvalidProtocolBufferException {
-        return agentDao.readAgentConfig(agentId);
     }
 
     public void addConfigListener(ConfigListener listener) {

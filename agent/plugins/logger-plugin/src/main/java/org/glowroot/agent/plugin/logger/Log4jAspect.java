@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,9 @@ public class Log4jAspect {
                     "java.lang.Object", "java.lang.Throwable"},
             nestingGroup = "logging", timerName = TIMER_NAME)
     public static class ForcedLogAdvice {
+
         private static final TimerName timerName = Agent.getTimerName(ForcedLogAdvice.class);
+
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindReceiver Logger logger) {
@@ -88,6 +90,7 @@ public class Log4jAspect {
                 }
             }
         }
+
         @OnBefore
         @SuppressWarnings("unused")
         public static TraceEntry onBefore(ThreadContext context, @BindReceiver Logger logger,
@@ -102,6 +105,7 @@ public class Log4jAspect {
             return context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
                     getLevelStr(lvl), loggerName, messageText), timerName);
         }
+
         @OnAfter
         @SuppressWarnings("unused")
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
@@ -121,26 +125,26 @@ public class Log4jAspect {
                 traceEntry.end();
             }
         }
-    }
 
-    private static String getLevelStr(int lvl) {
-        switch (lvl) {
-            case ALL_INT:
-                return "all";
-            case DEBUG_INT:
-                return "debug";
-            case INFO_INT:
-                return "info";
-            case WARN_INT:
-                return "warn";
-            case ERROR_INT:
-                return "error";
-            case FATAL_INT:
-                return "fatal";
-            case OFF_INT:
-                return "off";
-            default:
-                return "unknown (" + lvl + ")";
+        private static String getLevelStr(int lvl) {
+            switch (lvl) {
+                case ALL_INT:
+                    return "all";
+                case DEBUG_INT:
+                    return "debug";
+                case INFO_INT:
+                    return "info";
+                case WARN_INT:
+                    return "warn";
+                case ERROR_INT:
+                    return "error";
+                case FATAL_INT:
+                    return "fatal";
+                case OFF_INT:
+                    return "off";
+                default:
+                    return "unknown (" + lvl + ")";
+            }
         }
     }
 }

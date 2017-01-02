@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global angular, moment, $, Spinner, ZeroClipboard, alert */
+/* global angular, moment, $, Spinner, ZeroClipboard */
 
 var glowroot = angular.module('glowroot', [
   'ui.router',
@@ -51,7 +51,14 @@ glowroot.config([
                   .then(function (response) {
                     $rootScope.setLayout(response.data);
                   }, function (response) {
-                    // TODO handle error()
+                    $rootScope.navbarErrorMessage = 'An error occurred getting layout';
+                    if (response.data.message) {
+                      $rootScope.navbarErrorMessage += ': ' + response.data.message;
+                    }
+                    var unregisterListener = $rootScope.$on('$stateChangeSuccess', function () {
+                      $rootScope.navbarErrorMessage = '';
+                      unregisterListener();
+                    });
                   });
             }
             return response;
@@ -202,10 +209,15 @@ glowroot.run([
                 $rootScope.displaySignOutMessage = false;
               }, 2000);
             }
-          }, function () {
-            // there is not an obvious placement on the screen for this error message
-            // since the action is triggered from navbar on any screen
-            alert('An error occurred during log out');
+          }, function (response) {
+            $rootScope.navbarErrorMessage = 'An error occurred signing out';
+            if (response.data.message) {
+              $rootScope.navbarErrorMessage += ': ' + response.data.message;
+            }
+            var unregisterListener = $rootScope.$on('$stateChangeSuccess', function () {
+              $rootScope.navbarErrorMessage = '';
+              unregisterListener();
+            });
           });
     };
 
@@ -281,6 +293,15 @@ glowroot.run([
       $http.get('backend/layout')
           .then(function (response) {
             $rootScope.setLayout(response.data);
+          }, function (response) {
+            $rootScope.navbarErrorMessage = 'An error occurred getting layout';
+            if (response.data.message) {
+              $rootScope.navbarErrorMessage += ': ' + response.data.message;
+            }
+            var unregisterListener = $rootScope.$on('$stateChangeSuccess', function () {
+              $rootScope.navbarErrorMessage = '';
+              unregisterListener();
+            });
           });
     }
 

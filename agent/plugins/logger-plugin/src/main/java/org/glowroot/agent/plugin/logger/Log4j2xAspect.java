@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,10 +67,11 @@ public class Log4j2xAspect {
                     "java.lang.Throwable"},
             nestingGroup = "logging", timerName = TIMER_NAME)
     public static class CallAppendersAdvice {
+
         private static final TimerName timerName = Agent.getTimerName(CallAppendersAdvice.class);
+
         @OnBefore
-        public static LogAdviceTraveler onBefore(ThreadContext context,
-                @BindReceiver Logger logger,
+        public static LogAdviceTraveler onBefore(ThreadContext context, @BindReceiver Logger logger,
                 @SuppressWarnings("unused") @BindParameter @Nullable String fqcn,
                 @BindParameter @Nullable Level level,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
@@ -87,6 +88,7 @@ public class Log4j2xAspect {
                             getLevelStr(lvl), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
+
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
             Throwable t = traveler.throwable;
@@ -103,32 +105,32 @@ public class Log4j2xAspect {
                 traveler.traceEntry.end();
             }
         }
-    }
 
-    private static String nullToEmpty(@Nullable String s) {
-        return s == null ? "" : s;
-    }
+        private static String nullToEmpty(@Nullable String s) {
+            return s == null ? "" : s;
+        }
 
-    private static String getLevelStr(int lvl) {
-        switch (lvl) {
-            case ALL:
-                return "all";
-            case TRACE:
-                return "trace";
-            case DEBUG:
-                return "debug";
-            case INFO:
-                return "info";
-            case WARN:
-                return "warn";
-            case ERROR:
-                return "error";
-            case FATAL:
-                return "fatal";
-            case OFF:
-                return "off";
-            default:
-                return "unknown (" + lvl + ")";
+        private static String getLevelStr(int lvl) {
+            switch (lvl) {
+                case ALL:
+                    return "all";
+                case TRACE:
+                    return "trace";
+                case DEBUG:
+                    return "debug";
+                case INFO:
+                    return "info";
+                case WARN:
+                    return "warn";
+                case ERROR:
+                    return "error";
+                case FATAL:
+                    return "fatal";
+                case OFF:
+                    return "off";
+                default:
+                    return "unknown (" + lvl + ")";
+            }
         }
     }
 

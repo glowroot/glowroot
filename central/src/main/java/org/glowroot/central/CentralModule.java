@@ -16,9 +16,7 @@
 package org.glowroot.central;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.security.CodeSource;
@@ -35,13 +33,11 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +67,7 @@ import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
@@ -169,8 +166,6 @@ class CentralModule {
                 }
                 configRepository.updateWebConfig(updatedWebConfig, webConfig.version());
             }
-            centralConfigDao.setConfigRepository(configRepository);
-            agentDao.setConfigRepository(configRepository);
 
             TransactionTypeDao transactionTypeDao =
                     new TransactionTypeDao(session, configRepository);
@@ -287,18 +282,9 @@ class CentralModule {
             propFile = new File("glowroot-central.properties");
         }
         // upgrade from 0.9.4 to 0.9.5
-        String content = Files.toString(propFile, Charsets.UTF_8);
-        if (content.contains("cassandra.contact.points=")) {
-            content = content.replace("cassandra.contact.points=", "cassandra.contactPoints=");
-            Files.write(content, propFile, Charsets.UTF_8);
-        }
-        Properties props = new Properties();
-        InputStream in = new FileInputStream(propFile);
-        try {
-            props.load(in);
-        } finally {
-            in.close();
-        }
+        PropertiesFiles.upgradeIfNeeded(propFile, "cassandra.contact.points=",
+                "cassandra.contactPoints=");
+        Properties props = PropertiesFiles.load(propFile);
         String cassandraContactPoints = props.getProperty("cassandra.contactPoints");
         if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
             builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
@@ -403,6 +389,6 @@ class CentralModule {
         @Override
         public void defrag() throws Exception {}
         @Override
-        public void resizeIfNecessary() throws Exception {}
+        public void resizeIfNeeded() throws Exception {}
     }
 }

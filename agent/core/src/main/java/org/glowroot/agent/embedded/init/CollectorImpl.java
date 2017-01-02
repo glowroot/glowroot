@@ -31,6 +31,7 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -74,7 +75,8 @@ class CollectorImpl implements Collector {
         if (smtpConfig.host().isEmpty()) {
             return;
         }
-        for (AlertConfig alertConfig : configRepository.getTransactionAlertConfigs(AGENT_ID)) {
+        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID,
+                AlertKind.TRANSACTION)) {
             try {
                 alertingService.checkTransactionAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
                         captureTime, smtpConfig);
@@ -98,7 +100,8 @@ class CollectorImpl implements Collector {
         for (GaugeValue gaugeValue : gaugeValues) {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
         }
-        for (AlertConfig alertConfig : configRepository.getGaugeAlertConfigs(AGENT_ID)) {
+        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID,
+                AlertKind.GAUGE)) {
             try {
                 alertingService.checkGaugeAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
                         maxCaptureTime, smtpConfig);

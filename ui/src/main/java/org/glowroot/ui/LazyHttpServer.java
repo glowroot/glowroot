@@ -80,14 +80,12 @@ class LazyHttpServer {
         try {
             httpServer = build();
         } catch (SocketBindException e) {
-            startupLogger.error(
-                    "Error binding socket to {}:{}, the user interface will not be available",
-                    bindAddress, port, e.getCause());
+            startupLogger.error("Error binding socket to {}:{}, the user interface will not be"
+                    + " available", bindAddress, port, e);
             return;
         } catch (Exception e) {
-            startupLogger.error(
-                    "Error starting the user interface, the user interface will not be available",
-                    e.getCause());
+            startupLogger.error("Error starting the user interface, the user interface will not be"
+                    + " available", e);
             return;
         }
         this.httpServer = httpServer;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -280,14 +280,9 @@ class TransactionJsonService {
         jg.writeStartObject();
         jg.writeBooleanField("hasUnfilteredMainThreadProfile", hasUnfilteredMainThreadProfile);
         jg.writeBooleanField("hasUnfilteredAuxThreadProfile", hasUnfilteredAuxThreadProfile);
-        if (profile.getUnfilteredSampleCount() == 0) {
-            if (request.auxiliary()
-                    && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query)) {
-                jg.writeBooleanField("overwritten", true);
-            } else if (!request.auxiliary()
-                    && aggregateRepository.shouldHaveMainThreadProfile(agentRollupId, query)) {
-                jg.writeBooleanField("overwritten", true);
-            }
+        if (profile.getUnfilteredSampleCount() == 0
+                && isProfileOverwritten(request, agentRollupId, query)) {
+            jg.writeBooleanField("overwritten", true);
         }
         jg.writeFieldName("profile");
         profile.writeJson(jg);
@@ -552,6 +547,19 @@ class TransactionJsonService {
         }
         dataSeriesList.add(otherDataSeries);
         return dataSeriesList;
+    }
+
+    private boolean isProfileOverwritten(TransactionProfileRequest request, String agentRollupId,
+            TransactionQuery query) throws Exception {
+        if (request.auxiliary()
+                && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query)) {
+            return true;
+        }
+        if (!request.auxiliary()
+                && aggregateRepository.shouldHaveMainThreadProfile(agentRollupId, query)) {
+            return true;
+        }
+        return false;
     }
 
     // calculate top 5 timers

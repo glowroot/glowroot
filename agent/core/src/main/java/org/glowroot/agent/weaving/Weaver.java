@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ASM5;
 
 public class Weaver {
@@ -235,17 +236,15 @@ public class Weaver {
 
     private static class JSRInlinerClassVisitor extends ClassVisitor {
 
-        private final ClassVisitor cv;
-
         private JSRInlinerClassVisitor(ClassVisitor cv) {
             super(ASM5, cv);
-            this.cv = cv;
         }
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
-            MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
+            MethodVisitor mv =
+                    checkNotNull(cv).visitMethod(access, name, desc, signature, exceptions);
             return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
         }
     }

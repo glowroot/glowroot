@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,8 +55,13 @@ public class UserDao {
             CacheBuilder.newBuilder()
                     .build(new CacheLoader<String, Optional<UserConfig>>() {
                         @Override
-                        public Optional<UserConfig> load(String username) throws Exception {
-                            return Optional.fromNullable(readUpperCase(username));
+                        public Optional<UserConfig> load(String usernameUpper) throws Exception {
+                            for (UserConfig userConfig : read()) {
+                                if (userConfig.username().equalsIgnoreCase(usernameUpper)) {
+                                    return Optional.of(userConfig);
+                                }
+                            }
+                            return Optional.absent();
                         }
                     });
 
@@ -64,7 +69,12 @@ public class UserDao {
             .build(new CacheLoader<String, Boolean>() {
                 @Override
                 public Boolean load(String dummy) throws Exception {
-                    return namedUsersExistInternal();
+                    for (UserConfig userConfig : read()) {
+                        if (!userConfig.username().equalsIgnoreCase("anonymous")) {
+                            return true;
+                        }
+                    }
+                    return false;
                 }
             });
 
@@ -139,24 +149,6 @@ public class UserDao {
         session.execute(boundStatement);
         upperCaseCache.invalidate(username.toUpperCase(Locale.ENGLISH));
         namedUsersExist.invalidate(NAMED_USERS_EXIST_SINGLE_CACHE_KEY);
-    }
-
-    private @Nullable UserConfig readUpperCase(String usernameUpper) {
-        for (UserConfig userConfig : read()) {
-            if (userConfig.username().equalsIgnoreCase(usernameUpper)) {
-                return userConfig;
-            }
-        }
-        return null;
-    }
-
-    private boolean namedUsersExistInternal() {
-        for (UserConfig userConfig : read()) {
-            if (!userConfig.username().equalsIgnoreCase("anonymous")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static ImmutableUserConfig buildUser(Row row) {

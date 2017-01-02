@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,11 +58,12 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class GaugeValueDao implements GaugeValueRepository {
 
-    private static Logger logger = LoggerFactory.getLogger(GaugeValueDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(GaugeValueDao.class);
 
     private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
@@ -478,6 +479,9 @@ public class GaugeValueDao implements GaugeValueRepository {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setTimestamp(i++, new Date(to));
+        // individual gauge value weights cannot be zero, and rows is non-empty
+        // (see callers of this method), so totalWeight is guaranteed non-zero
+        checkState(totalWeight != 0);
         boundStatement.setDouble(i++, totalWeightedValue / totalWeight);
         boundStatement.setLong(i++, totalWeight);
         boundStatement.setInt(i++, adjustedTTL);

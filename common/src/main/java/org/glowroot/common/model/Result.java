@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,7 @@ public class Result<T extends /*@NonNull*/ Object> {
     }
 
     public static <T extends /*@NonNull*/ Object> Result<T> create(List<T> records, int limit) {
-        if (limit == 0) {
-            return new Result<T>(records, false);
-        } else if (records.size() > limit) {
+        if (limit != 0 && records.size() > limit) {
             return new Result<T>(records.subList(0, limit), true);
         } else {
             return new Result<T>(records, false);

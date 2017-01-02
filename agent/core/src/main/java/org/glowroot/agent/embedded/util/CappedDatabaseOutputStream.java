@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,20 +193,24 @@ class CappedDatabaseOutputStream extends OutputStream {
             return true;
         }
         long newSizeBytes = newSizeKb * 1024L;
-        if (newSizeKb < sizeKb && currIndex - lastResizeBaseIndex < newSizeBytes) {
-            // resizing smaller and on first "loop" after a resize and haven't written up to the
-            // new smaller size yet
+        if (isEasyResize(newSizeKb, newSizeBytes)) {
             out.seek(8);
             out.writeInt(newSizeKb);
             sizeKb = newSizeKb;
             sizeBytes = newSizeBytes;
             return true;
-        } else if (newSizeKb > sizeKb && currIndex - lastResizeBaseIndex < sizeBytes) {
+        }
+        return false;
+    }
+
+    private boolean isEasyResize(int newSizeKb, long newSizeBytes) {
+        if (newSizeKb < sizeKb && currIndex - lastResizeBaseIndex < newSizeBytes) {
+            // resizing smaller and on first "loop" after a resize and haven't written up to the
+            // new smaller size yet
+            return true;
+        }
+        if (newSizeKb > sizeKb && currIndex - lastResizeBaseIndex < sizeBytes) {
             // resizing larger and on first "loop" after a resize
-            out.seek(8);
-            out.writeInt(newSizeKb);
-            sizeKb = newSizeKb;
-            sizeBytes = newSizeBytes;
             return true;
         }
         return false;

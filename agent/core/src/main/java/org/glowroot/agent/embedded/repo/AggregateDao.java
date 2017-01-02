@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,11 +71,11 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.MutableAggregate;
 import org.glowroot.common.repo.util.RollupLevelService;
+import org.glowroot.common.repo.util.ThreadStatsCreator;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
-import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castUntainted;
@@ -639,7 +639,7 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public @Nullable Void valueIfDataSourceClosing() {
+        public @Nullable Void valueIfDataSourceClosed() {
             return null;
         }
     }
@@ -699,7 +699,7 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public @Nullable Void valueIfDataSourceClosing() {
+        public @Nullable Void valueIfDataSourceClosed() {
             return null;
         }
 
@@ -757,7 +757,7 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public @Nullable Void valueIfDataSourceClosing() {
+        public @Nullable Void valueIfDataSourceClosed() {
             return null;
         }
     }
@@ -817,7 +817,7 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public @Nullable Void valueIfDataSourceClosing() {
+        public @Nullable Void valueIfDataSourceClosed() {
             return null;
         }
 
@@ -831,7 +831,6 @@ public class AggregateDao implements AggregateRepository {
                     throw new AssertionError("Unexpected sort order: " + sortOrder);
             }
         }
-
     }
 
     private static class OverviewAggregateQuery implements JdbcRowQuery<OverviewAggregate> {
@@ -885,7 +884,7 @@ public class AggregateDao implements AggregateRepository {
                 builder.asyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
             }
             Aggregate.ThreadStats mainThreadStats =
-                    buildThreadStats(RowMappers.getDouble(resultSet, i++),
+                    ThreadStatsCreator.create(RowMappers.getDouble(resultSet, i++),
                             RowMappers.getDouble(resultSet, i++),
                             RowMappers.getDouble(resultSet, i++),
                             RowMappers.getDouble(resultSet, i++));
@@ -893,7 +892,7 @@ public class AggregateDao implements AggregateRepository {
                 builder.mainThreadStats(mainThreadStats);
             }
             Aggregate.ThreadStats auxThreadStats =
-                    buildThreadStats(RowMappers.getDouble(resultSet, i++),
+                    ThreadStatsCreator.create(RowMappers.getDouble(resultSet, i++),
                             RowMappers.getDouble(resultSet, i++),
                             RowMappers.getDouble(resultSet, i++),
                             RowMappers.getDouble(resultSet, i++));
@@ -901,32 +900,6 @@ public class AggregateDao implements AggregateRepository {
                 builder.auxThreadStats(auxThreadStats);
             }
             return builder.build();
-        }
-
-        private static @Nullable Aggregate.ThreadStats buildThreadStats(
-                @Nullable Double totalCpuNanos, @Nullable Double totalBlockedNanos,
-                @Nullable Double totalWaitedNanos, @Nullable Double totalAllocatedBytes) {
-            if (totalCpuNanos == null && totalBlockedNanos == null && totalWaitedNanos == null
-                    && totalAllocatedBytes == null) {
-                return null;
-            }
-            Aggregate.ThreadStats.Builder threadStats = Aggregate.ThreadStats.newBuilder();
-            if (totalCpuNanos != null) {
-                threadStats.setTotalCpuNanos(OptionalDouble.newBuilder().setValue(totalCpuNanos));
-            }
-            if (totalBlockedNanos != null) {
-                threadStats.setTotalBlockedNanos(
-                        OptionalDouble.newBuilder().setValue(totalBlockedNanos));
-            }
-            if (totalWaitedNanos != null) {
-                threadStats.setTotalWaitedNanos(
-                        OptionalDouble.newBuilder().setValue(totalWaitedNanos));
-            }
-            if (totalAllocatedBytes != null) {
-                threadStats.setTotalAllocatedBytes(
-                        OptionalDouble.newBuilder().setValue(totalAllocatedBytes));
-            }
-            return threadStats.build();
         }
     }
 
@@ -1065,7 +1038,7 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public @Nullable Void valueIfDataSourceClosing() {
+        public @Nullable Void valueIfDataSourceClosed() {
             return null;
         }
     }
@@ -1139,7 +1112,7 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public @Nullable Void valueIfDataSourceClosing() {
+        public @Nullable Void valueIfDataSourceClosed() {
             return null;
         }
     }
@@ -1183,7 +1156,7 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public List<CappedId> valueIfDataSourceClosing() {
+        public List<CappedId> valueIfDataSourceClosed() {
             return ImmutableList.of();
         }
     }
@@ -1226,7 +1199,7 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public Boolean valueIfDataSourceClosing() {
+        public Boolean valueIfDataSourceClosed() {
             return false;
         }
     }

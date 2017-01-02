@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public class DataSource {
     private final Object lock = new Object();
     @GuardedBy("lock")
     private Connection connection;
-    private volatile boolean closing = false;
+    private volatile boolean closed;
 
     private final Map</*@Untainted*/String, ImmutableList<Column>> tables = Maps.newConcurrentMap();
     private final Map</*@Untainted*/String, ImmutableList<Index>> indexes = Maps.newConcurrentMap();
@@ -101,7 +101,7 @@ public class DataSource {
             return;
         }
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return;
             }
             execute("shutdown defrag");
@@ -115,7 +115,7 @@ public class DataSource {
             return;
         }
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return;
             }
             connection.close();
@@ -137,7 +137,7 @@ public class DataSource {
     public void execute(@Untainted String sql) throws SQLException {
         debug(sql);
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return;
             }
             Statement statement = connection.createStatement();
@@ -154,7 +154,7 @@ public class DataSource {
         }
     }
 
-    // warning: this method returns 0 when data source is closing
+    // warning: this method returns 0 when data source is closed
     public long queryForLong(final @Untainted String sql, Object... args) throws SQLException {
         Long value = queryForOptionalLong(sql, args);
         return value == null ? 0L : value;
@@ -164,7 +164,7 @@ public class DataSource {
             throws SQLException {
         debug(sql, args);
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return null;
             }
             return queryUnderLock(sql, args, new ResultSetExtractor</*@Nullable*/ Long>() {
@@ -187,7 +187,7 @@ public class DataSource {
     public boolean queryForExists(final @Untainted String sql, Object... args) throws SQLException {
         debug(sql, args);
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return false;
             }
             return queryUnderLock(sql, args, new ResultSetExtractor<Boolean>() {
@@ -216,8 +216,8 @@ public class DataSource {
 
     public <T> T query(JdbcQuery<T> jdbcQuery) throws Exception {
         synchronized (lock) {
-            if (closing) {
-                return jdbcQuery.valueIfDataSourceClosing();
+            if (closed) {
+                return jdbcQuery.valueIfDataSourceClosed();
             }
             PreparedStatement preparedStatement =
                     prepareStatement(jdbcQuery.getSql(), QUERY_TIMEOUT_SECONDS);
@@ -250,7 +250,7 @@ public class DataSource {
     public <T extends /*@NonNull*/ Object> List<T> query(JdbcRowQuery<T> jdbcQuery)
             throws SQLException {
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return ImmutableList.of();
             }
             PreparedStatement preparedStatement =
@@ -290,7 +290,7 @@ public class DataSource {
     }
 
     public int update(JdbcUpdate jdbcUpdate) throws SQLException {
-        if (closing) {
+        if (closed) {
             // this can get called a lot inserting traces, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
             // ends up generating warning messages from
@@ -298,7 +298,7 @@ public class DataSource {
             return 0;
         }
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return 0;
             }
             PreparedStatement preparedStatement = prepareStatement(jdbcUpdate.getSql(), 0);
@@ -309,7 +309,7 @@ public class DataSource {
     }
 
     public int[] batchUpdate(JdbcUpdate jdbcUpdate) throws Exception {
-        if (closing) {
+        if (closed) {
             // this can get called a lot inserting traces, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
             // ends up generating warning messages from
@@ -317,7 +317,7 @@ public class DataSource {
             return new int[0];
         }
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return new int[0];
             }
             PreparedStatement preparedStatement = prepareStatement(jdbcUpdate.getSql(), 0);
@@ -339,7 +339,7 @@ public class DataSource {
 
     public void syncTable(@Untainted String tableName, List<Column> columns) throws SQLException {
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return;
             }
             Schemas.syncTable(tableName, columns, connection);
@@ -350,7 +350,7 @@ public class DataSource {
     public void syncIndexes(@Untainted String tableName, ImmutableList<Index> indexes)
             throws SQLException {
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return;
             }
             Schemas.syncIndexes(tableName, indexes, connection);
@@ -365,14 +365,14 @@ public class DataSource {
     // helpful for upgrading schema
     public boolean tableExists(String tableName) throws SQLException {
         synchronized (lock) {
-            return !closing && Schemas.tableExists(tableName, connection);
+            return !closed && Schemas.tableExists(tableName, connection);
         }
     }
 
     // helpful for upgrading schema
     public boolean columnExists(String tableName, String columnName) throws SQLException {
         synchronized (lock) {
-            return !closing && Schemas.columnExists(tableName, columnName, connection);
+            return !closed && Schemas.columnExists(tableName, columnName, connection);
         }
     }
 
@@ -396,10 +396,10 @@ public class DataSource {
     @OnlyUsedByTests
     public void close() throws SQLException {
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return;
             }
-            closing = true;
+            closed = true;
             connection.close();
         }
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
@@ -495,7 +495,7 @@ public class DataSource {
         String getSql();
         void bind(PreparedStatement preparedStatement) throws Exception;
         T processResultSet(ResultSet resultSet) throws Exception;
-        T valueIfDataSourceClosing();
+        T valueIfDataSourceClosed();
     }
 
     public interface JdbcRowQuery<T> {
@@ -525,7 +525,7 @@ public class DataSource {
                 // update flag outside of lock in case there is a backlog of threads already
                 // waiting on the lock (once the flag is set, any threads in the backlog that
                 // haven't acquired the lock will abort quickly once they do obtain the lock)
-                closing = true;
+                closed = true;
                 synchronized (lock) {
                     connection.close();
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,13 +37,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class QueryStrings {
 
     private static LoadingCache<Class<?>, Map<String, Method>> settersCache =
-            CacheBuilder.newBuilder()
-                    .build(new CacheLoader<Class<?>, Map<String, Method>>() {
-                        @Override
-                        public Map<String, Method> load(Class<?> key) throws Exception {
-                            return loadSetters(key);
-                        }
-                    });
+            CacheBuilder.newBuilder().build(new SettersCacheBuilder());
 
     private QueryStrings() {}
 
@@ -138,37 +132,41 @@ class QueryStrings {
         return targetClass == boolean.class || targetClass == Boolean.class;
     }
 
-    private static Map<String, Method> loadSetters(Class<?> immutableBuilderClass) {
-        Map<String, Method> setters = Maps.newHashMap();
-        for (Method method : immutableBuilderClass.getMethods()) {
-            if (method.getName().startsWith("add") && !method.getName().startsWith("addAll")) {
-                continue;
-            }
-            if (method.getParameterTypes().length == 1) {
-                if (!isSimpleSetter(method.getParameterTypes()[0])) {
+    private static class SettersCacheBuilder extends CacheLoader<Class<?>, Map<String, Method>> {
+        @Override
+        public Map<String, Method> load(Class<?> key) throws Exception {
+            Map<String, Method> setters = Maps.newHashMap();
+            for (Method method : key.getMethods()) {
+                if (method.getName().startsWith("add") && !method.getName().startsWith("addAll")) {
                     continue;
                 }
-                method.setAccessible(true);
-                if (method.getName().startsWith("addAll")) {
-                    String propertyName = method.getName().substring(6);
-                    propertyName = Character.toLowerCase(propertyName.charAt(0))
-                            + propertyName.substring(1);
-                    setters.put(propertyName, method);
-                } else {
-                    setters.put(method.getName(), method);
+                if (method.getParameterTypes().length == 1) {
+                    if (!isSimpleSetter(method.getParameterTypes()[0])) {
+                        continue;
+                    }
+                    method.setAccessible(true);
+                    if (method.getName().startsWith("addAll")) {
+                        String propertyName = method.getName().substring(6);
+                        propertyName = Character.toLowerCase(propertyName.charAt(0))
+                                + propertyName.substring(1);
+                        setters.put(propertyName, method);
+                    } else {
+                        setters.put(method.getName(), method);
+                    }
                 }
             }
+            return setters;
         }
-        return setters;
-    }
 
-    private static boolean isSimpleSetter(Class<?> targetClass) {
-        return targetClass == String.class
-                || isInteger(targetClass)
-                || isLong(targetClass)
-                || isDouble(targetClass)
-                || isBoolean(targetClass)
-                || Enum.class.isAssignableFrom(targetClass)
-                || targetClass == Iterable.class;
+        private static boolean isSimpleSetter(Class<?> targetClass) {
+            return targetClass == String.class
+                    || isInteger(targetClass)
+                    || isLong(targetClass)
+                    || isDouble(targetClass)
+                    || isBoolean(targetClass)
+                    || Enum.class.isAssignableFrom(targetClass)
+                    || targetClass == Iterable.class;
+        }
+
     }
 }

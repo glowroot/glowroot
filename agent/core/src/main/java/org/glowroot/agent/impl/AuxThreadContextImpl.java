@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TraceEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 
 import static org.glowroot.agent.util.Checkers.castInitialized;
@@ -81,13 +81,13 @@ class AuxThreadContextImpl implements AuxThreadContext {
             if (completeAsyncTransaction) {
                 context.setTransactionAsyncComplete();
             }
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         context = transactionService.startAuxThreadContextInternal(transaction, parentTraceEntry,
                 parentThreadContextPriorEntry, servletMessageSupplier, threadContextHolder);
         if (context == null) {
             // transaction is already complete or auxiliary thread context limit exceeded
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
         if (logger.isDebugEnabled() && parentTraceEntry != null) {
             logger.debug("start AUX thread context: {}, thread context: {},"

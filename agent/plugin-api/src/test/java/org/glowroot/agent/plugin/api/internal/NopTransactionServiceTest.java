@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,9 @@ package org.glowroot.agent.plugin.api.internal;
 
 import org.junit.Test;
 
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncQueryEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncTraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAuxThreadContext;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopQueryEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimerName;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,40 +28,43 @@ public class NopTransactionServiceTest {
 
     @Test
     public void testNopTraceEntry() {
-        NopTraceEntry.INSTANCE.end();
-        NopTraceEntry.INSTANCE.endWithStackTrace(0, MILLISECONDS);
-        NopTraceEntry.INSTANCE.endWithError(new Throwable());
-        NopTraceEntry.INSTANCE.endWithError("");
-        NopTraceEntry.INSTANCE.endWithError("", new Throwable());
-        NopTraceEntry.INSTANCE.endWithInfo(new Throwable());
-        assertThat(NopTraceEntry.INSTANCE.getMessageSupplier()).isNull();
+        NopTransactionService.TRACE_ENTRY.end();
+        NopTransactionService.TRACE_ENTRY.endWithStackTrace(0, MILLISECONDS);
+        NopTransactionService.TRACE_ENTRY.endWithError(new Throwable());
+        NopTransactionService.TRACE_ENTRY.endWithError("");
+        NopTransactionService.TRACE_ENTRY.endWithError("", new Throwable());
+        NopTransactionService.TRACE_ENTRY.endWithInfo(new Throwable());
+        assertThat(NopTransactionService.TRACE_ENTRY.getMessageSupplier()).isNull();
     }
 
     @Test
     public void testNopQueryEntry() {
-        assertThat(NopQueryEntry.INSTANCE.extend()).isEqualTo(NopTimer.INSTANCE);
-        NopQueryEntry.INSTANCE.rowNavigationAttempted();
-        NopQueryEntry.INSTANCE.incrementCurrRow();
-        NopQueryEntry.INSTANCE.setCurrRow(0);
+        assertThat(NopTransactionService.QUERY_ENTRY.extend()).isEqualTo(NopTimer.INSTANCE);
+        NopTransactionService.QUERY_ENTRY.rowNavigationAttempted();
+        NopTransactionService.QUERY_ENTRY.incrementCurrRow();
+        NopTransactionService.QUERY_ENTRY.setCurrRow(0);
     }
 
     @Test
     public void testNopAsyncTraceEntry() {
-        NopAsyncTraceEntry.INSTANCE.stopSyncTimer();
-        assertThat(NopAsyncTraceEntry.INSTANCE.extendSyncTimer(null)).isEqualTo(NopTimer.INSTANCE);
+        NopTransactionService.ASYNC_TRACE_ENTRY.stopSyncTimer();
+        assertThat(NopTransactionService.ASYNC_TRACE_ENTRY.extendSyncTimer(null))
+                .isEqualTo(NopTimer.INSTANCE);
     }
 
     @Test
     public void testNopAsyncQueryEntry() {
-        NopAsyncQueryEntry.INSTANCE.stopSyncTimer();
-        assertThat(NopAsyncQueryEntry.INSTANCE.extendSyncTimer(null)).isEqualTo(NopTimer.INSTANCE);
+        NopTransactionService.ASYNC_QUERY_ENTRY.stopSyncTimer();
+        assertThat(NopTransactionService.ASYNC_QUERY_ENTRY.extendSyncTimer(null))
+                .isEqualTo(NopTimer.INSTANCE);
     }
 
     @Test
     public void testNopAuxThreadContext() {
-        assertThat(NopAuxThreadContext.INSTANCE.start()).isEqualTo(NopTraceEntry.INSTANCE);
+        assertThat(NopAuxThreadContext.INSTANCE.start())
+                .isEqualTo(NopTransactionService.TRACE_ENTRY);
         assertThat(NopAuxThreadContext.INSTANCE.startAndMarkAsyncTransactionComplete())
-                .isEqualTo(NopTraceEntry.INSTANCE);
+                .isEqualTo(NopTransactionService.TRACE_ENTRY);
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,14 +71,7 @@ class Beans {
     // all getters for an individual class are only needed to handle wildcards at the end of a
     // session attribute path, e.g. "user.*"
     private static final LoadingCache<Class<?>, ImmutableMap<String, Method>> wildcardGetters =
-            CacheBuilder.newBuilder()
-                    .weakKeys()
-                    .build(new CacheLoader<Class<?>, ImmutableMap<String, Method>>() {
-                        @Override
-                        public ImmutableMap<String, Method> load(Class<?> clazz) {
-                            return getPropertyNames(clazz);
-                        }
-                    });
+            CacheBuilder.newBuilder().weakKeys().build(new WildcardGettersCacheLoader());
 
     private Beans() {}
 
@@ -195,51 +188,6 @@ class Beans {
         }
     }
 
-    private static ImmutableMap<String, Method> getPropertyNames(Class<?> clazz) {
-        Map<String, Method> propertyNames = Maps.newHashMap();
-        for (Method method : clazz.getMethods()) {
-            String propertyName = getPropertyName(method);
-            if (propertyName == null) {
-                continue;
-            }
-            Method otherMethod = propertyNames.get(propertyName);
-            if (otherMethod != null && otherMethod.getName().startsWith("get")) {
-                // "getX" takes precedence over "isX"
-                continue;
-            }
-            propertyNames.put(propertyName, method);
-        }
-        return ImmutableMap.copyOf(propertyNames);
-    }
-
-    private static @Nullable String getPropertyName(Method method) {
-        if (method.getParameterTypes().length > 0) {
-            return null;
-        }
-        String methodName = method.getName();
-        if (methodName.equals("getClass")) {
-            // ignore this "getter"
-            return null;
-        }
-        if (startsWithAndThenUpperCaseChar(methodName, "get")) {
-            return getRemainingWithFirstCharLowercased(methodName, "get");
-        }
-        if (startsWithAndThenUpperCaseChar(methodName, "is")) {
-            return getRemainingWithFirstCharLowercased(methodName, "is");
-        }
-        return null;
-    }
-
-    private static boolean startsWithAndThenUpperCaseChar(String str, String prefix) {
-        return str.startsWith(prefix) && str.length() > prefix.length()
-                && Character.isUpperCase(str.charAt(prefix.length()));
-    }
-
-    private static String getRemainingWithFirstCharLowercased(String str, String prefix) {
-        return Character.toLowerCase(str.charAt(prefix.length()))
-                + str.substring(prefix.length() + 1);
-    }
-
     private static Method getMethod(Class<?> clazz, String methodName) throws Exception {
         try {
             return clazz.getMethod(methodName);
@@ -263,4 +211,53 @@ class Beans {
     // this unused private method is required for use as SENTINEL_METHOD above
     @SuppressWarnings("unused")
     private static void sentinelMethod() {}
+
+    private static class WildcardGettersCacheLoader
+            extends CacheLoader<Class<?>, ImmutableMap<String, Method>> {
+        @Override
+        public ImmutableMap<String, Method> load(Class<?> clazz) {
+            Map<String, Method> propertyNames = Maps.newHashMap();
+            for (Method method : clazz.getMethods()) {
+                String propertyName = getPropertyName(method);
+                if (propertyName == null) {
+                    continue;
+                }
+                Method otherMethod = propertyNames.get(propertyName);
+                if (otherMethod != null && otherMethod.getName().startsWith("get")) {
+                    // "getX" takes precedence over "isX"
+                    continue;
+                }
+                propertyNames.put(propertyName, method);
+            }
+            return ImmutableMap.copyOf(propertyNames);
+        }
+
+        private static @Nullable String getPropertyName(Method method) {
+            if (method.getParameterTypes().length > 0) {
+                return null;
+            }
+            String methodName = method.getName();
+            if (methodName.equals("getClass")) {
+                // ignore this "getter"
+                return null;
+            }
+            if (startsWithAndThenUpperCaseChar(methodName, "get")) {
+                return getRemainingWithFirstCharLowercased(methodName, "get");
+            }
+            if (startsWithAndThenUpperCaseChar(methodName, "is")) {
+                return getRemainingWithFirstCharLowercased(methodName, "is");
+            }
+            return null;
+        }
+
+        private static boolean startsWithAndThenUpperCaseChar(String str, String prefix) {
+            return str.startsWith(prefix) && str.length() > prefix.length()
+                    && Character.isUpperCase(str.charAt(prefix.length()));
+        }
+
+        private static String getRemainingWithFirstCharLowercased(String str, String prefix) {
+            return Character.toLowerCase(str.charAt(prefix.length()))
+                    + str.substring(prefix.length() + 1);
+        }
+    }
 }

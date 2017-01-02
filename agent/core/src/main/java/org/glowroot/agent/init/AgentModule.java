@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class AgentModule {
 
@@ -77,7 +78,7 @@ public class AgentModule {
 
     // 1 minute
     private static final long ROLLUP_0_INTERVAL_MILLIS =
-            Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000);
+            Long.getLong("glowroot.internal.rollup.0.intervalMillis", MINUTES.toMillis(1));
 
     @OnlyUsedByTests
     public static final ThreadLocal</*@Nullable*/ IsolatedWeavingClassLoader> isolatedWeavingClassLoader =

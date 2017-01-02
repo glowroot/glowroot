@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.glowroot.agent.init;
 
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -74,30 +73,27 @@ class StackTraceCollector {
     }
 
     @OnlyUsedByTests
-    void close() {
-        runnable.closing.set(true);
+    void close() throws InterruptedException {
+        runnable.closed = true;
         processingThread.interrupt();
+        processingThread.join();
     }
 
     private class InternalRunnable implements Runnable {
 
-        private final AtomicBoolean closing = new AtomicBoolean();
+        private volatile boolean closed;
 
         @Override
         public void run() {
             // delay for first
             long remainingInInterval = 0;
-            while (true) {
+            while (!closed) {
                 int intervalMillis = configService.getTransactionConfig().profilingIntervalMillis();
                 if (intervalMillis <= 0) {
                     try {
                         Thread.sleep(Long.MAX_VALUE);
                     } catch (InterruptedException e) {
                         logger.debug(e.getMessage(), e);
-                        // only terminate if closing
-                        if (closing.get()) {
-                            return;
-                        }
                         // re-start loop
                         remainingInInterval = 0;
                         continue;
@@ -108,10 +104,6 @@ class StackTraceCollector {
                     Thread.sleep(remainingInInterval + randomDelayFromIntervalStart);
                 } catch (InterruptedException e) {
                     logger.debug(e.getMessage(), e);
-                    // only terminate if closing
-                    if (closing.get()) {
-                        return;
-                    }
                     // re-start loop
                     remainingInInterval = 0;
                     continue;

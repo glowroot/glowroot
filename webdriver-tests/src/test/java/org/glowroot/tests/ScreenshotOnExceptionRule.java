@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public class ScreenshotOnExceptionRule implements MethodRule {
 
-    private static Logger logger = LoggerFactory.getLogger(ScreenshotOnExceptionRule.class);
+    private static final Logger logger = LoggerFactory.getLogger(ScreenshotOnExceptionRule.class);
 
     private WebDriver driver;
 

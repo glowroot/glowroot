@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class CappedDatabase {
     private final Thread shutdownHookThread;
     @GuardedBy("lock")
     private RandomAccessFile inFile;
-    private volatile boolean closing = false;
+    private volatile boolean closed = false;
 
     private final Ticker ticker;
     private final Map<String, CappedDatabaseStats> statsByType = Maps.newHashMap();
@@ -115,7 +115,7 @@ public class CappedDatabase {
 
     private long write(String type, Copier copier) throws IOException {
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return -1;
             }
             long startTick = ticker.read();
@@ -236,7 +236,7 @@ public class CappedDatabase {
 
     public void resize(int newSizeKb) throws IOException {
         synchronized (lock) {
-            if (closing) {
+            if (closed) {
                 return;
             }
             inFile.close();
@@ -248,7 +248,7 @@ public class CappedDatabase {
     @OnlyUsedByTests
     public void close() throws IOException {
         synchronized (lock) {
-            closing = true;
+            closed = true;
             out.close();
             inFile.close();
         }
@@ -332,7 +332,7 @@ public class CappedDatabase {
                 // update flag outside of lock in case there is a backlog of threads already
                 // waiting on the lock (once the flag is set, any threads in the backlog that
                 // haven't acquired the lock will abort quickly once they do obtain the lock)
-                closing = true;
+                closed = true;
                 synchronized (lock) {
                     out.close();
                     inFile.close();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,7 @@ import org.glowroot.agent.weaving.targets.Misc;
 public class SomeAspect {
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "execute1|execute2",
-            methodParameterTypes = {}, timerName = "xyz")
+            methodName = "execute1|execute2", methodParameterTypes = {}, timerName = "xyz")
     public static class BasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -78,8 +77,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.SuperBasicMisc",
-            methodName = "superBasic",
-            methodParameterTypes = {}, timerName = "superbasic")
+            methodName = "superBasic", methodParameterTypes = {}, timerName = "superbasic")
     public static class SuperBasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -241,8 +239,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.BasicMisc$InnerMisc",
-            methodName = "execute1",
-            methodParameterTypes = {})
+            methodName = "execute1", methodParameterTypes = {})
     public static class BasicWithInnerClassAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -551,8 +548,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "executeWithReturn",
-            methodParameterTypes = {})
+            methodName = "executeWithReturn", methodParameterTypes = {})
     public static class BindReturnAdvice {
         @OnReturn
         public static void onReturn(@BindReturn String value) {
@@ -579,8 +575,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "executeWithReturn",
-            methodParameterTypes = {})
+            methodName = "executeWithReturn", methodParameterTypes = {})
     public static class BindOptionalReturnAdvice {
         @OnReturn
         public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
@@ -695,8 +690,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "executeWithReturn",
-            methodParameterTypes = {})
+            methodName = "executeWithReturn", methodParameterTypes = {})
     public static class ChangeReturnAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -746,8 +740,7 @@ public class SomeAspect {
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.BasicMisc",
             methodDeclaringClassName = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "execute1",
-            methodParameterTypes = {})
+            methodName = "execute1", methodParameterTypes = {})
     public static class TargetedAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -813,8 +806,7 @@ public class SomeAspect {
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.SubBasicMisc",
             methodDeclaringClassName = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "execute1",
-            methodParameterTypes = {})
+            methodName = "execute1", methodParameterTypes = {})
     public static class TargetedFromSubAbstractBaseAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -955,8 +947,7 @@ public class SomeAspect {
     public static class MultipleMethodsAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.StaticMisc",
-            methodName = "executeStatic",
-            methodParameterTypes = {})
+            methodName = "executeStatic", methodParameterTypes = {})
     public static class StaticAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc", methodName = "execute1",
@@ -977,13 +968,13 @@ public class SomeAspect {
     public static class MethodReturnVoidAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "executeWithReturn",
-            methodParameterTypes = {}, methodReturnType = "java.lang.CharSequence")
+            methodName = "executeWithReturn", methodParameterTypes = {},
+            methodReturnType = "java.lang.CharSequence")
     public static class MethodReturnCharSequenceAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "executeWithReturn",
-            methodParameterTypes = {}, methodReturnType = "java.lang.String")
+            methodName = "executeWithReturn", methodParameterTypes = {},
+            methodReturnType = "java.lang.String")
     public static class MethodReturnStringAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc", methodName = "execute1",
@@ -991,13 +982,13 @@ public class SomeAspect {
     public static class NonMatchingMethodReturnAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "executeWithReturn",
-            methodParameterTypes = {}, methodReturnType = "java.lang.Number")
+            methodName = "executeWithReturn", methodParameterTypes = {},
+            methodReturnType = "java.lang.Number")
     public static class NonMatchingMethodReturnAdvice2 extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "executeWithReturn",
-            methodParameterTypes = {}, methodReturnType = "java.lang.")
+            methodName = "executeWithReturn", methodParameterTypes = {},
+            methodReturnType = "java.lang.")
     public static class MethodReturnNarrowingAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc", methodName = "*",
@@ -1090,8 +1081,7 @@ public class SomeAspect {
 
     // same as MoreVeryBadAdvice, but testing weaving a method with a non-void return type
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
-            methodName = "executeWithReturn",
-            methodParameterTypes = {})
+            methodName = "executeWithReturn", methodParameterTypes = {})
     public static class MoreVeryBadAdvice2 {
         @OnReturn
         public static void onReturn() {

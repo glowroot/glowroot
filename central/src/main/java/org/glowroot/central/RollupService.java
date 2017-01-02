@@ -39,11 +39,12 @@ import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class RollupService implements Runnable {
+class RollupService implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RollupService.class);
 
@@ -60,9 +61,9 @@ public class RollupService implements Runnable {
 
     private final Stopwatch stopwatch = Stopwatch.createStarted();
 
-    private volatile boolean stopped;
+    private volatile boolean closed;
 
-    public RollupService(AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
+    RollupService(AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
             HeartbeatDao heartbeatDao, ConfigRepositoryImpl configRepository,
             AlertingService alertingService, DownstreamServiceImpl downstreamService, Clock clock) {
         this.agentDao = agentDao;
@@ -77,28 +78,26 @@ public class RollupService implements Runnable {
         executor.execute(castInitialized(this));
     }
 
-    public void close() throws InterruptedException {
-        stopped = true;
-        // shutdownNow() is needed here to send interrupt to RollupService thread
-        executor.shutdownNow();
-        if (!executor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate executor");
-        }
-    }
-
     @Override
     public void run() {
-        while (true) {
+        while (!closed) {
             try {
                 Thread.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
                 runInternal();
             } catch (InterruptedException e) {
-                if (stopped) {
-                    return;
-                }
+                continue;
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
             }
+        }
+    }
+
+    void close() throws InterruptedException {
+        closed = true;
+        // shutdownNow() is needed here to send interrupt to RollupService thread
+        executor.shutdownNow();
+        if (!executor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
         }
     }
 
@@ -110,14 +109,14 @@ public class RollupService implements Runnable {
         for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
             rollupAggregates(agentRollup, null);
             rollupGauges(agentRollup, null);
-            checkTransactionAlerts(agentRollup);
-            checkGaugeAlerts(agentRollup);
+            checkHierarchy(agentRollup, AlertKind.TRANSACTION, this::checkTransactionAlerts);
+            checkHierarchy(agentRollup, AlertKind.GAUGE, this::checkGaugeAlerts);
             if (stopwatch.elapsed(MINUTES) >= 4) {
                 // give agents plenty of time to re-connect after central start-up
                 // needs to be at least enough time for grpc max reconnect backoff
                 // which is 2 minutes +/- 20% jitter (see io.grpc.internal.ExponentialBackoffPolicy)
                 // but better to give a bit extra (4 minutes above) to avoid false heartbeat alert
-                checkHeartbeatAlerts(agentRollup);
+                checkHierarchy(agentRollup, AlertKind.HEARTBEAT, this::checkHeartbeatAlerts);
             }
             updateAgentConfigIfConnectedAndNeeded(agentRollup);
         }
@@ -168,46 +167,39 @@ public class RollupService implements Runnable {
         }
     }
 
+    private void checkHierarchy(AgentRollup agentRollup, AlertKind alertKind, Consumer check)
+            throws InterruptedException {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            checkHierarchy(childAgentRollup, alertKind, check);
+        }
+        check.accept(agentRollup);
+    }
+
     private void checkTransactionAlerts(AgentRollup agentRollup) throws InterruptedException {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
             checkTransactionAlerts(childAgentRollup);
         }
-        try {
-            checkTransactionAlerts(agentRollup.id(), agentRollup.display());
-        } catch (InterruptedException e) {
-            // shutdown requested
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-        }
+        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.TRANSACTION,
+                (alertConfig, smtpConfig) -> checkTransactionAlert(agentRollup.id(),
+                        agentRollup.display(), alertConfig, clock.currentTimeMillis(), smtpConfig));
     }
 
     private void checkGaugeAlerts(AgentRollup agentRollup) throws InterruptedException {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
             checkGaugeAlerts(childAgentRollup);
         }
-        try {
-            checkGaugeAlerts(agentRollup.id(), agentRollup.display());
-        } catch (InterruptedException e) {
-            // shutdown requested
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-        }
+        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.GAUGE,
+                (alertConfig, smtpConfig) -> checkGaugeAlert(agentRollup.id(),
+                        agentRollup.display(), alertConfig, clock.currentTimeMillis(), smtpConfig));
     }
 
     private void checkHeartbeatAlerts(AgentRollup agentRollup) throws InterruptedException {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
             checkHeartbeatAlerts(childAgentRollup);
         }
-        try {
-            checkHeartbeatAlerts(agentRollup.id(), agentRollup.display());
-        } catch (InterruptedException e) {
-            // shutdown requested
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-        }
+        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.HEARTBEAT,
+                (alertConfig, smtpConfig) -> checkHeartbeatAlert(agentRollup.id(),
+                        agentRollup.display(), alertConfig, clock.currentTimeMillis(), smtpConfig));
     }
 
     private void updateAgentConfigIfConnectedAndNeeded(AgentRollup agentRollup)
@@ -227,94 +219,32 @@ public class RollupService implements Runnable {
         }
     }
 
-    private void checkTransactionAlerts(String agentId, String agentDisplay)
-            throws InterruptedException {
+    private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
+            BiConsumer check) throws InterruptedException {
         SmtpConfig smtpConfig = configRepository.getSmtpConfig();
         if (smtpConfig.host().isEmpty()) {
             return;
         }
         List<AlertConfig> alertConfigs;
         try {
-            alertConfigs = configRepository.getTransactionAlertConfigs(agentId);
+            alertConfigs = configRepository.getAlertConfigs(agentId, alertKind);
         } catch (IOException e) {
-            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
+            logger.error("{} - {}", agentDisplay, e.getMessage(), e);
             return;
         }
         if (alertConfigs.isEmpty()) {
             return;
         }
-        long endTime = clock.currentTimeMillis();
         for (AlertConfig alertConfig : alertConfigs) {
             try {
-                checkTransactionAlert(agentId, agentDisplay, alertConfig, endTime, smtpConfig);
+                check.accept(alertConfig, smtpConfig);
             } catch (InterruptedException e) {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
+                logger.error("{} - {}", agentDisplay, e.getMessage(), e);
             }
         }
-    }
-
-    private void checkGaugeAlerts(String agentId, String agentDisplay) throws InterruptedException {
-        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
-        if (smtpConfig.host().isEmpty()) {
-            return;
-        }
-        List<AlertConfig> alertConfigs;
-        try {
-            alertConfigs = configRepository.getGaugeAlertConfigs(agentId);
-        } catch (IOException e) {
-            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
-            return;
-        }
-        if (alertConfigs.isEmpty()) {
-            return;
-        }
-        long endTime = clock.currentTimeMillis();
-        for (AlertConfig alertConfig : alertConfigs) {
-            try {
-                checkGaugeAlert(agentId, agentDisplay, alertConfig, endTime, smtpConfig);
-            } catch (InterruptedException e) {
-                // shutdown requested
-                throw e;
-            } catch (Exception e) {
-                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
-            }
-        }
-    }
-
-    private void checkHeartbeatAlerts(String agentId, String agentDisplay)
-            throws InterruptedException {
-        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
-        if (smtpConfig.host().isEmpty()) {
-            return;
-        }
-        List<AlertConfig> alertConfigs;
-        try {
-            alertConfigs = configRepository.getHeartbeatAlertConfigs(agentId);
-        } catch (IOException e) {
-            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
-            return;
-        }
-        if (alertConfigs.isEmpty()) {
-            return;
-        }
-        long endTime = clock.currentTimeMillis();
-        for (AlertConfig alertConfig : alertConfigs) {
-            try {
-                checkHeartbeatAlert(agentId, agentDisplay, alertConfig, endTime, smtpConfig);
-            } catch (InterruptedException e) {
-                // shutdown requested
-                throw e;
-            } catch (Exception e) {
-                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
-            }
-        }
-    }
-
-    private String getAgentDisplay(String agentId) {
-        return agentDao.readAgentRollupDisplay(agentId);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
@@ -353,5 +283,15 @@ public class RollupService implements Runnable {
     @SuppressWarnings("return.type.incompatible")
     private static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
         return obj;
+    }
+
+    @FunctionalInterface
+    interface Consumer {
+        void accept(AgentRollup agentRollup) throws InterruptedException;
+    }
+
+    @FunctionalInterface
+    interface BiConsumer {
+        void accept(AlertConfig alertConfig, SmtpConfig smtpConfig) throws Exception;
     }
 }

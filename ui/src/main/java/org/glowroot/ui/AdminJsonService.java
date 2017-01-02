@@ -223,7 +223,7 @@ class AdminJsonService {
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
-            repoAdmin.resizeIfNecessary();
+            repoAdmin.resizeIfNeeded();
         }
         return getStorageConfig();
     }

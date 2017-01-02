@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 package org.glowroot.agent;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
@@ -33,13 +31,11 @@ import java.util.ServiceLoader;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -53,6 +49,7 @@ import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -170,18 +167,8 @@ public class MainEntryPoint {
         File propFile = new File(baseDir, "glowroot.properties");
         if (propFile.exists()) {
             // upgrade from 0.9.6 to 0.9.7
-            String content = Files.toString(propFile, Charsets.UTF_8);
-            if (content.contains("agent.rollup=")) {
-                content = content.replace("agent.rollup=", "agent.rollup.id=");
-                Files.write(content, propFile, Charsets.UTF_8);
-            }
-            Properties props = new Properties();
-            InputStream in = new FileInputStream(propFile);
-            try {
-                props.load(in);
-            } finally {
-                in.close();
-            }
+            PropertiesFiles.upgradeIfNeeded(propFile, "agent.rollup=", "agent.rollup.id=");
+            Properties props = PropertiesFiles.load(propFile);
             for (String key : props.stringPropertyNames()) {
                 String value = props.getProperty(key);
                 if (value != null) {

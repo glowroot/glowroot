@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,7 +196,13 @@ public class QueryCollector {
 
         private List<String> latestSharedQueryTexts = Lists.newArrayList();
 
-        public int getIndex(String queryText) {
+        public List<String> getAndClearLastestSharedQueryTexts() {
+            List<String> latestSharedQueryTexts = this.latestSharedQueryTexts;
+            this.latestSharedQueryTexts = Lists.newArrayList();
+            return latestSharedQueryTexts;
+        }
+
+        int getIndex(String queryText) {
             Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
             if (sharedQueryTextIndex == null) {
                 sharedQueryTextIndex = sharedQueryTextIndexes.size();
@@ -204,12 +210,6 @@ public class QueryCollector {
                 latestSharedQueryTexts.add(queryText);
             }
             return sharedQueryTextIndex;
-        }
-
-        public List<String> getAndClearLastestSharedQueryTexts() {
-            List<String> latestSharedQueryTexts = this.latestSharedQueryTexts;
-            this.latestSharedQueryTexts = Lists.newArrayList();
-            return latestSharedQueryTexts;
         }
     }
 }

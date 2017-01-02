@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 visitOnReturnAdvice(advice, returnOpcode);
                 visitOnAfterAdvice(advice);
             }
-            resetCurrentNestingGroupIfNecessary();
+            resetCurrentNestingGroupIfNeeded();
             // need to call super.visitInsn() in order to avoid infinite loop
             // could call mv.visitInsn(), but that would bypass special constructor handling in
             // AdviceAdapter.visitInsn()
@@ -309,7 +309,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitTryCatchBlock(catchStartLabel, catchEndLabel, catchHandlerLabel,
                     "java/lang/Throwable");
             visitLabel(catchHandlerLabel);
-            resetCurrentNestingGroupIfNecessary();
+            resetCurrentNestingGroupIfNeeded();
             visitInsn(ATHROW);
         } else {
             for (CatchHandler catchHandler : Lists.reverse(catchHandlers)) {
@@ -323,7 +323,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 for (Advice advice : Lists.reverse(catchHandler.advisors())) {
                     visitOnAfterAdvice(advice);
                 }
-                resetCurrentNestingGroupIfNecessary();
+                resetCurrentNestingGroupIfNeeded();
                 visitInsn(ATHROW);
             }
         }
@@ -754,7 +754,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void resetCurrentNestingGroupIfNecessary() {
+    private void resetCurrentNestingGroupIfNeeded() {
         ListIterator<Advice> i = advisors.listIterator(advisors.size());
         while (i.hasPrevious()) {
             Advice advice = i.previous();

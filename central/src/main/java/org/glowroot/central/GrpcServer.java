@@ -46,6 +46,7 @@ import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
@@ -136,20 +137,14 @@ class GrpcServer {
         alertCheckingExecutor.shutdown();
     }
 
-    private int getNextDelayMillis() {
-        long currentishTimeMillis = clock.currentTimeMillis() + 10000;
-        if (currentishTimeMillis > currentMinute) {
-            // race condition here is ok, at worst results in resetting nextDelay multiple times
-            nextDelay.set(0);
-            currentMinute = (long) Math.ceil(currentishTimeMillis / 60000.0) * 60000;
-        }
-        // spread out aggregate collections 100 milliseconds a part, rolling over at 10 seconds
-        return nextDelay.getAndAdd(100) % 10000;
-    }
-
     @VisibleForTesting
     static String trimSpacesAroundAgentRollupIdSeparator(String agentRollupId) {
         return agentRollupId.replaceAll(" */ *", "/").trim();
+    }
+
+    @FunctionalInterface
+    interface BiConsumer {
+        void accept(AlertConfig alertConfig, SmtpConfig smtpConfig) throws Exception;
     }
 
     private class CollectorServiceImpl extends CollectorServiceImplBase {
@@ -168,11 +163,11 @@ class GrpcServer {
                 updatedAgentConfig = agentDao.store(agentId, Strings.emptyToNull(agentRollupId),
                         request.getEnvironment(), request.getAgentConfig());
             } catch (Throwable t) {
-                logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
+                logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
-            logger.info("agent connected: {}, version {}", getAgentDisplay(agentId),
+            logger.info("agent connected: {}, version {}", getAgentRollupDisplay(agentId),
                     request.getEnvironment().getJavaInfo().getGlowrootAgentVersion());
             InitResponse.Builder response = InitResponse.newBuilder()
                     .setGlowrootCentralVersion(version);
@@ -231,7 +226,7 @@ class GrpcServer {
                     if (header == null) {
                         logger.error(t.getMessage(), t);
                     } else {
-                        logger.error("{} - {}", getAgentDisplay(header.getAgentId()),
+                        logger.error("{} - {}", getAgentRollupDisplay(header.getAgentId()),
                                 t.getMessage(), t);
                     }
                 }
@@ -286,17 +281,30 @@ class GrpcServer {
                     aggregateDao.store(agentId, captureTime, aggregatesByTypeList,
                             sharedQueryTexts);
                 } catch (Throwable t) {
-                    logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
+                    logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
                     responseObserver.onError(t);
                     return;
                 }
             }
-            String agentDisplay = getAgentDisplay(agentId);
-            checkTransactionAlerts(agentId, agentDisplay, captureTime);
+            String agentDisplay = getAgentRollupDisplay(agentId);
+            checkAlerts(agentId, agentDisplay, AlertKind.TRANSACTION,
+                    (alertConfig, smtpConfig) -> checkTransactionAlert(agentId, agentDisplay,
+                            alertConfig, captureTime, smtpConfig));
             responseObserver.onNext(AggregateResponseMessage.newBuilder()
                     .setNextDelayMillis(getNextDelayMillis())
                     .build());
             responseObserver.onCompleted();
+        }
+
+        private int getNextDelayMillis() {
+            long currentishTimeMillis = clock.currentTimeMillis() + 10000;
+            if (currentishTimeMillis > currentMinute) {
+                // race condition here is ok, at worst results in resetting nextDelay multiple times
+                nextDelay.set(0);
+                currentMinute = (long) Math.ceil(currentishTimeMillis / 60000.0) * 60000;
+            }
+            // spread out aggregate collections 100 milliseconds a part, rolling over at 10 seconds
+            return nextDelay.getAndAdd(100) % 10000;
         }
 
         @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Gauges",
@@ -312,20 +320,25 @@ class GrpcServer {
                     maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
                 }
             } catch (Throwable t) {
-                logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
+                logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
             try {
                 heartbeatDao.store(agentId);
             } catch (Throwable t) {
-                logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
+                logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
             String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
-            checkGaugeAlerts(agentId, agentDisplay, maxCaptureTime);
-            clearHeartbeatAlerts(agentId, agentDisplay);
+            final long captureTime = maxCaptureTime;
+            checkAlerts(agentId, agentDisplay, AlertKind.GAUGE,
+                    (alertConfig, smtpConfig) -> checkGaugeAlert(agentId, agentDisplay, alertConfig,
+                            captureTime, smtpConfig));
+            checkAlerts(agentId, agentDisplay, AlertKind.HEARTBEAT,
+                    (alertConfig, smtpConfig) -> checkHeartbeatAlert(agentId, agentDisplay,
+                            alertConfig, smtpConfig));
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -362,7 +375,7 @@ class GrpcServer {
                     if (header == null) {
                         logger.error(t.getMessage(), t);
                     } else {
-                        logger.error("{} - {}", getAgentDisplay(header.getAgentId()),
+                        logger.error("{} - {}", getAgentRollupDisplay(header.getAgentId()),
                                 t.getMessage(), t);
                     }
                 }
@@ -378,7 +391,7 @@ class GrpcServer {
                                 .addAllSharedQueryText(sharedQueryTexts)
                                 .build());
                     } catch (Throwable t) {
-                        logger.error("{} - {}", getAgentDisplay(header.getAgentId()),
+                        logger.error("{} - {}", getAgentRollupDisplay(header.getAgentId()),
                                 t.getMessage(), t);
                         responseObserver.onError(t);
                         return;
@@ -398,7 +411,7 @@ class GrpcServer {
             try {
                 traceDao.store(agentId, request.getTrace());
             } catch (Throwable t) {
-                logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
+                logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -414,7 +427,7 @@ class GrpcServer {
                 LogEvent logEvent = request.getLogEvent();
                 Proto.Throwable t = logEvent.getThrowable();
                 Level level = logEvent.getLevel();
-                String agentDisplay = getAgentDisplay(request.getAgentId());
+                String agentDisplay = getAgentRollupDisplay(request.getAgentId());
                 if (t == null) {
                     log(level, "{} -- {} -- {} -- {}", agentDisplay, level,
                             logEvent.getLoggerName(), logEvent.getMessage());
@@ -430,16 +443,17 @@ class GrpcServer {
             responseObserver.onCompleted();
         }
 
-        private void checkTransactionAlerts(String agentId, String agentDisplay, long captureTime) {
+        private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
+                BiConsumer check) {
             SmtpConfig smtpConfig = configRepository.getSmtpConfig();
             if (smtpConfig.host().isEmpty()) {
                 return;
             }
             List<AlertConfig> alertConfigs;
             try {
-                alertConfigs = configRepository.getTransactionAlertConfigs(agentId);
+                alertConfigs = configRepository.getAlertConfigs(agentId, alertKind);
             } catch (IOException e) {
-                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
+                logger.error("{} - {}", getAgentRollupDisplay(agentId), e.getMessage(), e);
                 return;
             }
             if (alertConfigs.isEmpty()) {
@@ -451,98 +465,18 @@ class GrpcServer {
                     try {
                         runInternal();
                     } catch (Throwable t) {
-                        logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
+                        logger.error("{} - {}", agentDisplay, t.getMessage(), t);
                     }
                 }
                 private void runInternal() throws InterruptedException {
                     for (AlertConfig alertConfig : alertConfigs) {
                         try {
-                            checkTransactionAlert(agentId, agentDisplay, alertConfig, captureTime,
-                                    smtpConfig);
+                            check.accept(alertConfig, smtpConfig);
                         } catch (InterruptedException e) {
                             // shutdown requested
                             throw e;
                         } catch (Exception e) {
-                            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
-                        }
-                    }
-                }
-            });
-        }
-
-        private void checkGaugeAlerts(String agentId, String agentDisplay, long captureTime) {
-            SmtpConfig smtpConfig = configRepository.getSmtpConfig();
-            if (smtpConfig.host().isEmpty()) {
-                return;
-            }
-            List<AlertConfig> alertConfigs;
-            try {
-                alertConfigs = configRepository.getGaugeAlertConfigs(agentId);
-            } catch (IOException e) {
-                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
-                return;
-            }
-            if (alertConfigs.isEmpty()) {
-                return;
-            }
-            alertCheckingExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        runInternal();
-                    } catch (Throwable t) {
-                        logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
-                    }
-                }
-                private void runInternal() throws InterruptedException {
-                    for (AlertConfig alertConfig : alertConfigs) {
-                        try {
-                            checkGaugeAlert(agentId, agentDisplay, alertConfig, captureTime,
-                                    smtpConfig);
-                        } catch (InterruptedException e) {
-                            // shutdown requested
-                            throw e;
-                        } catch (Exception e) {
-                            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
-                        }
-                    }
-                }
-            });
-        }
-
-        private void clearHeartbeatAlerts(String agentId, String agentDisplay) {
-            SmtpConfig smtpConfig = configRepository.getSmtpConfig();
-            if (smtpConfig.host().isEmpty()) {
-                return;
-            }
-            List<AlertConfig> alertConfigs;
-            try {
-                alertConfigs = configRepository.getHeartbeatAlertConfigs(agentId);
-            } catch (IOException e) {
-                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
-                return;
-            }
-            if (alertConfigs.isEmpty()) {
-                return;
-            }
-            alertCheckingExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        runInternal();
-                    } catch (Throwable t) {
-                        logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
-                    }
-                }
-                private void runInternal() throws InterruptedException {
-                    for (AlertConfig alertConfig : alertConfigs) {
-                        try {
-                            checkHeartbeatAlert(agentId, agentDisplay, alertConfig, smtpConfig);
-                        } catch (InterruptedException e) {
-                            // shutdown requested
-                            throw e;
-                        } catch (Exception e) {
-                            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
+                            logger.error("{} - {}", agentDisplay, e.getMessage(), e);
                         }
                     }
                 }
@@ -576,8 +510,8 @@ class GrpcServer {
                     smtpConfig);
         }
 
-        private String getAgentDisplay(String agentId) {
-            return agentDao.readAgentRollupDisplay(agentId);
+        private String getAgentRollupDisplay(String agentRollupId) {
+            return agentDao.readAgentRollupDisplay(agentRollupId);
         }
 
         private void log(Level level, String format, Object... arguments) {

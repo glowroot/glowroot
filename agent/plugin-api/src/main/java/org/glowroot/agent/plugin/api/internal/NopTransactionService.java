@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,18 @@ import org.glowroot.agent.plugin.api.TraceEntry;
 
 public class NopTransactionService {
 
+    public static final TraceEntry TRACE_ENTRY = NopAsyncQueryEntry.INSTANCE;
+    public static final QueryEntry QUERY_ENTRY = NopAsyncQueryEntry.INSTANCE;
+    public static final AsyncTraceEntry ASYNC_TRACE_ENTRY = NopAsyncQueryEntry.INSTANCE;
+    public static final AsyncQueryEntry ASYNC_QUERY_ENTRY = NopAsyncQueryEntry.INSTANCE;
+
     private NopTransactionService() {}
 
-    public static class NopTraceEntry implements TraceEntry {
+    private static class NopAsyncQueryEntry implements AsyncQueryEntry {
 
-        public static final NopTraceEntry INSTANCE = new NopTraceEntry();
+        public static final NopAsyncQueryEntry INSTANCE = new NopAsyncQueryEntry();
 
-        private NopTraceEntry() {}
+        private NopAsyncQueryEntry() {}
 
         @Override
         public void end() {}
@@ -61,13 +66,6 @@ public class NopTransactionService {
         public @Nullable MessageSupplier getMessageSupplier() {
             return null;
         }
-    }
-
-    public static class NopQueryEntry extends NopTraceEntry implements QueryEntry {
-
-        public static final NopQueryEntry INSTANCE = new NopQueryEntry();
-
-        private NopQueryEntry() {}
 
         @Override
         public Timer extend() {
@@ -82,28 +80,6 @@ public class NopTransactionService {
 
         @Override
         public void setCurrRow(long row) {}
-    }
-
-    public static class NopAsyncTraceEntry extends NopTraceEntry implements AsyncTraceEntry {
-
-        public static final NopAsyncTraceEntry INSTANCE = new NopAsyncTraceEntry();
-
-        private NopAsyncTraceEntry() {}
-
-        @Override
-        public void stopSyncTimer() {}
-
-        @Override
-        public Timer extendSyncTimer(ThreadContext currThreadContext) {
-            return NopTimer.INSTANCE;
-        }
-    }
-
-    public static class NopAsyncQueryEntry extends NopQueryEntry implements AsyncQueryEntry {
-
-        public static final NopAsyncQueryEntry INSTANCE = new NopAsyncQueryEntry();
-
-        private NopAsyncQueryEntry() {}
 
         @Override
         public void stopSyncTimer() {}
@@ -122,12 +98,12 @@ public class NopTransactionService {
 
         @Override
         public TraceEntry start() {
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
 
         @Override
         public TraceEntry startAndMarkAsyncTransactionComplete() {
-            return NopTraceEntry.INSTANCE;
+            return NopTransactionService.TRACE_ENTRY;
         }
     }
 

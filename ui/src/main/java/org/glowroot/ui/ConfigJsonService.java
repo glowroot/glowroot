@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,8 +91,7 @@ class ConfigJsonService {
         }
     }
 
-    @GET(path = "/backend/config/user-recording",
-            permission = "agent:config:view:userRecording")
+    @GET(path = "/backend/config/user-recording", permission = "agent:config:view:userRecording")
     String getUserRecordingConfig(@BindAgentId String agentId) throws Exception {
         UserRecordingConfig config = configRepository.getUserRecordingConfig(agentId);
         if (config == null) {
@@ -341,7 +340,6 @@ class ConfigJsonService {
                 case BVAL:
                     return PropertyType.BOOLEAN;
                 case DVAL_NULL:
-                    return PropertyType.DOUBLE;
                 case DVAL:
                     return PropertyType.DOUBLE;
                 case SVAL:

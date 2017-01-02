@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -430,107 +430,42 @@ public class TraceDao implements TraceRepository {
                 futures.add(session.executeAsync(boundStatement));
             }
 
-            List<Trace.Attribute> attributes = header.getAttributeList();
             if (header.getSlow()) {
                 BoundStatement boundStatement = insertOverallSlowPoint.bind();
-                int i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setLong(i++, header.getDurationNanos());
-                boundStatement.setBool(i++, header.getPartial());
-                boundStatement.setBool(i++, header.hasError());
-                boundStatement.setString(i++, header.getHeadline());
-                boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
-                if (attributes.isEmpty()) {
-                    boundStatement.setToNull(i++);
-                } else {
-                    boundStatement.setBytes(i++, Messages.toByteBuffer(attributes));
-                }
-                boundStatement.setInt(i++, adjustedTTL);
+                bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                        true);
                 futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionSlowPoint.bind();
-                i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setString(i++, header.getTransactionName());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setLong(i++, header.getDurationNanos());
-                boundStatement.setBool(i++, header.getPartial());
-                boundStatement.setBool(i++, header.hasError());
-                boundStatement.setString(i++, header.getHeadline());
-                boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
-                if (attributes.isEmpty()) {
-                    boundStatement.setToNull(i++);
-                } else {
-                    boundStatement.setBytes(i++, Messages.toByteBuffer(attributes));
-                }
-                boundStatement.setInt(i++, adjustedTTL);
+                bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                        false);
                 futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertOverallSlowCount.bind();
-                i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setInt(i++, adjustedTTL);
+                bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                        true);
                 futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionSlowCount.bind();
-                i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setString(i++, header.getTransactionName());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setInt(i++, adjustedTTL);
+                bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                        false);
                 futures.add(session.executeAsync(boundStatement));
 
                 if (priorHeader != null) {
                     boundStatement = deletePartialOverallSlowPoint.bind();
-                    i = 0;
-                    boundStatement.setString(i++, agentRollupId);
-                    boundStatement.setString(i++, priorHeader.getTransactionType());
-                    boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
-                    boundStatement.setString(i++, agentId);
-                    boundStatement.setString(i++, traceId);
+                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true);
                     futures.add(session.executeAsync(boundStatement));
 
                     boundStatement = deletePartialTransactionSlowPoint.bind();
-                    i = 0;
-                    boundStatement.setString(i++, agentRollupId);
-                    boundStatement.setString(i++, priorHeader.getTransactionType());
-                    boundStatement.setString(i++, priorHeader.getTransactionName());
-                    boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
-                    boundStatement.setString(i++, agentId);
-                    boundStatement.setString(i++, traceId);
+                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false);
                     futures.add(session.executeAsync(boundStatement));
 
                     boundStatement = deletePartialOverallSlowCount.bind();
-                    i = 0;
-                    boundStatement.setString(i++, agentRollupId);
-                    boundStatement.setString(i++, priorHeader.getTransactionType());
-                    boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
-                    boundStatement.setString(i++, agentId);
-                    boundStatement.setString(i++, traceId);
+                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true);
                     futures.add(session.executeAsync(boundStatement));
 
                     boundStatement = deletePartialTransactionSlowCount.bind();
-                    i = 0;
-                    boundStatement.setString(i++, agentRollupId);
-                    boundStatement.setString(i++, priorHeader.getTransactionType());
-                    boundStatement.setString(i++, priorHeader.getTransactionName());
-                    boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
-                    boundStatement.setString(i++, agentId);
-                    boundStatement.setString(i++, traceId);
+                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false);
                     futures.add(session.executeAsync(boundStatement));
                 }
             }
@@ -538,91 +473,36 @@ public class TraceDao implements TraceRepository {
             // and this avoids having to clean up partial trace data when trace is complete
             if (header.hasError() && !header.getPartial()) {
                 BoundStatement boundStatement = insertOverallErrorMessage.bind();
-                int i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setString(i++, header.getError().getMessage());
-                boundStatement.setInt(i++, adjustedTTL);
+                bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
+                        adjustedTTL, true);
                 futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorMessage.bind();
-                i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setString(i++, header.getTransactionName());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setString(i++, header.getError().getMessage());
-                boundStatement.setInt(i++, adjustedTTL);
+                bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
+                        adjustedTTL, false);
                 futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertOverallErrorPoint.bind();
-                i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setLong(i++, header.getDurationNanos());
-                boundStatement.setBool(i++, header.getPartial());
-                boundStatement.setString(i++, header.getError().getMessage());
-                boundStatement.setString(i++, header.getHeadline());
-                boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
-                if (attributes.isEmpty()) {
-                    boundStatement.setToNull(i++);
-                } else {
-                    boundStatement.setBytes(i++, Messages.toByteBuffer(attributes));
-                }
-                boundStatement.setInt(i++, adjustedTTL);
+                bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                        true);
                 futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorPoint.bind();
-                i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setString(i++, header.getTransactionName());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setLong(i++, header.getDurationNanos());
-                boundStatement.setBool(i++, header.getPartial());
-                boundStatement.setString(i++, header.getError().getMessage());
-                boundStatement.setString(i++, header.getHeadline());
-                boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
-                if (attributes.isEmpty()) {
-                    boundStatement.setToNull(i++);
-                } else {
-                    boundStatement.setBytes(i++, Messages.toByteBuffer(attributes));
-                }
-                boundStatement.setInt(i++, adjustedTTL);
+                bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                        false);
                 futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertOverallErrorCount.bind();
-                i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setInt(i++, adjustedTTL);
+                bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                        true);
                 futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorCount.bind();
-                i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setString(i++, header.getTransactionName());
-                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setString(i++, traceId);
-                boundStatement.setInt(i++, adjustedTTL);
+                bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                        false);
                 futures.add(session.executeAsync(boundStatement));
             }
-            for (Trace.Attribute attributeName : attributes) {
+            for (Trace.Attribute attributeName : header.getAttributeList()) {
                 traceAttributeNameDao.store(agentRollupId,
                         header.getTransactionType(), attributeName.getName(), futures);
             }
@@ -705,23 +585,15 @@ public class TraceDao implements TraceRepository {
 
         if (trace.hasMainThreadProfile()) {
             boundStatement = insertMainThreadProfile.bind();
-            i = 0;
-            boundStatement.setString(i++, agentId);
-            boundStatement.setString(i++, traceId);
-            boundStatement.setBytes(i++,
-                    ByteBuffer.wrap(trace.getMainThreadProfile().toByteArray()));
-            boundStatement.setInt(i++, adjustedTTL);
+            bindThreadProfile(boundStatement, agentId, traceId, trace.getMainThreadProfile(),
+                    adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
 
         if (trace.hasAuxThreadProfile()) {
             boundStatement = insertAuxThreadProfile.bind();
-            i = 0;
-            boundStatement.setString(i++, agentId);
-            boundStatement.setString(i++, traceId);
-            boundStatement.setBytes(i++,
-                    ByteBuffer.wrap(trace.getAuxThreadProfile().toByteArray()));
-            boundStatement.setInt(i++, adjustedTTL);
+            bindThreadProfile(boundStatement, agentId, traceId, trace.getAuxThreadProfile(),
+                    adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
         futures.addAll(transactionTypeDao.store(agentRollupIds, header.getTransactionType()));
@@ -731,53 +603,33 @@ public class TraceDao implements TraceRepository {
     @Override
     public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws IOException {
+        BoundStatement boundStatement;
         String transactionName = query.transactionName();
         if (transactionName == null) {
-            BoundStatement boundStatement = readOverallSlowPoint.bind();
-            int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setTimestamp(i++, new Date(query.from()));
-            boundStatement.setTimestamp(i++, new Date(query.to()));
-            ResultSet results = session.execute(boundStatement);
-            return processPoints(results, filter, limit, false);
+            boundStatement = readOverallSlowPoint.bind();
+            bindTraceQuery(boundStatement, agentRollupId, query, true);
         } else {
-            BoundStatement boundStatement = readTransactionSlowPoint.bind();
-            int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setString(i++, transactionName);
-            boundStatement.setTimestamp(i++, new Date(query.from()));
-            boundStatement.setTimestamp(i++, new Date(query.to()));
-            ResultSet results = session.execute(boundStatement);
-            return processPoints(results, filter, limit, false);
+            boundStatement = readTransactionSlowPoint.bind();
+            bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
+        ResultSet results = session.execute(boundStatement);
+        return processPoints(results, filter, limit, false);
     }
 
     @Override
     public Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws IOException {
+        BoundStatement boundStatement;
         String transactionName = query.transactionName();
         if (transactionName == null) {
-            BoundStatement boundStatement = readOverallErrorPoint.bind();
-            int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setTimestamp(i++, new Date(query.from()));
-            boundStatement.setTimestamp(i++, new Date(query.to()));
-            ResultSet results = session.execute(boundStatement);
-            return processPoints(results, filter, limit, true);
+            boundStatement = readOverallErrorPoint.bind();
+            bindTraceQuery(boundStatement, agentRollupId, query, true);
         } else {
-            BoundStatement boundStatement = readTransactionErrorPoint.bind();
-            int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setString(i++, transactionName);
-            boundStatement.setTimestamp(i++, new Date(query.from()));
-            boundStatement.setTimestamp(i++, new Date(query.to()));
-            ResultSet results = session.execute(boundStatement);
-            return processPoints(results, filter, limit, true);
+            boundStatement = readTransactionErrorPoint.bind();
+            bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
+        ResultSet results = session.execute(boundStatement);
+        return processPoints(results, filter, limit, true);
     }
 
     @Override
@@ -829,19 +681,10 @@ public class TraceDao implements TraceRepository {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             boundStatement = readOverallErrorMessage.bind();
-            int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setTimestamp(i++, new Date(query.from()));
-            boundStatement.setTimestamp(i++, new Date(query.to()));
+            bindTraceQuery(boundStatement, agentRollupId, query, true);
         } else {
             boundStatement = readTransactionErrorMessage.bind();
-            int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setString(i++, transactionName);
-            boundStatement.setTimestamp(i++, new Date(query.from()));
-            boundStatement.setTimestamp(i++, new Date(query.to()));
+            bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
         ResultSet results = session.execute(boundStatement);
         // rows are already in order by captureTime, so saving sort step by using linked hash map
@@ -1079,6 +922,91 @@ public class TraceDao implements TraceRepository {
     private int getTTL() {
         return Ints.saturatedCast(
                 HOURS.toSeconds(configRepository.getStorageConfig().traceExpirationHours()));
+    }
+
+    private static void bindSlowPoint(BoundStatement boundStatement, String agentRollupId,
+            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall)
+            throws IOException {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
+        boundStatement.setLong(i++, header.getDurationNanos());
+        boundStatement.setBool(i++, header.getPartial());
+        boundStatement.setBool(i++, header.hasError());
+        boundStatement.setString(i++, header.getHeadline());
+        boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
+        List<Trace.Attribute> attributes = header.getAttributeList();
+        if (attributes.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(attributes));
+        }
+        boundStatement.setInt(i++, adjustedTTL);
+    }
+
+    private static void bindCount(BoundStatement boundStatement, String agentRollupId,
+            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall) {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
+        boundStatement.setInt(i++, adjustedTTL);
+    }
+
+    private static void bindErrorMessage(BoundStatement boundStatement, String agentRollupId,
+            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall) {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
+        boundStatement.setString(i++, header.getError().getMessage());
+        boundStatement.setInt(i++, adjustedTTL);
+    }
+
+    private static void bindErrorPoint(BoundStatement boundStatement, String agentRollupId,
+            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall)
+            throws IOException {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
+        boundStatement.setLong(i++, header.getDurationNanos());
+        boundStatement.setBool(i++, header.getPartial());
+        boundStatement.setString(i++, header.getError().getMessage());
+        boundStatement.setString(i++, header.getHeadline());
+        boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
+        List<Trace.Attribute> attributes = header.getAttributeList();
+        if (attributes.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(attributes));
+        }
+        boundStatement.setInt(i++, adjustedTTL);
+    }
+
+    private static int bind(BoundStatement boundStatement, String agentRollupId, String agentId,
+            String traceId, Trace.Header header, boolean overall) {
+        int i = 0;
+        boundStatement.setString(i++, agentRollupId);
+        boundStatement.setString(i++, header.getTransactionType());
+        if (!overall) {
+            boundStatement.setString(i++, header.getTransactionName());
+        }
+        boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+        boundStatement.setString(i++, agentId);
+        boundStatement.setString(i++, traceId);
+        return i;
+    }
+
+    private static void bindThreadProfile(BoundStatement boundStatement, String agentId,
+            String traceId, Profile profile, int adjustedTTL) {
+        int i = 0;
+        boundStatement.setString(i++, agentId);
+        boundStatement.setString(i++, traceId);
+        boundStatement.setBytes(i++, ByteBuffer.wrap(profile.toByteArray()));
+        boundStatement.setInt(i++, adjustedTTL);
+    }
+
+    private static void bindTraceQuery(BoundStatement boundStatement, String agentRollupId,
+            TraceQuery query, boolean overall) {
+        int i = 0;
+        boundStatement.setString(i++, agentRollupId);
+        boundStatement.setString(i++, query.transactionType());
+        String transactionName = query.transactionName();
+        if (!overall) {
+            boundStatement.setString(i++, transactionName);
+        }
+        boundStatement.setTimestamp(i++, new Date(query.from()));
+        boundStatement.setTimestamp(i++, new Date(query.to()));
     }
 
     private static Result<TracePoint> processPoints(ResultSet results, TracePointFilter filter,

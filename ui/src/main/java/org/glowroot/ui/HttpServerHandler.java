@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -601,11 +601,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             jg.writeStringField("message", message);
             jg.writeEndObject();
             jg.close();
-            return HttpServices.createJsonResponse(sb.toString(), status);
         } catch (IOException f) {
             logger.error(f.getMessage(), f);
             return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
+        return HttpServices.createJsonResponse(sb.toString(), status);
     }
 
     private static FullHttpResponse newHttpResponseWithStackTrace(Exception e,
@@ -632,11 +632,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             jg.writeStringField("stackTrace", sw.toString());
             jg.writeEndObject();
             jg.close();
-            return HttpServices.createJsonResponse(sb.toString(), status);
         } catch (IOException f) {
             logger.error(f.getMessage(), f);
             return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
+        return HttpServices.createJsonResponse(sb.toString(), status);
     }
 
     private static @Nullable Object callMethod(JsonServiceMapping jsonServiceMapping,

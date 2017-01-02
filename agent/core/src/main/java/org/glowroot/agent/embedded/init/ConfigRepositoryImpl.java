@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,21 +214,10 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AgentConfig.AlertConfig> getTransactionAlertConfigs(String agentId) {
+    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind) {
         List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : configService.getAlertConfigs()) {
-            if (config.kind() == AlertKind.TRANSACTION) {
-                configs.add(config.toProto());
-            }
-        }
-        return configs;
-    }
-
-    @Override
-    public List<AgentConfig.AlertConfig> getGaugeAlertConfigs(String agentId) {
-        List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
-        for (AlertConfig config : configService.getAlertConfigs()) {
-            if (config.kind() == AlertKind.GAUGE) {
+            if (config.kind() == alertKind) {
                 configs.add(config.toProto());
             }
         }

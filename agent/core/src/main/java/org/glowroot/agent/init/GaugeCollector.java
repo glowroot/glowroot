@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -238,12 +238,17 @@ class GaugeCollector extends ScheduledRunnable {
                         "MBean attribute value is not a number or string");
             }
             if (value != null) {
-                String gaugeName = mbeanObjectName + ':' + mbeanAttributeName;
+                StringBuilder gaugeName = new StringBuilder(mbeanObjectName.length() + 1
+                        + mbeanAttributeName.length() + "[counter]".length());
+                gaugeName.append(mbeanObjectName);
+                gaugeName.append(':');
+                gaugeName.append(mbeanAttributeName);
                 if (mbeanAttribute.counter()) {
                     // "[counter]" suffix is so gauge name (and gauge id) will change if gauge is
                     // switched between counter and non-counter (which will prevent counter and
                     // non-counter values showing up in same chart line)
-                    gaugeName += "[counter]";
+                    gaugeName.append("[counter]");
+                    String gaugeNameStr = gaugeName.toString();
                     RawCounterValue priorRawCounterValue = priorRawCounterValues.get(gaugeName);
                     long captureTick = ticker.read();
                     if (priorRawCounterValue != null) {
@@ -252,17 +257,17 @@ class GaugeCollector extends ScheduledRunnable {
                         double averageDeltaPerSecond =
                                 1000000000 * (value - priorRawCounterValue.value()) / intervalNanos;
                         gaugeValues.add(GaugeValue.newBuilder()
-                                .setGaugeName(gaugeName)
+                                .setGaugeName(gaugeNameStr)
                                 .setCaptureTime(captureTime)
                                 .setValue(averageDeltaPerSecond)
                                 .setWeight(intervalNanos)
                                 .build());
                     }
-                    priorRawCounterValues.put(gaugeName,
+                    priorRawCounterValues.put(gaugeNameStr,
                             ImmutableRawCounterValue.of(value, captureTick));
                 } else {
                     gaugeValues.add(GaugeValue.newBuilder()
-                            .setGaugeName(gaugeName)
+                            .setGaugeName(gaugeName.toString())
                             .setCaptureTime(captureTime)
                             .setValue(value)
                             .setWeight(1)

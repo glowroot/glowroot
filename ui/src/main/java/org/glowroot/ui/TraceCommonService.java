@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,8 +177,7 @@ class TraceCommonService {
     }
 
     private @Nullable HeaderPlus getStoredHeader(String agentRollupId, String agentId,
-            String traceId,
-            RetryCountdown retryCountdown) throws Exception {
+            String traceId, RetryCountdown retryCountdown) throws Exception {
         HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentRollupId, agentId, traceId);
         while (headerPlus == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector

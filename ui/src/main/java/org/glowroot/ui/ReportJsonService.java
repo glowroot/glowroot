@@ -56,6 +56,7 @@ import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -235,6 +236,9 @@ class ReportJsonService {
             totalDurationNanos += aggregate.totalDurationNanos();
             transactionCount += aggregate.transactionCount();
         }
+        // individual aggregate transaction counts cannot be zero, and aggregates is non-empty
+        // (see above conditional), so transactionCount is guaranteed non-zero
+        checkState(transactionCount != 0);
         dataSeries
                 .setOverall(totalDurationNanos / (transactionCount * NANOSECONDS_PER_MILLISECOND));
         return dataSeries;
@@ -320,6 +324,9 @@ class ReportJsonService {
             totalIntervalMillis += rollupIntervalMillis;
             priorAggregate = aggregate;
         }
+        // individual aggregate intervals are non-zero, and aggregates is non-empty
+        // (see above conditional), so totalIntervalMillis is guaranteed non-zero
+        checkState(totalIntervalMillis != 0);
         dataSeries.setOverall(60000.0 * transactionCount / totalIntervalMillis);
         return dataSeries;
     }
@@ -362,6 +369,9 @@ class ReportJsonService {
             total += gaugeValue.getValue() * gaugeValue.getWeight();
             weight += gaugeValue.getWeight();
         }
+        // individual gauge value weights cannot be zero, and gaugeValues is non-empty
+        // (see above conditional), so weight is guaranteed non-zero
+        checkState(weight != 0);
         dataSeries.setOverall(total / weight);
         return dataSeries;
     }
