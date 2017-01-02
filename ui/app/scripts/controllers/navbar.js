@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,11 +68,11 @@ glowroot.controller('NavbarCtrl', [
       if (!$scope.layout) {
         return '';
       }
-      if ($scope.layout.embedded
+      if ($scope.layout.central && $scope.layout.adminView) {
+        return 'admin/agent-list';
+      } else if (!$scope.layout.central
           && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
         return 'config/transaction';
-      } else if (!$scope.layout.embedded && $scope.layout.adminView) {
-        return 'admin/agent-list';
       } else {
         return 'change-password';
       }
@@ -82,10 +82,10 @@ glowroot.controller('NavbarCtrl', [
       if (!$scope.layout) {
         return '';
       }
-      if ($scope.layout.embedded
+      if (!$scope.layout.central
           && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
         return 'Configuration';
-      } else if (!$scope.layout.embedded && $scope.layout.adminView) {
+      } else if ($scope.layout.central && $scope.layout.adminView) {
         return 'Administration';
       } else {
         return 'Profile';

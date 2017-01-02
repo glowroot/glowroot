@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,13 +56,13 @@ class RoleConfigJsonService {
         }
     };
 
-    private final boolean embedded;
+    private final boolean central;
     private final ConfigRepository configRepository;
     private final AgentRepository agentRepository;
 
-    RoleConfigJsonService(boolean embedded, ConfigRepository configRepository,
+    RoleConfigJsonService(boolean central, ConfigRepository configRepository,
             AgentRepository agentRepository) {
-        this.embedded = embedded;
+        this.central = central;
         this.configRepository = configRepository;
         this.agentRepository = agentRepository;
     }
@@ -90,7 +90,7 @@ class RoleConfigJsonService {
 
     @POST(path = "/backend/admin/roles/add", permission = "admin:edit:role")
     String addRole(@BindRequest RoleConfigDto roleConfigDto) throws Exception {
-        RoleConfig roleConfig = roleConfigDto.convert(embedded);
+        RoleConfig roleConfig = roleConfigDto.convert(central);
         try {
             configRepository.insertRoleConfig(roleConfig);
         } catch (DuplicateRoleNameException e) {
@@ -103,7 +103,7 @@ class RoleConfigJsonService {
 
     @POST(path = "/backend/admin/roles/update", permission = "admin:edit:role")
     String updateRole(@BindRequest RoleConfigDto roleConfigDto) throws Exception {
-        RoleConfig roleConfig = roleConfigDto.convert(embedded);
+        RoleConfig roleConfig = roleConfigDto.convert(central);
         String version = roleConfigDto.version().get();
         try {
             configRepository.updateRoleConfig(roleConfig, version);
@@ -131,8 +131,8 @@ class RoleConfigJsonService {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
         ImmutableRoleConfigResponse.Builder response = ImmutableRoleConfigResponse.builder()
-                .config(RoleConfigDto.create(roleConfig, embedded));
-        if (!embedded) {
+                .config(RoleConfigDto.create(roleConfig, central));
+        if (central) {
             response.allAgentRollups(getFlattenedAgentRollups());
         }
         return mapper.writeValueAsString(response.build());
@@ -201,13 +201,11 @@ class RoleConfigJsonService {
         abstract ImmutableList<ImmutableRolePermissionBlock> permissionBlocks();
         abstract Optional<String> version(); // absent for insert operations
 
-        private RoleConfig convert(boolean embedded) {
+        private RoleConfig convert(boolean central) {
             ImmutableRoleConfig.Builder builder = ImmutableRoleConfig.builder()
-                    .embedded(embedded)
+                    .central(central)
                     .name(name());
-            if (embedded) {
-                builder.addAllPermissions(permissions());
-            } else {
+            if (central) {
                 for (String permission : permissions()) {
                     if (permission.startsWith("agent:")) {
                         builder.addPermissions(
@@ -216,6 +214,8 @@ class RoleConfigJsonService {
                         builder.addPermissions(permission);
                     }
                 }
+            } else {
+                builder.addAllPermissions(permissions());
             }
             for (RolePermissionBlock permissionBlock : permissionBlocks()) {
                 String agentIds =
@@ -228,12 +228,10 @@ class RoleConfigJsonService {
             return builder.build();
         }
 
-        private static RoleConfigDto create(RoleConfig roleConfig, boolean embedded) {
+        private static RoleConfigDto create(RoleConfig roleConfig, boolean central) {
             ImmutableRoleConfigDto.Builder builder = ImmutableRoleConfigDto.builder()
                     .name(roleConfig.name());
-            if (embedded) {
-                builder.addAllPermissions(roleConfig.permissions());
-            } else {
+            if (central) {
                 Multimap<List<String>, String> permissionBlocks = HashMultimap.create();
                 for (String permission : roleConfig.permissions()) {
                     if (permission.startsWith("agent:")) {
@@ -259,6 +257,8 @@ class RoleConfigJsonService {
                             .addAllPermissions(entry.getValue())
                             .build());
                 }
+            } else {
+                builder.addAllPermissions(roleConfig.permissions());
             }
             return builder.version(roleConfig.version())
                     .build();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ glowroot.controller('ReportAdhocCtrl', [
     }, true);
 
     $scope.runReport = function (deferred) {
-      if (!$scope.layout.embedded && !$scope.report.agentRollupIds.length) {
+      if ($scope.layout.central && !$scope.report.agentRollupIds.length) {
         deferred.reject('Select one or more agents');
         return;
       }
@@ -171,7 +171,7 @@ glowroot.controller('ReportAdhocCtrl', [
           return;
         }
       }
-      if (!$scope.layout.embedded) {
+      if ($scope.layout.central) {
         $location.search('agent-rollup-id', $scope.report.agentRollupIds);
       }
       $location.search('metric-id', $scope.report.metricId);
@@ -213,7 +213,7 @@ glowroot.controller('ReportAdhocCtrl', [
       if (appliedReport.metricId !== 'response-time-percentile') {
         delete query.metricPercentile;
       }
-      if ($scope.layout.embedded) {
+      if (!$scope.layout.central) {
         query.agentRollupIds = [''];
       }
       $scope.showChartSpinner++;

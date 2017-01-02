@@ -210,7 +210,7 @@ class CentralModule {
                     configRepository, alertingService, downstreamService, clock);
 
             uiModule = new CreateUiModuleBuilder()
-                    .embedded(false)
+                    .central(true)
                     .offline(false)
                     .baseDir(new File("."))
                     .glowrootDir(new File("."))

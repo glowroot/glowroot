@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,11 @@ glowroot.controller('JvmCtrl', [
         // this is ok, under grunt serve and layout hasn't loaded yet
         return true;
       }
-      return $scope.layout.agentRollups.length === 1 || $scope.layout.embedded;
+      return !$scope.layout.central || $scope.layout.agentRollups.length === 1;
     };
 
     $scope.hideMainContent = function () {
-      return !$scope.agentRollupId && !$scope.agentId && !$scope.layout.embedded;
+      return $scope.layout.central && !$scope.agentRollupId && !$scope.agentId;
     };
 
     $scope.currentUrl = function () {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ glowroot.config([
             // no need to add transaction-type to url
             return;
           }
-          var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup-id']
-              || $rootScope.layout.embedded;
+          var hasAgent = !$rootScope.layout.central || $location.search()['agent-id']
+              || $location.search()['agent-rollup-id'];
           if (hasAgent && needsTransactionType && !$location.search()['transaction-type']) {
             $location.search('transaction-type', $rootScope.defaultTransactionType());
             $location.replace();
@@ -48,8 +48,8 @@ glowroot.config([
               unregisterWatch();
               return;
             }
-            var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup-id']
-                || $rootScope.layout.embedded;
+            var hasAgent = !$rootScope.layout.central || $location.search()['agent-id']
+                || $location.search()['agent-rollup-id'];
             if (hasAgent && needsTransactionType && !$location.search()['transaction-type']) {
               $location.search('transaction-type', $rootScope.defaultTransactionType());
               $location.replace();
@@ -73,7 +73,7 @@ glowroot.config([
       } else if ($rootScope.layout.showNavbarError) {
         return 'error/messages';
       } else if ($rootScope.layout.showNavbarJvm) {
-        if ($rootScope.layout.embedded) {
+        if (!$rootScope.layout.central) {
           var jvmPermissions = $rootScope.layout.agentRollups[''].permissions.jvm;
           if (jvmPermissions.gauges) {
             return 'jvm/gauges';

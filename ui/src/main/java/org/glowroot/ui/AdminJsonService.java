@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ class AdminJsonService {
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final boolean embedded;
+    private final boolean central;
     private final File glowrootDir;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
@@ -88,10 +88,10 @@ class AdminJsonService {
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    AdminJsonService(boolean embedded, File glowrootDir, ConfigRepository configRepository,
+    AdminJsonService(boolean central, File glowrootDir, ConfigRepository configRepository,
             RepoAdmin repoAdmin, LiveAggregateRepository liveAggregateRepository,
             MailService mailService) {
-        this.embedded = embedded;
+        this.central = central;
         this.glowrootDir = glowrootDir;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
@@ -130,12 +130,12 @@ class AdminJsonService {
 
     @GET(path = "/backend/admin/storage", permission = "admin:view:storage")
     String getStorageConfig() throws Exception {
-        if (embedded) {
-            FatStorageConfig config = configRepository.getFatStorageConfig();
-            return mapper.writeValueAsString(FatStorageConfigDto.create(config));
-        } else {
+        if (central) {
             CentralStorageConfig config = configRepository.getCentralStorageConfig();
             return mapper.writeValueAsString(CentralStorageConfigDto.create(config));
+        } else {
+            FatStorageConfig config = configRepository.getFatStorageConfig();
+            return mapper.writeValueAsString(FatStorageConfigDto.create(config));
         }
     }
 
@@ -202,21 +202,21 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/storage", permission = "admin:edit:storage")
     String updateStorageConfig(@BindRequest String content) throws Exception {
-        if (embedded) {
-            FatStorageConfigDto configDto =
-                    mapper.readValue(content, ImmutableFatStorageConfigDto.class);
-            try {
-                configRepository.updateFatStorageConfig(configDto.convert(), configDto.version());
-            } catch (OptimisticLockException e) {
-                throw new JsonServiceException(PRECONDITION_FAILED, e);
-            }
-            repoAdmin.resizeIfNecessary();
-        } else {
+        if (central) {
             CentralStorageConfigDto configDto =
                     mapper.readValue(content, ImmutableCentralStorageConfigDto.class);
             try {
                 configRepository.updateCentralStorageConfig(configDto.convert(),
                         configDto.version());
+            } catch (OptimisticLockException e) {
+                throw new JsonServiceException(PRECONDITION_FAILED, e);
+            }
+            repoAdmin.resizeIfNecessary();
+        } else {
+            FatStorageConfigDto configDto =
+                    mapper.readValue(content, ImmutableFatStorageConfigDto.class);
+            try {
+                configRepository.updateFatStorageConfig(configDto.convert(), configDto.version());
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }

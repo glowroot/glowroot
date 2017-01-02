@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ glowroot.run([
       $rootScope.agentRollupId = $location.search()['agent-rollup-id'] || $rootScope.agentId;
       if ($rootScope.layout) {
         // layout doesn't exist on first page load when running under grunt serve
-        if ($rootScope.layout.embedded || $rootScope.agentRollupId) {
+        if (!$rootScope.layout.central || $rootScope.agentRollupId) {
           var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
           $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
         } else {
@@ -118,7 +118,7 @@ glowroot.run([
     });
 
     $rootScope.agentQueryString = function () {
-      if ($rootScope.layout.embedded) {
+      if (!$rootScope.layout.central) {
         return '';
       }
       if ($rootScope.agentId) {
@@ -250,7 +250,7 @@ glowroot.run([
         agentRollup.id = agentRollupId;
         $rootScope.layout.agentRollupValues.push(agentRollup);
       });
-      if ($rootScope.layout.embedded || $rootScope.agentRollupId) {
+      if (!$rootScope.layout.central || $rootScope.agentRollupId) {
         var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
         $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
       } else {

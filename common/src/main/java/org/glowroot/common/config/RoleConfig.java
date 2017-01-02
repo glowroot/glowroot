@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@ public abstract class RoleConfig {
 
     @JsonIgnore
     @Value.Default
-    public boolean embedded() {
-        return true;
+    public boolean central() {
+        return false;
     }
 
     @Value.Derived
@@ -43,10 +43,10 @@ public abstract class RoleConfig {
     public ImmutableSet<SimplePermission> simplePermissions() {
         Set<SimplePermission> simplePermissions = Sets.newHashSet();
         for (String permission : permissions()) {
-            if (embedded()) {
-                simplePermissions.add(SimplePermission.create("", permission));
-            } else {
+            if (central()) {
                 simplePermissions.add(SimplePermission.create(permission));
+            } else {
+                simplePermissions.add(SimplePermission.create("", permission));
             }
         }
         return ImmutableSet.copyOf(simplePermissions);

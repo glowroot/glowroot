@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ class HttpSessionManager {
     private static final Logger logger = LoggerFactory.getLogger(HttpSessionManager.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("audit");
 
-    private final boolean embedded;
+    private final boolean central;
     private final boolean offline;
     private final ConfigRepository configRepository;
     private final Clock clock;
@@ -65,9 +65,9 @@ class HttpSessionManager {
     private final SecureRandom secureRandom = new SecureRandom();
     private final Map<String, Session> sessions = Maps.newConcurrentMap();
 
-    HttpSessionManager(boolean embedded, boolean offline, ConfigRepository configRepository,
+    HttpSessionManager(boolean central, boolean offline, ConfigRepository configRepository,
             Clock clock, LayoutService layoutService) {
-        this.embedded = embedded;
+        this.central = central;
         this.offline = offline;
         this.configRepository = configRepository;
         this.clock = clock;
@@ -170,7 +170,7 @@ class HttpSessionManager {
         UserConfig userConfig = getUserConfigCaseInsensitive("anonymous");
         if (userConfig == null) {
             return ImmutableAuthentication.builder()
-                    .embedded(embedded)
+                    .central(central)
                     .offline(false)
                     .anonymous(true)
                     .ldap(false)
@@ -201,7 +201,7 @@ class HttpSessionManager {
 
     private Authentication getAuthentication(String username, Set<String> roles, boolean ldap) {
         return ImmutableAuthentication.builder()
-                .embedded(embedded)
+                .central(central)
                 .offline(false)
                 .anonymous(username.equalsIgnoreCase("anonymous"))
                 .ldap(ldap)
@@ -213,7 +213,7 @@ class HttpSessionManager {
 
     private Authentication getOfflineViewerAuthentication() {
         return ImmutableAuthentication.builder()
-                .embedded(true) // offline only applies to embedded
+                .central(false) // offline only applies to embedded
                 .offline(true)
                 .anonymous(true)
                 .ldap(false)
@@ -307,7 +307,7 @@ class HttpSessionManager {
     @Value.Immutable
     abstract static class Authentication {
 
-        abstract boolean embedded();
+        abstract boolean central();
         abstract boolean offline();
         abstract boolean anonymous();
         abstract boolean ldap();

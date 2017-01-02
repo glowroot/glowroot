@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class UiModule {
 
     @Builder.Factory
     public static UiModule createUiModule(
-            boolean embedded,
+            boolean central,
             boolean offline,
             File baseDir,
             File glowrootDir,
@@ -69,10 +69,10 @@ public class UiModule {
             String version) throws Exception {
 
         LayoutService layoutService =
-                new LayoutService(embedded, offline, version, configRepository, agentRepository,
+                new LayoutService(central, offline, version, configRepository, agentRepository,
                         transactionTypeRepository, traceAttributeNameRepository);
         HttpSessionManager httpSessionManager =
-                new HttpSessionManager(embedded, offline, configRepository, clock, layoutService);
+                new HttpSessionManager(central, offline, configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
                 new IndexHtmlHttpService(layoutService, configRepository);
         LayoutHttpService layoutHttpService = new LayoutHttpService(layoutService);
@@ -102,7 +102,7 @@ public class UiModule {
                 gaugeValueRepository, rollupLevelService, agentRepository, configRepository);
         AlertConfigJsonService alertConfigJsonService =
                 new AlertConfigJsonService(configRepository);
-        AdminJsonService adminJsonService = new AdminJsonService(embedded, glowrootDir,
+        AdminJsonService adminJsonService = new AdminJsonService(central, glowrootDir,
                 configRepository, repoAdmin, liveAggregateRepository, new MailService());
 
         List<Object> jsonServices = Lists.newArrayList();
@@ -116,7 +116,7 @@ public class UiModule {
         jsonServices.add(configJsonService);
         jsonServices.add(new AgentConfigJsonService(configRepository, agentRepository));
         jsonServices.add(new UserConfigJsonService(configRepository));
-        jsonServices.add(new RoleConfigJsonService(embedded, configRepository, agentRepository));
+        jsonServices.add(new RoleConfigJsonService(central, configRepository, agentRepository));
         jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
         jsonServices.add(new InstrumentationConfigJsonService(configRepository, liveWeavingService,
                 liveJvmService));

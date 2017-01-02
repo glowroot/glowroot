@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,7 +194,7 @@ class EmbeddedAgentModule {
         }
         if (agentModule != null) {
             uiModule = new CreateUiModuleBuilder()
-                    .embedded(true)
+                    .central(false)
                     .offline(false)
                     .baseDir(baseDir)
                     .glowrootDir(glowrootDir)
@@ -220,7 +220,7 @@ class EmbeddedAgentModule {
         } else {
             checkNotNull(viewerAgentModule);
             uiModule = new CreateUiModuleBuilder()
-                    .embedded(true)
+                    .central(false)
                     .offline(true)
                     .baseDir(baseDir)
                     .glowrootDir(glowrootDir)

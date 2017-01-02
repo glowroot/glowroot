@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,10 @@ glowroot.controller('TransactionCtrl', [
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;
 
-    if ($scope.layout.embedded) {
-      $scope.headerDisplay = headerDisplay;
-    } else {
+    if ($scope.layout.central) {
       $scope.headerDisplay = $scope.agentRollupId || '<agent>';
+    } else {
+      $scope.headerDisplay = headerDisplay;
     }
     $scope.shortName = shortName;
     $scope.defaultSummarySortOrder = defaultSummarySortOrder;
@@ -42,7 +42,7 @@ glowroot.controller('TransactionCtrl', [
     $scope.range = {};
 
     $scope.hideAgentRollupDropdown = function () {
-      return $scope.layout.agentRollups.length === 1 || $scope.layout.embedded;
+      return $scope.layout.agentRollups.length === 1 || !$scope.layout.central;
     };
 
     $scope.hideTransactionTypeDropdown = function () {
@@ -63,12 +63,12 @@ glowroot.controller('TransactionCtrl', [
     };
 
     $scope.hideMainContent = function () {
-      return (!$scope.agentRollupId && !$scope.layout.embedded) || !$scope.transactionType;
+      return ($scope.layout.central && !$scope.agentRollupId) || !$scope.transactionType;
     };
 
     $scope.headerQueryString = function (agentRollup, transactionType) {
       var query = {};
-      if (!$scope.layout.embedded) {
+      if ($scope.layout.central) {
         if (agentRollup.agent) {
           query['agent-id'] = agentRollup.id;
         } else {
@@ -154,7 +154,7 @@ glowroot.controller('TransactionCtrl', [
 
     $scope.buildQueryObject = function (baseQuery, allowSeconds) {
       var query = baseQuery || angular.copy($location.search());
-      if (!$scope.layout.embedded) {
+      if ($scope.layout.central) {
         var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];
         if (agentRollup) {
           if (agentRollup.agent) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -407,7 +407,7 @@ glowroot.controller('AdminRoleCtrl', [
           }, function (response) {
             httpErrors.handle(response, $scope);
           });
-    } else if (!$scope.layout.embedded) {
+    } else if ($scope.layout.central) {
       // can't just use $scope.layout.agentRollups here since that list is filtered by current user's permission
       $http.get('backend/admin/all-agent-rollups')
           .then(function (response) {

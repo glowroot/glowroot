@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ glowroot.controller('ConfigCtrl', [
   function ($scope, $location) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
-    if ($scope.layout.embedded || $location.path().indexOf('/admin/') === 0
-        || $location.path().indexOf('/change-password') === 0) {
-      $scope.$parent.activeNavbarItem = 'gears';
-    } else {
+    if ($scope.layout.central && $location.path().indexOf('/admin/') !== 0
+        && $location.path().indexOf('/change-password') !== 0) {
       $scope.$parent.activeNavbarItem = 'agentConfig';
+    } else {
+      $scope.$parent.activeNavbarItem = 'gears';
     }
 
     $scope.hideAgentRollupDropdown = function () {
@@ -38,28 +38,28 @@ glowroot.controller('ConfigCtrl', [
     };
 
     $scope.hideMainContent = function () {
-      return !$scope.agentRollupId && !$scope.agentId && !$scope.layout.embedded;
+      return $scope.layout.central && !$scope.agentRollupId && !$scope.agentId;
     };
 
     $scope.navbarTitle = function () {
       if (!$scope.layout) {
         return '';
       }
-      if ($scope.layout.embedded
+      if ($scope.layout.central && $scope.layout.adminView) {
+        return 'Administration';
+      } else if (!$scope.layout.central
           && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
         return 'Configuration';
-      } else if (!$scope.layout.embedded && $scope.layout.adminView) {
-        return 'Administration';
       } else {
         return 'Profile';
       }
     };
 
     $scope.showConfigSidebarItems = function () {
-      if ($scope.layout.embedded) {
-        return $scope.agentPermissions && $scope.agentPermissions.config.view;
-      } else {
+      if ($scope.layout.central) {
         return $scope.activeNavbarItem === 'agentConfig';
+      } else {
+        return $scope.agentPermissions && $scope.agentPermissions.config.view;
       }
     };
 

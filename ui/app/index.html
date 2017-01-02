@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Copyright 2012-2016 the original author or authors.
+  Copyright 2012-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -124,13 +124,13 @@
                gt-display="Config"
                gt-item-name="agentConfig"
                gt-url="config/transaction{{configQueryString()}}"
-               ng-if="!layout.embedded && layout.showNavbarConfig">
+               ng-if="layout.central && layout.showNavbarConfig">
           </div>
           <div gt-navbar-item
                gt-display="Reports"
                gt-item-name="report"
                gt-url="report/ad-hoc"
-               ng-if="!layout.embedded && (layout.showNavbarTransaction || layout.showNavbarError || layout.showNavbarJvm)">
+               ng-if="layout.central && (layout.showNavbarTransaction || layout.showNavbarError || layout.showNavbarJvm)">
           </div>
         </ul>
         <ul class="nav navbar-nav navbar-right"
@@ -139,7 +139,7 @@
                gt-display=""
                gt-item-name="gears"
                gt-url="{{gearIconUrl()}}"
-               ng-if="layout.adminView || layout.embedded && layout.showNavbarConfig || layout.loggedIn && !layout.ldap">
+               ng-if="layout.adminView || !layout.central && layout.showNavbarConfig || layout.loggedIn && !layout.ldap">
             <i title="{{gearIconNavbarTitle()}}"
                class="fa fa-gears"
                style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></i>

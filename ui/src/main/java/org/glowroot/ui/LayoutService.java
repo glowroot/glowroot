@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ class LayoutService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final boolean embedded;
+    private final boolean central;
     private final boolean offline;
     private final String version;
     private final ConfigRepository configRepository;
@@ -59,11 +59,11 @@ class LayoutService {
     private final TransactionTypeRepository transactionTypeRepository;
     private final TraceAttributeNameRepository traceAttributeNameRepository;
 
-    LayoutService(boolean embedded, boolean offline, String version,
+    LayoutService(boolean central, boolean offline, String version,
             ConfigRepository configRepository, AgentRepository agentRepository,
             TransactionTypeRepository transactionTypeRepository,
             TraceAttributeNameRepository traceAttributeNameRepository) {
-        this.embedded = embedded;
+        this.central = central;
         this.offline = offline;
         this.version = version;
         this.configRepository = configRepository;
@@ -83,10 +83,10 @@ class LayoutService {
     }
 
     private Layout buildLayout(Authentication authentication) throws Exception {
-        if (embedded) {
-            return buildLayoutEmbedded(authentication);
-        } else {
+        if (central) {
             return buildLayoutCentral(authentication);
+        } else {
+            return buildLayoutEmbedded(authentication);
         }
     }
 
@@ -148,7 +148,7 @@ class LayoutService {
 
     private ImmutableLayout createNoAccessLayout(Authentication authentication) {
         return ImmutableLayout.builder()
-                .embedded(embedded)
+                .central(central)
                 .offline(offline)
                 .footerMessage("Glowroot version " + version)
                 .loginEnabled(true)
@@ -174,7 +174,7 @@ class LayoutService {
             rollupExpirationMillis.add(HOURS.toMillis(hours));
         }
         return ImmutableLayout.builder()
-                .embedded(embedded)
+                .central(central)
                 .offline(offline)
                 .footerMessage("Glowroot version " + version)
                 .loginEnabled(offline ? false
@@ -382,7 +382,7 @@ class LayoutService {
     @Value.Immutable
     abstract static class Layout {
 
-        abstract boolean embedded();
+        abstract boolean central();
         abstract boolean offline();
         abstract String footerMessage();
         abstract boolean loginEnabled();
