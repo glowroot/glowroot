@@ -211,7 +211,6 @@ class AdminJsonService {
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
-            repoAdmin.resizeIfNecessary();
         } else {
             FatStorageConfigDto configDto =
                     mapper.readValue(content, ImmutableFatStorageConfigDto.class);
