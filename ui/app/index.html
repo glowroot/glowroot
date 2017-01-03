@@ -121,12 +121,6 @@
                ng-if="layout.showNavbarJvm">
           </div>
           <div gt-navbar-item
-               gt-display="Config"
-               gt-item-name="agentConfig"
-               gt-url="config/transaction{{configQueryString()}}"
-               ng-if="layout.central && layout.showNavbarConfig">
-          </div>
-          <div gt-navbar-item
                gt-display="Reports"
                gt-item-name="report"
                gt-url="report/ad-hoc"
@@ -135,25 +129,49 @@
         </ul>
         <ul class="nav navbar-nav navbar-right"
             style="margin-right: 0;">
-          <div gt-navbar-item
-               gt-display=""
-               gt-item-name="gears"
-               gt-url="{{gearIconUrl()}}"
-               ng-if="layout.adminView || !layout.central && layout.showNavbarConfig || layout.loggedIn && !layout.ldap">
-            <i title="{{gearIconNavbarTitle()}}"
-               class="fa fa-gears"
-               style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></i>
-          </div>
-          <li class="ng-cloak" ng-if="showSignIn()">
-            <a href="login"
-               ng-click="goToLogin($event)"
-               style="padding-top: 14px; padding-bottom: 0; height: 50px;">
-              <i title="Sign in"
-                 class="fa fa-sign-in"
+          <li class="dropdown ng-cloak"
+              ng-class="{active: activeNavbarItem === 'gears'}"
+              ng-if="layout.showNavbarConfig || layout.adminView || !layout.loggedIn && layout.loginEnabled || layout.loggedIn && !layout.ldap">
+            <!-- id is used by webdriver tests -->
+            <a role="button"
+               class="dropdown-toggle"
+               data-toggle="dropdown"
+               href="#"
+               id="gtGearsMenuToggle">
+              <i class="fa fa-gears"
                  style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></i>
             </a>
+            <!-- id is used by webdriver tests -->
+            <ul class="dropdown-menu"
+                id="gtGearsMenu">
+              <li ng-if="layout.showNavbarConfig">
+                <a ng-href="config/transaction{{configQueryString()}}"
+                   style="padding-top: 5px; padding-bottom: 5px;">
+                  {{layout.central ? 'Agent configuration' : 'Configuration'}}
+                </a>
+              </li>
+              <li ng-if="layout.adminView">
+                <a ng-href="{{layout.central ? 'admin/agent-list' : 'admin/user-list'}}"
+                   style="padding-top: 5px; padding-bottom: 5px;">
+                  Administration
+                </a>
+              </li>
+              <li ng-if="!layout.loggedIn && layout.loginEnabled">
+                <a href="login"
+                   ng-click="goToLogin($event)"
+                   style="padding-top: 5px; padding-bottom: 5px;">
+                  Login
+                </a>
+              </li>
+              <li ng-if="layout.loggedIn && !layout.ldap">
+                <a ng-href="profile/change-password"
+                   style="padding-top: 5px; padding-bottom: 5px;">
+                  Change my password
+                </a>
+              </li>
+            </ul>
           </li>
-          <li class="ng-cloak" ng-if="showSignOut()">
+          <li class="ng-cloak" ng-if="layout.loggedIn">
             <a href="#"
                ng-click="signOut()"
                style="padding-top: 14px; padding-bottom: 0; height: 50px;">
@@ -295,6 +313,7 @@
 <script src="scripts/controllers/config/instrumentation-list.js"></script>
 <script src="scripts/controllers/config/instrumentation.js"></script>
 <script src="scripts/controllers/config/user-recording.js"></script>
+<script src="scripts/controllers/admin.js"></script>
 <script src="scripts/controllers/admin/agent-list.js"></script>
 <script src="scripts/controllers/admin/agent.js"></script>
 <script src="scripts/controllers/admin/user-list.js"></script>
@@ -305,7 +324,8 @@
 <script src="scripts/controllers/admin/storage.js"></script>
 <script src="scripts/controllers/admin/smtp.js"></script>
 <script src="scripts/controllers/admin/ldap.js"></script>
-<script src="scripts/controllers/change-password.js"></script>
+<script src="scripts/controllers/profile.js"></script>
+<script src="scripts/controllers/profile/change-password.js"></script>
 <script src="scripts/controllers/login.js"></script>
 <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
 <script src="scripts/generated/handlebars-templates.js"></script>

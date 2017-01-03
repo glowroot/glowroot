@@ -15,21 +15,20 @@
 -->
 <div class="gt-header" style="margin-bottom: 6px;">
   <div class="gt-header-page-name">
-    <div ng-show="hideAgentRollupDropdown()">
-      {{navbarTitle()}}
+    <div ng-hide="layout.central">
+      Configuration
     </div>
-    <div style="margin-top: -16px;" ng-hide="hideAgentRollupDropdown()">
-      <span class="gt-inline-block gt-header-menu" ng-if="activeNavbarItem === 'agentConfig'">
+    <div style="margin-top: -16px;" ng-show="layout.central">
+      <span class="gt-inline-block gt-header-menu">
         <span class="dropdown">
           <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
             {{layout.agentRollups[agentRollupId].display || '&lt;agent&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
           <!-- margin-bottom helps when large menu that extends to the bottom of the page -->
-          <!-- z-index 1200 to keep dropdown on top of error overlay (which is at z-index 1000) -->
           <ul class="dropdown-menu"
               role="menu"
-              style="margin-bottom: 100px; z-index: 1200;">
+              style="margin-bottom: 100px;">
             <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
                  that start with '$', because angular silently ignores object keys starting with '$' -->
             <li ng-repeat="agentRollup in layout.agentRollupValues"
@@ -46,18 +45,17 @@
       <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
            while chrome guesses the placement of the border based on default font and then it moves slightly
            once font is available -->
-      <span class="gt-inline-block gt-separator" ng-if="activeNavbarItem === 'agentConfig'">
+      <span class="gt-inline-block gt-separator">
         |
       </span>
-      <span class="gt-inline-block" ng-if="activeNavbarItem === 'agentConfig'">
+      <span class="gt-inline-block">
         Configuration
       </span>
     </div>
   </div>
 </div>
 <div class="gt-sidebar hidden-print">
-  <div class="panel panel-default"
-       ng-if="showConfigSidebarItems()">
+  <div class="panel panel-default">
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Transactions"
@@ -97,55 +95,6 @@
            gt-display="Advanced"
            gt-url="config/advanced{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/advanced'">
-      </div>
-    </ul>
-  </div>
-  <div class="panel panel-default"
-       ng-if="(activeNavbarItem === 'gears' || !layout.central) && layout.adminView">
-    <ul class="list-group">
-      <div gt-sidebar-item
-           gt-display="Agents"
-           gt-url="admin/agent-list"
-           gt-active="currentUrl() === 'admin/agent-list'"
-           gt-sub-active="currentUrl() === 'admin/agent'"
-           ng-if="layout.central">
-      </div>
-      <div gt-sidebar-item
-           gt-display="Users"
-           gt-url="admin/user-list"
-           gt-active="currentUrl() === 'admin/user-list'"
-           gt-sub-active="currentUrl() === 'admin/user'">
-      </div>
-      <div gt-sidebar-item
-           gt-display="Roles"
-           gt-url="admin/role-list"
-           gt-active="currentUrl() === 'admin/role-list'"
-           gt-sub-active="currentUrl() === 'admin/role'">
-      </div>
-      <div gt-sidebar-item
-           gt-display="Web"
-           gt-url="admin/web">
-      </div>
-      <div gt-sidebar-item
-           gt-display="Storage"
-           gt-url="admin/storage">
-      </div>
-      <div gt-sidebar-item
-           gt-display="SMTP"
-           gt-url="admin/smtp">
-      </div>
-      <div gt-sidebar-item
-           gt-display="LDAP"
-           gt-url="admin/ldap">
-      </div>
-    </ul>
-  </div>
-  <div class="panel panel-default"
-       ng-if="activeNavbarItem === 'gears' && layout.loggedIn && !layout.ldap">
-    <ul class="list-group">
-      <div gt-sidebar-item
-           gt-display="Change {{layout.adminView ? 'my' : ''}} password"
-           gt-url="change-password">
       </div>
     </ul>
   </div>

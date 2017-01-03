@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2016 the original author or authors.
+  Copyright 2015-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -24,10 +24,8 @@
           </span>
           <span class="gt-large-caret"></span>
         </a>
-        <!-- z-index 1200 to keep dropdown on top of error overlay (which is at z-index 1000) -->
         <ul class="dropdown-menu"
-            role="menu"
-            style="z-index: 1200;">
+            role="menu">
           <li ng-repeat="last in rangeSelections">
             <a role="menuitem" tabindex="-1" ng-href="{{currentTabUrl()}}{{headerRangeQueryString(last)}}"
                ng-click="updateLast(last, $event)">

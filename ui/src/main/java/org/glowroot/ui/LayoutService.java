@@ -130,7 +130,6 @@ class LayoutService {
                 .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
                 .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
                 .build());
-        showNavbarConfig = checkNotNull(permissions.config()).view();
 
         return createLayout(authentication, agentRollups, showNavbarTransaction, showNavbarError,
                 showNavbarJvm, showNavbarConfig);

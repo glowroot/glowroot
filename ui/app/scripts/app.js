@@ -178,14 +178,6 @@ glowroot.run([
       return agentRollup.defaultDisplayedTransactionType;
     };
 
-    $rootScope.showSignIn = function () {
-      return $rootScope.layout && !$rootScope.layout.loggedIn && $rootScope.layout.loginEnabled;
-    };
-
-    $rootScope.showSignOut = function () {
-      return $rootScope.layout && $rootScope.layout.loggedIn;
-    };
-
     $rootScope.goToLogin = function (event) {
       if (!event.ctrlKey) {
         login.goToLogin();

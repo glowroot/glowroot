@@ -69,6 +69,7 @@ import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.LdapAuthentication.AuthenticationException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -107,6 +108,9 @@ class AdminJsonService {
     @POST(path = "/backend/change-password", permission = "")
     String changePassword(@BindRequest ChangePassword changePassword,
             @BindAuthentication Authentication authentication) throws Exception {
+        if (authentication.anonymous()) {
+            throw new JsonServiceException(BAD_REQUEST, "cannot change anonymous password");
+        }
         UserConfig userConfig = configRepository
                 .getUserConfigCaseInsensitive(authentication.caseAmbiguousUsername());
         checkNotNull(userConfig, "user no longer exists");

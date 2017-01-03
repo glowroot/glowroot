@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,8 +170,13 @@ body {
   font-size: 32px;
 }
 
-.gt-header-page-name li a:hover {
+.gt-header-page-name li a:hover, ul.nav li.dropdown > ul.dropdown-menu > li a:hover {
   background-color: #edeae4;
+}
+
+.bootstrap-select .dropdown-menu {
+  // override default dropdown font-size 16px
+  font-size: 14px;
 }
 
 .gt-header-page-name .dropdown-toggle {
@@ -218,6 +223,17 @@ body {
 
 .nav.navbar-nav a {
   font-size: 16px;
+}
+
+.navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
+  // overriding default darken(@navbar-inverse-bg, 5%)
+  background-color: darken(@navbar-inverse-bg, 2%);
+}
+
+.navbar-inverse .navbar-nav > .active.open > a, .navbar-inverse .navbar-nav > .active.open > a:hover, .navbar-inverse .navbar-nav > .active.open > a:focus {
+  // re-overriding above back to default darken(@navbar-inverse-bg, 5%)
+  // so that when clicking on navbar dropdown (gear icon) when it is already active will not change background color
+  background-color: darken(@navbar-inverse-bg, 5%);
 }
 
 .container {

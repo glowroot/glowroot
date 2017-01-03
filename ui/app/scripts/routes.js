@@ -98,8 +98,13 @@ glowroot.config([
         }
       } else if ($rootScope.layout.showNavbarConfig) {
         return 'config/transaction';
-      } else {
+      } else if ($rootScope.layout.adminView) {
         return 'admin/agent-list';
+      } else if ($rootScope.layout.loggedIn && !$rootScope.layout.ldap) {
+        return 'profile/change-password';
+      } else {
+        // give up
+        return 'transaction/average';
       }
     });
     $stateProvider.state('transaction', {
@@ -470,8 +475,8 @@ glowroot.config([
     });
     $stateProvider.state('admin', {
       url: '/admin',
-      templateUrl: 'views/config.html',
-      controller: 'ConfigCtrl',
+      templateUrl: 'views/admin.html',
+      controller: 'AdminCtrl',
       resolve: {
         waitForLayout: waitForLayout(false)
       }
@@ -526,10 +531,18 @@ glowroot.config([
       templateUrl: 'views/admin/ldap.html',
       controller: 'AdminLdapCtrl'
     });
-    $stateProvider.state('admin.changePassword', {
-      url: '^/change-password',
-      templateUrl: 'views/change-password.html',
-      controller: 'ChangePasswordCtrl'
+    $stateProvider.state('profile', {
+      url: '/profile',
+      templateUrl: 'views/profile.html',
+      controller: 'ProfileCtrl',
+      resolve: {
+        waitForLayout: waitForLayout(false)
+      }
+    });
+    $stateProvider.state('profile.changePassword', {
+      url: '/change-password',
+      templateUrl: 'views/profile/change-password.html',
+      controller: 'ProfileChangePasswordCtrl'
     });
     $stateProvider.state('login', {
       url: '/login',

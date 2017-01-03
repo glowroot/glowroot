@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,10 +117,10 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/transaction/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/change-password$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/profile/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/backend/layout$"), layoutHttpService);
         // export service is not bound under /backend since the export url is visible to users

@@ -1,0 +1,82 @@
+<!--
+  Copyright 2017 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="gt-header" style="margin-bottom: 6px;">
+  <div class="gt-header-page-name">
+      <span class="gt-inline-block">
+        Administration
+      </span>
+  </div>
+</div>
+<div class="gt-sidebar hidden-print">
+  <div class="panel panel-default">
+    <ul class="list-group">
+      <div gt-sidebar-item
+           gt-display="Agents"
+           gt-url="admin/agent-list"
+           gt-active="currentUrl() === 'admin/agent-list'"
+           gt-sub-active="currentUrl() === 'admin/agent'"
+           ng-if="layout.central">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Users"
+           gt-url="admin/user-list"
+           gt-active="currentUrl() === 'admin/user-list'"
+           gt-sub-active="currentUrl() === 'admin/user'">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Roles"
+           gt-url="admin/role-list"
+           gt-active="currentUrl() === 'admin/role-list'"
+           gt-sub-active="currentUrl() === 'admin/role'">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Web"
+           gt-url="admin/web">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Storage"
+           gt-url="admin/storage">
+      </div>
+      <div gt-sidebar-item
+           gt-display="SMTP"
+           gt-url="admin/smtp">
+      </div>
+      <div gt-sidebar-item
+           gt-display="LDAP"
+           gt-url="admin/ldap">
+      </div>
+    </ul>
+  </div>
+</div>
+<div ui-view class="gt-main-column">
+</div>
+<div class="modal" id="confirmationModal" tabindex="-1">
+  <div class="modal-dialog"
+       style="max-width: 500px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3></h3>
+      </div>
+      <div class="modal-body">
+        <p></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" id="confirmationModalButton">Yes</button>
+        <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>

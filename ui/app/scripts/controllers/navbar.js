@@ -53,7 +53,7 @@ glowroot.controller('NavbarCtrl', [
     };
 
     $scope.configQueryString = function () {
-      if ($scope.agentPermissions && $scope.agentPermissions.config.view) {
+      if ($scope.layout.central && $scope.agentPermissions && $scope.agentPermissions.config.view) {
         return '?agent-id=' + encodeURIComponent($scope.agentId || $scope.agentRollupId);
       } else {
         return '';

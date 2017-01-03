@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,48 +16,16 @@
 
 /* global glowroot */
 
-glowroot.controller('ConfigCtrl', [
+glowroot.controller('AdminCtrl', [
   '$scope',
   '$location',
   function ($scope, $location) {
     // \u00b7 is &middot;
-    document.title = 'Configuration \u00b7 Glowroot';
+    document.title = 'Administration \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'gears';
 
-    $scope.hideAgentRollupDropdown = function () {
-      if (!$scope.layout) {
-        // this is ok, under grunt serve and layout hasn't loaded yet
-        return true;
-      }
-      return $scope.layout.agentRollups.length === 1;
-    };
-
-    $scope.hideMainContent = function () {
-      return $scope.layout.central && !$scope.agentRollupId && !$scope.agentId;
-    };
-
-    $scope.percentileSuffix = function (percentile) {
-      var text = String(percentile);
-      if (text === '11' || /\.11$/.test(text)) {
-        return 'th';
-      }
-      if (text === '12' || /\.12$/.test(text)) {
-        return 'th';
-      }
-      if (text === '13' || /\.13$/.test(text)) {
-        return 'th';
-      }
-      var lastChar = text.charAt(text.length - 1);
-      if (lastChar === '1') {
-        return 'st';
-      }
-      if (lastChar === '2') {
-        return 'nd';
-      }
-      if (lastChar === '3') {
-        return 'rd';
-      }
-      return 'th';
+    $scope.isAnonymous = function () {
+      return $scope.layout.username && $scope.layout.username.toLowerCase() === 'anonymous';
     };
 
     $scope.currentUrl = function () {

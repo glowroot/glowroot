@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.util.Utils;
 
+import static org.openqa.selenium.By.id;
 import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.xpath;
 
@@ -52,23 +53,31 @@ class GlobalNavbar {
     }
 
     WebElement getConfigLink() {
+        getNavbarLink(driver, id("gtGearsMenuToggle")).click();
+        WebElement gearsMenu = Utils.withWait(driver, id("gtGearsMenu"));
         if (central) {
-            return getNavbarLink(driver, linkText("Config"));
+            return Utils.withWait(driver, gearsMenu, linkText("Agent configuration"));
         } else {
-            return getNavbarLink(driver, xpath("//nav//a[@ng-href='config/transaction']"));
+            return Utils.withWait(driver, gearsMenu, linkText("Configuration"));
         }
     }
 
     WebElement getAdminConfigLink() {
-        if (central) {
-            return getNavbarLink(driver, xpath("//nav//a[@ng-href='admin/agent-list']"));
-        } else {
-            return getNavbarLink(driver, xpath("//nav//a[@ng-href='config/transaction']"));
-        }
+        getNavbarLink(driver, id("gtGearsMenuToggle")).click();
+        WebElement gearsMenu = Utils.withWait(driver, id("gtGearsMenu"));
+        return Utils.withWait(driver, gearsMenu, linkText("Administration"));
+    }
+
+    WebElement getChangeMyPasswordLink() {
+        getNavbarLink(driver, id("gtGearsMenuToggle")).click();
+        WebElement gearsMenu = Utils.withWait(driver, id("gtGearsMenu"));
+        return Utils.withWait(driver, gearsMenu, linkText("Change my password"));
     }
 
     WebElement getSignInLink() {
-        return getNavbarLink(driver, xpath("//a[@href='login']"));
+        getNavbarLink(driver, id("gtGearsMenuToggle")).click();
+        WebElement gearsMenu = Utils.withWait(driver, id("gtGearsMenu"));
+        return Utils.withWait(driver, gearsMenu, linkText("Login"));
     }
 
     WebElement getSignOutLink() {
