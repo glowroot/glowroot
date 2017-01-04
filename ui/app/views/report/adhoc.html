@@ -37,7 +37,7 @@
                that start with '$', because angular silently ignores object keys starting with '$' -->
           <select multiple
                   ng-model="report.agentRollupIds"
-                  ng-options="agentRollup.id as agentRollup.indentedDisplay for agentRollup in layout.agentRollupValues"
+                  ng-options="agentRollup.id as agentRollup.indentedDisplay for agentRollup in agentRollups"
                   class="form-control"
                   id="reportAgentRollupIds"
                   style="width: auto; min-width: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
@@ -53,11 +53,13 @@
           <select ng-model="report.metricId"
                   class="form-control"
                   id="reportMetric"
-                  style="width: 100%; max-width: 25em;">
-            <option value=""></option>
+                  style="width: auto;">
+            <option value="" ng-disabled="report.metricId"></option>
             <option ng-repeat="metric in metrics"
                     value="{{metric.id}}"
-                    ng-selected="metric.id === report.metricId">
+                    ng-disabled="metric.disabled"
+                    ng-selected="metric.id === report.metricId"
+                    ng-style="{'font-weight': metric.heading ? 'bold' : 'normal'}">
               {{metric.display}}
             </option>
           </select>
@@ -70,9 +72,10 @@
            gt-pattern="pattern.percentile"
            gt-width="7em"
            gt-addon="percentile"
-           ng-if="report.metricId === 'response-time-percentile'">
+           ng-if="report.metricId === 'transaction:response-time-percentile'">
       </div>
-      <div class="form-group">
+      <div class="form-group"
+           ng-if="report.metricId.indexOf('transaction:') === 0">
         <label class="col-lg-3 control-label"
                for="reportTransactionType">
           Transaction type
@@ -133,7 +136,7 @@
                   ng-options="timeZoneId for timeZoneId in layout.timeZoneIds"
                   class="form-control"
                   id="reportTimeZone"
-                  style="width: 100%; max-width: 25em;">
+                  style="width: 100%; width: auto;">
           </select>
         </div>
       </div>
@@ -169,7 +172,7 @@
         </div>
       </div>
       <div class="legend" id="chartLegend"
-           ng-hide="chartNoData"
+           ng-hide="chartNoData || !layout.central"
            style="text-align: center; margin-top: 10px; width: 100%;">
         <div class="gt-inline-block" style="max-width: 600px;">
           <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
@@ -186,10 +189,10 @@
       </div>
       <table class="table"
              style="margin-top: 50px;"
-             ng-if="seriesLabels">
+             ng-if="seriesLabels && !chartNoData">
         <thead>
         <tr>
-          <th></th>
+          <th ng-if="layout.central"></th>
           <th ng-repeat="xval in allXvals" style="text-align: right;">
             <a ng-click="sort(xval)"
                class="gt-sortable-table-header"
@@ -212,7 +215,7 @@
         </thead>
         <tbody>
         <tr ng-repeat="tableRow in tableRows | orderBy:[sortAttr,'-overall']:sortAsc">
-          <td>{{tableRow.label}}</td>
+          <td ng-if="layout.central">{{tableRow.label}}</td>
           <td ng-repeat="xval in allXvals" style="text-align: right;">
             <a ng-href="{{drillDownLink(tableRow.agentRollupId, xval)}}"
                ng-if="tableRow[xval] !== NEGATIVE_INFINITY">

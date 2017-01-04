@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -123,48 +124,11 @@ class GaugeValueJsonService {
         orderedNonRolledUpGaugeValues.addAll(gaugeValueRepository.readGaugeValues(agentRollupId,
                 gaugeName, nonRolledUpFrom, to, 0));
         gaugeValues = Lists.newArrayList(gaugeValues);
-        gaugeValues
-                .addAll(rollUpGaugeValues(orderedNonRolledUpGaugeValues, gaugeName, rollupLevel));
-        return gaugeValues;
-    }
-
-    private List<GaugeValue> rollUpGaugeValues(List<GaugeValue> orderedNonRolledUpGaugeValues,
-            String gaugeName, int rollupLevel) {
         long fixedIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
-        List<GaugeValue> rolledUpGaugeValues = Lists.newArrayList();
-        double currTotal = 0;
-        long currWeight = 0;
-        long currRollupCaptureTime = Long.MIN_VALUE;
-        for (GaugeValue nonRolledUpGaugeValue : orderedNonRolledUpGaugeValues) {
-            long captureTime = nonRolledUpGaugeValue.getCaptureTime();
-            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, fixedIntervalMillis);
-            if (rollupCaptureTime != currRollupCaptureTime && currWeight > 0) {
-                rolledUpGaugeValues.add(GaugeValue.newBuilder()
-                        .setGaugeName(gaugeName)
-                        .setCaptureTime(currRollupCaptureTime)
-                        .setValue(currTotal / currWeight)
-                        .setWeight(currWeight)
-                        .build());
-                currTotal = 0;
-                currWeight = 0;
-            }
-            currRollupCaptureTime = rollupCaptureTime;
-            currTotal += nonRolledUpGaugeValue.getValue() * nonRolledUpGaugeValue.getWeight();
-            currWeight += nonRolledUpGaugeValue.getWeight();
-        }
-        if (currWeight > 0) {
-            // roll up final one
-            long lastCaptureTime = orderedNonRolledUpGaugeValues
-                    .get(orderedNonRolledUpGaugeValues.size() - 1).getCaptureTime();
-            rolledUpGaugeValues.add(GaugeValue.newBuilder()
-                    .setGaugeName(gaugeName)
-                    .setCaptureTime(lastCaptureTime)
-                    .setValue(currTotal / currWeight)
-                    .setWeight(currWeight)
-                    .build());
-        }
-        return rolledUpGaugeValues;
+        gaugeValues.addAll(rollUpGaugeValues(orderedNonRolledUpGaugeValues, gaugeName,
+                new RollupCaptureTimeFn(fixedIntervalMillis)));
+        return gaugeValues;
     }
 
     private void syncManualRollupCaptureTimes(Map<String, List<GaugeValue>> map, int rollupLevel) {
@@ -212,6 +176,43 @@ class GaugeValueJsonService {
         }
     }
 
+    static List<GaugeValue> rollUpGaugeValues(List<GaugeValue> orderedNonRolledUpGaugeValues,
+            String gaugeName, Function<Long, Long> rollupCaptureTimeFn) {
+        List<GaugeValue> rolledUpGaugeValues = Lists.newArrayList();
+        double currTotal = 0;
+        long currWeight = 0;
+        long currRollupCaptureTime = Long.MIN_VALUE;
+        for (GaugeValue nonRolledUpGaugeValue : orderedNonRolledUpGaugeValues) {
+            long captureTime = nonRolledUpGaugeValue.getCaptureTime();
+            long rollupCaptureTime = rollupCaptureTimeFn.apply(captureTime);
+            if (rollupCaptureTime != currRollupCaptureTime && currWeight > 0) {
+                rolledUpGaugeValues.add(GaugeValue.newBuilder()
+                        .setGaugeName(gaugeName)
+                        .setCaptureTime(currRollupCaptureTime)
+                        .setValue(currTotal / currWeight)
+                        .setWeight(currWeight)
+                        .build());
+                currTotal = 0;
+                currWeight = 0;
+            }
+            currRollupCaptureTime = rollupCaptureTime;
+            currTotal += nonRolledUpGaugeValue.getValue() * nonRolledUpGaugeValue.getWeight();
+            currWeight += nonRolledUpGaugeValue.getWeight();
+        }
+        if (currWeight > 0) {
+            // roll up final one
+            long lastCaptureTime = orderedNonRolledUpGaugeValues
+                    .get(orderedNonRolledUpGaugeValues.size() - 1).getCaptureTime();
+            rolledUpGaugeValues.add(GaugeValue.newBuilder()
+                    .setGaugeName(gaugeName)
+                    .setCaptureTime(lastCaptureTime)
+                    .setValue(currTotal / currWeight)
+                    .setWeight(currWeight)
+                    .build());
+        }
+        return rolledUpGaugeValues;
+    }
+
     private static DataSeries convertToDataSeriesWithGaps(String dataSeriesName,
             List<GaugeValue> gaugeValues, double gapMillis) {
         DataSeries dataSeries = new DataSeries(dataSeriesName);
@@ -234,10 +235,24 @@ class GaugeValueJsonService {
         ImmutableList<String> gaugeNames();
     }
 
-    private static class GaugeOrdering extends Ordering<Gauge> {
+    static class GaugeOrdering extends Ordering<Gauge> {
         @Override
         public int compare(Gauge left, Gauge right) {
             return left.display().compareToIgnoreCase(right.display());
+        }
+    }
+
+    private static class RollupCaptureTimeFn implements Function<Long, Long> {
+
+        private final long fixedIntervalMillis;
+
+        private RollupCaptureTimeFn(long fixedIntervalMillis) {
+            this.fixedIntervalMillis = fixedIntervalMillis;
+        }
+
+        @Override
+        public Long apply(Long captureTime) {
+            return Utils.getRollupCaptureTime(captureTime, fixedIntervalMillis);
         }
     }
 }

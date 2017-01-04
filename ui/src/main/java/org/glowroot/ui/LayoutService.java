@@ -101,6 +101,10 @@ class LayoutService {
         boolean showNavbarTransaction = permissions.transaction().hasSomeAccess();
         boolean showNavbarError = permissions.error().hasSomeAccess();
         boolean showNavbarJvm = permissions.jvm().hasSomeAccess();
+        // for now (for simplicity) reporting requires permission for ALL reportable metrics
+        // (currently transaction:overview and jvm:gauges)
+        boolean showNavbarReport = permissions.transaction().overview()
+                && permissions.jvm().gauges();
         boolean showNavbarConfig = permissions.config().view();
         // a couple of special cases for embedded ui
         UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
@@ -132,7 +136,7 @@ class LayoutService {
                 .build());
 
         return createLayout(authentication, agentRollups, showNavbarTransaction, showNavbarError,
-                showNavbarJvm, showNavbarConfig);
+                showNavbarJvm, showNavbarReport, showNavbarConfig);
     }
 
     private Layout buildLayoutCentral(Authentication authentication) throws Exception {
@@ -155,6 +159,7 @@ class LayoutService {
                 .showNavbarTransaction(false)
                 .showNavbarError(false)
                 .showNavbarJvm(false)
+                .showNavbarReport(false)
                 .showNavbarConfig(false)
                 .adminView(false)
                 .adminEdit(false)
@@ -167,7 +172,8 @@ class LayoutService {
 
     private ImmutableLayout createLayout(Authentication authentication,
             Map<String, AgentRollupLayout> agentRollups, boolean showNavbarTransaction,
-            boolean showNavbarError, boolean showNavbarJvm, boolean showNavbarConfig) {
+            boolean showNavbarError, boolean showNavbarJvm, boolean showNavbarReport,
+            boolean showNavbarConfig) {
         List<Long> rollupExpirationMillis = Lists.newArrayList();
         for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
             rollupExpirationMillis.add(HOURS.toMillis(hours));
@@ -186,6 +192,7 @@ class LayoutService {
                 .showNavbarTransaction(showNavbarTransaction)
                 .showNavbarError(showNavbarError)
                 .showNavbarJvm(showNavbarJvm)
+                .showNavbarReport(showNavbarReport)
                 .showNavbarConfig(showNavbarConfig)
                 .adminView(authentication.isAdminPermitted("admin:view"))
                 .adminEdit(authentication.isAdminPermitted("admin:edit"))
@@ -297,6 +304,7 @@ class LayoutService {
         private boolean showNavbarTransaction = false;
         private boolean showNavbarError = false;
         private boolean showNavbarJvm = false;
+        private boolean showNavbarReport = false;
         private boolean showNavbarConfig = false;
 
         private CentralLayoutBuilder(Authentication authentication) throws Exception {
@@ -310,6 +318,9 @@ class LayoutService {
             showNavbarTransaction = permissions.transaction().hasSomeAccess();
             showNavbarError = permissions.error().hasSomeAccess();
             showNavbarJvm = permissions.jvm().hasSomeAccess();
+            // for now (for simplicity) reporting requires permission for ALL reportable metrics
+            // (currently transaction:overview and jvm:gauges)
+            showNavbarReport = permissions.transaction().overview() && permissions.jvm().gauges();
             showNavbarConfig = permissions.config().view();
         }
 
@@ -320,6 +331,10 @@ class LayoutService {
                     showNavbarTransaction || permissions.transaction().hasSomeAccess();
             showNavbarError = showNavbarError || permissions.error().hasSomeAccess();
             showNavbarJvm = showNavbarJvm || permissions.jvm().hasSomeAccess();
+            // for now (for simplicity) reporting requires permission for ALL reportable metrics
+            // (currently transaction:overview and jvm:gauges)
+            showNavbarReport = showNavbarReport || (permissions.transaction().overview()
+                    && permissions.jvm().gauges());
             showNavbarConfig = showNavbarConfig || permissions.config().view();
             UiConfig uiConfig = configRepository.getUiConfig(agentRollup.id());
             String defaultDisplayedTransactionType;
@@ -362,7 +377,7 @@ class LayoutService {
         private ImmutableLayout build(Authentication authentication) {
             if (hasSomeAccess) {
                 return createLayout(authentication, agentRollups, showNavbarTransaction,
-                        showNavbarError, showNavbarJvm, showNavbarConfig);
+                        showNavbarError, showNavbarJvm, showNavbarReport, showNavbarConfig);
             } else {
                 return createNoAccessLayout(authentication);
             }
@@ -392,6 +407,7 @@ class LayoutService {
         abstract boolean showNavbarTransaction();
         abstract boolean showNavbarError();
         abstract boolean showNavbarJvm();
+        abstract boolean showNavbarReport();
         abstract boolean showNavbarConfig();
         abstract boolean adminView();
         abstract boolean adminEdit();

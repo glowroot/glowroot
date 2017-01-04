@@ -96,7 +96,7 @@ public class UiModule {
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);
         ReportJsonService reportJsonService =
-                new ReportJsonService(aggregateRepository, agentRepository);
+                new ReportJsonService(aggregateRepository, agentRepository, gaugeValueRepository);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository);
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, agentRepository, configRepository);
