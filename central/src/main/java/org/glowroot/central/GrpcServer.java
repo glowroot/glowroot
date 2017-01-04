@@ -290,7 +290,8 @@ class GrpcServer {
                     return;
                 }
             }
-            checkTransactionAlerts(agentId, captureTime);
+            String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+            checkTransactionAlerts(agentId, agentDisplay, captureTime);
             responseObserver.onNext(AggregateResponseMessage.newBuilder()
                     .setNextDelayMillis(getNextDelayMillis())
                     .build());
@@ -320,8 +321,9 @@ class GrpcServer {
                 responseObserver.onError(t);
                 return;
             }
-            checkGaugeAlerts(request.getAgentId(), maxCaptureTime);
-            clearHeartbeatAlerts(request.getAgentId());
+            String agentDisplay = agentDao.readAgentRollupDisplay(request.getAgentId());
+            checkGaugeAlerts(request.getAgentId(), agentDisplay, maxCaptureTime);
+            clearHeartbeatAlerts(request.getAgentId(), agentDisplay);
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -422,7 +424,7 @@ class GrpcServer {
             responseObserver.onCompleted();
         }
 
-        private void checkTransactionAlerts(String agentId, long captureTime) {
+        private void checkTransactionAlerts(String agentId, String agentDisplay, long captureTime) {
             SmtpConfig smtpConfig = configRepository.getSmtpConfig();
             if (smtpConfig.host().isEmpty()) {
                 return;
@@ -449,7 +451,8 @@ class GrpcServer {
                 private void runInternal() throws InterruptedException {
                     for (AlertConfig alertConfig : alertConfigs) {
                         try {
-                            checkTransactionAlert(agentId, alertConfig, captureTime, smtpConfig);
+                            checkTransactionAlert(agentId, agentDisplay, alertConfig, captureTime,
+                                    smtpConfig);
                         } catch (InterruptedException e) {
                             // shutdown requested
                             throw e;
@@ -461,7 +464,7 @@ class GrpcServer {
             });
         }
 
-        private void checkGaugeAlerts(String agentId, long captureTime) {
+        private void checkGaugeAlerts(String agentId, String agentDisplay, long captureTime) {
             SmtpConfig smtpConfig = configRepository.getSmtpConfig();
             if (smtpConfig.host().isEmpty()) {
                 return;
@@ -488,7 +491,8 @@ class GrpcServer {
                 private void runInternal() throws InterruptedException {
                     for (AlertConfig alertConfig : alertConfigs) {
                         try {
-                            checkGaugeAlert(agentId, alertConfig, captureTime, smtpConfig);
+                            checkGaugeAlert(agentId, agentDisplay, alertConfig, captureTime,
+                                    smtpConfig);
                         } catch (InterruptedException e) {
                             // shutdown requested
                             throw e;
@@ -500,7 +504,7 @@ class GrpcServer {
             });
         }
 
-        private void clearHeartbeatAlerts(String agentId) {
+        private void clearHeartbeatAlerts(String agentId, String agentDisplay) {
             SmtpConfig smtpConfig = configRepository.getSmtpConfig();
             if (smtpConfig.host().isEmpty()) {
                 return;
@@ -527,7 +531,7 @@ class GrpcServer {
                 private void runInternal() throws InterruptedException {
                     for (AlertConfig alertConfig : alertConfigs) {
                         try {
-                            checkHeartbeatAlert(agentId, alertConfig, smtpConfig);
+                            checkHeartbeatAlert(agentId, agentDisplay, alertConfig, smtpConfig);
                         } catch (InterruptedException e) {
                             // shutdown requested
                             throw e;
@@ -542,25 +546,28 @@ class GrpcServer {
         @Instrumentation.Transaction(transactionType = "Background",
                 transactionName = "Check transaction alert",
                 traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
-        private void checkTransactionAlert(String agentId, AlertConfig alertConfig,
-                long endTime, SmtpConfig smtpConfig) throws Exception {
-            alertingService.checkTransactionAlert(agentId, alertConfig, endTime, smtpConfig);
+        private void checkTransactionAlert(String agentId, String agentDisplay,
+                AlertConfig alertConfig, long endTime, SmtpConfig smtpConfig) throws Exception {
+            alertingService.checkTransactionAlert(agentId, agentDisplay, alertConfig, endTime,
+                    smtpConfig);
         }
 
         @Instrumentation.Transaction(transactionType = "Background",
                 transactionName = "Check gauge alert",
                 traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
-        private void checkGaugeAlert(String agentId, AlertConfig alertConfig, long endTime,
-                SmtpConfig smtpConfig) throws Exception {
-            alertingService.checkGaugeAlert(agentId, alertConfig, endTime, smtpConfig);
+        private void checkGaugeAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
+                long endTime, SmtpConfig smtpConfig) throws Exception {
+            alertingService.checkGaugeAlert(agentId, agentDisplay, alertConfig, endTime,
+                    smtpConfig);
         }
 
         @Instrumentation.Transaction(transactionType = "Background",
                 transactionName = "Check heartbeat alert",
                 traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
-        private void checkHeartbeatAlert(String agentId, AlertConfig alertConfig,
-                SmtpConfig smtpConfig) throws Exception {
-            alertingService.checkHeartbeatAlert(agentId, alertConfig, false, smtpConfig);
+        private void checkHeartbeatAlert(String agentId, String agentDisplay,
+                AlertConfig alertConfig, SmtpConfig smtpConfig) throws Exception {
+            alertingService.checkHeartbeatAlert(agentId, agentDisplay, alertConfig, false,
+                    smtpConfig);
         }
 
         private void log(Level level, String format, Object... arguments) {

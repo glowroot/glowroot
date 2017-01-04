@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ class CollectorImpl implements Collector {
     private static final Logger logger = LoggerFactory.getLogger(CollectorImpl.class);
 
     private static final String AGENT_ID = "";
+    private static final String AGENT_DISPLAY = "";
 
     private final AgentDao agentDao;
     private final AggregateDao aggregateDao;
@@ -75,8 +76,8 @@ class CollectorImpl implements Collector {
         }
         for (AlertConfig alertConfig : configRepository.getTransactionAlertConfigs(AGENT_ID)) {
             try {
-                alertingService.checkTransactionAlert(AGENT_ID, alertConfig, captureTime,
-                        smtpConfig);
+                alertingService.checkTransactionAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
+                        captureTime, smtpConfig);
             } catch (InterruptedException e) {
                 // shutdown request
                 throw e;
@@ -99,7 +100,8 @@ class CollectorImpl implements Collector {
         }
         for (AlertConfig alertConfig : configRepository.getGaugeAlertConfigs(AGENT_ID)) {
             try {
-                alertingService.checkGaugeAlert(AGENT_ID, alertConfig, maxCaptureTime, smtpConfig);
+                alertingService.checkGaugeAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
+                        maxCaptureTime, smtpConfig);
             } catch (InterruptedException e) {
                 // shutdown request
                 throw e;

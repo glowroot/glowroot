@@ -173,7 +173,7 @@ public class RollupService implements Runnable {
             checkTransactionAlerts(childAgentRollup);
         }
         try {
-            checkTransactionAlerts(agentRollup.id());
+            checkTransactionAlerts(agentRollup.id(), agentRollup.display());
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;
@@ -187,7 +187,7 @@ public class RollupService implements Runnable {
             checkGaugeAlerts(childAgentRollup);
         }
         try {
-            checkGaugeAlerts(agentRollup.id());
+            checkGaugeAlerts(agentRollup.id(), agentRollup.display());
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;
@@ -201,7 +201,7 @@ public class RollupService implements Runnable {
             checkHeartbeatAlerts(childAgentRollup);
         }
         try {
-            checkHeartbeatAlerts(agentRollup.id());
+            checkHeartbeatAlerts(agentRollup.id(), agentRollup.display());
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;
@@ -227,7 +227,8 @@ public class RollupService implements Runnable {
         }
     }
 
-    private void checkTransactionAlerts(String agentId) throws InterruptedException {
+    private void checkTransactionAlerts(String agentId, String agentDisplay)
+            throws InterruptedException {
         SmtpConfig smtpConfig = configRepository.getSmtpConfig();
         if (smtpConfig.host().isEmpty()) {
             return;
@@ -245,7 +246,7 @@ public class RollupService implements Runnable {
         long endTime = clock.currentTimeMillis();
         for (AlertConfig alertConfig : alertConfigs) {
             try {
-                checkTransactionAlert(agentId, alertConfig, endTime, smtpConfig);
+                checkTransactionAlert(agentId, agentDisplay, alertConfig, endTime, smtpConfig);
             } catch (InterruptedException e) {
                 // shutdown requested
                 throw e;
@@ -255,7 +256,7 @@ public class RollupService implements Runnable {
         }
     }
 
-    private void checkGaugeAlerts(String agentId) throws InterruptedException {
+    private void checkGaugeAlerts(String agentId, String agentDisplay) throws InterruptedException {
         SmtpConfig smtpConfig = configRepository.getSmtpConfig();
         if (smtpConfig.host().isEmpty()) {
             return;
@@ -273,7 +274,7 @@ public class RollupService implements Runnable {
         long endTime = clock.currentTimeMillis();
         for (AlertConfig alertConfig : alertConfigs) {
             try {
-                checkGaugeAlert(agentId, alertConfig, endTime, smtpConfig);
+                checkGaugeAlert(agentId, agentDisplay, alertConfig, endTime, smtpConfig);
             } catch (InterruptedException e) {
                 // shutdown requested
                 throw e;
@@ -283,7 +284,8 @@ public class RollupService implements Runnable {
         }
     }
 
-    private void checkHeartbeatAlerts(String agentId) throws InterruptedException {
+    private void checkHeartbeatAlerts(String agentId, String agentDisplay)
+            throws InterruptedException {
         SmtpConfig smtpConfig = configRepository.getSmtpConfig();
         if (smtpConfig.host().isEmpty()) {
             return;
@@ -301,7 +303,7 @@ public class RollupService implements Runnable {
         long endTime = clock.currentTimeMillis();
         for (AlertConfig alertConfig : alertConfigs) {
             try {
-                checkHeartbeatAlert(agentId, alertConfig, endTime, smtpConfig);
+                checkHeartbeatAlert(agentId, agentDisplay, alertConfig, endTime, smtpConfig);
             } catch (InterruptedException e) {
                 // shutdown requested
                 throw e;
@@ -314,27 +316,29 @@ public class RollupService implements Runnable {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check transaction alert",
             traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
-    private void checkTransactionAlert(String agentId, AlertConfig alertConfig,
+    private void checkTransactionAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
             long endTime, SmtpConfig smtpConfig) throws Exception {
-        alertingService.checkTransactionAlert(agentId, alertConfig, endTime, smtpConfig);
+        alertingService.checkTransactionAlert(agentId, agentDisplay, alertConfig, endTime,
+                smtpConfig);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check gauge alert",
             traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
-    private void checkGaugeAlert(String agentId, AlertConfig alertConfig, long endTime,
-            SmtpConfig smtpConfig) throws Exception {
-        alertingService.checkGaugeAlert(agentId, alertConfig, endTime, smtpConfig);
+    private void checkGaugeAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
+            long endTime, SmtpConfig smtpConfig) throws Exception {
+        alertingService.checkGaugeAlert(agentId, agentDisplay, alertConfig, endTime, smtpConfig);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check heartbeat alert",
             traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
-    private void checkHeartbeatAlert(String agentId, AlertConfig alertConfig, long endTime,
-            SmtpConfig smtpConfig) throws Exception {
+    private void checkHeartbeatAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
+            long endTime, SmtpConfig smtpConfig) throws Exception {
         long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
         boolean currentlyTriggered = !heartbeatDao.exists(agentId, startTime, endTime);
-        alertingService.checkHeartbeatAlert(agentId, alertConfig, currentlyTriggered, smtpConfig);
+        alertingService.checkHeartbeatAlert(agentId, agentDisplay, alertConfig, currentlyTriggered,
+                smtpConfig);
     }
 
     @VisibleForTesting
