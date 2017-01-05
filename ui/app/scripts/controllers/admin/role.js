@@ -93,7 +93,7 @@ glowroot.controller('AdminRoleCtrl', [
         for (var i = 0; i < agentRollup.depth; i++) {
           indent += '\u00a0\u00a0\u00a0\u00a0';
         }
-        agentRollup.display = indent + agentRollup.display;
+        agentRollup.indentedDisplay = indent + agentRollup.display;
       });
       $scope.allAgentRollups = data.allAgentRollups;
     }

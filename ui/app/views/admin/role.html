@@ -605,14 +605,24 @@
         <div class="col-lg-9 col-lg-offset-3">
           <div style="padding: 15px 0 10px;">
             <div ng-class="{'has-error': !permissionBlock.agentRollups.length}">
-              <select multiple
-                      class="form-control"
-                      ng-model="permissionBlock.agentRollups"
-                      ng-options="agentRollup.id as agentRollup.display for agentRollup in allAgentRollups"
-                      ng-required="true"
-                      ng-disabled="!layout.adminEdit"
-                      style="width: auto; min-width: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
-              </select>
+              <!-- using remove-selected="false" in order to preserve hierarchy when parent agent rollups are selected -->
+              <ui-select multiple
+                         ng-model="permissionBlock.agentRollups"
+                         theme="bootstrap"
+                         close-on-select="false"
+                         title="Choose agents"
+                         remove-selected="false"
+                         ng-required="true"
+                         ng-disabled="!layout.adminEdit"
+                         style="min-width: 200px; max-width: 650px;">
+                <ui-select-match placeholder="Select agents...">{{$item.display}}</ui-select-match>
+                <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
+                     that start with '$', because angular silently ignores object keys starting with '$' -->
+                <ui-select-choices
+                    repeat="agentRollup.id as agentRollup in allAgentRollups | filter: {display: $select.search}">
+                  <div ng-bind-html="agentRollup.indentedDisplay | highlight: $select.search"></div>
+                </ui-select-choices>
+              </ui-select>
             </div>
           </div>
           <div class="checkbox">
