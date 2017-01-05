@@ -77,7 +77,7 @@ case "$1" in
                fi
                ;;
 
-      "sonar") if [[ $SONAR_JDBC_URL && "$TRAVIS_PULL_REQUEST" == "false" ]]
+      "sonar") if [[ $SONAR_LOGIN && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
                  # need to skip shading when running jacoco, otherwise the bytecode changes done to
                  # the classes during shading will modify the jacoco class id and the sonar reports
@@ -160,12 +160,10 @@ case "$1" in
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-1.x \
                                       -B
-                 # the sonar.jdbc.password system property is set in the pom.xml using the
-                 # environment variable SONAR_DB_PASSWORD (instead of setting the system
+                 # the sonar.login system property is set in the pom.xml using the
+                 # environment variable SONAR_LOGIN (instead of setting the system
                  # property on the command line which which would make it visible to ps)
                  mvn clean verify sonar:sonar -pl !build/license-bundle,!build/checker-jdk6,!build/multi-lib-tests,!agent/benchmarks,!agent/ui-sandbox,!agent/dist-maven-plugin,!agent/dist \
-                                   -Dsonar.jdbc.url=$SONAR_JDBC_URL \
-                                   -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                    -Dsonar.host.url=$SONAR_HOST_URL \
                                    -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
                                    -Dsonar.jacoco.itReportPath=$PWD/jacoco-combined-it.exec \
