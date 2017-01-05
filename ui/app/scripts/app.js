@@ -23,7 +23,9 @@ var glowroot = angular.module('glowroot', [
   'ui.bootstrap.popover',
   'ui.bootstrap.typeahead',
   'ui.bootstrap.modal',
-  'ui.bootstrap.debounce'
+  'ui.bootstrap.debounce',
+  'ui.select',
+  'ngSanitize'
 ]);
 
 var Glowroot;

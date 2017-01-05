@@ -33,15 +33,22 @@
           Agents
         </label>
         <div class="col-lg-9">
-          <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
-               that start with '$', because angular silently ignores object keys starting with '$' -->
-          <select multiple
-                  ng-model="report.agentRollupIds"
-                  ng-options="agentRollup.id as agentRollup.indentedDisplay for agentRollup in agentRollups"
-                  class="form-control"
-                  id="reportAgentRollupIds"
-                  style="width: auto; min-width: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
-          </select>
+          <!-- using remove-selected="false" in order to preserve hierarchy when parent agent rollups are selected -->
+          <ui-select multiple
+                     ng-model="report.agentRollupIds"
+                     theme="bootstrap"
+                     close-on-select="false"
+                     style="min-width: 200px; max-width: 650px;"
+                     title="Choose agents"
+                     remove-selected="false">
+            <ui-select-match placeholder="Select agents...">{{$item.display}}</ui-select-match>
+            <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
+                 that start with '$', because angular silently ignores object keys starting with '$' -->
+            <ui-select-choices
+                repeat="agentRollup.id as agentRollup in agentRollups | filter: {display: $select.search}">
+              <div ng-bind-html="agentRollup.indentedDisplay | highlight: $select.search"></div>
+            </ui-select-choices>
+          </ui-select>
         </div>
       </div>
       <div class="form-group">

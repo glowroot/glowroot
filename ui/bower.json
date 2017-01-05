@@ -2,8 +2,10 @@
   "name": "glowroot",
   "dependencies": {
     "angular": "1.6.1",
+    "angular-sanitize": "1.6.1",
     "angular-ui-bootstrap": "2.4.0",
     "angular-ui-router": "0.3.2",
+    "angular-ui-select": "0.19.6",
     "bootstrap": "3.3.7",
     "bootstrap-select": "1.12.1",
     "d3-flame-graph": "trask/d3-flame-graph#glowroot-0.9.2",

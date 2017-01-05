@@ -471,6 +471,26 @@ hr.soften {
   color: @gt-blue;
 }
 
+select.form-control {
+  // override default 12px so that the left padding lines up with text inputs (e.g. adhoc report page)
+  padding-left: 8px !important;
+}
+
+.ui-select-multiple.ui-select-bootstrap {
+  // override default 3px
+  padding: 6px 6px 0 6px !important;
+}
+
+.ui-select-multiple.ui-select-bootstrap .ui-select-match-item {
+  // override default 3px
+  margin: 0 6px 6px 0 !important;
+}
+
+.ui-select-multiple.ui-select-bootstrap input.ui-select-search {
+  // override default 3px
+  margin-bottom: 6px !important;
+}
+
 @media screen and (min-width: @screen-lg-min) {
   .gt-query-text-column {
     // !important is needed to override normal td padding-right
@@ -504,9 +524,11 @@ hr.soften {
   .gt-response-time-chart-tools {
     margin-top: -20px;
   }
+
   .gt-everything-below-throughput-chart {
     padding: 0 40px;
   }
+
   .gt-everything-below-average-chart {
     padding: 0 20px;
   }
@@ -520,12 +542,15 @@ hr.soften {
   .gt-error-messages-chart-tools {
     margin-top: -22px;
   }
+
   .gt-everything-below-average-chart {
     padding: 0 40px;
   }
+
   .gt-everything-below-gauge-chart {
     padding: 0 20px;
   }
+
   .gt-flame-graph-link {
     margin-top: 0;
     margin-bottom: 0;
