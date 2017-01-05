@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@ public class PermissionParser {
 
     private String permission;
     private int index;
-    private boolean inAgentId;
-    private boolean inQuotedAgentId;
-    private final StringBuilder currAgentId = new StringBuilder();
-    private final List<String> agentIds = Lists.newArrayList();
+    private boolean inAgentRollupId;
+    private boolean inQuotedAgentRollupId;
+    private final StringBuilder currAgentRollupId = new StringBuilder();
+    private final List<String> agentRollupIds = Lists.newArrayList();
 
     public PermissionParser(String permission) {
         this.permission = permission;
@@ -48,13 +48,13 @@ public class PermissionParser {
         index = "agent:".length();
         while (index < permission.length()) {
             readNextChar();
-            if (!inAgentId && permission.charAt(index - 1) == ':') {
+            if (!inAgentRollupId && permission.charAt(index - 1) == ':') {
                 break;
             }
         }
-        if (inAgentId) {
+        if (inAgentRollupId) {
             // add the last value
-            agentIds.add(currAgentId.toString());
+            agentRollupIds.add(currAgentRollupId.toString());
         }
         if (permission.length() == index) {
             permission = "agent";
@@ -63,8 +63,8 @@ public class PermissionParser {
         }
     }
 
-    public List<String> getAgentIds() {
-        return agentIds;
+    public List<String> getAgentRollupIds() {
+        return agentRollupIds;
     }
 
     public String getPermission() {
@@ -77,23 +77,23 @@ public class PermissionParser {
             startValue(c);
         } else if (isEndOfValue(c)) {
             endValue();
-        } else if (inQuotedAgentId && c == '\\') {
-            currAgentId.append(permission.charAt(index++));
-        } else if (inAgentId) {
-            currAgentId.append(c);
+        } else if (inQuotedAgentRollupId && c == '\\') {
+            currAgentRollupId.append(permission.charAt(index++));
+        } else if (inAgentRollupId) {
+            currAgentRollupId.append(c);
         }
     }
 
     private boolean isStartOfValue(char c) {
-        return !inAgentId && c != ',' && c != ':';
+        return !inAgentRollupId && c != ',' && c != ':';
     }
 
     private void startValue(char c) {
-        inAgentId = true;
+        inAgentRollupId = true;
         if (c == '"') {
-            inQuotedAgentId = true;
+            inQuotedAgentRollupId = true;
         } else {
-            currAgentId.append(c);
+            currAgentRollupId.append(c);
         }
     }
 
@@ -102,31 +102,31 @@ public class PermissionParser {
     }
 
     private void endValue() {
-        agentIds.add(currAgentId.toString());
-        inAgentId = false;
-        inQuotedAgentId = false;
-        currAgentId.setLength(0);
+        agentRollupIds.add(currAgentRollupId.toString());
+        inAgentRollupId = false;
+        inQuotedAgentRollupId = false;
+        currAgentRollupId.setLength(0);
     }
 
     private boolean isEndOfQuotedValue(char c) {
-        return inQuotedAgentId && c == '"';
+        return inQuotedAgentRollupId && c == '"';
     }
 
     private boolean isEndOfNonQuotedValue(char c) {
-        return inAgentId && !inQuotedAgentId && (c == ',' || c == ':');
+        return inAgentRollupId && !inQuotedAgentRollupId && (c == ',' || c == ':');
     }
 
-    public static String quoteIfNecessaryAndJoin(List<String> agentIds) {
-        List<String> quotedIfNecessaryAgentIds = Lists.newArrayList();
-        for (String agentId : agentIds) {
-            if (agentId.indexOf(',') != -1 || agentId.indexOf(':') != -1) {
-                quotedIfNecessaryAgentIds
-                        .add("\"" + agentId.replace("\\", "\\\\").replace("\"", "\\\"") + "\"");
+    public static String quoteIfNecessaryAndJoin(List<String> agentRollupIds) {
+        List<String> quotedIfNecessaryAgentRollupIds = Lists.newArrayList();
+        for (String agentRollupId : agentRollupIds) {
+            if (agentRollupId.indexOf(',') != -1 || agentRollupId.indexOf(':') != -1) {
+                quotedIfNecessaryAgentRollupIds.add(
+                        "\"" + agentRollupId.replace("\\", "\\\\").replace("\"", "\\\"") + "\"");
             } else {
-                quotedIfNecessaryAgentIds.add(agentId);
+                quotedIfNecessaryAgentRollupIds.add(agentRollupId);
             }
         }
-        return Joiner.on(',').join(quotedIfNecessaryAgentIds);
+        return Joiner.on(',').join(quotedIfNecessaryAgentRollupIds);
     }
 
     public static boolean upgradeAgentPermissions(List<String> perms) {

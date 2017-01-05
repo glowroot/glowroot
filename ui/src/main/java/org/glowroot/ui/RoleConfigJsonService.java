@@ -219,7 +219,7 @@ class RoleConfigJsonService {
             }
             for (RolePermissionBlock permissionBlock : permissionBlocks()) {
                 String agentIds =
-                        PermissionParser.quoteIfNecessaryAndJoin(permissionBlock.agentRollups());
+                        PermissionParser.quoteIfNecessaryAndJoin(permissionBlock.agentRollupIds());
                 for (String permission : permissionBlock.permissions()) {
                     builder.addPermissions(
                             "agent:" + agentIds + ":" + permission.substring("agent:".length()));
@@ -237,13 +237,13 @@ class RoleConfigJsonService {
                     if (permission.startsWith("agent:")) {
                         PermissionParser parser = new PermissionParser(permission);
                         parser.parse();
-                        if (parser.getAgentIds().size() == 1
-                                && parser.getAgentIds().get(0).equals("*")) {
+                        if (parser.getAgentRollupIds().size() == 1
+                                && parser.getAgentRollupIds().get(0).equals("*")) {
                             builder.addPermissions(parser.getPermission());
                         } else {
                             // sorting in order to combine agent:a,b:... and agent:b,a:...
                             List<String> agentIds =
-                                    Ordering.natural().sortedCopy(parser.getAgentIds());
+                                    Ordering.natural().sortedCopy(parser.getAgentRollupIds());
                             permissionBlocks.put(agentIds, parser.getPermission());
                         }
                     } else {
@@ -253,7 +253,7 @@ class RoleConfigJsonService {
                 for (Entry<List<String>, Collection<String>> entry : permissionBlocks.asMap()
                         .entrySet()) {
                     builder.addPermissionBlocks(ImmutableRolePermissionBlock.builder()
-                            .addAllAgentRollups(entry.getKey())
+                            .addAllAgentRollupIds(entry.getKey())
                             .addAllPermissions(entry.getValue())
                             .build());
                 }
@@ -267,7 +267,7 @@ class RoleConfigJsonService {
 
     @Value.Immutable
     interface RolePermissionBlock {
-        ImmutableList<String> agentRollups();
+        ImmutableList<String> agentRollupIds();
         ImmutableList<String> permissions();
     }
 }

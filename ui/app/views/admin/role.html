@@ -604,10 +604,10 @@
         <legend style="margin-bottom: 5px;">Agent specific permission block</legend>
         <div class="col-lg-9 col-lg-offset-3">
           <div style="padding: 15px 0 10px;">
-            <div ng-class="{'has-error': !permissionBlock.agentRollups.length}">
+            <div ng-class="{'has-error': !permissionBlock.agentRollupIds.length}">
               <!-- using remove-selected="false" in order to preserve hierarchy when parent agent rollups are selected -->
               <ui-select multiple
-                         ng-model="permissionBlock.agentRollups"
+                         ng-model="permissionBlock.agentRollupIds"
                          theme="bootstrap"
                          close-on-select="false"
                          title="Choose agents"

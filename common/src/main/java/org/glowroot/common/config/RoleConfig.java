@@ -74,7 +74,7 @@ public abstract class RoleConfig {
             PermissionParser parser = new PermissionParser(permission);
             parser.parse();
             return ImmutableSimplePermission.builder()
-                    .addAllAgentIds(parser.getAgentIds())
+                    .addAllAgentIds(parser.getAgentRollupIds())
                     .addAllParts(Splitter.on(':').splitToList(parser.getPermission()))
                     .build();
         }

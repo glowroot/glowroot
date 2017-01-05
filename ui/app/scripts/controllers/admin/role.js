@@ -37,9 +37,9 @@ glowroot.controller('AdminRoleCtrl', [
       var permissionBlock;
       for (i = 0; i < data.config.permissionBlocks.length; i++) {
         permissionBlock = data.config.permissionBlocks[i];
-        permissionBlock.agentRollups.sort();
+        permissionBlock.agentRollupIds.sort();
         permissionBlock.permissions.sort();
-        if (permissionBlock.agentRollups.length === 1 && permissionBlock.agentRollups[0] === '*') {
+        if (permissionBlock.agentRollupIds.length === 1 && permissionBlock.agentRollupIds[0] === '*') {
           // need to put '*' (all agent config) first, to avoid hasChanges()
           data.config.permissionBlocks.splice(i, 1);
           data.config.permissionBlocks.unshift(permissionBlock);
@@ -82,7 +82,7 @@ glowroot.controller('AdminRoleCtrl', [
       });
       angular.forEach(data.config.permissionBlocks, function (configPermissionBlock) {
         var permissionBlock = newPermissionBlock();
-        permissionBlock.agentRollups = configPermissionBlock.agentRollups;
+        permissionBlock.agentRollupIds = configPermissionBlock.agentRollupIds;
         $scope.page.permissionBlocks.push(permissionBlock);
         angular.forEach(configPermissionBlock.permissions, function (permission) {
           populatePermissionBlock(permissionBlock, permission);
@@ -334,13 +334,13 @@ glowroot.controller('AdminRoleCtrl', [
       $scope.config.permissionBlocks = [];
       angular.forEach($scope.page.permissionBlocks, function (permissionBlock) {
         var configPermissionBlock = {
-          agentRollups: permissionBlock.agentRollups,
+          agentRollupIds: permissionBlock.agentRollupIds,
           permissions: []
         };
         cascadeInsidePermissionsObj(permissionBlock);
         configPermissionBlock.permissions = permissionsObjToList(permissionBlock);
         // need to sort to preserve original (sorted) ordering and avoid hasChanges()
-        configPermissionBlock.agentRollups.sort();
+        configPermissionBlock.agentRollupIds.sort();
         configPermissionBlock.permissions.sort();
         $scope.config.permissionBlocks.push(configPermissionBlock);
       });
@@ -390,7 +390,7 @@ glowroot.controller('AdminRoleCtrl', [
 
     $scope.addPermissionBlock = function () {
       var permissionBlock = newPermissionBlock();
-      permissionBlock.agentRollups = [];
+      permissionBlock.agentRollupIds = [];
       $scope.page.permissionBlocks.push(permissionBlock);
     };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).containsExactly("*");
+        assertThat(parser.getAgentRollupIds()).containsExactly("*");
         assertThat(parser.getPermission()).isEqualTo("agent:transaction");
     }
 
@@ -39,7 +39,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).containsExactly("abc");
+        assertThat(parser.getAgentRollupIds()).containsExactly("abc");
         assertThat(parser.getPermission()).isEqualTo("agent:transaction");
     }
 
@@ -50,7 +50,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).containsExactly("abc", "mno");
+        assertThat(parser.getAgentRollupIds()).containsExactly("abc", "mno");
         assertThat(parser.getPermission()).isEqualTo("agent:transaction");
     }
 
@@ -61,7 +61,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).containsExactly("abc", "mno", "xyz");
+        assertThat(parser.getAgentRollupIds()).containsExactly("abc", "mno", "xyz");
         assertThat(parser.getPermission()).isEqualTo("agent:transaction");
     }
 
@@ -72,7 +72,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).containsExactly("abc", "m,n:o", "xyz");
+        assertThat(parser.getAgentRollupIds()).containsExactly("abc", "m,n:o", "xyz");
         assertThat(parser.getPermission()).isEqualTo("agent:transaction");
     }
 
@@ -83,7 +83,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).containsExactly("abc", "m\"n\\o", "xyz");
+        assertThat(parser.getAgentRollupIds()).containsExactly("abc", "m\"n\\o", "xyz");
         assertThat(parser.getPermission()).isEqualTo("agent:transaction");
     }
 
@@ -94,7 +94,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).isEmpty();
+        assertThat(parser.getAgentRollupIds()).isEmpty();
         assertThat(parser.getPermission()).isEqualTo("agent:transaction");
     }
 
@@ -105,7 +105,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).isEmpty();
+        assertThat(parser.getAgentRollupIds()).isEmpty();
         assertThat(parser.getPermission()).isEqualTo("agent:transaction");
     }
 
@@ -116,7 +116,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).containsExactly("*");
+        assertThat(parser.getAgentRollupIds()).containsExactly("*");
         assertThat(parser.getPermission()).isEqualTo("agent");
     }
 
@@ -127,7 +127,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).containsExactly("*");
+        assertThat(parser.getAgentRollupIds()).containsExactly("*");
         assertThat(parser.getPermission()).isEqualTo("agent");
     }
 
@@ -138,7 +138,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).isEmpty();
+        assertThat(parser.getAgentRollupIds()).isEmpty();
         assertThat(parser.getPermission()).isEqualTo("agent");
     }
 
@@ -149,7 +149,7 @@ public class PermissionParserTest {
         // when
         parser.parse();
         // then
-        assertThat(parser.getAgentIds()).isEmpty();
+        assertThat(parser.getAgentRollupIds()).isEmpty();
         assertThat(parser.getPermission()).isEqualTo("agent");
     }
 }
