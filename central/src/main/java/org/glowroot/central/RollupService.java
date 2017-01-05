@@ -237,7 +237,7 @@ public class RollupService implements Runnable {
         try {
             alertConfigs = configRepository.getTransactionAlertConfigs(agentId);
         } catch (IOException e) {
-            logger.error("{} - {}", agentId, e.getMessage(), e);
+            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
             return;
         }
         if (alertConfigs.isEmpty()) {
@@ -251,7 +251,7 @@ public class RollupService implements Runnable {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error("{} - {}", agentId, e.getMessage(), e);
+                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
             }
         }
     }
@@ -265,7 +265,7 @@ public class RollupService implements Runnable {
         try {
             alertConfigs = configRepository.getGaugeAlertConfigs(agentId);
         } catch (IOException e) {
-            logger.error("{} - {}", agentId, e.getMessage(), e);
+            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
             return;
         }
         if (alertConfigs.isEmpty()) {
@@ -279,7 +279,7 @@ public class RollupService implements Runnable {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error("{} - {}", agentId, e.getMessage(), e);
+                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
             }
         }
     }
@@ -294,7 +294,7 @@ public class RollupService implements Runnable {
         try {
             alertConfigs = configRepository.getHeartbeatAlertConfigs(agentId);
         } catch (IOException e) {
-            logger.error("{} - {}", agentId, e.getMessage(), e);
+            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
             return;
         }
         if (alertConfigs.isEmpty()) {
@@ -308,9 +308,13 @@ public class RollupService implements Runnable {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error("{} - {}", agentId, e.getMessage(), e);
+                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
             }
         }
+    }
+
+    private String getAgentDisplay(String agentId) {
+        return agentDao.readAgentRollupDisplay(agentId);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",

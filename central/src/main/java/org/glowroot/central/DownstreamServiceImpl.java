@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -340,7 +340,11 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                             .build());
                 }
                 startupLogger.info("downstream connection (re-)established with agent: {}",
-                        agentId);
+                        getAgentDisplay(agentId));
+                return;
+            }
+            if (agentId == null) {
+                logger.error("first message from agent to downstream service must be HELLO");
                 return;
             }
             long requestId = value.getRequestId();
@@ -355,9 +359,9 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 responseHolder.response.exchange(value, 1, MINUTES);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                logger.error("{} - {}", agentId, e.getMessage(), e);
+                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
             } catch (TimeoutException e) {
-                logger.error("{} - {}", agentId, e.getMessage(), e);
+                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
             }
         }
 
@@ -365,7 +369,8 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
         public void onError(Throwable t) {
             logger.debug("{} - {}", t.getMessage(), t);
             if (agentId != null) {
-                startupLogger.info("downstream connection lost with agent: {}", agentId);
+                startupLogger.info("downstream connection lost with agent: {}",
+                        getAgentDisplay(agentId));
                 connectedAgents.remove(agentId, ConnectedAgent.this);
             }
         }
@@ -649,6 +654,10 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 throw new AgentException();
             }
             return response;
+        }
+
+        private String getAgentDisplay(String agentId) {
+            return agentDao.readAgentRollupDisplay(agentId);
         }
     }
 

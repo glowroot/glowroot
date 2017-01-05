@@ -159,20 +159,20 @@ class GrpcServer {
         @Override
         public void collectInit(InitMessage request,
                 StreamObserver<InitResponse> responseObserver) {
+            String agentId = request.getAgentId();
             AgentConfig updatedAgentConfig;
             try {
                 String agentRollupId = request.getAgentRollupId();
                 // trim spaces around rollup separator "/"
                 agentRollupId = trimSpacesAroundAgentRollupIdSeparator(agentRollupId);
-                updatedAgentConfig = agentDao.store(request.getAgentId(),
-                        Strings.emptyToNull(agentRollupId), request.getEnvironment(),
-                        request.getAgentConfig());
+                updatedAgentConfig = agentDao.store(agentId, Strings.emptyToNull(agentRollupId),
+                        request.getEnvironment(), request.getAgentConfig());
             } catch (Throwable t) {
-                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
+                logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
-            logger.info("agent connected: {}, version {}", request.getAgentId(),
+            logger.info("agent connected: {}, version {}", getAgentDisplay(agentId),
                     request.getEnvironment().getJavaInfo().getGlowrootAgentVersion());
             InitResponse.Builder response = InitResponse.newBuilder()
                     .setGlowrootCentralVersion(version);
@@ -231,7 +231,8 @@ class GrpcServer {
                     if (header == null) {
                         logger.error(t.getMessage(), t);
                     } else {
-                        logger.error("{} - {}", header.getAgentId(), t.getMessage(), t);
+                        logger.error("{} - {}", getAgentDisplay(header.getAgentId()),
+                                t.getMessage(), t);
                     }
                 }
 
@@ -285,12 +286,12 @@ class GrpcServer {
                     aggregateDao.store(agentId, captureTime, aggregatesByTypeList,
                             sharedQueryTexts);
                 } catch (Throwable t) {
-                    logger.error("{} - {}", agentId, t.getMessage(), t);
+                    logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
                     responseObserver.onError(t);
                     return;
                 }
             }
-            String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+            String agentDisplay = getAgentDisplay(agentId);
             checkTransactionAlerts(agentId, agentDisplay, captureTime);
             responseObserver.onNext(AggregateResponseMessage.newBuilder()
                     .setNextDelayMillis(getNextDelayMillis())
@@ -303,27 +304,28 @@ class GrpcServer {
         @Override
         public void collectGaugeValues(GaugeValueMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
+            String agentId = request.getAgentId();
             long maxCaptureTime = 0;
             try {
-                gaugeValueDao.store(request.getAgentId(), request.getGaugeValuesList());
+                gaugeValueDao.store(agentId, request.getGaugeValuesList());
                 for (GaugeValue gaugeValue : request.getGaugeValuesList()) {
                     maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
                 }
             } catch (Throwable t) {
-                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
+                logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
             try {
-                heartbeatDao.store(request.getAgentId());
+                heartbeatDao.store(agentId);
             } catch (Throwable t) {
-                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
+                logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
-            String agentDisplay = agentDao.readAgentRollupDisplay(request.getAgentId());
-            checkGaugeAlerts(request.getAgentId(), agentDisplay, maxCaptureTime);
-            clearHeartbeatAlerts(request.getAgentId(), agentDisplay);
+            String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+            checkGaugeAlerts(agentId, agentDisplay, maxCaptureTime);
+            clearHeartbeatAlerts(agentId, agentDisplay);
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -360,7 +362,8 @@ class GrpcServer {
                     if (header == null) {
                         logger.error(t.getMessage(), t);
                     } else {
-                        logger.error("{} - {}", header.getAgentId(), t.getMessage(), t);
+                        logger.error("{} - {}", getAgentDisplay(header.getAgentId()),
+                                t.getMessage(), t);
                     }
                 }
 
@@ -375,7 +378,8 @@ class GrpcServer {
                                 .addAllSharedQueryText(sharedQueryTexts)
                                 .build());
                     } catch (Throwable t) {
-                        logger.error("{} - {}", header.getAgentId(), t.getMessage(), t);
+                        logger.error("{} - {}", getAgentDisplay(header.getAgentId()),
+                                t.getMessage(), t);
                         responseObserver.onError(t);
                         return;
                     }
@@ -390,10 +394,11 @@ class GrpcServer {
         @Override
         public void collectTrace(OldTraceMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
+            String agentId = request.getAgentId();
             try {
-                traceDao.store(request.getAgentId(), request.getTrace());
+                traceDao.store(agentId, request.getTrace());
             } catch (Throwable t) {
-                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
+                logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -409,11 +414,12 @@ class GrpcServer {
                 LogEvent logEvent = request.getLogEvent();
                 Proto.Throwable t = logEvent.getThrowable();
                 Level level = logEvent.getLevel();
+                String agentDisplay = getAgentDisplay(request.getAgentId());
                 if (t == null) {
-                    log(level, "{} -- {} -- {} -- {}", request.getAgentId(), level,
+                    log(level, "{} -- {} -- {} -- {}", agentDisplay, level,
                             logEvent.getLoggerName(), logEvent.getMessage());
                 } else {
-                    log(level, "{} -- {} -- {} -- {}\n{}", request.getAgentId(), level,
+                    log(level, "{} -- {} -- {} -- {}\n{}", agentDisplay, level,
                             logEvent.getLoggerName(), logEvent.getMessage(), t);
                 }
             } catch (Throwable t) {
@@ -433,7 +439,7 @@ class GrpcServer {
             try {
                 alertConfigs = configRepository.getTransactionAlertConfigs(agentId);
             } catch (IOException e) {
-                logger.error("{} - {}", agentId, e.getMessage(), e);
+                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
                 return;
             }
             if (alertConfigs.isEmpty()) {
@@ -445,7 +451,7 @@ class GrpcServer {
                     try {
                         runInternal();
                     } catch (Throwable t) {
-                        logger.error("{} - {}", agentId, t.getMessage(), t);
+                        logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
                     }
                 }
                 private void runInternal() throws InterruptedException {
@@ -457,7 +463,7 @@ class GrpcServer {
                             // shutdown requested
                             throw e;
                         } catch (Exception e) {
-                            logger.error("{} - {}", agentId, e.getMessage(), e);
+                            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
                         }
                     }
                 }
@@ -473,7 +479,7 @@ class GrpcServer {
             try {
                 alertConfigs = configRepository.getGaugeAlertConfigs(agentId);
             } catch (IOException e) {
-                logger.error("{} - {}", agentId, e.getMessage(), e);
+                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
                 return;
             }
             if (alertConfigs.isEmpty()) {
@@ -485,7 +491,7 @@ class GrpcServer {
                     try {
                         runInternal();
                     } catch (Throwable t) {
-                        logger.error("{} - {}", agentId, t.getMessage(), t);
+                        logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
                     }
                 }
                 private void runInternal() throws InterruptedException {
@@ -497,7 +503,7 @@ class GrpcServer {
                             // shutdown requested
                             throw e;
                         } catch (Exception e) {
-                            logger.error("{} - {}", agentId, e.getMessage(), e);
+                            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
                         }
                     }
                 }
@@ -513,7 +519,7 @@ class GrpcServer {
             try {
                 alertConfigs = configRepository.getHeartbeatAlertConfigs(agentId);
             } catch (IOException e) {
-                logger.error("{} - {}", agentId, e.getMessage(), e);
+                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
                 return;
             }
             if (alertConfigs.isEmpty()) {
@@ -525,7 +531,7 @@ class GrpcServer {
                     try {
                         runInternal();
                     } catch (Throwable t) {
-                        logger.error("{} - {}", agentId, t.getMessage(), t);
+                        logger.error("{} - {}", getAgentDisplay(agentId), t.getMessage(), t);
                     }
                 }
                 private void runInternal() throws InterruptedException {
@@ -536,7 +542,7 @@ class GrpcServer {
                             // shutdown requested
                             throw e;
                         } catch (Exception e) {
-                            logger.error("{} - {}", agentId, e.getMessage(), e);
+                            logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
                         }
                     }
                 }
@@ -568,6 +574,10 @@ class GrpcServer {
                 AlertConfig alertConfig, SmtpConfig smtpConfig) throws Exception {
             alertingService.checkHeartbeatAlert(agentId, agentDisplay, alertConfig, false,
                     smtpConfig);
+        }
+
+        private String getAgentDisplay(String agentId) {
+            return agentDao.readAgentRollupDisplay(agentId);
         }
 
         private void log(Level level, String format, Object... arguments) {
