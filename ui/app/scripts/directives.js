@@ -39,23 +39,23 @@ glowroot.factory('gtButtonGroupControllerFactory', [
             }
 
             var deferred = $q.defer();
-            deferred.promise.then(function (success) {
+            deferred.promise.then(function (message) {
               if (spinner) {
                 spinner.stop();
               }
-              // if success is undefined (e.g. no explicit success message), need to pass empty string,
+              // if message is undefined (e.g. no explicit success message), need to pass empty string,
               // otherwise it won't overwrite old error message in $buttonMessage if there is one
-              $buttonMessage.text(success || '');
+              $buttonMessage.text(message || '');
               $buttonMessage.removeClass('gt-button-message-error');
               $buttonMessage.addClass('gt-button-message-success');
               Glowroot.showAndFadeSuccessMessage($buttonMessage);
               alreadyExecuting = false;
-            }, function (error) {
+            }, function (message) {
               if (spinner) {
                 spinner.stop();
               }
               Glowroot.cancelFadeSuccessMessage($buttonMessage);
-              $buttonMessage.text(error);
+              $buttonMessage.text(message);
               $buttonMessage.removeClass('gt-button-message-success');
               $buttonMessage.addClass('gt-button-message-error');
               $buttonMessage.removeClass('hide');
