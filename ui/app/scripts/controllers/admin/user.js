@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,11 @@ glowroot.controller('AdminUserCtrl', [
   '$location',
   '$http',
   '$timeout',
+  '$q',
   'confirmIfHasChanges',
   'httpErrors',
   'modals',
-  function ($scope, $location, $http, $timeout, confirmIfHasChanges, httpErrors, modals) {
+  function ($scope, $location, $http, $timeout, $q, confirmIfHasChanges, httpErrors, modals) {
 
     // initialize page binding object
     $scope.page = {};
@@ -125,11 +126,7 @@ glowroot.controller('AdminUserCtrl', [
     };
     var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.save = function (deferred) {
-      if ($scope.page.password !== $scope.page.verifyPassword) {
-        deferred.reject('Passwords do not match');
-        return;
-      }
+    function save(deferred) {
       var postData = angular.copy($scope.config);
       if ($scope.page.password) {
         postData.newPassword = $scope.page.password;
@@ -152,12 +149,36 @@ glowroot.controller('AdminUserCtrl', [
             }
           }, function (response) {
             if (response.status === 409 && response.data.message === 'username') {
-              $scope.duplicateUsername = true;
               deferred.reject('There is already a user with this username');
               return;
             }
             httpErrors.handle(response, $scope, deferred);
           });
+    }
+
+    var overrideSaveWithNoRoles = false;
+
+    $scope.save = function (deferred) {
+      if ($scope.page.password !== $scope.page.verifyPassword) {
+        deferred.reject('Passwords do not match');
+        return;
+      }
+      if ($scope.config.roles.length || overrideSaveWithNoRoles) {
+        overrideSaveWithNoRoles = false;
+        save(deferred);
+      } else {
+        modals.display('#saveWithNoRolesConfirmationModal', true);
+        deferred.resolve();
+      }
+    };
+
+    $scope.saveWithNoRoles = function () {
+      $('#saveWithNoRolesConfirmationModal').modal('hide');
+      // 'clicking' on the save button in order to get proper deferred passed into $scope.save()
+      setTimeout(function () {
+        overrideSaveWithNoRoles = true;
+        $('#gtSaveChanges button').click();
+      });
     };
 
     // delete user deserves confirmation dialog (as opposed to other deletes), since it cannot be undone without

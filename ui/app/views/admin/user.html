@@ -1,5 +1,5 @@
 <!--
-  Copyright 2016 the original author or authors.
+  Copyright 2016-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -109,7 +109,8 @@
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"
                  gt-click="save(deferred)"
                  gt-disabled="formCtrl.$invalid"
-                 class="gt-inline-block">
+                 class="gt-inline-block"
+                 id="gtSaveChanges">
             </div>
             <button ng-click="displayDeleteConfirmationModal()"
                     ng-show="config.version"
@@ -148,6 +149,24 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-default" ng-click="delete()">Yes</button>
+        <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="saveWithNoRolesConfirmationModal" tabindex="-1">
+  <div class="modal-dialog"
+       style="max-width: 500px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>User has no role assignments</h3>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to save this user with no roles?</p>
+        <p>Without any role assignments, this user will have no permissions.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" ng-click="saveWithNoRoles()">Yes</button>
         <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>

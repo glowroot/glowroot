@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,8 +52,11 @@ public class UserConfigPage {
     }
 
     public void clickSaveButton() {
-        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
-        saveButton.click();
+        withWait(xpath("//button[normalize-space()='Save changes']")).click();
+    }
+
+    public void clickSaveWithNoRolesConfirmationButton() {
+        withWait(xpath("//button[@ng-click='saveWithNoRoles()']")).click();
     }
 
     public WebElement getDeleteButton() {
