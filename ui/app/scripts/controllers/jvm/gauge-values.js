@@ -30,6 +30,15 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     $scope.$parent.heading = 'Gauges';
 
+    if ($scope.hideMainContent()) {
+      // these are needed to prevent nested controller chart-range.js from throwing errors
+      $scope.range = {};
+      $scope.buildQueryObject = function () {
+        return {};
+      };
+      return;
+    }
+
     // initialize page binding object
     $scope.page = {};
 

@@ -28,6 +28,10 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     $scope.$parent.activeTabItem = 'messages';
 
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
     var appliedFilter;
 
     var chartState = charts.createState();
