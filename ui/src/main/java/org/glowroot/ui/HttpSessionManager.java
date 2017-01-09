@@ -131,7 +131,7 @@ class HttpSessionManager {
                 ServerCookieEncoder.STRICT.encode(cookie));
     }
 
-    Authentication getAuthentication(HttpRequest request) {
+    Authentication getAuthentication(HttpRequest request, boolean touch) {
         if (offline) {
             return getOfflineViewerAuthentication();
         }
@@ -147,7 +147,9 @@ class HttpSessionManager {
         if (session.isTimedOut(currentTimeMillis)) {
             return getAnonymousAuthentication();
         }
-        session.touch(currentTimeMillis);
+        if (touch) {
+            session.touch(currentTimeMillis);
+        }
         return session.authentication;
     }
 

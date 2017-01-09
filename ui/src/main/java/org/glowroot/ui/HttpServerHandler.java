@@ -222,7 +222,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 sendFullResponse(ctx, request, response, HttpUtil.isKeepAlive(request));
                 return;
             }
-            Authentication authentication = httpSessionManager.getAuthentication(request);
+            Authentication authentication = httpSessionManager.getAuthentication(request, true);
             Glowroot.setTransactionUser(authentication.caseAmbiguousUsername());
             response = handleRequest(path, ctx, request, authentication);
             if (response != null) {
@@ -329,6 +329,13 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             String anonymousLayout = layoutService.getLayout(authentication);
             FullHttpResponse response = HttpServices.createJsonResponse(anonymousLayout, OK);
             httpSessionManager.deleteSessionCookie(response);
+            return response;
+        }
+        if (path.equals("/backend/check")) {
+            Authentication authentication = httpSessionManager.getAuthentication(request, false);
+            FullHttpResponse response = HttpServices.createJsonResponse("", OK);
+            response.headers().add("Glowroot-Layout-Version",
+                    layoutService.getLayoutVersion(authentication));
             return response;
         }
         return null;

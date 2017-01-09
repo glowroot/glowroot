@@ -242,6 +242,22 @@ glowroot.run([
       }
     });
 
+    // check layout every 60 seconds, this will notice when session expires and sending user to /login
+    function scheduleNextCheckLayout() {
+      $timeout(function () {
+        $http.get('backend/check')
+            .then(function () {
+              // Glowroot-Layout-Version is returned and the http interceptor will notice and take appropriate action
+              scheduleNextCheckLayout();
+            }, function () {
+              // ok to ignore, e.g. temporary network disconnect
+              scheduleNextCheckLayout();
+            });
+      }, 60000);
+    }
+
+    scheduleNextCheckLayout();
+
     $rootScope.initLayout = function () {
       // agentRollupValues is needed when using angular ng-repeat over agentRollups in case there are
       // any agent rollup ids that start with '$', because angular silently ignores object keys starting with '$'
