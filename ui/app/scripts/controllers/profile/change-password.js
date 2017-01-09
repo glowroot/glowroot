@@ -21,10 +21,9 @@ glowroot.controller('ProfileChangePasswordCtrl', [
   '$http',
   '$rootScope',
   '$location',
-  '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, $rootScope, $location, $timeout, confirmIfHasChanges, httpErrors) {
+  function ($scope, $http, $rootScope, $location, confirmIfHasChanges, httpErrors) {
 
     $scope.page = {};
 

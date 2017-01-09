@@ -20,12 +20,11 @@ glowroot.controller('AdminUserCtrl', [
   '$scope',
   '$location',
   '$http',
-  '$timeout',
   '$q',
   'confirmIfHasChanges',
   'httpErrors',
   'modals',
-  function ($scope, $location, $http, $timeout, $q, confirmIfHasChanges, httpErrors, modals) {
+  function ($scope, $location, $http, $q, confirmIfHasChanges, httpErrors, modals) {
 
     // initialize page binding object
     $scope.page = {};
