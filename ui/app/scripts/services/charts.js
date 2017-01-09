@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -431,20 +431,36 @@ glowroot.factory('charts', [
     }
 
     function startAutoRefresh($scope, delay) {
-      function nextRefresh() {
-        var timer = $timeout(function () {
-          if ($scope.range.last) {
-            $scope.suppressChartSpinner = true;
-            $scope.refresh();
-          }
-          nextRefresh();
-        }, delay);
-        $scope.$on('$destroy', function () {
-          $timeout.cancel(timer);
+      var timer;
+
+      function onVisible() {
+        $scope.$apply(function () {
+          $scope.refresh();
         });
+        document.removeEventListener('visibilitychange', onVisible);
       }
 
-      nextRefresh();
+      function scheduleNextRefresh() {
+        timer = $timeout(function () {
+          if ($scope.range.last) {
+            // document.hidden is not supported by IE9 but that's ok, the condition will just evaluate to false
+            // and auto refresh will continue even while hidden under IE9
+            if (document.hidden) {
+              document.addEventListener('visibilitychange', onVisible);
+            } else {
+              $scope.suppressChartSpinner = true;
+              $scope.refresh();
+            }
+          }
+          scheduleNextRefresh();
+        }, delay);
+      }
+
+      scheduleNextRefresh();
+
+      $scope.$on('$destroy', function () {
+        $timeout.cancel(timer);
+      });
     }
 
     return {
