@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,18 +36,19 @@ glowroot.controller('TransactionPercentilesCtrl', [
 
     var appliedPercentiles;
 
-    function refreshData() {
-      charts.refreshData('backend/transaction/percentiles', chartState, $scope, addToQuery, onRefreshData);
+    function refreshData(autoRefresh) {
+      charts.refreshData('backend/transaction/percentiles', chartState, $scope, autoRefresh, addToQuery, onRefreshData);
     }
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
-      if (angular.equals(appliedPercentiles, $scope.layout.agentRollups[$scope.agentRollupId].defaultDisplayedPercentiles)) {
-        $location.search('percentile', null);
-      } else {
-        $location.search('percentile', appliedPercentiles);
-      }
-      refreshData();
-    });
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh'],
+        function (newValues, oldValues) {
+          if (angular.equals(appliedPercentiles, $scope.layout.agentRollups[$scope.agentRollupId].defaultDisplayedPercentiles)) {
+            $location.search('percentile', null);
+          } else {
+            $location.search('percentile', appliedPercentiles);
+          }
+          refreshData(newValues[3] !== oldValues[3]);
+        });
 
     $scope.clickTopRadioButton = function (item) {
       if (item === 'percentiles') {

@@ -85,11 +85,12 @@ class TransactionJsonService {
 
     @GET(path = "/backend/transaction/average", permission = "agent:transaction:overview")
     String getOverview(@BindAgentRollupId String agentRollupId,
-            @BindRequest TransactionDataRequest request) throws Exception {
+            @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
+            throws Exception {
         TransactionQuery query = toChartQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates =
-                transactionCommonService.getOverviewAggregates(agentRollupId, query);
+                transactionCommonService.getOverviewAggregates(agentRollupId, query, autoRefresh);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForTimerChart(request, overviewAggregates, liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
@@ -117,11 +118,12 @@ class TransactionJsonService {
 
     @GET(path = "/backend/transaction/percentiles", permission = "agent:transaction:overview")
     String getPercentiles(@BindAgentRollupId String agentRollupId,
-            @BindRequest TransactionDataRequest request) throws Exception {
+            @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
+            throws Exception {
         TransactionQuery query = toChartQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates =
-                transactionCommonService.getPercentileAggregates(agentRollupId, query);
+                transactionCommonService.getPercentileAggregates(agentRollupId, query, autoRefresh);
         PercentileData percentileData = getDataSeriesForPercentileChart(request,
                 percentileAggregates, request.percentile(), liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts2(percentileAggregates);
@@ -139,11 +141,12 @@ class TransactionJsonService {
 
     @GET(path = "/backend/transaction/throughput", permission = "agent:transaction:overview")
     String getThroughput(@BindAgentRollupId String agentRollupId,
-            @BindRequest TransactionDataRequest request) throws Exception {
+            @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
+            throws Exception {
         TransactionQuery query = toChartQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(agentRollupId, query);
+                transactionCommonService.getThroughputAggregates(agentRollupId, query, autoRefresh);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForThroughputChart(request, throughputAggregates, liveCaptureTime);
         // TODO more precise aggregate when from/to not on rollup grid
@@ -293,7 +296,8 @@ class TransactionJsonService {
 
     @GET(path = "/backend/transaction/summaries", permission = "agent:transaction:overview")
     String getSummaries(@BindAgentRollupId String agentRollupId,
-            @BindRequest TransactionSummaryRequest request) throws Exception {
+            @BindRequest TransactionSummaryRequest request, @BindAutoRefresh boolean autoRefresh)
+            throws Exception {
         ImmutableOverallQuery query = ImmutableOverallQuery.builder()
                 .transactionType(request.transactionType())
                 .from(request.from())
@@ -301,10 +305,10 @@ class TransactionJsonService {
                 .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
                 .build();
         OverallSummary overallSummary =
-                transactionCommonService.readOverallSummary(agentRollupId, query);
+                transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh);
         Result<TransactionSummary> queryResult = transactionCommonService
                 .readTransactionSummaries(agentRollupId, query, request.sortOrder(),
-                        request.limit());
+                        request.limit(), autoRefresh);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));

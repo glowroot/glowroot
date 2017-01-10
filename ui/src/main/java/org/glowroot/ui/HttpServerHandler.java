@@ -222,7 +222,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 sendFullResponse(ctx, request, response, HttpUtil.isKeepAlive(request));
                 return;
             }
-            Authentication authentication = httpSessionManager.getAuthentication(request, true);
+            boolean autoRefresh = isAutoRefresh(decoder.parameters().get("auto-refresh"));
+            Authentication authentication =
+                    httpSessionManager.getAuthentication(request, !autoRefresh);
             Glowroot.setTransactionUser(authentication.caseAmbiguousUsername());
             response = handleRequest(path, ctx, request, authentication);
             if (response != null) {
@@ -512,11 +514,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private static ImmutableJsonServiceMapping build(HttpMethod httpMethod, String path,
+    private static JsonServiceMapping build(HttpMethod httpMethod, String path,
             String permission, Object jsonService, Method method) {
         boolean bindAgentId = false;
         boolean bindAgentRollup = false;
         Class<?> bindRequest = null;
+        boolean bindAutoRefresh = false;
         boolean bindAuthentication = false;
         for (int i = 0; i < method.getParameterAnnotations().length; i++) {
             Annotation[] parameterAnnotations = method.getParameterAnnotations()[i];
@@ -527,6 +530,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     bindAgentRollup = true;
                 } else if (annotation.annotationType() == BindRequest.class) {
                     bindRequest = method.getParameterTypes()[i];
+                } else if (annotation.annotationType() == BindAutoRefresh.class) {
+                    bindAutoRefresh = true;
                 } else if (annotation.annotationType() == BindAuthentication.class) {
                     bindAuthentication = true;
                 }
@@ -541,6 +546,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 .bindAgentId(bindAgentId)
                 .bindAgentRollup(bindAgentRollup)
                 .bindRequest(bindRequest)
+                .bindAutoRefresh(bindAutoRefresh)
                 .bindAuthentication(bindAuthentication)
                 .build();
     }
@@ -650,6 +656,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             List<Class<?>> parameterTypes, List<Object> parameters,
             Map<String, List<String>> queryParameters, Authentication authentication,
             FullHttpRequest request) throws Exception {
+        List<String> autoRefreshParams = queryParameters.remove("auto-refresh");
+        boolean autoRefresh = isAutoRefresh(autoRefreshParams);
         Class<?> bindRequest = jsonServiceMapping.bindRequest();
         if (bindRequest != null) {
             parameterTypes.add(bindRequest);
@@ -670,6 +678,10 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         }
+        if (jsonServiceMapping.bindAutoRefresh()) {
+            parameterTypes.add(boolean.class);
+            parameters.add(autoRefresh);
+        }
         if (jsonServiceMapping.bindAuthentication()) {
             parameterTypes.add(Authentication.class);
             parameters.add(authentication);
@@ -682,6 +694,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
         return jsonServiceMapping.method().invoke(service,
                 parameters.toArray(new Object[parameters.size()]));
+    }
+
+    private static boolean isAutoRefresh(@Nullable List<String> autoRefreshParams) {
+        return autoRefreshParams != null && autoRefreshParams.size() == 1
+                && Boolean.valueOf(autoRefreshParams.get(0));
     }
 
     @Value.Immutable
@@ -701,6 +718,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         boolean bindAgentRollup();
         @Nullable
         Class<?> bindRequest();
+        boolean bindAutoRefresh();
         boolean bindAuthentication();
     }
 

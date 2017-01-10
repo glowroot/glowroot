@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,17 @@ class ErrorCommonService {
     }
 
     // from is non-inclusive
-    OverallErrorSummary readOverallErrorSummary(String agentRollupId, OverallQuery query)
-            throws Exception {
+    OverallErrorSummary readOverallErrorSummary(String agentRollupId, OverallQuery query,
+            boolean autoRefresh) throws Exception {
         OverallErrorSummaryCollector collector = new OverallErrorSummaryCollector();
         long revisedFrom = query.from();
-        long revisedTo =
-                liveAggregateRepository.mergeInOverallErrorSummary(agentRollupId, query, collector);
+        long revisedTo;
+        if (autoRefresh) {
+            revisedTo = query.to();
+        } else {
+            revisedTo = liveAggregateRepository.mergeInOverallErrorSummary(agentRollupId, query,
+                    collector);
+        }
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
@@ -64,11 +69,17 @@ class ErrorCommonService {
 
     // query.from() is non-inclusive
     Result<TransactionErrorSummary> readTransactionErrorSummaries(String agentRollupId,
-            OverallQuery query, ErrorSummarySortOrder sortOrder, int limit) throws Exception {
+            OverallQuery query, ErrorSummarySortOrder sortOrder, int limit, boolean autoRefresh)
+            throws Exception {
         TransactionErrorSummaryCollector collector = new TransactionErrorSummaryCollector();
         long revisedFrom = query.from();
-        long revisedTo = liveAggregateRepository.mergeInTransactionErrorSummaries(agentRollupId,
-                query, collector);
+        long revisedTo;
+        if (autoRefresh) {
+            revisedTo = query.to();
+        } else {
+            revisedTo = liveAggregateRepository.mergeInTransactionErrorSummaries(agentRollupId,
+                    query, collector);
+        }
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)

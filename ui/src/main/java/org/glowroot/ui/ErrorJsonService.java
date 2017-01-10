@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,8 @@ class ErrorJsonService {
 
     @GET(path = "/backend/error/messages", permission = "agent:error:overview")
     String getData(@BindAgentRollupId String agentRollupId,
-            @BindRequest ErrorMessageRequest request) throws Exception {
+            @BindRequest ErrorMessageRequest request, @BindAutoRefresh boolean autoRefresh)
+            throws Exception {
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
@@ -99,8 +100,8 @@ class ErrorJsonService {
                 .addAllExcludes(request.exclude())
                 .build();
         long liveCaptureTime = clock.currentTimeMillis();
-        List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(agentRollupId, transactionQuery);
+        List<ThroughputAggregate> throughputAggregates = transactionCommonService
+                .getThroughputAggregates(agentRollupId, transactionQuery, autoRefresh);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         Map<Long, Long> transactionCountMap = Maps.newHashMap();
@@ -151,7 +152,8 @@ class ErrorJsonService {
 
     @GET(path = "/backend/error/summaries", permission = "agent:error:overview")
     String getSummaries(@BindAgentRollupId String agentRollupId,
-            @BindRequest ErrorSummaryRequest request) throws Exception {
+            @BindRequest ErrorSummaryRequest request, @BindAutoRefresh boolean autoRefresh)
+            throws Exception {
         OverallQuery query = ImmutableOverallQuery.builder()
                 .transactionType(request.transactionType())
                 .from(request.from())
@@ -159,10 +161,10 @@ class ErrorJsonService {
                 .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
                 .build();
         OverallErrorSummary overallSummary =
-                errorCommonService.readOverallErrorSummary(agentRollupId, query);
+                errorCommonService.readOverallErrorSummary(agentRollupId, query, autoRefresh);
         Result<TransactionErrorSummary> queryResult =
                 errorCommonService.readTransactionErrorSummaries(agentRollupId, query,
-                        request.sortOrder(), request.limit());
+                        request.sortOrder(), request.limit(), autoRefresh);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));

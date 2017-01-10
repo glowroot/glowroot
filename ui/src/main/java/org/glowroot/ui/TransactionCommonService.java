@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,11 +71,17 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    OverallSummary readOverallSummary(String agentRollupId, OverallQuery query) throws Exception {
+    OverallSummary readOverallSummary(String agentRollupId, OverallQuery query, boolean autoRefresh)
+            throws Exception {
         OverallSummaryCollector collector = new OverallSummaryCollector();
         long revisedFrom = query.from();
-        long revisedTo =
-                liveAggregateRepository.mergeInOverallSummary(agentRollupId, query, collector);
+        long revisedTo;
+        if (autoRefresh) {
+            revisedTo = query.to();
+        } else {
+            revisedTo =
+                    liveAggregateRepository.mergeInOverallSummary(agentRollupId, query, collector);
+        }
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
@@ -95,11 +101,16 @@ class TransactionCommonService {
 
     // query.from() is non-inclusive
     Result<TransactionSummary> readTransactionSummaries(String agentRollupId, OverallQuery query,
-            SummarySortOrder sortOrder, int limit) throws Exception {
+            SummarySortOrder sortOrder, int limit, boolean autoRefresh) throws Exception {
         TransactionSummaryCollector collector = new TransactionSummaryCollector();
         long revisedFrom = query.from();
-        long revisedTo = liveAggregateRepository.mergeInTransactionSummaries(agentRollupId, query,
-                collector);
+        long revisedTo;
+        if (autoRefresh) {
+            revisedTo = query.to();
+        } else {
+            revisedTo = liveAggregateRepository.mergeInTransactionSummaries(agentRollupId, query,
+                    collector);
+        }
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
@@ -119,11 +130,17 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<OverviewAggregate> getOverviewAggregates(String agentRollupId, TransactionQuery query)
-            throws Exception {
-        LiveResult<OverviewAggregate> liveResult =
-                liveAggregateRepository.getOverviewAggregates(agentRollupId, query);
-        long revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
+    List<OverviewAggregate> getOverviewAggregates(String agentRollupId, TransactionQuery query,
+            boolean autoRefresh) throws Exception {
+        LiveResult<OverviewAggregate> liveResult;
+        long revisedTo;
+        if (autoRefresh) {
+            liveResult = null;
+            revisedTo = query.to();
+        } else {
+            liveResult = liveAggregateRepository.getOverviewAggregates(agentRollupId, query);
+            revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
+        }
         TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                 .copyFrom(query)
                 .to(revisedTo)
@@ -171,11 +188,17 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<PercentileAggregate> getPercentileAggregates(String agentRollupId, TransactionQuery query)
-            throws Exception {
-        LiveResult<PercentileAggregate> liveResult =
-                liveAggregateRepository.getPercentileAggregates(agentRollupId, query);
-        long revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
+    List<PercentileAggregate> getPercentileAggregates(String agentRollupId, TransactionQuery query,
+            boolean autoRefresh) throws Exception {
+        LiveResult<PercentileAggregate> liveResult;
+        long revisedTo;
+        if (autoRefresh) {
+            liveResult = null;
+            revisedTo = query.to();
+        } else {
+            liveResult = liveAggregateRepository.getPercentileAggregates(agentRollupId, query);
+            revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
+        }
         TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                 .copyFrom(query)
                 .to(revisedTo)
@@ -223,11 +246,17 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<ThroughputAggregate> getThroughputAggregates(String agentRollupId, TransactionQuery query)
-            throws Exception {
-        LiveResult<ThroughputAggregate> liveResult =
-                liveAggregateRepository.getThroughputAggregates(agentRollupId, query);
-        long revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
+    List<ThroughputAggregate> getThroughputAggregates(String agentRollupId, TransactionQuery query,
+            boolean autoRefresh) throws Exception {
+        LiveResult<ThroughputAggregate> liveResult;
+        long revisedTo;
+        if (autoRefresh) {
+            liveResult = null;
+            revisedTo = query.to();
+        } else {
+            liveResult = liveAggregateRepository.getThroughputAggregates(agentRollupId, query);
+            revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
+        }
         TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                 .copyFrom(query)
                 .to(revisedTo)

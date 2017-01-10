@@ -263,7 +263,7 @@ glowroot.factory('charts', [
       });
     }
 
-    function refreshData(url, chartState, $scope, addToQuery, onRefreshData) {
+    function refreshData(url, chartState, $scope, autoRefresh, addToQuery, onRefreshData) {
       // addToQuery may change query.from/query.to (see gauges.js)
       var chartFrom = $scope.range.chartFrom;
       var chartTo = $scope.range.chartTo;
@@ -274,6 +274,9 @@ glowroot.factory('charts', [
         from: chartFrom,
         to: chartTo
       };
+      if (autoRefresh) {
+        query.autoRefresh = true;
+      }
       if (addToQuery) {
         addToQuery(query);
       }
@@ -435,6 +438,7 @@ glowroot.factory('charts', [
 
       function onVisible() {
         $scope.$apply(function () {
+          $scope.range.chartAutoRefresh++;
           $scope.refresh();
         });
         document.removeEventListener('visibilitychange', onVisible);
@@ -449,6 +453,7 @@ glowroot.factory('charts', [
               document.addEventListener('visibilitychange', onVisible);
             } else {
               $scope.suppressChartSpinner = true;
+              $scope.range.chartAutoRefresh++;
               $scope.refresh();
             }
           }

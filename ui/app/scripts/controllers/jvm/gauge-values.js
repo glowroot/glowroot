@@ -65,33 +65,32 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       return 'jvm/gauges';
     };
 
-    function refreshData() {
-      charts.refreshData('backend/jvm/gauges', chartState, $scope, addToQuery, onRefreshData);
+    function refreshData(autoRefresh) {
+      charts.refreshData('backend/jvm/gauges', chartState, $scope, autoRefresh, addToQuery, onRefreshData);
     }
 
-    function watchListener() {
+    function watchListener(autoRefresh) {
       $location.search($scope.buildQueryObject());
       if ($scope.gaugeNames.length) {
-        refreshData();
+        refreshData(autoRefresh);
       } else {
         // ideally wouldn't need to refreshData here, but this seems a rare condition (to de-select all gauges)
         // and need some way to clear the last gauge from the chart, and this is easy
-        refreshData();
+        refreshData(autoRefresh);
         $scope.chartNoData = true;
       }
     }
 
-    $scope.$watchGroup(['range.last', 'range.chartFrom', 'range.chartTo', 'range.chartRefresh'],
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh'],
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
-            watchListener();
+            watchListener(newValues[3] !== oldValues[3]);
           }
-        }
-    );
+        });
 
     $scope.$watchCollection('gaugeNames', function (newValue, oldValue) {
       if (newValue !== oldValue || newValue.length) {
-        watchListener();
+        watchListener(false);
       }
     });
 

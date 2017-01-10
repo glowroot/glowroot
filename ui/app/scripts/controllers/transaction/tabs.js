@@ -29,12 +29,12 @@ glowroot.controller('TransactionTabCtrl', [
     var filteredTraceTabCount;
     var concurrentUpdateCount = 0;
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'transactionName'],
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh', 'transactionName'],
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
             $timeout(function () {
               // slight delay to de-prioritize tab bar data request
-              updateTabBarData();
+              updateTabBarData(newValues[3] !== oldValues[3]);
             }, 100);
           }
         });
@@ -101,7 +101,7 @@ glowroot.controller('TransactionTabCtrl', [
       initialStateChangeSuccess = false;
     });
 
-    function updateTabBarData() {
+    function updateTabBarData(autoRefresh) {
       if (!$scope.agentPermissions || !$scope.agentPermissions[shortName].traces) {
         return;
       }
@@ -116,6 +116,9 @@ glowroot.controller('TransactionTabCtrl', [
         from: $scope.range.chartFrom,
         to: $scope.range.chartTo
       };
+      if (autoRefresh) {
+        query.autoRefresh = true;
+      }
       concurrentUpdateCount++;
       $http.get('backend/' + shortName + '/trace-count' + queryStrings.encodeObject(query))
           .then(function (response) {

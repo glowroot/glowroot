@@ -31,13 +31,14 @@ glowroot.controller('TransactionThroughputCtrl', [
 
     var chartState = charts.createState();
 
-    function refreshData() {
-      charts.refreshData('backend/transaction/throughput', chartState, $scope, undefined, onRefreshData);
+    function refreshData(autoRefresh) {
+      charts.refreshData('backend/transaction/throughput', chartState, $scope, autoRefresh, undefined, onRefreshData);
     }
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
-      refreshData();
-    });
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh'],
+        function (newValues, oldValues) {
+          refreshData(newValues[3] !== oldValues[3]);
+        });
 
     $scope.clickTopRadioButton = function (item) {
       if (item === 'throughput') {

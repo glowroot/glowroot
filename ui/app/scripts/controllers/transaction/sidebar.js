@@ -32,7 +32,6 @@ glowroot.controller('TransactionSidebarCtrl', [
     var concurrentUpdateCount = 0;
 
     $scope.summarySortOrders = summarySortOrders;
-    $scope.backendSummariesUrl = 'backend/' + $scope.shortName + '/summaries';
 
     $scope.summaryLimit = 10;
     $scope.summariesLoadingMore = 0;
@@ -58,20 +57,20 @@ glowroot.controller('TransactionSidebarCtrl', [
     $scope.showMoreSummaries = function () {
       // double each time
       $scope.summaryLimit *= 2;
-      updateSummaries(true);
+      updateSummaries(false, true);
     };
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'summarySortOrder'],
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh', 'summarySortOrder'],
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
-            if (newValues[3] !== oldValues[3]) {
+            if (newValues[4] !== oldValues[4]) {
               $scope.summariesNoSearch = true;
               $scope.transactionSummaries = undefined;
               $scope.moreSummariesAvailable = undefined;
             }
             $timeout(function () {
               // slight delay to de-prioritize summaries data request
-              updateSummaries();
+              updateSummaries(newValues[3] !== oldValues[3]);
             }, 100);
           }
         });
@@ -96,7 +95,7 @@ glowroot.controller('TransactionSidebarCtrl', [
       initialStateChangeSuccess = false;
     });
 
-    function updateSummaries(moreLoading) {
+    function updateSummaries(autoRefresh, moreLoading) {
       if (($scope.layout.central && !$scope.agentRollupId) || !$scope.transactionType) {
         $scope.summariesNoSearch = true;
         return;
@@ -111,11 +110,14 @@ glowroot.controller('TransactionSidebarCtrl', [
         sortOrder: $scope.summarySortOrder,
         limit: $scope.summaryLimit
       };
+      if (autoRefresh) {
+        query.autoRefresh = true;
+      }
       if (moreLoading) {
         $scope.summariesLoadingMore++;
       }
       concurrentUpdateCount++;
-      $http.get($scope.backendSummariesUrl + queryStrings.encodeObject(query))
+      $http.get('backend/' + $scope.shortName + '/summaries' + queryStrings.encodeObject(query))
           .then(function (response) {
             if (moreLoading) {
               $scope.summariesLoadingMore--;
