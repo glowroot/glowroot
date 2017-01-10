@@ -163,11 +163,11 @@ class GrpcServer {
                 updatedAgentConfig = agentDao.store(agentId, Strings.emptyToNull(agentRollupId),
                         request.getEnvironment(), request.getAgentConfig());
             } catch (Throwable t) {
-                logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
+                logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
-            logger.info("agent connected: {}, version {}", getAgentRollupDisplay(agentId),
+            logger.info("agent connected: {}, version {}", getDisplayForLogging(agentId),
                     request.getEnvironment().getJavaInfo().getGlowrootAgentVersion());
             InitResponse.Builder response = InitResponse.newBuilder()
                     .setGlowrootCentralVersion(version);
@@ -226,7 +226,7 @@ class GrpcServer {
                     if (header == null) {
                         logger.error(t.getMessage(), t);
                     } else {
-                        logger.error("{} - {}", getAgentRollupDisplay(header.getAgentId()),
+                        logger.error("{} - {}", getDisplayForLogging(header.getAgentId()),
                                 t.getMessage(), t);
                     }
                 }
@@ -281,12 +281,19 @@ class GrpcServer {
                     aggregateDao.store(agentId, captureTime, aggregatesByTypeList,
                             sharedQueryTexts);
                 } catch (Throwable t) {
-                    logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
+                    logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                     responseObserver.onError(t);
                     return;
                 }
             }
-            String agentDisplay = getAgentRollupDisplay(agentId);
+            String agentDisplay;
+            try {
+                agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+            } catch (Exception e) {
+                logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
+                responseObserver.onError(e);
+                return;
+            }
             checkAlerts(agentId, agentDisplay, AlertKind.TRANSACTION,
                     (alertConfig, smtpConfig) -> checkTransactionAlert(agentId, agentDisplay,
                             alertConfig, captureTime, smtpConfig));
@@ -320,18 +327,25 @@ class GrpcServer {
                     maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
                 }
             } catch (Throwable t) {
-                logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
+                logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
             try {
                 heartbeatDao.store(agentId);
             } catch (Throwable t) {
-                logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
+                logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
-            String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+            String agentDisplay;
+            try {
+                agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+            } catch (Exception e) {
+                logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
+                responseObserver.onError(e);
+                return;
+            }
             final long captureTime = maxCaptureTime;
             checkAlerts(agentId, agentDisplay, AlertKind.GAUGE,
                     (alertConfig, smtpConfig) -> checkGaugeAlert(agentId, agentDisplay, alertConfig,
@@ -375,7 +389,7 @@ class GrpcServer {
                     if (header == null) {
                         logger.error(t.getMessage(), t);
                     } else {
-                        logger.error("{} - {}", getAgentRollupDisplay(header.getAgentId()),
+                        logger.error("{} - {}", getDisplayForLogging(header.getAgentId()),
                                 t.getMessage(), t);
                     }
                 }
@@ -391,7 +405,7 @@ class GrpcServer {
                                 .addAllSharedQueryText(sharedQueryTexts)
                                 .build());
                     } catch (Throwable t) {
-                        logger.error("{} - {}", getAgentRollupDisplay(header.getAgentId()),
+                        logger.error("{} - {}", getDisplayForLogging(header.getAgentId()),
                                 t.getMessage(), t);
                         responseObserver.onError(t);
                         return;
@@ -411,7 +425,7 @@ class GrpcServer {
             try {
                 traceDao.store(agentId, request.getTrace());
             } catch (Throwable t) {
-                logger.error("{} - {}", getAgentRollupDisplay(agentId), t.getMessage(), t);
+                logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -423,11 +437,12 @@ class GrpcServer {
                 traceHeadline = "Log: {{0.agentId}}", timer = "log")
         @Override
         public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
+            String agentId = request.getAgentId();
             try {
                 LogEvent logEvent = request.getLogEvent();
                 Proto.Throwable t = logEvent.getThrowable();
                 Level level = logEvent.getLevel();
-                String agentDisplay = getAgentRollupDisplay(request.getAgentId());
+                String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
                 if (t == null) {
                     log(level, "{} -- {} -- {} -- {}", agentDisplay, level,
                             logEvent.getLoggerName(), logEvent.getMessage());
@@ -436,6 +451,7 @@ class GrpcServer {
                             logEvent.getLoggerName(), logEvent.getMessage(), t);
                 }
             } catch (Throwable t) {
+                logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -445,15 +461,21 @@ class GrpcServer {
 
         private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
                 BiConsumer check) {
-            SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+            SmtpConfig smtpConfig;
+            try {
+                smtpConfig = configRepository.getSmtpConfig();
+            } catch (Exception e) {
+                logger.error("{} - {}", agentDisplay, e.getMessage(), e);
+                return;
+            }
             if (smtpConfig.host().isEmpty()) {
                 return;
             }
             List<AlertConfig> alertConfigs;
             try {
                 alertConfigs = configRepository.getAlertConfigs(agentId, alertKind);
-            } catch (IOException e) {
-                logger.error("{} - {}", getAgentRollupDisplay(agentId), e.getMessage(), e);
+            } catch (Exception e) {
+                logger.error("{} - {}", agentDisplay, e.getMessage(), e);
                 return;
             }
             if (alertConfigs.isEmpty()) {
@@ -510,8 +532,13 @@ class GrpcServer {
                     smtpConfig);
         }
 
-        private String getAgentRollupDisplay(String agentRollupId) {
-            return agentDao.readAgentRollupDisplay(agentRollupId);
+        private String getDisplayForLogging(String agentRollupId) {
+            try {
+                return agentDao.readAgentRollupDisplay(agentRollupId);
+            } catch (Exception e) {
+                logger.error("{} - {}", agentRollupId, e.getMessage(), e);
+                return "id:" + agentRollupId;
+            }
         }
 
         private void log(Level level, String format, Object... arguments) {

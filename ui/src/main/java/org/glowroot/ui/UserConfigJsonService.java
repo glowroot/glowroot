@@ -20,7 +20,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -79,7 +78,7 @@ class UserConfigJsonService {
     }
 
     @GET(path = "/backend/admin/all-role-names", permission = "admin:edit:user")
-    String getAllRoleNames() throws JsonProcessingException {
+    String getAllRoleNames() throws Exception {
         return mapper.writeValueAsString(ImmutableAllRolesResponse.builder()
                 .allRoles(getAllRoleNamesInternal())
                 .ldapAvailable(!configRepository.getLdapConfig().url().isEmpty())
@@ -140,7 +139,7 @@ class UserConfigJsonService {
                 .build());
     }
 
-    private List<String> getAllRoleNamesInternal() {
+    private List<String> getAllRoleNamesInternal() throws Exception {
         List<String> roleNames = Lists.newArrayList();
         for (RoleConfig roleConfig : configRepository.getRoleConfigs()) {
             roleNames.add(roleConfig.name());

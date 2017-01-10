@@ -123,12 +123,12 @@ public class UserDao {
     }
 
     @Nullable
-    UserConfig readCaseInsensitive(String username) {
-        return upperCaseCache.getUnchecked(username.toUpperCase(Locale.ENGLISH)).orNull();
+    UserConfig readCaseInsensitive(String username) throws Exception {
+        return upperCaseCache.get(username.toUpperCase(Locale.ENGLISH)).orNull();
     }
 
-    boolean namedUsersExist() {
-        return namedUsersExist.getUnchecked(NAMED_USERS_EXIST_SINGLE_CACHE_KEY);
+    boolean namedUsersExist() throws Exception {
+        return namedUsersExist.get(NAMED_USERS_EXIST_SINGLE_CACHE_KEY);
     }
 
     void insert(UserConfig userConfig) throws Exception {

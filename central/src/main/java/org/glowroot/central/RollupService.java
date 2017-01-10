@@ -104,7 +104,7 @@ class RollupService implements Runnable {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Outer rollup loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
-    private void runInternal() throws InterruptedException {
+    private void runInternal() throws Exception {
         Glowroot.setTransactionOuter();
         for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
             rollupAggregates(agentRollup, null);
@@ -168,14 +168,14 @@ class RollupService implements Runnable {
     }
 
     private void checkHierarchy(AgentRollup agentRollup, AlertKind alertKind, Consumer check)
-            throws InterruptedException {
+            throws Exception {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
             checkHierarchy(childAgentRollup, alertKind, check);
         }
         check.accept(agentRollup);
     }
 
-    private void checkTransactionAlerts(AgentRollup agentRollup) throws InterruptedException {
+    private void checkTransactionAlerts(AgentRollup agentRollup) throws Exception {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
             checkTransactionAlerts(childAgentRollup);
         }
@@ -184,7 +184,7 @@ class RollupService implements Runnable {
                         agentRollup.display(), alertConfig, clock.currentTimeMillis(), smtpConfig));
     }
 
-    private void checkGaugeAlerts(AgentRollup agentRollup) throws InterruptedException {
+    private void checkGaugeAlerts(AgentRollup agentRollup) throws Exception {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
             checkGaugeAlerts(childAgentRollup);
         }
@@ -193,7 +193,7 @@ class RollupService implements Runnable {
                         agentRollup.display(), alertConfig, clock.currentTimeMillis(), smtpConfig));
     }
 
-    private void checkHeartbeatAlerts(AgentRollup agentRollup) throws InterruptedException {
+    private void checkHeartbeatAlerts(AgentRollup agentRollup) throws Exception {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
             checkHeartbeatAlerts(childAgentRollup);
         }
@@ -220,7 +220,7 @@ class RollupService implements Runnable {
     }
 
     private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
-            BiConsumer check) throws InterruptedException {
+            BiConsumer check) throws Exception {
         SmtpConfig smtpConfig = configRepository.getSmtpConfig();
         if (smtpConfig.host().isEmpty()) {
             return;
@@ -287,7 +287,7 @@ class RollupService implements Runnable {
 
     @FunctionalInterface
     interface Consumer {
-        void accept(AgentRollup agentRollup) throws InterruptedException;
+        void accept(AgentRollup agentRollup) throws Exception;
     }
 
     @FunctionalInterface

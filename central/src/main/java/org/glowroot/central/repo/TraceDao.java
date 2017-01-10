@@ -130,7 +130,7 @@ public class TraceDao implements TraceRepository {
 
     public TraceDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
             FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
-            ConfigRepository configRepository, Clock clock) {
+            ConfigRepository configRepository, Clock clock) throws Exception {
         this.session = session;
         this.agentDao = agentDao;
         this.transactionTypeDao = transactionTypeDao;
@@ -919,7 +919,7 @@ public class TraceDao implements TraceRepository {
         return sharedQueryTexts;
     }
 
-    private int getTTL() {
+    private int getTTL() throws Exception {
         return Ints.saturatedCast(
                 HOURS.toSeconds(configRepository.getStorageConfig().traceExpirationHours()));
     }

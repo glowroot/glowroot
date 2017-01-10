@@ -15,7 +15,6 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -543,7 +542,7 @@ class TransactionCommonService {
         return collector.getProfile();
     }
 
-    private int getMaxAggregateQueriesPerType(String agentRollupId) throws IOException {
+    private int getMaxAggregateQueriesPerType(String agentRollupId) throws Exception {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
         if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerType()) {
             return advancedConfig.getMaxAggregateQueriesPerType().getValue();
@@ -552,7 +551,7 @@ class TransactionCommonService {
         }
     }
 
-    private int getMaxAggregateServiceCallsPerType(String agentRollupId) throws IOException {
+    private int getMaxAggregateServiceCallsPerType(String agentRollupId) throws Exception {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
         if (advancedConfig != null && advancedConfig.hasMaxAggregateServiceCallsPerType()) {
             return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();

@@ -89,7 +89,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final PreparedStatement deleteNeedsRollupFromChild;
 
     public GaugeValueDao(Session session, AgentDao agentDao, ConfigRepository configRepository,
-            Clock clock) {
+            Clock clock) throws Exception {
         this.session = session;
         this.agentDao = agentDao;
         this.configRepository = configRepository;
@@ -488,7 +488,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         return session.executeAsync(boundStatement);
     }
 
-    private List<Integer> getTTLs() {
+    private List<Integer> getTTLs() throws Exception {
         List<Integer> ttls = Lists.newArrayList();
         List<Integer> rollupExpirationHours = getRollupExpirationHours(configRepository);
         for (long expirationHours : rollupExpirationHours) {
@@ -509,7 +509,8 @@ public class GaugeValueDao implements GaugeValueRepository {
         session.execute("truncate gauge_needs_rollup_from_child");
     }
 
-    private static List<Integer> getRollupExpirationHours(ConfigRepository configRepository) {
+    private static List<Integer> getRollupExpirationHours(ConfigRepository configRepository)
+            throws Exception {
         List<Integer> rollupExpirationHours =
                 Lists.newArrayList(configRepository.getStorageConfig().rollupExpirationHours());
         rollupExpirationHours.add(0, rollupExpirationHours.get(0));

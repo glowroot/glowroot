@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 
@@ -32,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class HttpServerHandlerTest {
 
     @Test
-    public void shouldCreateJsonServiceExceptionResponse() {
+    public void shouldCreateJsonServiceExceptionResponse() throws Exception {
         // given
         Exception e = new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED,
                 new IllegalStateException("An ignored message"));
@@ -45,7 +44,7 @@ public class HttpServerHandlerTest {
     }
 
     @Test
-    public void shouldCreateJsonServiceExceptionResponseWithMessage() {
+    public void shouldCreateJsonServiceExceptionResponseWithMessage() throws Exception {
         // given
         Exception e = new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, "A message");
         // when
@@ -57,7 +56,8 @@ public class HttpServerHandlerTest {
     }
 
     @Test
-    public void shouldCreateJsonServiceExceptionResponseFromInvocationTargetException() {
+    public void shouldCreateJsonServiceExceptionResponseFromInvocationTargetException()
+            throws Exception {
         // given
         Exception e = new InvocationTargetException(
                 new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED,
@@ -71,7 +71,8 @@ public class HttpServerHandlerTest {
     }
 
     @Test
-    public void shouldCreateJsonServiceExceptionResponseWithMessageFromInvocationTargetException() {
+    public void shouldCreateJsonServiceExceptionResponseWithMessageFromInvocationTargetException()
+            throws Exception {
         // given
         Exception e = new InvocationTargetException(
                 new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, "A message"));
@@ -84,7 +85,7 @@ public class HttpServerHandlerTest {
     }
 
     @Test
-    public void shouldCreateSqlTimeoutResponse() {
+    public void shouldCreateSqlTimeoutResponse() throws Exception {
         // given
         Exception e = new SQLException("", "", ErrorCode.STATEMENT_WAS_CANCELED);
         // when
@@ -97,7 +98,7 @@ public class HttpServerHandlerTest {
     }
 
     @Test
-    public void shouldCreateNonTimeoutSqlExceptionResponse() throws IOException {
+    public void shouldCreateNonTimeoutSqlExceptionResponse() throws Exception {
         // given
         Exception e = new SQLException("Another message", "", ErrorCode.STATEMENT_WAS_CANCELED + 1);
         // when
@@ -111,7 +112,7 @@ public class HttpServerHandlerTest {
     }
 
     @Test
-    public void shouldCreateExceptionResponse() throws IOException {
+    public void shouldCreateExceptionResponse() throws Exception {
         // given
         Exception e = new Exception("Banother message");
         // when
@@ -125,7 +126,7 @@ public class HttpServerHandlerTest {
     }
 
     @Test
-    public void shouldCreateWrappedExceptionResponse() throws IOException {
+    public void shouldCreateWrappedExceptionResponse() throws Exception {
         // given
         Exception e = new Exception(new Exception(new Exception("Wrapped message")));
         // when

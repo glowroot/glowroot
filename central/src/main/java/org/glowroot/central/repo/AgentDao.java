@@ -142,8 +142,7 @@ public class AgentDao implements AgentRepository {
 
     // returns stored agent config
     public AgentConfig store(String agentId, @Nullable String agentRollupId,
-            Environment environment, AgentConfig agentConfig)
-            throws InvalidProtocolBufferException {
+            Environment environment, AgentConfig agentConfig) throws Exception {
         AgentConfig existingAgentConfig = readAgentConfig(agentId);
         AgentConfig updatedAgentConfig;
         if (existingAgentConfig == null) {
@@ -263,9 +262,8 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
-    public String readAgentRollupDisplay(String agentRollupId) {
-        AgentRollupConfig agentRollupConfig =
-                agentRollupConfigCache.getUnchecked(agentRollupId).orNull();
+    public String readAgentRollupDisplay(String agentRollupId) throws Exception {
+        AgentRollupConfig agentRollupConfig = agentRollupConfigCache.get(agentRollupId).orNull();
         if (agentRollupConfig == null) {
             return agentRollupId;
         }
@@ -332,8 +330,8 @@ public class AgentDao implements AgentRepository {
     // agentId is index 0
     // its direct parent is index 1
     // etc...
-    public List<String> readAgentRollupIds(String agentId) {
-        String agentRollupId = agentRollupIdCache.getUnchecked(agentId).orNull();
+    public List<String> readAgentRollupIds(String agentId) throws Exception {
+        String agentRollupId = agentRollupIdCache.get(agentId).orNull();
         if (agentRollupId == null) {
             // agent must have been manually deleted
             return ImmutableList.of(agentId);
@@ -353,8 +351,8 @@ public class AgentDao implements AgentRepository {
     }
 
     @Nullable
-    AgentConfig readAgentConfig(String agentId) {
-        return agentConfigCache.getUnchecked(agentId).orNull();
+    AgentConfig readAgentConfig(String agentId) throws Exception {
+        return agentConfigCache.get(agentId).orNull();
     }
 
     void storeAgentConfig(String agentId, AgentConfig agentConfig) {
@@ -369,8 +367,8 @@ public class AgentDao implements AgentRepository {
     }
 
     @Nullable
-    AgentRollupConfig readAgentRollupConfig(String agentRollupId) {
-        return agentRollupConfigCache.getUnchecked(agentRollupId).orNull();
+    AgentRollupConfig readAgentRollupConfig(String agentRollupId) throws Exception {
+        return agentRollupConfigCache.get(agentRollupId).orNull();
     }
 
     void update(AgentRollupConfig agentRollupConfig) {

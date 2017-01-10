@@ -16,7 +16,6 @@
 package org.glowroot.central.repo;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -33,7 +32,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.protobuf.InvalidProtocolBufferException;
 
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
@@ -110,8 +108,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable TransactionConfig getTransactionConfig(String agentId)
-            throws InvalidProtocolBufferException {
+    public @Nullable TransactionConfig getTransactionConfig(String agentId) throws Exception {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
             return null;
@@ -120,7 +117,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable UiConfig getUiConfig(String agentId) throws IOException {
+    public @Nullable UiConfig getUiConfig(String agentId) throws Exception {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
             return null;
@@ -129,7 +126,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable UserRecordingConfig getUserRecordingConfig(String agentId) throws IOException {
+    public @Nullable UserRecordingConfig getUserRecordingConfig(String agentId) throws Exception {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
             return null;
@@ -138,7 +135,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AdvancedConfig getAdvancedConfig(String agentId) throws IOException {
+    public @Nullable AdvancedConfig getAdvancedConfig(String agentId) throws Exception {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
             return null;
@@ -147,8 +144,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<GaugeConfig> getGaugeConfigs(String agentId)
-            throws InvalidProtocolBufferException {
+    public List<GaugeConfig> getGaugeConfigs(String agentId) throws Exception {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
             return ImmutableList.of();
@@ -157,8 +153,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public GaugeConfig getGaugeConfig(String agentId, String version)
-            throws InvalidProtocolBufferException {
+    public GaugeConfig getGaugeConfig(String agentId, String version) throws Exception {
         for (GaugeConfig gaugeConfig : getGaugeConfigs(agentId)) {
             if (Versions.getVersion(gaugeConfig).equals(version)) {
                 return gaugeConfig;
@@ -168,7 +163,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AlertConfig> getAlertConfigs(String agentId) throws InvalidProtocolBufferException {
+    public List<AlertConfig> getAlertConfigs(String agentId) throws Exception {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
             return ImmutableList.of();
@@ -177,8 +172,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind)
-            throws InvalidProtocolBufferException {
+    public List<AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind) throws Exception {
         List<AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : getAlertConfigs(agentId)) {
             if (config.getKind() == alertKind) {
@@ -189,8 +183,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AlertConfig getAlertConfig(String agentId, String version)
-            throws InvalidProtocolBufferException {
+    public @Nullable AlertConfig getAlertConfig(String agentId, String version) throws Exception {
         for (AlertConfig alertConfig : getAlertConfigs(agentId)) {
             if (Versions.getVersion(alertConfig).equals(version)) {
                 return alertConfig;
@@ -200,8 +193,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<PluginConfig> getPluginConfigs(String agentId)
-            throws InvalidProtocolBufferException {
+    public List<PluginConfig> getPluginConfigs(String agentId) throws Exception {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
             return ImmutableList.of();
@@ -210,8 +202,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public PluginConfig getPluginConfig(String agentId, String pluginId)
-            throws InvalidProtocolBufferException {
+    public PluginConfig getPluginConfig(String agentId, String pluginId) throws Exception {
         for (PluginConfig pluginConfig : getPluginConfigs(agentId)) {
             if (pluginConfig.getId().equals(pluginId)) {
                 return pluginConfig;
@@ -221,8 +212,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<InstrumentationConfig> getInstrumentationConfigs(String agentId)
-            throws InvalidProtocolBufferException {
+    public List<InstrumentationConfig> getInstrumentationConfigs(String agentId) throws Exception {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
             return ImmutableList.of();
@@ -232,7 +222,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public InstrumentationConfig getInstrumentationConfig(String agentId, String version)
-            throws IOException {
+            throws Exception {
         for (InstrumentationConfig config : getInstrumentationConfigs(agentId)) {
             if (Versions.getVersion(config).equals(version)) {
                 return config;
@@ -242,7 +232,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentRollupConfig getAgentRollupConfig(String agentRollupId) {
+    public @Nullable AgentRollupConfig getAgentRollupConfig(String agentRollupId)
+            throws Exception {
         return agentDao.readAgentRollupConfig(agentRollupId);
     }
 
@@ -257,27 +248,28 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
+    public @Nullable UserConfig getUserConfigCaseInsensitive(String username)
+            throws Exception {
         return userDao.readCaseInsensitive(username);
     }
 
     @Override
-    public boolean namedUsersExist() {
+    public boolean namedUsersExist() throws Exception {
         return userDao.namedUsersExist();
     }
 
     @Override
-    public List<RoleConfig> getRoleConfigs() {
+    public List<RoleConfig> getRoleConfigs() throws Exception {
         return roleDao.read();
     }
 
     @Override
-    public @Nullable RoleConfig getRoleConfig(String name) {
+    public @Nullable RoleConfig getRoleConfig(String name) throws Exception {
         return roleDao.read(name);
     }
 
     @Override
-    public WebConfig getWebConfig() {
+    public WebConfig getWebConfig() throws Exception {
         WebConfig config = centralConfigDao.read(WEB_KEY, ImmutableWebConfig.class);
         if (config == null) {
             return ImmutableWebConfig.builder()
@@ -293,7 +285,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public CentralStorageConfig getCentralStorageConfig() {
+    public CentralStorageConfig getCentralStorageConfig() throws Exception {
         CentralStorageConfig config =
                 centralConfigDao.read(STORAGE_KEY, ImmutableCentralStorageConfig.class);
         if (config == null) {
@@ -306,7 +298,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public SmtpConfig getSmtpConfig() {
+    public SmtpConfig getSmtpConfig() throws Exception {
         SmtpConfig config = centralConfigDao.read(SMTP_KEY, ImmutableSmtpConfig.class);
         if (config == null) {
             return ImmutableSmtpConfig.builder().build();
@@ -315,7 +307,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public LdapConfig getLdapConfig() {
+    public LdapConfig getLdapConfig() throws Exception {
         LdapConfig config = centralConfigDao.read(LDAP_KEY, ImmutableLdapConfig.class);
         if (config == null) {
             return ImmutableLdapConfig.builder().build();
@@ -883,7 +875,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public StorageConfig getStorageConfig() {
+    public StorageConfig getStorageConfig() throws Exception {
         return getCentralStorageConfig();
     }
 

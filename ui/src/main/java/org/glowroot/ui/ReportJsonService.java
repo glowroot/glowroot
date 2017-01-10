@@ -377,7 +377,7 @@ class ReportJsonService {
     }
 
     private static void checkPermissions(List<String> agentRollupIds, String permission,
-            Authentication authentication) {
+            Authentication authentication) throws Exception {
         for (String agentRollupId : agentRollupIds) {
             if (!authentication.isAgentPermitted(agentRollupId, permission)) {
                 throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);

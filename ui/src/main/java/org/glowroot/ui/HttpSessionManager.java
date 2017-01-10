@@ -112,7 +112,7 @@ class HttpSessionManager {
         }
     }
 
-    void signOut(HttpRequest request) {
+    void signOut(HttpRequest request) throws Exception {
         String sessionId = getSessionId(request);
         if (sessionId != null) {
             Session session = sessions.remove(sessionId);
@@ -122,7 +122,7 @@ class HttpSessionManager {
         }
     }
 
-    void deleteSessionCookie(HttpResponse response) {
+    void deleteSessionCookie(HttpResponse response) throws Exception {
         Cookie cookie = new DefaultCookie(configRepository.getWebConfig().sessionCookieName(), "");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
@@ -131,7 +131,7 @@ class HttpSessionManager {
                 ServerCookieEncoder.STRICT.encode(cookie));
     }
 
-    Authentication getAuthentication(HttpRequest request, boolean touch) {
+    Authentication getAuthentication(HttpRequest request, boolean touch) throws Exception {
         if (offline) {
             return getOfflineViewerAuthentication();
         }
@@ -154,7 +154,7 @@ class HttpSessionManager {
     }
 
     @Nullable
-    String getSessionId(HttpRequest request) {
+    String getSessionId(HttpRequest request) throws Exception {
         String cookieHeader = request.headers().getAsString(HttpHeaderNames.COOKIE);
         if (cookieHeader == null) {
             return null;
@@ -233,7 +233,7 @@ class HttpSessionManager {
         return null;
     }
 
-    private void purgeExpiredSessions() {
+    private void purgeExpiredSessions() throws Exception {
         long currentTimeMillis = clock.currentTimeMillis();
         Iterator<Entry<String, Session>> i = sessions.entrySet().iterator();
         while (i.hasNext()) {
@@ -293,7 +293,7 @@ class HttpSessionManager {
             lastRequest = clock.currentTimeMillis();
         }
 
-        private boolean isTimedOut(long currentTimeMillis) {
+        private boolean isTimedOut(long currentTimeMillis) throws Exception {
             return lastRequest < currentTimeMillis - getTimeoutMillis();
         }
 
@@ -301,7 +301,7 @@ class HttpSessionManager {
             lastRequest = currentTimeMillis;
         }
 
-        private long getTimeoutMillis() {
+        private long getTimeoutMillis() throws Exception {
             return MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
         }
     }
@@ -318,7 +318,7 @@ class HttpSessionManager {
 
         abstract ConfigRepository configRepository();
 
-        boolean isPermitted(String agentRollupId, String permission) {
+        boolean isPermitted(String agentRollupId, String permission) throws Exception {
             if (permission.startsWith("agent:")) {
                 return isAgentPermitted(agentRollupId, permission);
             } else {
@@ -326,7 +326,7 @@ class HttpSessionManager {
             }
         }
 
-        boolean isAgentPermitted(String agentRollupId, String permission) {
+        boolean isAgentPermitted(String agentRollupId, String permission) throws Exception {
             checkState(permission.startsWith("agent:"));
             if (offline()) {
                 return !permission.startsWith("agent:config:edit:");
@@ -339,7 +339,7 @@ class HttpSessionManager {
             return isPermitted(SimplePermission.create(agentRollupId, permission));
         }
 
-        boolean isAdminPermitted(String permission) {
+        boolean isAdminPermitted(String permission) throws Exception {
             checkState(permission.startsWith("admin:"));
             if (offline()) {
                 return permission.equals("admin:view") || permission.startsWith("admin:view:");
@@ -347,7 +347,7 @@ class HttpSessionManager {
             return isPermitted(SimplePermission.create(permission));
         }
 
-        private boolean isPermitted(SimplePermission permission) {
+        private boolean isPermitted(SimplePermission permission) throws Exception {
             for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
                 if (roles().contains(roleConfig.name()) && roleConfig.isPermitted(permission)) {
                     return true;

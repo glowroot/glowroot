@@ -340,7 +340,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                             .build());
                 }
                 startupLogger.info("downstream connection (re-)established with agent: {}",
-                        getAgentDisplay(agentId));
+                        getDisplayForLogging(agentId));
                 return;
             }
             if (agentId == null) {
@@ -359,9 +359,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 responseHolder.response.exchange(value, 1, MINUTES);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
+                logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
             } catch (TimeoutException e) {
-                logger.error("{} - {}", getAgentDisplay(agentId), e.getMessage(), e);
+                logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
             }
         }
 
@@ -370,7 +370,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             logger.debug("{} - {}", t.getMessage(), t);
             if (agentId != null) {
                 startupLogger.info("downstream connection lost with agent: {}",
-                        getAgentDisplay(agentId));
+                        getDisplayForLogging(agentId));
                 connectedAgents.remove(agentId, ConnectedAgent.this);
             }
         }
@@ -656,8 +656,13 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             return response;
         }
 
-        private String getAgentDisplay(String agentId) {
-            return agentDao.readAgentRollupDisplay(agentId);
+        private String getDisplayForLogging(String agentRollupId) {
+            try {
+                return agentDao.readAgentRollupDisplay(agentRollupId);
+            } catch (Exception e) {
+                logger.error("{} - {}", agentRollupId, e.getMessage(), e);
+                return "id:" + agentRollupId;
+            }
         }
     }
 

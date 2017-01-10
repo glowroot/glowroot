@@ -16,7 +16,6 @@
 package org.glowroot.agent.embedded.repo;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -540,7 +539,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private int getMaxAggregateQueriesPerType() throws IOException {
+    private int getMaxAggregateQueriesPerType() throws Exception {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID);
         if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerType()) {
             return advancedConfig.getMaxAggregateQueriesPerType().getValue();
@@ -549,7 +548,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private int getMaxAggregateServiceCallsPerType() throws IOException {
+    private int getMaxAggregateServiceCallsPerType() throws Exception {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID);
         if (advancedConfig != null && advancedConfig.hasMaxAggregateServiceCallsPerType()) {
             return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();

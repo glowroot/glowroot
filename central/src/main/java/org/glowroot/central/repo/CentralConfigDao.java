@@ -76,8 +76,8 @@ public class CentralConfigDao {
     }
 
     @Nullable
-    <T> T read(String key, Class<T> clazz) {
-        return clazz.cast(cache.getUnchecked(ImmutableCacheKey.of(key, clazz)).orNull());
+    <T> T read(String key, Class<T> clazz) throws Exception {
+        return clazz.cast(cache.get(ImmutableCacheKey.of(key, clazz)).orNull());
     }
 
     @Value.Immutable

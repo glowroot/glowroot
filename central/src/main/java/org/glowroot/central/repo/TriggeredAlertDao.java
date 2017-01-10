@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         session.execute(boundStatement);
     }
 
-    private int getMaxTTL() {
+    private int getMaxTTL() throws Exception {
         long maxTTL = 0;
         for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
             if (expirationHours == 0) {

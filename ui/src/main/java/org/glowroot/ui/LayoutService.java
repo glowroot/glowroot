@@ -15,7 +15,6 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -173,7 +172,7 @@ class LayoutService {
     private ImmutableLayout createLayout(Authentication authentication,
             Map<String, AgentRollupLayout> agentRollups, boolean showNavbarTransaction,
             boolean showNavbarError, boolean showNavbarJvm, boolean showNavbarReport,
-            boolean showNavbarConfig) {
+            boolean showNavbarConfig) throws Exception {
         List<Long> rollupExpirationMillis = Lists.newArrayList();
         for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
             rollupExpirationMillis.add(HOURS.toMillis(hours));
@@ -206,7 +205,7 @@ class LayoutService {
 
     // need to filter out agent rollups with no access rights, and move children up if needed
     private List<FilteredAgentRollup> filter(List<AgentRollup> agentRollups,
-            Authentication authentication) {
+            Authentication authentication) throws Exception {
         List<FilteredAgentRollup> filtered = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
             Permissions permissions =
@@ -229,7 +228,7 @@ class LayoutService {
     }
 
     private static Permissions getPermissions(Authentication authentication, String agentRollupId,
-            boolean agent) {
+            boolean agent) throws Exception {
         return ImmutablePermissions.builder()
                 .transaction(ImmutableTransactionPermissions.builder()
                         .overview(authentication.isAgentPermitted(agentRollupId,
@@ -324,7 +323,7 @@ class LayoutService {
             showNavbarConfig = permissions.config().view();
         }
 
-        private void process(FilteredAgentRollup agentRollup, int depth) throws IOException {
+        private void process(FilteredAgentRollup agentRollup, int depth) throws Exception {
             Permissions permissions = agentRollup.permissions();
             hasSomeAccess = true;
             showNavbarTransaction =
@@ -374,7 +373,7 @@ class LayoutService {
             }
         }
 
-        private ImmutableLayout build(Authentication authentication) {
+        private ImmutableLayout build(Authentication authentication) throws Exception {
             if (hasSomeAccess) {
                 return createLayout(authentication, agentRollups, showNavbarTransaction,
                         showNavbarError, showNavbarJvm, showNavbarReport, showNavbarConfig);

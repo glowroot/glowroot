@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import java.util.List;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -64,7 +63,7 @@ public class AgentDaoIT {
     }
 
     @Test
-    public void shouldStoreAgentConfig() throws InvalidProtocolBufferException {
+    public void shouldStoreAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.newBuilder()
                 .setAgentVersion("123")
@@ -77,7 +76,7 @@ public class AgentDaoIT {
     }
 
     @Test
-    public void shouldNotOverwriteExistingAgentConfig() throws InvalidProtocolBufferException {
+    public void shouldNotOverwriteExistingAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.newBuilder()
                 .setAgentVersion("123")
@@ -93,7 +92,7 @@ public class AgentDaoIT {
     }
 
     @Test
-    public void shouldStoreEnvironment() throws InvalidProtocolBufferException {
+    public void shouldStoreEnvironment() throws Exception {
         // given
         Environment environment = Environment.newBuilder()
                 .setHostInfo(HostInfo.newBuilder()
@@ -107,7 +106,7 @@ public class AgentDaoIT {
     }
 
     @Test
-    public void shouldReadAgentRollups() throws InvalidProtocolBufferException {
+    public void shouldReadAgentRollups() throws Exception {
         // given
         agentDao.store("a", null, Environment.getDefaultInstance(),
                 AgentConfig.getDefaultInstance());
@@ -121,7 +120,7 @@ public class AgentDaoIT {
     }
 
     @Test
-    public void shouldReadNullAgentRollup() throws InvalidProtocolBufferException {
+    public void shouldReadNullAgentRollup() throws Exception {
         // given
         agentDao.store("a", null, Environment.getDefaultInstance(),
                 AgentConfig.getDefaultInstance());
@@ -132,7 +131,7 @@ public class AgentDaoIT {
     }
 
     @Test
-    public void shouldReadSingleLevelAgentRollup() throws InvalidProtocolBufferException {
+    public void shouldReadSingleLevelAgentRollup() throws Exception {
         // given
         agentDao.store("a", "x", Environment.getDefaultInstance(),
                 AgentConfig.getDefaultInstance());
@@ -143,7 +142,7 @@ public class AgentDaoIT {
     }
 
     @Test
-    public void shouldReadMultiLevelAgentRollup() throws InvalidProtocolBufferException {
+    public void shouldReadMultiLevelAgentRollup() throws Exception {
         // given
         agentDao.store("a", "x/y/z", Environment.getDefaultInstance(),
                 AgentConfig.getDefaultInstance());

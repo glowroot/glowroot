@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,8 @@ public class FullQueryTextDao {
         return row.getString(0);
     }
 
-    List<ResultSetFuture> store(String agentRollupId, String fullTextSha1, String fullText) {
+    List<ResultSetFuture> store(String agentRollupId, String fullTextSha1, String fullText)
+            throws Exception {
         FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
@@ -107,7 +108,7 @@ public class FullQueryTextDao {
         return storeInternal(rateLimiterKey, fullText);
     }
 
-    List<ResultSetFuture> updateTTL(String agentRollupId, String fullTextSha1) {
+    List<ResultSetFuture> updateTTL(String agentRollupId, String fullTextSha1) throws Exception {
         FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
@@ -126,7 +127,8 @@ public class FullQueryTextDao {
         return storeInternal(rateLimiterKey, fullText);
     }
 
-    List<ResultSetFuture> updateCheckTTL(String agentRollupId, String fullTextSha1) {
+    List<ResultSetFuture> updateCheckTTL(String agentRollupId, String fullTextSha1)
+            throws Exception {
         FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
@@ -136,7 +138,8 @@ public class FullQueryTextDao {
         return futures;
     }
 
-    private List<ResultSetFuture> storeInternal(FullQueryTextKey rateLimiterKey, String fullText) {
+    private List<ResultSetFuture> storeInternal(FullQueryTextKey rateLimiterKey, String fullText)
+            throws Exception {
         List<ResultSetFuture> futures = Lists.newArrayList();
         futures.add(storeCheckInternal(rateLimiterKey));
         BoundStatement boundStatement = insertPS.bind();
@@ -149,7 +152,7 @@ public class FullQueryTextDao {
         return futures;
     }
 
-    private ResultSetFuture storeCheckInternal(FullQueryTextKey rateLimiterKey) {
+    private ResultSetFuture storeCheckInternal(FullQueryTextKey rateLimiterKey) throws Exception {
         BoundStatement boundStatement = insertCheckPS.bind();
         int i = 0;
         boundStatement.setString(i++, rateLimiterKey.agentRollupId());
@@ -159,7 +162,7 @@ public class FullQueryTextDao {
                 () -> rateLimiter.invalidate(rateLimiterKey));
     }
 
-    private int getTTL() {
+    private int getTTL() throws Exception {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         RollupConfig lastRollupConfig = rollupConfigs.get(rollupConfigs.size() - 1);
         // adding largest rollup time to account for query being retained longer by rollups

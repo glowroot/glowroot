@@ -82,13 +82,13 @@ public class RoleDao {
         }
     }
 
-    List<RoleConfig> read() {
-        return allRolesCache.getUnchecked(ALL_ROLES_SINGLE_CACHE_KEY);
+    List<RoleConfig> read() throws Exception {
+        return allRolesCache.get(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
     @Nullable
-    RoleConfig read(String name) {
-        return cache.getUnchecked(name).orNull();
+    RoleConfig read(String name) throws Exception {
+        return cache.get(name).orNull();
     }
 
     void delete(String name) throws Exception {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
     }
 
     void store(String agentRollupId, String transactionType, String traceAttributeName,
-            List<ResultSetFuture> futures) {
+            List<ResultSetFuture> futures) throws Exception {
         TraceAttributeNameKey rateLimiterKey = ImmutableTraceAttributeNameKey.of(agentRollupId,
                 transactionType, traceAttributeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
@@ -101,7 +101,7 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
                 () -> rateLimiter.invalidate(rateLimiterKey)));
     }
 
-    private int getMaxTTL() {
+    private int getMaxTTL() throws Exception {
         long maxTTL = 0;
         for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
             if (expirationHours == 0) {

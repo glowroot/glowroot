@@ -324,7 +324,7 @@ class TraceCommonService {
         return mutableProfile.toJson();
     }
 
-    private String toJsonLiveHeader(String agentId, Trace.Header header) throws IOException {
+    private String toJsonLiveHeader(String agentId, Trace.Header header) throws Exception {
         boolean hasProfile = header.getMainThreadProfileSampleCount() > 0
                 || header.getAuxThreadProfileSampleCount() > 0;
         return toJson(agentId, header, header.getPartial(),
@@ -332,13 +332,13 @@ class TraceCommonService {
                 hasProfile ? Existence.YES : Existence.NO);
     }
 
-    private String toJsonRepoHeader(String agentId, HeaderPlus header) throws IOException {
+    private String toJsonRepoHeader(String agentId, HeaderPlus header) throws Exception {
         return toJson(agentId, header.header(), false, header.entriesExistence(),
                 header.profileExistence());
     }
 
     private String toJson(String agentId, Trace.Header header, boolean active,
-            Existence entriesExistence, Existence profileExistence) throws IOException {
+            Existence entriesExistence, Existence profileExistence) throws Exception {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();

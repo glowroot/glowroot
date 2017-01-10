@@ -461,7 +461,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         return response;
     }
 
-    private FullHttpResponse handleNotAuthenticated(HttpRequest request) {
+    private FullHttpResponse handleNotAuthenticated(HttpRequest request) throws Exception {
         if (httpSessionManager.getSessionId(request) != null) {
             return HttpServices.createJsonResponse("{\"timedOut\":true}", UNAUTHORIZED);
         } else {

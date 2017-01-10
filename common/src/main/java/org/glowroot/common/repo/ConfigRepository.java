@@ -15,7 +15,6 @@
  */
 package org.glowroot.common.repo;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -69,42 +68,41 @@ public interface ConfigRepository {
             Long.getLong("glowroot.internal.rollup.3.intervalMillis", HOURS.toMillis(4));
 
     @Nullable
-    TransactionConfig getTransactionConfig(String agentId) throws IOException;
+    TransactionConfig getTransactionConfig(String agentId) throws Exception;
 
     @Nullable
-    UiConfig getUiConfig(String agentId) throws IOException;
+    UiConfig getUiConfig(String agentId) throws Exception;
 
     @Nullable
-    UserRecordingConfig getUserRecordingConfig(String agentId) throws IOException;
+    UserRecordingConfig getUserRecordingConfig(String agentId) throws Exception;
 
     @Nullable
-    AdvancedConfig getAdvancedConfig(String agentId) throws IOException;
+    AdvancedConfig getAdvancedConfig(String agentId) throws Exception;
 
-    List<GaugeConfig> getGaugeConfigs(String agentId) throws IOException;
-
-    @Nullable
-    GaugeConfig getGaugeConfig(String agentId, String version) throws IOException;
-
-    List<AlertConfig> getAlertConfigs(String agentId) throws IOException;
-
-    List<AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind) throws IOException;
+    List<GaugeConfig> getGaugeConfigs(String agentId) throws Exception;
 
     @Nullable
-    AlertConfig getAlertConfig(String agentId, String version) throws IOException;
+    GaugeConfig getGaugeConfig(String agentId, String version) throws Exception;
 
-    List<PluginConfig> getPluginConfigs(String agentId) throws IOException;
+    List<AlertConfig> getAlertConfigs(String agentId) throws Exception;
 
-    @Nullable
-    PluginConfig getPluginConfig(String agentId, String pluginId) throws IOException;
-
-    List<InstrumentationConfig> getInstrumentationConfigs(String agentId) throws IOException;
+    List<AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind) throws Exception;
 
     @Nullable
-    InstrumentationConfig getInstrumentationConfig(String agentId, String version)
-            throws IOException;
+    AlertConfig getAlertConfig(String agentId, String version) throws Exception;
+
+    List<PluginConfig> getPluginConfigs(String agentId) throws Exception;
 
     @Nullable
-    AgentRollupConfig getAgentRollupConfig(String agentRollupId);
+    PluginConfig getPluginConfig(String agentId, String pluginId) throws Exception;
+
+    List<InstrumentationConfig> getInstrumentationConfigs(String agentId) throws Exception;
+
+    @Nullable
+    InstrumentationConfig getInstrumentationConfig(String agentId, String version) throws Exception;
+
+    @Nullable
+    AgentRollupConfig getAgentRollupConfig(String agentRollupId) throws Exception;
 
     List<UserConfig> getUserConfigs();
 
@@ -112,24 +110,24 @@ public interface ConfigRepository {
     UserConfig getUserConfig(String username) throws Exception;
 
     @Nullable
-    UserConfig getUserConfigCaseInsensitive(String username);
+    UserConfig getUserConfigCaseInsensitive(String username) throws Exception;
 
-    boolean namedUsersExist();
+    boolean namedUsersExist() throws Exception;
 
-    List<RoleConfig> getRoleConfigs();
+    List<RoleConfig> getRoleConfigs() throws Exception;
 
     @Nullable
-    RoleConfig getRoleConfig(String name);
+    RoleConfig getRoleConfig(String name) throws Exception;
 
-    WebConfig getWebConfig();
+    WebConfig getWebConfig() throws Exception;
 
-    FatStorageConfig getFatStorageConfig();
+    FatStorageConfig getFatStorageConfig() throws Exception;
 
-    CentralStorageConfig getCentralStorageConfig();
+    CentralStorageConfig getCentralStorageConfig() throws Exception;
 
-    SmtpConfig getSmtpConfig();
+    SmtpConfig getSmtpConfig() throws Exception;
 
-    LdapConfig getLdapConfig();
+    LdapConfig getLdapConfig() throws Exception;
 
     void updateTransactionConfig(String agentId, TransactionConfig transactionConfig,
             String priorVersion) throws Exception;
@@ -200,7 +198,7 @@ public interface ConfigRepository {
 
     void updateLdapConfig(LdapConfig ldapConfig, String priorVersion) throws Exception;
 
-    StorageConfig getStorageConfig();
+    StorageConfig getStorageConfig() throws Exception;
 
     long getGaugeCollectionIntervalMillis();
 

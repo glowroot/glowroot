@@ -236,7 +236,8 @@ public class AggregateDao implements AggregateRepository {
     private final ImmutableList<Table> allTables;
 
     public AggregateDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository, Clock clock) {
+            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository, Clock clock)
+            throws Exception {
         this.session = session;
         this.agentDao = agentDao;
         this.transactionTypeDao = transactionTypeDao;
@@ -1373,7 +1374,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> rollupQueries(RollupParams rollup, TransactionQuery query)
-            throws IOException {
+            throws Exception {
         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, queryTable);
         if (results.isExhausted()) {
             return ImmutableList.of();
@@ -1382,7 +1383,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> rollupQueriesFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups) {
+            TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, queryTable);
         if (rows.isEmpty()) {
             return ImmutableList.of();
@@ -1391,7 +1392,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> rollupQueriesFromRows(RollupParams rollup, TransactionQuery query,
-            Iterable<Row> rows, boolean rollupFromChildren) {
+            Iterable<Row> rows, boolean rollupFromChildren) throws Exception {
         QueryCollector collector = new QueryCollector(rollup.maxAggregateQueriesPerType());
         for (Row row : rows) {
             int i = 0;
@@ -1743,7 +1744,7 @@ public class AggregateDao implements AggregateRepository {
     private List<ResultSetFuture> insertQueries(Map<String, List<MutableQuery>> map,
             int rollupLevel, String agentRollupId, String transactionType,
             @Nullable String transactionName, long captureTime, int adjustedTTL,
-            boolean rollupFromChildren) {
+            boolean rollupFromChildren) throws Exception {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (Entry<String, List<MutableQuery>> entry : map.entrySet()) {
             for (MutableQuery query : entry.getValue()) {
@@ -1949,7 +1950,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private List<Integer> getTTLs() {
+    private List<Integer> getTTLs() throws Exception {
         List<Integer> ttls = Lists.newArrayList();
         List<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
@@ -1960,7 +1961,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private RollupParams getRollupParams(String agentRollupId, int rollupLevel, int adjustedTTL)
-            throws IOException {
+            throws Exception {
         ImmutableRollupParams.Builder rollupInfo = ImmutableRollupParams.builder()
                 .agentRollupId(agentRollupId)
                 .rollupLevel(rollupLevel)

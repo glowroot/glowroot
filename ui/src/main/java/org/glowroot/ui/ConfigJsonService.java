@@ -15,7 +15,6 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -173,7 +172,7 @@ class ConfigJsonService {
         return getAdvancedConfig(agentId);
     }
 
-    private String getPluginConfigInternal(String agentId, String pluginId) throws IOException {
+    private String getPluginConfigInternal(String agentId, String pluginId) throws Exception {
         PluginConfig config = configRepository.getPluginConfig(agentId, pluginId);
         if (config == null) {
             throw new IllegalArgumentException("Plugin id not found: " + pluginId);

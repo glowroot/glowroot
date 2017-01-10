@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,8 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         return builder.build();
     }
 
-    List<ResultSetFuture> store(List<String> agentRollups, String transactionType) {
+    List<ResultSetFuture> store(List<String> agentRollups, String transactionType)
+            throws Exception {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (String agentRollupId : agentRollups) {
             TransactionTypeKey rateLimiterKey =
@@ -111,7 +112,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         return futures;
     }
 
-    private int getMaxTTL() {
+    private int getMaxTTL() throws Exception {
         long maxTTL = 0;
         for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
             if (expirationHours == 0) {
