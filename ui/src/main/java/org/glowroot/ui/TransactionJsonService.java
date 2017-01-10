@@ -118,7 +118,7 @@ class TransactionJsonService {
 
     @GET(path = "/backend/transaction/percentiles", permission = "agent:transaction:overview")
     String getPercentiles(@BindAgentRollupId String agentRollupId,
-            @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
+            @BindRequest TransactionPercentileRequest request, @BindAutoRefresh boolean autoRefresh)
             throws Exception {
         TransactionQuery query = toChartQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
@@ -388,7 +388,7 @@ class TransactionJsonService {
         return getTimerDataSeries(request, stackedPoints, liveCaptureTime);
     }
 
-    private PercentileData getDataSeriesForPercentileChart(TransactionDataRequest request,
+    private PercentileData getDataSeriesForPercentileChart(TransactionPercentileRequest request,
             List<PercentileAggregate> percentileAggregates, List<Double> percentiles,
             long liveCaptureTime) throws Exception {
         if (percentileAggregates.isEmpty()) {
@@ -678,7 +678,10 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    interface TransactionDataRequest extends RequestBase {
+    interface TransactionDataRequest extends RequestBase {}
+
+    @Value.Immutable
+    interface TransactionPercentileRequest extends RequestBase {
         // singular because this is used in query string
         ImmutableList<Double> percentile();
     }
