@@ -39,7 +39,6 @@ class LazyHttpServer {
     private final int port;
     private final HttpSessionManager httpSessionManager;
     private final IndexHtmlHttpService indexHtmlHttpService;
-    private final LayoutHttpService layoutHttpService;
     private final LayoutService layoutService;
     private final ConfigRepository configRepository;
     private final TraceDetailHttpService traceDetailHttpService;
@@ -53,9 +52,8 @@ class LazyHttpServer {
     private volatile @Nullable HttpServer httpServer;
 
     LazyHttpServer(String bindAddress, int port, HttpSessionManager httpSessionManager,
-            IndexHtmlHttpService indexHtmlHttpService, LayoutHttpService layoutHttpService,
-            LayoutService layoutService, ConfigRepository configRepository,
-            TraceDetailHttpService traceDetailHttpService,
+            IndexHtmlHttpService indexHtmlHttpService, LayoutService layoutService,
+            ConfigRepository configRepository, TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
             GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
             File baseDir, Clock clock, int numWorkerThreads) {
@@ -63,7 +61,6 @@ class LazyHttpServer {
         this.port = port;
         this.httpSessionManager = httpSessionManager;
         this.indexHtmlHttpService = indexHtmlHttpService;
-        this.layoutHttpService = layoutHttpService;
         this.layoutService = layoutService;
         this.configRepository = configRepository;
         this.traceDetailHttpService = traceDetailHttpService;
@@ -120,7 +117,6 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/profile/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/backend/layout$"), layoutHttpService);
         // export service is not bound under /backend since the export url is visible to users
         // as the download url for the export file
         httpServices.put(Pattern.compile("^/export/trace$"), traceExportHttpService);

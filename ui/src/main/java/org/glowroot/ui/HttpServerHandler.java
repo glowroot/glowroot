@@ -223,8 +223,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
             boolean autoRefresh = isAutoRefresh(decoder.parameters().get("auto-refresh"));
+            boolean touchSession = !autoRefresh && !request.uri().equals("/backend/layout");
             Authentication authentication =
-                    httpSessionManager.getAuthentication(request, !autoRefresh);
+                    httpSessionManager.getAuthentication(request, touchSession);
             Glowroot.setTransactionUser(authentication.caseAmbiguousUsername());
             response = handleRequest(path, ctx, request, authentication);
             if (response != null) {
@@ -333,12 +334,16 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             httpSessionManager.deleteSessionCookie(response);
             return response;
         }
-        if (path.equals("/backend/check")) {
+        if (path.equals("/backend/check-layout")) {
             Authentication authentication = httpSessionManager.getAuthentication(request, false);
             FullHttpResponse response = HttpServices.createJsonResponse("", OK);
             response.headers().add("Glowroot-Layout-Version",
                     layoutService.getLayoutVersion(authentication));
             return response;
+        }
+        if (path.equals("/backend/layout")) {
+            Authentication authentication = httpSessionManager.getAuthentication(request, false);
+            return HttpServices.createJsonResponse(layoutService.getLayout(authentication), OK);
         }
         return null;
     }

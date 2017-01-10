@@ -245,7 +245,7 @@ glowroot.run([
     // check layout every 60 seconds, this will notice when session expires and sending user to /login
     function scheduleNextCheckLayout() {
       $timeout(function () {
-        $http.get('backend/check')
+        $http.get('backend/check-layout')
             .then(function () {
               // Glowroot-Layout-Version is returned and the http interceptor will notice and take appropriate action
               scheduleNextCheckLayout();
