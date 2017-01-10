@@ -221,7 +221,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<Gauge> getGauges(String agentRollupId) {
+    public List<Gauge> getGauges(String agentRollupId) throws Exception {
         List<Gauge> gauges = Lists.newArrayList();
         for (String gaugeName : gaugeNameDao.getGaugeNames(agentRollupId)) {
             gauges.add(Gauges.getGauge(gaugeName));

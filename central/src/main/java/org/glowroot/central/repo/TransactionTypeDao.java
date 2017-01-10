@@ -24,10 +24,14 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.RateLimiter;
@@ -44,6 +48,8 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
+    private static final String SINGLE_CACHE_KEY = "x";
+
     private final Session session;
     private final ConfigRepository configRepository;
 
@@ -51,6 +57,9 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     private final PreparedStatement readPS;
 
     private final RateLimiter<TransactionTypeKey> rateLimiter = new RateLimiter<>();
+
+    private final LoadingCache<String, Map<String, List<String>>> cache =
+            CacheBuilder.newBuilder().build(new TransactionTypeCacheLoader());
 
     public TransactionTypeDao(Session session, ConfigRepository configRepository) {
         this.session = session;
@@ -67,29 +76,8 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     @Override
-    public Map<String, List<String>> read() {
-        ResultSet results = session.execute(readPS.bind());
-
-        ImmutableMap.Builder<String, List<String>> builder = ImmutableMap.builder();
-        String currAgentRollup = null;
-        List<String> currTransactionTypes = Lists.newArrayList();
-        for (Row row : results) {
-            String agentRollupId = checkNotNull(row.getString(0));
-            String transactionType = checkNotNull(row.getString(1));
-            if (currAgentRollup == null) {
-                currAgentRollup = agentRollupId;
-            }
-            if (!agentRollupId.equals(currAgentRollup)) {
-                builder.put(currAgentRollup, ImmutableList.copyOf(currTransactionTypes));
-                currAgentRollup = agentRollupId;
-                currTransactionTypes = Lists.newArrayList();
-            }
-            currTransactionTypes.add(transactionType);
-        }
-        if (currAgentRollup != null) {
-            builder.put(currAgentRollup, ImmutableList.copyOf(currTransactionTypes));
-        }
-        return builder.build();
+    public Map<String, List<String>> read() throws Exception {
+        return cache.get(SINGLE_CACHE_KEY);
     }
 
     List<ResultSetFuture> store(List<String> agentRollups, String transactionType)
@@ -106,8 +94,11 @@ public class TransactionTypeDao implements TransactionTypeRepository {
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, transactionType);
             boundStatement.setInt(i++, getMaxTTL());
-            futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
-                    () -> rateLimiter.invalidate(rateLimiterKey)));
+            ResultSetFuture future = Sessions.executeAsyncWithOnFailure(session, boundStatement,
+                    () -> rateLimiter.invalidate(rateLimiterKey));
+            future.addListener(() -> cache.invalidate(SINGLE_CACHE_KEY),
+                    MoreExecutors.directExecutor());
+            futures.add(future);
         }
         return futures;
     }
@@ -130,5 +121,34 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     interface TransactionTypeKey {
         String agentRollupId();
         String transactionType();
+    }
+
+    private class TransactionTypeCacheLoader
+            extends CacheLoader<String, Map<String, List<String>>> {
+        @Override
+        public Map<String, List<String>> load(String key) {
+            ResultSet results = session.execute(readPS.bind());
+
+            ImmutableMap.Builder<String, List<String>> builder = ImmutableMap.builder();
+            String currAgentRollup = null;
+            List<String> currTransactionTypes = Lists.newArrayList();
+            for (Row row : results) {
+                String agentRollupId = checkNotNull(row.getString(0));
+                String transactionType = checkNotNull(row.getString(1));
+                if (currAgentRollup == null) {
+                    currAgentRollup = agentRollupId;
+                }
+                if (!agentRollupId.equals(currAgentRollup)) {
+                    builder.put(currAgentRollup, ImmutableList.copyOf(currTransactionTypes));
+                    currAgentRollup = agentRollupId;
+                    currTransactionTypes = Lists.newArrayList();
+                }
+                currTransactionTypes.add(transactionType);
+            }
+            if (currAgentRollup != null) {
+                builder.put(currAgentRollup, ImmutableList.copyOf(currTransactionTypes));
+            }
+            return builder.build();
+        }
     }
 }
