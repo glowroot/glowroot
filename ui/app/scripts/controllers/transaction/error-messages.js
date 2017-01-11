@@ -41,12 +41,13 @@ glowroot.controller('ErrorMessagesCtrl', [
     var errorMessageLimit = 25;
     var dataSeriesExtra;
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
-      $location.search('filter', $scope.filter || null);
-      refreshData();
-    });
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh'],
+        function (newValues, oldValues) {
+          $location.search('filter', $scope.filter || null);
+          refreshData(newValues[3] !== oldValues[3]);
+        });
 
-    function refreshData(deferred) {
+    function refreshData(autoRefresh, deferred) {
       if (($scope.layout.central && !$scope.agentRollupId) || !$scope.transactionType) {
         return;
       }
@@ -66,6 +67,9 @@ glowroot.controller('ErrorMessagesCtrl', [
         exclude: parseResult.excludes,
         errorMessageLimit: errorMessageLimit
       };
+      if (autoRefresh) {
+        query.autoRefresh = true;
+      }
       var showChartSpinner = !$scope.suppressChartSpinner;
       if (showChartSpinner) {
         $scope.showChartSpinner++;
@@ -126,7 +130,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     $scope.showMoreErrorMessages = function (deferred) {
       // double each time
       errorMessageLimit *= 2;
-      refreshData(deferred);
+      refreshData(false, deferred);
     };
 
     $scope.refresh = function () {

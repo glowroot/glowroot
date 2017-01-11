@@ -57,18 +57,19 @@ glowroot.controller('TracesCtrl', [
       {text: '5,000', value: 5000}
     ];
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
-      appliedFilter.from = $scope.range.chartFrom;
-      appliedFilter.to = $scope.range.chartTo;
-      updateLocation();
-      if ($scope.suppressChartRefresh) {
-        $scope.suppressChartRefresh = false;
-        return;
-      }
-      refreshChart();
-    });
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh'],
+        function (newValues, oldValues) {
+          appliedFilter.from = $scope.range.chartFrom;
+          appliedFilter.to = $scope.range.chartTo;
+          updateLocation();
+          if ($scope.suppressChartRefresh) {
+            $scope.suppressChartRefresh = false;
+            return;
+          }
+          refreshChart(newValues[3] !== oldValues[3]);
+        });
 
-    function refreshChart(deferred) {
+    function refreshChart(autoRefresh, deferred) {
       if ((!$scope.agentRollupId && $scope.layout.central) || !$scope.transactionType) {
         return;
       }
@@ -79,6 +80,9 @@ glowroot.controller('TracesCtrl', [
       query.agentRollupId = $scope.agentRollupId;
       if ($scope.transactionName) {
         query.transactionName = $scope.transactionName;
+      }
+      if (autoRefresh) {
+        query.autoRefresh = true;
       }
       var showChartSpinner = !$scope.suppressChartSpinner;
       if (showChartSpinner) {
