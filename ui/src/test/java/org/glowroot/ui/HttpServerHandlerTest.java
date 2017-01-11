@@ -17,18 +17,32 @@ package org.glowroot.ui;
 
 import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.h2.api.ErrorCode;
 import org.junit.Test;
 
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.util.Clock;
+import org.glowroot.ui.HttpSessionManager.Authentication;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class HttpServerHandlerTest {
+
+    private static final HttpServerHandler HTTP_SERVER_HANDLER =
+            new HttpServerHandler(mock(LayoutService.class), mock(ConfigRepository.class),
+                    new HashMap<Pattern, HttpService>(), mock(HttpSessionManager.class),
+                    new ArrayList<Object>(), mock(Clock.class));
 
     @Test
     public void shouldCreateJsonServiceExceptionResponse() throws Exception {
@@ -36,7 +50,8 @@ public class HttpServerHandlerTest {
         Exception e = new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED,
                 new IllegalStateException("An ignored message"));
         // when
-        FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
+        FullHttpResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
+                mock(FullHttpRequest.class), mock(Authentication.class), e);
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":\"\"}");
@@ -48,7 +63,8 @@ public class HttpServerHandlerTest {
         // given
         Exception e = new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, "A message");
         // when
-        FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
+        FullHttpResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
+                mock(FullHttpRequest.class), mock(Authentication.class), e);
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":\"A message\"}");
@@ -63,7 +79,8 @@ public class HttpServerHandlerTest {
                 new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED,
                         new IllegalStateException("An ignored message")));
         // when
-        FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
+        FullHttpResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
+                mock(FullHttpRequest.class), mock(Authentication.class), e);
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":\"\"}");
@@ -77,7 +94,8 @@ public class HttpServerHandlerTest {
         Exception e = new InvocationTargetException(
                 new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, "A message"));
         // when
-        FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
+        FullHttpResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
+                mock(FullHttpRequest.class), mock(Authentication.class), e);
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":\"A message\"}");
@@ -89,7 +107,8 @@ public class HttpServerHandlerTest {
         // given
         Exception e = new SQLException("", "", ErrorCode.STATEMENT_WAS_CANCELED);
         // when
-        FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
+        FullHttpResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
+                mock(FullHttpRequest.class), mock(Authentication.class), e);
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":"
@@ -102,7 +121,8 @@ public class HttpServerHandlerTest {
         // given
         Exception e = new SQLException("Another message", "", ErrorCode.STATEMENT_WAS_CANCELED + 1);
         // when
-        FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
+        FullHttpResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
+                mock(FullHttpRequest.class), mock(Authentication.class), e);
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
@@ -116,7 +136,8 @@ public class HttpServerHandlerTest {
         // given
         Exception e = new Exception("Banother message");
         // when
-        FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
+        FullHttpResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
+                mock(FullHttpRequest.class), mock(Authentication.class), e);
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
@@ -130,7 +151,8 @@ public class HttpServerHandlerTest {
         // given
         Exception e = new Exception(new Exception(new Exception("Wrapped message")));
         // when
-        FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
+        FullHttpResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
+                mock(FullHttpRequest.class), mock(Authentication.class), e);
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);

@@ -370,11 +370,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         List<String> agentRollupIds = decoder.parameters().get("agent-rollup-id");
         String agentRollupId = agentRollupIds == null ? "" : agentRollupIds.get(0);
         if (!authentication.isPermitted(agentRollupId, permission)) {
-            if (authentication.anonymous()) {
-                return handleNotAuthenticated(request);
-            } else {
-                return handleNotAuthorized();
-            }
+            return handleNotAuthorized(request, authentication);
         }
         return httpService.handleRequest(ctx, request, authentication);
     }
@@ -426,20 +422,44 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     || authentication.isAdminPermitted(jsonServiceMapping.permission());
         }
         if (!permitted) {
-            if (authentication.anonymous()) {
-                return handleNotAuthenticated(request);
-            } else {
-                return handleNotAuthorized();
-            }
+            return handleNotAuthorized(request, authentication);
         }
         Object responseObject;
         try {
             responseObject = callMethod(jsonServiceMapping, parameterTypes, parameters,
                     queryParameters, authentication, request);
         } catch (Exception e) {
-            return newHttpResponseFromException(e);
+            return newHttpResponseFromException(request, authentication, e);
         }
         return buildJsonResponse(responseObject);
+    }
+
+    FullHttpResponse newHttpResponseFromException(FullHttpRequest request,
+            Authentication authentication, Exception exception) throws Exception {
+        Exception e = exception;
+        if (e instanceof InvocationTargetException) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Exception) {
+                e = (Exception) cause;
+            }
+        }
+        if (e instanceof JsonServiceException) {
+            // this is an "expected" exception, no need to log
+            JsonServiceException jsonServiceException = (JsonServiceException) e;
+            if (jsonServiceException.getStatus() == FORBIDDEN) {
+                return handleNotAuthorized(request, authentication);
+            } else {
+                return newHttpResponseWithMessage(jsonServiceException.getStatus(),
+                        jsonServiceException.getMessage());
+            }
+        }
+        logger.error(e.getMessage(), e);
+        if (e instanceof SQLException
+                && ((SQLException) e).getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED) {
+            return newHttpResponseWithMessage(REQUEST_TIMEOUT,
+                    "Query timed out (timeout is configurable under Configuration > Advanced)");
+        }
+        return newHttpResponseWithStackTrace(e, INTERNAL_SERVER_ERROR, null);
     }
 
     private FullHttpResponse buildJsonResponse(@Nullable Object responseObject) {
@@ -461,16 +481,17 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         return response;
     }
 
-    private FullHttpResponse handleNotAuthenticated(HttpRequest request) throws Exception {
-        if (httpSessionManager.getSessionId(request) != null) {
-            return HttpServices.createJsonResponse("{\"timedOut\":true}", UNAUTHORIZED);
+    private FullHttpResponse handleNotAuthorized(FullHttpRequest request,
+            Authentication authentication) throws Exception {
+        if (authentication.anonymous()) {
+            if (httpSessionManager.getSessionId(request) != null) {
+                return HttpServices.createJsonResponse("{\"timedOut\":true}", UNAUTHORIZED);
+            } else {
+                return new DefaultFullHttpResponse(HTTP_1_1, UNAUTHORIZED);
+            }
         } else {
-            return new DefaultFullHttpResponse(HTTP_1_1, UNAUTHORIZED);
+            return new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN);
         }
-    }
-
-    private FullHttpResponse handleNotAuthorized() {
-        return new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN);
     }
 
     private FullHttpResponse handleStaticResource(String path, HttpRequest request)
@@ -583,30 +604,6 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         } else {
             return classLoader.getResource(path);
         }
-    }
-
-    @VisibleForTesting
-    static FullHttpResponse newHttpResponseFromException(Exception exception) {
-        Exception e = exception;
-        if (e instanceof InvocationTargetException) {
-            Throwable cause = e.getCause();
-            if (cause instanceof Exception) {
-                e = (Exception) cause;
-            }
-        }
-        if (e instanceof JsonServiceException) {
-            // this is an "expected" exception, no need to log
-            JsonServiceException jsonServiceException = (JsonServiceException) e;
-            return newHttpResponseWithMessage(jsonServiceException.getStatus(),
-                    jsonServiceException.getMessage());
-        }
-        logger.error(e.getMessage(), e);
-        if (e instanceof SQLException
-                && ((SQLException) e).getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED) {
-            return newHttpResponseWithMessage(REQUEST_TIMEOUT,
-                    "Query timed out (timeout is configurable under Configuration > Advanced)");
-        }
-        return newHttpResponseWithStackTrace(e, INTERNAL_SERVER_ERROR, null);
     }
 
     private static FullHttpResponse newHttpResponseWithMessage(HttpResponseStatus status,
