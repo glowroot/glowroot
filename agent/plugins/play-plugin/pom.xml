@@ -79,11 +79,11 @@
     <profile>
       <id>play-2.x</id>
       <properties>
-        <play.version>2.5.1</play.version>
+        <play.version>2.5.10</play.version>
         <scala.major.version>2.11</scala.major.version>
         <scala.version>2.11.8</scala.version>
-        <netty.version>4.0.34.Final</netty.version>
-        <jackson.version>2.7.1</jackson.version>
+        <netty.version>4.0.41.Final</netty.version>
+        <jackson.version>2.7.8</jackson.version>
         <test.app.version>2.5.x</test.app.version>
         <test.app.language>scala</test.app.language>
       </properties>

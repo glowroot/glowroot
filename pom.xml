@@ -84,7 +84,7 @@
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.8</logback.version>
-    <immutables.version>2.3.10</immutables.version>
+    <immutables.version>2.4.0</immutables.version>
     <javax.mail.version>1.5.6</javax.mail.version>
     <jmh.version>1.17.3</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -262,7 +262,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.5.0</version>
+        <version>2.5.7</version>
       </dependency>
       <dependency>
         <groupId>com.ning</groupId>
@@ -769,7 +769,7 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>2.1.6</checker.qual.version>
+        <checker.qual.version>2.1.7</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>

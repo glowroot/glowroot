@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,9 +105,20 @@ public class Play {
         runPlay2x("2.4.4", "2.11.8", "3.10.4.Final", "2.5.4");
         runPlay2x("2.4.5", "2.11.8", "3.10.4.Final", "2.5.4");
         runPlay2x("2.4.6", "2.11.8", "3.10.4.Final", "2.5.4");
+        runPlay2x("2.4.7", "2.11.8", "3.10.4.Final", "2.5.4");
+        runPlay2x("2.4.8", "2.11.8", "3.10.4.Final", "2.5.4");
 
         runPlay2x("2.5.0", "2.11.8", "4.0.33.Final", "2.7.1");
         runPlay2x("2.5.1", "2.11.8", "4.0.34.Final", "2.7.1");
+        runPlay2x("2.5.2", "2.11.8", "4.0.36.Final", "2.7.1");
+        runPlay2x("2.5.3", "2.11.8", "4.0.36.Final", "2.7.1");
+        runPlay2x("2.5.4", "2.11.8", "4.0.36.Final", "2.7.1");
+        runPlay2x("2.5.5", "2.11.8", "4.0.39.Final", "2.7.6");
+        runPlay2x("2.5.6", "2.11.8", "4.0.39.Final", "2.7.6");
+        runPlay2x("2.5.7", "2.11.8", "4.0.41.Final", "2.7.6");
+        runPlay2x("2.5.8", "2.11.8", "4.0.41.Final", "2.7.6");
+        runPlay2x("2.5.9", "2.11.8", "4.0.41.Final", "2.7.6");
+        runPlay2x("2.5.10", "2.11.8", "4.0.41.Final", "2.7.8");
     }
 
     private static void runPlay2x(String playVersion, String scalaVersion, String nettyVersion,

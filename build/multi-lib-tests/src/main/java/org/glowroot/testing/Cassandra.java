@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,20 +31,25 @@ public class Cassandra {
         run("2.0.9.2");
         run("2.0.12.1");
         run("2.0.12.2");
+        run("2.0.12.3");
         for (int i = 0; i <= 10; i++) {
             run("2.1." + i);
         }
         run("2.1.7.1");
         run("2.1.10.1");
         run("2.1.10.2");
+        run("2.1.10.3");
         run("3.0.0");
         run("3.0.1");
         run("3.0.2");
         run("3.0.3");
         run("3.0.4");
+        run("3.0.5");
+        run("3.0.6");
         run("3.1.0");
         run("3.1.1");
         run("3.1.2");
+        run("3.1.3");
     }
 
     private static void run(String version) throws Exception {
