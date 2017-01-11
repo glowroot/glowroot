@@ -36,18 +36,17 @@ glowroot.controller('TransactionPercentilesCtrl', [
 
     var appliedPercentiles;
 
-    function refreshData(autoRefresh) {
-      charts.refreshData('backend/transaction/percentiles', chartState, $scope, autoRefresh, addToQuery, onRefreshData);
-    }
-
     $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh'],
         function (newValues, oldValues) {
-          if (angular.equals(appliedPercentiles, $scope.layout.agentRollups[$scope.agentRollupId].defaultDisplayedPercentiles)) {
+          if (angular.equals(appliedPercentiles,
+                  $scope.layout.agentRollups[$scope.agentRollupId].defaultDisplayedPercentiles)) {
             $location.search('percentile', null);
           } else {
             $location.search('percentile', appliedPercentiles);
           }
-          refreshData(newValues[3] !== oldValues[3]);
+          var autoRefresh = newValues[3] !== oldValues[3];
+          charts.refreshData('backend/transaction/percentiles', chartState, $scope, autoRefresh, addToQuery,
+              onRefreshData);
         });
 
     $scope.clickTopRadioButton = function (item) {
