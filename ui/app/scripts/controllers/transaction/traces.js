@@ -69,7 +69,7 @@ glowroot.controller('TracesCtrl', [
           refreshChart(newValues[3] !== oldValues[3]);
         });
 
-    function refreshChart(autoRefresh, deferred) {
+    function refreshChart(autoRefresh) {
       if ((!$scope.agentRollupId && $scope.layout.central) || !$scope.transactionType) {
         return;
       }
@@ -143,14 +143,11 @@ glowroot.controller('TracesCtrl', [
               highlight();
             }
             broadcastTraceTabCount();
-            if (deferred) {
-              deferred.resolve('Success');
-            }
           }, function (response) {
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, $scope);
           });
     }
 
