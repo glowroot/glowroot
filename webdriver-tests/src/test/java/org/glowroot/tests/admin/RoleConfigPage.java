@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,10 +151,10 @@ public class RoleConfigPage {
         return withWait(xpath("//input[@ng-model='page.permissions.admin.edit']"));
     }
 
-    public WebElement getAddButton() {
+    public void clickAddButton() {
         // in central ui, there are 2 "Add" buttons, one is to add an agent specific permission
         // block, the other is to save new role
-        return withWait(xpath("//div[@gt-click='save(deferred)']//button"));
+        clickWithWait(xpath("//div[@gt-click='save(deferred)']//button"));
     }
 
     public WebElement getDuplicateRoleMessage() {
@@ -162,8 +162,7 @@ public class RoleConfigPage {
     }
 
     public void clickSaveButton() {
-        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
-        saveButton.click();
+        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
     }
 
     public WebElement getDeleteButton() {
@@ -172,5 +171,9 @@ public class RoleConfigPage {
 
     private WebElement withWait(By by) {
         return Utils.withWait(driver, by);
+    }
+
+    private void clickWithWait(By by) {
+        Utils.clickWithWait(driver, by);
     }
 }

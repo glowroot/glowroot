@@ -27,6 +27,7 @@
          style="padding-top: 15px;">
 
       <div class="form-group"
+           ng-class="{'has-error': !report.agentRollupIds.length}"
            ng-if="layout.central">
         <label class="col-lg-3 control-label"
                for="reportAgentRollupIds">
@@ -36,6 +37,7 @@
           <!-- using remove-selected="false" in order to preserve hierarchy when parent agent rollups are selected -->
           <ui-select multiple
                      ng-model="report.agentRollupIds"
+                     ng-required="true"
                      theme="bootstrap"
                      close-on-select="false"
                      style="min-width: 200px; max-width: 650px;"
@@ -51,48 +53,48 @@
           </ui-select>
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group"
+           ng-class="{'has-error': formCtrl.reportMetric.$invalid}">
         <label class="col-lg-3 control-label"
                for="reportMetric">
           Metric
         </label>
         <div class="col-lg-9">
-          <select ng-model="report.metricId"
+          <select ng-model="report.metric"
+                  ng-required="true"
                   class="form-control"
+                  name="reportMetric"
                   id="reportMetric"
                   style="width: auto;">
-            <option value="" ng-disabled="report.metricId"></option>
             <option ng-repeat="metric in metrics track by metric.id"
                     value="{{metric.id}}"
                     ng-disabled="metric.disabled"
-                    ng-selected="metric.id === report.metricId"
+                    ng-selected="metric.id === report.metric"
                     ng-style="{'font-weight': metric.heading ? 'bold' : 'normal'}">
               {{metric.display}}
             </option>
           </select>
         </div>
       </div>
-      <div gt-form-group
-           gt-label="Percentile"
-           gt-model="report.metricPercentile"
-           gt-number="true"
-           gt-pattern="pattern.percentile"
-           gt-width="7em"
-           gt-addon="percentile"
-           ng-if="report.metricId === 'transaction:response-time-percentile'">
-      </div>
       <div class="form-group"
-           ng-if="report.metricId.indexOf('transaction:') === 0">
+           ng-class="{'has-error': formCtrl.reportTransactionType.$invalid}"
+           ng-if="showTransactionTypeAndName()">
         <label class="col-lg-3 control-label"
                for="reportTransactionType">
           Transaction type
         </label>
         <div class="col-lg-9">
           <select ng-model="report.transactionType"
+                  ng-required="true"
                   class="form-control"
+                  name="reportTransactionType"
                   id="reportTransactionType"
                   style="width: 100%; max-width: 25em;">
-            <option value=""></option>
+            <option value="__________"
+                    disabled
+                    ng-if="!report.agentRollupIds.length">
+              (select one or more agents to see available transaction types)
+            </option>
             <option ng-repeat="transactionType in allTransactionTypes"
                     value="{{transactionType}}"
                     ng-selected="transactionType === report.transactionType">
@@ -100,6 +102,22 @@
             </option>
           </select>
         </div>
+      </div>
+      <div gt-form-group
+           gt-label="Transaction name"
+           gt-model="report.transactionName"
+           gt-width="20em"
+           ng-if="showTransactionTypeAndName()">
+      </div>
+      <div gt-form-group
+           gt-label="Percentile"
+           gt-model="report.percentile"
+           gt-number="true"
+           gt-pattern="pattern.percentage"
+           gt-width="7em"
+           gt-addon="percentile"
+           gt-required="report.metric === 'transaction:x-percentile'"
+           ng-if="report.metric === 'transaction:x-percentile'">
       </div>
       <div class="form-group">
         <label class="col-lg-3 control-label"
@@ -152,6 +170,7 @@
           <div gt-button
                gt-label="Run report"
                gt-click="runReport(deferred)"
+               gt-disabled="formCtrl.$invalid"
                class="gt-inline-block">
           </div>
         </div>
@@ -226,7 +245,7 @@
           <td ng-repeat="xval in allXvals" style="text-align: right;">
             <a ng-href="{{drillDownLink(tableRow.agentRollupId, xval)}}"
                ng-if="tableRow[xval] !== NEGATIVE_INFINITY">
-              {{tableRow[xval] | gtMillis}}
+              {{formatValue(tableRow[xval])}}
             </a>
             <span ng-if="tableRow[xval] === NEGATIVE_INFINITY">
               -
@@ -235,7 +254,7 @@
           <td style="text-align: right;">
             <a ng-href="{{drillDownLinkOverall(tableRow.agentRollupId)}}"
                ng-if="tableRow.overall !== NEGATIVE_INFINITY">
-              {{tableRow.overall | gtMillis}}
+              {{formatValue(tableRow.overall)}}
             </a>
             <span ng-if="tableRow.overall === NEGATIVE_INFINITY">
               -

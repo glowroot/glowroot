@@ -141,7 +141,7 @@ public class UserConfigIT extends WebDriverIT {
         userPage.getUsernameTextField().sendKeys("test");
         userPage.getPasswordTextField().sendKeys("test");
         userPage.getVerifyPasswordTextField().sendKeys("test");
-        userPage.getAddButton().click();
+        userPage.clickAddButton();
         userPage.clickSaveWithNoRolesConfirmationButton();
         userPage.getDuplicateUsernameMessage();
     }
@@ -152,7 +152,7 @@ public class UserConfigIT extends WebDriverIT {
         userPage.getUsernameTextField().sendKeys("test");
         userPage.getPasswordTextField().sendKeys("test");
         userPage.getVerifyPasswordTextField().sendKeys("test");
-        userPage.getAddButton().click();
+        userPage.clickAddButton();
         userPage.clickSaveWithNoRolesConfirmationButton();
         // getDeleteButton() waits for the save/redirect
         // (the delete button does not appear until after the save/redirect)

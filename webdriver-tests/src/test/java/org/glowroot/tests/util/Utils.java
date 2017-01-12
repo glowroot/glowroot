@@ -32,7 +32,20 @@ public class Utils {
         return withWait(driver, driver, by);
     }
 
-    public static WebElement withWait(WebDriver driver, final SearchContext context, final By by) {
+    public static WebElement withWait(WebDriver driver, SearchContext context, By by) {
+        return withWait(driver, context, by, false);
+    }
+
+    public static void clickWithWait(WebDriver driver, By by) {
+        clickWithWait(driver, driver, by);
+    }
+
+    public static void clickWithWait(WebDriver driver, SearchContext context, By by) {
+        withWait(driver, context, by, true).click();
+    }
+
+    public static WebElement withWait(WebDriver driver, final SearchContext context, final By by,
+            final boolean waitForEnabled) {
         return new WebDriverWait(driver, 30).until(new Function<WebDriver, WebElement>() {
             @Override
             public WebElement apply(WebDriver driver) {
@@ -43,7 +56,7 @@ public class Utils {
                 WebElement foundElement = null;
                 for (WebElement element : elements) {
                     try {
-                        if (element.isDisplayed()) {
+                        if (element.isDisplayed() && (!waitForEnabled || element.isEnabled())) {
                             foundElement = element;
                             break;
                         }

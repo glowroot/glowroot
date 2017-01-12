@@ -61,7 +61,6 @@ import org.glowroot.common.repo.util.LazySecretKey;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -215,18 +214,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
         List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : configService.getAlertConfigs()) {
             configs.add(config.toProto());
-        }
-        return configs;
-    }
-
-    @Override
-    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentRollupId,
-            AlertKind alertKind) {
-        List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
-        for (AlertConfig config : configService.getAlertConfigs()) {
-            if (config.kind() == alertKind) {
-                configs.add(config.toProto());
-            }
         }
         return configs;
     }

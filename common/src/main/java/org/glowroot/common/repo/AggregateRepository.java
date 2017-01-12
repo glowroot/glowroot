@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.immutables.value.Value;
-
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
@@ -35,7 +33,6 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
-import org.glowroot.common.util.Styles;
 
 public interface AggregateRepository {
 
@@ -113,11 +110,4 @@ public interface AggregateRepository {
     // query.from() is non-inclusive
     boolean shouldHaveAuxThreadProfile(String agentRollupId, TransactionQuery query)
             throws Exception;
-
-    @Value.Immutable
-    @Styles.AllParameters
-    interface AllowRead {
-        boolean allow();
-        long lastCaptureTime();
-    }
 }

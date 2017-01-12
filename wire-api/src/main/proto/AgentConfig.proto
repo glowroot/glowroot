@@ -17,7 +17,8 @@ message AgentConfig {
 
   repeated GaugeConfig gauge_config = 10;
   repeated SyntheticMonitorConfig synthetic_monitor_config = 14;
-  repeated AlertConfig alert_config = 11;
+  repeated OldAlertConfig old_alert_config = 11;
+  repeated AlertConfig alert_config = 15;
   repeated PluginConfig plugin_config = 12;
   repeated InstrumentationConfig instrumentation_config = 13;
 
@@ -67,7 +68,7 @@ message AgentConfig {
     }
   }
 
-  message AlertConfig {
+  message OldAlertConfig {
     AlertKind kind = 1;
     string transaction_type = 2;
     OptionalDouble transaction_percentile = 3;
@@ -86,6 +87,55 @@ message AgentConfig {
       GAUGE = 1;
       HEARTBEAT = 2;
       SYNTHETIC_MONITOR = 4;
+    }
+  }
+
+  message AlertConfig {
+
+    // condition and notification are split out into their own messages because it is convenient to
+    // for passing them around and storing them separately from their AlertConfig
+    // (e.g. the condition is used and stored separately as unique key to track incidents
+    // independent of any notifications, including any changes to the notifications)
+
+    AlertCondition condition = 1;
+    AlertNotification notification = 2;
+
+    message AlertCondition {
+      oneof val {
+        MetricCondition metric_condition = 1;
+        SyntheticMonitorCondition synthetic_monitor_condition = 2;
+        HeartbeatCondition heartbeat_condition = 3;
+      }
+
+      message MetricCondition {
+        string metric = 1;
+        string transaction_type = 2;
+        string transaction_name = 3;
+        OptionalDouble percentile = 4;
+
+        double threshold = 100;
+        bool lower_bound_threshold = 101;
+        int32 time_period_seconds = 102;
+        int64 min_transaction_count = 103;
+        // OptionalInt32 consecutive_time_periods = 104; // e.g. two consecutive time periods
+      }
+
+      message SyntheticMonitorCondition {
+        string synthetic_monitor_id = 1;
+        int32 threshold_millis = 2;
+      }
+
+      message HeartbeatCondition {
+        int32 time_period_seconds = 1;
+      }
+    }
+
+    message AlertNotification {
+      EmailNotification email_notification = 1;
+
+      message EmailNotification {
+        repeated string email_address = 1;
+      }
     }
   }
 

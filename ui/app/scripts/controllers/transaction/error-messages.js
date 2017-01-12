@@ -156,7 +156,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     var chartOptions = {
       yaxis: {
         max: 100,
-        label: 'error percentage'
+        label: 'error rate (%)'
       },
       tooltip: true,
       tooltipOpts: {
@@ -179,8 +179,8 @@ glowroot.controller('ErrorMessagesCtrl', [
           var to = xval;
           var html = '<div class="gt-chart-tooltip"><div style="font-weight: 600;">'
               + smartFormat(from) + ' to ' + smartFormat(to)
-              + '</div><div>Error percentage: ' + yval.toFixed(1)
-              + '</div><div>Error count: ' + dataSeriesExtra[xval][0]
+              + '</div><div>Error rate: ' + yval.toFixed(1)
+              + ' %</div><div>Error count: ' + dataSeriesExtra[xval][0]
               + '</div><div>Transaction count: ' + dataSeriesExtra[xval][1] + '</div></div>';
           return html;
         }

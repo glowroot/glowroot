@@ -484,24 +484,41 @@ class TransactionCommonService {
             Function<Long, Long> rollupCaptureTimeFn) throws Exception {
         List<ThroughputAggregate> rolledUpThroughputAggregates = Lists.newArrayList();
         long currTransactionCount = 0;
+        // error_count is null for data inserted prior to glowroot central 0.9.18
+        // rolling up any interval with null error_count should result in null error_count
+        boolean hasMissingErrorCount = false;
+        long currErrorCount = 0;
         long currRollupCaptureTime = Long.MIN_VALUE;
         long maxCaptureTime = Long.MIN_VALUE;
         for (ThroughputAggregate nonRolledUpThroughputAggregate : orderedNonRolledUpThroughputAggregates) {
             maxCaptureTime = nonRolledUpThroughputAggregate.captureTime();
             long rollupCaptureTime = rollupCaptureTimeFn.apply(maxCaptureTime);
             if (rollupCaptureTime != currRollupCaptureTime && currTransactionCount > 0) {
-                rolledUpThroughputAggregates
-                        .add(ImmutableThroughputAggregate.of(currRollupCaptureTime,
-                                currTransactionCount));
+                rolledUpThroughputAggregates.add(ImmutableThroughputAggregate.builder()
+                        .captureTime(currRollupCaptureTime)
+                        .transactionCount(currTransactionCount)
+                        .errorCount(hasMissingErrorCount ? null : currErrorCount)
+                        .build());
                 currTransactionCount = 0;
+                hasMissingErrorCount = false;
+                currErrorCount = 0;
             }
             currRollupCaptureTime = rollupCaptureTime;
             currTransactionCount += nonRolledUpThroughputAggregate.transactionCount();
+            Long errorCount = nonRolledUpThroughputAggregate.errorCount();
+            if (errorCount == null) {
+                hasMissingErrorCount = true;
+            } else {
+                currErrorCount += errorCount;
+            }
         }
         if (currTransactionCount > 0) {
             // roll up final one
-            rolledUpThroughputAggregates
-                    .add(ImmutableThroughputAggregate.of(maxCaptureTime, currTransactionCount));
+            rolledUpThroughputAggregates.add(ImmutableThroughputAggregate.builder()
+                    .captureTime(maxCaptureTime)
+                    .transactionCount(currTransactionCount)
+                    .errorCount(hasMissingErrorCount ? null : currErrorCount)
+                    .build());
         }
         return rolledUpThroughputAggregates;
     }

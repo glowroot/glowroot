@@ -19,6 +19,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import org.checkerframework.checker.tainting.qual.Untainted;
@@ -32,8 +34,7 @@ import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.agent.embedded.util.Schemas.Index;
 import org.glowroot.common.repo.ImmutableTriggeredAlert;
 import org.glowroot.common.repo.TriggeredAlertRepository;
-import org.glowroot.common.repo.util.AlertingService;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -47,7 +48,7 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
 
     private final DataSource dataSource;
 
-    TriggeredAlertDao(DataSource dataSource) throws Exception {
+    TriggeredAlertDao(DataSource dataSource, @Nullable Integer schemaVersion) throws Exception {
         this.dataSource = dataSource;
         if (dataSource.columnExists("triggered_alert", "alert_config_version")) {
             // left over table before it was removed in 0.9.10 (now added back in 0.9.16)
@@ -55,6 +56,11 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
         }
         dataSource.syncTable("triggered_alert", triggeredAlertColumns);
         dataSource.syncIndexes("triggered_alert", triggeredAlertIndexes);
+        if (schemaVersion != null && schemaVersion < 2) {
+            // this is needed because of alert_condition change from OldAlertConfig to
+            // AlertCondition in 0.9.18
+            dataSource.update("truncate table triggered_alert");
+        }
     }
 
     @Override
@@ -63,32 +69,29 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public void insert(String agentRollupId, AlertConfig alertConfig) throws Exception {
-        AlertConfig alertCondition = AlertingService.toAlertCondition(alertConfig);
+    public void insert(String agentRollupId, AlertCondition alertCondition) throws Exception {
         dataSource.update("insert into triggered_alert (alert_condition) values (?)",
                 alertCondition.toByteArray());
     }
 
     @Override
-    public boolean exists(String agentRollupId, AlertConfig alertConfig) throws Exception {
-        AlertConfig alertCondition = AlertingService.toAlertCondition(alertConfig);
+    public boolean exists(String agentRollupId, AlertCondition alertCondition) throws Exception {
         return dataSource.queryForExists("select 1 from triggered_alert where alert_condition = ?",
                 alertCondition.toByteArray());
     }
 
     @Override
-    public void delete(String agentRollupId, AlertConfig alertConfig) throws Exception {
-        AlertConfig alertCondition = AlertingService.toAlertCondition(alertConfig);
+    public void delete(String agentRollupId, AlertCondition alertCondition) throws Exception {
         dataSource.update("delete from triggered_alert where alert_condition = ?",
                 alertCondition.toByteArray());
     }
 
     @Override
-    public List<AlertConfig> readAlertConditions(String agentRollupId) throws Exception {
+    public List<AlertCondition> readAlertConditions(String agentRollupId) throws Exception {
         return dataSource.query(new AlertConditionRowQuery());
     }
 
-    private static class AlertConditionRowQuery implements JdbcRowQuery<AlertConfig> {
+    private static class AlertConditionRowQuery implements JdbcRowQuery<AlertCondition> {
 
         @Override
         public @Untainted String getSql() {
@@ -99,9 +102,9 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
         public void bind(PreparedStatement preparedStatement) {}
 
         @Override
-        public AlertConfig mapRow(ResultSet resultSet) throws Exception {
+        public AlertCondition mapRow(ResultSet resultSet) throws Exception {
             byte[] bytes = checkNotNull(resultSet.getBytes(1));
-            return AlertConfig.parseFrom(bytes);
+            return AlertCondition.parseFrom(bytes);
         }
     }
 
@@ -122,7 +125,7 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
             byte[] bytes = checkNotNull(resultSet.getBytes(1));
             return ImmutableTriggeredAlert.builder()
                     .agentRollupId(AGENT_ID)
-                    .alertCondition(AlertConfig.parseFrom(ByteString.copyFrom(bytes)))
+                    .alertCondition(AlertCondition.parseFrom(ByteString.copyFrom(bytes)))
                     .build();
         }
     }

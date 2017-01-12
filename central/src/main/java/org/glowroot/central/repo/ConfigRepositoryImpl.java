@@ -56,7 +56,7 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
@@ -200,25 +200,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     // central supports alert configs on rollups
-    @Override
-    public List<AlertConfig> getAlertConfigs(String agentRollupId, AlertKind alertKind)
-            throws Exception {
-        List<AlertConfig> configs = Lists.newArrayList();
-        for (AlertConfig config : getAlertConfigs(agentRollupId)) {
-            if (config.getKind() == alertKind) {
-                configs.add(config);
-            }
-        }
-        return configs;
-    }
-
-    // central supports alert configs on rollups
     public List<AlertConfig> getAlertConfigsForSyntheticMonitorId(String agentRollupId,
             String syntheticMonitorId) throws Exception {
         List<AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : getAlertConfigs(agentRollupId)) {
-            if (config.getKind() == AlertKind.SYNTHETIC_MONITOR
-                    && config.getSyntheticMonitorId().equals(syntheticMonitorId)) {
+            AlertCondition alertCondition = config.getCondition();
+            if (alertCondition.getValCase() == AlertCondition.ValCase.SYNTHETIC_MONITOR_CONDITION
+                    && alertCondition.getSyntheticMonitorCondition().getSyntheticMonitorId()
+                            .equals(syntheticMonitorId)) {
                 configs.add(config);
             }
         }
@@ -579,7 +568,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                checkAlertConditionDoesNotExist(config, agentConfig.getAlertConfigList());
+                for (AlertConfig loopConfig : agentConfig.getAlertConfigList()) {
+                    if (loopConfig.getCondition().equals(config.getCondition())) {
+                        throw new IllegalStateException(
+                                "This exact alert condition already exists");
+                    }
+                }
                 return agentConfig.toBuilder()
                         .addAlertConfig(config)
                         .build();
@@ -592,7 +586,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion)
             throws Exception {
-        AlertConfig configWithoutDestination = getAlertConfigWithoutDestination(config);
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -605,8 +598,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     if (Versions.getVersion(loopConfig).equals(priorVersion)) {
                         i.set(config);
                         found = true;
-                    } else if (getAlertConfigWithoutDestination(loopConfig)
-                            .equals(configWithoutDestination)) {
+                    } else if (loopConfig.getCondition().equals(config.getCondition())) {
                         throw new IllegalStateException(
                                 "This exact alert condition already exists");
                     }
@@ -1050,16 +1042,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return left.getValCase() == right.getValCase();
     }
 
-    private static void checkAlertConditionDoesNotExist(AlertConfig config,
-            List<AlertConfig> configs) {
-        AlertConfig configWithoutDestination = getAlertConfigWithoutDestination(config);
-        for (AlertConfig loopConfig : configs) {
-            if (getAlertConfigWithoutDestination(loopConfig).equals(configWithoutDestination)) {
-                throw new IllegalStateException("This exact alert condition already exists");
-            }
-        }
-    }
-
     private static void checkInstrumentationDoesNotExist(InstrumentationConfig config,
             List<InstrumentationConfig> configs) {
         for (InstrumentationConfig loopConfig : configs) {
@@ -1067,12 +1049,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new IllegalStateException("This exact instrumentation already exists");
             }
         }
-    }
-
-    private static AlertConfig getAlertConfigWithoutDestination(AlertConfig config) {
-        return AlertConfig.newBuilder(config)
-                .clearEmailAddress()
-                .build();
     }
 
     private static CentralStorageConfig withCorrectedLists(CentralStorageConfig config) {

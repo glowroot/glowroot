@@ -32,53 +32,64 @@ public class AlertConfigPage {
         this.driver = driver;
     }
 
-    public WebElement getKindTransactionRadioButton() {
-        return withWait(xpath("//input[@ng-model='config.kind'][@value='transaction']"));
+    public WebElement getMetricRadioButton() {
+        return withWait(
+                xpath("//input[@ng-model='config.condition.conditionType'][@value='metric']"));
     }
 
-    public WebElement getKindGaugeRadioButton() {
-        return withWait(xpath("//input[@ng-model='config.kind'][@value='gauge']"));
+    public WebElement getSyntheticMonitorRadioButton() {
+        return withWait(xpath(
+                "//input[@ng-model='config.condition.conditionType'][@value='synthetic-monitor']"));
+    }
+
+    public WebElement getHeartbeatRadioButton() {
+        return withWait(
+                xpath("//input[@ng-model='config.condition.conditionType'][@value='heartbeat']"));
+    }
+
+    public Select getMetricSelect() {
+        return new Select(withWait(xpath("//select[@ng-model='config.condition.metric']")));
     }
 
     public Select getTransactionTypeSelect() {
-        return new Select(withWait(xpath("//select[@ng-model='config.transactionType']")));
+        return new Select(
+                withWait(xpath("//select[@ng-model='config.condition.transactionType']")));
+    }
+
+    public WebElement getTransactionNameTextField() {
+        return withWait(xpath("//div[@gt-model='config.condition.transactionName']//input"));
     }
 
     public WebElement getTransactionPercentileTextField() {
-        return withWait(xpath("//div[@gt-model='config.transactionPercentile']//input"));
+        return withWait(xpath("//div[@gt-model='config.condition.percentile']//input"));
     }
 
-    public WebElement getThresholdMillisTextField() {
-        return withWait(xpath("//div[@gt-model='config.thresholdMillis']//input"));
+    public WebElement getLowerBoundThresholdCheckBox() {
+        return withWait(xpath("//div[@gt-model='config.condition.lowerBoundThreshold']//input"));
+    }
+
+    public WebElement getThresholdTextField() {
+        return withWait(xpath("//div[@gt-model='config.condition.threshold']//input"));
     }
 
     public WebElement getTimePeriodMinutesTextField() {
         return withWait(xpath("//div[@gt-model='page.timePeriodMinutes']//input"));
     }
 
-    public Select getGaugeNameSelect() {
-        return new Select(withWait(xpath("//select[@ng-model='config.gaugeName']")));
-    }
-
-    public WebElement getGaugeThresholdTextField() {
-        return withWait(xpath("//div[@gt-model='config.gaugeThreshold']//input"));
-    }
-
     public WebElement getMinTransactionCountTextField() {
-        return withWait(xpath("//div[@gt-model='config.minTransactionCount']//input"));
+        return withWait(xpath("//div[@gt-model='config.condition.minTransactionCount']//input"));
     }
 
     public WebElement getEmailAddressesTextField() {
-        return withWait(xpath("//div[@gt-model='emailAddresses']//textarea"));
+        return withWait(xpath("//div[@gt-model='page.emailAddresses']//textarea"));
     }
 
-    public WebElement getAddButton() {
-        return withWait(xpath("//button[normalize-space()='Add']"));
+    public void clickAddButton() {
+        clickWithWait(xpath("//button[normalize-space()='Add']"));
     }
 
     public void clickSaveButton() {
-        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
-        saveButton.click();
+        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
     }
 
     public WebElement getDeleteButton() {
@@ -87,5 +98,9 @@ public class AlertConfigPage {
 
     private WebElement withWait(By by) {
         return Utils.withWait(driver, by);
+    }
+
+    private void clickWithWait(By by) {
+        Utils.clickWithWait(driver, by);
     }
 }

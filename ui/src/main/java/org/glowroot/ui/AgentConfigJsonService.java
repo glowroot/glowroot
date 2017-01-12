@@ -90,11 +90,11 @@ class AgentConfigJsonService {
                     .build();
         }
 
-        private static AgentRollupConfigDto create(AgentRollupConfig agentRollupConfig) {
+        private static AgentRollupConfigDto create(AgentRollupConfig config) {
             return ImmutableAgentRollupConfigDto.builder()
-                    .id(agentRollupConfig.id())
-                    .display(agentRollupConfig.display())
-                    .version(agentRollupConfig.version())
+                    .id(config.id())
+                    .display(config.display())
+                    .version(config.version())
                     .build();
         }
     }

@@ -51,13 +51,12 @@ public class GaugeConfigPage {
         return withWait(xpath("//div[@ng-show='duplicateMBean']"));
     }
 
-    public WebElement getAddButton() {
-        return withWait(xpath("//button[normalize-space()='Add']"));
+    public void clickAddButton() {
+        clickWithWait(xpath("//button[normalize-space()='Add']"));
     }
 
     public void clickSaveButton() {
-        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
-        saveButton.click();
+        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
     }
 
     public WebElement getDeleteButton() {
@@ -66,6 +65,10 @@ public class GaugeConfigPage {
 
     private WebElement withWait(By by) {
         return Utils.withWait(driver, by);
+    }
+
+    private void clickWithWait(By by) {
+        Utils.clickWithWait(driver, by);
     }
 
     private void clickTypeAheadItem(String label, final String text) {

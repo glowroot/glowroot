@@ -96,11 +96,11 @@ public class CentralRepoModule {
         return centralConfigDao;
     }
 
-    public AgentRollupDao getAgentDao() {
+    public AgentRollupDao getAgentRollupDao() {
         return agentRollupDao;
     }
 
-    public AgentConfigDao getConfigDao() {
+    public AgentConfigDao getAgentConfigDao() {
         return agentConfigDao;
     }
 

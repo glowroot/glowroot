@@ -253,17 +253,17 @@ class GaugeConfigJsonService {
             return builder.build();
         }
 
-        private static GaugeConfigDto create(GaugeConfig gaugeConfig) {
-            List<String> displayPath = Gauges.displayPath(gaugeConfig.getMbeanObjectName());
+        private static GaugeConfigDto create(GaugeConfig config) {
+            List<String> displayPath = Gauges.displayPath(config.getMbeanObjectName());
             String display = Joiner.on(Gauges.DISPLAY_PATH_SEPARATOR).join(displayPath);
             ImmutableGaugeConfigDto.Builder builder = ImmutableGaugeConfigDto.builder()
                     .display(display)
                     .displayPath(displayPath)
-                    .mbeanObjectName(gaugeConfig.getMbeanObjectName());
-            for (MBeanAttribute mbeanAttribute : gaugeConfig.getMbeanAttributeList()) {
+                    .mbeanObjectName(config.getMbeanObjectName());
+            for (MBeanAttribute mbeanAttribute : config.getMbeanAttributeList()) {
                 builder.addMbeanAttributes(MBeanAttributeDto.create(mbeanAttribute));
             }
-            return builder.version(Versions.getVersion(gaugeConfig))
+            return builder.version(Versions.getVersion(config))
                     .build();
         }
     }

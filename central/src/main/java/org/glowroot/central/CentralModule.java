@@ -85,6 +85,7 @@ public class CentralModule {
     private final ClusterManager clusterManager;
     private final Cluster cluster;
     private final Session session;
+    private final CentralAlertingService centralAlertingService;
     private final RollupService rollupService;
     private final SyntheticMonitorService syntheticMonitorService;
     private final GrpcServer grpcServer;
@@ -103,6 +104,7 @@ public class CentralModule {
         ClusterManager clusterManager = null;
         Cluster cluster = null;
         Session session = null;
+        CentralAlertingService centralAlertingService = null;
         RollupService rollupService = null;
         SyntheticMonitorService syntheticMonitorService = null;
         GrpcServer grpcServer = null;
@@ -144,7 +146,6 @@ public class CentralModule {
             if (schemaUpgrade.reloadCentralConfiguration()) {
                 centralConfig = getCentralConfiguration(centralDir);
             }
-
             CentralRepoModule repos = new CentralRepoModule(clusterManager, session,
                     keyspaceMetadata, centralConfig.cassandraSymmetricEncryptionKey(), clock);
 
@@ -161,15 +162,16 @@ public class CentralModule {
             AlertingService alertingService = new AlertingService(repos.getConfigRepository(),
                     repos.getTriggeredAlertDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
                     rollupLevelService, new MailService());
+            centralAlertingService =
+                    new CentralAlertingService(repos.getConfigRepository(), alertingService);
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
-                    repos.getAgentDao(), repos.getConfigDao(), repos.getAggregateDao(),
+                    repos.getAgentRollupDao(), repos.getAgentConfigDao(), repos.getAggregateDao(),
                     repos.getGaugeValueDao(), repos.getEnvironmentDao(), repos.getHeartbeatDao(),
-                    repos.getTraceDao(), repos.getConfigRepository(), alertingService,
-                    clusterManager, clock, version);
+                    repos.getTraceDao(), centralAlertingService, clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
-                    repos.getAgentDao(), repos.getConfigDao(), downstreamService, clock);
+                    repos.getAgentRollupDao(), repos.getAgentConfigDao(), downstreamService, clock);
             UpdateAgentConfigIfNeededService updateAgentConfigIfNeededServiceEffectivelyFinal =
                     updateAgentConfigIfNeededService;
             repos.getConfigRepository().addAgentConfigListener(new AgentConfigListener() {
@@ -180,10 +182,10 @@ public class CentralModule {
                             .updateAgentConfigIfNeededAndConnected(agentId);
                 }
             });
-            rollupService = new RollupService(repos.getAgentDao(), repos.getAggregateDao(),
-                    repos.getGaugeValueDao(), repos.getSyntheticResultDao(),
-                    repos.getHeartbeatDao(), repos.getConfigRepository(), alertingService, clock);
-            syntheticMonitorService = new SyntheticMonitorService(repos.getAgentDao(),
+            rollupService = new RollupService(repos.getAgentRollupDao(), repos.getAggregateDao(),
+                    repos.getGaugeValueDao(), repos.getSyntheticResultDao(), centralAlertingService,
+                    clock);
+            syntheticMonitorService = new SyntheticMonitorService(repos.getAgentRollupDao(),
                     repos.getConfigRepository(), repos.getTriggeredAlertDao(), alertingService,
                     repos.getSyntheticResultDao(), ticker, clock);
 
@@ -202,7 +204,7 @@ public class CentralModule {
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(repos.getConfigRepository())
-                    .agentRollupRepository(repos.getAgentDao())
+                    .agentRollupRepository(repos.getAgentRollupDao())
                     .environmentRepository(repos.getEnvironmentDao())
                     .transactionTypeRepository(repos.getTransactionTypeDao())
                     .traceAttributeNameRepository(repos.getTraceAttributeNameDao())
@@ -213,8 +215,8 @@ public class CentralModule {
                     .triggeredAlertRepository(repos.getTriggeredAlertDao())
                     .repoAdmin(new NopRepoAdmin())
                     .rollupLevelService(rollupLevelService)
-                    .liveTraceRepository(
-                            new LiveTraceRepositoryImpl(downstreamService, repos.getAgentDao()))
+                    .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService,
+                            repos.getAgentRollupDao()))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(new LiveWeavingServiceImpl(downstreamService))
                     .sessionMapFactory(new SessionMapFactory() {
@@ -250,6 +252,9 @@ public class CentralModule {
             if (rollupService != null) {
                 rollupService.close();
             }
+            if (centralAlertingService != null) {
+                centralAlertingService.close();
+            }
             if (session != null) {
                 session.close();
             }
@@ -264,6 +269,7 @@ public class CentralModule {
         this.clusterManager = clusterManager;
         this.cluster = cluster;
         this.session = session;
+        this.centralAlertingService = centralAlertingService;
         this.rollupService = rollupService;
         this.syntheticMonitorService = syntheticMonitorService;
         this.grpcServer = grpcServer;
@@ -288,6 +294,7 @@ public class CentralModule {
             grpcServer.close();
             syntheticMonitorService.close();
             rollupService.close();
+            centralAlertingService.close();
             session.close();
             cluster.close();
             clusterManager.close();

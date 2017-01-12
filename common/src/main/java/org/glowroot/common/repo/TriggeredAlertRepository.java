@@ -20,25 +20,24 @@ import java.util.List;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 
 public interface TriggeredAlertRepository {
 
     List<TriggeredAlert> readAll() throws Exception;
 
-    boolean exists(String agentRollupId, AlertConfig alertConfig) throws Exception;
+    boolean exists(String agentRollupId, AlertCondition alertCondition) throws Exception;
 
-    void delete(String agentRollupId, AlertConfig alertConfig) throws Exception;
+    void delete(String agentRollupId, AlertCondition alertCondition) throws Exception;
 
-    void insert(String agentRollupId, AlertConfig alertConfig) throws Exception;
+    void insert(String agentRollupId, AlertCondition alertCondition) throws Exception;
 
-    List<AlertConfig> readAlertConditions(String agentRollupId) throws Exception;
+    List<AlertCondition> readAlertConditions(String agentRollupId) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters
     interface TriggeredAlert {
         String agentRollupId();
-        AgentConfig.AlertConfig alertCondition();
+        AlertCondition alertCondition();
     }
 }

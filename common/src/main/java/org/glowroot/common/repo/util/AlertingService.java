@@ -32,13 +32,17 @@ import javax.mail.internet.MimeMessage;
 
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.config.SmtpConfig;
-import org.glowroot.common.live.ImmutableTransactionQuery;
-import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
@@ -47,10 +51,13 @@ import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Formatting;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class AlertingService {
@@ -59,10 +66,9 @@ public class AlertingService {
 
     private final ConfigRepository configRepository;
     private final TriggeredAlertRepository triggeredAlertRepository;
-    private final AggregateRepository aggregateRepository;
-    private final GaugeValueRepository gaugeValueRepository;
-    private final RollupLevelService rollupLevelService;
     private final MailService mailService;
+
+    private final MetricService metricService;
 
     // limit missing smtp host configuration warning to once per hour
     private final RateLimiter smtpHostWarningRateLimiter = RateLimiter.create(1.0 / 3600);
@@ -73,18 +79,17 @@ public class AlertingService {
             RollupLevelService rollupLevelService, MailService mailService) {
         this.configRepository = configRepository;
         this.triggeredAlertRepository = triggeredAlertRepository;
-        this.aggregateRepository = aggregateRepository;
-        this.gaugeValueRepository = gaugeValueRepository;
-        this.rollupLevelService = rollupLevelService;
         this.mailService = mailService;
+        this.metricService =
+                new MetricService(aggregateRepository, gaugeValueRepository, rollupLevelService);
     }
 
     public void checkForDeletedAlerts(String agentRollupId) throws Exception {
-        Set<AlertConfig> alertConditions = Sets.newHashSet();
+        Set<AlertCondition> alertConditions = Sets.newHashSet();
         for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollupId)) {
-            alertConditions.add(toAlertCondition(alertConfig));
+            alertConditions.add(alertConfig.getCondition());
         }
-        for (AlertConfig alertCondition : triggeredAlertRepository
+        for (AlertCondition alertCondition : triggeredAlertRepository
                 .readAlertConditions(agentRollupId)) {
             if (!alertConditions.contains(alertCondition)) {
                 triggeredAlertRepository.delete(agentRollupId, alertCondition);
@@ -92,178 +97,127 @@ public class AlertingService {
         }
     }
 
-    public void checkTransactionAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, long endTime) throws Exception {
-        // validate config
-        if (!alertConfig.hasTransactionPercentile()) {
-            // AlertConfig has nice toString() from immutables
-            logger.warn("alert config missing transactionPercentile: {}", alertConfig);
-            return;
-        }
-        if (!alertConfig.hasThresholdMillis()) {
-            // AlertConfig has nice toString() from immutables
-            logger.warn("alert config missing thresholdMillis: {}", alertConfig);
-            return;
-        }
-        if (!alertConfig.hasMinTransactionCount()) {
-            // AlertConfig has nice toString() from immutables
-            logger.warn("alert config missing minTransactionCount: {}", alertConfig);
-            return;
-        }
-        int minTransactionCount = alertConfig.getMinTransactionCount().getValue();
+    public void checkMetricAlert(String agentRollupId, String agentRollupDisplay,
+            AlertCondition alertCondition, MetricCondition metricCondition,
+            AlertNotification alertNotification, long endTime) throws Exception {
 
-        long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
-        int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
-        // startTime + 1 in order to not include the gauge value at startTime
-        List<PercentileAggregate> percentileAggregates =
-                aggregateRepository.readPercentileAggregates(agentRollupId,
-                        ImmutableTransactionQuery.builder()
-                                .transactionType(alertConfig.getTransactionType())
-                                .from(startTime + 1)
-                                .to(endTime)
-                                .rollupLevel(rollupLevel)
-                                .build());
-        long transactionCount = 0;
-        LazyHistogram durationNanosHistogram = new LazyHistogram();
-        for (PercentileAggregate aggregate : percentileAggregates) {
-            transactionCount += aggregate.transactionCount();
-            durationNanosHistogram.merge(aggregate.durationNanosHistogram());
-        }
-        if (transactionCount < minTransactionCount) {
-            // don't clear existing triggered alert
+        long startTime = endTime - SECONDS.toMillis(metricCondition.getTimePeriodSeconds());
+        Number value =
+                metricService.getMetricValue(agentRollupId, metricCondition, startTime, endTime);
+        if (value == null) {
+            // cannot calculate due to no data, e.g. error rate (but not error count, which can be
+            // calculated - zero - when no data)
             return;
         }
-        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollupId, alertConfig);
-        long valueAtPercentile = durationNanosHistogram
-                .getValueAtPercentile(alertConfig.getTransactionPercentile().getValue());
-        boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS
-                .toNanos(alertConfig.getThresholdMillis().getValue());
+        boolean currentlyTriggered;
+        if (metricCondition.getLowerBoundThreshold()) {
+            currentlyTriggered = value.doubleValue() < metricCondition.getThreshold();
+        } else {
+            currentlyTriggered = value.doubleValue() > metricCondition.getThreshold();
+        }
+        boolean previouslyTriggered =
+                triggeredAlertRepository.exists(agentRollupId, alertCondition);
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentRollupId, alertConfig);
-            sendTransactionAlert(agentRollupDisplay, alertConfig, true);
+            triggeredAlertRepository.delete(agentRollupId, alertCondition);
+            sendMetricAlert(agentRollupId, agentRollupDisplay, metricCondition, alertNotification,
+                    true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentRollupId, alertConfig);
-            sendTransactionAlert(agentRollupDisplay, alertConfig, false);
-        }
-    }
-
-    public void checkGaugeAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, long endTime) throws Exception {
-        if (!alertConfig.hasGaugeThreshold()) {
-            // AlertConfig has nice toString() from immutables
-            logger.warn("alert config missing gaugeThreshold: {}", alertConfig);
-            return;
-        }
-        double threshold = alertConfig.getGaugeThreshold().getValue();
-        long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
-        int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
-        // startTime + 1 in order to not include the gauge value at startTime
-        List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
-                alertConfig.getGaugeName(), startTime + 1, endTime, rollupLevel);
-        if (gaugeValues.isEmpty()) {
-            return;
-        }
-        double totalWeightedValue = 0;
-        long totalWeight = 0;
-        for (GaugeValue gaugeValue : gaugeValues) {
-            totalWeightedValue += gaugeValue.getValue() * gaugeValue.getWeight();
-            totalWeight += gaugeValue.getWeight();
-        }
-        // individual gauge value weights cannot be zero, and gaugeValues is non-empty
-        // (see above conditional), so totalWeight is guaranteed non-zero
-        checkState(totalWeight != 0);
-        double average = totalWeightedValue / totalWeight;
-        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollupId, alertConfig);
-        boolean currentlyTriggered = average >= threshold;
-        if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentRollupId, alertConfig);
-            sendGaugeAlert(agentRollupDisplay, alertConfig, threshold, true);
-        } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentRollupId, alertConfig);
-            sendGaugeAlert(agentRollupDisplay, alertConfig, threshold, false);
+            triggeredAlertRepository.insert(agentRollupId, alertCondition);
+            sendMetricAlert(agentRollupId, agentRollupDisplay, metricCondition, alertNotification,
+                    false);
         }
     }
 
     // only used by central
     public void sendHeartbeatAlertIfNeeded(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, boolean currentlyTriggered) throws Exception {
-        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollupId, alertConfig);
+            AlertCondition alertCondition, HeartbeatCondition heartbeatCondition,
+            AlertNotification alertNotification, boolean currentlyTriggered) throws Exception {
+        boolean previouslyTriggered =
+                triggeredAlertRepository.exists(agentRollupId, alertCondition);
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentRollupId, alertConfig);
-            sendHeartbeatAlert(agentRollupDisplay, alertConfig, true);
+            triggeredAlertRepository.delete(agentRollupId, alertCondition);
+            sendHeartbeatAlert(agentRollupDisplay, heartbeatCondition, alertNotification,
+                    true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentRollupId, alertConfig);
-            sendHeartbeatAlert(agentRollupDisplay, alertConfig, false);
+            triggeredAlertRepository.insert(agentRollupId, alertCondition);
+            sendHeartbeatAlert(agentRollupDisplay, heartbeatCondition, alertNotification,
+                    false);
         }
     }
 
-    private void sendTransactionAlert(String agentRollupDisplay, AlertConfig alertConfig,
-            boolean ok) throws Exception {
+    private void sendMetricAlert(String agentRollupId, String agentRollupDisplay,
+            MetricCondition metricCondition, AlertNotification alertNotification, boolean ok)
+            throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
-        String subject = "Glowroot alert";
-        if (!agentRollupDisplay.equals("")) {
-            subject += " - " + agentRollupDisplay;
+        StringBuilder subject = new StringBuilder();
+        subject.append("Glowroot alert");
+        if (!agentRollupId.isEmpty()) {
+            subject.append(" - ");
+            subject.append(agentRollupDisplay);
         }
-        subject += " - " + alertConfig.getTransactionType();
-        StringBuilder sb = new StringBuilder();
-        sb.append(Utils.getPercentileWithSuffix(alertConfig.getTransactionPercentile().getValue()));
-        sb.append(" percentile over the last ");
-        sb.append(alertConfig.getTimePeriodSeconds() / 60);
-        sb.append(" minute");
-        if (alertConfig.getTimePeriodSeconds() != 60) {
-            sb.append("s");
+        String metric = metricCondition.getMetric();
+        String transactionType = metricCondition.getTransactionType();
+        if (!transactionType.isEmpty()) {
+            subject.append(" - ");
+            subject.append(transactionType);
         }
-        if (ok) {
-            sb.append(" has dropped back below alert threshold of ");
+        String transactionName = metricCondition.getTransactionName();
+        if (!transactionName.isEmpty()) {
+            subject.append(" - ");
+            subject.append(transactionName);
+        }
+        Gauge gauge = null;
+        StringBuilder message = new StringBuilder();
+        if (metric.equals("transaction:x-percentile")) {
+            checkState(metricCondition.hasPercentile());
+            message.append(
+                    Utils.getPercentileWithSuffix(metricCondition.getPercentile().getValue()));
+            message.append(" percentile");
+        } else if (metric.equals("transaction:average")) {
+            message.append("Average");
+        } else if (metric.equals("transaction:count")) {
+            message.append("Transaction count");
+        } else if (metric.equals("error:rate")) {
+            message.append("Error rate");
+        } else if (metric.equals("error:count")) {
+            message.append("Error count");
+        } else if (metric.startsWith("gauge:")) {
+            String gaugeName = metric.substring("gauge:".length());
+            gauge = Gauges.getGauge(gaugeName);
+            subject.append(" - ");
+            subject.append(gauge.display());
+            message.append("Average");
         } else {
-            sb.append(" exceeded alert threshold of ");
+            throw new IllegalStateException("Unexpected metric: " + metric);
         }
-        int thresholdMillis = alertConfig.getThresholdMillis().getValue();
-        sb.append(thresholdMillis);
-        sb.append(" millisecond");
-        if (thresholdMillis != 1) {
-            sb.append("s");
+        message.append(getOverTheLastText(metricCondition.getTimePeriodSeconds()));
+        if (metricCondition.getLowerBoundThreshold()) {
+            message.append(getPreLowerBoundText(ok));
+        } else {
+            message.append(getPreUpperBoundText(ok));
         }
-        sb.append(".");
-        sendNotification(alertConfig, subject, sb.toString());
+        if (metric.equals("transaction:x-percentile") || metric.equals("transaction:average")) {
+            message.append(
+                    AlertingService.getWithUnit(metricCondition.getThreshold(), "millisecond"));
+        } else if (metric.equals("transaction:count")) {
+            message.append(metricCondition.getThreshold());
+        } else if (metric.equals("error:rate")) {
+            message.append(metricCondition.getThreshold());
+            message.append("percent");
+        } else if (metric.equals("error:count")) {
+            message.append(metricCondition.getThreshold());
+        } else if (metric.startsWith("gauge:")) {
+            message.append(getGaugeThresholdText(metricCondition.getThreshold(),
+                    checkNotNull(gauge).unit()));
+        } else {
+            throw new IllegalStateException("Unexpected metric: " + metric);
+        }
+        message.append(".\n\n");
+        sendNotification(alertNotification, subject.toString(), message.toString());
     }
 
-    private void sendGaugeAlert(String agentRollupDisplay, AlertConfig alertConfig,
-            double threshold, boolean ok) throws Exception {
-        // subject is the same between initial and ok messages so they will be threaded by gmail
-        String subject = "Glowroot alert";
-        if (!agentRollupDisplay.equals("")) {
-            subject += " - " + agentRollupDisplay;
-        }
-        Gauge gauge = Gauges.getGauge(alertConfig.getGaugeName());
-        subject += " - " + gauge.display();
-        StringBuilder sb = new StringBuilder();
-        sb.append("Average over the last ");
-        sb.append(alertConfig.getTimePeriodSeconds() / 60);
-        sb.append(" minute");
-        if (alertConfig.getTimePeriodSeconds() != 60) {
-            sb.append("s");
-        }
-        if (ok) {
-            sb.append(" has dropped back below alert threshold of ");
-        } else {
-            sb.append(" exceeded alert threshold of ");
-        }
-        String unit = gauge.unit();
-        if (unit.equals("bytes")) {
-            sb.append(Formatting.formatBytes((long) threshold));
-        } else if (!unit.isEmpty()) {
-            sb.append(Formatting.displaySixDigitsOfPrecision(threshold));
-            sb.append(" ");
-            sb.append(unit);
-        } else {
-            sb.append(Formatting.displaySixDigitsOfPrecision(threshold));
-        }
-        sb.append(".\n\n");
-        sendNotification(alertConfig, subject, sb.toString());
-    }
-
-    private void sendHeartbeatAlert(String agentRollupDisplay, AlertConfig alertConfig, boolean ok)
+    private void sendHeartbeatAlert(String agentRollupDisplay,
+            HeartbeatCondition heartbeatCondition, AlertNotification alertNotification, boolean ok)
             throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
@@ -276,30 +230,27 @@ public class AlertingService {
             sb.append("Receving heartbeat again.\n\n");
         } else {
             sb.append("Heartbeat not received in the last ");
-            sb.append(alertConfig.getTimePeriodSeconds());
+            sb.append(heartbeatCondition.getTimePeriodSeconds());
             sb.append(" seconds.\n\n");
         }
-        sendNotification(alertConfig, subject, sb.toString());
+        sendNotification(alertNotification, subject, sb.toString());
     }
 
-    public void sendNotification(AlertConfig alertConfig, String subject, String messageText)
-            throws Exception {
-        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
-        if (smtpConfig.host().isEmpty()) {
-            if (smtpHostWarningRateLimiter.tryAcquire()) {
-                logger.warn("not sending alert due to missing SMTP host configuration"
-                        + " (this warning will be logged at most once an hour)");
+    public void sendNotification(AlertNotification alertNotification, String subject,
+            String messageText) throws Exception {
+        if (alertNotification.hasEmailNotification()) {
+            SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+            if (smtpConfig.host().isEmpty()) {
+                if (smtpHostWarningRateLimiter.tryAcquire()) {
+                    logger.warn("not sending alert due to missing SMTP host configuration"
+                            + " (this warning will be logged at most once an hour)");
+                }
+            } else {
+                sendEmail(alertNotification.getEmailNotification().getEmailAddressList(), subject,
+                        messageText, smtpConfig, null, configRepository.getLazySecretKey(),
+                        mailService);
             }
-            return;
         }
-        sendEmail(alertConfig.getEmailAddressList(), subject, messageText, smtpConfig, null,
-                configRepository.getLazySecretKey(), mailService);
-    }
-
-    public static AlertConfig toAlertCondition(AlertConfig alertConfig) {
-        return alertConfig.toBuilder()
-                .clearEmailAddress()
-                .build();
     }
 
     // optional newPlainPassword can be passed in to test SMTP from
@@ -328,6 +279,48 @@ public class AlertingService {
         message.setSubject(subject);
         message.setText(messageText);
         mailService.send(message);
+    }
+
+    public static String getPreUpperBoundText(boolean ok) {
+        if (ok) {
+            return " no longer exceeds alert threshold of ";
+        } else {
+            return " has exceeded alert threshold of ";
+        }
+    }
+
+    public static String getGaugeThresholdText(double threshold, String gaugeUnit) {
+        if (gaugeUnit.equals("bytes")) {
+            return Formatting.formatBytes((long) threshold);
+        } else if (!gaugeUnit.isEmpty()) {
+            return Formatting.displaySixDigitsOfPrecision(threshold) + " " + gaugeUnit;
+        } else {
+            return Formatting.displaySixDigitsOfPrecision(threshold);
+        }
+    }
+
+    public static String getOverTheLastText(int timePeriodSeconds) {
+        String text = " over the last " + timePeriodSeconds / 60 + " minute";
+        if (timePeriodSeconds != 60) {
+            text += "s";
+        }
+        return text;
+    }
+
+    public static String getWithUnit(double val, String unit) {
+        String text = Formatting.displaySixDigitsOfPrecision(val) + " " + unit;
+        if (val != 1) {
+            text += "s";
+        }
+        return text;
+    }
+
+    private static String getPreLowerBoundText(boolean ok) {
+        if (ok) {
+            return " has risen back above alert threshold of ";
+        } else {
+            return " has dropped below alert threshold of ";
+        }
     }
 
     // optional newPlainPassword can be passed in to test SMTP from
@@ -374,5 +367,33 @@ public class AlertingService {
             return "";
         }
         return Encryption.decrypt(password, lazySecretKey);
+    }
+
+    public static class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> {
+
+        @Override
+        public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
+            if (msg instanceof HttpResponse) {
+                HttpResponse response = (HttpResponse) msg;
+                if (!response.status().equals(HttpResponseStatus.OK)) {
+                    if (msg instanceof HttpContent) {
+                        HttpContent httpContent = (HttpContent) msg;
+                        String content = httpContent.content().toString(CharsetUtil.UTF_8);
+                        logger.warn("unexpected response status: {}, content: {}",
+                                response.status(), content);
+                    } else {
+                        logger.warn("unexpected response status: {}", response.status());
+                    }
+                }
+            } else {
+                logger.error("unexpected response: {}", msg);
+            }
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            logger.error(cause.getMessage(), cause);
+            ctx.close();
+        }
     }
 }

@@ -84,7 +84,7 @@ public class InstrumentationConfigPage {
         return withWait(xpath("//div[@gt-model='config.traceEntryStackThresholdMillis']//input"));
     }
 
-    public WebElement getTraceEntryCaptureSelfNestedCheckbox() {
+    public WebElement getTraceEntryCaptureSelfNestedCheckBox() {
         return withWait(xpath("//div[@gt-model='config.traceEntryCaptureSelfNested']//input"));
     }
 

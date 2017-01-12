@@ -39,11 +39,12 @@ import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.Utils;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
-import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -53,26 +54,46 @@ public class AlertingServiceTest {
 
     private static final String AGENT_ID = "";
 
-    private static final AlertConfig TRANSACTION_ALERT_CONFIG = AlertConfig.newBuilder()
-            .setKind(AlertKind.TRANSACTION)
-            .setTransactionType("tt")
-            .setTransactionPercentile(OptionalDouble.newBuilder().setValue(95.0))
-            .setThresholdMillis(OptionalInt32.newBuilder().setValue(1))
-            .setTimePeriodSeconds(60)
-            .setMinTransactionCount(OptionalInt32.newBuilder().setValue(0))
-            .setGaugeName("")
-            .addEmailAddress("to@example.org")
-            .build();
+    private static final MetricCondition TRANSACTION_X_PERCENTILE_CONDITION =
+            MetricCondition.newBuilder()
+                    .setMetric("transaction:x-percentile")
+                    .setTransactionType("tt")
+                    .setPercentile(OptionalDouble.newBuilder().setValue(95))
+                    .setThreshold(1)
+                    .setTimePeriodSeconds(60)
+                    .build();
 
-    private static final AlertConfig GAUGE_ALERT_CONFIG = AlertConfig.newBuilder()
-            .setKind(AlertKind.GAUGE)
-            .setGaugeName("java.lang:type=GarbageCollector,name=ConcurrentMarkSweep"
-                    + ":CollectionTime[counter]")
-            .setGaugeThreshold(OptionalDouble.newBuilder().setValue(500.0))
-            .setTimePeriodSeconds(60)
-            .setMinTransactionCount(OptionalInt32.newBuilder().setValue(0))
-            .setTransactionType("")
-            .addEmailAddress("to@example.org")
+    private static final AlertCondition TRANSACTION_TIME_ALERT_CONDITION =
+            AlertCondition.newBuilder()
+                    .setMetricCondition(TRANSACTION_X_PERCENTILE_CONDITION)
+                    .build();
+
+    private static final MetricCondition GAUGE_CONDITION =
+            MetricCondition.newBuilder()
+                    .setMetric("gauge:java.lang:type=GarbageCollector,name=ConcurrentMarkSweep"
+                            + ":CollectionTime[counter]")
+                    .setThreshold(500.0)
+                    .setTimePeriodSeconds(60)
+                    .build();
+
+    private static final AlertCondition GAUGE_ALERT_CONDITION =
+            AlertCondition.newBuilder()
+                    .setMetricCondition(GAUGE_CONDITION)
+                    .build();
+
+    private static final MetricCondition LOWER_BOUND_GAUGE_CONDITION =
+            GAUGE_CONDITION.toBuilder()
+                    .setLowerBoundThreshold(true)
+                    .build();
+
+    private static final AlertCondition LOWER_BOUND_GAUGE_ALERT_CONDITION =
+            AlertCondition.newBuilder()
+                    .setMetricCondition(LOWER_BOUND_GAUGE_CONDITION)
+                    .build();
+
+    private static final AlertNotification ALERT_NOTIFICATION = AlertNotification.newBuilder()
+            .setEmailNotification(EmailNotification.newBuilder()
+                    .addEmailAddress("to@example.org"))
             .build();
 
     private static final LazySecretKey LAZY_SECRET_KEY;
@@ -128,28 +149,30 @@ public class AlertingServiceTest {
     @Test
     public void shouldSendMailForTransactionAlert() throws Exception {
         // given
-        setupForTransaction(1000000);
+        setupForTransaction(1000001);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkTransactionAlert("", "", TRANSACTION_ALERT_CONFIG, 120000);
+        alertingService.checkMetricAlert("", "", TRANSACTION_TIME_ALERT_CONDITION,
+                TRANSACTION_X_PERCENTILE_CONDITION, ALERT_NOTIFICATION, 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
-                .isEqualTo("95th percentile over the last 1 minute exceeded alert threshold of"
+                .isEqualTo("95th percentile over the last 1 minute has exceeded alert threshold of"
                         + " 1 millisecond.");
     }
 
     @Test
     public void shouldNotSendMailForTransactionAlert() throws Exception {
         // given
-        setupForTransaction(999000);
+        setupForTransaction(1000000);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkTransactionAlert("", "", TRANSACTION_ALERT_CONFIG, 120000);
+        alertingService.checkMetricAlert("", "", TRANSACTION_TIME_ALERT_CONDITION,
+                TRANSACTION_X_PERCENTILE_CONDITION, ALERT_NOTIFICATION, 120000);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -162,23 +185,56 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkGaugeAlert("", "", GAUGE_ALERT_CONFIG, 120000);
+        alertingService.checkMetricAlert("", "", GAUGE_ALERT_CONDITION, GAUGE_CONDITION,
+                ALERT_NOTIFICATION, 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
-                .isEqualTo("Average over the last 1 minute exceeded alert threshold of"
+                .isEqualTo("Average over the last 1 minute has exceeded alert threshold of"
                         + " 500 milliseconds per second.");
     }
 
     @Test
     public void shouldNotSendMailForGaugeAlert() throws Exception {
         // given
-        setupForGauge(499);
+        setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkGaugeAlert("", "", GAUGE_ALERT_CONFIG, 120000);
+        alertingService.checkMetricAlert("", "", GAUGE_ALERT_CONDITION, GAUGE_CONDITION,
+                ALERT_NOTIFICATION, 120000);
+        // then
+        assertThat(mailService.getMessage()).isNull();
+    }
+
+    @Test
+    public void shouldSendMailForLowerBoundGaugeAlert() throws Exception {
+        // given
+        setupForGauge(499.9);
+        AlertingService alertingService = new AlertingService(configRepository,
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService);
+        // when
+        alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONDITION,
+                LOWER_BOUND_GAUGE_CONDITION, ALERT_NOTIFICATION, 120000);
+        // then
+        assertThat(mailService.getMessage()).isNotNull();
+        assertThat(((String) mailService.getMessage().getContent()).trim())
+                .isEqualTo("Average over the last 1 minute has dropped below alert threshold of"
+                        + " 500 milliseconds per second.");
+    }
+
+    @Test
+    public void shouldNotSendMailForLowerBoundGaugeAlert() throws Exception {
+        // given
+        setupForGauge(500);
+        AlertingService alertingService = new AlertingService(configRepository,
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService);
+        // when
+        alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONDITION,
+                LOWER_BOUND_GAUGE_CONDITION, ALERT_NOTIFICATION, 120000);
         // then
         assertThat(mailService.getMessage()).isNull();
     }

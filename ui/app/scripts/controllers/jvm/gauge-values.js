@@ -505,16 +505,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       });
     };
 
-    function displaySixDigitsOfPrecision(value) {
-      var nonScaledValue;
-      if (value < 1000000) {
-        nonScaledValue = parseFloat(value.toPrecision(6));
-      } else {
-        nonScaledValue = Math.round(value);
-      }
-      return nonScaledValue.toLocaleString(undefined, {maximumFractionDigits: 20});
-    }
-
     var chartOptions = {
       tooltip: true,
       yaxis: {
@@ -539,7 +529,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
             tooltip += '</td></tr><tr><td style="padding-right: 10px;">Time:</td><td style="font-weight: 400;">';
             tooltip += moment(xval).format('h:mm:ss.SSS a (Z)') + '</td></tr>';
             tooltip += '<tr><td style="padding-right: 10px;">Value:</td><td style="font-weight: 600;">';
-            tooltip += displaySixDigitsOfPrecision(nonScaledValue) + gaugeUnits[label] + '</td></tr>';
+            tooltip += $filter('gtGaugeValue')(nonScaledValue) + gaugeUnits[label] + '</td></tr>';
             tooltip += '</table>';
             return tooltip;
           }
@@ -553,7 +543,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
                 if (nonScaledValue === undefined) {
                   return 'no data';
                 }
-                return displaySixDigitsOfPrecision(nonScaledValue) + gaugeUnits[label];
+                return $filter('gtGaugeValue')(nonScaledValue) + gaugeUnits[label];
               }, ' (average value over this interval)', true);
         }
       }

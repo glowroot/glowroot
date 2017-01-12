@@ -197,12 +197,12 @@ class UserConfigJsonService {
                     .build();
         }
 
-        private static UserConfigDto create(UserConfig userConfig) {
+        private static UserConfigDto create(UserConfig config) {
             return ImmutableUserConfigDto.builder()
-                    .username(userConfig.username())
-                    .ldap(userConfig.ldap())
-                    .roles(userConfig.roles())
-                    .version(userConfig.version())
+                    .username(config.username())
+                    .ldap(config.ldap())
+                    .roles(config.roles())
+                    .version(config.version())
                     .build();
         }
     }

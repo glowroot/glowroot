@@ -122,6 +122,8 @@ public class UiModule {
         jsonServices.add(new JvmJsonService(environmentRepository, liveJvmService));
         jsonServices.add(new AlertIncidentJsonService(triggeredAlertRepository,
                 configRepository));
+        jsonServices.add(new ReportJsonService(aggregateRepository, agentRollupRepository,
+                gaugeValueRepository));
         jsonServices.add(new ConfigJsonService(agentRollupRepository, configRepository));
         jsonServices
                 .add(new AlertConfigJsonService(configRepository, gaugeValueRepository, central));
@@ -136,11 +138,8 @@ public class UiModule {
 
         if (central) {
             checkNotNull(syntheticResultRepository);
-            checkNotNull(triggeredAlertRepository);
             jsonServices.add(new SyntheticResultJsonService(syntheticResultRepository,
                     rollupLevelService, configRepository));
-            jsonServices.add(new ReportJsonService(aggregateRepository, agentRollupRepository,
-                    gaugeValueRepository));
             jsonServices.add(new SyntheticMonitorConfigJsonService(configRepository));
         }
 
@@ -165,6 +164,7 @@ public class UiModule {
         httpServices.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/alerts$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/profile/.*$"), indexHtmlHttpService);
@@ -181,7 +181,6 @@ public class UiModule {
 
         if (central) {
             httpServices.put(Pattern.compile("^/synthetic-monitors$"), indexHtmlHttpService);
-            httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
         }
 
         CommonHandler commonHandler = new CommonHandler(central, layoutService, httpServices,

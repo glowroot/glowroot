@@ -108,6 +108,10 @@ class LayoutService {
         boolean showNavbarJvm = permissions.jvm().hasSomeAccess();
         boolean showNavbarAlert =
                 permissions.alert() && !configRepository.getAlertConfigs(AGENT_ID).isEmpty();
+        // for now (for simplicity) reporting requires permission for ALL reportable metrics
+        // (currently transaction:overview, error:overview and jvm:gauges)
+        boolean showNavbarReport = permissions.transaction().overview()
+                && permissions.error().overview() && permissions.jvm().gauges();
         boolean showNavbarConfig = permissions.config().view();
         // a couple of special cases for embedded ui
         UiConfig uiConfig = configRepository.getUiConfig(AGENT_ID);
@@ -138,7 +142,7 @@ class LayoutService {
                 .build());
 
         return createLayout(authentication, agentRollups, showNavbarTransaction, showNavbarError,
-                showNavbarJvm, false, showNavbarAlert, false, showNavbarConfig);
+                showNavbarJvm, false, showNavbarAlert, showNavbarReport, showNavbarConfig);
     }
 
     private Layout buildLayoutCentral(Authentication authentication) throws Exception {
@@ -342,8 +346,9 @@ class LayoutService {
             showNavbarSyntheticMonitor = permissions.syntheticMonitor();
             showNavbarAlert = permissions.alert();
             // for now (for simplicity) reporting requires permission for ALL reportable metrics
-            // (currently transaction:overview and jvm:gauges)
-            showNavbarReport = permissions.transaction().overview() && permissions.jvm().gauges();
+            // (currently transaction:overview, error:overview and jvm:gauges)
+            showNavbarReport = permissions.transaction().overview()
+                    && permissions.error().overview() && permissions.jvm().gauges();
             showNavbarConfig = permissions.config().view();
         }
 
@@ -366,9 +371,9 @@ class LayoutService {
                     showNavbarSyntheticMonitor || permissions.syntheticMonitor();
             showNavbarAlert = showNavbarAlert || permissions.alert();
             // for now (for simplicity) reporting requires permission for ALL reportable metrics
-            // (currently transaction:overview and jvm:gauges)
+            // (currently transaction:overview, error:overview and jvm:gauges)
             showNavbarReport = showNavbarReport || (permissions.transaction().overview()
-                    && permissions.jvm().gauges());
+                    && permissions.error().overview() && permissions.jvm().gauges());
             showNavbarConfig = showNavbarConfig || permissions.config().view();
             String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
             List<Double> defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();

@@ -44,6 +44,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class SimpleRepoModule {
 
+    private static final int CURR_SCHEMA_VERSION = 2;
+
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
 
     private final DataSource dataSource;
@@ -81,6 +83,9 @@ public class SimpleRepoModule {
         traceCappedDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
                 storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
 
+        SchemaVersionDao schemaVersionDao = new SchemaVersionDao(dataSource);
+        Integer schemaVersion = schemaVersionDao.getSchemaVersion();
+
         environmentDao = new EnvironmentDao(dataSource);
         transactionTypeDao = new TransactionTypeDao(dataSource);
         rollupLevelService = new RollupLevelService(configRepository, clock);
@@ -92,13 +97,16 @@ public class SimpleRepoModule {
                 fullQueryTextDao, traceAttributeNameDao);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
-        triggeredAlertDao = new TriggeredAlertDao(dataSource);
+        triggeredAlertDao = new TriggeredAlertDao(dataSource, schemaVersion);
+
+        if (schemaVersion == null || schemaVersion < CURR_SCHEMA_VERSION) {
+            schemaVersionDao.updateSchemaVersion(CURR_SCHEMA_VERSION);
+        }
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
                 configRepository, environmentDao, gaugeValueDao, gaugeNameDao, transactionTypeDao,
                 fullQueryTextDao, traceAttributeNameDao);
 
-        TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
                 gaugeValueDao, rollupLevelService, new MailService());
         if (backgroundExecutor == null) {

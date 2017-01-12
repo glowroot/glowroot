@@ -34,7 +34,7 @@ public abstract class EmbeddedStorageConfig implements StorageConfig {
     // TODO revisit this comment
     //
     // currently aggregate expiration should be at least as big as trace expiration
-    // errors/messages page depends on this for calculating error percentage when using the filter
+    // errors/messages page depends on this for calculating error rate when using the filter
     @Override
     @Value.Default
     @SuppressWarnings("immutables")

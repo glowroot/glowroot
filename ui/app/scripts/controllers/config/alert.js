@@ -29,37 +29,194 @@ glowroot.controller('ConfigAlertCtrl', [
 
     var version = $location.search().v;
 
+    var gaugeUnits = {};
+
+    var METRICS = [
+      {
+        id: 'transaction',
+        display: 'Transactions',
+        heading: true,
+        disabled: true
+      },
+      {
+        id: 'transaction:average',
+        display: 'Response time (average)'
+      },
+      {
+        id: 'transaction:x-percentile',
+        display: 'Response time (X\u1d57\u02b0 percentile)'
+      },
+      // TODO
+      // {
+      //   id: 'transaction:timer-inclusive',
+      //   display: 'Breakdown metric time (inclusive)'
+      // },
+      // {
+      //   id: 'transaction:timer-exclusive',
+      //   display: 'Breakdown metric time (exclusive)'
+      // },
+      // {
+      //   id: 'transaction:timer-count',
+      //   display: 'Breakdown metric count'
+      // },
+      // {
+      //   id: 'transaction:profile-sample-count',
+      //   display: 'Profile sample count'
+      // },
+      {
+        id: 'transaction:count',
+        display: 'Count'
+      },
+      {
+        id: '-empty1-',
+        display: '',
+        disabled: true
+      },
+      {
+        id: 'error',
+        display: 'Errors',
+        heading: true,
+        disabled: true
+      },
+      {
+        id: 'error:rate',
+        display: 'Error rate (%)'
+      },
+      {
+        id: 'error:count',
+        display: 'Count'
+      },
+      {
+        id: '-empty2-',
+        display: '',
+        disabled: true
+      },
+      {
+        id: 'gauge',
+        display: 'JVM Gauges',
+        heading: true,
+        disabled: true
+      }
+    ];
+
+    $scope.metrics = angular.copy(METRICS);
+    $scope.metrics.push({
+      id: 'gauge:select',
+      display: '(select one or more agents to see available gauges)',
+      disabled: true
+    });
+
+    function showTransactionTypeAndName(metric) {
+      return metric && (metric.lastIndexOf('transaction:', 0) === 0 || metric.lastIndexOf('error:', 0) === 0);
+    }
+
+    $scope.showTransactionTypeAndName = function () {
+      return showTransactionTypeAndName($scope.config.condition.metric);
+    };
+
+    $scope.$watch('config.condition.metric', function (metric) {
+      if (!$scope.condition) {
+        return;
+      }
+      if (showTransactionTypeAndName(metric)) {
+        if ($scope.config.condition.transactionType === undefined) {
+          $scope.config.condition.transactionType = $scope.defaultTransactionType();
+        }
+        if ($scope.config.condition.transactionName === undefined) {
+          $scope.config.condition.transactionName = '';
+        }
+      } else {
+        delete $scope.config.condition.transactionType;
+        delete $scope.config.condition.transactionName;
+      }
+      if (metric !== 'transaction:x-percentile' && $scope.config) {
+        delete $scope.config.condition.percentile;
+      }
+    });
+
+    $scope.phraseForValue = function () {
+      var metric = $scope.config.condition.metric;
+      if (metric === 'transaction:average') {
+        return 'average response time';
+      } else if (metric === 'transaction:x-percentile') {
+        return 'X\u1d57\u02b0 percentile response time';
+      } else if (metric === 'transaction:count') {
+        return 'transaction count';
+      } else if (metric === 'error:rate') {
+        return 'error rate';
+      } else if (metric === 'error:count') {
+        return 'error count';
+      } else if (metric && metric.lastIndexOf('gauge:', 0) === 0) {
+        return 'average gauge value';
+      }
+    };
+
     function onNewData(data) {
+      // need to populate notification objects before making originalConfig copy
+      if (!data.config.emailNotification) {
+        data.config.emailNotification = {
+          emailAddresses: []
+        };
+      }
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
 
       if (data.heading) {
-        if (data.config.timePeriodSeconds === undefined) {
+        if (data.config.condition.timePeriodSeconds === undefined) {
           $scope.page.timePeriodMinutes = undefined;
         } else {
-          $scope.page.timePeriodMinutes = data.config.timePeriodSeconds / 60;
+          $scope.page.timePeriodMinutes = data.config.condition.timePeriodSeconds / 60;
         }
         $scope.heading = data.heading;
-        $scope.emailAddresses = data.config.emailAddresses.join(', ');
+        $scope.page.emailAddresses = data.config.emailNotification.emailAddresses.join(', ');
       } else {
         $scope.heading = '<New>';
       }
-      $scope.gauges = data.gauges;
+      $scope.metrics = angular.copy(METRICS);
+      gaugeUnits = {};
+      angular.forEach(data.gauges, function (gauge) {
+        $scope.metrics.push({
+          id: 'gauge:' + gauge.name,
+          display: gauge.display
+        });
+        if (gauge.unit) {
+          gaugeUnits[gauge.name] = ' ' + gauge.unit;
+        } else {
+          gaugeUnits[gauge.name] = '';
+        }
+      });
+      if ($scope.config.condition.conditionType === 'metric'
+          && $scope.config.condition.metric.lastIndexOf('gauge:', 0) === 0) {
+        var gaugeName = $scope.config.condition.metric.substring('gauge:'.length);
+        if (gaugeUnits[gaugeName] === undefined) {
+          $scope.metrics.push({
+            id: '-empty9-',
+            display: '',
+            disabled: true
+          });
+          $scope.metrics.push({
+            id: 'gauge:' + gaugeName,
+            display: gaugeName + ' (not available)',
+            disabled: true
+          });
+        }
+      }
       $scope.syntheticMonitors = data.syntheticMonitors;
     }
 
     $scope.unit = function () {
-      if (!$scope.gauges) {
-        // list of gauges hasn't loaded yet
+      var metric = $scope.config.condition.metric;
+      if (metric === 'transaction:average' || metric === 'transaction:x-percentile') {
+        return 'milliseconds';
+      } else if (metric === 'error:rate') {
+        return 'percent';
+      } else if (metric && metric.lastIndexOf('gauge:', 0) === 0) {
+        var gaugeName = metric.substring('gauge:'.length);
+        return gaugeUnits[gaugeName];
+      } else {
+        // e.g. 'transaction:count'
         return '';
       }
-      var i;
-      for (i = 0; i < $scope.gauges.length; i++) {
-        if ($scope.gauges[i].name === $scope.config.gaugeName) {
-          return $scope.gauges[i].unit;
-        }
-      }
-      return '';
     };
 
     if (version) {
@@ -77,9 +234,10 @@ glowroot.controller('ConfigAlertCtrl', [
           .then(function (response) {
             onNewData({
               config: {
-                kind: 'transaction',
-                transactionType: $scope.defaultTransactionType(),
-                emailAddresses: []
+                condition: {
+                  conditionType: 'metric',
+                  metric: ''
+                }
               },
               gauges: response.data.gauges,
               syntheticMonitors: response.data.syntheticMonitors
@@ -90,24 +248,19 @@ glowroot.controller('ConfigAlertCtrl', [
           });
     }
 
-    $scope.$watch('config.kind', function (newValue, oldValue) {
+    $scope.$watch('config.condition.conditionType', function (newValue, oldValue) {
       if (!$scope.config) {
         return;
       }
       if (oldValue === undefined) {
         return;
       }
-      $scope.config.transactionType = undefined;
-      $scope.config.transactionPercentile = undefined;
-      $scope.config.minTransactionCount = undefined;
-      $scope.config.gaugeName = undefined;
-      $scope.config.gaugeThreshold = undefined;
-      $scope.config.syntheticMonitorId = undefined;
-      $scope.config.thresholdMillis = undefined;
-      $scope.config.timePeriodSeconds = undefined;
+      $scope.config.condition = {
+        conditionType: newValue
+      };
       $scope.page.timePeriodMinutes = undefined;
-      if (newValue === 'transaction') {
-        $scope.config.transactionType = $scope.defaultTransactionType();
+      if ($scope.showTransactionTypeAndName()) {
+        $scope.config.condition.transactionType = $scope.defaultTransactionType();
       }
     });
 
@@ -116,13 +269,13 @@ glowroot.controller('ConfigAlertCtrl', [
         return;
       }
       if (newValue === undefined) {
-        $scope.config.timePeriodSeconds = undefined;
+        $scope.config.condition.timePeriodSeconds = undefined;
       } else {
-        $scope.config.timePeriodSeconds = newValue * 60;
+        $scope.config.condition.timePeriodSeconds = newValue * 60;
       }
     });
 
-    $scope.$watch('emailAddresses', function (newValue) {
+    $scope.$watch('page.emailAddresses', function (newValue) {
       if (newValue) {
         var emailAddresses = [];
         angular.forEach(newValue.split(','), function (emailAddress) {
@@ -131,9 +284,9 @@ glowroot.controller('ConfigAlertCtrl', [
             emailAddresses.push(emailAddress);
           }
         });
-        $scope.config.emailAddresses = emailAddresses;
+        $scope.config.emailNotification.emailAddresses = emailAddresses;
       } else if ($scope.config) {
-        $scope.config.emailAddresses = [];
+        $scope.config.emailNotification.emailAddresses = [];
       }
     });
 
@@ -144,6 +297,9 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
+      if (!postData.emailNotification.emailAddresses.length) {
+        delete postData.emailNotification;
+      }
       var url;
       if (version) {
         url = 'backend/config/alerts/update';

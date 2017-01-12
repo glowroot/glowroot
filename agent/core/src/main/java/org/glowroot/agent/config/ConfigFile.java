@@ -110,6 +110,7 @@ class ConfigFile {
             return mapper.readValue(mapper.treeAsTokens(node), typeReference);
         } catch (IOException e) {
             logger.error("error parsing config json node '{}': ", key, e);
+            writeBackupFile(configFile);
             return null;
         }
     }
@@ -160,9 +161,6 @@ class ConfigFile {
     }
 
     private static void upgradeConfigIfNeeded(ObjectNode configRootObjectNode) {
-        // upgrade from 0.9.9 to 0.9.10
-        // even though alerts are no longer supported in agent UI, they are still stored in agent's
-        // config.json when it it connected to central
         JsonNode alertsNode = configRootObjectNode.get("alerts");
         if (alertsNode == null || !alertsNode.isArray()) {
             return;
@@ -173,8 +171,43 @@ class ConfigFile {
             }
             ObjectNode alertObjectNode = (ObjectNode) alertNode;
             if (alertObjectNode.has("transactionThresholdMillis")) {
+                // upgrade from 0.9.9 to 0.9.10
                 alertObjectNode.set("thresholdMillis",
                         alertObjectNode.remove("transactionThresholdMillis"));
+            }
+            if (alertObjectNode.has("kind")) {
+                // upgrade from 0.9.17 to 0.9.18
+                String alertKind = alertObjectNode.remove("kind").asText();
+                if (alertKind.equals("transaction")) {
+                    ObjectNode conditionObjectNode = mapper.createObjectNode();
+                    conditionObjectNode.put("conditionType", "metric");
+                    conditionObjectNode.put("metric", "transaction:x-percentile");
+                    conditionObjectNode.set("transactionType",
+                            alertObjectNode.remove("transactionType"));
+                    conditionObjectNode.set("percentile",
+                            alertObjectNode.remove("transactionPercentile"));
+                    conditionObjectNode.set("threshold", alertObjectNode.remove("thresholdMillis"));
+                    conditionObjectNode.set("timePeriodSeconds",
+                            alertObjectNode.remove("timePeriodSeconds"));
+                    conditionObjectNode.set("minTransactionCount",
+                            alertObjectNode.remove("minTransactionCount"));
+                    alertObjectNode.set("condition", conditionObjectNode);
+                } else if (alertKind.equals("gauge")) {
+                    ObjectNode conditionObjectNode = mapper.createObjectNode();
+                    conditionObjectNode.put("conditionType", "metric");
+                    conditionObjectNode.put("metric",
+                            "gauge:" + alertObjectNode.remove("gaugeName").asText());
+                    conditionObjectNode.set("threshold", alertObjectNode.remove("gaugeThreshold"));
+                    conditionObjectNode.set("timePeriodSeconds",
+                            alertObjectNode.remove("timePeriodSeconds"));
+                    alertObjectNode.set("condition", conditionObjectNode);
+                } else {
+                    logger.error("unexpected alert kind: {}", alertKind);
+                }
+                ObjectNode emailNotificationObjectNode = mapper.createObjectNode();
+                emailNotificationObjectNode.set("emailAddresses",
+                        alertObjectNode.remove("emailAddresses"));
+                alertObjectNode.set("emailNotification", emailNotificationObjectNode);
             }
         }
     }
@@ -256,16 +289,20 @@ class ConfigFile {
             }
         } catch (IOException e) {
             logger.warn("error processing config file: {}", file.getAbsolutePath(), e);
-            File backupFile = new File(file.getParentFile(), file.getName() + ".invalid-orig");
-            try {
-                Files.copy(file, backupFile);
-                logger.warn("due to an error in the config file, it has been backed up to extension"
-                        + " '.invalid-orig' and will be overwritten with the default config");
-            } catch (IOException f) {
-                logger.warn("error making a copy of the invalid config file before overwriting it",
-                        f);
-            }
+            writeBackupFile(file);
         }
         return rootObjectNode == null ? mapper.createObjectNode() : rootObjectNode;
+    }
+
+    private static void writeBackupFile(File file) {
+        File backupFile = new File(file.getParentFile(), file.getName() + ".invalid-orig");
+        try {
+            Files.copy(file, backupFile);
+            logger.warn("due to an error in the config file, it has been backed up to extension"
+                    + " '.invalid-orig' and will be overwritten with the default config");
+        } catch (IOException f) {
+            logger.warn("error making a copy of the invalid config file before overwriting it",
+                    f);
+        }
     }
 }

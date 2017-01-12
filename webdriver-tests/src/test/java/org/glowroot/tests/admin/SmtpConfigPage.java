@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class SmtpConfigPage {
         return withWait(xpath("//div[@gt-label='Port']//input"));
     }
 
-    public WebElement getUseSslCheckbox() {
+    public WebElement getUseSslCheckBox() {
         return withWait(xpath("//div[@gt-label='Use SSL']//input"));
     }
 
@@ -60,11 +60,14 @@ public class SmtpConfigPage {
     }
 
     public void clickSaveButton() {
-        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
-        saveButton.click();
+        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
     }
 
     private WebElement withWait(By by) {
         return Utils.withWait(driver, by);
+    }
+
+    private void clickWithWait(By by) {
+        Utils.clickWithWait(driver, by);
     }
 }

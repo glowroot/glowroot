@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,7 +158,7 @@ public class GaugeConfigIT extends WebDriverIT {
         gaugePage.clickMBeanObjectNameAutoCompleteItem("java.lang:type=ClassLoading");
         gaugePage.getMBeanAttributeCheckBox("LoadedClassCount").click();
         gaugePage.getMBeanAttributeCheckBox("TotalLoadedClassCount").click();
-        gaugePage.getAddButton().click();
+        gaugePage.clickAddButton();
         // getDeleteButton() waits for the save/redirect
         // (the delete button does not appear until after the save/redirect)
         gaugePage.getDeleteButton();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,11 +53,14 @@ public class AdvancedConfigPage {
     }
 
     public void clickSaveButton() {
-        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
-        saveButton.click();
+        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
     }
 
     private WebElement withWait(By by) {
         return Utils.withWait(driver, by);
+    }
+
+    private void clickWithWait(By by) {
+        Utils.clickWithWait(driver, by);
     }
 }

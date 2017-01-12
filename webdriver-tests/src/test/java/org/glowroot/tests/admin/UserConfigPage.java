@@ -43,8 +43,8 @@ public class UserConfigPage {
         return withWait(xpath("//div[@gt-label='Verify password']//input"));
     }
 
-    public WebElement getAddButton() {
-        return withWait(xpath("//button[normalize-space()='Add']"));
+    public void clickAddButton() {
+        clickWithWait(xpath("//button[normalize-space()='Add']"));
     }
 
     public WebElement getDuplicateUsernameMessage() {
@@ -52,11 +52,11 @@ public class UserConfigPage {
     }
 
     public void clickSaveButton() {
-        withWait(xpath("//button[normalize-space()='Save changes']")).click();
+        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
     }
 
     public void clickSaveWithNoRolesConfirmationButton() {
-        withWait(xpath("//button[@ng-click='saveWithNoRoles()']")).click();
+        clickWithWait(xpath("//button[@ng-click='saveWithNoRoles()']"));
     }
 
     public WebElement getDeleteButton() {
@@ -65,5 +65,9 @@ public class UserConfigPage {
 
     private WebElement withWait(By by) {
         return Utils.withWait(driver, by);
+    }
+
+    private void clickWithWait(By by) {
+        Utils.clickWithWait(driver, by);
     }
 }

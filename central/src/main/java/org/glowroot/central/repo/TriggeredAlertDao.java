@@ -29,8 +29,7 @@ import com.google.protobuf.ByteString;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ImmutableTriggeredAlert;
 import org.glowroot.common.repo.TriggeredAlertRepository;
-import org.glowroot.common.repo.util.AlertingService;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -71,8 +70,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public boolean exists(String agentRollupId, AlertConfig alertConfig) throws Exception {
-        AlertConfig alertCondition = AlertingService.toAlertCondition(alertConfig);
+    public boolean exists(String agentRollupId, AlertCondition alertCondition) throws Exception {
         BoundStatement boundStatement = existsPS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setBytes(1, ByteBuffer.wrap(alertCondition.toByteArray()));
@@ -81,8 +79,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public void delete(String agentRollupId, AlertConfig alertConfig) throws Exception {
-        AlertConfig alertCondition = AlertingService.toAlertCondition(alertConfig);
+    public void delete(String agentRollupId, AlertCondition alertCondition) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setBytes(1, ByteBuffer.wrap(alertCondition.toByteArray()));
@@ -90,8 +87,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public void insert(String agentRollupId, AlertConfig alertConfig) throws Exception {
-        AlertConfig alertCondition = AlertingService.toAlertCondition(alertConfig);
+    public void insert(String agentRollupId, AlertCondition alertCondition) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setBytes(1, ByteBuffer.wrap(alertCondition.toByteArray()));
@@ -99,16 +95,16 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public List<AlertConfig> readAlertConditions(String agentRollupId) throws Exception {
+    public List<AlertCondition> readAlertConditions(String agentRollupId) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentRollupId);
         ResultSet results = Sessions.execute(session, boundStatement);
-        List<AlertConfig> alertConfigs = Lists.newArrayList();
+        List<AlertCondition> alertConditions = Lists.newArrayList();
         for (Row row : results) {
             ByteBuffer bytes = checkNotNull(row.getBytes(0));
-            alertConfigs.add(AlertConfig.parseFrom(ByteString.copyFrom(bytes)));
+            alertConditions.add(AlertCondition.parseFrom(ByteString.copyFrom(bytes)));
         }
-        return alertConfigs;
+        return alertConditions;
     }
 
     @Override
@@ -121,7 +117,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
             ByteBuffer bytes = checkNotNull(row.getBytes(1));
             triggeredAlerts.add(ImmutableTriggeredAlert.builder()
                     .agentRollupId(agentRollupId)
-                    .alertCondition(AlertConfig.parseFrom(ByteString.copyFrom(bytes)))
+                    .alertCondition(AlertCondition.parseFrom(ByteString.copyFrom(bytes)))
                     .build());
         }
         return triggeredAlerts;

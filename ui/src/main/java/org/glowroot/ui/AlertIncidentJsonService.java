@@ -53,7 +53,7 @@ class AlertIncidentJsonService {
                 continue;
             }
             alertItems.add(ImmutableAlertItem.of(triggeredAlert.agentRollupId(),
-                    AlertConfigJsonService.getAlertDisplay(triggeredAlert.agentRollupId(),
+                    AlertConfigJsonService.getConditionDisplay(triggeredAlert.agentRollupId(),
                             triggeredAlert.alertCondition(), configRepository)));
         }
         return mapper.writeValueAsString(alertItems);

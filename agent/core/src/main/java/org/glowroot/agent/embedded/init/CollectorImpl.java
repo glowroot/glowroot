@@ -32,7 +32,7 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -72,16 +72,19 @@ class CollectorImpl implements Collector {
     public void collectAggregates(AggregateReader aggregateReader) throws Exception {
         aggregateDao.store(aggregateReader);
         alertingService.checkForDeletedAlerts(AGENT_ID);
-        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID,
-                AlertKind.TRANSACTION)) {
-            try {
-                alertingService.checkTransactionAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
-                        aggregateReader.captureTime());
-            } catch (InterruptedException e) {
-                // shutdown request
-                throw e;
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
+            AlertCondition alertCondition = alertConfig.getCondition();
+            if (isAggregateMetricCondition(alertCondition)) {
+                try {
+                    alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY,
+                            alertCondition, alertCondition.getMetricCondition(),
+                            alertConfig.getNotification(), aggregateReader.captureTime());
+                } catch (InterruptedException e) {
+                    // shutdown request
+                    throw e;
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
     }
@@ -94,16 +97,19 @@ class CollectorImpl implements Collector {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
         }
         alertingService.checkForDeletedAlerts(AGENT_ID);
-        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID,
-                AlertKind.GAUGE)) {
-            try {
-                alertingService.checkGaugeAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
-                        maxCaptureTime);
-            } catch (InterruptedException e) {
-                // shutdown request
-                throw e;
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
+            AlertCondition alertCondition = alertConfig.getCondition();
+            if (isGaugeMetricCondition(alertCondition)) {
+                try {
+                    alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY, alertCondition,
+                            alertCondition.getMetricCondition(), alertConfig.getNotification(),
+                            maxCaptureTime);
+                } catch (InterruptedException e) {
+                    // shutdown request
+                    throw e;
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
     }
@@ -116,5 +122,18 @@ class CollectorImpl implements Collector {
     @Override
     public void log(LogEvent logEvent) {
         // do nothing, already logging locally through ConsoleAppender and RollingFileAppender
+    }
+
+    private static boolean isAggregateMetricCondition(AlertCondition alertCondition) {
+        if (alertCondition.getValCase() != AlertCondition.ValCase.METRIC_CONDITION) {
+            return false;
+        }
+        String metric = alertCondition.getMetricCondition().getMetric();
+        return metric.startsWith("transaction:") || metric.startsWith("error:");
+    }
+
+    private static boolean isGaugeMetricCondition(AlertCondition alertCondition) {
+        return alertCondition.getValCase() == AlertCondition.ValCase.METRIC_CONDITION
+                && alertCondition.getMetricCondition().getMetric().startsWith("gauge:");
     }
 }

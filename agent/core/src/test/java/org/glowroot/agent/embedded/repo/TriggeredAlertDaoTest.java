@@ -23,9 +23,11 @@ import org.junit.Test;
 
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.common.repo.TriggeredAlertRepository.TriggeredAlert;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 // NOTE this is mostly a copy of TriggeredAlertDaoIT in glowroot-central
@@ -45,7 +47,7 @@ public class TriggeredAlertDaoTest {
         if (dataSource.tableExists("triggered_alert")) {
             dataSource.execute("drop table triggered_alert");
         }
-        triggeredAlertDao = new TriggeredAlertDao(dataSource);
+        triggeredAlertDao = new TriggeredAlertDao(dataSource, null);
     }
 
     @After
@@ -55,8 +57,15 @@ public class TriggeredAlertDaoTest {
 
     @Test
     public void shouldNotExist() throws Exception {
-        AlertConfig alertCondition = AlertConfig.newBuilder()
-                .setKind(AlertKind.HEARTBEAT)
+        AlertCondition alertCondition = AlertCondition.newBuilder()
+                .setMetricCondition(MetricCondition.newBuilder()
+                        .setMetric("transaction:x-percentile")
+                        .setTransactionType("Web")
+                        .setPercentile(OptionalDouble.newBuilder().setValue(95))
+                        .setThreshold(SECONDS.toNanos(2))
+                        .setTimePeriodSeconds(60)
+                        .setMinTransactionCount(100)
+                        .build())
                 .build();
         assertThat(triggeredAlertDao.exists(AGENT_ID, alertCondition)).isFalse();
     }
@@ -64,24 +73,45 @@ public class TriggeredAlertDaoTest {
     @Test
     public void shouldExistAfterInsert() throws Exception {
         // given
-        AlertConfig alertCondition = AlertConfig.newBuilder()
-                .setKind(AlertKind.HEARTBEAT)
+        AlertCondition alertCondition = AlertCondition.newBuilder()
+                .setMetricCondition(MetricCondition.newBuilder()
+                        .setMetric("transaction:x-percentile")
+                        .setTransactionType("Web")
+                        .setPercentile(OptionalDouble.newBuilder().setValue(95))
+                        .setThreshold(SECONDS.toNanos(2))
+                        .setTimePeriodSeconds(60)
+                        .setMinTransactionCount(100)
+                        .build())
                 .build();
-        AlertConfig otherAlertConfig = AlertConfig.newBuilder()
-                .setKind(AlertKind.GAUGE)
+        AlertCondition otherAlertCondition = AlertCondition.newBuilder()
+                .setMetricCondition(MetricCondition.newBuilder()
+                        .setMetric("transaction:x-percentile")
+                        .setTransactionType("Web")
+                        .setPercentile(OptionalDouble.newBuilder().setValue(96))
+                        .setThreshold(SECONDS.toNanos(2))
+                        .setTimePeriodSeconds(60)
+                        .setMinTransactionCount(100)
+                        .build())
                 .build();
         // when
         triggeredAlertDao.insert(AGENT_ID, alertCondition);
         // then
-        assertThat(triggeredAlertDao.exists(AGENT_ID, otherAlertConfig)).isFalse();
+        assertThat(triggeredAlertDao.exists(AGENT_ID, otherAlertCondition)).isFalse();
         assertThat(triggeredAlertDao.exists(AGENT_ID, alertCondition)).isTrue();
     }
 
     @Test
     public void shouldNotExistAfterDelete() throws Exception {
         // given
-        AlertConfig alertCondition = AlertConfig.newBuilder()
-                .setKind(AlertKind.HEARTBEAT)
+        AlertCondition alertCondition = AlertCondition.newBuilder()
+                .setMetricCondition(MetricCondition.newBuilder()
+                        .setMetric("transaction:x-percentile")
+                        .setTransactionType("Web")
+                        .setPercentile(OptionalDouble.newBuilder().setValue(95))
+                        .setThreshold(SECONDS.toNanos(2))
+                        .setTimePeriodSeconds(60)
+                        .setMinTransactionCount(100)
+                        .build())
                 .build();
         // when
         triggeredAlertDao.insert(AGENT_ID, alertCondition);
@@ -93,11 +123,25 @@ public class TriggeredAlertDaoTest {
     @Test
     public void shouldReadAll() throws Exception {
         // given
-        AlertConfig alertCondition = AlertConfig.newBuilder()
-                .setKind(AlertKind.HEARTBEAT)
+        AlertCondition alertCondition = AlertCondition.newBuilder()
+                .setMetricCondition(MetricCondition.newBuilder()
+                        .setMetric("transaction:x-percentile")
+                        .setTransactionType("Web")
+                        .setPercentile(OptionalDouble.newBuilder().setValue(95))
+                        .setThreshold(SECONDS.toNanos(2))
+                        .setTimePeriodSeconds(60)
+                        .setMinTransactionCount(100)
+                        .build())
                 .build();
-        AlertConfig alertCondition2 = AlertConfig.newBuilder()
-                .setKind(AlertKind.GAUGE)
+        AlertCondition alertCondition2 = AlertCondition.newBuilder()
+                .setMetricCondition(MetricCondition.newBuilder()
+                        .setMetric("transaction:x-percentile")
+                        .setTransactionType("Web")
+                        .setPercentile(OptionalDouble.newBuilder().setValue(95))
+                        .setThreshold(SECONDS.toNanos(2))
+                        .setTimePeriodSeconds(60)
+                        .setMinTransactionCount(100)
+                        .build())
                 .build();
         // when
         triggeredAlertDao.insert("xyz", alertCondition);

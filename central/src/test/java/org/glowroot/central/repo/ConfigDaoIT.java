@@ -26,7 +26,8 @@ import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -101,8 +102,9 @@ public class ConfigDaoIT {
                 .addSyntheticMonitorConfig(SyntheticMonitorConfig.newBuilder()
                         .setId("22"))
                 .addAlertConfig(AlertConfig.newBuilder()
-                        .setKind(AlertKind.SYNTHETIC_MONITOR)
-                        .setSyntheticMonitorId("11"))
+                        .setCondition(AlertCondition.newBuilder()
+                                .setSyntheticMonitorCondition(SyntheticMonitorCondition.newBuilder()
+                                        .setSyntheticMonitorId("11"))))
                 .build();
         // when
         AgentConfig updatedAgentConfig = AgentConfigDao.generateNewIds(agentConfig);
@@ -112,7 +114,8 @@ public class ConfigDaoIT {
         assertThat(syntheticMonitorId).hasSize(32);
         assertThat(updatedAgentConfig.getSyntheticMonitorConfig(1).getId()).hasSize(32);
         assertThat(updatedAgentConfig.getAlertConfigList()).hasSize(1);
-        assertThat(updatedAgentConfig.getAlertConfig(0).getSyntheticMonitorId())
-                .isEqualTo(syntheticMonitorId);
+        assertThat(updatedAgentConfig.getAlertConfig(0).getCondition()
+                .getSyntheticMonitorCondition().getSyntheticMonitorId())
+                        .isEqualTo(syntheticMonitorId);
     }
 }

@@ -160,6 +160,7 @@ public class AggregateDao implements AggregateRepository {
     private static final Table throughputTable = ImmutableTable.builder()
             .partialName("throughput")
             .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
+            .addColumns(ImmutableColumn.of("error_count", "bigint"))
             .summary(false)
             .fromInclusive(true)
             .build();
@@ -660,11 +661,15 @@ public class AggregateDao implements AggregateRepository {
         ResultSet results = executeQuery(agentRollupId, query, throughputTable);
         List<ThroughputAggregate> throughputAggregates = Lists.newArrayList();
         for (Row row : results) {
-            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
-            long transactionCount = row.getLong(1);
+            int i = 0;
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long transactionCount = row.getLong(i++);
+            boolean hasErrorCount = !row.isNull(i);
+            long errorCount = row.getLong(i++);
             throughputAggregates.add(ImmutableThroughputAggregate.builder()
                     .captureTime(captureTime)
                     .transactionCount(transactionCount)
+                    .errorCount(hasErrorCount ? errorCount : null)
                     .build());
         }
         return throughputAggregates;
@@ -1377,8 +1382,17 @@ public class AggregateDao implements AggregateRepository {
     private List<ResultSetFuture> rollupThroughputFromRows(RollupParams rollup,
             TransactionQuery query, Iterable<Row> rows) {
         long transactionCount = 0;
+        // error_count is null for data inserted prior to glowroot central 0.9.18
+        // rolling up any interval with null error_count should result in null error_count
+        boolean hasMissingErrorCount = false;
+        long errorCount = 0;
         for (Row row : rows) {
             transactionCount += row.getLong(0);
+            if (row.isNull(1)) {
+                hasMissingErrorCount = true;
+            } else {
+                errorCount += row.getLong(1);
+            }
         }
         BoundStatement boundStatement;
         if (query.transactionName() == null) {
@@ -1394,6 +1408,11 @@ public class AggregateDao implements AggregateRepository {
         }
         boundStatement.setTimestamp(i++, new Date(query.to()));
         boundStatement.setLong(i++, transactionCount);
+        if (hasMissingErrorCount) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setLong(i++, errorCount);
+        }
         boundStatement.setInt(i++, rollup.adjustedTTL());
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
@@ -1594,6 +1613,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(i++, transactionType);
         boundStatement.setTimestamp(i++, new Date(captureTime));
         boundStatement.setLong(i++, aggregate.getTransactionCount());
+        boundStatement.setLong(i++, aggregate.getErrorCount());
         boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
@@ -1661,6 +1681,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(i++, transactionName);
         boundStatement.setTimestamp(i++, new Date(captureTime));
         boundStatement.setLong(i++, aggregate.getTransactionCount());
+        boundStatement.setLong(i++, aggregate.getErrorCount());
         boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 

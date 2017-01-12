@@ -955,7 +955,7 @@ public class AggregateDao implements AggregateRepository {
         public @Untainted String getSql() {
             String tableName = getTableName(query);
             String transactionNameCriteria = getTransactionNameCriteria(query);
-            return "select capture_time, transaction_count from " + tableName
+            return "select capture_time, transaction_count, error_count from " + tableName
                     + " where transaction_type = ?" + transactionNameCriteria
                     + " and capture_time >= ? and capture_time <= ? order by capture_time";
         }
@@ -971,6 +971,7 @@ public class AggregateDao implements AggregateRepository {
             return ImmutableThroughputAggregate.builder()
                     .captureTime(resultSet.getLong(i++))
                     .transactionCount(resultSet.getLong(i++))
+                    .errorCount(resultSet.getLong(i++))
                     .build();
         }
     }

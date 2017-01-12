@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
-import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public interface LiveAggregateRepository {
@@ -116,10 +115,11 @@ public interface LiveAggregateRepository {
     }
 
     @Value.Immutable
-    @Styles.AllParameters
     public interface ThroughputAggregate {
         long captureTime();
         long transactionCount();
+        @Nullable
+        Long errorCount(); // null for data inserted prior to glowroot central 0.9.18
     }
 
     public class LiveResult<T> {

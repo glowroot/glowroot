@@ -37,7 +37,6 @@ import org.glowroot.common.repo.util.LazySecretKey;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
@@ -96,9 +95,6 @@ public interface ConfigRepository {
 
     // central supports alert configs on rollups
     List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception;
-
-    // central supports alert configs on rollups
-    List<AlertConfig> getAlertConfigs(String agentRollupId, AlertKind alertKind) throws Exception;
 
     @Nullable
     AlertConfig getAlertConfig(String agentRollupId, String version) throws Exception;

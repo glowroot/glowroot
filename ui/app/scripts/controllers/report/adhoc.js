@@ -47,19 +47,55 @@ glowroot.controller('ReportAdhocCtrl', [
         disabled: true
       },
       {
-        id: 'transaction:response-time-avg',
-        display: 'Response time: average'
+        id: 'transaction:average',
+        display: 'Response time (average)'
       },
       {
-        id: 'transaction:response-time-percentile',
-        display: 'Response time: percentile'
+        id: 'transaction:x-percentile',
+        display: 'Response time (X\u1d57\u02b0 percentile)'
+      },
+      // TODO
+      // {
+      //   id: 'transaction:timer-inclusive',
+      //   display: 'Breakdown metric time (inclusive)'
+      // },
+      // {
+      //   id: 'transaction:timer-exclusive',
+      //   display: 'Breakdown metric time (exclusive)'
+      // },
+      // {
+      //   id: 'transaction:timer-count',
+      //   display: 'Breakdown metric count'
+      // },
+      // {
+      //   id: 'transaction:profile-sample-count',
+      //   display: 'Profile sample count'
+      // },
+      {
+        id: 'transaction:count',
+        display: 'Count'
       },
       {
-        id: 'transaction:throughput',
-        display: 'Throughput'
+        id: '-empty1-',
+        display: '',
+        disabled: true
       },
       {
-        id: '-',
+        id: 'error',
+        display: 'Errors',
+        heading: true,
+        disabled: true
+      },
+      {
+        id: 'error:rate',
+        display: 'Error rate (%)'
+      },
+      {
+        id: 'error:count',
+        display: 'Count'
+      },
+      {
+        id: '-empty2-',
         display: '',
         disabled: true
       },
@@ -98,13 +134,23 @@ glowroot.controller('ReportAdhocCtrl', [
     $scope.allTransactionTypes = [];
 
     $scope.agentRollups = [];
+
     angular.forEach($scope.layout.agentRollupValues, function (agentRollup) {
       // for now (for simplicity) reporting requires permission for ALL reportable metrics
-      // (currently transaction:overview and jvm:gauges)
-      if (agentRollup.permissions.transaction.overview && agentRollup.permissions.jvm.gauges) {
+      // (currently transaction:overview, error:overview and jvm:gauges)
+      if (agentRollup.permissions.transaction.overview
+          && agentRollup.permissions.error.overview && agentRollup.permissions.jvm.gauges) {
         $scope.agentRollups.push(agentRollup);
       }
     });
+
+    function showTransactionTypeAndName(metric) {
+      return metric && (metric.lastIndexOf('transaction:', 0) === 0 || metric.lastIndexOf('error:', 0) === 0);
+    }
+
+    $scope.showTransactionTypeAndName = function () {
+      return showTransactionTypeAndName($scope.report.metric);
+    };
 
     $scope.$watch('report.agentRollupIds', function () {
       var temp = {};
@@ -115,6 +161,9 @@ glowroot.controller('ReportAdhocCtrl', [
         });
       });
       $scope.allTransactionTypes = Object.keys(temp).sort();
+      if ($scope.allTransactionTypes.indexOf($scope.report.transactionType) === -1) {
+        $scope.report.transactionType = '';
+      }
 
       if ($scope.report.agentRollupIds.length) {
         var query = {
@@ -158,6 +207,19 @@ glowroot.controller('ReportAdhocCtrl', [
     $scope.tableRows = [];
 
     var browserTimeZone = moment.tz.guess();
+
+    $scope.formatValue = function (value) {
+      var metric = $scope.report.metric;
+      if (metric.lastIndexOf('gauge:', 0) === 0) {
+        return $filter('gtGaugeValue')(value);
+      } else if (metric === 'transaction:count' || metric === 'error:count') {
+        return $filter('number')(value);
+      } else if (metric === 'error:rate') {
+        return $filter('gtMillis')(value) + ' %';
+      } else {
+        return $filter('gtMillis')(value);
+      }
+    };
 
     var options = {
       grid: {
@@ -220,7 +282,7 @@ glowroot.controller('ReportAdhocCtrl', [
                 if (nonScaledValue === undefined) {
                   return 'no data';
                 }
-                return $filter('gtMillis')(nonScaledValue) + ' ' + plot.getAxes().yaxis.options.label;
+                return $scope.formatValue(nonScaledValue) + ' ' + plot.getAxes().yaxis.options.label;
               }, undefined, true, dateFormat, altBetweenText);
         }
       }
@@ -247,12 +309,13 @@ glowroot.controller('ReportAdhocCtrl', [
       } else if (!angular.isArray(appliedReport.agentRollupIds)) {
         appliedReport.agentRollupIds = [appliedReport.agentRollupIds];
       }
-      appliedReport.metricId = $location.search()['metric-id'];
-      appliedReport.metricPercentile = Number($location.search()['metric-percentile']);
-      if (isNaN(appliedReport.metricPercentile)) {
-        delete appliedReport.metricPercentile;
-      }
+      appliedReport.metric = $location.search().metric;
       appliedReport.transactionType = $location.search()['transaction-type'];
+      appliedReport.transactionName = $location.search()['transaction-name'];
+      appliedReport.percentile = Number($location.search().percentile);
+      if (isNaN(appliedReport.percentile)) {
+        delete appliedReport.percentile;
+      }
       appliedReport.fromDate = $location.search()['from-date'];
       appliedReport.toDate = $location.search()['to-date'];
       if (appliedReport.fromDate && appliedReport.toDate) {
@@ -274,9 +337,17 @@ glowroot.controller('ReportAdhocCtrl', [
       $scope.report = angular.copy(appliedReport);
     });
 
-    $scope.$watch('report.metricId', function (newValue) {
-      if (newValue !== 'transaction:response-time-percentile') {
-        $scope.report.metricPercentile = undefined;
+    $scope.$watch('report.metric', function (metric) {
+      if (showTransactionTypeAndName(metric)) {
+        if ($scope.report.transactionName === undefined) {
+          $scope.report.transactionName = '';
+        }
+      } else {
+        delete $scope.report.transactionType;
+        delete $scope.report.transactionName;
+      }
+      if (metric !== 'transaction:x-percentile') {
+        delete $scope.report.percentile;
       }
     });
 
@@ -291,19 +362,6 @@ glowroot.controller('ReportAdhocCtrl', [
     $scope.runReport = function (deferred) {
       if ($scope.layout.central && !$scope.report.agentRollupIds.length) {
         deferred.reject('Select one or more agents');
-        return;
-      }
-      if (!$scope.report.metricId) {
-        deferred.reject('Select metric');
-        return;
-      }
-      if ($scope.report.metricId === 'transaction:response-time-percentile'
-          && !$scope.report.metricPercentile && $scope.report.metricPercentile !== 0) {
-        deferred.reject('Select percentile');
-        return;
-      }
-      if ($scope.report.metricId.indexOf('transaction:') === 0 && !$scope.report.transactionType) {
-        deferred.reject('Select transaction type');
         return;
       }
       if ($scope.report.rollup === 'weekly'
@@ -324,9 +382,10 @@ glowroot.controller('ReportAdhocCtrl', [
       if ($scope.layout.central) {
         $location.search('agent-rollup-id', $scope.report.agentRollupIds);
       }
-      $location.search('metric-id', $scope.report.metricId);
-      $location.search('metric-percentile', $scope.report.metricPercentile);
+      $location.search('metric', $scope.report.metric);
       $location.search('transaction-type', $scope.report.transactionType);
+      $location.search('transaction-name', $scope.report.transactionName);
+      $location.search('percentile', $scope.report.percentile);
       var fromDate = moment($scope.report.fromDate).format('YYYYMMDD');
       var toDate = moment($scope.report.toDate).format('YYYYMMDD');
       $location.search('from-date', fromDate);
@@ -359,9 +418,6 @@ glowroot.controller('ReportAdhocCtrl', [
       var query = angular.copy(appliedReport);
       query.fromDate = moment(appliedReport.fromDate).format('YYYYMMDD');
       query.toDate = moment(appliedReport.toDate).format('YYYYMMDD');
-      if (appliedReport.metricId !== 'transaction:response-time-percentile') {
-        delete query.metricPercentile;
-      }
       if (!$scope.layout.central) {
         query.agentRollupIds = [''];
       }
@@ -445,12 +501,12 @@ glowroot.controller('ReportAdhocCtrl', [
               plotData.push(plotDataItem);
             });
             function doWithPlot() {
-              if (query.metricId === 'transaction:response-time-avg' || query.metricId === 'transaction:response-time-percentile') {
+              if (query.metric === 'transaction:x-percentile' || query.metric === 'transaction:average') {
                 plot.getAxes().yaxis.options.label = 'milliseconds';
-              } else if (query.metricId === 'transaction:throughput') {
-                plot.getAxes().yaxis.options.label = 'transactions per minute';
-              } else if (query.metricId.indexOf('gauge:') === 0) {
-                var gaugeName = query.metricId.substring('gauge:'.length);
+              } else if (query.metric === 'error:rate') {
+                plot.getAxes().yaxis.options.label = 'percent';
+              } else if (query.metric.indexOf('gauge:') === 0) {
+                var gaugeName = query.metric.substring('gauge:'.length);
                 plot.getAxes().yaxis.options.label = gaugeUnits[gaugeName];
               } else {
                 plot.getAxes().yaxis.options.label = '';
@@ -561,24 +617,31 @@ glowroot.controller('ReportAdhocCtrl', [
 
     function drillDownLink(agentRollupId, from, to) {
       var path;
-      if (appliedReport.metricId === 'transaction:response-time-avg') {
+      if (appliedReport.metric === 'transaction:average') {
         path = 'transaction/average';
-      } else if (appliedReport.metricId === 'transaction:response-time-percentile') {
+      } else if (appliedReport.metric === 'transaction:x-percentile') {
         path = 'transaction/percentiles';
-      } else if (appliedReport.metricId === 'transaction:throughput') {
+      } else if (appliedReport.metric === 'transaction:count') {
         path = 'transaction/throughput';
-      } else if (appliedReport.metricId.indexOf('gauge:') === 0) {
+      } else if (appliedReport.metric === 'error:rate') {
+        path = 'error/messages';
+      } else if (appliedReport.metric === 'error:count') {
+        path = 'error/messages';
+      } else if (appliedReport.metric.indexOf('gauge:') === 0) {
         path = 'jvm/gauges';
       }
       var url = path + '?agent-rollup-id=' + encodeURIComponent(agentRollupId);
-      if (appliedReport.metricId.indexOf('transaction:') === 0) {
+      if (showTransactionTypeAndName(appliedReport.metric)) {
         url += '&transaction-type=' + encodeURIComponent(appliedReport.transactionType);
-      } else if (appliedReport.metricId.indexOf('gauge:') === 0) {
-        url += '&gauge-name=' + encodeURIComponent(appliedReport.metricId.substring('gauge:'.length));
+        if (appliedReport.transactionName) {
+          url += '&transaction-name=' + encodeURIComponent(appliedReport.transactionName);
+        }
+      } else if (appliedReport.metric.indexOf('gauge:') === 0) {
+        url += '&gauge-name=' + encodeURIComponent(appliedReport.metric.substring('gauge:'.length));
       }
       url += '&from=' + from + '&to=' + to;
-      if (appliedReport.metricId === 'transaction:response-time-percentile') {
-        url += '&percentile=' + appliedReport.metricPercentile;
+      if (appliedReport.metric === 'transaction:x-percentile') {
+        url += '&percentile=' + appliedReport.percentile;
       }
       return url;
     }
@@ -593,6 +656,5 @@ glowroot.controller('ReportAdhocCtrl', [
       var to = getFromTo(appliedReport.toDate)[1];
       return drillDownLink(agentRollupId, from, to);
     };
-
   }
 ]);

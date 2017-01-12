@@ -45,7 +45,10 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
@@ -54,7 +57,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttrib
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
-import org.glowroot.wire.api.model.Proto.OptionalDouble;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -287,11 +289,15 @@ public class ConfigRepositoryIT {
         String agentId = UUID.randomUUID().toString();
         agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
         AlertConfig alertConfig = AlertConfig.newBuilder()
-                .setKind(AlertKind.GAUGE)
-                .setGaugeName("abc")
-                .setGaugeThreshold(OptionalDouble.newBuilder().setValue(111))
-                .setTimePeriodSeconds(60)
-                .addEmailAddress("noone@example.org")
+                .setCondition(AlertCondition.newBuilder()
+                        .setMetricCondition(MetricCondition.newBuilder()
+                                .setMetric("gauge:abc")
+                                .setThreshold(111)
+                                .setTimePeriodSeconds(60))
+                        .build())
+                .setNotification(AlertNotification.newBuilder()
+                        .setEmailNotification(EmailNotification.newBuilder()
+                                .addEmailAddress("noone@example.org")))
                 .build();
 
         // when
@@ -305,11 +311,16 @@ public class ConfigRepositoryIT {
         // and further
 
         // given
-        AlertConfig updatedAlertConfig = alertConfig.toBuilder()
-                .setGaugeName("abc2")
-                .setGaugeThreshold(OptionalDouble.newBuilder().setValue(222))
-                .setTimePeriodSeconds(62)
-                .addEmailAddress("noone2@example.org")
+        AlertConfig updatedAlertConfig = AlertConfig.newBuilder()
+                .setCondition(AlertCondition.newBuilder()
+                        .setMetricCondition(MetricCondition.newBuilder()
+                                .setMetric("gauge:abc2")
+                                .setThreshold(222)
+                                .setTimePeriodSeconds(62))
+                        .build())
+                .setNotification(AlertNotification.newBuilder()
+                        .setEmailNotification(EmailNotification.newBuilder()
+                                .addEmailAddress("noone2@example.org")))
                 .build();
 
         // when

@@ -92,7 +92,7 @@ public class LoginIT extends WebDriverIT {
         sendKeys(userPage.getPasswordTextField(), "p");
         sendKeys(userPage.getVerifyPasswordTextField(), "p");
         Utils.withWait(driver, xpath("//input[@ng-model='role.checked']")).click();
-        userPage.getAddButton().click();
+        userPage.clickAddButton();
         // getDeleteButton() waits for the save/redirect
         // (the delete button does not appear until after the save/redirect)
         userPage.getDeleteButton();

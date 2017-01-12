@@ -186,10 +186,10 @@ class RoleConfigJsonService {
         abstract String name();
         abstract String version();
 
-        private static RoleConfigListDto create(RoleConfig roleConfig) {
+        private static RoleConfigListDto create(RoleConfig config) {
             return ImmutableRoleConfigListDto.builder()
-                    .name(roleConfig.name())
-                    .version(roleConfig.version())
+                    .name(config.name())
+                    .version(config.version())
                     .build();
         }
     }

@@ -46,7 +46,9 @@ import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.ValCase;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 
@@ -276,15 +278,19 @@ public class AgentConfigDao {
         }
         builder.clearAlertConfig();
         for (AgentConfig.AlertConfig alertConfig : agentConfig.getAlertConfigList()) {
-            if (alertConfig.getKind() == AlertKind.SYNTHETIC_MONITOR) {
-                String id = alertConfig.getSyntheticMonitorId();
+            AlertCondition alertCondition = alertConfig.getCondition();
+            if (alertCondition.getValCase() == ValCase.SYNTHETIC_MONITOR_CONDITION) {
+                String id = alertCondition.getSyntheticMonitorCondition().getSyntheticMonitorId();
                 String newId = syntheticMonitorIdMap.get(id);
                 if (newId == null) {
                     logger.warn("synthetic monitor id not found: {}", id);
                     continue;
                 }
+                SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
                 builder.addAlertConfig(alertConfig.toBuilder()
-                        .setSyntheticMonitorId(newId));
+                        .setCondition(alertCondition.toBuilder()
+                                .setSyntheticMonitorCondition(condition.toBuilder()
+                                        .setSyntheticMonitorId(newId))));
             } else {
                 builder.addAlertConfig(alertConfig);
             }

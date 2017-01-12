@@ -21,8 +21,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -41,17 +39,15 @@ import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AgentConfigDao;
 import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.repo.AggregateDao;
-import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
+import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
@@ -96,8 +92,7 @@ class GrpcServer {
     private final GaugeValueDao gaugeValueDao;
     private final HeartbeatDao heartbeatDao;
     private final TraceDao traceDao;
-    private final ConfigRepositoryImpl configRepository;
-    private final AlertingService alertingService;
+    private final CentralAlertingService centralAlertingService;
     private final Clock clock;
     private final String version;
 
@@ -105,16 +100,14 @@ class GrpcServer {
 
     private final ServerImpl server;
 
-    private final ExecutorService alertCheckingExecutor;
-
     private volatile long currentMinute;
     private final AtomicInteger nextDelay = new AtomicInteger();
 
     GrpcServer(String bindAddress, int port, AgentRollupDao agentRollupDao,
             AgentConfigDao agentConfigDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
             EnvironmentDao environmentDao, HeartbeatDao heartbeatDao, TraceDao traceDao,
-            ConfigRepositoryImpl configRepository, AlertingService alertingService,
-            ClusterManager clusterManager, Clock clock, String version) throws IOException {
+            CentralAlertingService centralAlertingService, ClusterManager clusterManager,
+            Clock clock, String version) throws IOException {
         this.agentRollupDao = agentRollupDao;
         this.agentConfigDao = agentConfigDao;
         this.environmentDao = environmentDao;
@@ -122,8 +115,7 @@ class GrpcServer {
         this.gaugeValueDao = gaugeValueDao;
         this.heartbeatDao = heartbeatDao;
         this.traceDao = traceDao;
-        this.configRepository = configRepository;
-        this.alertingService = alertingService;
+        this.centralAlertingService = centralAlertingService;
         this.clock = clock;
         this.version = version;
 
@@ -137,8 +129,6 @@ class GrpcServer {
                 .maxMessageSize(64 * 1024 * 1024)
                 .build()
                 .start();
-
-        alertCheckingExecutor = Executors.newSingleThreadExecutor();
 
         startupLogger.info("gRPC listening on {}:{}", bindAddress, port);
     }
@@ -162,12 +152,6 @@ class GrpcServer {
         // wait for existing grpc requests to complete
         if (!server.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Timed out waiting for grpc server to terminate");
-        }
-        // then shutdown alert checking executor
-        alertCheckingExecutor.shutdown();
-        if (!server.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException(
-                    "Timed out waiting for grpc server's alert checking executor to terminate");
         }
     }
 
@@ -194,8 +178,9 @@ class GrpcServer {
                 String agentRollupId = request.getAgentRollupId();
                 // trim spaces around rollup separator "/"
                 agentRollupId = trimSpacesAroundAgentRollupIdSeparator(agentRollupId);
+                updatedAgentConfig = SchemaUpgrade.upgradeOldAgentConfig(request.getAgentConfig());
                 updatedAgentConfig = agentConfigDao.store(agentId,
-                        Strings.emptyToNull(agentRollupId), request.getAgentConfig());
+                        Strings.emptyToNull(agentRollupId), updatedAgentConfig);
                 environmentDao.insert(agentId, request.getEnvironment());
                 // insert into agent_rollup last so environment and agent config will return
                 // non-null if the agent is visible in the UI dropdown
@@ -333,9 +318,7 @@ class GrpcServer {
                 responseObserver.onError(e);
                 return;
             }
-            checkAlerts(agentId, agentDisplay, AlertKind.TRANSACTION,
-                    alertConfig -> checkTransactionAlert(agentId, agentDisplay, alertConfig,
-                            captureTime));
+            centralAlertingService.checkAggregateAlertsAsync(agentId, agentDisplay, captureTime);
             responseObserver.onNext(AggregateResponseMessage.newBuilder()
                     .setNextDelayMillis(getNextDelayMillis())
                     .build());
@@ -385,12 +368,8 @@ class GrpcServer {
                 responseObserver.onError(t);
                 return;
             }
-            final long captureTime = maxCaptureTime;
-            checkAlerts(agentId, agentDisplay, AlertKind.GAUGE,
-                    alertConfig -> checkGaugeAlert(agentId, agentDisplay, alertConfig,
-                            captureTime));
-            checkAlerts(agentId, agentDisplay, AlertKind.HEARTBEAT,
-                    alertConfig -> checkHeartbeatAlert(agentId, agentDisplay, alertConfig));
+            centralAlertingService.checkGaugeAndHeartbeatAlertsAsync(agentId, agentDisplay,
+                    maxCaptureTime);
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -398,6 +377,7 @@ class GrpcServer {
         @Override
         public StreamObserver<TraceStreamMessage> collectTraceStream(
                 final StreamObserver<EmptyMessage> responseObserver) {
+
             return new StreamObserver<TraceStreamMessage>() {
 
                 private @MonotonicNonNull TraceStreamHeader streamHeader;
@@ -572,66 +552,6 @@ class GrpcServer {
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
-        }
-
-        private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
-                AlertConfigConsumer check) {
-            List<AlertConfig> alertConfigs;
-            try {
-                alertConfigs = configRepository.getAlertConfigs(agentId, alertKind);
-            } catch (Exception e) {
-                logger.error("{} - {}", agentDisplay, e.getMessage(), e);
-                return;
-            }
-            if (alertConfigs.isEmpty()) {
-                return;
-            }
-            alertCheckingExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        runInternal();
-                    } catch (Throwable t) {
-                        logger.error("{} - {}", agentDisplay, t.getMessage(), t);
-                    }
-                }
-                private void runInternal() throws InterruptedException {
-                    for (AlertConfig alertConfig : alertConfigs) {
-                        try {
-                            check.accept(alertConfig);
-                        } catch (InterruptedException e) {
-                            // shutdown requested
-                            throw e;
-                        } catch (Exception e) {
-                            logger.error("{} - {}", agentDisplay, e.getMessage(), e);
-                        }
-                    }
-                }
-            });
-        }
-
-        @Instrumentation.Transaction(transactionType = "Background",
-                transactionName = "Check transaction alert",
-                traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
-        private void checkTransactionAlert(String agentId, String agentDisplay,
-                AlertConfig alertConfig, long endTime) throws Exception {
-            alertingService.checkTransactionAlert(agentId, agentDisplay, alertConfig, endTime);
-        }
-
-        @Instrumentation.Transaction(transactionType = "Background",
-                transactionName = "Check gauge alert",
-                traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
-        private void checkGaugeAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-                long endTime) throws Exception {
-            alertingService.checkGaugeAlert(agentId, agentDisplay, alertConfig, endTime);
-        }
-
-        @Instrumentation.Transaction(transactionType = "Background",
-                transactionName = "Check heartbeat alert",
-                traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
-        private void checkHeartbeatAlert(String agentId, String agentDisplay,
-                AlertConfig alertConfig) throws Exception {
-            alertingService.sendHeartbeatAlertIfNeeded(agentId, agentDisplay, alertConfig, false);
         }
 
         private String getDisplayForLogging(String agentRollupId) {

@@ -26,8 +26,9 @@ import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.TriggeredAlertRepository.TriggeredAlert;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,8 +66,9 @@ public class TriggeredAlertDaoIT {
 
     @Test
     public void shouldNotExist() throws Exception {
-        AlertConfig alertCondition = AlertConfig.newBuilder()
-                .setKind(AlertKind.HEARTBEAT)
+        AlertCondition alertCondition = AlertCondition.newBuilder()
+                .setHeartbeatCondition(HeartbeatCondition.newBuilder()
+                        .setTimePeriodSeconds(60))
                 .build();
         assertThat(triggeredAlertDao.exists(AGENT_ID, alertCondition)).isFalse();
     }
@@ -74,24 +76,29 @@ public class TriggeredAlertDaoIT {
     @Test
     public void shouldExistAfterInsert() throws Exception {
         // given
-        AlertConfig alertCondition = AlertConfig.newBuilder()
-                .setKind(AlertKind.HEARTBEAT)
+        AlertCondition alertCondition = AlertCondition.newBuilder()
+                .setHeartbeatCondition(HeartbeatCondition.newBuilder()
+                        .setTimePeriodSeconds(60))
                 .build();
-        AlertConfig otherAlertConfig = AlertConfig.newBuilder()
-                .setKind(AlertKind.GAUGE)
+        AlertCondition otherAlertCondition = AlertCondition.newBuilder()
+                .setMetricCondition(MetricCondition.newBuilder()
+                        .setMetric("gauge:abc")
+                        .setThreshold(5)
+                        .setTimePeriodSeconds(60))
                 .build();
         // when
         triggeredAlertDao.insert(AGENT_ID, alertCondition);
         // then
-        assertThat(triggeredAlertDao.exists(AGENT_ID, otherAlertConfig)).isFalse();
+        assertThat(triggeredAlertDao.exists(AGENT_ID, otherAlertCondition)).isFalse();
         assertThat(triggeredAlertDao.exists(AGENT_ID, alertCondition)).isTrue();
     }
 
     @Test
     public void shouldNotExistAfterDelete() throws Exception {
         // given
-        AlertConfig alertCondition = AlertConfig.newBuilder()
-                .setKind(AlertKind.HEARTBEAT)
+        AlertCondition alertCondition = AlertCondition.newBuilder()
+                .setHeartbeatCondition(HeartbeatCondition.newBuilder()
+                        .setTimePeriodSeconds(60))
                 .build();
         // when
         triggeredAlertDao.insert(AGENT_ID, alertCondition);
@@ -103,11 +110,15 @@ public class TriggeredAlertDaoIT {
     @Test
     public void shouldReadAll() throws Exception {
         // given
-        AlertConfig alertCondition = AlertConfig.newBuilder()
-                .setKind(AlertKind.HEARTBEAT)
+        AlertCondition alertCondition = AlertCondition.newBuilder()
+                .setHeartbeatCondition(HeartbeatCondition.newBuilder()
+                        .setTimePeriodSeconds(60))
                 .build();
-        AlertConfig alertCondition2 = AlertConfig.newBuilder()
-                .setKind(AlertKind.GAUGE)
+        AlertCondition alertCondition2 = AlertCondition.newBuilder()
+                .setMetricCondition(MetricCondition.newBuilder()
+                        .setMetric("gauge:abc")
+                        .setThreshold(5)
+                        .setTimePeriodSeconds(60))
                 .build();
         // when
         triggeredAlertDao.insert("xyz", alertCondition);

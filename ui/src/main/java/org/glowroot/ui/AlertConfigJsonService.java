@@ -19,6 +19,11 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -32,17 +37,25 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common.repo.Utils;
+import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Gauges;
 import org.glowroot.common.util.Formatting;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
-import org.glowroot.wire.api.model.Proto.OptionalInt32;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 @JsonService
 class AlertConfigJsonService {
@@ -84,7 +97,8 @@ class AlertConfigJsonService {
             List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentRollupId);
             for (AlertConfig alertConfig : alertConfigs) {
                 alertListItems.add(ImmutableAlertListItem.of(Versions.getVersion(alertConfig),
-                        getAlertDisplay(agentRollupId, alertConfig, configRepository)));
+                        getConditionDisplay(agentRollupId, alertConfig.getCondition(),
+                                configRepository)));
             }
             alertListItems = orderingByName.immutableSortedCopy(alertListItems);
             return mapper.writeValueAsString(alertListItems);
@@ -104,7 +118,7 @@ class AlertConfigJsonService {
     @POST(path = "/backend/config/alerts/add", permission = "agent:config:edit:alert")
     String addAlert(@BindAgentRollupId String agentRollupId, @BindRequest AlertConfigDto configDto)
             throws Exception {
-        AlertConfig alertConfig = configDto.convert();
+        AlertConfig alertConfig = configDto.toProto();
         configRepository.insertAlertConfig(agentRollupId, alertConfig);
         return getAlertResponse(agentRollupId, alertConfig);
     }
@@ -113,7 +127,7 @@ class AlertConfigJsonService {
     @POST(path = "/backend/config/alerts/update", permission = "agent:config:edit:alert")
     String updateAlert(@BindAgentRollupId String agentRollupId,
             @BindRequest AlertConfigDto configDto) throws Exception {
-        AlertConfig alertConfig = configDto.convert();
+        AlertConfig alertConfig = configDto.toProto();
         configRepository.updateAlertConfig(agentRollupId, alertConfig, configDto.version().get());
         return getAlertResponse(agentRollupId, alertConfig);
     }
@@ -128,8 +142,9 @@ class AlertConfigJsonService {
     private String getAlertResponse(String agentRollupId, AlertConfig alertConfig)
             throws Exception {
         return mapper.writeValueAsString(ImmutableAlertConfigResponse.builder()
-                .config(AlertConfigDto.create(alertConfig))
-                .heading(getAlertDisplay(agentRollupId, alertConfig, configRepository))
+                .config(AlertConfigDto.toDto(alertConfig))
+                .heading(getConditionDisplay(agentRollupId, alertConfig.getCondition(),
+                        configRepository))
                 .addAllGauges(getGaugeDropdownItems(agentRollupId))
                 .addAllSyntheticMonitors(getSyntheticMonitorDropdownItems(agentRollupId))
                 .build());
@@ -153,87 +168,97 @@ class AlertConfigJsonService {
         return items;
     }
 
-    static String getAlertDisplay(String agentRollupId, AlertConfig alertCondition,
+    static String getConditionDisplay(String agentRollupId, AlertCondition alertCondition,
             ConfigRepository configRepository) throws Exception {
-        switch (alertCondition.getKind()) {
-            case TRANSACTION:
-                return getTransactionAlertDisplay(alertCondition);
-            case GAUGE:
-                return getGaugeAlertDisplay(alertCondition);
-            case HEARTBEAT:
-                return getHeartbeatAlertDisplay(alertCondition);
-            case SYNTHETIC_MONITOR:
+        switch (alertCondition.getValCase()) {
+            case METRIC_CONDITION:
+                return getConditionDisplay(alertCondition.getMetricCondition());
+            case SYNTHETIC_MONITOR_CONDITION:
+                SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
                 SyntheticMonitorConfig syntheticMonitorConfig =
                         configRepository.getSyntheticMonitorConfig(agentRollupId,
-                                alertCondition.getSyntheticMonitorId());
-                return getSyntheticMonitorAlertDisplay(alertCondition, syntheticMonitorConfig);
+                                condition.getSyntheticMonitorId());
+                return getConditionDisplay(condition,
+                        syntheticMonitorConfig);
+            case HEARTBEAT_CONDITION:
+                return getConditionDisplay(alertCondition.getHeartbeatCondition());
             default:
                 throw new IllegalStateException(
-                        "Unexpected alert kind: " + alertCondition.getKind());
+                        "Unexpected alert condition: " + alertCondition.getValCase().name());
         }
     }
 
-    private static String getTransactionAlertDisplay(AlertConfig alertCondition) {
+    private static String getConditionDisplay(MetricCondition metricCondition) {
         StringBuilder sb = new StringBuilder();
-        sb.append(alertCondition.getTransactionType());
-        sb.append(" - ");
-        sb.append(Utils
-                .getPercentileWithSuffix(alertCondition.getTransactionPercentile().getValue()));
-        sb.append(" percentile over the last ");
-        sb.append(alertCondition.getTimePeriodSeconds() / 60);
-        sb.append(" minute");
-        if (alertCondition.getTimePeriodSeconds() != 60) {
-            sb.append("s");
+        String metric = metricCondition.getMetric();
+        String transactionType = metricCondition.getTransactionType();
+        if (!transactionType.isEmpty()) {
+            sb.append(transactionType);
+            sb.append(" - ");
         }
-        sb.append(" exceeds ");
-        int thresholdMillis = alertCondition.getThresholdMillis().getValue();
-        sb.append(thresholdMillis);
-        sb.append(" millisecond");
-        if (thresholdMillis != 1) {
-            sb.append("s");
+        String transactionName = metricCondition.getTransactionName();
+        if (!transactionName.isEmpty()) {
+            sb.append(transactionName);
+            sb.append(" - ");
         }
-        return sb.toString();
-    }
-
-    private static String getGaugeAlertDisplay(AlertConfig alertCondition) {
-        Gauge gauge = Gauges.getGauge(alertCondition.getGaugeName());
-        StringBuilder sb = new StringBuilder();
-        sb.append("Gauge - ");
-        sb.append(gauge.display());
-        sb.append(" - average over the last ");
-        sb.append(alertCondition.getTimePeriodSeconds() / 60);
-        sb.append(" minute");
-        if (alertCondition.getTimePeriodSeconds() != 60) {
-            sb.append("s");
+        Gauge gauge = null;
+        if (metric.startsWith("gauge:")) {
+            String gaugeName = metric.substring("gauge:".length());
+            gauge = Gauges.getGauge(gaugeName);
+            sb.append("Gauge - ");
+            sb.append(gauge.display());
+            sb.append(" - ");
         }
-        sb.append(" exceeds ");
-        double value = alertCondition.getGaugeThreshold().getValue();
-        String unit = gauge.unit();
-        if (unit.equals("bytes")) {
-            sb.append(Formatting.formatBytes((long) value));
-        } else if (!unit.isEmpty()) {
-            sb.append(Formatting.displaySixDigitsOfPrecision(value));
-            sb.append(" ");
-            sb.append(unit);
+        if (metric.equals("transaction:x-percentile")) {
+            checkState(metricCondition.hasPercentile());
+            sb.append(
+                    Utils.getPercentileWithSuffix(metricCondition.getPercentile().getValue()));
+            sb.append(" percentile");
+        } else if (metric.equals("transaction:average")) {
+            sb.append("average");
+        } else if (metric.equals("transaction:count")) {
+            sb.append("transaction count");
+        } else if (metric.equals("error:rate")) {
+            sb.append("error rate");
+        } else if (metric.equals("error:count")) {
+            sb.append("error count");
+        } else if (metric.startsWith("gauge:")) {
+            sb.append("average");
         } else {
-            sb.append(Formatting.displaySixDigitsOfPrecision(value));
+            throw new IllegalStateException("Unexpected metric: " + metric);
+        }
+        sb.append(AlertingService.getOverTheLastText(metricCondition.getTimePeriodSeconds()));
+        if (metricCondition.getLowerBoundThreshold()) {
+            sb.append(" drops below ");
+        } else {
+            sb.append(" exceeds ");
+        }
+        if (metric.equals("transaction:x-percentile") || metric.equals("transaction:average")) {
+            sb.append(AlertingService.getWithUnit(metricCondition.getThreshold(), "millisecond"));
+        } else if (metric.equals("transaction:count")) {
+            sb.append(Formatting.displaySixDigitsOfPrecision(metricCondition.getThreshold()));
+        } else if (metric.equals("error:rate")) {
+            sb.append(Formatting.displaySixDigitsOfPrecision(metricCondition.getThreshold()));
+            sb.append(" percent");
+        } else if (metric.equals("error:count")) {
+            sb.append(Formatting.displaySixDigitsOfPrecision(metricCondition.getThreshold()));
+        } else if (metric.startsWith("gauge:")) {
+            sb.append(AlertingService.getGaugeThresholdText(metricCondition.getThreshold(),
+                    checkNotNull(gauge).unit()));
+        } else {
+            throw new IllegalStateException("Unexpected metric: " + metric);
         }
         return sb.toString();
     }
 
-    private static String getHeartbeatAlertDisplay(AlertConfig alertCondition) {
+    private static String getConditionDisplay(HeartbeatCondition condition) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Heartbeat - not received over the last ");
-        int timePeriodSeconds = alertCondition.getTimePeriodSeconds();
-        sb.append(timePeriodSeconds);
-        sb.append(" second");
-        if (timePeriodSeconds != 1) {
-            sb.append("s");
-        }
+        sb.append("Heartbeat - not received");
+        sb.append(AlertingService.getOverTheLastText(condition.getTimePeriodSeconds()));
         return sb.toString();
     }
 
-    private static String getSyntheticMonitorAlertDisplay(AlertConfig alertCondition,
+    private static String getConditionDisplay(SyntheticMonitorCondition condition,
             @Nullable SyntheticMonitorConfig syntheticMonitorConfig) {
         StringBuilder sb = new StringBuilder();
         sb.append("Synthetic monitor - ");
@@ -243,13 +268,16 @@ class AlertConfigJsonService {
             sb.append(syntheticMonitorConfig.getDisplay());
         }
         sb.append(" exceeds ");
-        int thresholdMillis = alertCondition.getThresholdMillis().getValue();
-        sb.append(thresholdMillis);
-        sb.append(" millisecond");
-        if (thresholdMillis != 1) {
-            sb.append("s");
-        }
+        sb.append(AlertingService.getWithUnit(condition.getThresholdMillis(), "millisecond"));
         return sb.toString();
+    }
+
+    public static String getExceedsOrLessThan(boolean lowerThreshold) {
+        if (lowerThreshold) {
+            return " is less than ";
+        } else {
+            return " exceeds ";
+        }
     }
 
     @Value.Immutable
@@ -284,109 +312,200 @@ class AlertConfigJsonService {
     @Value.Immutable
     abstract static class AlertConfigDto {
 
-        abstract AlertKind kind();
+        public abstract AlertConditionDto condition();
+        public abstract @Nullable ImmutableEmailNotificationDto emailNotification();
 
-        abstract @Nullable String transactionType();
-        abstract @Nullable Double transactionPercentile();
-        abstract @Nullable Integer minTransactionCount();
-        abstract @Nullable String gaugeName();
-        abstract @Nullable Double gaugeThreshold();
-        abstract @Nullable String gaugeDisplay(); // only used in response
-        abstract List<String> gaugeDisplayPath(); // only used in response
-        abstract @Nullable String gaugeUnit(); // only used in response
-        abstract @Nullable String gaugeGrouping(); // only used in response
-        abstract @Nullable String syntheticMonitorId();
-        abstract @Nullable Integer thresholdMillis();
-        abstract @Nullable Integer timePeriodSeconds();
-        abstract ImmutableList<String> emailAddresses();
         abstract Optional<String> version(); // absent for insert operations
 
-        private AlertConfig convert() {
-            AlertConfig.Builder builder = AlertConfig.newBuilder()
-                    .setKind(kind());
-            String transactionType = transactionType();
-            if (transactionType != null) {
-                builder.setTransactionType(transactionType);
+        public static AlertConfigDto toDto(AgentConfig.AlertConfig config) {
+            ImmutableAlertConfigDto.Builder builder = ImmutableAlertConfigDto.builder()
+                    .condition(toDto(config.getCondition()));
+            AlertNotification notification = config.getNotification();
+            if (notification.hasEmailNotification()) {
+                builder.emailNotification(toDto(notification.getEmailNotification()));
             }
-            Double transactionPercentile = transactionPercentile();
-            if (transactionPercentile != null) {
-                builder.setTransactionPercentile(OptionalDouble.newBuilder()
-                        .setValue(transactionPercentile));
+            return builder.version(Optional.of(Versions.getVersion(config)))
+                    .build();
+        }
+
+        private AgentConfig.AlertConfig toProto() {
+            AgentConfig.AlertConfig.Builder builder = AgentConfig.AlertConfig.newBuilder();
+            builder.setCondition(toProto(condition()));
+            EmailNotificationDto emailNotification = emailNotification();
+            if (emailNotification != null) {
+                builder.getNotificationBuilder().setEmailNotification(toProto(emailNotification));
             }
-            Integer minTransactionCount = minTransactionCount();
-            if (minTransactionCount != null) {
-                builder.setMinTransactionCount(OptionalInt32.newBuilder()
-                        .setValue(minTransactionCount));
-            }
-            String gaugeName = gaugeName();
-            if (gaugeName != null) {
-                builder.setGaugeName(gaugeName);
-            }
-            Double gaugeThreshold = gaugeThreshold();
-            if (gaugeThreshold != null) {
-                builder.setGaugeThreshold(OptionalDouble.newBuilder()
-                        .setValue(gaugeThreshold));
-            }
-            String syntheticMonitorId = syntheticMonitorId();
-            if (syntheticMonitorId != null) {
-                builder.setSyntheticMonitorId(syntheticMonitorId);
-            }
-            Integer thresholdMillis = thresholdMillis();
-            if (thresholdMillis != null) {
-                builder.setThresholdMillis(OptionalInt32.newBuilder().setValue(thresholdMillis));
-            }
-            Integer timePeriodSeconds = timePeriodSeconds();
-            if (timePeriodSeconds != null) {
-                builder.setTimePeriodSeconds(timePeriodSeconds);
-            }
-            builder.addAllEmailAddress(emailAddresses());
             return builder.build();
         }
 
-        private static AlertConfigDto create(AlertConfig alertConfig) {
-            Gauge gauge = null;
-            if (alertConfig.getKind() == AlertKind.GAUGE) {
-                gauge = Gauges.getGauge(alertConfig.getGaugeName());
+        private static AlertConditionDto toDto(
+                AgentConfig.AlertConfig.AlertCondition alertCondition) {
+            switch (alertCondition.getValCase()) {
+                case METRIC_CONDITION:
+                    return toDto(alertCondition.getMetricCondition());
+                case SYNTHETIC_MONITOR_CONDITION:
+                    return toDto(alertCondition.getSyntheticMonitorCondition());
+                case HEARTBEAT_CONDITION:
+                    return toDto(alertCondition.getHeartbeatCondition());
+                default:
+                    throw new IllegalStateException(
+                            "Unexpected condition kind: " + alertCondition.getValCase().name());
             }
-            ImmutableAlertConfigDto.Builder builder = ImmutableAlertConfigDto.builder()
-                    .kind(alertConfig.getKind());
-            String transactionType = alertConfig.getTransactionType();
-            if (!transactionType.isEmpty()) {
+        }
+
+        private static ImmutableEmailNotificationDto toDto(
+                AgentConfig.AlertConfig.AlertNotification.EmailNotification emailNotification) {
+            return ImmutableEmailNotificationDto.builder()
+                    .addAllEmailAddresses(emailNotification.getEmailAddressList())
+                    .build();
+        }
+
+        private static AgentConfig.AlertConfig.AlertCondition toProto(AlertConditionDto condition) {
+            if (condition instanceof MetricConditionDto) {
+                return AgentConfig.AlertConfig.AlertCondition.newBuilder()
+                        .setMetricCondition(toProto((MetricConditionDto) condition))
+                        .build();
+            }
+            if (condition instanceof SyntheticMonitorConditionDto) {
+                return AgentConfig.AlertConfig.AlertCondition.newBuilder()
+                        .setSyntheticMonitorCondition(
+                                toProto((SyntheticMonitorConditionDto) condition))
+                        .build();
+            }
+            if (condition instanceof HeartbeatConditionDto) {
+                return AgentConfig.AlertConfig.AlertCondition.newBuilder()
+                        .setHeartbeatCondition(toProto((HeartbeatConditionDto) condition))
+                        .build();
+            }
+            throw new IllegalStateException(
+                    "Unexpected alert condition type: " + condition.getClass().getName());
+        }
+
+        private static AgentConfig.AlertConfig.AlertNotification.EmailNotification toProto(
+                EmailNotificationDto emailNotification) {
+            return AgentConfig.AlertConfig.AlertNotification.EmailNotification.newBuilder()
+                    .addAllEmailAddress(emailNotification.emailAddresses())
+                    .build();
+        }
+
+        private static MetricConditionDto toDto(
+                AgentConfig.AlertConfig.AlertCondition.MetricCondition condition) {
+            ImmutableMetricConditionDto.Builder builder = ImmutableMetricConditionDto.builder()
+                    .metric(condition.getMetric());
+            String transactionType = condition.getTransactionType();
+            if (transactionType != null) {
                 builder.transactionType(transactionType);
             }
-            if (alertConfig.hasTransactionPercentile()) {
-                builder.transactionPercentile(alertConfig.getTransactionPercentile().getValue());
+            String transactionName = condition.getTransactionName();
+            if (transactionName != null) {
+                builder.transactionName(transactionName);
             }
-            if (alertConfig.hasMinTransactionCount()) {
-                builder.minTransactionCount(alertConfig.getMinTransactionCount().getValue());
+            if (condition.hasPercentile()) {
+                builder.percentile(condition.getPercentile().getValue());
             }
-            String gaugeName = alertConfig.getGaugeName();
-            if (!gaugeName.isEmpty()) {
-                builder.gaugeName(gaugeName);
-            }
-            if (alertConfig.hasGaugeThreshold()) {
-                builder.gaugeThreshold(alertConfig.getGaugeThreshold().getValue());
-            }
-            if (gauge != null) {
-                builder.gaugeDisplay(gauge.display())
-                        .gaugeDisplayPath(gauge.displayPath());
-            }
-            String syntheticMonitorId = alertConfig.getSyntheticMonitorId();
-            if (!syntheticMonitorId.isEmpty()) {
-                builder.syntheticMonitorId(syntheticMonitorId);
-            }
-            if (alertConfig.hasThresholdMillis()) {
-                builder.thresholdMillis(alertConfig.getThresholdMillis().getValue());
-            }
-            int timePeriodSeconds = alertConfig.getTimePeriodSeconds();
-            if (timePeriodSeconds != 0) {
-                builder.timePeriodSeconds(timePeriodSeconds);
-            }
-            return builder.gaugeUnit(gauge == null ? "" : gauge.unit())
-                    .gaugeGrouping(gauge == null ? "" : gauge.grouping())
-                    .addAllEmailAddresses(alertConfig.getEmailAddressList())
-                    .version(Versions.getVersion(alertConfig))
+            return builder.threshold(condition.getThreshold())
+                    .lowerBoundThreshold(condition.getLowerBoundThreshold())
+                    .timePeriodSeconds(condition.getTimePeriodSeconds())
+                    .minTransactionCount(condition.getMinTransactionCount())
                     .build();
+        }
+
+        private static SyntheticMonitorConditionDto toDto(
+                AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition condition) {
+            return ImmutableSyntheticMonitorConditionDto.builder()
+                    .syntheticMonitorId(condition.getSyntheticMonitorId())
+                    .thresholdMillis(condition.getThresholdMillis())
+                    .build();
+        }
+
+        private static HeartbeatConditionDto toDto(
+                AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition condition) {
+            return ImmutableHeartbeatConditionDto.builder()
+                    .timePeriodSeconds(condition.getTimePeriodSeconds())
+                    .build();
+        }
+
+        private static AgentConfig.AlertConfig.AlertCondition.MetricCondition toProto(
+                MetricConditionDto condition) {
+            AgentConfig.AlertConfig.AlertCondition.MetricCondition.Builder builder =
+                    AgentConfig.AlertConfig.AlertCondition.MetricCondition.newBuilder()
+                            .setMetric(condition.metric());
+            String transactionType = condition.transactionType();
+            if (transactionType != null) {
+                builder.setTransactionType(transactionType);
+            }
+            String transactionName = condition.transactionName();
+            if (transactionName != null) {
+                builder.setTransactionName(transactionName);
+            }
+            Double percentile = condition.percentile();
+            if (percentile != null) {
+                builder.setPercentile(OptionalDouble.newBuilder().setValue(percentile));
+            }
+            return builder.setThreshold(condition.threshold())
+                    .setLowerBoundThreshold(condition.lowerBoundThreshold())
+                    .setTimePeriodSeconds(condition.timePeriodSeconds())
+                    .setMinTransactionCount(condition.minTransactionCount())
+                    .build();
+        }
+
+        private static AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition toProto(
+                SyntheticMonitorConditionDto condition) {
+            return AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition.newBuilder()
+                    .setSyntheticMonitorId(condition.syntheticMonitorId())
+                    .setThresholdMillis(condition.thresholdMillis())
+                    .build();
+        }
+
+        private static AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition toProto(
+                HeartbeatConditionDto condition) {
+            return AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition.newBuilder()
+                    .setTimePeriodSeconds(condition.timePeriodSeconds())
+                    .build();
+        }
+
+        @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY,
+                property = "conditionType")
+        @JsonSubTypes({@Type(value = ImmutableMetricConditionDto.class, name = "metric"),
+                @Type(value = ImmutableSyntheticMonitorConditionDto.class,
+                        name = "synthetic-monitor"),
+                @Type(value = ImmutableHeartbeatConditionDto.class, name = "heartbeat")})
+        public interface AlertConditionDto {}
+
+        @Value.Immutable
+        public static abstract class MetricConditionDto implements AlertConditionDto {
+            abstract String metric();
+            abstract @Nullable String transactionType();
+            abstract @Nullable String transactionName();
+            abstract @Nullable Double percentile();
+            abstract double threshold();
+            @Value.Default
+            @JsonInclude(value = Include.NON_EMPTY)
+            boolean lowerBoundThreshold() {
+                return false;
+            }
+            abstract int timePeriodSeconds();
+            @Value.Default
+            @JsonInclude(value = Include.NON_EMPTY)
+            long minTransactionCount() {
+                return 0;
+            }
+        }
+
+        @Value.Immutable
+        public interface SyntheticMonitorConditionDto extends AlertConditionDto {
+            String syntheticMonitorId();
+            int thresholdMillis();
+        }
+
+        @Value.Immutable
+        public interface HeartbeatConditionDto extends AlertConditionDto {
+            int timePeriodSeconds();
+        }
+
+        @Value.Immutable
+        public interface EmailNotificationDto {
+            ImmutableList<String> emailAddresses();
         }
     }
 }

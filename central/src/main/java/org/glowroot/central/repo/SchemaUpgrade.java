@@ -61,12 +61,18 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.OldAlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SchemaUpgrade {
@@ -78,7 +84,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 23;
+    private static final int CURR_SCHEMA_VERSION = 26;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -212,6 +218,19 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 23) {
             renameConfigTable();
             updateSchemaVersion(23);
+        }
+        if (initialSchemaVersion < 24) {
+            upgradeAlertConfigs();
+            updateSchemaVersion(24);
+        }
+        if (initialSchemaVersion < 25) {
+            addAggregateThroughputColumn();
+            updateSchemaVersion(25);
+        }
+        if (initialSchemaVersion < 26) {
+            // this is needed due to change from OldAlertConfig to AlertConfig in schema version 24
+            yetAnotherRedoOnTriggeredAlertTable();
+            updateSchemaVersion(26);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -805,6 +824,45 @@ public class SchemaUpgrade {
         dropTable("config");
     }
 
+    private void upgradeAlertConfigs() {
+        PreparedStatement readPS =
+                session.prepare("select agent_rollup_id, config from agent_config");
+        PreparedStatement insertPS = session.prepare("insert into agent_config (agent_rollup_id,"
+                + " config, config_update, config_update_token) values (?, ?, ?, ?)");
+        BoundStatement boundStatement = readPS.bind();
+        ResultSet results = session.execute(boundStatement);
+        for (Row row : results) {
+            String agentRollupId = row.getString(0);
+            AgentConfig oldAgentConfig;
+            try {
+                oldAgentConfig =
+                        AgentConfig.parseFrom(ByteString.copyFrom(checkNotNull(row.getBytes(1))));
+            } catch (InvalidProtocolBufferException e) {
+                logger.error(e.getMessage(), e);
+                continue;
+            }
+            List<OldAlertConfig> oldAlertConfigs = oldAgentConfig.getOldAlertConfigList();
+            if (oldAlertConfigs.isEmpty()) {
+                continue;
+            }
+            AgentConfig agentConfig = upgradeOldAgentConfig(oldAgentConfig);
+            boundStatement = insertPS.bind();
+            boundStatement.setString(0, agentRollupId);
+            boundStatement.setBytes(1, ByteBuffer.wrap(agentConfig.toByteArray()));
+        }
+    }
+
+    private void addAggregateThroughputColumn() throws Exception {
+        addColumnIfNotExists("aggregate_tt_throughput_rollup_0", "error_count", "bigint");
+        addColumnIfNotExists("aggregate_tt_throughput_rollup_1", "error_count", "bigint");
+        addColumnIfNotExists("aggregate_tt_throughput_rollup_2", "error_count", "bigint");
+        addColumnIfNotExists("aggregate_tt_throughput_rollup_3", "error_count", "bigint");
+        addColumnIfNotExists("aggregate_tn_throughput_rollup_0", "error_count", "bigint");
+        addColumnIfNotExists("aggregate_tn_throughput_rollup_1", "error_count", "bigint");
+        addColumnIfNotExists("aggregate_tn_throughput_rollup_2", "error_count", "bigint");
+        addColumnIfNotExists("aggregate_tn_throughput_rollup_3", "error_count", "bigint");
+    }
+
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
             throws Exception {
         if (!columnExists(tableName, columnName)) {
@@ -836,6 +894,73 @@ public class SchemaUpgrade {
         }
         // try one last time and let exception bubble up
         Sessions.execute(session, "drop table if exists " + tableName);
+    }
+
+    public static AgentConfig upgradeOldAgentConfig(AgentConfig oldAgentConfig) {
+        AgentConfig.Builder builder = oldAgentConfig.toBuilder()
+                .clearOldAlertConfig();
+        for (OldAlertConfig oldAlertConfig : oldAgentConfig.getOldAlertConfigList()) {
+            AlertConfig.Builder alertConfigBuilder = AlertConfig.newBuilder();
+            switch (oldAlertConfig.getKind()) {
+                case TRANSACTION:
+                    alertConfigBuilder.getConditionBuilder().setMetricCondition(
+                            createTransactionTimeCondition(oldAlertConfig));
+                    break;
+                case GAUGE:
+                    alertConfigBuilder.getConditionBuilder().setMetricCondition(
+                            createGaugeCondition(oldAlertConfig));
+                    break;
+                case SYNTHETIC_MONITOR:
+                    alertConfigBuilder.getConditionBuilder().setSyntheticMonitorCondition(
+                            createSyntheticMonitorCondition(oldAlertConfig));
+                    break;
+                case HEARTBEAT:
+                    alertConfigBuilder.getConditionBuilder().setHeartbeatCondition(
+                            createHeartbeatCondition(oldAlertConfig));
+                    break;
+                default:
+                    logger.error("unexpected alert kind: {}", oldAlertConfig.getKind());
+                    continue;
+            }
+            alertConfigBuilder.getNotificationBuilder().getEmailNotificationBuilder()
+                    .addAllEmailAddress(oldAlertConfig.getEmailAddressList());
+            builder.addAlertConfig(alertConfigBuilder);
+        }
+        return builder.build();
+    }
+
+    private static MetricCondition createTransactionTimeCondition(
+            OldAlertConfig oldAlertConfig) {
+        return MetricCondition.newBuilder()
+                .setMetric("transaction:x-percentile")
+                .setTransactionType(oldAlertConfig.getTransactionType())
+                .setPercentile(oldAlertConfig.getTransactionPercentile())
+                .setThreshold(MILLISECONDS.toNanos(oldAlertConfig.getThresholdMillis().getValue()))
+                .setTimePeriodSeconds(oldAlertConfig.getTimePeriodSeconds())
+                .setMinTransactionCount(oldAlertConfig.getMinTransactionCount().getValue())
+                .build();
+    }
+
+    private static MetricCondition createGaugeCondition(OldAlertConfig oldAlertConfig) {
+        return MetricCondition.newBuilder()
+                .setMetric("gauge:" + oldAlertConfig.getGaugeName())
+                .setThreshold(oldAlertConfig.getGaugeThreshold().getValue())
+                .setTimePeriodSeconds(oldAlertConfig.getTimePeriodSeconds())
+                .build();
+    }
+
+    private static SyntheticMonitorCondition createSyntheticMonitorCondition(
+            OldAlertConfig oldAlertConfig) {
+        return SyntheticMonitorCondition.newBuilder()
+                .setSyntheticMonitorId(oldAlertConfig.getSyntheticMonitorId())
+                .setThresholdMillis(oldAlertConfig.getThresholdMillis().getValue())
+                .build();
+    }
+
+    private static HeartbeatCondition createHeartbeatCondition(OldAlertConfig oldAlertConfig) {
+        return HeartbeatCondition.newBuilder()
+                .setTimePeriodSeconds(oldAlertConfig.getTimePeriodSeconds())
+                .build();
     }
 
     private static int getExpirationHoursForTable(String tableName,
@@ -1012,24 +1137,19 @@ public class SchemaUpgrade {
 
     private static @Nullable Integer getSchemaVersion(Session session, KeyspaceMetadata keyspace)
             throws Exception {
-        ResultSet results =
-                Sessions.execute(session,
-                        "select schema_version from schema_version where one = 1");
+        ResultSet results = Sessions.execute(session,
+                "select schema_version from schema_version where one = 1");
         Row row = results.one();
         if (row != null) {
             return row.getInt(0);
         }
         TableMetadata agentTable = keyspace.getTable("agent");
-        if (agentTable == null) {
-            // new installation, tables haven't been created yet
-            return null;
-        }
-        if (agentTable.getColumn("system_info") != null) {
+        if (agentTable != null && agentTable.getColumn("system_info") != null) {
             // special case, this is glowroot version 0.9.1, the only version supporting upgrades
             // prior to schema_version table
             return 1;
         }
-        // new installation, agent table was created tables haven't been created yet
+        // new installation
         return null;
     }
 }

@@ -232,7 +232,7 @@ public class ConfigIT extends WebDriverIT {
         page.getHostTextField().sendKeys("example.org");
         page.getPortTextField().clear();
         page.getPortTextField().sendKeys("5678");
-        page.getUseSslCheckbox().click();
+        page.getUseSslCheckBox().click();
         page.getUsernameTextField().clear();
         page.getUsernameTextField().sendKeys("user1234");
         page.getPasswordTextField().clear();
@@ -251,7 +251,7 @@ public class ConfigIT extends WebDriverIT {
         configSidebar.getSmtpLink().click();
         assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
         assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("5678");
-        assertThat(page.getUseSslCheckbox().isSelected()).isTrue();
+        assertThat(page.getUseSslCheckBox().isSelected()).isTrue();
         assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
         assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
         assertThat(page.getFromEmailAddressTextField().getAttribute("value"))
@@ -276,7 +276,7 @@ public class ConfigIT extends WebDriverIT {
         page.getHostTextField().sendKeys("example.org");
         page.getPortTextField().clear();
         page.getPortTextField().sendKeys("5678");
-        page.getUseSslCheckbox().click();
+        page.getUseSslCheckBox().click();
         page.getUsernameTextField().clear();
         page.getUsernameTextField().sendKeys("user1234");
         page.getPasswordTextField().clear();
@@ -299,7 +299,7 @@ public class ConfigIT extends WebDriverIT {
         configSidebar.getLdapLink().click();
         assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
         assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("5678");
-        assertThat(page.getUseSslCheckbox().isSelected()).isTrue();
+        assertThat(page.getUseSslCheckBox().isSelected()).isTrue();
         assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
         assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
         assertThat(page.getUserBaseDnTextField().getAttribute("value")).isEqualTo("x");
