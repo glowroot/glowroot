@@ -262,18 +262,28 @@ public class AgentModule {
         if (runnableCallableClasses.isEmpty()) {
             return;
         }
-        String firstJavaagentArg = null;
+        List<String> nonGlowrootAgents = Lists.newArrayList();
         for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
-            if (jvmArg.startsWith("-javaagent:")) {
-                firstJavaagentArg = jvmArg;
-                break;
+            if (jvmArg.startsWith("-javaagent:") && !jvmArg.endsWith("glowroot.jar")
+                    || jvmArg.startsWith("-agentpath:")) {
+                nonGlowrootAgents.add(jvmArg);
             }
         }
         String extraExplanation = "";
-        if (firstJavaagentArg != null && !firstJavaagentArg.endsWith("glowroot.jar")) {
-            extraExplanation = "This likely occurred because there is another javaagent listed in"
-                    + " the JVM args prior to the Glowroot javaagent which gives the other"
-                    + " javaagent higher loading precedence. ";
+        if (!nonGlowrootAgents.isEmpty()) {
+            extraExplanation = "This likely occurred because there";
+            if (nonGlowrootAgents.size() == 1) {
+                extraExplanation += " is another agent";
+            } else {
+                extraExplanation += " are other agents";
+            }
+            extraExplanation += " listed in the JVM args prior to the Glowroot agent ("
+                    + Joiner.on(" ").join(nonGlowrootAgents)
+                    + ") which gives the other agent";
+            if (nonGlowrootAgents.size() != 1) {
+                extraExplanation += "s";
+            }
+            extraExplanation += " higher loading precedence. ";
         }
         logger.warn("one or more java.lang.Runnable or java.util.concurrent.Callable"
                 + " implementations were loaded before Glowroot instrumentation could be applied to"
