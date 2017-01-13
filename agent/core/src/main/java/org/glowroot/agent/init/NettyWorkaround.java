@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class NettyWorkaround {
 
-    private static final Logger logger = LoggerFactory.getLogger(NettyWorkaround.class);
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private NettyWorkaround() {}
 
@@ -49,7 +49,7 @@ public class NettyWorkaround {
                         waitForMain(instrumentation);
                         doNettyInit.execute(true);
                     } catch (Throwable t) {
-                        logger.error(t.getMessage(), t);
+                        startupLogger.error(t.getMessage(), t);
                     }
                 }
             });
@@ -67,7 +67,7 @@ public class NettyWorkaround {
             }
         }
         // something has gone wrong
-        logger.error("sun.misc.Launcher was never loaded");
+        startupLogger.error("sun.misc.Launcher was never loaded");
     }
 
     public interface NettyInit {
