@@ -63,6 +63,8 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         Ticker ticker = Tickers.getTicker();
         Clock clock = Clock.systemClock();
 
+        // need to perform jrebel workaround prior to loading any jackson classes
+        JRebelWorkaround.performWorkaroundIfNeeded();
         final PluginCache pluginCache = PluginCache.create(glowrootJarFile, false);
         final ConfigService configService =
                 ConfigService.create(baseDir, pluginCache.pluginDescriptors());

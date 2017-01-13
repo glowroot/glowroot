@@ -43,6 +43,7 @@ import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.EnvironmentCreator;
 import org.glowroot.agent.init.GlowrootThinAgentInit;
+import org.glowroot.agent.init.JRebelWorkaround;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
@@ -102,6 +103,8 @@ class EmbeddedAgentModule {
             dataSource = new DataSource(new File(dataDir, "data.h2.db"));
         }
 
+        // need to perform jrebel workaround prior to loading any jackson classes
+        JRebelWorkaround.performWorkaroundIfNeeded();
         PluginCache pluginCache = PluginCache.create(glowrootJarFile, false);
         if (offline) {
             viewerAgentModule = new ViewerAgentModule(baseDir, glowrootJarFile);
