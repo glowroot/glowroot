@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.init.NettyWorkaround.NettyInit;
 import org.glowroot.agent.util.Tickers;
-import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 
@@ -61,9 +60,6 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
             final @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
             final String glowrootVersion, boolean offline) throws Exception {
 
-        if (instrumentation != null) {
-            PreInitializeWeavingClasses.preInitializeClasses();
-        }
         Ticker ticker = Tickers.getTicker();
         Clock clock = Clock.systemClock();
 

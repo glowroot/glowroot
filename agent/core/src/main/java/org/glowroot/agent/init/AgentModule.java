@@ -60,6 +60,7 @@ import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.AdviceCache;
 import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
+import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.agent.weaving.Weaver;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
 import org.glowroot.common.util.Clock;
@@ -139,6 +140,7 @@ public class AgentModule {
             isolatedWeavingClassLoader.setWeaver(weaver);
             jvmRetransformClassesSupported = false;
         } else {
+            PreInitializeWeavingClasses.preInitializeClasses();
             ClassFileTransformer transformer = new WeavingClassFileTransformer(weaver);
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
