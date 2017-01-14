@@ -57,28 +57,28 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public boolean exists(String agentRollupId, String version) throws Exception {
+    public boolean exists(String agentId, String alertConfigVersion) throws Exception {
         BoundStatement boundStatement = existsPS.bind();
-        boundStatement.setString(0, agentRollupId);
-        boundStatement.setString(1, version);
+        boundStatement.setString(0, agentId);
+        boundStatement.setString(1, alertConfigVersion);
         ResultSet results = session.execute(boundStatement);
         return !results.isExhausted();
     }
 
     @Override
-    public void delete(String agentRollupId, String version) throws Exception {
+    public void delete(String agentId, String alertConfigVersion) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
-        boundStatement.setString(0, agentRollupId);
-        boundStatement.setString(1, version);
+        boundStatement.setString(0, agentId);
+        boundStatement.setString(1, alertConfigVersion);
         session.execute(boundStatement);
     }
 
     @Override
-    public void insert(String agentRollupId, String version) throws Exception {
+    public void insert(String agentId, String alertConfigVersion) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, version);
+        boundStatement.setString(i++, agentId);
+        boundStatement.setString(i++, alertConfigVersion);
         boundStatement.setInt(i++, getMaxTTL());
         session.execute(boundStatement);
     }

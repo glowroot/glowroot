@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,19 +42,21 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public void insert(String agentRollupId, String version) throws Exception {
-        dataSource.update("insert into triggered_alert (alert_config_version) values (?)", version);
+    public void insert(String agentId, String alertConfigVersion) throws Exception {
+        dataSource.update("insert into triggered_alert (alert_config_version) values (?)",
+                alertConfigVersion);
     }
 
     @Override
-    public boolean exists(String agentRollupId, String version) throws Exception {
+    public boolean exists(String agentId, String alertConfigVersion) throws Exception {
         return dataSource.queryForExists(
-                "select 1 from triggered_alert where alert_config_version = ?", version);
+                "select 1 from triggered_alert where alert_config_version = ?", alertConfigVersion);
     }
 
     @Override
-    public void delete(String agentRollupId, String version) throws Exception {
-        dataSource.update("delete from triggered_alert where alert_config_version = ?", version);
+    public void delete(String agentId, String alertConfigVersion) throws Exception {
+        dataSource.update("delete from triggered_alert where alert_config_version = ?",
+                alertConfigVersion);
     }
 
     // TODO expire triggered alerts after 1 day

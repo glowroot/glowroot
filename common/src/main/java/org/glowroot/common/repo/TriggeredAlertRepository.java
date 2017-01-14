@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package org.glowroot.common.repo;
 
 public interface TriggeredAlertRepository {
 
-    boolean exists(String agentRollupId, String version) throws Exception;
+    boolean exists(String agentId, String alertConfigVersion) throws Exception;
 
-    void delete(String agentRollupId, String version) throws Exception;
+    void delete(String agentId, String alertConfigVersion) throws Exception;
 
-    void insert(String agentRollupId, String version) throws Exception;
+    void insert(String agentId, String alertConfigVersion) throws Exception;
 }
