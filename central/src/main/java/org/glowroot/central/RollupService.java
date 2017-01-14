@@ -109,16 +109,16 @@ class RollupService implements Runnable {
         for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
             rollupAggregates(agentRollup, null);
             rollupGauges(agentRollup, null);
-            checkHierarchy(agentRollup, AlertKind.TRANSACTION, this::checkTransactionAlerts);
-            checkHierarchy(agentRollup, AlertKind.GAUGE, this::checkGaugeAlerts);
+            consumeLeafAgentRollups(agentRollup, this::checkTransactionAlerts);
+            consumeLeafAgentRollups(agentRollup, this::checkGaugeAlerts);
             if (stopwatch.elapsed(MINUTES) >= 4) {
                 // give agents plenty of time to re-connect after central start-up
                 // needs to be at least enough time for grpc max reconnect backoff
                 // which is 2 minutes +/- 20% jitter (see io.grpc.internal.ExponentialBackoffPolicy)
                 // but better to give a bit extra (4 minutes above) to avoid false heartbeat alert
-                checkHierarchy(agentRollup, AlertKind.HEARTBEAT, this::checkHeartbeatAlerts);
+                consumeLeafAgentRollups(agentRollup, this::checkHeartbeatAlerts);
             }
-            updateAgentConfigIfConnectedAndNeeded(agentRollup);
+            consumeLeafAgentRollups(agentRollup, this::updateAgentConfigIfConnectedAndNeeded);
         }
     }
 
@@ -167,60 +167,53 @@ class RollupService implements Runnable {
         }
     }
 
-    private void checkHierarchy(AgentRollup agentRollup, AlertKind alertKind, Consumer check)
-            throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            checkHierarchy(childAgentRollup, alertKind, check);
-        }
-        check.accept(agentRollup);
-    }
-
-    private void checkTransactionAlerts(AgentRollup agentRollup) throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            checkTransactionAlerts(childAgentRollup);
-        }
-        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.TRANSACTION,
-                (alertConfig, smtpConfig) -> checkTransactionAlert(agentRollup.id(),
-                        agentRollup.display(), alertConfig, clock.currentTimeMillis(), smtpConfig));
-    }
-
-    private void checkGaugeAlerts(AgentRollup agentRollup) throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            checkGaugeAlerts(childAgentRollup);
-        }
-        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.GAUGE,
-                (alertConfig, smtpConfig) -> checkGaugeAlert(agentRollup.id(),
-                        agentRollup.display(), alertConfig, clock.currentTimeMillis(), smtpConfig));
-    }
-
-    private void checkHeartbeatAlerts(AgentRollup agentRollup) throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            checkHeartbeatAlerts(childAgentRollup);
-        }
-        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.HEARTBEAT,
-                (alertConfig, smtpConfig) -> checkHeartbeatAlert(agentRollup.id(),
-                        agentRollup.display(), alertConfig, clock.currentTimeMillis(), smtpConfig));
-    }
-
-    private void updateAgentConfigIfConnectedAndNeeded(AgentRollup agentRollup)
-            throws InterruptedException {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            updateAgentConfigIfConnectedAndNeeded(childAgentRollup);
-        }
-        if (agentRollup.children().isEmpty()) {
-            try {
-                downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.id());
-            } catch (InterruptedException e) {
-                // shutdown requested
-                throw e;
-            } catch (Exception e) {
-                logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
+    private void consumeLeafAgentRollups(AgentRollup agentRollup,
+            LeafAgentRollupConsumer leafAgentRollupConsumer) throws Exception {
+        List<AgentRollup> childAgentRollups = agentRollup.children();
+        if (childAgentRollups.isEmpty()) {
+            leafAgentRollupConsumer.accept(agentRollup);
+        } else {
+            for (AgentRollup childAgentRollup : childAgentRollups) {
+                consumeLeafAgentRollups(childAgentRollup, leafAgentRollupConsumer);
             }
         }
     }
 
+    private void checkTransactionAlerts(AgentRollup leafAgentRollup) throws Exception {
+        checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.TRANSACTION,
+                (alertConfig, smtpConfig) -> checkTransactionAlert(leafAgentRollup.id(),
+                        leafAgentRollup.display(), alertConfig, clock.currentTimeMillis(),
+                        smtpConfig));
+    }
+
+    private void checkGaugeAlerts(AgentRollup leafAgentRollup) throws Exception {
+        checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.GAUGE,
+                (alertConfig, smtpConfig) -> checkGaugeAlert(leafAgentRollup.id(),
+                        leafAgentRollup.display(), alertConfig, clock.currentTimeMillis(),
+                        smtpConfig));
+    }
+
+    private void checkHeartbeatAlerts(AgentRollup leafAgentRollup) throws Exception {
+        checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.HEARTBEAT,
+                (alertConfig, smtpConfig) -> checkHeartbeatAlert(leafAgentRollup.id(),
+                        leafAgentRollup.display(), alertConfig, clock.currentTimeMillis(),
+                        smtpConfig));
+    }
+
+    private void updateAgentConfigIfConnectedAndNeeded(AgentRollup leafAgentRollup)
+            throws InterruptedException {
+        try {
+            downstreamService.updateAgentConfigIfConnectedAndNeeded(leafAgentRollup.id());
+        } catch (InterruptedException e) {
+            // shutdown requested
+            throw e;
+        } catch (Exception e) {
+            logger.error("{} - {}", leafAgentRollup.id(), e.getMessage(), e);
+        }
+    }
+
     private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
-            BiConsumer check) throws Exception {
+            AlertConfigConsumer check) throws Exception {
         SmtpConfig smtpConfig = configRepository.getSmtpConfig();
         if (smtpConfig.host().isEmpty()) {
             return;
@@ -286,12 +279,12 @@ class RollupService implements Runnable {
     }
 
     @FunctionalInterface
-    interface Consumer {
-        void accept(AgentRollup agentRollup) throws Exception;
+    interface LeafAgentRollupConsumer {
+        void accept(AgentRollup leafAgentRollup) throws Exception;
     }
 
     @FunctionalInterface
-    interface BiConsumer {
+    interface AlertConfigConsumer {
         void accept(AlertConfig alertConfig, SmtpConfig smtpConfig) throws Exception;
     }
 }
