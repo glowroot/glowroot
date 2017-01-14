@@ -179,7 +179,7 @@ class CentralModule {
             GaugeValueDao gaugeValueDao =
                     new GaugeValueDao(session, agentDao, configRepository, clock);
             HeartbeatDao heartbeatDao = new HeartbeatDao(session, clock);
-            TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
+            TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
             AlertingService alertingService = new AlertingService(configRepository,
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,

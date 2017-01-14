@@ -15,6 +15,8 @@
  */
 package org.glowroot.common.repo;
 
+import java.util.List;
+
 public interface TriggeredAlertRepository {
 
     boolean exists(String agentId, String alertConfigVersion) throws Exception;
@@ -22,4 +24,6 @@ public interface TriggeredAlertRepository {
     void delete(String agentId, String alertConfigVersion) throws Exception;
 
     void insert(String agentId, String alertConfigVersion) throws Exception;
+
+    List<String> read(String agentId) throws Exception;
 }

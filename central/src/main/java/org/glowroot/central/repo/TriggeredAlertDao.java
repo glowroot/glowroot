@@ -15,16 +15,18 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.List;
+
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.primitives.Ints;
+import com.google.common.collect.Lists;
 
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.TriggeredAlertRepository;
 
-import static java.util.concurrent.TimeUnit.HOURS;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class TriggeredAlertDao implements TriggeredAlertRepository {
 
@@ -32,28 +34,30 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
-    private final ConfigRepository configRepository;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement existsPS;
     private final PreparedStatement deletePS;
+    private final PreparedStatement readPS;
 
-    public TriggeredAlertDao(Session session, ConfigRepository configRepository) {
+    public TriggeredAlertDao(Session session) {
         this.session = session;
-        this.configRepository = configRepository;
 
         session.execute("create table if not exists triggered_alert (agent_rollup varchar,"
                 + " alert_config_version varchar, primary key (agent_rollup,"
                 + " alert_config_version)) " + WITH_LCS);
 
         insertPS = session.prepare("insert into triggered_alert (agent_rollup,"
-                + " alert_config_version) values (?, ?) using ttl ?");
+                + " alert_config_version) values (?, ?)");
 
         existsPS = session.prepare("select agent_rollup from triggered_alert where agent_rollup = ?"
                 + " and alert_config_version = ?");
 
         deletePS = session.prepare("delete from triggered_alert where agent_rollup = ?"
                 + " and alert_config_version = ?");
+
+        readPS = session
+                .prepare("select alert_config_version from triggered_alert where agent_rollup = ?");
     }
 
     @Override
@@ -79,20 +83,18 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, alertConfigVersion);
-        boundStatement.setInt(i++, getMaxTTL());
         session.execute(boundStatement);
     }
 
-    private int getMaxTTL() throws Exception {
-        long maxTTL = 0;
-        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
-            if (expirationHours == 0) {
-                // zero value expiration/TTL means never expire
-                return 0;
-            }
-            maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
+    @Override
+    public List<String> read(String agentId) throws Exception {
+        BoundStatement boundStatement = readPS.bind();
+        boundStatement.setString(0, agentId);
+        ResultSet results = session.execute(boundStatement);
+        List<String> alertConfigVersions = Lists.newArrayList();
+        for (Row row : results) {
+            alertConfigVersions.add(checkNotNull(row.getString(0)));
         }
-        // intentionally not accounting for rateLimiter
-        return Ints.saturatedCast(maxTTL);
+        return alertConfigVersions;
     }
 }

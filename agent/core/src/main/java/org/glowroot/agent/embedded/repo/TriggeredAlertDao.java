@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.embedded.repo;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 
 import org.glowroot.agent.embedded.util.DataSource;
@@ -59,6 +61,8 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
                 alertConfigVersion);
     }
 
-    // TODO expire triggered alerts after 1 day
-    // partly because rows could get stranded if an alert is deleted (or its version changes)
+    @Override
+    public List<String> read(String agentId) throws Exception {
+        return dataSource.queryForStringList("select alert_config_version from triggered_alert");
+    }
 }

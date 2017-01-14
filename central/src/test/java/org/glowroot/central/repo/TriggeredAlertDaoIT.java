@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
-import org.glowroot.common.config.ImmutableCentralStorageConfig;
-import org.glowroot.common.repo.ConfigRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 // NOTE this is mostly a copy of TriggeredAlertDaoTest in glowroot-agent
 public class TriggeredAlertDaoIT {
@@ -46,10 +42,7 @@ public class TriggeredAlertDaoIT {
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
 
-        ConfigRepository configRepository = mock(ConfigRepository.class);
-        when(configRepository.getStorageConfig())
-                .thenReturn(ImmutableCentralStorageConfig.builder().build());
-        triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
+        triggeredAlertDao = new TriggeredAlertDao(session);
 
         session.execute("truncate triggered_alert");
     }

@@ -108,6 +108,7 @@ class RollupService implements Runnable {
         for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
             rollupAggregates(agentRollup, null);
             rollupGauges(agentRollup, null);
+            consumeLeafAgentRollups(agentRollup, this::checkDeletedAlerts);
             consumeLeafAgentRollups(agentRollup, this::checkTransactionAlerts);
             consumeLeafAgentRollups(agentRollup, this::checkGaugeAlerts);
             if (stopwatch.elapsed(MINUTES) >= 4) {
@@ -176,6 +177,10 @@ class RollupService implements Runnable {
                 consumeLeafAgentRollups(childAgentRollup, leafAgentRollupConsumer);
             }
         }
+    }
+
+    private void checkDeletedAlerts(AgentRollup agentRollup) throws Exception {
+        alertingService.checkForAbandoned(agentRollup.id());
     }
 
     private void checkTransactionAlerts(AgentRollup leafAgentRollup) throws Exception {

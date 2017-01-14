@@ -23,6 +23,7 @@ import java.text.NumberFormat;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 import javax.mail.Address;
@@ -34,6 +35,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,6 +82,18 @@ public class AlertingService {
         this.gaugeValueRepository = gaugeValueRepository;
         this.rollupLevelService = rollupLevelService;
         this.mailService = mailService;
+    }
+
+    public void checkForAbandoned(String agentId) throws Exception {
+        Set<String> alertConfigVersions = Sets.newHashSet();
+        for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentId)) {
+            alertConfigVersions.add(Versions.getVersion(alertConfig));
+        }
+        for (String alertConfigVersion : triggeredAlertRepository.read(agentId)) {
+            if (!alertConfigVersions.contains(alertConfigVersion)) {
+                triggeredAlertRepository.delete(agentId, alertConfigVersion);
+            }
+        }
     }
 
     public void checkTransactionAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
