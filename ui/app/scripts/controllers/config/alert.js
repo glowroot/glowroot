@@ -34,14 +34,23 @@ glowroot.controller('ConfigAlertCtrl', [
       $scope.originalConfig = angular.copy(data);
 
       if (data.emailAddresses.length) {
-        $scope.page.timePeriodMinutes = data.timePeriodSeconds / 60;
+        if (data.timePeriodSeconds === undefined) {
+          $scope.page.timePeriodMinutes = undefined;
+        } else {
+          $scope.page.timePeriodMinutes = data.timePeriodSeconds / 60;
+        }
         if (data.kind === 'transaction') {
           $scope.heading = data.transactionType + ' - ' + data.transactionPercentile
               + $scope.percentileSuffix(data.transactionPercentile) + ' percentile over a '
               + data.timePeriodSeconds + ' minute period';
-        }
-        if (data.kind === 'gauge') {
+        } else if (data.kind === 'gauge') {
           $scope.heading = data.gaugeDisplay + ' - average over a ' + data.timePeriodSeconds / 60 + ' minute period';
+        } else if (data.kind === 'heartbeat') {
+          $scope.heading = 'Heartbeat - no heartbeat received for ' + data.timePeriodSeconds + ' second period';
+        } else if (data.kind === 'ping') {
+          $scope.heading = 'Ping - ' + data.pingUrl;
+        } else if (data.kind === 'synthetic') {
+          $scope.heading = 'Synthetic user test';
         }
         $scope.emailAddresses = data.emailAddresses.join(', ');
       } else {
@@ -99,20 +108,25 @@ glowroot.controller('ConfigAlertCtrl', [
       });
     }
 
-    $scope.$watch('config.kind', function (newValue) {
+    $scope.$watch('config.kind', function (newValue, oldValue) {
       if (!$scope.config) {
         return;
       }
-      if (newValue === 'transaction') {
-        $scope.config.gaugeName = undefined;
-        $scope.config.gaugeThreshold = undefined;
-        $scope.config.transactionType = $scope.defaultTransactionType();
+      if (oldValue === undefined) {
+        return;
       }
-      if (newValue === 'gauge') {
-        $scope.config.transactionType = undefined;
-        $scope.config.transactionPercentile = undefined;
-        $scope.config.transactionThresholdMillis = undefined;
-        $scope.config.minTransactionCount = undefined;
+      $scope.config.transactionType = undefined;
+      $scope.config.transactionPercentile = undefined;
+      $scope.config.minTransactionCount = undefined;
+      $scope.config.gaugeName = undefined;
+      $scope.config.gaugeThreshold = undefined;
+      $scope.config.pingUrl = undefined;
+      $scope.config.syntheticUserTest = undefined;
+      $scope.config.thresholdMillis = undefined;
+      $scope.config.timePeriodSeconds = undefined;
+      $scope.page.timePeriodMinutes = undefined;
+      if (newValue === 'transaction') {
+        $scope.config.transactionType = $scope.defaultTransactionType();
       }
     });
 
@@ -158,6 +172,12 @@ glowroot.controller('ConfigAlertCtrl', [
       var agentId = $scope.agentId;
       $http.post(url + '?agent-id=' + encodeURIComponent(agentId), postData)
           .then(function (response) {
+            if (response.data.syntheticUserTestCompilationErrors) {
+              $scope.syntheticUserTestCompilationErrors = response.data.syntheticUserTestCompilationErrors;
+              deferred.reject('compile errors (see above)');
+              return;
+            }
+            $scope.syntheticUserTestCompilationErrors = [];
             onNewData(response.data);
             deferred.resolve(version ? 'Saved' : 'Added');
             version = response.data.version;

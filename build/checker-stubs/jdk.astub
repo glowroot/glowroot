@@ -123,3 +123,15 @@ package javax.management.openmbean;
 public class CompositeType {
     public @Nullable OpenType<?> getType(String itemName);
 }
+
+/* ========================================================================== */
+package javax.tools;
+
+public interface JavaCompiler {
+    CompilationTask getTask(@Nullable Writer out,
+                            @Nullable JavaFileManager fileManager,
+                            @Nullable DiagnosticListener<? super JavaFileObject> diagnosticListener,
+                            @Nullable Iterable<String> options,
+                            @Nullable Iterable<String> classes,
+                            @Nullable Iterable<? extends JavaFileObject> compilationUnits);
+}

@@ -42,7 +42,7 @@ glowroot.controller('ConfigAlertListCtrl', [
       if (alert.kind === 'transaction') {
         return alert.transactionType + ' - ' + alert.transactionPercentile
             + $scope.percentileSuffix(alert.transactionPercentile) + ' percentile over a '
-            + alert.timePeriodSeconds / 60 + ' minute period exceeds ' + alert.transactionThresholdMillis
+            + alert.timePeriodSeconds / 60 + ' minute period exceeds ' + alert.thresholdMillis
             + ' milliseconds';
       } else if (alert.kind === 'gauge') {
         var threshold;
@@ -57,6 +57,10 @@ glowroot.controller('ConfigAlertListCtrl', [
             + ' minute period exceeds ' + threshold;
       } else if (alert.kind === 'heartbeat') {
         return 'Heartbeat - no heartbeat received for ' + alert.timePeriodSeconds + ' seconds';
+      } else if (alert.kind === 'ping') {
+        return 'Ping - ' + alert.pingUrl;
+      } else if (alert.kind === 'synthetic') {
+        return 'Synthetic user test';
       } else {
         return 'Unknown alert kind ' + alert.kind;
       }

@@ -53,7 +53,7 @@ public class AlertConfigIT extends WebDriverIT {
                         .isEqualTo("Web");
         assertThat(alertPage.getTransactionPercentileTextField().getAttribute("value"))
                 .isEqualTo("95");
-        assertThat(alertPage.getTransactionThresholdMillisTextField().getAttribute("value"))
+        assertThat(alertPage.getThresholdMillisTextField().getAttribute("value"))
                 .isEqualTo("1000");
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getMinTransactionCountTextField().getAttribute("value"))
@@ -181,7 +181,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getKindTransactionRadioButton().click();
         alertPage.getTransactionTypeSelect().selectByValue("Web");
         alertPage.getTransactionPercentileTextField().sendKeys("95");
-        alertPage.getTransactionThresholdMillisTextField().sendKeys("1000");
+        alertPage.getThresholdMillisTextField().sendKeys("1000");
         alertPage.getTimePeriodMinutesTextField().sendKeys("1");
         alertPage.getMinTransactionCountTextField().sendKeys("2");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");

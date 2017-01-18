@@ -59,12 +59,13 @@ class ConfigFile {
         this.adminFile = adminFile;
         if (configFile.exists()) {
             configRootObjectNode = getRootObjectNode(configFile);
+            upgradeConfigIfNeeded(configRootObjectNode);
         } else {
             configRootObjectNode = mapper.createObjectNode();
         }
         if (adminFile.exists()) {
             adminRootObjectNode = getRootObjectNode(adminFile);
-            upgradeIfNeeded(adminRootObjectNode);
+            upgradeAdminIfNeeded(adminRootObjectNode);
         } else {
             adminRootObjectNode = mapper.createObjectNode();
         }
@@ -157,7 +158,27 @@ class ConfigFile {
         }
     }
 
-    private static void upgradeIfNeeded(ObjectNode adminRootObjectNode) {
+    private static void upgradeConfigIfNeeded(ObjectNode configRootObjectNode) {
+        // upgrade from 0.9.9 to 0.9.10
+        // even though alerts are no longer supported in agent UI, they are still stored in agent's
+        // config.json when it it connected to central
+        JsonNode alertsNode = configRootObjectNode.get("alerts");
+        if (alertsNode == null || !alertsNode.isArray()) {
+            return;
+        }
+        for (JsonNode alertNode : alertsNode) {
+            if (!(alertNode instanceof ObjectNode)) {
+                continue;
+            }
+            ObjectNode alertObjectNode = (ObjectNode) alertNode;
+            if (alertObjectNode.has("transactionThresholdMillis")) {
+                alertObjectNode.set("thresholdMillis",
+                        alertObjectNode.remove("transactionThresholdMillis"));
+            }
+        }
+    }
+
+    private static void upgradeAdminIfNeeded(ObjectNode adminRootObjectNode) {
         // upgrade from 0.9.1 to 0.9.2
         JsonNode rolesNode = adminRootObjectNode.get("roles");
         if (rolesNode == null || !rolesNode.isArray()) {

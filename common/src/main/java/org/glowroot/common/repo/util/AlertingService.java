@@ -84,7 +84,7 @@ public class AlertingService {
         this.mailService = mailService;
     }
 
-    public void checkForAbandoned(String agentId) throws Exception {
+    public void checkForDeletedAlerts(String agentId) throws Exception {
         Set<String> alertConfigVersions = Sets.newHashSet();
         for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentId)) {
             alertConfigVersions.add(Versions.getVersion(alertConfig));
@@ -104,13 +104,11 @@ public class AlertingService {
             logger.warn("alert config missing transactionPercentile: {}", alertConfig);
             return;
         }
-        double percentile = alertConfig.getTransactionPercentile().getValue();
-        if (!alertConfig.hasTransactionThresholdMillis()) {
+        if (!alertConfig.hasThresholdMillis()) {
             // AlertConfig has nice toString() from immutables
-            logger.warn("alert config missing transactionThresholdMillis: {}", alertConfig);
+            logger.warn("alert config missing thresholdMillis: {}", alertConfig);
             return;
         }
-        int thresholdMillis = alertConfig.getTransactionThresholdMillis().getValue();
         if (!alertConfig.hasMinTransactionCount()) {
             // AlertConfig has nice toString() from immutables
             logger.warn("alert config missing minTransactionCount: {}", alertConfig);
@@ -141,14 +139,16 @@ public class AlertingService {
         }
         String version = Versions.getVersion(alertConfig);
         boolean previouslyTriggered = triggeredAlertRepository.exists(agentId, version);
-        long valueAtPercentile = durationNanosHistogram.getValueAtPercentile(percentile);
-        boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS.toNanos(thresholdMillis);
+        long valueAtPercentile = durationNanosHistogram
+                .getValueAtPercentile(alertConfig.getTransactionPercentile().getValue());
+        boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS
+                .toNanos(alertConfig.getThresholdMillis().getValue());
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentId, version);
-            sendTransactionAlert(agentDisplay, alertConfig, percentile, thresholdMillis, true);
+            sendTransactionAlert(agentDisplay, alertConfig, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentId, version);
-            sendTransactionAlert(agentDisplay, alertConfig, percentile, thresholdMillis, false);
+            sendTransactionAlert(agentDisplay, alertConfig, false);
         }
     }
 
@@ -204,8 +204,8 @@ public class AlertingService {
         }
     }
 
-    private void sendTransactionAlert(String agentDisplay, AlertConfig alertConfig,
-            double percentile, long thresholdMillis, boolean ok) throws Exception {
+    private void sendTransactionAlert(String agentDisplay, AlertConfig alertConfig, boolean ok)
+            throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentDisplay.equals("")) {
@@ -213,7 +213,7 @@ public class AlertingService {
         }
         subject += " - " + alertConfig.getTransactionType();
         StringBuilder sb = new StringBuilder();
-        sb.append(Utils.getPercentileWithSuffix(percentile));
+        sb.append(Utils.getPercentileWithSuffix(alertConfig.getTransactionPercentile().getValue()));
         sb.append(" percentile over the last ");
         sb.append(alertConfig.getTimePeriodSeconds() / 60);
         sb.append(" minute");
@@ -225,6 +225,7 @@ public class AlertingService {
         } else {
             sb.append(" exceeded alert threshold of ");
         }
+        int thresholdMillis = alertConfig.getThresholdMillis().getValue();
         sb.append(thresholdMillis);
         sb.append(" millisecond");
         if (thresholdMillis != 1) {

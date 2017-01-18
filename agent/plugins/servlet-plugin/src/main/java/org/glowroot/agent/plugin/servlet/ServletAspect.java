@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,6 +171,12 @@ public class ServletAspect {
             TraceEntry traceEntry =
                     context.startTransaction("Web", requestUri, messageSupplier, timerName);
             context.setServletMessageSupplier(messageSupplier);
+            // Glowroot-Transaction-Type header currently only accepts "Synthetic", in order to
+            // prevent spamming of transaction types, which could cause some issues
+            String transactionTypeOverride = request.getHeader("Glowroot-Transaction-Type");
+            if (transactionTypeOverride != null && transactionTypeOverride.equals("Synthetic")) {
+                context.setTransactionType(transactionTypeOverride, Priority.CORE_MAX);
+            }
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
             String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");

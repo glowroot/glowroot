@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,26 +29,20 @@ public class AlertConfigOrderingTest {
     private final AlertConfig left = AlertConfig.newBuilder()
             .setKind(AlertKind.TRANSACTION)
             .setTransactionType("tt")
-            .setTransactionPercentile(OptionalDouble.newBuilder()
-                    .setValue(50.0))
-            .setTransactionThresholdMillis(OptionalInt32.newBuilder()
-                    .setValue(500))
+            .setTransactionPercentile(OptionalDouble.newBuilder().setValue(50.0))
+            .setThresholdMillis(OptionalInt32.newBuilder().setValue(500))
             .setTimePeriodSeconds(60)
-            .setMinTransactionCount(OptionalInt32.newBuilder()
-                    .setValue(5))
+            .setMinTransactionCount(OptionalInt32.newBuilder().setValue(5))
             .setGaugeName("")
             .build();
 
     private final AlertConfig right = AlertConfig.newBuilder()
             .setKind(AlertKind.TRANSACTION)
             .setTransactionType("uu")
-            .setTransactionPercentile(OptionalDouble.newBuilder()
-                    .setValue(50.0))
-            .setTransactionThresholdMillis(OptionalInt32.newBuilder()
-                    .setValue(500))
+            .setTransactionPercentile(OptionalDouble.newBuilder().setValue(50.0))
+            .setThresholdMillis(OptionalInt32.newBuilder().setValue(500))
             .setTimePeriodSeconds(60)
-            .setMinTransactionCount(OptionalInt32.newBuilder()
-                    .setValue(5))
+            .setMinTransactionCount(OptionalInt32.newBuilder().setValue(5))
             .setGaugeName("")
             .build();
 

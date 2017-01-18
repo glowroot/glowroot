@@ -15,7 +15,6 @@
  */
 package org.glowroot.central;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -108,9 +107,17 @@ class RollupService implements Runnable {
         for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
             rollupAggregates(agentRollup, null);
             rollupGauges(agentRollup, null);
-            consumeLeafAgentRollups(agentRollup, this::checkDeletedAlerts);
+            // checking for deleted alerts doesn't depend on rollup
+            consumeLeafAgentRollups(agentRollup, this::checkForDeletedAlerts);
+            // checking transaction and gauge alerts after rollup since their calculation can depend
+            // on rollups depending on time period length
+            //
+            // these alerts are also checked right after receiving the respective data
+            // (transaction/gauge/heartbeat) from agent, but need to also check once a minute in
+            // case no data has been received from agent recently
             consumeLeafAgentRollups(agentRollup, this::checkTransactionAlerts);
             consumeLeafAgentRollups(agentRollup, this::checkGaugeAlerts);
+            // checking heartbeat alerts doesn't depend on rollups, just here for convenience
             if (stopwatch.elapsed(MINUTES) >= 4) {
                 // give agents plenty of time to re-connect after central start-up
                 // needs to be at least enough time for grpc max reconnect backoff
@@ -118,6 +125,7 @@ class RollupService implements Runnable {
                 // but better to give a bit extra (4 minutes above) to avoid false heartbeat alert
                 consumeLeafAgentRollups(agentRollup, this::checkHeartbeatAlerts);
             }
+            // updating agent configs doesn't depend on rollups, just here for convenience
             consumeLeafAgentRollups(agentRollup, this::updateAgentConfigIfConnectedAndNeeded);
         }
     }
@@ -179,8 +187,8 @@ class RollupService implements Runnable {
         }
     }
 
-    private void checkDeletedAlerts(AgentRollup agentRollup) throws Exception {
-        alertingService.checkForAbandoned(agentRollup.id());
+    private void checkForDeletedAlerts(AgentRollup agentRollup) throws Exception {
+        alertingService.checkForDeletedAlerts(agentRollup.id());
     }
 
     private void checkTransactionAlerts(AgentRollup leafAgentRollup) throws Exception {
@@ -214,11 +222,11 @@ class RollupService implements Runnable {
     }
 
     private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
-            AlertConfigConsumer check) throws Exception {
+            AlertConfigConsumer check) throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
             alertConfigs = configRepository.getAlertConfigs(agentId, alertKind);
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("{} - {}", agentDisplay, e.getMessage(), e);
             return;
         }

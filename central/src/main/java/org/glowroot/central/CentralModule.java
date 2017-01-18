@@ -105,6 +105,7 @@ class CentralModule {
     private final Cluster cluster;
     private final Session session;
     private final RollupService rollupService;
+    private final PingAndSyntheticAlertService pingAndSyntheticAlertService;
     private final GrpcServer server;
     private final UiModule uiModule;
 
@@ -112,6 +113,7 @@ class CentralModule {
         Cluster cluster = null;
         Session session = null;
         RollupService rollupService = null;
+        PingAndSyntheticAlertService pingAndSyntheticAlertService = null;
         GrpcServer server = null;
         UiModule uiModule = null;
         try {
@@ -203,6 +205,8 @@ class CentralModule {
             });
             rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao, heartbeatDao,
                     configRepository, alertingService, downstreamService, clock);
+            pingAndSyntheticAlertService = new PingAndSyntheticAlertService(agentDao,
+                    configRepository, triggeredAlertDao, alertingService);
 
             uiModule = new CreateUiModuleBuilder()
                     .central(true)
@@ -239,6 +243,9 @@ class CentralModule {
             if (rollupService != null) {
                 rollupService.close();
             }
+            if (pingAndSyntheticAlertService != null) {
+                pingAndSyntheticAlertService.close();
+            }
             if (session != null) {
                 session.close();
             }
@@ -250,6 +257,7 @@ class CentralModule {
         this.cluster = cluster;
         this.session = session;
         this.rollupService = rollupService;
+        this.pingAndSyntheticAlertService = pingAndSyntheticAlertService;
         this.server = server;
         this.uiModule = uiModule;
     }
@@ -260,6 +268,7 @@ class CentralModule {
             uiModule.close(false);
             server.close();
             rollupService.close();
+            pingAndSyntheticAlertService.close();
             session.close();
             cluster.close();
             startupLogger.info("shutdown complete");

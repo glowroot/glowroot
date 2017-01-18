@@ -35,7 +35,6 @@ public abstract class AlertConfig {
     // transaction alert
     public abstract @Nullable String transactionType();
     public abstract @Nullable Double transactionPercentile();
-    public abstract @Nullable Integer transactionThresholdMillis();
     public abstract @Nullable Integer minTransactionCount();
 
     // gauge alert
@@ -43,8 +42,16 @@ public abstract class AlertConfig {
     public abstract @Nullable String gaugeName();
     public abstract @Nullable Double gaugeThreshold();
 
-    // both
-    public abstract int timePeriodSeconds();
+    // ping alert
+    public abstract @Nullable String pingUrl();
+
+    // synthetic alert
+    public abstract @Nullable String syntheticUserTest();
+
+    // used by transaction, ping and synthetic alerts
+    public abstract @Nullable Integer thresholdMillis();
+    // used by transaction, gauge and heartbeat alerts
+    public abstract @Nullable Integer timePeriodSeconds();
 
     public abstract ImmutableList<String> emailAddresses();
 
@@ -58,9 +65,6 @@ public abstract class AlertConfig {
         if (config.hasTransactionPercentile()) {
             builder.transactionPercentile(config.getTransactionPercentile().getValue());
         }
-        if (config.hasTransactionThresholdMillis()) {
-            builder.transactionThresholdMillis(config.getTransactionThresholdMillis().getValue());
-        }
         if (config.hasMinTransactionCount()) {
             builder.minTransactionCount(config.getMinTransactionCount().getValue());
         }
@@ -71,8 +75,22 @@ public abstract class AlertConfig {
         if (config.hasGaugeThreshold()) {
             builder.gaugeThreshold(config.getGaugeThreshold().getValue());
         }
-        return builder.timePeriodSeconds(config.getTimePeriodSeconds())
-                .addAllEmailAddresses(config.getEmailAddressList())
+        String pingUrl = config.getPingUrl();
+        if (!pingUrl.isEmpty()) {
+            builder.pingUrl(pingUrl);
+        }
+        String syntheticUserTest = config.getSyntheticUserTest();
+        if (!syntheticUserTest.isEmpty()) {
+            builder.syntheticUserTest(syntheticUserTest);
+        }
+        if (config.hasThresholdMillis()) {
+            builder.thresholdMillis(config.getThresholdMillis().getValue());
+        }
+        int timePeriodSeconds = config.getTimePeriodSeconds();
+        if (timePeriodSeconds != 0) {
+            builder.timePeriodSeconds(timePeriodSeconds);
+        }
+        return builder.addAllEmailAddresses(config.getEmailAddressList())
                 .build();
     }
 
@@ -88,11 +106,6 @@ public abstract class AlertConfig {
             builder.setTransactionPercentile(OptionalDouble.newBuilder()
                     .setValue(transactionPercentile));
         }
-        Integer transactionThresholdMillis = transactionThresholdMillis();
-        if (transactionThresholdMillis != null) {
-            builder.setTransactionThresholdMillis(OptionalInt32.newBuilder()
-                    .setValue(transactionThresholdMillis));
-        }
         Integer minTransactionCount = minTransactionCount();
         if (minTransactionCount != null) {
             builder.setMinTransactionCount(OptionalInt32.newBuilder()
@@ -107,8 +120,23 @@ public abstract class AlertConfig {
             builder.setGaugeThreshold(OptionalDouble.newBuilder()
                     .setValue(gaugeThreshold));
         }
-        return builder.setTimePeriodSeconds(timePeriodSeconds())
-                .addAllEmailAddress(emailAddresses())
+        String pingUrl = pingUrl();
+        if (pingUrl != null) {
+            builder.setPingUrl(pingUrl);
+        }
+        String syntheticUserTest = syntheticUserTest();
+        if (syntheticUserTest != null) {
+            builder.setSyntheticUserTest(syntheticUserTest);
+        }
+        Integer thresholdMillis = thresholdMillis();
+        if (thresholdMillis != null) {
+            builder.setThresholdMillis(OptionalInt32.newBuilder().setValue(thresholdMillis));
+        }
+        Integer timePeriodSeconds = timePeriodSeconds();
+        if (timePeriodSeconds != null) {
+            builder.setTimePeriodSeconds(timePeriodSeconds);
+        }
+        return builder.addAllEmailAddress(emailAddresses())
                 .build();
     }
 }

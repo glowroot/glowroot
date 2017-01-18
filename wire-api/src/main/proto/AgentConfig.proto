@@ -57,17 +57,21 @@ message AgentConfig {
     AlertKind kind = 1;
     string transaction_type = 2;
     OptionalDouble transaction_percentile = 3;
-    OptionalInt32 transaction_threshold_millis = 4;
     OptionalInt32 min_transaction_count = 5;
     string gauge_name = 6;
     OptionalDouble gauge_threshold = 7;
-    int32 time_period_seconds = 8;
+    string ping_url = 10;
+    string synthetic_user_test = 11;
+    OptionalInt32 threshold_millis = 4; // used by TRANSACTION, PING, SYNTHETIC
+    int32 time_period_seconds = 8; // used by TRANSACTION, GAUGE, HEARTBEAT
     repeated string email_address = 9;
 
     enum AlertKind {
       TRANSACTION = 0;
       GAUGE = 1;
       HEARTBEAT = 2;
+      PING = 3;
+      SYNTHETIC = 4;
     }
   }
 

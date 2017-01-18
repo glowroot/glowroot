@@ -184,6 +184,13 @@
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.5</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
       <version>9.4.0.v20161208</version>

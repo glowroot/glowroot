@@ -73,6 +73,26 @@
               Heartbeat
             </label>
           </div>
+          <div class="radio" ng-if="layout.central">
+            <label>
+              <input type="radio"
+                     class="gt-autofocus-ignore"
+                     ng-model="config.kind"
+                     ng-disabled="!agentPermissions.config.edit.alert"
+                     value="ping">
+              Ping
+            </label>
+          </div>
+          <div class="radio" ng-if="layout.central">
+            <label>
+              <input type="radio"
+                     class="gt-autofocus-ignore"
+                     ng-model="config.kind"
+                     ng-disabled="!agentPermissions.config.edit.alert"
+                     value="synthetic">
+              Synthetic user test
+            </label>
+          </div>
         </div>
       </div>
       <div ng-if="config.kind === 'transaction'">
@@ -119,7 +139,7 @@
         </div>
         <div gt-form-group
              gt-label="Threshold"
-             gt-model="config.transactionThresholdMillis"
+             gt-model="config.thresholdMillis"
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
@@ -222,6 +242,68 @@
           <div class="help-block">
             The time period after which the alert is triggered if no heartbeat has been received from the agent.
             Heartbeats are normally received every 5 seconds.
+          </div>
+        </div>
+      </div>
+      <div ng-if="config.kind === 'ping'">
+        <div gt-form-group
+             gt-type="url"
+             gt-label="Ping URL"
+             gt-model="config.pingUrl"
+             gt-pattern="/^https?:\/\//"
+             gt-required="loaded"
+             gt-disabled="!agentPermissions.config.edit.alert"
+             gt-rows="10"
+             class="gt-alert-java-class">
+          <div class="help-block">
+            The HTTP or HTTPS URL to ping with a simple GET request.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Threshold"
+             gt-model="config.thresholdMillis"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-disabled="!agentPermissions.config.edit.alert"
+             gt-width="7em"
+             gt-addon="milliseconds">
+          <div class="help-block">
+            If the HTTP/S request takes more than this threshold, then an alert will be triggered.
+          </div>
+        </div>
+      </div>
+      <div ng-if="config.kind === 'synthetic'">
+        <div gt-form-group
+             gt-type="textarea"
+             gt-label="Synthetic user test"
+             gt-model="config.syntheticUserTest"
+             gt-required="loaded"
+             gt-disabled="!agentPermissions.config.edit.alert"
+             gt-rows="10"
+             class="gt-alert-java-class">
+          <div class="help-block">
+            Note: the synthetic test is run from glowroot central, not from the agent.
+          </div>
+          <div ng-if="syntheticUserTestCompilationErrors"
+               class="gt-button-message-error"
+               style="font-weight: bold;">
+            <div ng-repeat="compilationError in syntheticUserTestCompilationErrors">
+              {{compilationError}}
+            </div>
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Threshold"
+             gt-model="config.thresholdMillis"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-disabled="!agentPermissions.config.edit.alert"
+             gt-width="7em"
+             gt-addon="milliseconds">
+          <div class="help-block">
+            If the synthetic user test takes more than this threshold, then an alert will be triggered.
           </div>
         </div>
       </div>
