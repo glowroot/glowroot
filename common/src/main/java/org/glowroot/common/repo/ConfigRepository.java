@@ -35,7 +35,6 @@ import org.glowroot.common.config.WebConfig;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
@@ -85,8 +84,6 @@ public interface ConfigRepository {
     GaugeConfig getGaugeConfig(String agentId, String version) throws Exception;
 
     List<AlertConfig> getAlertConfigs(String agentId) throws Exception;
-
-    List<AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind) throws Exception;
 
     @Nullable
     AlertConfig getAlertConfig(String agentId, String version) throws Exception;

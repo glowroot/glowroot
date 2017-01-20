@@ -18,19 +18,12 @@ package org.glowroot.agent.embedded.init;
 import java.io.File;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.embedded.repo.AgentDao;
 import org.glowroot.agent.embedded.repo.AggregateDao;
 import org.glowroot.agent.embedded.repo.GaugeValueDao;
 import org.glowroot.agent.embedded.repo.TraceDao;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -38,27 +31,17 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CollectorImpl implements Collector {
 
-    private static final Logger logger = LoggerFactory.getLogger(CollectorImpl.class);
-
-    private static final String AGENT_ID = "";
-    private static final String AGENT_DISPLAY = "";
-
     private final AgentDao agentDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
-    private final ConfigRepository configRepository;
-    private final AlertingService alertingService;
 
     CollectorImpl(AgentDao agentDao, AggregateDao aggregateRepository, TraceDao traceRepository,
-            GaugeValueDao gaugeValueRepository, ConfigRepository configRepository,
-            AlertingService alertingService) {
+            GaugeValueDao gaugeValueRepository) {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateRepository;
         this.traceDao = traceRepository;
         this.gaugeValueDao = gaugeValueRepository;
-        this.configRepository = configRepository;
-        this.alertingService = alertingService;
     }
 
     @Override
@@ -70,18 +53,6 @@ class CollectorImpl implements Collector {
     @Override
     public void collectAggregates(long captureTime, Aggregates aggregates) throws Exception {
         aggregateDao.store(captureTime, aggregates);
-        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID,
-                AlertKind.TRANSACTION)) {
-            try {
-                alertingService.checkTransactionAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
-                        captureTime);
-            } catch (InterruptedException e) {
-                // shutdown request
-                throw e;
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
     }
 
     @Override
@@ -90,18 +61,6 @@ class CollectorImpl implements Collector {
         long maxCaptureTime = 0;
         for (GaugeValue gaugeValue : gaugeValues) {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
-        }
-        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID,
-                AlertKind.GAUGE)) {
-            try {
-                alertingService.checkGaugeAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
-                        maxCaptureTime);
-            } catch (InterruptedException e) {
-                // shutdown request
-                throw e;
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-            }
         }
     }
 

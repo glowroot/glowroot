@@ -79,9 +79,8 @@ import org.glowroot.central.RollupService.AlertConfigConsumer;
 import org.glowroot.central.RollupService.LeafAgentRollupConsumer;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
+import org.glowroot.central.repo.TriggeredAlertDao;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
-import org.glowroot.common.repo.TriggeredAlertRepository;
-import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.util.Styles;
@@ -123,7 +122,7 @@ class PingAndSyntheticAlertService implements Runnable {
 
     private final AgentDao agentDao;
     private final ConfigRepositoryImpl configRepository;
-    private final TriggeredAlertRepository triggeredAlertRepository;
+    private final TriggeredAlertDao triggeredAlertDao;
     private final AlertingService alertingService;
 
     private final ExecutorService mainLoopExecutor;
@@ -137,10 +136,10 @@ class PingAndSyntheticAlertService implements Runnable {
     private volatile boolean closed;
 
     PingAndSyntheticAlertService(AgentDao agentDao, ConfigRepositoryImpl configRepository,
-            TriggeredAlertRepository triggeredAlertRepository, AlertingService alertingService) {
+            TriggeredAlertDao triggeredAlertDao, AlertingService alertingService) {
         this.agentDao = agentDao;
         this.configRepository = configRepository;
-        this.triggeredAlertRepository = triggeredAlertRepository;
+        this.triggeredAlertDao = triggeredAlertDao;
         this.alertingService = alertingService;
         mainLoopExecutor = Executors.newSingleThreadExecutor();
         checkExecutor = Executors.newCachedThreadPool();
@@ -319,12 +318,12 @@ class PingAndSyntheticAlertService implements Runnable {
             AlertConfig alertConfig, boolean currentlyTriggered, @Nullable String errorMessage)
             throws Exception {
         String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertRepository.exists(agentId, version);
+        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, version);
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentId, version);
+            triggeredAlertDao.delete(agentId, version);
             sendPingOrSyntheticAlert(agentDisplay, alertConfig, true, null);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentId, version);
+            triggeredAlertDao.insert(agentId, version);
             sendPingOrSyntheticAlert(agentDisplay, alertConfig, false, errorMessage);
         }
     }

@@ -171,7 +171,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return agentConfig.getAlertConfigList();
     }
 
-    @Override
     public List<AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind) throws Exception {
         List<AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : getAlertConfigs(agentId)) {

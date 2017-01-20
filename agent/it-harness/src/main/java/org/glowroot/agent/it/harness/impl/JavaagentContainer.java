@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -377,11 +377,9 @@ public class JavaagentContainer implements Container {
                     || name.matches("jackson-.*\\.jar")
                     || name.matches("jzlib-.*\\.jar")
                     || name.matches("logback-.*\\.jar")
-                    || name.matches("mailapi-.*\\.jar")
                     || name.matches("netty-.*\\.jar")
                     || name.matches("protobuf-java-.*\\.jar")
                     || name.matches("slf4j-api-.*\\.jar")
-                    || name.matches("smtp-.*\\.jar")
                     || name.matches("value-.*\\.jar")) {
                 // these are glowroot-agent-core transitive dependencies
                 maybeBootstrapJar.add(path);

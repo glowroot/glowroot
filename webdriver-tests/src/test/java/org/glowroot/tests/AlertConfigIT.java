@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests;
 
+import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
@@ -31,6 +32,10 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldAddTransactionAlert() throws Exception {
+
+        // alerting is only present in central
+        Assume.assumeTrue(WebDriverSetup.useCentral);
+
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -64,6 +69,10 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldAddGaugeAlert() throws Exception {
+
+        // alerting is only present in central
+        Assume.assumeTrue(WebDriverSetup.useCentral);
+
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -91,6 +100,10 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldUpdateTransactionAlert() throws Exception {
+
+        // alerting is only present in central
+        Assume.assumeTrue(WebDriverSetup.useCentral);
+
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -119,6 +132,10 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldUpdateGaugeAlert() throws Exception {
+
+        // alerting is only present in central
+        Assume.assumeTrue(WebDriverSetup.useCentral);
+
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -147,6 +164,10 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldDeleteAlert() throws Exception {
+
+        // alerting is only present in central
+        Assume.assumeTrue(WebDriverSetup.useCentral);
+
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();

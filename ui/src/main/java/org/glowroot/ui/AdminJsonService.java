@@ -60,9 +60,7 @@ import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.RepoAdmin;
-import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Encryption;
-import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.ui.HttpSessionManager.Authentication;
@@ -85,19 +83,16 @@ class AdminJsonService {
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final LiveAggregateRepository liveAggregateRepository;
-    private final MailService mailService;
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     AdminJsonService(boolean central, File glowrootDir, ConfigRepository configRepository,
-            RepoAdmin repoAdmin, LiveAggregateRepository liveAggregateRepository,
-            MailService mailService) {
+            RepoAdmin repoAdmin, LiveAggregateRepository liveAggregateRepository) {
         this.central = central;
         this.glowrootDir = glowrootDir;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.liveAggregateRepository = liveAggregateRepository;
-        this.mailService = mailService;
     }
 
     void setHttpServer(HttpServer httpServer) {
@@ -143,6 +138,7 @@ class AdminJsonService {
         }
     }
 
+    // only used by central
     @GET(path = "/backend/admin/smtp", permission = "admin:view:smtp")
     String getSmtpConfig() throws Exception {
         SmtpConfig config = configRepository.getSmtpConfig();
@@ -228,6 +224,7 @@ class AdminJsonService {
         return getStorageConfig();
     }
 
+    // only used by central
     @POST(path = "/backend/admin/smtp", permission = "admin:edit:smtp")
     String updateSmtpConfig(@BindRequest SmtpConfigDto configDto) throws Exception {
         try {
@@ -250,6 +247,7 @@ class AdminJsonService {
         return getLdapConfig();
     }
 
+    // only used by central
     @POST(path = "/backend/admin/send-test-email", permission = "admin:edit:smtp")
     String sendTestEmail(@BindRequest SmtpConfigDto configDto) throws IOException {
         String testEmailRecipient = configDto.testEmailRecipient();
@@ -257,9 +255,8 @@ class AdminJsonService {
         List<String> emailAddresses =
                 Splitter.on(',').trimResults().splitToList(testEmailRecipient);
         try {
-            AlertingService.sendEmail(emailAddresses, "Test email from Glowroot", "",
-                    configDto.convert(configRepository), configRepository.getSecretKey(),
-                    mailService);
+            repoAdmin.sendTestEmail(emailAddresses, "Test email from Glowroot", "",
+                    configDto.convert(configRepository), configRepository.getSecretKey());
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
             return createErrorResponse(e.getMessage());

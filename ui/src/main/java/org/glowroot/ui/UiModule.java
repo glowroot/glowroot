@@ -36,7 +36,6 @@ import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
-import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 
@@ -102,7 +101,7 @@ public class UiModule {
         AlertConfigJsonService alertConfigJsonService =
                 new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(central, glowrootDir,
-                configRepository, repoAdmin, liveAggregateRepository, new MailService());
+                configRepository, repoAdmin, liveAggregateRepository);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(transactionJsonService);

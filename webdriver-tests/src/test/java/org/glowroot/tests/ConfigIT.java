@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests;
 
+import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -219,6 +220,10 @@ public class ConfigIT extends WebDriverIT {
 
     @Test
     public void shouldUpdateSmtpConfig() throws Exception {
+
+        // alerting (and therefore smtp config) is only present in central
+        Assume.assumeTrue(WebDriverSetup.useCentral);
+
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();

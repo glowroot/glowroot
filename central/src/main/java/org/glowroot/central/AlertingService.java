@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.common.repo.util;
+package org.glowroot.central;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -40,6 +40,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.central.repo.TriggeredAlertDao;
+import org.glowroot.central.util.MailService;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.live.ImmutableTransactionQuery;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
@@ -48,8 +50,10 @@ import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
-import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.Utils;
+import org.glowroot.common.repo.util.Encryption;
+import org.glowroot.common.repo.util.Gauges;
+import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
@@ -63,7 +67,7 @@ public class AlertingService {
     private static final Logger logger = LoggerFactory.getLogger(AlertingService.class);
 
     private final ConfigRepository configRepository;
-    private final TriggeredAlertRepository triggeredAlertRepository;
+    private final TriggeredAlertDao triggeredAlertDao;
     private final AggregateRepository aggregateRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final RollupLevelService rollupLevelService;
@@ -72,12 +76,11 @@ public class AlertingService {
     // limit missing smtp host configuration warning to once per hour
     private final RateLimiter smtpHostWarningRateLimiter = RateLimiter.create(1.0 / 3600);
 
-    public AlertingService(ConfigRepository configRepository,
-            TriggeredAlertRepository triggeredAlertRepository,
+    public AlertingService(ConfigRepository configRepository, TriggeredAlertDao triggeredAlertDao,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
             RollupLevelService rollupLevelService, MailService mailService) {
         this.configRepository = configRepository;
-        this.triggeredAlertRepository = triggeredAlertRepository;
+        this.triggeredAlertDao = triggeredAlertDao;
         this.aggregateRepository = aggregateRepository;
         this.gaugeValueRepository = gaugeValueRepository;
         this.rollupLevelService = rollupLevelService;
@@ -89,9 +92,9 @@ public class AlertingService {
         for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentId)) {
             alertConfigVersions.add(Versions.getVersion(alertConfig));
         }
-        for (String alertConfigVersion : triggeredAlertRepository.read(agentId)) {
+        for (String alertConfigVersion : triggeredAlertDao.read(agentId)) {
             if (!alertConfigVersions.contains(alertConfigVersion)) {
-                triggeredAlertRepository.delete(agentId, alertConfigVersion);
+                triggeredAlertDao.delete(agentId, alertConfigVersion);
             }
         }
     }
@@ -138,16 +141,16 @@ public class AlertingService {
             return;
         }
         String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertRepository.exists(agentId, version);
+        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, version);
         long valueAtPercentile = durationNanosHistogram
                 .getValueAtPercentile(alertConfig.getTransactionPercentile().getValue());
         boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS
                 .toNanos(alertConfig.getThresholdMillis().getValue());
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentId, version);
+            triggeredAlertDao.delete(agentId, version);
             sendTransactionAlert(agentDisplay, alertConfig, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentId, version);
+            triggeredAlertDao.insert(agentId, version);
             sendTransactionAlert(agentDisplay, alertConfig, false);
         }
     }
@@ -179,13 +182,13 @@ public class AlertingService {
         checkState(totalWeight != 0);
         double average = totalWeightedValue / totalWeight;
         String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertRepository.exists(agentId, version);
+        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, version);
         boolean currentlyTriggered = average >= threshold;
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentId, version);
+            triggeredAlertDao.delete(agentId, version);
             sendGaugeAlert(agentDisplay, alertConfig, threshold, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentId, version);
+            triggeredAlertDao.insert(agentId, version);
             sendGaugeAlert(agentDisplay, alertConfig, threshold, false);
         }
     }
@@ -194,12 +197,12 @@ public class AlertingService {
     public void checkHeartbeatAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
             boolean currentlyTriggered) throws Exception {
         String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertRepository.exists(agentId, version);
+        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, version);
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentId, version);
+            triggeredAlertDao.delete(agentId, version);
             sendHeartbeatAlert(agentDisplay, alertConfig, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentId, version);
+            triggeredAlertDao.insert(agentId, version);
             sendHeartbeatAlert(agentDisplay, alertConfig, false);
         }
     }

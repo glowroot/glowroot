@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,6 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
-import org.glowroot.common.repo.util.AlertingService;
-import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -58,7 +56,6 @@ public class SimpleRepoModule {
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final RollupLevelService rollupLevelService;
-    private final AlertingService alertingService;
     private final @Nullable ReaperRunnable reaperRunnable;
 
     public SimpleRepoModule(DataSource dataSource, File dataDir, Clock clock, Ticker ticker,
@@ -96,9 +93,6 @@ public class SimpleRepoModule {
                 configRepository, agentDao, gaugeValueDao, gaugeNameDao, transactionTypeDao,
                 fullQueryTextDao, traceAttributeNameDao);
 
-        TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
-        alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
-                gaugeValueDao, rollupLevelService, new MailService());
         if (backgroundExecutor == null) {
             reaperRunnable = null;
         } else {
@@ -156,10 +150,6 @@ public class SimpleRepoModule {
 
     public RollupLevelService getRollupLevelService() {
         return rollupLevelService;
-    }
-
-    public AlertingService getAlertingService() {
-        return alertingService;
     }
 
     @OnlyUsedByTests

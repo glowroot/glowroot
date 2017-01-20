@@ -25,7 +25,6 @@ import org.glowroot.central.util.Sessions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// NOTE this is mostly a copy of TriggeredAlertDaoTest in glowroot-agent
 public class TriggeredAlertDaoIT {
 
     private static final String AGENT_ID = "xyz";

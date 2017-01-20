@@ -154,8 +154,8 @@ class EmbeddedAgentModule {
                         // now inject the real collector into the proxy
                         CollectorImpl collectorImpl = new CollectorImpl(
                                 simpleRepoModule.getAgentDao(), simpleRepoModule.getAggregateDao(),
-                                simpleRepoModule.getTraceDao(), simpleRepoModule.getGaugeValueDao(),
-                                configRepository, simpleRepoModule.getAlertingService());
+                                simpleRepoModule.getTraceDao(),
+                                simpleRepoModule.getGaugeValueDao());
                         collectorProxy.setInstance(collectorImpl);
                         // embedded CollectorImpl does nothing with agent config parameter
                         collectorImpl.init(baseDir, EnvironmentCreator.create(glowrootVersion),

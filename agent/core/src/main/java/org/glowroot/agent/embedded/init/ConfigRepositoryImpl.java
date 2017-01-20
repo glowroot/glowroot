@@ -48,7 +48,6 @@ import org.glowroot.common.config.FatStorageConfig;
 import org.glowroot.common.config.ImmutableFatStorageConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableRoleConfig;
-import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.ImmutableWebConfig;
 import org.glowroot.common.config.LdapConfig;
@@ -62,7 +61,6 @@ import org.glowroot.common.repo.util.LazySecretKey;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -84,7 +82,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile ImmutableList<RoleConfig> roleConfigs;
     private volatile WebConfig webConfig;
     private volatile FatStorageConfig storageConfig;
-    private volatile SmtpConfig smtpConfig;
     private volatile LdapConfig ldapConfig;
 
     static ConfigRepository create(File baseDir, ConfigService configService,
@@ -150,12 +147,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
         } else {
             this.storageConfig = storageConfig;
         }
-        SmtpConfig smtpConfig = configService.getAdminConfig(SMTP_KEY, ImmutableSmtpConfig.class);
-        if (smtpConfig == null) {
-            this.smtpConfig = ImmutableSmtpConfig.builder().build();
-        } else {
-            this.smtpConfig = smtpConfig;
-        }
         LdapConfig ldapConfig = configService.getAdminConfig(LDAP_KEY, ImmutableLdapConfig.class);
         if (ldapConfig == null) {
             this.ldapConfig = ImmutableLdapConfig.builder().build();
@@ -209,17 +200,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
         List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : configService.getAlertConfigs()) {
             configs.add(config.toProto());
-        }
-        return configs;
-    }
-
-    @Override
-    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentId, AlertKind alertKind) {
-        List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
-        for (AlertConfig config : configService.getAlertConfigs()) {
-            if (config.kind() == alertKind) {
-                configs.add(config.toProto());
-            }
         }
         return configs;
     }
@@ -347,7 +327,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public SmtpConfig getSmtpConfig() {
-        return smtpConfig;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -704,7 +684,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new UserNotFoundException();
             }
-            if (getSmtpConfig().host().isEmpty() && configs.isEmpty()) {
+            if (getLdapConfig().host().isEmpty() && configs.isEmpty()) {
                 throw new CannotDeleteLastUserException();
             }
             configService.updateAdminConfig(USERS_KEY, configs);
@@ -806,12 +786,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateSmtpConfig(SmtpConfig updatedConfig, String priorVersion) throws Exception {
-        synchronized (writeLock) {
-            checkVersionsEqual(smtpConfig.version(), priorVersion);
-            configService.updateAdminConfig(SMTP_KEY, updatedConfig);
-            smtpConfig = updatedConfig;
-        }
+    public void updateSmtpConfig(SmtpConfig updatedConfig, String priorVersion) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -873,7 +849,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
                 .build());
         webConfig = ImmutableWebConfig.builder().build();
         storageConfig = ImmutableFatStorageConfig.builder().build();
-        smtpConfig = ImmutableSmtpConfig.builder().build();
         ldapConfig = ImmutableLdapConfig.builder().build();
         writeAll();
     }
@@ -885,7 +860,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
         configs.put(ROLES_KEY, roleConfigs);
         configs.put(WEB_KEY, webConfig);
         configs.put(STORAGE_KEY, storageConfig);
-        configs.put(SMTP_KEY, smtpConfig);
         configs.put(LDAP_KEY, ldapConfig);
         configService.updateAdminConfigs(configs);
     }

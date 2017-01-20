@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.annotation.Nullable;
+import javax.crypto.SecretKey;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -58,13 +59,13 @@ import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.TransactionTypeDao;
 import org.glowroot.central.repo.TriggeredAlertDao;
 import org.glowroot.central.repo.UserDao;
+import org.glowroot.central.util.MailService;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ImmutableWebConfig;
+import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.WebConfig;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.repo.RepoAdmin;
-import org.glowroot.common.repo.util.AlertingService;
-import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.PropertiesFiles;
@@ -183,9 +184,10 @@ class CentralModule {
             HeartbeatDao heartbeatDao = new HeartbeatDao(session, clock);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
+            MailService mailService = new MailService();
             AlertingService alertingService = new AlertingService(configRepository,
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
-                    new MailService());
+                    mailService);
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
@@ -222,7 +224,7 @@ class CentralModule {
                     .traceRepository(traceDao)
                     .aggregateRepository(aggregateDao)
                     .gaugeValueRepository(gaugeValueDao)
-                    .repoAdmin(new NopRepoAdmin())
+                    .repoAdmin(new RepoAdminImpl(mailService))
                     .rollupLevelService(rollupLevelService)
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService, agentDao))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
@@ -392,12 +394,34 @@ class CentralModule {
         abstract @Nullable Integer uiPortOverride();
     }
 
-    private static class NopRepoAdmin implements RepoAdmin {
+    private static class RepoAdminImpl implements RepoAdmin {
+
+        private final MailService mailService;
+
+        private RepoAdminImpl(MailService mailService) {
+            this.mailService = mailService;
+        }
+
         @Override
-        public void deleteAllData() throws Exception {}
+        public void deleteAllData() {
+            throw new UnsupportedOperationException();
+        }
+
         @Override
-        public void defrag() throws Exception {}
+        public void defrag() {
+            throw new UnsupportedOperationException();
+        }
+
         @Override
-        public void resizeIfNeeded() throws Exception {}
+        public void resizeIfNeeded() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void sendTestEmail(List<String> emailAddresses, String subject, String messageText,
+                SmtpConfig smtpConfig, SecretKey secretKey) throws Exception {
+            AlertingService.sendEmail(emailAddresses, subject, messageText, smtpConfig, secretKey,
+                    mailService);
+        }
     }
 }

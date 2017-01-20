@@ -15,6 +15,12 @@
  */
 package org.glowroot.common.repo;
 
+import java.util.List;
+
+import javax.crypto.SecretKey;
+
+import org.glowroot.common.config.SmtpConfig;
+
 public interface RepoAdmin {
 
     void defrag() throws Exception;
@@ -22,4 +28,7 @@ public interface RepoAdmin {
     void deleteAllData() throws Exception;
 
     void resizeIfNeeded() throws Exception;
+
+    void sendTestEmail(List<String> emailAddresses, String subject, String messageText,
+            SmtpConfig smtpConfig, SecretKey secretKey) throws Exception;
 }

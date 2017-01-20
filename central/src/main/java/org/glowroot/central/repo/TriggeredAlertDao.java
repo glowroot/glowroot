@@ -24,11 +24,9 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.Lists;
 
-import org.glowroot.common.repo.TriggeredAlertRepository;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class TriggeredAlertDao implements TriggeredAlertRepository {
+public class TriggeredAlertDao {
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -60,7 +58,6 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
                 .prepare("select alert_config_version from triggered_alert where agent_rollup = ?");
     }
 
-    @Override
     public boolean exists(String agentId, String alertConfigVersion) throws Exception {
         BoundStatement boundStatement = existsPS.bind();
         boundStatement.setString(0, agentId);
@@ -69,7 +66,6 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         return !results.isExhausted();
     }
 
-    @Override
     public void delete(String agentId, String alertConfigVersion) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, agentId);
@@ -77,7 +73,6 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         session.execute(boundStatement);
     }
 
-    @Override
     public void insert(String agentId, String alertConfigVersion) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
@@ -86,7 +81,6 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         session.execute(boundStatement);
     }
 
-    @Override
     public List<String> read(String agentId) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);

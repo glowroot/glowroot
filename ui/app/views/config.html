@@ -69,6 +69,7 @@
            gt-sub-active="currentUrl() === 'config/gauge'">
       </div>
       <div gt-sidebar-item
+           ng-if="layout.central"
            gt-display="Alerts"
            gt-url="config/alert-list{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/alert-list'"
