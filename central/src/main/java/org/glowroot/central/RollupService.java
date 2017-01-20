@@ -34,7 +34,6 @@ import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
-import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.util.Clock;
@@ -181,23 +180,20 @@ class RollupService implements Runnable {
 
     private void checkTransactionAlerts(AgentRollup leafAgentRollup) throws Exception {
         checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.TRANSACTION,
-                (alertConfig, smtpConfig) -> checkTransactionAlert(leafAgentRollup.id(),
-                        leafAgentRollup.display(), alertConfig, clock.currentTimeMillis(),
-                        smtpConfig));
+                alertConfig -> checkTransactionAlert(leafAgentRollup.id(),
+                        leafAgentRollup.display(), alertConfig, clock.currentTimeMillis()));
     }
 
     private void checkGaugeAlerts(AgentRollup leafAgentRollup) throws Exception {
         checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.GAUGE,
-                (alertConfig, smtpConfig) -> checkGaugeAlert(leafAgentRollup.id(),
-                        leafAgentRollup.display(), alertConfig, clock.currentTimeMillis(),
-                        smtpConfig));
+                alertConfig -> checkGaugeAlert(leafAgentRollup.id(), leafAgentRollup.display(),
+                        alertConfig, clock.currentTimeMillis()));
     }
 
     private void checkHeartbeatAlerts(AgentRollup leafAgentRollup) throws Exception {
         checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.HEARTBEAT,
-                (alertConfig, smtpConfig) -> checkHeartbeatAlert(leafAgentRollup.id(),
-                        leafAgentRollup.display(), alertConfig, clock.currentTimeMillis(),
-                        smtpConfig));
+                alertConfig -> checkHeartbeatAlert(leafAgentRollup.id(), leafAgentRollup.display(),
+                        alertConfig, clock.currentTimeMillis()));
     }
 
     private void updateAgentConfigIfConnectedAndNeeded(AgentRollup leafAgentRollup)
@@ -214,10 +210,6 @@ class RollupService implements Runnable {
 
     private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
             AlertConfigConsumer check) throws Exception {
-        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
-        if (smtpConfig.host().isEmpty()) {
-            return;
-        }
         List<AlertConfig> alertConfigs;
         try {
             alertConfigs = configRepository.getAlertConfigs(agentId, alertKind);
@@ -230,7 +222,7 @@ class RollupService implements Runnable {
         }
         for (AlertConfig alertConfig : alertConfigs) {
             try {
-                check.accept(alertConfig, smtpConfig);
+                check.accept(alertConfig);
             } catch (InterruptedException e) {
                 // shutdown requested
                 throw e;
@@ -244,28 +236,26 @@ class RollupService implements Runnable {
             transactionName = "Check transaction alert",
             traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
     private void checkTransactionAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime, SmtpConfig smtpConfig) throws Exception {
-        alertingService.checkTransactionAlert(agentId, agentDisplay, alertConfig, endTime,
-                smtpConfig);
+            long endTime) throws Exception {
+        alertingService.checkTransactionAlert(agentId, agentDisplay, alertConfig, endTime);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check gauge alert",
             traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
     private void checkGaugeAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime, SmtpConfig smtpConfig) throws Exception {
-        alertingService.checkGaugeAlert(agentId, agentDisplay, alertConfig, endTime, smtpConfig);
+            long endTime) throws Exception {
+        alertingService.checkGaugeAlert(agentId, agentDisplay, alertConfig, endTime);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check heartbeat alert",
             traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
     private void checkHeartbeatAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime, SmtpConfig smtpConfig) throws Exception {
+            long endTime) throws Exception {
         long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
         boolean currentlyTriggered = !heartbeatDao.exists(agentId, startTime, endTime);
-        alertingService.checkHeartbeatAlert(agentId, agentDisplay, alertConfig, currentlyTriggered,
-                smtpConfig);
+        alertingService.checkHeartbeatAlert(agentId, agentDisplay, alertConfig, currentlyTriggered);
     }
 
     @VisibleForTesting
@@ -285,6 +275,6 @@ class RollupService implements Runnable {
 
     @FunctionalInterface
     interface AlertConfigConsumer {
-        void accept(AlertConfig alertConfig, SmtpConfig smtpConfig) throws Exception;
+        void accept(AlertConfig alertConfig) throws Exception;
     }
 }

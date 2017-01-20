@@ -130,6 +130,7 @@ public class AlertingServiceTest {
         rollupLevelService = mock(RollupLevelService.class);
         mailService = new MockMailService();
         when(configRepository.getSecretKey()).thenReturn(SECRET_KEY);
+        when(configRepository.getSmtpConfig()).thenReturn(SMTP_CONFIG);
     }
 
     @Test
@@ -140,8 +141,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkTransactionAlert("", "", TRANSACTION_ALERT_CONFIG, 120000,
-                SMTP_CONFIG);
+        alertingService.checkTransactionAlert("", "", TRANSACTION_ALERT_CONFIG, 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -157,8 +157,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkTransactionAlert("", "", TRANSACTION_ALERT_CONFIG, 120000,
-                SMTP_CONFIG);
+        alertingService.checkTransactionAlert("", "", TRANSACTION_ALERT_CONFIG, 120000);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -171,7 +170,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkGaugeAlert("", "", GAUGE_ALERT_CONFIG, 120000, SMTP_CONFIG);
+        alertingService.checkGaugeAlert("", "", GAUGE_ALERT_CONFIG, 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -187,7 +186,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkGaugeAlert("", "", GAUGE_ALERT_CONFIG, 120000, SMTP_CONFIG);
+        alertingService.checkGaugeAlert("", "", GAUGE_ALERT_CONFIG, 120000);
         // then
         assertThat(mailService.getMessage()).isNull();
     }

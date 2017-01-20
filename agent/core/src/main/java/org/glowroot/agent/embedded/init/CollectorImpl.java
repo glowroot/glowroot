@@ -26,7 +26,6 @@ import org.glowroot.agent.embedded.repo.AgentDao;
 import org.glowroot.agent.embedded.repo.AggregateDao;
 import org.glowroot.agent.embedded.repo.GaugeValueDao;
 import org.glowroot.agent.embedded.repo.TraceDao;
-import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -71,15 +70,11 @@ class CollectorImpl implements Collector {
     @Override
     public void collectAggregates(long captureTime, Aggregates aggregates) throws Exception {
         aggregateDao.store(captureTime, aggregates);
-        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
-        if (smtpConfig.host().isEmpty()) {
-            return;
-        }
         for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID,
                 AlertKind.TRANSACTION)) {
             try {
                 alertingService.checkTransactionAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
-                        captureTime, smtpConfig);
+                        captureTime);
             } catch (InterruptedException e) {
                 // shutdown request
                 throw e;
@@ -92,10 +87,6 @@ class CollectorImpl implements Collector {
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
         gaugeValueDao.store(gaugeValues);
-        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
-        if (smtpConfig.host().isEmpty()) {
-            return;
-        }
         long maxCaptureTime = 0;
         for (GaugeValue gaugeValue : gaugeValues) {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
@@ -104,7 +95,7 @@ class CollectorImpl implements Collector {
                 AlertKind.GAUGE)) {
             try {
                 alertingService.checkGaugeAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
-                        maxCaptureTime, smtpConfig);
+                        maxCaptureTime);
             } catch (InterruptedException e) {
                 // shutdown request
                 throw e;

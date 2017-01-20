@@ -34,6 +34,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +67,9 @@ public class AlertingService {
     private final RollupLevelService rollupLevelService;
     private final MailService mailService;
 
+    // limit missing smtp host configuration warning to once per hour
+    private final RateLimiter smtpHostWarningRateLimiter = RateLimiter.create(1.0 / 3600);
+
     public AlertingService(ConfigRepository configRepository,
             TriggeredAlertRepository triggeredAlertRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
@@ -79,7 +83,7 @@ public class AlertingService {
     }
 
     public void checkTransactionAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime, SmtpConfig smtpConfig) throws Exception {
+            long endTime) throws Exception {
         // validate config
         if (!alertConfig.hasTransactionPercentile()) {
             // AlertConfig has nice toString() from immutables
@@ -127,17 +131,15 @@ public class AlertingService {
         boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS.toNanos(thresholdMillis);
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentId, version);
-            sendTransactionAlert(agentDisplay, alertConfig, percentile, thresholdMillis, true,
-                    smtpConfig);
+            sendTransactionAlert(agentDisplay, alertConfig, percentile, thresholdMillis, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentId, version);
-            sendTransactionAlert(agentDisplay, alertConfig, percentile, thresholdMillis, false,
-                    smtpConfig);
+            sendTransactionAlert(agentDisplay, alertConfig, percentile, thresholdMillis, false);
         }
     }
 
     public void checkGaugeAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime, SmtpConfig smtpConfig) throws Exception {
+            long endTime) throws Exception {
         if (!alertConfig.hasGaugeThreshold()) {
             // AlertConfig has nice toString() from immutables
             logger.warn("alert config missing gaugeThreshold: {}", alertConfig);
@@ -167,30 +169,29 @@ public class AlertingService {
         boolean currentlyTriggered = average >= threshold;
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentId, version);
-            sendGaugeAlert(agentDisplay, alertConfig, threshold, true, smtpConfig);
+            sendGaugeAlert(agentDisplay, alertConfig, threshold, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentId, version);
-            sendGaugeAlert(agentDisplay, alertConfig, threshold, false, smtpConfig);
+            sendGaugeAlert(agentDisplay, alertConfig, threshold, false);
         }
     }
 
     // this is only used by central
     public void checkHeartbeatAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            boolean currentlyTriggered, SmtpConfig smtpConfig) throws Exception {
+            boolean currentlyTriggered) throws Exception {
         String version = Versions.getVersion(alertConfig);
         boolean previouslyTriggered = triggeredAlertRepository.exists(agentId, version);
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentId, version);
-            sendHeartbeatAlert(agentDisplay, alertConfig, true, smtpConfig);
+            sendHeartbeatAlert(agentDisplay, alertConfig, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentId, version);
-            sendHeartbeatAlert(agentDisplay, alertConfig, false, smtpConfig);
+            sendHeartbeatAlert(agentDisplay, alertConfig, false);
         }
     }
 
     private void sendTransactionAlert(String agentDisplay, AlertConfig alertConfig,
-            double percentile, long thresholdMillis, boolean ok, SmtpConfig smtpConfig)
-            throws Exception {
+            double percentile, long thresholdMillis, boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentDisplay.equals("")) {
@@ -216,12 +217,11 @@ public class AlertingService {
             sb.append("s");
         }
         sb.append(".");
-        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(), smtpConfig,
-                configRepository.getSecretKey(), mailService);
+        sendNotification(alertConfig, subject, sb.toString());
     }
 
     private void sendGaugeAlert(String agentDisplay, AlertConfig alertConfig, double threshold,
-            boolean ok, SmtpConfig smtpConfig) throws Exception {
+            boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentDisplay.equals("")) {
@@ -248,12 +248,11 @@ public class AlertingService {
             sb.append(unit);
         }
         sb.append(".\n\n");
-        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(), smtpConfig,
-                configRepository.getSecretKey(), mailService);
+        sendNotification(alertConfig, subject, sb.toString());
     }
 
-    private void sendHeartbeatAlert(String agentDisplay, AlertConfig alertConfig, boolean ok,
-            SmtpConfig smtpConfig) throws Exception {
+    private void sendHeartbeatAlert(String agentDisplay, AlertConfig alertConfig, boolean ok)
+            throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentDisplay.equals("")) {
@@ -268,7 +267,20 @@ public class AlertingService {
             sb.append(alertConfig.getTimePeriodSeconds());
             sb.append(" seconds.\n\n");
         }
-        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(), smtpConfig,
+        sendNotification(alertConfig, subject, sb.toString());
+    }
+
+    public void sendNotification(AlertConfig alertConfig, String subject, String messageText)
+            throws Exception {
+        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+        if (smtpConfig.host().isEmpty()) {
+            if (smtpHostWarningRateLimiter.tryAcquire()) {
+                logger.warn("not sending alert due to missing SMTP host configuration"
+                        + " (this warning will be logged at most once an hour)");
+            }
+            return;
+        }
+        sendEmail(alertConfig.getEmailAddressList(), subject, messageText, smtpConfig,
                 configRepository.getSecretKey(), mailService);
     }
 
