@@ -33,8 +33,10 @@ glowroot.controller('ConfigAlertListCtrl', [
       var query = {};
       if ($scope.agentId) {
         query.agentId = $scope.agentId;
+      } else if ($scope.agentRollupId) {
+        query.agentRollupId = $scope.agentRollupId;
       }
-      query.v = alert.version;
+      query.id = alert.id;
       return queryStrings.encodeObject(query);
     };
 
@@ -67,13 +69,17 @@ glowroot.controller('ConfigAlertListCtrl', [
     };
 
     $scope.newQueryString = function () {
-      if ($scope.agentId) {
-        return '?agent-id=' + encodeURIComponent($scope.agentId) + '&new';
+      if ($scope.agentRollupId) {
+        if ($scope.layout.agentRollups[$scope.agentRollupId].agent) {
+          return '?agent-id=' + encodeURIComponent($scope.agentRollupId) + '&new';
+        } else {
+          return '?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId) + '&new';
+        }
       }
       return '?new';
     };
 
-    $http.get('backend/config/alerts?agent-id=' + encodeURIComponent($scope.agentId))
+    $http.get('backend/config/alerts?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
         .then(function (response) {
           $scope.loaded = true;
           $scope.alerts = response.data;

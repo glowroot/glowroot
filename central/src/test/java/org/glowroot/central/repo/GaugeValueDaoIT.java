@@ -28,10 +28,7 @@ import org.junit.Test;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,10 +51,11 @@ public class GaugeValueDaoIT {
 
         CentralConfigDao centralConfigDao = new CentralConfigDao(session);
         agentDao = new AgentDao(session);
+        ConfigDao configDao = new ConfigDao(session);
         UserDao userDao = new UserDao(session, keyspace);
         RoleDao roleDao = new RoleDao(session, keyspace);
-        ConfigRepository configRepository =
-                new ConfigRepositoryImpl(centralConfigDao, agentDao, userDao, roleDao);
+        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentDao, configDao,
+                centralConfigDao, userDao, roleDao);
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         configRepository.updateCentralStorageConfig(
                 ImmutableCentralStorageConfig
@@ -108,8 +106,7 @@ public class GaugeValueDaoIT {
     @Test
     public void shouldRollupFromChildren() throws Exception {
 
-        agentDao.store("one", "the parent", Environment.getDefaultInstance(),
-                AgentConfig.getDefaultInstance());
+        agentDao.store("one", "the parent");
 
         gaugeValueDao.truncateAll();
         gaugeValueDao.store("one", createData(60013));
@@ -131,8 +128,7 @@ public class GaugeValueDaoIT {
     @Test
     public void shouldRollupFromGrandChildren() throws Exception {
 
-        agentDao.store("one", "the gp/the parent", Environment.getDefaultInstance(),
-                AgentConfig.getDefaultInstance());
+        agentDao.store("one", "the gp/the parent");
 
         gaugeValueDao.truncateAll();
         gaugeValueDao.store("one", createData(60013));

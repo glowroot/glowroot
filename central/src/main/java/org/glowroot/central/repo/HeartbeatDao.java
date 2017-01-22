@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.util.Date;
+import java.util.List;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -33,13 +34,15 @@ public class HeartbeatDao {
     private static final int TTL = (int) HOURS.toMillis(EXPIRATION_HOURS);
 
     private final Session session;
+    private final AgentDao agentDao;
     private final Clock clock;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement existsPS;
 
-    public HeartbeatDao(Session session, Clock clock) {
+    public HeartbeatDao(Session session, AgentDao agentDao, Clock clock) {
         this.session = session;
+        this.agentDao = agentDao;
         this.clock = clock;
 
         Sessions.createTableWithTWCS(session, "create table if not exists heartbeat"
@@ -52,18 +55,21 @@ public class HeartbeatDao {
     }
 
     public void store(String agentId) throws Exception {
-        BoundStatement boundStatement = insertPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setTimestamp(i++, new Date(clock.currentTimeMillis()));
-        boundStatement.setInt(i++, TTL);
-        session.execute(boundStatement);
+        List<String> agentRollupIds = agentDao.readAgentRollupIds(agentId);
+        for (String agentRollupId : agentRollupIds) {
+            BoundStatement boundStatement = insertPS.bind();
+            int i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setTimestamp(i++, new Date(clock.currentTimeMillis()));
+            boundStatement.setInt(i++, TTL);
+            session.execute(boundStatement);
+        }
     }
 
-    public boolean exists(String agentId, long centralCaptureFrom, long centralCaptureTo) {
+    public boolean exists(String agentRollupId, long centralCaptureFrom, long centralCaptureTo) {
         BoundStatement boundStatement = existsPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentId);
+        boundStatement.setString(i++, agentRollupId);
         boundStatement.setTimestamp(i++, new Date(centralCaptureFrom));
         boundStatement.setTimestamp(i++, new Date(centralCaptureTo));
         return !session.execute(boundStatement).isExhausted();

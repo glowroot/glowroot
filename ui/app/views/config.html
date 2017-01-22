@@ -36,7 +36,7 @@
               <a role="menuitem"
                  tabindex="-1"
                  ng-href="{{agentRollupUrl(agentRollup)}}">
-                {{agentRollup.display}}
+                {{agentRollup.indentedDisplay}}
               </a>
             </li>
           </ul>
@@ -60,13 +60,15 @@
       <div gt-sidebar-item
            gt-display="Transactions"
            gt-url="config/transaction{{agentQueryString()}}"
-           gt-active="currentUrl() === 'config/transaction'">
+           gt-active="currentUrl() === 'config/transaction'"
+           ng-if="!isAgentRollup()">
       </div>
       <div gt-sidebar-item
            gt-display="Gauges"
            gt-url="config/gauge-list{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/gauge-list'"
-           gt-sub-active="currentUrl() === 'config/gauge'">
+           gt-sub-active="currentUrl() === 'config/gauge'"
+           ng-if="!isAgentRollup()">
       </div>
       <div gt-sidebar-item
            ng-if="layout.central"
@@ -84,13 +86,15 @@
            gt-display="Plugins"
            gt-url="config/plugin-list{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/plugin-list'"
-           gt-sub-active="currentUrl() === 'config/plugin'">
+           gt-sub-active="currentUrl() === 'config/plugin'"
+           ng-if="!isAgentRollup()">
       </div>
       <div gt-sidebar-item
            gt-display="Instrumentation"
            gt-url="config/instrumentation-list{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/instrumentation-list'"
-           gt-sub-active="currentUrl() === 'config/instrumentation'">
+           gt-sub-active="currentUrl() === 'config/instrumentation'"
+           ng-if="!isAgentRollup()">
       </div>
       <div gt-sidebar-item
            gt-display="Advanced"

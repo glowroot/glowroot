@@ -18,20 +18,21 @@ package org.glowroot.central.repo;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TriggeredAlertDaoIT {
-
-    private static final String AGENT_ID = "xyz";
+public class EnvironmentDaoIT {
 
     private static Cluster cluster;
     private static Session session;
-    private static TriggeredAlertDao triggeredAlertDao;
+    private static EnvironmentDao environmentDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -41,9 +42,7 @@ public class TriggeredAlertDaoIT {
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
 
-        triggeredAlertDao = new TriggeredAlertDao(session);
-
-        session.execute("truncate triggered_alert");
+        environmentDao = new EnvironmentDao(session);
     }
 
     @AfterClass
@@ -53,22 +52,22 @@ public class TriggeredAlertDaoIT {
         SharedSetupRunListener.stopCassandra();
     }
 
-    @Test
-    public void shouldNotExist() throws Exception {
-        assertThat(triggeredAlertDao.exists(AGENT_ID, "1111")).isFalse();
+    @Before
+    public void before() {
+        session.execute("truncate environment");
     }
 
     @Test
-    public void shouldExistAfterInsert() throws Exception {
-        triggeredAlertDao.insert(AGENT_ID, "2222");
-        assertThat(triggeredAlertDao.exists(AGENT_ID, "1111")).isFalse();
-        assertThat(triggeredAlertDao.exists(AGENT_ID, "2222")).isTrue();
-    }
-
-    @Test
-    public void shouldNotExistAfterDelete() throws Exception {
-        triggeredAlertDao.insert(AGENT_ID, "3333");
-        triggeredAlertDao.delete(AGENT_ID, "3333");
-        assertThat(triggeredAlertDao.exists(AGENT_ID, "3333")).isFalse();
+    public void shouldStoreEnvironment() throws Exception {
+        // given
+        Environment environment = Environment.newBuilder()
+                .setHostInfo(HostInfo.newBuilder()
+                        .setHostName("hosty"))
+                .build();
+        environmentDao.insert("a", environment);
+        // when
+        Environment readEnvironment = environmentDao.read("a");
+        // then
+        assertThat(readEnvironment).isEqualTo(environment);
     }
 }

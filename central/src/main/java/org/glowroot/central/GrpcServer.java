@@ -37,7 +37,9 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AggregateDao;
+import org.glowroot.central.repo.ConfigDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
+import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.TraceDao;
@@ -79,6 +81,8 @@ class GrpcServer {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private final AgentDao agentDao;
+    private final ConfigDao configDao;
+    private final EnvironmentDao environmentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
     private final HeartbeatDao heartbeatDao;
@@ -97,11 +101,13 @@ class GrpcServer {
     private volatile long currentMinute;
     private final AtomicInteger nextDelay = new AtomicInteger();
 
-    GrpcServer(String bindAddress, int port, AgentDao agentDao, AggregateDao aggregateDao,
-            GaugeValueDao gaugeValueDao, HeartbeatDao heartbeatDao, TraceDao traceDao,
-            ConfigRepositoryImpl configRepository, AlertingService alertingService, Clock clock,
-            String version) throws IOException {
+    GrpcServer(String bindAddress, int port, AgentDao agentDao, ConfigDao configDao,
+            AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, EnvironmentDao environmentDao,
+            HeartbeatDao heartbeatDao, TraceDao traceDao, ConfigRepositoryImpl configRepository,
+            AlertingService alertingService, Clock clock, String version) throws IOException {
         this.agentDao = agentDao;
+        this.configDao = configDao;
+        this.environmentDao = environmentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
         this.heartbeatDao = heartbeatDao;
@@ -111,7 +117,7 @@ class GrpcServer {
         this.clock = clock;
         this.version = version;
 
-        downstreamService = new DownstreamServiceImpl(agentDao);
+        downstreamService = new DownstreamServiceImpl(agentDao, configDao);
 
         server = NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port))
                 .addService(new CollectorServiceImpl().bindService())
@@ -158,8 +164,12 @@ class GrpcServer {
                 String agentRollupId = request.getAgentRollupId();
                 // trim spaces around rollup separator "/"
                 agentRollupId = trimSpacesAroundAgentRollupIdSeparator(agentRollupId);
-                updatedAgentConfig = agentDao.store(agentId, Strings.emptyToNull(agentRollupId),
-                        request.getEnvironment(), request.getAgentConfig());
+                updatedAgentConfig = configDao.store(agentId, Strings.emptyToNull(agentRollupId),
+                        request.getAgentConfig());
+                environmentDao.insert(agentId, request.getEnvironment());
+                // insert into agent_rollup last so environment and agent config will return
+                // non-null if the agent is visible in the UI dropdown
+                agentDao.store(agentId, Strings.emptyToNull(agentRollupId));
             } catch (Throwable t) {
                 logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                 responseObserver.onError(t);

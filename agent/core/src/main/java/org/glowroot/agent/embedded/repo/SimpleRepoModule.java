@@ -47,7 +47,7 @@ public class SimpleRepoModule {
     private final DataSource dataSource;
     private final ImmutableList<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
-    private final AgentDao agentDao;
+    private final EnvironmentDao environmentDao;
     private final TransactionTypeDao transactionTypeDao;
     private final AggregateDao aggregateDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
@@ -77,7 +77,7 @@ public class SimpleRepoModule {
         traceCappedDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
                 storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
 
-        agentDao = new AgentDao(dataSource);
+        environmentDao = new EnvironmentDao(dataSource);
         transactionTypeDao = new TransactionTypeDao(dataSource);
         rollupLevelService = new RollupLevelService(configRepository, clock);
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(dataSource);
@@ -90,7 +90,7 @@ public class SimpleRepoModule {
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
-                configRepository, agentDao, gaugeValueDao, gaugeNameDao, transactionTypeDao,
+                configRepository, environmentDao, gaugeValueDao, gaugeNameDao, transactionTypeDao,
                 fullQueryTextDao, traceAttributeNameDao);
 
         if (backgroundExecutor == null) {
@@ -116,8 +116,8 @@ public class SimpleRepoModule {
                 "org.glowroot:type=H2Database");
     }
 
-    public AgentDao getAgentDao() {
-        return agentDao;
+    public EnvironmentDao getEnvironmentDao() {
+        return environmentDao;
     }
 
     public TransactionTypeRepository getTransactionTypeRepository() {

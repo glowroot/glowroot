@@ -52,11 +52,16 @@ glowroot.controller('NavbarCtrl', [
       return queryStrings.encodeObject(query);
     };
 
-    $scope.configQueryString = function () {
+    $scope.configUrl = function () {
       if ($scope.layout.central && $scope.agentPermissions && $scope.agentPermissions.config.view) {
-        return '?agent-id=' + encodeURIComponent($scope.agentId || $scope.agentRollupId);
+        // using query string instead of layout.agentRollups[agentRollupId].agent in case agentRollupId doesn't exist
+        if ($location.search()['agent-rollup-id']) {
+          return 'config/alert-list?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId);
+        } else {
+          return 'config/transaction?agent-id=' + encodeURIComponent($scope.agentRollupId);
+        }
       } else {
-        return '';
+        return 'config/transaction';
       }
     };
 

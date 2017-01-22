@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
+import org.glowroot.central.repo.ConfigDao;
 import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
@@ -101,9 +102,11 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private final Map<String, ConnectedAgent> connectedAgents = Maps.newConcurrentMap();
     private final AgentDao agentDao;
+    private final ConfigDao configDao;
 
-    DownstreamServiceImpl(AgentDao agentDao) {
+    DownstreamServiceImpl(AgentDao agentDao, ConfigDao configDao) {
         this.agentDao = agentDao;
+        this.configDao = configDao;
     }
 
     @Override
@@ -114,10 +117,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     void updateAgentConfigIfConnectedAndNeeded(String agentId) throws Exception {
         ConnectedAgent connectedAgent = connectedAgents.get(agentId);
         if (connectedAgent != null) {
-            AgentConfigUpdate agentConfigUpdate = agentDao.readForAgentConfigUpdate(agentId);
+            AgentConfigUpdate agentConfigUpdate = configDao.readForUpdate(agentId);
             if (agentConfigUpdate != null) {
                 connectedAgent.updateAgentConfig(agentConfigUpdate.config());
-                agentDao.markAgentConfigUpdated(agentId, agentConfigUpdate.configUpdateToken());
+                configDao.markUpdated(agentId, agentConfigUpdate.configUpdateToken());
             }
         }
     }

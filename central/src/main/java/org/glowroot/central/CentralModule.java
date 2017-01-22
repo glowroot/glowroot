@@ -47,8 +47,10 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.CentralConfigDao;
+import org.glowroot.central.repo.ConfigDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
-import org.glowroot.central.repo.ConfigRepositoryImpl.ConfigListener;
+import org.glowroot.central.repo.ConfigRepositoryImpl.AgentConfigListener;
+import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.FullQueryTextDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
@@ -143,10 +145,11 @@ class CentralModule {
             }
             CentralConfigDao centralConfigDao = new CentralConfigDao(session);
             AgentDao agentDao = new AgentDao(session);
+            ConfigDao configDao = new ConfigDao(session);
             UserDao userDao = new UserDao(session, keyspace);
             RoleDao roleDao = new RoleDao(session, keyspace);
-            ConfigRepositoryImpl configRepository =
-                    new ConfigRepositoryImpl(centralConfigDao, agentDao, userDao, roleDao);
+            ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentDao, configDao,
+                    centralConfigDao, userDao, roleDao);
 
             if (initialSchemaVersion != null) {
                 schemaUpgrade.updateToMoreRecentCassandraOptions(
@@ -181,7 +184,8 @@ class CentralModule {
                     fullQueryTextDao, traceAttributeNameDao, configRepository, clock);
             GaugeValueDao gaugeValueDao =
                     new GaugeValueDao(session, agentDao, configRepository, clock);
-            HeartbeatDao heartbeatDao = new HeartbeatDao(session, clock);
+            EnvironmentDao environmentDao = new EnvironmentDao(session);
+            HeartbeatDao heartbeatDao = new HeartbeatDao(session, agentDao, clock);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
             MailService mailService = new MailService();
@@ -195,10 +199,10 @@ class CentralModule {
             }
 
             server = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
-                    agentDao, aggregateDao, gaugeValueDao, heartbeatDao, traceDao, configRepository,
-                    alertingService, clock, version);
+                    agentDao, configDao, aggregateDao, gaugeValueDao, environmentDao, heartbeatDao,
+                    traceDao, configRepository, alertingService, clock, version);
             DownstreamServiceImpl downstreamService = server.getDownstreamService();
-            configRepository.addConfigListener(new ConfigListener() {
+            configRepository.addAgentConfigListener(new AgentConfigListener() {
                 @Override
                 public void onChange(String agentId) throws Exception {
                     // TODO report checker framework issue that occurs without checkNotNull
@@ -219,6 +223,7 @@ class CentralModule {
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(configRepository)
                     .agentRepository(agentDao)
+                    .environmentRepository(environmentDao)
                     .transactionTypeRepository(transactionTypeDao)
                     .traceAttributeNameRepository(traceAttributeNameDao)
                     .traceRepository(traceDao)

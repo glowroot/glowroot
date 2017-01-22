@@ -88,19 +88,20 @@ class AlertConfigJsonService {
         this.configRepository = configRepository;
     }
 
+    // central supports alert configs on rollups
     @GET(path = "/backend/config/alerts", permission = "agent:config:view:alert")
-    String getAlert(@BindAgentId String agentId, @BindRequest AlertConfigRequest request)
-            throws Exception {
-        Optional<String> version = request.version();
-        if (version.isPresent()) {
-            AlertConfig alertConfig = configRepository.getAlertConfig(agentId, version.get());
+    String getAlert(@BindAgentRollupId String agentRollupId,
+            @BindRequest AlertConfigRequest request) throws Exception {
+        Optional<String> id = request.id();
+        if (id.isPresent()) {
+            AlertConfig alertConfig = configRepository.getAlertConfig(agentRollupId, id.get());
             if (alertConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
             return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
         } else {
             List<AlertConfigDto> alertConfigDtos = Lists.newArrayList();
-            List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentId);
+            List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentRollupId);
             alertConfigs = orderingByName.immutableSortedCopy(alertConfigs);
             for (AlertConfig alertConfig : alertConfigs) {
                 alertConfigDtos.add(AlertConfigDto.create(alertConfig));
@@ -109,34 +110,47 @@ class AlertConfigJsonService {
         }
     }
 
+    // central supports alert configs on rollups
     @POST(path = "/backend/config/alerts/add", permission = "agent:config:edit:alert")
-    String addAlert(@BindAgentId String agentId, @BindRequest AlertConfigDto configDto)
+    String addAlert(@BindAgentRollupId String agentRollupId, @BindRequest AlertConfigDto configDto)
             throws Exception {
         AlertConfig alertConfig = configDto.convert(configRepository.getSecretKey());
         String errorResponse = validate(alertConfig);
         if (errorResponse != null) {
             return errorResponse;
         }
+        String id;
         try {
-            configRepository.insertAlertConfig(agentId, alertConfig);
+            id = configRepository.insertAlertConfig(agentRollupId, alertConfig);
         } catch (DuplicateMBeanObjectNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
+        alertConfig = alertConfig.toBuilder()
+                .setId(id)
+                .build();
         return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
     }
 
+    // central supports alert configs on rollups
     @POST(path = "/backend/config/alerts/update", permission = "agent:config:edit:alert")
-    String updateAlert(@BindAgentId String agentId, @BindRequest AlertConfigDto configDto)
-            throws Exception {
+    String updateAlert(@BindAgentRollupId String agentRollupId,
+            @BindRequest AlertConfigDto configDto) throws Exception {
         AlertConfig alertConfig = configDto.convert(configRepository.getSecretKey());
         String errorResponse = validate(alertConfig);
         if (errorResponse != null) {
             return errorResponse;
         }
-        configRepository.updateAlertConfig(agentId, alertConfig, configDto.version().get());
+        configRepository.updateAlertConfig(agentRollupId, alertConfig, configDto.version().get());
         return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
+    }
+
+    // central supports alert configs on rollups
+    @POST(path = "/backend/config/alerts/remove", permission = "agent:config:edit:alert")
+    void removeAlert(@BindAgentRollupId String agentRollupId,
+            @BindRequest AlertConfigRequest request) throws Exception {
+        configRepository.deleteAlertConfig(agentRollupId, request.id().get());
     }
 
     private @Nullable String validate(AlertConfig alertConfig) throws Exception {
@@ -181,15 +195,9 @@ class AlertConfigJsonService {
         return sb.toString();
     }
 
-    @POST(path = "/backend/config/alerts/remove", permission = "agent:config:edit:alert")
-    void removeAlert(@BindAgentId String agentId, @BindRequest AlertConfigRequest request)
-            throws Exception {
-        configRepository.deleteAlertConfig(agentId, request.version().get());
-    }
-
     @Value.Immutable
     interface AlertConfigRequest {
-        Optional<String> version();
+        Optional<String> id();
     }
 
     @Value.Immutable
@@ -211,6 +219,7 @@ class AlertConfigJsonService {
         abstract @Nullable Integer thresholdMillis();
         abstract @Nullable Integer timePeriodSeconds();
         abstract ImmutableList<String> emailAddresses();
+        abstract Optional<String> id(); // absent for insert operations
         abstract Optional<String> version(); // absent for insert operations
 
         private AlertConfig convert(SecretKey secretKey) throws GeneralSecurityException {
@@ -263,8 +272,12 @@ class AlertConfigJsonService {
             if (timePeriodSeconds != null) {
                 builder.setTimePeriodSeconds(timePeriodSeconds);
             }
-            return builder.addAllEmailAddress(emailAddresses())
-                    .build();
+            builder.addAllEmailAddress(emailAddresses());
+            Optional<String> id = id();
+            if (id.isPresent()) {
+                builder.setId(id.get());
+            }
+            return builder.build();
         }
 
         private static AlertConfigDto create(AlertConfig alertConfig) {
@@ -313,6 +326,7 @@ class AlertConfigJsonService {
             return builder.gaugeUnit(gauge == null ? "" : gauge.unit())
                     .gaugeGrouping(gauge == null ? "" : gauge.grouping())
                     .addAllEmailAddresses(alertConfig.getEmailAddressList())
+                    .id(alertConfig.getId())
                     .version(Versions.getVersion(alertConfig))
                     .build();
         }

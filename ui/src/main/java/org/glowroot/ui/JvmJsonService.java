@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
-import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
@@ -81,17 +81,18 @@ class JvmJsonService {
                 "java.library.path", "sun.boot.class.path");
     }
 
-    private final AgentRepository agentRepository;
+    private final EnvironmentRepository environmentRepository;
     private final @Nullable LiveJvmService liveJvmService;
 
-    JvmJsonService(AgentRepository agentRepository, @Nullable LiveJvmService liveJvmService) {
-        this.agentRepository = agentRepository;
+    JvmJsonService(EnvironmentRepository environmentRepository,
+            @Nullable LiveJvmService liveJvmService) {
+        this.environmentRepository = environmentRepository;
         this.liveJvmService = liveJvmService;
     }
 
     @GET(path = "/backend/jvm/environment", permission = "agent:jvm:environment")
     String getEnvironment(@BindAgentId String agentId) throws Exception {
-        Environment environment = agentRepository.readEnvironment(agentId);
+        Environment environment = environmentRepository.read(agentId);
         if (environment == null) {
             return "{}";
         }
@@ -203,7 +204,7 @@ class JvmJsonService {
         if (!liveJvmService.isAvailable(agentId)) {
             return "{\"agentNotConnected\":true}";
         }
-        Environment environment = agentRepository.readEnvironment(agentId);
+        Environment environment = environmentRepository.read(agentId);
         checkNotNull(environment);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -444,7 +445,7 @@ class JvmJsonService {
     }
 
     private String getAgentVersion(String agentId) throws Exception {
-        Environment environment = agentRepository.readEnvironment(agentId);
+        Environment environment = environmentRepository.read(agentId);
         if (environment == null) {
             return "unknown";
         }

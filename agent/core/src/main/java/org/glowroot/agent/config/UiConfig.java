@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.glowroot.agent.config;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 @Value.Immutable
@@ -25,13 +26,15 @@ public abstract class UiConfig {
 
     @Value.Default
     public String defaultDisplayedTransactionType() {
-        return "Web";
+        return ConfigDefaults.DEFAULT_DISPLAYED_TRANSACTION_TYPE;
     }
 
     @Value.Default
     @SuppressWarnings("immutables")
     public ImmutableList<Double> defaultDisplayedPercentiles() {
-        return ImmutableList.of(50.0, 95.0, 99.0);
+        return ImmutableList.of(ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_1,
+                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_2,
+                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_3);
     }
 
     public AgentConfig.UiConfig toProto() {

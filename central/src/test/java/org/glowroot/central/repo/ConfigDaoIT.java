@@ -18,20 +18,20 @@ package org.glowroot.central.repo;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TriggeredAlertDaoIT {
-
-    private static final String AGENT_ID = "xyz";
+public class ConfigDaoIT {
 
     private static Cluster cluster;
     private static Session session;
-    private static TriggeredAlertDao triggeredAlertDao;
+    private static ConfigDao configDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -41,9 +41,7 @@ public class TriggeredAlertDaoIT {
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
 
-        triggeredAlertDao = new TriggeredAlertDao(session);
-
-        session.execute("truncate triggered_alert");
+        configDao = new ConfigDao(session);
     }
 
     @AfterClass
@@ -53,22 +51,37 @@ public class TriggeredAlertDaoIT {
         SharedSetupRunListener.stopCassandra();
     }
 
-    @Test
-    public void shouldNotExist() throws Exception {
-        assertThat(triggeredAlertDao.exists(AGENT_ID, "1111")).isFalse();
+    @Before
+    public void before() {
+        session.execute("truncate config");
     }
 
     @Test
-    public void shouldExistAfterInsert() throws Exception {
-        triggeredAlertDao.insert(AGENT_ID, "2222");
-        assertThat(triggeredAlertDao.exists(AGENT_ID, "1111")).isFalse();
-        assertThat(triggeredAlertDao.exists(AGENT_ID, "2222")).isTrue();
+    public void shouldStoreAgentConfig() throws Exception {
+        // given
+        AgentConfig agentConfig = AgentConfig.newBuilder()
+                .setAgentVersion("123")
+                .build();
+        configDao.store("a", null, agentConfig);
+        // when
+        AgentConfig readAgentConfig = configDao.read("a");
+        // then
+        assertThat(readAgentConfig).isEqualTo(agentConfig);
     }
 
     @Test
-    public void shouldNotExistAfterDelete() throws Exception {
-        triggeredAlertDao.insert(AGENT_ID, "3333");
-        triggeredAlertDao.delete(AGENT_ID, "3333");
-        assertThat(triggeredAlertDao.exists(AGENT_ID, "3333")).isFalse();
+    public void shouldNotOverwriteExistingAgentConfig() throws Exception {
+        // given
+        AgentConfig agentConfig = AgentConfig.newBuilder()
+                .setAgentVersion("123")
+                .build();
+        configDao.store("a", null, agentConfig);
+        configDao.store("a", null, AgentConfig.newBuilder()
+                .setAgentVersion("456")
+                .build());
+        // when
+        AgentConfig readAgentConfig = configDao.read("a");
+        // then
+        assertThat(readAgentConfig).isEqualTo(agentConfig);
     }
 }

@@ -75,8 +75,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
+import org.glowroot.central.RollupService.AgentRollupConsumer;
 import org.glowroot.central.RollupService.AlertConfigConsumer;
-import org.glowroot.central.RollupService.LeafAgentRollupConsumer;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.TriggeredAlertDao;
@@ -84,7 +84,6 @@ import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.util.Styles;
-import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 
@@ -183,7 +182,7 @@ class PingAndSyntheticAlertService implements Runnable {
     }
 
     private void consumeLeafAgentRollups(AgentRollup agentRollup,
-            LeafAgentRollupConsumer leafAgentRollupConsumer) throws Exception {
+            AgentRollupConsumer leafAgentRollupConsumer) throws Exception {
         List<AgentRollup> childAgentRollups = agentRollup.children();
         if (childAgentRollups.isEmpty()) {
             leafAgentRollupConsumer.accept(agentRollup);
@@ -317,13 +316,12 @@ class PingAndSyntheticAlertService implements Runnable {
     private void sendPingOrSyntheticAlertIfStatusChanged(String agentId, String agentDisplay,
             AlertConfig alertConfig, boolean currentlyTriggered, @Nullable String errorMessage)
             throws Exception {
-        String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, version);
+        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, alertConfig.getId());
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertDao.delete(agentId, version);
+            triggeredAlertDao.delete(agentId, alertConfig.getId());
             sendPingOrSyntheticAlert(agentDisplay, alertConfig, true, null);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertDao.insert(agentId, version);
+            triggeredAlertDao.insert(agentId, alertConfig.getId());
             sendPingOrSyntheticAlert(agentDisplay, alertConfig, false, errorMessage);
         }
     }

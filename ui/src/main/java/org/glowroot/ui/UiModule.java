@@ -31,6 +31,7 @@ import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
@@ -54,6 +55,7 @@ public class UiModule {
             @Nullable LiveJvmService liveJvmService,
             final ConfigRepository configRepository,
             AgentRepository agentRepository,
+            EnvironmentRepository environmentRepository,
             TransactionTypeRepository transactionTypeRepository,
             AggregateRepository aggregateRepository,
             TraceAttributeNameRepository traceAttributeNameRepository,
@@ -95,7 +97,8 @@ public class UiModule {
                 transactionCommonService, traceRepository, rollupLevelService, clock);
         ReportJsonService reportJsonService =
                 new ReportJsonService(aggregateRepository, agentRepository, gaugeValueRepository);
-        ConfigJsonService configJsonService = new ConfigJsonService(configRepository);
+        ConfigJsonService configJsonService =
+                new ConfigJsonService(agentRepository, configRepository);
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, agentRepository, configRepository);
         AlertConfigJsonService alertConfigJsonService =
@@ -109,7 +112,7 @@ public class UiModule {
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
         jsonServices.add(gaugeValueJsonService);
-        jsonServices.add(new JvmJsonService(agentRepository, liveJvmService));
+        jsonServices.add(new JvmJsonService(environmentRepository, liveJvmService));
         jsonServices.add(reportJsonService);
         jsonServices.add(configJsonService);
         jsonServices.add(new AgentConfigJsonService(configRepository, agentRepository));

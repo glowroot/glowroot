@@ -18,6 +18,7 @@ package org.glowroot.agent.embedded.init;
 import java.io.Closeable;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -29,6 +30,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +49,9 @@ import org.glowroot.agent.init.JRebelWorkaround;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
+import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.ui.CreateUiModuleBuilder;
@@ -153,7 +157,8 @@ class EmbeddedAgentModule {
 
                         // now inject the real collector into the proxy
                         CollectorImpl collectorImpl = new CollectorImpl(
-                                simpleRepoModule.getAgentDao(), simpleRepoModule.getAggregateDao(),
+                                simpleRepoModule.getEnvironmentDao(),
+                                simpleRepoModule.getAggregateDao(),
                                 simpleRepoModule.getTraceDao(),
                                 simpleRepoModule.getGaugeValueDao());
                         collectorProxy.setInstance(collectorImpl);
@@ -205,7 +210,8 @@ class EmbeddedAgentModule {
                     .clock(clock)
                     .liveJvmService(agentModule.getLiveJvmService())
                     .configRepository(simpleRepoModule.getConfigRepository())
-                    .agentRepository(simpleRepoModule.getAgentDao())
+                    .agentRepository(new AgentRepositoryImpl())
+                    .environmentRepository(simpleRepoModule.getEnvironmentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .traceAttributeNameRepository(
                             simpleRepoModule.getTraceAttributeNameRepository())
@@ -231,7 +237,8 @@ class EmbeddedAgentModule {
                     .clock(clock)
                     .liveJvmService(null)
                     .configRepository(simpleRepoModule.getConfigRepository())
-                    .agentRepository(simpleRepoModule.getAgentDao())
+                    .agentRepository(new AgentRepositoryImpl())
+                    .environmentRepository(simpleRepoModule.getEnvironmentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .traceAttributeNameRepository(
                             simpleRepoModule.getTraceAttributeNameRepository())
@@ -313,6 +320,28 @@ class EmbeddedAgentModule {
         @Override
         public void lazyRegisterMBean(Object object, String name) {
             lazyPlatformMBeanServer.lazyRegisterMBean(object, name);
+        }
+    }
+
+    private static class AgentRepositoryImpl implements AgentRepository {
+
+        @Override
+        public List<AgentRollup> readAgentRollups() {
+            return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
+                    .id("")
+                    .display("")
+                    .agent(true)
+                    .build());
+        }
+
+        @Override
+        public String readAgentRollupDisplay(String agentRollupId) {
+            return "";
+        }
+
+        @Override
+        public boolean isAgent(String agentId) {
+            return true;
         }
     }
 }

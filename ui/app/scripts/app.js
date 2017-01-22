@@ -140,6 +140,11 @@ glowroot.run([
     };
 
     $rootScope.agentRollupUrl = function (agentRollup) {
+      var query = $rootScope.agentRollupQuery(agentRollup);
+      return $location.path().substring(1) + queryStrings.encodeObject(query);
+    };
+
+    $rootScope.agentRollupQuery = function (agentRollup) {
       // preserve existing query string
       var search = angular.copy($location.search());
       delete search['agent-rollup-id'];
@@ -151,7 +156,7 @@ glowroot.run([
         query['agent-rollup-id'] = agentRollup.id;
       }
       angular.merge(query, search);
-      return $location.path().substring(1) + queryStrings.encodeObject(query);
+      return query;
     };
 
     $rootScope.transactionTypes = function () {

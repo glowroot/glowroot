@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.AdvancedConfig;
-import org.glowroot.agent.config.AlertConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.GaugeConfig;
 import org.glowroot.agent.config.InstrumentationConfig;
@@ -196,23 +195,14 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentId) {
-        List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
-        for (AlertConfig config : configService.getAlertConfigs()) {
-            configs.add(config.toProto());
-        }
-        return configs;
+    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentRollupId) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public @Nullable AgentConfig.AlertConfig getAlertConfig(String agentId, String version) {
-        for (AlertConfig alertConfig : configService.getAlertConfigs()) {
-            AgentConfig.AlertConfig config = alertConfig.toProto();
-            if (Versions.getVersion(config).equals(version)) {
-                return config;
-            }
-        }
-        return null;
+    public @Nullable AgentConfig.AlertConfig getAlertConfig(String agentRollupId,
+            String alertConfigId) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -338,17 +328,19 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateTransactionConfig(String agentId,
             AgentConfig.TransactionConfig updatedConfig, String priorVersion) throws Exception {
+        TransactionConfig config = TransactionConfig.create(updatedConfig);
         synchronized (writeLock) {
             String currVersion =
                     Versions.getVersion(configService.getTransactionConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
-            configService.updateTransactionConfig(TransactionConfig.create(updatedConfig));
+            configService.updateTransactionConfig(config);
         }
     }
 
     @Override
     public void insertGaugeConfig(String agentId, AgentConfig.GaugeConfig gaugeConfig)
             throws Exception {
+        GaugeConfig config = GaugeConfig.create(gaugeConfig);
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             // check for duplicate mbeanObjectName
@@ -357,14 +349,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
                     throw new DuplicateMBeanObjectNameException();
                 }
             }
-            // check for exact duplicate
-            String version = Versions.getVersion(gaugeConfig);
-            for (GaugeConfig loopConfig : configs) {
-                if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
-                    throw new IllegalStateException("This exact gauge already exists");
-                }
-            }
-            configs.add(GaugeConfig.create(gaugeConfig));
+            // no need to check for exact match since redundant with dup mbean object name check
+            configs.add(config);
             configService.updateGaugeConfigs(configs);
         }
     }
@@ -372,6 +358,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateGaugeConfig(String agentId, AgentConfig.GaugeConfig gaugeConfig,
             String priorVersion) throws Exception {
+        GaugeConfig config = GaugeConfig.create(gaugeConfig);
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             boolean found = false;
@@ -379,12 +366,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
                 GaugeConfig loopConfig = i.next();
                 String loopVersion = Versions.getVersion(loopConfig.toProto());
                 if (loopVersion.equals(priorVersion)) {
-                    i.set(GaugeConfig.create(gaugeConfig));
+                    i.set(config);
                     found = true;
-                    break;
                 } else if (loopConfig.mbeanObjectName().equals(gaugeConfig.getMbeanObjectName())) {
                     throw new DuplicateMBeanObjectNameException();
                 }
+                // no need to check for exact match since redundant with dup mbean object name check
             }
             if (!found) {
                 throw new OptimisticLockException();
@@ -401,7 +388,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
             for (ListIterator<GaugeConfig> i = configs.listIterator(); i.hasNext();) {
                 GaugeConfig loopConfig = i.next();
                 String loopVersion = Versions.getVersion(loopConfig.toProto());
-                if (version.equals(loopVersion)) {
+                if (loopVersion.equals(version)) {
                     i.remove();
                     found = true;
                     break;
@@ -415,79 +402,38 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertAlertConfig(String agentId, AgentConfig.AlertConfig alertConfig)
-            throws Exception {
-        synchronized (writeLock) {
-            List<AlertConfig> configs =
-                    Lists.newArrayList(configService.getAlertConfigs());
-            // check for exact duplicate
-            String version = Versions.getVersion(alertConfig);
-            for (AlertConfig loopConfig : configs) {
-                if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
-                    throw new IllegalStateException("This exact alert already exists");
-                }
-            }
-            configs.add(AlertConfig.create(alertConfig));
-            configService.updateAlertConfigs(configs);
-        }
+    public String insertAlertConfig(String agentRollupId,
+            AgentConfig.AlertConfig alertConfigWithoutId) throws Exception {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateAlertConfig(String agentId, AgentConfig.AlertConfig alertConfig,
+    public void updateAlertConfig(String agentRollupId, AgentConfig.AlertConfig alertConfig,
             String priorVersion) throws Exception {
-        synchronized (writeLock) {
-            List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
-            boolean found = false;
-            for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
-                AlertConfig loopConfig = i.next();
-                String loopVersion = Versions.getVersion(loopConfig.toProto());
-                if (loopVersion.equals(priorVersion)) {
-                    i.set(AlertConfig.create(alertConfig));
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                throw new OptimisticLockException();
-            }
-            configService.updateAlertConfigs(configs);
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void deleteAlertConfig(String agentId, String version) throws Exception {
-        synchronized (writeLock) {
-            List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
-            boolean found = false;
-            for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
-                AlertConfig loopConfig = i.next();
-                String loopVersion = Versions.getVersion(loopConfig.toProto());
-                if (version.equals(loopVersion)) {
-                    i.remove();
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                throw new OptimisticLockException();
-            }
-            configService.updateAlertConfigs(configs);
-        }
+    public void deleteAlertConfig(String agentRollupId, String alertConfigId) throws Exception {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateUiConfig(String agentId, AgentConfig.UiConfig uiConfig, String priorVersion)
             throws Exception {
+        UiConfig config = UiConfig.create(uiConfig);
         synchronized (writeLock) {
             String currVersion = Versions.getVersion(configService.getUiConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
-            configService.updateUiConfig(UiConfig.create(uiConfig));
+            configService.updateUiConfig(config);
         }
     }
 
     @Override
     public void updatePluginConfig(String agentId, String pluginId,
             List<PluginProperty> properties, String priorVersion) throws Exception {
+        PluginDescriptor pluginDescriptor = getPluginDescriptor(pluginId);
+        PluginConfig config = PluginConfig.create(pluginDescriptor, properties);
         synchronized (writeLock) {
             List<PluginConfig> configs = Lists.newArrayList(configService.getPluginConfigs());
             boolean found = false;
@@ -496,8 +442,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
                 if (pluginId.equals(loopPluginConfig.id())) {
                     String loopVersion = Versions.getVersion(loopPluginConfig.toProto());
                     checkVersionsEqual(loopVersion, priorVersion);
-                    PluginDescriptor pluginDescriptor = getPluginDescriptor(pluginId);
-                    i.set(PluginConfig.create(pluginDescriptor, properties));
+                    i.set(config);
                     found = true;
                     break;
                 }
@@ -510,17 +455,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void insertInstrumentationConfig(String agentId,
             AgentConfig.InstrumentationConfig instrumentationConfig) throws Exception {
+        InstrumentationConfig config = InstrumentationConfig.create(instrumentationConfig);
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
-            // check for exact duplicate
-            String version = Versions.getVersion(instrumentationConfig);
-            for (InstrumentationConfig loopConfig : configs) {
-                if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
-                    throw new IllegalStateException("This exact instrumentation already exists");
-                }
-            }
-            configs.add(InstrumentationConfig.create(instrumentationConfig));
+            checkInstrumentationDoesNotExist(config, configs);
+            configs.add(config);
             configService.updateInstrumentationConfigs(configs);
         }
     }
@@ -529,6 +469,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     public void updateInstrumentationConfig(String agentId,
             AgentConfig.InstrumentationConfig instrumentationConfig, String priorVersion)
             throws Exception {
+        InstrumentationConfig config = InstrumentationConfig.create(instrumentationConfig);
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
@@ -537,9 +478,10 @@ class ConfigRepositoryImpl implements ConfigRepository {
                 InstrumentationConfig loopConfig = i.next();
                 String loopVersion = Versions.getVersion(loopConfig.toProto());
                 if (loopVersion.equals(priorVersion)) {
-                    i.set(InstrumentationConfig.create(instrumentationConfig));
+                    i.set(config);
                     found = true;
-                    break;
+                } else if (loopConfig.equals(config)) {
+                    throw new IllegalStateException("This exact instrumentation already exists");
                 }
             }
             if (!found) {
@@ -574,19 +516,17 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void insertInstrumentationConfigs(String agentId,
             List<AgentConfig.InstrumentationConfig> instrumentationConfigs) throws Exception {
+        List<InstrumentationConfig> newConfigs = Lists.newArrayList();
+        for (AgentConfig.InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
+            InstrumentationConfig config = InstrumentationConfig.create(instrumentationConfig);
+            newConfigs.add(config);
+        }
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
-            for (AgentConfig.InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
-                // check for exact duplicate
-                String version = Versions.getVersion(instrumentationConfig);
-                for (InstrumentationConfig loopConfig : configs) {
-                    if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
-                        throw new IllegalStateException(
-                                "This exact instrumentation already exists");
-                    }
-                }
-                configs.add(InstrumentationConfig.create(instrumentationConfig));
+            for (InstrumentationConfig config : newConfigs) {
+                checkInstrumentationDoesNotExist(config, configs);
+                configs.add(config);
             }
             configService.updateInstrumentationConfigs(configs);
         }
@@ -596,22 +536,23 @@ class ConfigRepositoryImpl implements ConfigRepository {
     public void updateUserRecordingConfig(String agentId,
             AgentConfig.UserRecordingConfig userRecordingConfig, String priorVersion)
             throws Exception {
+        UserRecordingConfig config = UserRecordingConfig.create(userRecordingConfig);
         synchronized (writeLock) {
             String currVersion =
                     Versions.getVersion(configService.getUserRecordingConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
-            configService
-                    .updateUserRecordingConfig(UserRecordingConfig.create(userRecordingConfig));
+            configService.updateUserRecordingConfig(config);
         }
     }
 
     @Override
     public void updateAdvancedConfig(String agentId, AgentConfig.AdvancedConfig advancedConfig,
             String priorVersion) throws Exception {
+        AdvancedConfig config = AdvancedConfig.create(advancedConfig);
         synchronized (writeLock) {
             String currVersion = Versions.getVersion(configService.getAdvancedConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
-            configService.updateAdvancedConfig(AdvancedConfig.create(advancedConfig));
+            configService.updateAdvancedConfig(config);
         }
     }
 
@@ -862,6 +803,16 @@ class ConfigRepositoryImpl implements ConfigRepository {
         configs.put(STORAGE_KEY, storageConfig);
         configs.put(LDAP_KEY, ldapConfig);
         configService.updateAdminConfigs(configs);
+    }
+
+    private static void checkInstrumentationDoesNotExist(
+            InstrumentationConfig instrumentationConfig,
+            List<InstrumentationConfig> instrumentationConfigs) {
+        for (InstrumentationConfig loopInstrumentationConfig : instrumentationConfigs) {
+            if (loopInstrumentationConfig.equals(instrumentationConfig)) {
+                throw new IllegalStateException("This exact instrumentation already exists");
+            }
+        }
     }
 
     private static FatStorageConfig withCorrectedLists(FatStorageConfig storageConfig) {

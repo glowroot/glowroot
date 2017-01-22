@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,11 +116,11 @@ public abstract class WebDriverIT {
     }
 
     private static void resetAllCentralConfig() throws Exception {
-        resetCentralConfig("transaction", ImmutableTransactionConfig.builder().build());
-        resetCentralConfig("ui", ImmutableUiConfig.builder().build());
-        resetCentralConfig("user-recording",
+        resetCentralConfig("transaction", false, ImmutableTransactionConfig.builder().build());
+        resetCentralConfig("ui", true, ImmutableUiConfig.builder().build());
+        resetCentralConfig("user-recording", false,
                 ImmutableUserRecordingConfig.builder().build());
-        resetCentralConfig("advanced", ImmutableAdvancedConfig.builder().build());
+        resetCentralConfig("advanced", true, ImmutableAdvancedConfig.builder().build());
         deleteAllGauges();
         deleteAllAlerts();
         deleteAllInstrumentation();
@@ -158,9 +158,13 @@ public abstract class WebDriverIT {
                 + "\"version\":\"$version\"}");
     }
 
-    private static void resetCentralConfig(String type, Object config) throws Exception {
-        String url = "http://localhost:" + getUiPort() + "/backend/config/" + type + "?agent-id="
-                + agentId;
+    private static void resetCentralConfig(String type, boolean useAgentRollupId, Object config)
+            throws Exception {
+        String url = "http://localhost:" + getUiPort() + "/backend/config/" + type + "?agent";
+        if (useAgentRollupId) {
+            url += "-rollup";
+        }
+        url += "-id=" + agentId;
 
         Request request = asyncHttpClient
                 .prepareGet(url)
@@ -210,16 +214,16 @@ public abstract class WebDriverIT {
     private static void deleteAllAlerts() throws Exception {
         Request request = asyncHttpClient
                 .prepareGet("http://localhost:" + getUiPort()
-                        + "/backend/config/alerts?agent-id=" + agentId)
+                        + "/backend/config/alerts?agent-rollup-id=" + agentId)
                 .build();
         Response response = asyncHttpClient.executeRequest(request).get();
         ArrayNode alerts = (ArrayNode) new ObjectMapper().readTree(response.getResponseBody());
         for (JsonNode alert : alerts) {
-            String version = alert.get("version").asText();
+            String id = alert.get("id").asText();
             request = asyncHttpClient
                     .preparePost("http://localhost:" + getUiPort()
-                            + "/backend/config/alerts/remove?agent-id=" + agentId)
-                    .setBody("{\"version\":\"" + version + "\"}")
+                            + "/backend/config/alerts/remove?agent-rollup-id=" + agentId)
+                    .setBody("{\"id\":\"" + id + "\"}")
                     .build();
             int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
             if (statusCode != 200) {

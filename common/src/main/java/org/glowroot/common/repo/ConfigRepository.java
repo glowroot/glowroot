@@ -66,27 +66,28 @@ public interface ConfigRepository {
     long ROLLUP_3_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.3.intervalMillis", HOURS.toMillis(4));
 
-    @Nullable
     TransactionConfig getTransactionConfig(String agentId) throws Exception;
 
-    @Nullable
-    UiConfig getUiConfig(String agentId) throws Exception;
+    // central supports ui config on rollups
+    UiConfig getUiConfig(String agentRollupId) throws Exception;
 
-    @Nullable
     UserRecordingConfig getUserRecordingConfig(String agentId) throws Exception;
 
-    @Nullable
-    AdvancedConfig getAdvancedConfig(String agentId) throws Exception;
+    // central supports advanced config on rollups
+    // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
+    AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception;
 
     List<GaugeConfig> getGaugeConfigs(String agentId) throws Exception;
 
     @Nullable
     GaugeConfig getGaugeConfig(String agentId, String version) throws Exception;
 
-    List<AlertConfig> getAlertConfigs(String agentId) throws Exception;
+    // central supports alert configs on rollups
+    List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception;
 
+    // central supports alert configs on rollups
     @Nullable
-    AlertConfig getAlertConfig(String agentId, String version) throws Exception;
+    AlertConfig getAlertConfig(String agentRollupId, String alertConfigId) throws Exception;
 
     List<PluginConfig> getPluginConfigs(String agentId) throws Exception;
 
@@ -136,14 +137,21 @@ public interface ConfigRepository {
 
     void deleteGaugeConfig(String agentId, String version) throws Exception;
 
-    void insertAlertConfig(String agentId, AlertConfig alertConfig) throws Exception;
-
-    void updateAlertConfig(String agentId, AlertConfig alertConfig, String priorVersion)
+    // central supports alert configs on rollups
+    // returns id
+    String insertAlertConfig(String agentRollupId, AlertConfig alertConfigWithoutId)
             throws Exception;
 
-    void deleteAlertConfig(String agentId, String version) throws Exception;
+    // central supports alert configs on rollups
+    void updateAlertConfig(String agentRollupId, AlertConfig alertConfig, String priorVersion)
+            throws Exception;
 
-    void updateUiConfig(String agentId, UiConfig uiConfig, String priorVersion) throws Exception;
+    // central supports alert configs on rollups
+    void deleteAlertConfig(String agentRollupId, String alertConfigId) throws Exception;
+
+    // central supports ui config on rollups
+    void updateUiConfig(String agentRollupId, UiConfig uiConfig, String priorVersion)
+            throws Exception;
 
     // only name, type and value of properties is used
     void updatePluginConfig(String agentId, String pluginId, List<PluginProperty> properties,
@@ -163,8 +171,10 @@ public interface ConfigRepository {
     void updateUserRecordingConfig(String agentId, UserRecordingConfig userRecordingConfig,
             String priorVersion) throws Exception;
 
-    void updateAdvancedConfig(String agentId, AdvancedConfig advancedConfig, String priorVersion)
-            throws Exception;
+    // central supports advanced config on rollups
+    // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
+    void updateAdvancedConfig(String agentRollupId, AdvancedConfig advancedConfig,
+            String priorVersion) throws Exception;
 
     void updateAgentRollupConfig(AgentRollupConfig agentRollupConfig, String priorVersion)
             throws Exception;
@@ -235,6 +245,9 @@ public interface ConfigRepository {
     class OptimisticLockException extends Exception {}
 
     @SuppressWarnings("serial")
+    class AgentConfigNotFoundException extends Exception {}
+
+    @SuppressWarnings("serial")
     class UserNotFoundException extends Exception {}
 
     @SuppressWarnings("serial")
@@ -254,4 +267,10 @@ public interface ConfigRepository {
 
     @SuppressWarnings("serial")
     class DuplicateRoleNameException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class AgentRollupNotFoundException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class AlertNotFoundException extends Exception {}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -238,7 +238,6 @@ class GaugeConfigJsonService {
     @Value.Immutable
     abstract static class GaugeConfigDto {
 
-        abstract Optional<String> agentId(); // only used in request
         abstract @Nullable String display(); // only used in response
         abstract List<String> displayPath(); // only used in response
         abstract String mbeanObjectName();

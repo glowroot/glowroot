@@ -41,7 +41,6 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 class LayoutService {
@@ -106,9 +105,8 @@ class LayoutService {
                 && permissions.jvm().gauges();
         boolean showNavbarConfig = permissions.config().view();
         // a couple of special cases for embedded ui
-        UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
-        String defaultDisplayedTransactionType =
-                uiConfig.getDefaultDisplayedTransactionType();
+        UiConfig uiConfig = configRepository.getUiConfig(AGENT_ID);
+        String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
         Set<String> transactionTypes = Sets.newTreeSet(String.CASE_INSENSITIVE_ORDER);
         List<String> storedTransactionTypes = transactionTypeRepository.read().get(AGENT_ID);
         if (storedTransactionTypes != null) {
@@ -267,22 +265,26 @@ class LayoutService {
                                 "agent:jvm:capabilities"))
                         .build())
                 .config(ImmutableConfigPermissions.builder()
-                        .view(agent && authentication.isAgentPermitted(agentRollupId,
-                                "agent:config:view"))
+                        // central supports alert configs and ui config on rollups
+                        .view(authentication.isAgentPermitted(agentRollupId, "agent:config:view"))
                         .edit(ImmutableEditConfigPermissions.builder()
                                 .transaction(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:transaction"))
                                 .gauge(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:gauge"))
-                                .alert(agent && authentication.isAgentPermitted(agentRollupId,
+                                // central supports alert configs on rollups
+                                .alert(authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:alert"))
-                                .ui(agent && authentication.isAgentPermitted(agentRollupId,
+                                // central supports ui config on rollups
+                                .ui(authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:ui"))
                                 .plugin(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:plugin"))
                                 .instrumentation(agent && authentication.isAgentPermitted(
                                         agentRollupId, "agent:config:edit:instrumentation"))
-                                .advanced(agent && authentication.isAgentPermitted(agentRollupId,
+                                // central supports advanced config on rollups
+                                // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
+                                .advanced(authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:advanced"))
                                 .userRecording(
                                         agent && authentication.isAgentPermitted(agentRollupId,
@@ -336,16 +338,8 @@ class LayoutService {
                     && permissions.jvm().gauges());
             showNavbarConfig = showNavbarConfig || permissions.config().view();
             UiConfig uiConfig = configRepository.getUiConfig(agentRollup.id());
-            String defaultDisplayedTransactionType;
-            List<Double> defaultDisplayedPercentiles;
-            if (uiConfig == null) {
-                // TODO these defaults should be shared with UiConfig defaults
-                defaultDisplayedTransactionType = "Web";
-                defaultDisplayedPercentiles = ImmutableList.of(50.0, 95.0, 99.0);
-            } else {
-                defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
-                defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
-            }
+            String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
+            List<Double> defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
             Set<String> transactionTypes = Sets.newTreeSet(String.CASE_INSENSITIVE_ORDER);
             List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.id());
             if (storedTransactionTypes != null) {

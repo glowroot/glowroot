@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.common.config;
+package org.glowroot.common.repo;
 
-public interface ConfigDefaults {
+import javax.annotation.Nullable;
 
-    String DEFAULT_DISPLAYED_TRANSACTION_TYPE = "Web";
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
-    double DEFAULT_DISPLAYED_PERCENTILE_1 = 50.0;
-    double DEFAULT_DISPLAYED_PERCENTILE_2 = 95.0;
-    double DEFAULT_DISPLAYED_PERCENTILE_3 = 99.0;
+public interface EnvironmentRepository {
 
-    int MAX_AGGREGATE_TRANSACTIONS_PER_TYPE = 500;
-    int MAX_AGGREGATE_QUERIES_PER_TYPE = 500;
-    int MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE = 500;
+    @Nullable
+    Environment read(String agentId) throws Exception;
 }

@@ -146,7 +146,7 @@
             <ul class="dropdown-menu"
                 id="gtGearsMenu">
               <li ng-if="layout.showNavbarConfig">
-                <a ng-href="config/transaction{{configQueryString()}}"
+                <a ng-href="{{configUrl()}}"
                    style="padding-top: 5px; padding-bottom: 5px;">
                   {{layout.central ? 'Agent configuration' : 'Configuration'}}
                 </a>
@@ -311,7 +311,7 @@
 <script src="scripts/controllers/report.js"></script>
 <script src="scripts/controllers/report/adhoc.js"></script>
 <script src="scripts/controllers/config.js"></script>
-<script src="scripts/controllers/config/common.js"></script>
+<script src="scripts/controllers/config/transaction.js"></script>
 <script src="scripts/controllers/config/gauge-list.js"></script>
 <script src="scripts/controllers/config/gauge.js"></script>
 <script src="scripts/controllers/config/alert-list.js"></script>
@@ -321,6 +321,7 @@
 <script src="scripts/controllers/config/plugin.js"></script>
 <script src="scripts/controllers/config/instrumentation-list.js"></script>
 <script src="scripts/controllers/config/instrumentation.js"></script>
+<script src="scripts/controllers/config/advanced.js"></script>
 <script src="scripts/controllers/config/user-recording.js"></script>
 <script src="scripts/controllers/admin.js"></script>
 <script src="scripts/controllers/admin/agent-list.js"></script>

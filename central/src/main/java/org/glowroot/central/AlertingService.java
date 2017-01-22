@@ -54,7 +54,6 @@ import org.glowroot.common.repo.Utils;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.repo.util.Gauges;
 import org.glowroot.common.repo.util.RollupLevelService;
-import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
@@ -87,20 +86,20 @@ public class AlertingService {
         this.mailService = mailService;
     }
 
-    public void checkForDeletedAlerts(String agentId) throws Exception {
-        Set<String> alertConfigVersions = Sets.newHashSet();
-        for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentId)) {
-            alertConfigVersions.add(Versions.getVersion(alertConfig));
+    public void checkForDeletedAlerts(String agentRollupId) throws Exception {
+        Set<String> alertConfigIds = Sets.newHashSet();
+        for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollupId)) {
+            alertConfigIds.add(alertConfig.getId());
         }
-        for (String alertConfigVersion : triggeredAlertDao.read(agentId)) {
-            if (!alertConfigVersions.contains(alertConfigVersion)) {
-                triggeredAlertDao.delete(agentId, alertConfigVersion);
+        for (String alertConfigId : triggeredAlertDao.read(agentRollupId)) {
+            if (!alertConfigIds.contains(alertConfigId)) {
+                triggeredAlertDao.delete(agentRollupId, alertConfigId);
             }
         }
     }
 
-    public void checkTransactionAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime) throws Exception {
+    public void checkTransactionAlert(String agentRollupId, String agentRollupDisplay,
+            AlertConfig alertConfig, long endTime) throws Exception {
         // validate config
         if (!alertConfig.hasTransactionPercentile()) {
             // AlertConfig has nice toString() from immutables
@@ -123,7 +122,7 @@ public class AlertingService {
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
         // startTime + 1 in order to not include the gauge value at startTime
         List<PercentileAggregate> percentileAggregates =
-                aggregateRepository.readPercentileAggregates(agentId,
+                aggregateRepository.readPercentileAggregates(agentRollupId,
                         ImmutableTransactionQuery.builder()
                                 .transactionType(alertConfig.getTransactionType())
                                 .from(startTime + 1)
@@ -140,23 +139,22 @@ public class AlertingService {
             // don't clear existing triggered alert
             return;
         }
-        String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, version);
+        boolean previouslyTriggered = triggeredAlertDao.exists(agentRollupId, alertConfig.getId());
         long valueAtPercentile = durationNanosHistogram
                 .getValueAtPercentile(alertConfig.getTransactionPercentile().getValue());
         boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS
                 .toNanos(alertConfig.getThresholdMillis().getValue());
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertDao.delete(agentId, version);
-            sendTransactionAlert(agentDisplay, alertConfig, true);
+            triggeredAlertDao.delete(agentRollupId, alertConfig.getId());
+            sendTransactionAlert(agentRollupDisplay, alertConfig, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertDao.insert(agentId, version);
-            sendTransactionAlert(agentDisplay, alertConfig, false);
+            triggeredAlertDao.insert(agentRollupId, alertConfig.getId());
+            sendTransactionAlert(agentRollupDisplay, alertConfig, false);
         }
     }
 
-    public void checkGaugeAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime) throws Exception {
+    public void checkGaugeAlert(String agentRollupId, String agentRollupDisplay,
+            AlertConfig alertConfig, long endTime) throws Exception {
         if (!alertConfig.hasGaugeThreshold()) {
             // AlertConfig has nice toString() from immutables
             logger.warn("alert config missing gaugeThreshold: {}", alertConfig);
@@ -166,7 +164,7 @@ public class AlertingService {
         long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
         // startTime + 1 in order to not include the gauge value at startTime
-        List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentId,
+        List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
                 alertConfig.getGaugeName(), startTime + 1, endTime, rollupLevel);
         if (gaugeValues.isEmpty()) {
             return;
@@ -181,38 +179,35 @@ public class AlertingService {
         // (see above conditional), so totalWeight is guaranteed non-zero
         checkState(totalWeight != 0);
         double average = totalWeightedValue / totalWeight;
-        String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, version);
+        boolean previouslyTriggered = triggeredAlertDao.exists(agentRollupId, alertConfig.getId());
         boolean currentlyTriggered = average >= threshold;
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertDao.delete(agentId, version);
-            sendGaugeAlert(agentDisplay, alertConfig, threshold, true);
+            triggeredAlertDao.delete(agentRollupId, alertConfig.getId());
+            sendGaugeAlert(agentRollupDisplay, alertConfig, threshold, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertDao.insert(agentId, version);
-            sendGaugeAlert(agentDisplay, alertConfig, threshold, false);
+            triggeredAlertDao.insert(agentRollupId, alertConfig.getId());
+            sendGaugeAlert(agentRollupDisplay, alertConfig, threshold, false);
         }
     }
 
-    // this is only used by central
-    public void checkHeartbeatAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            boolean currentlyTriggered) throws Exception {
-        String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, version);
+    public void checkHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
+            AlertConfig alertConfig, boolean currentlyTriggered) throws Exception {
+        boolean previouslyTriggered = triggeredAlertDao.exists(agentRollupId, alertConfig.getId());
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertDao.delete(agentId, version);
-            sendHeartbeatAlert(agentDisplay, alertConfig, true);
+            triggeredAlertDao.delete(agentRollupId, alertConfig.getId());
+            sendHeartbeatAlert(agentRollupDisplay, alertConfig, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertDao.insert(agentId, version);
-            sendHeartbeatAlert(agentDisplay, alertConfig, false);
+            triggeredAlertDao.insert(agentRollupId, alertConfig.getId());
+            sendHeartbeatAlert(agentRollupDisplay, alertConfig, false);
         }
     }
 
-    private void sendTransactionAlert(String agentDisplay, AlertConfig alertConfig, boolean ok)
-            throws Exception {
+    private void sendTransactionAlert(String agentRollupDisplay, AlertConfig alertConfig,
+            boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
-        if (!agentDisplay.equals("")) {
-            subject += " - " + agentDisplay;
+        if (!agentRollupDisplay.equals("")) {
+            subject += " - " + agentRollupDisplay;
         }
         subject += " - " + alertConfig.getTransactionType();
         StringBuilder sb = new StringBuilder();
@@ -238,12 +233,12 @@ public class AlertingService {
         sendNotification(alertConfig, subject, sb.toString());
     }
 
-    private void sendGaugeAlert(String agentDisplay, AlertConfig alertConfig, double threshold,
-            boolean ok) throws Exception {
+    private void sendGaugeAlert(String agentRollupDisplay, AlertConfig alertConfig,
+            double threshold, boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
-        if (!agentDisplay.equals("")) {
-            subject += " - " + agentDisplay;
+        if (!agentRollupDisplay.equals("")) {
+            subject += " - " + agentRollupDisplay;
         }
         Gauge gauge = Gauges.getGauge(alertConfig.getGaugeName());
         subject += " - " + gauge.display();
@@ -269,12 +264,12 @@ public class AlertingService {
         sendNotification(alertConfig, subject, sb.toString());
     }
 
-    private void sendHeartbeatAlert(String agentDisplay, AlertConfig alertConfig, boolean ok)
+    private void sendHeartbeatAlert(String agentRollupDisplay, AlertConfig alertConfig, boolean ok)
             throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
-        if (!agentDisplay.equals("")) {
-            subject += " - " + agentDisplay;
+        if (!agentRollupDisplay.equals("")) {
+            subject += " - " + agentRollupDisplay;
         }
         subject += " - Heartbeat";
         StringBuilder sb = new StringBuilder();

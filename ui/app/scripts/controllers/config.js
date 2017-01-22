@@ -19,7 +19,8 @@
 glowroot.controller('ConfigCtrl', [
   '$scope',
   '$location',
-  function ($scope, $location) {
+  'queryStrings',
+  function ($scope, $location, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'gears';
@@ -62,6 +63,31 @@ glowroot.controller('ConfigCtrl', [
 
     $scope.currentUrl = function () {
       return $location.path().substring(1);
+    };
+
+    $scope.isAgentRollup = function () {
+      // using query string instead of layout.agentRollups[agentRollupId].agent in case agentRollupId doesn't exist
+      return $location.search()['agent-rollup-id'];
+    };
+
+    function agentRollupUrl(path, agentRollup) {
+      var query = $scope.agentRollupQuery(agentRollup);
+      return path + queryStrings.encodeObject(query);
+    }
+
+    $scope.agentRollupUrl = function (agentRollup) {
+      var path = $location.path().substring(1);
+      if (agentRollup.agent) {
+        return agentRollupUrl(path, agentRollup);
+      }
+      if (path === 'config/alert-list'
+          || path === 'config/alert'
+          || path === 'config/ui'
+          || path === 'config/advanced') {
+        return agentRollupUrl(path, agentRollup);
+      } else {
+        return agentRollupUrl('config/alert-list', agentRollup);
+      }
     };
 
     $scope.$on('$stateChangeSuccess', function () {

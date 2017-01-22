@@ -19,8 +19,8 @@ import java.io.File;
 import java.util.List;
 
 import org.glowroot.agent.collector.Collector;
-import org.glowroot.agent.embedded.repo.AgentDao;
 import org.glowroot.agent.embedded.repo.AggregateDao;
+import org.glowroot.agent.embedded.repo.EnvironmentDao;
 import org.glowroot.agent.embedded.repo.GaugeValueDao;
 import org.glowroot.agent.embedded.repo.TraceDao;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -31,13 +31,13 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CollectorImpl implements Collector {
 
-    private final AgentDao agentDao;
+    private final EnvironmentDao agentDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
 
-    CollectorImpl(AgentDao agentDao, AggregateDao aggregateRepository, TraceDao traceRepository,
-            GaugeValueDao gaugeValueRepository) {
+    CollectorImpl(EnvironmentDao agentDao, AggregateDao aggregateRepository,
+            TraceDao traceRepository, GaugeValueDao gaugeValueRepository) {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateRepository;
         this.traceDao = traceRepository;

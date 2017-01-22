@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 public interface AgentRepository {
 
@@ -31,10 +30,7 @@ public interface AgentRepository {
 
     String readAgentRollupDisplay(String agentRollupId) throws Exception;
 
-    boolean isAgentId(String agentId);
-
-    @Nullable
-    Environment readEnvironment(String agentId) throws Exception;
+    boolean isAgent(String agentRollupId);
 
     @Value.Immutable
     @Styles.AllParameters

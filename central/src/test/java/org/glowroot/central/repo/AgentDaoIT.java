@@ -26,9 +26,6 @@ import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,58 +55,13 @@ public class AgentDaoIT {
 
     @Before
     public void before() {
-        session.execute("truncate agent");
         session.execute("truncate agent_rollup");
-    }
-
-    @Test
-    public void shouldStoreAgentConfig() throws Exception {
-        // given
-        AgentConfig agentConfig = AgentConfig.newBuilder()
-                .setAgentVersion("123")
-                .build();
-        agentDao.store("a", null, Environment.getDefaultInstance(), agentConfig);
-        // when
-        AgentConfig readAgentConfig = agentDao.readAgentConfig("a");
-        // then
-        assertThat(readAgentConfig).isEqualTo(agentConfig);
-    }
-
-    @Test
-    public void shouldNotOverwriteExistingAgentConfig() throws Exception {
-        // given
-        AgentConfig agentConfig = AgentConfig.newBuilder()
-                .setAgentVersion("123")
-                .build();
-        agentDao.store("a", null, Environment.getDefaultInstance(), agentConfig);
-        agentDao.store("a", null, Environment.getDefaultInstance(), AgentConfig.newBuilder()
-                .setAgentVersion("456")
-                .build());
-        // when
-        AgentConfig readAgentConfig = agentDao.readAgentConfig("a");
-        // then
-        assertThat(readAgentConfig).isEqualTo(agentConfig);
-    }
-
-    @Test
-    public void shouldStoreEnvironment() throws Exception {
-        // given
-        Environment environment = Environment.newBuilder()
-                .setHostInfo(HostInfo.newBuilder()
-                        .setHostName("hosty"))
-                .build();
-        agentDao.store("a", null, environment, AgentConfig.getDefaultInstance());
-        // when
-        Environment readEnvironment = agentDao.readEnvironment("a");
-        // then
-        assertThat(readEnvironment).isEqualTo(environment);
     }
 
     @Test
     public void shouldReadAgentRollups() throws Exception {
         // given
-        agentDao.store("a", null, Environment.getDefaultInstance(),
-                AgentConfig.getDefaultInstance());
+        agentDao.store("a", null);
         // when
         List<AgentRollup> agentRollups = agentDao.readAgentRollups();
         // then
@@ -122,8 +74,7 @@ public class AgentDaoIT {
     @Test
     public void shouldReadNullAgentRollup() throws Exception {
         // given
-        agentDao.store("a", null, Environment.getDefaultInstance(),
-                AgentConfig.getDefaultInstance());
+        agentDao.store("a", null);
         // when
         List<String> agentRollupIds = agentDao.readAgentRollupIds("a");
         // then
@@ -133,8 +84,7 @@ public class AgentDaoIT {
     @Test
     public void shouldReadSingleLevelAgentRollup() throws Exception {
         // given
-        agentDao.store("a", "x", Environment.getDefaultInstance(),
-                AgentConfig.getDefaultInstance());
+        agentDao.store("a", "x");
         // when
         List<String> agentRollupIds = agentDao.readAgentRollupIds("a");
         // then
@@ -144,8 +94,7 @@ public class AgentDaoIT {
     @Test
     public void shouldReadMultiLevelAgentRollup() throws Exception {
         // given
-        agentDao.store("a", "x/y/z", Environment.getDefaultInstance(),
-                AgentConfig.getDefaultInstance());
+        agentDao.store("a", "x/y/z");
         // when
         List<String> agentRollupIds = agentDao.readAgentRollupIds("a");
         // then

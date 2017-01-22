@@ -107,25 +107,25 @@ class RollupService implements Runnable {
             rollupAggregates(agentRollup, null);
             rollupGauges(agentRollup, null);
             // checking for deleted alerts doesn't depend on rollup
-            consumeLeafAgentRollups(agentRollup, this::checkForDeletedAlerts);
+            consumeAgentRollups(agentRollup, this::checkForDeletedAlerts);
             // checking transaction and gauge alerts after rollup since their calculation can depend
             // on rollups depending on time period length
             //
             // these alerts are also checked right after receiving the respective data
             // (transaction/gauge/heartbeat) from agent, but need to also check once a minute in
             // case no data has been received from agent recently
-            consumeLeafAgentRollups(agentRollup, this::checkTransactionAlerts);
-            consumeLeafAgentRollups(agentRollup, this::checkGaugeAlerts);
+            consumeAgentRollups(agentRollup, this::checkTransactionAlerts);
+            consumeAgentRollups(agentRollup, this::checkGaugeAlerts);
             // checking heartbeat alerts doesn't depend on rollups, just here for convenience
             if (stopwatch.elapsed(MINUTES) >= 4) {
                 // give agents plenty of time to re-connect after central start-up
                 // needs to be at least enough time for grpc max reconnect backoff
                 // which is 2 minutes +/- 20% jitter (see io.grpc.internal.ExponentialBackoffPolicy)
                 // but better to give a bit extra (4 minutes above) to avoid false heartbeat alert
-                consumeLeafAgentRollups(agentRollup, this::checkHeartbeatAlerts);
+                consumeAgentRollups(agentRollup, this::checkHeartbeatAlerts);
             }
             // updating agent configs doesn't depend on rollups, just here for convenience
-            consumeLeafAgentRollups(agentRollup, this::updateAgentConfigIfConnectedAndNeeded);
+            consumeAgentRollups(agentRollup, this::updateAgentConfigIfConnectedAndNeeded);
         }
     }
 
@@ -174,59 +174,58 @@ class RollupService implements Runnable {
         }
     }
 
-    private void consumeLeafAgentRollups(AgentRollup agentRollup,
-            LeafAgentRollupConsumer leafAgentRollupConsumer) throws Exception {
-        List<AgentRollup> childAgentRollups = agentRollup.children();
-        if (childAgentRollups.isEmpty()) {
-            leafAgentRollupConsumer.accept(agentRollup);
-        } else {
-            for (AgentRollup childAgentRollup : childAgentRollups) {
-                consumeLeafAgentRollups(childAgentRollup, leafAgentRollupConsumer);
-            }
+    private void consumeAgentRollups(AgentRollup agentRollup,
+            AgentRollupConsumer agentRollupConsumer) throws Exception {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            consumeAgentRollups(childAgentRollup, agentRollupConsumer);
         }
+        agentRollupConsumer.accept(agentRollup);
     }
 
     private void checkForDeletedAlerts(AgentRollup agentRollup) throws Exception {
         alertingService.checkForDeletedAlerts(agentRollup.id());
     }
 
-    private void checkTransactionAlerts(AgentRollup leafAgentRollup) throws Exception {
-        checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.TRANSACTION,
-                alertConfig -> checkTransactionAlert(leafAgentRollup.id(),
-                        leafAgentRollup.display(), alertConfig, clock.currentTimeMillis()));
+    private void checkTransactionAlerts(AgentRollup agentRollup) throws Exception {
+        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.TRANSACTION,
+                alertConfig -> checkTransactionAlert(agentRollup.id(),
+                        agentRollup.display(), alertConfig, clock.currentTimeMillis()));
     }
 
-    private void checkGaugeAlerts(AgentRollup leafAgentRollup) throws Exception {
-        checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.GAUGE,
-                alertConfig -> checkGaugeAlert(leafAgentRollup.id(), leafAgentRollup.display(),
+    private void checkGaugeAlerts(AgentRollup agentRollup) throws Exception {
+        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.GAUGE,
+                alertConfig -> checkGaugeAlert(agentRollup.id(), agentRollup.display(),
                         alertConfig, clock.currentTimeMillis()));
     }
 
-    private void checkHeartbeatAlerts(AgentRollup leafAgentRollup) throws Exception {
-        checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.HEARTBEAT,
-                alertConfig -> checkHeartbeatAlert(leafAgentRollup.id(), leafAgentRollup.display(),
+    private void checkHeartbeatAlerts(AgentRollup agentRollup) throws Exception {
+        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.HEARTBEAT,
+                alertConfig -> checkHeartbeatAlert(agentRollup.id(), agentRollup.display(),
                         alertConfig, clock.currentTimeMillis()));
     }
 
-    private void updateAgentConfigIfConnectedAndNeeded(AgentRollup leafAgentRollup)
+    private void updateAgentConfigIfConnectedAndNeeded(AgentRollup agentRollup)
             throws InterruptedException {
+        if (!agentRollup.children().isEmpty()) {
+            return;
+        }
         try {
-            downstreamService.updateAgentConfigIfConnectedAndNeeded(leafAgentRollup.id());
+            downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.id());
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error("{} - {}", leafAgentRollup.id(), e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
         }
     }
 
-    private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
+    private void checkAlerts(String agentRollupId, String agentRollupDisplay, AlertKind alertKind,
             AlertConfigConsumer check) throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
-            alertConfigs = configRepository.getAlertConfigs(agentId, alertKind);
+            alertConfigs = configRepository.getAlertConfigs(agentRollupId, alertKind);
         } catch (Exception e) {
-            logger.error("{} - {}", agentDisplay, e.getMessage(), e);
+            logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
             return;
         }
         if (alertConfigs.isEmpty()) {
@@ -239,7 +238,7 @@ class RollupService implements Runnable {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error("{} - {}", agentDisplay, e.getMessage(), e);
+                logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
             }
         }
     }
@@ -247,27 +246,29 @@ class RollupService implements Runnable {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check transaction alert",
             traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
-    private void checkTransactionAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime) throws Exception {
-        alertingService.checkTransactionAlert(agentId, agentDisplay, alertConfig, endTime);
+    private void checkTransactionAlert(String agentRollupId, String agentRollupDisplay,
+            AlertConfig alertConfig, long endTime) throws Exception {
+        alertingService.checkTransactionAlert(agentRollupId, agentRollupDisplay, alertConfig,
+                endTime);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check gauge alert",
             traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
-    private void checkGaugeAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime) throws Exception {
-        alertingService.checkGaugeAlert(agentId, agentDisplay, alertConfig, endTime);
+    private void checkGaugeAlert(String agentRollupId, String agentRollupDisplay,
+            AlertConfig alertConfig, long endTime) throws Exception {
+        alertingService.checkGaugeAlert(agentRollupId, agentRollupDisplay, alertConfig, endTime);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check heartbeat alert",
             traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
-    private void checkHeartbeatAlert(String agentId, String agentDisplay, AlertConfig alertConfig,
-            long endTime) throws Exception {
+    private void checkHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
+            AlertConfig alertConfig, long endTime) throws Exception {
         long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
-        boolean currentlyTriggered = !heartbeatDao.exists(agentId, startTime, endTime);
-        alertingService.checkHeartbeatAlert(agentId, agentDisplay, alertConfig, currentlyTriggered);
+        boolean currentlyTriggered = !heartbeatDao.exists(agentRollupId, startTime, endTime);
+        alertingService.checkHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig,
+                currentlyTriggered);
     }
 
     @VisibleForTesting
@@ -281,8 +282,8 @@ class RollupService implements Runnable {
     }
 
     @FunctionalInterface
-    interface LeafAgentRollupConsumer {
-        void accept(AgentRollup leafAgentRollup) throws Exception;
+    interface AgentRollupConsumer {
+        void accept(AgentRollup agentRollup) throws Exception;
     }
 
     @FunctionalInterface

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.glowroot.agent.embedded.repo;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -31,45 +30,28 @@ import org.glowroot.agent.embedded.util.DataSource.JdbcUpdate;
 import org.glowroot.agent.embedded.util.ImmutableColumn;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
-import org.glowroot.common.repo.AgentRepository;
-import org.glowroot.common.repo.ImmutableAgentRollup;
+import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-public class AgentDao implements AgentRepository {
+public class EnvironmentDao implements EnvironmentRepository {
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
             ImmutableColumn.of("environment", ColumnType.VARBINARY));
 
     private final DataSource dataSource;
 
-    AgentDao(DataSource dataSource) throws Exception {
+    EnvironmentDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
         // upgrade from 0.9.1 to 0.9.2
         dataSource.renameColumn("agent", "system_info", "environment");
-        dataSource.syncTable("agent", columns);
+        // upgrade from 0.9.9 to 0.9.10
+        dataSource.renameTable("agent", "environment");
+
+        dataSource.syncTable("environment", columns);
         init(dataSource);
-    }
-
-    @Override
-    public List<AgentRollup> readAgentRollups() {
-        return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
-                .id("")
-                .display("")
-                .agent(true)
-                .build());
-    }
-
-    @Override
-    public String readAgentRollupDisplay(String agentRollupId) {
-        return "";
-    }
-
-    @Override
-    public boolean isAgentId(String agentId) {
-        return true;
     }
 
     public void store(Environment environment) throws Exception {
@@ -77,7 +59,7 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
-    public @Nullable Environment readEnvironment(String agentId) throws Exception {
+    public @Nullable Environment read(String agentId) throws Exception {
         return dataSource.queryAtMostOne(new EnvironmentRowMapper());
     }
 
@@ -86,9 +68,9 @@ public class AgentDao implements AgentRepository {
     }
 
     private static void init(DataSource dataSource) throws SQLException {
-        long rowCount = dataSource.queryForLong("select count(*) from agent");
+        long rowCount = dataSource.queryForLong("select count(*) from environment");
         if (rowCount == 0) {
-            dataSource.execute("insert into agent (environment) values (null)");
+            dataSource.execute("insert into environment (environment) values (null)");
         } else {
             checkState(rowCount == 1);
         }
@@ -104,7 +86,7 @@ public class AgentDao implements AgentRepository {
 
         @Override
         public @Untainted String getSql() {
-            return "update agent set environment = ?";
+            return "update environment set environment = ?";
         }
 
         @Override
@@ -117,7 +99,7 @@ public class AgentDao implements AgentRepository {
 
         @Override
         public @Untainted String getSql() {
-            return "select environment from agent where environment is not null";
+            return "select environment from environment where environment is not null";
         }
 
         @Override

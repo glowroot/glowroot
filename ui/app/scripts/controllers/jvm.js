@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot */
 
 glowroot.controller('JvmCtrl', [
   '$scope',
@@ -42,17 +42,7 @@ glowroot.controller('JvmCtrl', [
     };
 
     function agentRollupUrl(path, agentRollup) {
-      // preserve existing query string
-      var search = angular.copy($location.search());
-      delete search['agent-rollup-id'];
-      delete search['agent-id'];
-      var query = {};
-      if (agentRollup.agent) {
-        query['agent-id'] = agentRollup.id;
-      } else {
-        query['agent-rollup-id'] = agentRollup.id;
-      }
-      angular.merge(query, search);
+      var query = $scope.agentRollupQuery(agentRollup);
       return path + queryStrings.encodeObject(query);
     }
 

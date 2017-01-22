@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('ConfigCommonCtrl', [
+glowroot.controller('ConfigTransactionCtrl', [
   '$scope',
   '$http',
-  'backendUrl',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, backendUrl, confirmIfHasChanges, httpErrors) {
+  function ($scope, $http, confirmIfHasChanges, httpErrors) {
 
     if ($scope.hideMainContent()) {
       return;
@@ -41,7 +40,7 @@ glowroot.controller('ConfigCommonCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      $http.post(backendUrl + '?agent-id=' + encodeURIComponent($scope.agentId), postData)
+      $http.post('backend/config/transaction?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .then(function (response) {
             onNewData(response.data);
             deferred.resolve('Saved');
@@ -50,7 +49,7 @@ glowroot.controller('ConfigCommonCtrl', [
           });
     };
 
-    $http.get(backendUrl + '?agent-id=' + encodeURIComponent($scope.agentId))
+    $http.get('backend/config/transaction?agent-id=' + encodeURIComponent($scope.agentId))
         .then(function (response) {
           onNewData(response.data);
         }, function (response) {

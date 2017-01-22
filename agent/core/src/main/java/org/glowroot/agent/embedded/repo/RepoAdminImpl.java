@@ -32,7 +32,7 @@ class RepoAdminImpl implements RepoAdmin {
     private final List<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
     private final ConfigRepository configRepository;
-    private final AgentDao agentDao;
+    private final EnvironmentDao agentDao;
     private final GaugeValueDao gaugeValueDao;
     private final GaugeNameDao gaugeNameDao;
     private final TransactionTypeDao transactionTypeDao;
@@ -41,7 +41,7 @@ class RepoAdminImpl implements RepoAdmin {
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             CappedDatabase traceCappedDatabase, ConfigRepository configRepository,
-            AgentDao agentDao, GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
+            EnvironmentDao agentDao, GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
             TraceAttributeNameDao traceAttributeNameDao) {
         this.dataSource = dataSource;
@@ -58,7 +58,7 @@ class RepoAdminImpl implements RepoAdmin {
 
     @Override
     public void deleteAllData() throws Exception {
-        Environment environment = agentDao.readEnvironment("");
+        Environment environment = agentDao.read("");
         dataSource.deleteAll();
         agentDao.reinitAfterDeletingDatabase();
         gaugeValueDao.reinitAfterDeletingDatabase();

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2016 the original author or authors.
+  Copyright 2013-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@
              gt-width="7em"
              gt-addon="seconds"
              gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class2="col-lg-8"
+             ng-if="!isAgentRollup()">
           <div class="help-block">
             Any transaction that exceeds this amount of time will have its partial trace stored to
             disk immediately (prior to its completion).
@@ -53,7 +54,8 @@
              gt-disabled="!agentPermissions.config.edit.advanced"
              gt-width="7em"
              gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class2="col-lg-8"
+             ng-if="!isAgentRollup()">
           <div class="help-block">
             The maximum number of different transaction names in a given minute that each have their own aggregates.
             If this is exceeded in any given minute, then transactions with other transactions names will still be
@@ -109,7 +111,8 @@
              gt-disabled="!agentPermissions.config.edit.advanced"
              gt-width="7em"
              gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class2="col-lg-8"
+             ng-if="!isAgentRollup()">
           <div class="help-block">
             Maximum number of trace entries collected for a given transaction.
             This is used to limit the memory of very long transactions that would capture
@@ -127,7 +130,8 @@
              gt-disabled="!agentPermissions.config.edit.advanced"
              gt-width="7em"
              gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class2="col-lg-8"
+             ng-if="!isAgentRollup()">
           <div class="help-block">
             Maximum number of stack trace samples collected for a given transaction.
             This is used to limit the memory of very long transactions that would capture

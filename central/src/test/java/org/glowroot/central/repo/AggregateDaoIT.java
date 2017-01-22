@@ -24,11 +24,13 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.CentralStorageConfig;
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.live.ImmutableOverallQuery;
 import org.glowroot.common.live.ImmutableTransactionQuery;
@@ -53,19 +55,28 @@ import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AggregateDaoIT {
 
+    private static final AdvancedConfig DEFAULT_ADVANCED_CONFIG = AdvancedConfig.newBuilder()
+            .setMaxAggregateQueriesPerType(OptionalInt32.newBuilder()
+                    .setValue(ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE))
+            .setMaxAggregateServiceCallsPerType(OptionalInt32.newBuilder()
+                    .setValue(ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE))
+            .build();
+
     private static Cluster cluster;
     private static Session session;
     private static AgentDao agentDao;
+    private static ConfigDao configDao;
     private static AggregateDao aggregateDao;
 
     @BeforeClass
@@ -77,13 +88,13 @@ public class AggregateDaoIT {
         session.execute("use glowroot_unit_tests");
         KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
-        CentralConfigDao centralConfigDao = new CentralConfigDao(session);
         agentDao = new AgentDao(session);
-
+        configDao = new ConfigDao(session);
+        CentralConfigDao centralConfigDao = new CentralConfigDao(session);
         UserDao userDao = new UserDao(session, keyspace);
         RoleDao roleDao = new RoleDao(session, keyspace);
-        ConfigRepository configRepository =
-                new ConfigRepositoryImpl(centralConfigDao, agentDao, userDao, roleDao);
+        ConfigRepository configRepository = new ConfigRepositoryImpl(agentDao, configDao,
+                centralConfigDao, userDao, roleDao);
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         configRepository.updateCentralStorageConfig(
                 ImmutableCentralStorageConfig
@@ -103,8 +114,20 @@ public class AggregateDaoIT {
         SharedSetupRunListener.stopCassandra();
     }
 
+    @Before
+    public void before() {
+        session.execute("truncate agent_rollup");
+        session.execute("truncate config");
+    }
+
     @Test
     public void shouldRollup() throws Exception {
+
+        agentDao.store("one", null);
+        configDao.store("one", null, AgentConfig.newBuilder()
+                .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
+                .build());
+
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList
                 .of(Aggregate.SharedQueryText.newBuilder().setFullText("select 1").build());
@@ -275,8 +298,10 @@ public class AggregateDaoIT {
     @Test
     public void shouldRollupFromChildren() throws Exception {
 
-        agentDao.store("one", "the parent", Environment.getDefaultInstance(),
-                AgentConfig.getDefaultInstance());
+        agentDao.store("one", "the parent");
+        configDao.store("one", "the parent", AgentConfig.newBuilder()
+                .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
+                .build());
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList
@@ -450,8 +475,10 @@ public class AggregateDaoIT {
     @Test
     public void shouldRollupFromGrandChildren() throws Exception {
 
-        agentDao.store("one", "the gp/the parent", Environment.getDefaultInstance(),
-                AgentConfig.getDefaultInstance());
+        agentDao.store("one", "the gp/the parent");
+        configDao.store("one", "the gp/the parent", AgentConfig.newBuilder()
+                .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
+                .build());
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList

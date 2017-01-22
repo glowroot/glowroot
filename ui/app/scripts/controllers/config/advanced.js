@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,17 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('ConfigUiCtrl', [
+glowroot.controller('ConfigAdvancedCtrl', [
   '$scope',
-  '$http',
-  '$rootScope',
   '$location',
+  '$http',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, $rootScope, $location, confirmIfHasChanges, httpErrors) {
-
-    // initialize page binding object
-    $scope.page = {};
+  function ($scope, $location, $http, confirmIfHasChanges, httpErrors) {
 
     if ($scope.hideMainContent()) {
       return;
     }
-
-    $scope.$watch('page.defaultDisplayedPercentiles', function (newVal) {
-      if ($scope.config) {
-        var percentiles = [];
-        if (newVal) {
-          angular.forEach(newVal.split(','), function (percentile) {
-            percentile = percentile.trim();
-            if (percentile.length) {
-              percentiles.push(Number(percentile));
-            }
-          });
-        }
-        $scope.config.defaultDisplayedPercentiles = percentiles;
-      }
-    });
 
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
@@ -55,17 +36,17 @@ glowroot.controller('ConfigUiCtrl', [
     function onNewData(data) {
       $scope.loaded = true;
       $scope.config = data;
-      $scope.originalConfig = angular.copy(data);
-      $scope.page = {};
-
-      if ($scope.config.defaultDisplayedPercentiles) {
-        $scope.page.defaultDisplayedPercentiles = $scope.config.defaultDisplayedPercentiles.join(', ');
-      }
+      $scope.originalConfig = angular.copy($scope.config);
     }
+
+    $scope.isAgentRollup = function () {
+      // using query string instead of layout.agentRollups[agentRollupId].agent in case agentRollupId doesn't exist
+      return $location.search()['agent-rollup-id'];
+    };
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      $http.post('backend/config/ui?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId), postData)
+      $http.post('backend/config/advanced?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId), postData)
           .then(function (response) {
             onNewData(response.data);
             deferred.resolve('Saved');
@@ -74,7 +55,7 @@ glowroot.controller('ConfigUiCtrl', [
           });
     };
 
-    $http.get('backend/config/ui?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
+    $http.get('backend/config/advanced?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
         .then(function (response) {
           onNewData(response.data);
         }, function (response) {

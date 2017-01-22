@@ -41,54 +41,54 @@ public class TriggeredAlertDao {
     public TriggeredAlertDao(Session session) {
         this.session = session;
 
-        session.execute("create table if not exists triggered_alert (agent_rollup varchar,"
-                + " alert_config_version varchar, primary key (agent_rollup,"
-                + " alert_config_version)) " + WITH_LCS);
+        session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
+                + " alert_config_id varchar, primary key (agent_rollup_id, alert_config_id)) "
+                + WITH_LCS);
 
-        insertPS = session.prepare("insert into triggered_alert (agent_rollup,"
-                + " alert_config_version) values (?, ?)");
+        insertPS = session.prepare("insert into triggered_alert (agent_rollup_id,"
+                + " alert_config_id) values (?, ?)");
 
-        existsPS = session.prepare("select agent_rollup from triggered_alert where agent_rollup = ?"
-                + " and alert_config_version = ?");
+        existsPS = session.prepare("select agent_rollup_id from triggered_alert where"
+                + " agent_rollup_id = ? and alert_config_id = ?");
 
-        deletePS = session.prepare("delete from triggered_alert where agent_rollup = ?"
-                + " and alert_config_version = ?");
+        deletePS = session.prepare("delete from triggered_alert where agent_rollup_id = ?"
+                + " and alert_config_id = ?");
 
         readPS = session
-                .prepare("select alert_config_version from triggered_alert where agent_rollup = ?");
+                .prepare("select alert_config_id from triggered_alert where agent_rollup_id = ?");
     }
 
-    public boolean exists(String agentId, String alertConfigVersion) throws Exception {
+    public boolean exists(String agentRollupId, String alertConfigId) throws Exception {
         BoundStatement boundStatement = existsPS.bind();
-        boundStatement.setString(0, agentId);
-        boundStatement.setString(1, alertConfigVersion);
+        boundStatement.setString(0, agentRollupId);
+        boundStatement.setString(1, alertConfigId);
         ResultSet results = session.execute(boundStatement);
         return !results.isExhausted();
     }
 
-    public void delete(String agentId, String alertConfigVersion) throws Exception {
+    public void delete(String agentRollupId, String alertConfigId) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
-        boundStatement.setString(0, agentId);
-        boundStatement.setString(1, alertConfigVersion);
+        boundStatement.setString(0, agentRollupId);
+        boundStatement.setString(1, alertConfigId);
         session.execute(boundStatement);
     }
 
-    public void insert(String agentId, String alertConfigVersion) throws Exception {
+    public void insert(String agentRollupId, String alertConfigId) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setString(i++, alertConfigVersion);
+        boundStatement.setString(i++, agentRollupId);
+        boundStatement.setString(i++, alertConfigId);
         session.execute(boundStatement);
     }
 
-    public List<String> read(String agentId) throws Exception {
+    public List<String> read(String agentRollupId) throws Exception {
         BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, agentId);
+        boundStatement.setString(0, agentRollupId);
         ResultSet results = session.execute(boundStatement);
-        List<String> alertConfigVersions = Lists.newArrayList();
+        List<String> alertConfigIds = Lists.newArrayList();
         for (Row row : results) {
-            alertConfigVersions.add(checkNotNull(row.getString(0)));
+            alertConfigIds.add(checkNotNull(row.getString(0)));
         }
-        return alertConfigVersions;
+        return alertConfigIds;
     }
 }

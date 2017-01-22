@@ -15,9 +15,12 @@
  */
 package org.glowroot.central.repo;
 
+import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.annotation.Nullable;
 
@@ -35,13 +38,22 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.config.CentralStorageConfig;
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.PermissionParser;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -55,7 +67,7 @@ public class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 14;
+    private static final int CURR_SCHEMA_VERSION = 17;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -135,6 +147,19 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 14) {
             addTracePointPartialColumn();
             updateSchemaVersion(14);
+        }
+        // 0.9.9 to 0.9.10
+        if (initialSchemaVersion < 15) {
+            splitUpAgentTableAndAddAlertIdAtSameTime();
+            updateSchemaVersion(15);
+        }
+        if (initialSchemaVersion < 16) {
+            initialPopulationOfConfigForRollups();
+            updateSchemaVersion(16);
+        }
+        if (initialSchemaVersion < 17) {
+            redoOnTriggeredAlertTable();
+            updateSchemaVersion(17);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -456,6 +481,165 @@ public class SchemaUpgrade {
         addColumnIfNotExists("trace_tn_slow_point", "partial", "boolean");
         addColumnIfNotExists("trace_tt_error_point", "partial", "boolean");
         addColumnIfNotExists("trace_tn_error_point", "partial", "boolean");
+    }
+
+    private void splitUpAgentTableAndAddAlertIdAtSameTime() throws InterruptedException {
+        session.execute("create table if not exists config (agent_rollup_id varchar, config blob,"
+                + " config_update boolean, config_update_token uuid, primary key"
+                + " (agent_rollup_id)) " + WITH_LCS);
+        session.execute("create table if not exists environment (agent_id varchar,"
+                + " environment blob, primary key (agent_id)) " + WITH_LCS);
+
+        ResultSet results =
+                session.execute("select agent_rollup_id, agent from agent_rollup where one = 1");
+        List<String> agentIds = Lists.newArrayList();
+        for (Row row : results) {
+            if (row.getBool(1)) {
+                agentIds.add(checkNotNull(row.getString(0)));
+            }
+        }
+        PreparedStatement readPS = session.prepare("select environment, config, config_update,"
+                + " config_update_token from agent where agent_id = ?");
+        PreparedStatement insertEnvironmentPS =
+                session.prepare("insert into environment (agent_id, environment) values (?, ?)");
+        PreparedStatement insertConfigPS = session.prepare("insert into config (agent_rollup_id,"
+                + " config, config_update, config_update_token) values (?, ?, ?, ?)");
+        for (String agentId : agentIds) {
+            BoundStatement boundStatement = readPS.bind();
+            boundStatement.setString(0, agentId);
+            results = session.execute(boundStatement);
+            Row row = results.one();
+            if (row == null) {
+                logger.warn("agent record not found for agent id: {}", agentId);
+                continue;
+            }
+            int i = 0;
+            ByteBuffer environmentBytes = checkNotNull(row.getBytes(i++));
+            ByteBuffer configBytes = checkNotNull(row.getBytes(i++));
+            boolean configUpdate = row.getBool(i++);
+            UUID configUpdateToken = row.getUUID(i++);
+
+            boundStatement = insertEnvironmentPS.bind();
+            boundStatement.setString(0, agentId);
+            boundStatement.setBytes(1, environmentBytes);
+            session.execute(boundStatement);
+
+            AgentConfig agentConfig;
+            try {
+                agentConfig = AgentConfig.parseFrom(ByteString.copyFrom(configBytes));
+            } catch (InvalidProtocolBufferException e) {
+                logger.error(e.getMessage(), e);
+                continue;
+            }
+            List<AlertConfig> alertConfigs = agentConfig.getAlertConfigList();
+            AgentConfig.Builder updatedAgentConfig = agentConfig.toBuilder()
+                    .clearAlertConfig();
+            for (AlertConfig alertConfig : alertConfigs) {
+                updatedAgentConfig.addAlertConfig(alertConfig.toBuilder()
+                        .setId(ConfigRepositoryImpl.generateAlertConfigId()));
+            }
+            boundStatement = insertConfigPS.bind();
+            i = 0;
+            boundStatement.setString(i++, agentId);
+            boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.build().toByteArray()));
+            boundStatement.setBool(i++, configUpdate);
+            boundStatement.setUUID(i++, configUpdateToken);
+            session.execute(boundStatement);
+        }
+        dropTable("agent");
+    }
+
+    private void initialPopulationOfConfigForRollups() {
+        ResultSet results = session.execute("select agent_rollup_id, parent_agent_rollup_id, agent"
+                + " from agent_rollup where one = 1");
+        List<String> agentRollupIds = Lists.newArrayList();
+        Multimap<String, String> childAgentIds = ArrayListMultimap.create();
+        for (Row row : results) {
+            int i = 0;
+            String agentRollupId = row.getString(i++);
+            String parentAgentRollupId = row.getString(i++);
+            boolean agent = row.getBool(i++);
+            if (!agent) {
+                agentRollupIds.add(checkNotNull(agentRollupId));
+            }
+            if (parentAgentRollupId != null) {
+                childAgentIds.put(parentAgentRollupId, agentRollupId);
+            }
+        }
+
+        AgentConfig defaultAgentConfig = AgentConfig.newBuilder()
+                .setUiConfig(UiConfig.newBuilder()
+                        .setDefaultDisplayedTransactionType(
+                                ConfigDefaults.DEFAULT_DISPLAYED_TRANSACTION_TYPE)
+                        .addDefaultDisplayedPercentile(
+                                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_1)
+                        .addDefaultDisplayedPercentile(
+                                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_2)
+                        .addDefaultDisplayedPercentile(
+                                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_3))
+                .setAdvancedConfig(AdvancedConfig.newBuilder()
+                        .setMaxAggregateQueriesPerType(OptionalInt32.newBuilder()
+                                .setValue(ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE))
+                        .setMaxAggregateServiceCallsPerType(OptionalInt32.newBuilder()
+                                .setValue(ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE)))
+                .build();
+
+        PreparedStatement readPS =
+                session.prepare("select config from config where agent_rollup_id = ?");
+        PreparedStatement insertPS =
+                session.prepare("insert into config (agent_rollup_id, config) values (?, ?)");
+        for (String agentRollupId : agentRollupIds) {
+            Iterator<String> iterator = childAgentIds.get(agentRollupId).iterator();
+            if (!iterator.hasNext()) {
+                logger.warn("could not find a child agent for rollup: {}", agentRollupId);
+                BoundStatement boundStatement = insertPS.bind();
+                boundStatement.setString(0, agentRollupId);
+                boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
+                session.execute(boundStatement);
+                continue;
+            }
+            String childAgentId = iterator.next();
+            BoundStatement boundStatement = readPS.bind();
+            boundStatement.setString(0, childAgentId);
+            Row row = session.execute(boundStatement).one();
+
+            boundStatement = insertPS.bind();
+            boundStatement.setString(0, agentRollupId);
+            if (row == null) {
+                logger.warn("could not find config for agent id: {}", childAgentId);
+                boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
+            } else {
+                try {
+                    AgentConfig agentConfig = AgentConfig
+                            .parseFrom(ByteString.copyFrom(checkNotNull(row.getBytes(0))));
+                    AdvancedConfig advancedConfig = agentConfig.getAdvancedConfig();
+                    AgentConfig rollupAgentConfig = AgentConfig.newBuilder()
+                            .setUiConfig(agentConfig.getUiConfig())
+                            .setAdvancedConfig(AdvancedConfig.newBuilder()
+                                    .setMaxAggregateQueriesPerType(
+                                            advancedConfig.getMaxAggregateQueriesPerType())
+                                    .setMaxAggregateServiceCallsPerType(
+                                            advancedConfig.getMaxAggregateServiceCallsPerType()))
+                            .build();
+                    boundStatement.setBytes(1, ByteBuffer.wrap(rollupAgentConfig.toByteArray()));
+                } catch (InvalidProtocolBufferException e) {
+                    logger.error(e.getMessage(), e);
+                    boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
+                }
+            }
+            session.execute(boundStatement);
+        }
+    }
+
+    private void redoOnTriggeredAlertTable() throws InterruptedException {
+        if (columnExists("triggered_alert", "alert_config_id")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTable("triggered_alert");
+        session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
+                + " alert_config_id varchar, primary key (agent_rollup_id, alert_config_id)) "
+                + WITH_LCS);
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType) {

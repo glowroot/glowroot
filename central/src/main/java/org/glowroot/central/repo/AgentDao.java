@@ -15,12 +15,10 @@
  */
 package org.glowroot.central.repo;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,7 +30,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
@@ -42,12 +39,9 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
 
 import org.glowroot.common.config.AgentRollupConfig;
@@ -56,9 +50,6 @@ import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -69,24 +60,17 @@ public class AgentDao implements AgentRepository {
 
     private final Session session;
 
-    private final PreparedStatement insertAgentPS;
-    private final PreparedStatement insertAgentConfigOnlyPS;
-    private final PreparedStatement existsAgentPS;
-    private final PreparedStatement readEnvironmentPS;
-    private final PreparedStatement readAgentConfigPS;
-    private final PreparedStatement readAgentConfigUpdatePS;
-    private final PreparedStatement markAgentConfigUpdatedPS;
-    private final PreparedStatement deleteAgentPS;
+    private final PreparedStatement readPS;
+    private final PreparedStatement readParentIdPS;
+    private final PreparedStatement insertPS;
+    private final PreparedStatement insertLastCaptureTimePS;
 
-    private final PreparedStatement readAllAgentRollupPS;
-    private final PreparedStatement readParentAgentRollupIdPS;
-    private final PreparedStatement insertAgentRollupPS;
-    private final PreparedStatement insertAgentRollupLastCaptureTimePS;
+    private final PreparedStatement isAgentPS;
 
-    private final PreparedStatement readAgentRollupConfigPS;
-    private final PreparedStatement insertAgentRollupConfigPS;
+    private final PreparedStatement readDisplayPS;
+    private final PreparedStatement insertDisplayPS;
 
-    private final PreparedStatement deleteAgentRollupPS;
+    private final PreparedStatement deletePS;
 
     private final LoadingCache<String, Optional<String>> agentRollupIdCache =
             CacheBuilder.newBuilder().build(new AgentRollupIdCacheLoader());
@@ -94,115 +78,40 @@ public class AgentDao implements AgentRepository {
     private final LoadingCache<String, Optional<AgentRollupConfig>> agentRollupConfigCache =
             CacheBuilder.newBuilder().build(new AgentRollupConfigCacheLoader());
 
-    private final LoadingCache<String, Optional<AgentConfig>> agentConfigCache =
-            CacheBuilder.newBuilder().build(new AgentConfigCacheLoader());
-
     public AgentDao(Session session) {
         this.session = session;
 
-        session.execute("create table if not exists agent (agent_id varchar, environment blob,"
-                + " config blob, config_update boolean, config_update_token uuid,"
-                + " primary key (agent_id)) " + WITH_LCS);
-        // secondary index is needed for Cassandra 2.x (to avoid error on readAgentConfigUpdatePS)
-        session.execute(
-                "create index if not exists agent_config_update_idx on agent (config_update)");
         session.execute("create table if not exists agent_rollup (one int, agent_rollup_id varchar,"
                 + " parent_agent_rollup_id varchar, display varchar, agent boolean,"
                 + " last_capture_time timestamp, primary key (one, agent_rollup_id)) " + WITH_LCS);
 
-        insertAgentPS = session.prepare("insert into agent (agent_id, environment, config,"
-                + " config_update, config_update_token) values (?, ?, ?, ?, ?)");
-        insertAgentConfigOnlyPS = session.prepare("insert into agent (agent_id, config,"
-                + " config_update, config_update_token) values (?, ?, ?, ?)");
-        existsAgentPS = session.prepare("select agent_id from agent where agent_id = ?");
-        readEnvironmentPS = session.prepare("select environment from agent where agent_id = ?");
-        readAgentConfigPS = session.prepare("select config from agent where agent_id = ?");
-        readAgentConfigUpdatePS = session.prepare("select config, config_update_token from agent"
-                + " where agent_id = ? and config_update = true allow filtering");
-        markAgentConfigUpdatedPS = session.prepare("update agent set config_update = false,"
-                + " config_update_token = null where agent_id = ? if config_update_token = ?");
-        deleteAgentPS = session.prepare("delete from agent where agent_id = ?");
-
-        readAllAgentRollupPS = session.prepare("select agent_rollup_id, parent_agent_rollup_id,"
+        readPS = session.prepare("select agent_rollup_id, parent_agent_rollup_id,"
                 + " display, agent, last_capture_time from agent_rollup where one = 1");
-        readParentAgentRollupIdPS = session.prepare("select parent_agent_rollup_id from"
-                + " agent_rollup where one = 1 and agent_rollup_id = ?");
-        insertAgentRollupPS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
+        readParentIdPS = session.prepare("select parent_agent_rollup_id from agent_rollup where"
+                + " one = 1 and agent_rollup_id = ?");
+        insertPS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
                 + " parent_agent_rollup_id, agent) values (1, ?, ?, ?)");
-        insertAgentRollupLastCaptureTimePS = session.prepare("insert into agent_rollup (one,"
-                + " agent_rollup_id, last_capture_time) values (1, ?, ?)");
+        insertLastCaptureTimePS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
+                + " last_capture_time) values (1, ?, ?)");
 
-        readAgentRollupConfigPS = session
+        isAgentPS = session
+                .prepare("select agent from agent_rollup where one = 1 and agent_rollup_id = ?");
+
+        readDisplayPS = session
                 .prepare("select display from agent_rollup where one = 1 and agent_rollup_id = ?");
-        insertAgentRollupConfigPS = session.prepare("insert into agent_rollup (one,"
-                + " agent_rollup_id, display) values (1, ?, ?)");
-        deleteAgentRollupPS = session.prepare("delete from agent_rollup where one = 1"
-                + " and agent_rollup_id = ?");
+        insertDisplayPS = session.prepare("insert into agent_rollup (one, agent_rollup_id, display)"
+                + " values (1, ?, ?)");
+
+        deletePS =
+                session.prepare("delete from agent_rollup where one = 1 and agent_rollup_id = ?");
     }
 
     // returns stored agent config
-    public AgentConfig store(String agentId, @Nullable String agentRollupId,
-            Environment environment, AgentConfig agentConfig) throws Exception {
-        AgentConfig existingAgentConfig = readAgentConfig(agentId);
-        AgentConfig updatedAgentConfig;
-        if (existingAgentConfig == null) {
-            updatedAgentConfig = agentConfig;
-        } else {
-            // sync list of plugin properties, central property values win
-            Map<String, PluginConfig> existingPluginConfigs = Maps.newHashMap();
-            for (PluginConfig existingPluginConfig : existingAgentConfig.getPluginConfigList()) {
-                existingPluginConfigs.put(existingPluginConfig.getId(), existingPluginConfig);
-            }
-            List<PluginConfig> pluginConfigs = Lists.newArrayList();
-            for (PluginConfig agentPluginConfig : agentConfig.getPluginConfigList()) {
-                PluginConfig existingPluginConfig =
-                        existingPluginConfigs.get(agentPluginConfig.getId());
-                if (existingPluginConfig == null) {
-                    pluginConfigs.add(agentPluginConfig);
-                    continue;
-                }
-                Map<String, PluginProperty> existingProperties = Maps.newHashMap();
-                for (PluginProperty existingProperty : existingPluginConfig.getPropertyList()) {
-                    existingProperties.put(existingProperty.getName(), existingProperty);
-                }
-                List<PluginProperty> properties = Lists.newArrayList();
-                for (PluginProperty agentProperty : agentPluginConfig.getPropertyList()) {
-                    PluginProperty existingProperty =
-                            existingProperties.get(agentProperty.getName());
-                    if (existingProperty == null) {
-                        properties.add(agentProperty);
-                        continue;
-                    }
-                    // overlay existing property value
-                    properties.add(agentProperty.toBuilder()
-                            .setValue(existingProperty.getValue())
-                            .build());
-                }
-                pluginConfigs.add(PluginConfig.newBuilder()
-                        .setId(agentPluginConfig.getId())
-                        .setName(agentPluginConfig.getName())
-                        .addAllProperty(properties)
-                        .build());
-            }
-            updatedAgentConfig = existingAgentConfig.toBuilder()
-                    .clearPluginConfig()
-                    .addAllPluginConfig(pluginConfigs)
-                    .build();
-        }
-        BoundStatement boundStatement = insertAgentPS.bind();
+    public void store(String agentId, @Nullable String agentRollupId) throws Exception {
+        // insert into agent_rollup last so readEnvironment() and readAgentConfig() are more likely
+        // to return non-null
+        BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setBytes(i++, ByteBuffer.wrap(environment.toByteArray()));
-        boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
-        // this method is only called by collectInit(), and agent will not consider collectInit()
-        // to be successful until it receives updated agent config
-        boundStatement.setBool(i++, false);
-        boundStatement.setToNull(i++);
-        session.execute(boundStatement);
-        // insert into agent_rollup last so readEnvironment() and readAgentConfig() below are more
-        // likely to return non-null
-        boundStatement = insertAgentRollupPS.bind();
-        i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setBool(i++, true);
@@ -212,7 +121,7 @@ public class AgentDao implements AgentRepository {
             for (int j = agentRollupIds.size() - 1; j >= 0; j--) {
                 String loopAgentRollupId = agentRollupIds.get(j);
                 String loopParentAgentRollupId = j == 0 ? null : agentRollupIds.get(j - 1);
-                boundStatement = insertAgentRollupPS.bind();
+                boundStatement = insertPS.bind();
                 i = 0;
                 boundStatement.setString(i++, loopAgentRollupId);
                 boundStatement.setString(i++, loopParentAgentRollupId);
@@ -226,13 +135,11 @@ public class AgentDao implements AgentRepository {
         // but this will probably change, and likely to forget to invalidate agent rollup config
         // cache at that time, so...
         agentRollupConfigCache.invalidate(agentId);
-        agentConfigCache.invalidate(agentId);
-        return updatedAgentConfig;
     }
 
     @Override
     public List<AgentRollup> readAgentRollups() {
-        ResultSet results = session.execute(readAllAgentRollupPS.bind());
+        ResultSet results = session.execute(readPS.bind());
         Set<AgentRollupRecord> topLevel = Sets.newHashSet();
         Multimap<String, AgentRollupRecord> childMultimap = ArrayListMultimap.create();
         for (Row row : results) {
@@ -275,55 +182,14 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
-    public boolean isAgentId(String agentId) {
-        BoundStatement boundStatement = existsAgentPS.bind();
-        boundStatement.setString(0, agentId);
-        return !session.execute(boundStatement).isExhausted();
-    }
-
-    @Override
-    public @Nullable Environment readEnvironment(String agentId)
-            throws InvalidProtocolBufferException {
-        BoundStatement boundStatement = readEnvironmentPS.bind();
-        boundStatement.setString(0, agentId);
-        ResultSet results = session.execute(boundStatement);
-        Row row = results.one();
+    public boolean isAgent(String agentRollupId) {
+        BoundStatement boundStatement = isAgentPS.bind();
+        boundStatement.setString(0, agentRollupId);
+        Row row = session.execute(boundStatement).one();
         if (row == null) {
-            // agent must have been manually deleted
-            return null;
+            return false;
         }
-        ByteBuffer bytes = row.getBytes(0);
-        if (bytes == null) {
-            // for some reason received data from agent, but not initial environment data
-            return null;
-        }
-        return Environment.parseFrom(ByteString.copyFrom(bytes));
-    }
-
-    public @Nullable AgentConfigUpdate readForAgentConfigUpdate(String agentId)
-            throws InvalidProtocolBufferException {
-        BoundStatement boundStatement = readAgentConfigUpdatePS.bind();
-        boundStatement.setString(0, agentId);
-        ResultSet results = session.execute(boundStatement);
-        Row row = results.one();
-        if (row == null) {
-            // no pending config update for this agent (or agent has been manually deleted)
-            return null;
-        }
-        ByteBuffer bytes = checkNotNull(row.getBytes(0));
-        UUID configUpdateToken = checkNotNull(row.getUUID(1));
-        return ImmutableAgentConfigUpdate.builder()
-                .config(AgentConfig.parseFrom(ByteString.copyFrom(bytes)))
-                .configUpdateToken(configUpdateToken)
-                .build();
-    }
-
-    public void markAgentConfigUpdated(String agentId, UUID configUpdateToken) {
-        BoundStatement boundStatement = markAgentConfigUpdatedPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setUUID(i++, configUpdateToken);
-        session.execute(boundStatement);
+        return row.getBool(0);
     }
 
     // includes agentId itself
@@ -343,27 +209,11 @@ public class AgentDao implements AgentRepository {
     }
 
     ResultSetFuture updateLastCaptureTime(String agentId, long captureTime) {
-        BoundStatement boundStatement = insertAgentRollupLastCaptureTimePS.bind();
+        BoundStatement boundStatement = insertLastCaptureTimePS.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setTimestamp(i++, new Date(captureTime));
         return session.executeAsync(boundStatement);
-    }
-
-    @Nullable
-    AgentConfig readAgentConfig(String agentId) throws Exception {
-        return agentConfigCache.get(agentId).orNull();
-    }
-
-    void storeAgentConfig(String agentId, AgentConfig agentConfig) {
-        BoundStatement boundStatement = insertAgentConfigOnlyPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
-        boundStatement.setBool(i++, true);
-        boundStatement.setUUID(i++, UUIDs.random());
-        session.execute(boundStatement);
-        agentConfigCache.invalidate(agentId);
     }
 
     @Nullable
@@ -372,7 +222,7 @@ public class AgentDao implements AgentRepository {
     }
 
     void update(AgentRollupConfig agentRollupConfig) {
-        BoundStatement boundStatement = insertAgentRollupConfigPS.bind();
+        BoundStatement boundStatement = insertDisplayPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupConfig.id());
         boundStatement.setString(i++, Strings.emptyToNull(agentRollupConfig.display()));
@@ -381,12 +231,7 @@ public class AgentDao implements AgentRepository {
     }
 
     void delete(String agentRollupId) {
-        if (isAgentId(agentRollupId)) {
-            BoundStatement boundStatement = deleteAgentPS.bind();
-            boundStatement.setString(0, agentRollupId);
-            session.execute(boundStatement);
-        }
-        BoundStatement boundStatement = deleteAgentRollupPS.bind();
+        BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, agentRollupId);
         session.execute(boundStatement);
     }
@@ -444,7 +289,7 @@ public class AgentDao implements AgentRepository {
     private class AgentRollupIdCacheLoader extends CacheLoader<String, Optional<String>> {
         @Override
         public Optional<String> load(String agentId) throws Exception {
-            BoundStatement boundStatement = readParentAgentRollupIdPS.bind();
+            BoundStatement boundStatement = readParentIdPS.bind();
             boundStatement.setString(0, agentId);
             ResultSet results = session.execute(boundStatement);
             Row row = results.one();
@@ -459,7 +304,7 @@ public class AgentDao implements AgentRepository {
             extends CacheLoader<String, Optional<AgentRollupConfig>> {
         @Override
         public Optional<AgentRollupConfig> load(String agentRollupId) throws Exception {
-            BoundStatement boundStatement = readAgentRollupConfigPS.bind();
+            BoundStatement boundStatement = readDisplayPS.bind();
             boundStatement.setString(0, agentRollupId);
             ResultSet results = session.execute(boundStatement);
             Row row = results.one();
@@ -470,26 +315,6 @@ public class AgentDao implements AgentRepository {
                     .id(agentRollupId)
                     .display(Strings.nullToEmpty(row.getString(0)))
                     .build());
-        }
-    }
-
-    private class AgentConfigCacheLoader extends CacheLoader<String, Optional<AgentConfig>> {
-        @Override
-        public Optional<AgentConfig> load(String agentId) throws Exception {
-            BoundStatement boundStatement = readAgentConfigPS.bind();
-            boundStatement.setString(0, agentId);
-            ResultSet results = session.execute(boundStatement);
-            Row row = results.one();
-            if (row == null) {
-                // agent must have been manually deleted
-                return Optional.absent();
-            }
-            ByteBuffer bytes = row.getBytes(0);
-            if (bytes == null) {
-                // for some reason received data from agent, but not initial agent config
-                return Optional.absent();
-            }
-            return Optional.of(AgentConfig.parseFrom(ByteString.copyFrom(bytes)));
         }
     }
 }

@@ -406,12 +406,7 @@ glowroot.config([
     $stateProvider.state('config.transaction', {
       url: '/transaction?agent-id',
       templateUrl: 'views/config/transaction.html',
-      controller: 'ConfigCommonCtrl',
-      resolve: {
-        backendUrl: function () {
-          return 'backend/config/transaction';
-        }
-      }
+      controller: 'ConfigTransactionCtrl'
     });
     $stateProvider.state('config.gaugeList', {
       url: '/gauge-list?agent-id',
@@ -424,17 +419,17 @@ glowroot.config([
       controller: 'ConfigGaugeCtrl'
     });
     $stateProvider.state('config.alertList', {
-      url: '/alert-list?agent-id',
+      url: '/alert-list?agent-id&agent-rollup-id',
       templateUrl: 'views/config/alert-list.html',
       controller: 'ConfigAlertListCtrl'
     });
     $stateProvider.state('config.alert', {
-      url: '/alert?agent-id&v',
+      url: '/alert?agent-id&agent-rollup-id&id',
       templateUrl: 'views/config/alert.html',
       controller: 'ConfigAlertCtrl'
     });
     $stateProvider.state('config.ui', {
-      url: '/ui?agent-id',
+      url: '/ui?agent-id&agent-rollup-id',
       templateUrl: 'views/config/ui.html',
       controller: 'ConfigUiCtrl'
     });
@@ -466,12 +461,7 @@ glowroot.config([
     $stateProvider.state('config.advanced', {
       url: '/advanced?agent-id',
       templateUrl: 'views/config/advanced.html',
-      controller: 'ConfigCommonCtrl',
-      resolve: {
-        backendUrl: function () {
-          return 'backend/config/advanced';
-        }
-      }
+      controller: 'ConfigAdvancedCtrl'
     });
     $stateProvider.state('admin', {
       url: '/admin',
