@@ -434,7 +434,7 @@ glowroot.config([
       controller: 'ConfigAlertCtrl'
     });
     $stateProvider.state('config.ui', {
-      url: '/ui',
+      url: '/ui?agent-id',
       templateUrl: 'views/config/ui.html',
       controller: 'ConfigUiCtrl'
     });
@@ -459,7 +459,7 @@ glowroot.config([
       controller: 'ConfigInstrumentationCtrl'
     });
     $stateProvider.state('config.userRecording', {
-      url: '/user-recording',
+      url: '/user-recording?agent-id',
       templateUrl: 'views/config/user-recording.html',
       controller: 'ConfigUserRecordingCtrl'
     });
