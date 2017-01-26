@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,10 +127,10 @@ public class OkHttpClientAspect {
             }
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable throwable,
+        public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable TraceEntry traceEntry) {
             if (traceEntry != null) {
-                traceEntry.endWithError(throwable);
+                traceEntry.endWithError(t);
             }
         }
     }
@@ -180,11 +180,11 @@ public class OkHttpClientAspect {
             }
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable throwable,
+        public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
             if (asyncTraceEntry != null) {
                 asyncTraceEntry.stopSyncTimer();
-                asyncTraceEntry.endWithError(throwable);
+                asyncTraceEntry.endWithError(t);
             }
         }
     }

@@ -166,11 +166,11 @@ public class AsyncHttpClientAspect {
             }, DirectExecutor.INSTANCE);
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable throwable,
+        public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
             if (asyncTraceEntry != null) {
                 asyncTraceEntry.stopSyncTimer();
-                asyncTraceEntry.endWithError(throwable);
+                asyncTraceEntry.endWithError(t);
             }
         }
         // this is hacky way to find out if future ended with exception or not
