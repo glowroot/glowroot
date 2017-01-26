@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -80,6 +81,69 @@ public class GaugeCollectorTest {
     @After
     public void afterEachTest() {
         verifyNoMoreInteractions(logger);
+    }
+
+    @Test
+    public void shouldCaptureNonCounterGauge() throws Exception {
+        // given
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
+                .mbeanObjectName("test:aaa=bbb")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
+                .build();
+        when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
+                .thenReturn(555);
+
+        // when
+        List<GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
+
+        // then
+        assertThat(gaugeValues).hasSize(1);
+        assertThat(gaugeValues.get(0).getValue()).isEqualTo(555);
+        assertThat(gaugeValues.get(0).getWeight()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotCaptureCounterGauge() throws Exception {
+        // given
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
+                .mbeanObjectName("test:aaa=bbb")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", true))
+                .build();
+        when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
+                .thenReturn(555);
+
+        // need to execute run() once in order to initialize internal priorRawCounterValues map
+        gaugeCollector.run();
+
+        // when
+        List<GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
+
+        // then
+        assertThat(gaugeValues).isEmpty();
+    }
+
+    @Test
+    public void shouldCaptureCounterGauge() throws Exception {
+        // given
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
+                .mbeanObjectName("test:aaa=bbb")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", true))
+                .build();
+        when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
+                .thenReturn(555, 565);
+        when(ticker.read()).thenReturn(SECONDS.toNanos(1), SECONDS.toNanos(3));
+
+        // need to execute run() once in order to initialize internal priorRawCounterValues map
+        gaugeCollector.run();
+
+        // when
+        gaugeCollector.collectGaugeValues(gaugeConfig);
+        List<GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
+
+        // then
+        assertThat(gaugeValues).hasSize(1);
+        assertThat(gaugeValues.get(0).getValue()).isEqualTo(5); // 5 "units" per second
+        assertThat(gaugeValues.get(0).getWeight()).isEqualTo(SECONDS.toNanos(2));
     }
 
     @Test

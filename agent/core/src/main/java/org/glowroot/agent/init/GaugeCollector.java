@@ -249,7 +249,7 @@ class GaugeCollector extends ScheduledRunnable {
                     // non-counter values showing up in same chart line)
                     gaugeName.append("[counter]");
                     String gaugeNameStr = gaugeName.toString();
-                    RawCounterValue priorRawCounterValue = priorRawCounterValues.get(gaugeName);
+                    RawCounterValue priorRawCounterValue = priorRawCounterValues.get(gaugeNameStr);
                     long captureTick = ticker.read();
                     if (priorRawCounterValue != null) {
                         long intervalNanos = captureTick - priorRawCounterValue.captureTick();
