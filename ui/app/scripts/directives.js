@@ -170,6 +170,16 @@ glowroot.directive('gtFormGroup', [
           // default
           scope.gtType = 'text';
         }
+        if (scope.gtType === 'codemirror') {
+          scope.codeMirrorOpts = {
+            lineNumbers: true,
+            matchBrackets: true,
+            mode: 'text/x-java'
+          };
+          if (scope.gtDisabled()) {
+            scope.codeMirrorOpts.readOnly = 'nocursor';
+          }
+        }
         scope.$watch('gtModel', function (newValue) {
           // conditional prevents the '.' from being automatically deleted when user deletes the '3' in '2.3'
           if (conversions.toNumber(scope.ngModel) !== newValue) {

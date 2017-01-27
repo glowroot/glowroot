@@ -33,8 +33,8 @@
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <!-- intentionally not using gt-form-autofocus-on-first-input as it doesn't make the most sense on this form -->
     <div ng-form
-         gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl"
          style="padding-top: 15px;">
@@ -46,7 +46,6 @@
           <div class="radio">
             <label>
               <input type="radio"
-                     class="gt-autofocus-ignore"
                      ng-model="config.kind"
                      ng-disabled="!agentPermissions.config.edit.alert"
                      value="transaction">
@@ -56,7 +55,6 @@
           <div class="radio">
             <label>
               <input type="radio"
-                     class="gt-autofocus-ignore"
                      ng-model="config.kind"
                      ng-disabled="!agentPermissions.config.edit.alert"
                      value="gauge">
@@ -66,7 +64,6 @@
           <div class="radio">
             <label>
               <input type="radio"
-                     class="gt-autofocus-ignore"
                      ng-model="config.kind"
                      ng-disabled="!agentPermissions.config.edit.alert"
                      value="heartbeat">
@@ -76,7 +73,6 @@
           <div class="radio">
             <label>
               <input type="radio"
-                     class="gt-autofocus-ignore"
                      ng-model="config.kind"
                      ng-disabled="!agentPermissions.config.edit.alert"
                      value="ping">
@@ -86,7 +82,6 @@
           <div class="radio">
             <label>
               <input type="radio"
-                     class="gt-autofocus-ignore"
                      ng-model="config.kind"
                      ng-disabled="!agentPermissions.config.edit.alert"
                      value="synthetic">
@@ -274,16 +269,29 @@
         </div>
       </div>
       <div ng-if="config.kind === 'synthetic'">
+        <!-- the id below is needed for css style (see config.less) -->
         <div gt-form-group
-             gt-type="textarea"
+             gt-type="codemirror"
              gt-label="Synthetic user test"
              gt-model="config.syntheticUserTest"
              gt-required="loaded"
              gt-disabled="!agentPermissions.config.edit.alert"
-             gt-rows="10"
-             class="gt-alert-java-class">
+             id="gtSyntheticUserTest"
+             class="gt-alert-java-class"
+             ng-class="{'has-error': !config.syntheticUserTest}">
           <div class="help-block">
-            Note: the synthetic test is run from glowroot central, not from the agent.
+            A Java class that executes the synthetic user test.
+          </div>
+          <div class="help-block">
+            The class can be named anything.
+            The entry method must be named <em>test</em> and take a single parameter of
+            type <em>org.openqa.selenium.WebDriver</em>.
+          </div>
+          <div class="help-block">
+            Any string constants that begins with the text "ENCRYPT:" will be encrypted
+            (using two-way encryption so they can be decrypted when running the test).
+            The encryption/decryption key is unique to your glowroot central instance and is stored in the file named
+            <em>secret</em> inside the glowroot central directory.
           </div>
           <div ng-if="syntheticUserTestCompilationErrors"
                class="gt-button-message-error"

@@ -45,6 +45,13 @@
                   rows="{{gtRows ? gtRows : ''}}">
         </textarea>
       </div>
+      <div ng-switch-when="codemirror">
+        <div ui-codemirror
+             ui-codemirror-opts="codeMirrorOpts"
+             ng-model="$parent.ngModel"
+             ng-class="{'codemirror-disabled': gtDisabled()}">
+        </div>
+      </div>
       <div ng-switch-default>
         <div ng-style="{display : gtWidth ? 'inline' : 'block'}">
           <div ng-class="{'input-group' : gtAddon}">

@@ -113,6 +113,24 @@
   font-family: Cousine, monospace;
 }
 
+.CodeMirror {
+  border: 1px solid #ddd;
+}
+
+.has-error .CodeMirror {
+  border: 1px solid @gt-red;
+}
+
+#gtSyntheticUserTest .CodeMirror {
+  // tall enough for Example synthetic user test
+  // even when narrow and horizontal scrollbar appears at bottom
+  height: 400px !important;
+}
+
+#gtSyntheticUserTest .codemirror-disabled .CodeMirror {
+  background-color: #eee;
+}
+
 @media screen and (min-width: @screen-lg-min) {
   .gt-send-email-fieldset {
     margin-left: 20px;

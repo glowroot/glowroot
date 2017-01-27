@@ -24,6 +24,7 @@ var glowroot = angular.module('glowroot', [
   'ui.bootstrap.typeahead',
   'ui.bootstrap.modal',
   'ui.bootstrap.debounce',
+  'ui.codemirror',
   'ui.select',
   'ngSanitize'
 ]);

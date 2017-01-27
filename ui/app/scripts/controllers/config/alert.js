@@ -128,6 +128,22 @@ glowroot.controller('ConfigAlertCtrl', [
       if (newValue === 'transaction') {
         $scope.config.transactionType = $scope.defaultTransactionType();
       }
+      if (newValue === 'synthetic') {
+        $scope.config.syntheticUserTest = 'import org.openqa.selenium.*;\n'
+            + 'import org.openqa.selenium.support.ui.*;\n\n'
+            + 'import static org.openqa.selenium.support.ui.ExpectedConditions.*;\n\n'
+            + 'public class Example {\n\n'
+            + '    public void test(WebDriver driver) throws Exception {\n\n'
+            + '        // e.g.\n'
+            + '        driver.get("https://www.example.org");\n'
+            + '        new WebDriverWait(driver, 30).until(\n'
+            + '                  visibilityOfElementLocated(By.xpath("//h1[text()=\'Example Domain\']")));\n'
+            + '        WebElement element = driver.findElement(By.linkText("More information..."));\n'
+            + '        element.click();\n'
+            + '        // ...\n'
+            + '    }\n'
+            + '}';
+      }
     });
 
     $scope.$watch('page.timePeriodMinutes', function (newValue) {
