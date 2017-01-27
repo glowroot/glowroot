@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,7 +114,7 @@ public class Logger {
             updateLibVersion("logback.version", "1.0." + i);
             run(test);
         }
-        for (int i = 0; i <= 8; i++) {
+        for (int i = 0; i <= 9; i++) {
             updateLibVersion("slf4j.version", "1.7.21");
             updateLibVersion("logback.version", "1.1." + i);
             run(test);
@@ -159,6 +159,8 @@ public class Logger {
         updateLibVersion("log4j2x.version", "2.6.2");
         runJava7(test);
         updateLibVersion("log4j2x.version", "2.7");
+        runJava7(test);
+        updateLibVersion("log4j2x.version", "2.8");
         runJava7(test);
     }
 

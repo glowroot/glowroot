@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,9 @@ public class HttpClient {
         run(test);
         updateLibVersion("apache.httpclient.version", "4.5.2");
         updateLibVersion("apache.httpcore.version", "4.4.4");
+        run(test);
+        updateLibVersion("apache.httpclient.version", "4.5.3");
+        updateLibVersion("apache.httpcore.version", "4.4.6");
         run(test);
     }
 
@@ -237,7 +240,7 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 3; i++) {
+        for (int i = 0; i <= 6; i++) {
             updateLibVersion("spring.version", "4.3." + i + ".RELEASE");
             run(test);
         }

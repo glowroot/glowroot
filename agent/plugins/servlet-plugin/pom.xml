@@ -81,7 +81,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>4.3.5.RELEASE</version>
+      <version>4.3.6.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -89,7 +89,7 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>4.3.5.RELEASE</version>
+      <version>4.3.6.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
