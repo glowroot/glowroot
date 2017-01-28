@@ -59,6 +59,13 @@
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
       <version>0.17.3</version>
+      <exclusions>
+        <exclusion>
+          <!-- a later version of jna with a different groupId is already included by selenium  -->
+          <groupId>com.sun.jna</groupId>
+          <artifactId>jna</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.immutables</groupId>
@@ -85,14 +92,14 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>smtp</artifactId>
-        <version>1.5.6</version>
-        <exclusions>
-          <exclusion>
-            <!-- JAF included in Java SE 6+ -->
-            <groupId>javax.activation</groupId>
-            <artifactId>activation</artifactId>
-          </exclusion>
-        </exclusions>
+      <version>1.5.6</version>
+      <exclusions>
+        <exclusion>
+          <!-- JAF included in Java SE 6+ -->
+          <groupId>javax.activation</groupId>
+          <artifactId>activation</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>${checker.qual.group.id}</groupId>
