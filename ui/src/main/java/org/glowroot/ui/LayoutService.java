@@ -150,7 +150,7 @@ class LayoutService {
         return ImmutableLayout.builder()
                 .central(central)
                 .offline(offline)
-                .footerMessage("Glowroot version " + version)
+                .glowrootVersion(version)
                 .loginEnabled(true)
                 .gaugeCollectionIntervalMillis(0)
                 .showNavbarTransaction(false)
@@ -178,7 +178,7 @@ class LayoutService {
         return ImmutableLayout.builder()
                 .central(central)
                 .offline(offline)
-                .footerMessage("Glowroot version " + version)
+                .glowrootVersion(version)
                 .loginEnabled(offline ? false
                         : configRepository.namedUsersExist()
                                 || !configRepository.getLdapConfig().host().isEmpty())
@@ -391,7 +391,7 @@ class LayoutService {
 
         abstract boolean central();
         abstract boolean offline();
-        abstract String footerMessage();
+        abstract String glowrootVersion();
         abstract boolean loginEnabled();
         abstract ImmutableList<RollupConfig> rollupConfigs();
         abstract ImmutableList<Long> rollupExpirationMillis();

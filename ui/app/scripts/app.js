@@ -105,11 +105,12 @@ glowroot.run([
   '$rootScope',
   '$http',
   '$location',
+  '$window',
   '$state',
   '$timeout',
   'login',
   'queryStrings',
-  function ($rootScope, $http, $location, $state, $timeout, login, queryStrings) {
+  function ($rootScope, $http, $location, $window, $state, $timeout, login, queryStrings) {
 
     $rootScope.agentId = '';
 
@@ -233,12 +234,12 @@ glowroot.run([
 
     // with responsive design, container width doesn't change on every window resize event
     var $container = $('#container');
-    var $window = $(window);
+    var $windowjq = $(window);
     $rootScope.containerWidth = $container.width();
-    $rootScope.windowHeight = $window.height();
+    $rootScope.windowHeight = $windowjq.height();
     $(window).resize(function () {
       var containerWidth = $container.width();
-      var windowHeight = $window.height();
+      var windowHeight = $windowjq.height();
       if (containerWidth !== $rootScope.containerWidth || windowHeight !== $rootScope.windowHeight) {
         // one of the relevant dimensions has changed
         $rootScope.$apply(function () {
@@ -263,6 +264,8 @@ glowroot.run([
     }
 
     scheduleNextCheckLayout();
+
+    var glowrootVersion;
 
     $rootScope.initLayout = function () {
       // agentRollupValues is needed when using angular ng-repeat over agentRollups in case there are
@@ -295,6 +298,23 @@ glowroot.run([
         }
       });
       $rootScope.layout.timeZoneIds = timeZoneIds;
+
+      function forceRefreshDueToNewVersion(remaining) {
+        if (remaining === 0) {
+          $window.location.reload();
+        } else {
+          $rootScope.navbarErrorMessage = 'New version of Glowroot UI has been deployed, refreshing browser in '
+              + remaining + ' second' + (remaining === 1 ? '' : 's') + '...';
+          $timeout(function () {
+            forceRefreshDueToNewVersion(remaining - 1);
+          }, 1000);
+        }
+      }
+
+      if (glowrootVersion && glowrootVersion !== $rootScope.layout.glowrootVersion) {
+        forceRefreshDueToNewVersion(10);
+      }
+      glowrootVersion = $rootScope.layout.glowrootVersion;
     };
 
     $rootScope.setLayout = function (data) {
