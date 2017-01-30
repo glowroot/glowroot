@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,18 +51,15 @@ public class Netty {
         for (int i = 0; i <= 5; i++) {
             runNetty("3.10." + i + ".Final", "netty-3.x");
         }
-        for (int i = 0; i <= 42; i++) {
+        for (int i = 0; i <= 44; i++) {
             runNetty("4.0." + i + ".Final", "netty-4.x");
         }
         for (int i = 1; i <= 7; i++) {
             runNetty("4.1.0.CR" + i, "netty-4.x");
         }
-        runNetty("4.1.0.Final", "netty-4.x");
-        runNetty("4.1.1.Final", "netty-4.x");
-        runNetty("4.1.2.Final", "netty-4.x");
-        runNetty("4.1.3.Final", "netty-4.x");
-        runNetty("4.1.4.Final", "netty-4.x");
-        runNetty("4.1.5.Final", "netty-4.x");
+        for (int i = 0; i <= 8; i++) {
+            runNetty("4.1." + i + ".Final", "netty-4.x");
+        }
     }
 
     private static void vertx() throws Exception {

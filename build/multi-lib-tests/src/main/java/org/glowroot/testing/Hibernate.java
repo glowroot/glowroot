@@ -44,13 +44,14 @@ public class Hibernate {
         for (int i = 0; i <= 11; i++) {
             run("4.3." + i + ".Final");
         }
-        for (int i = 0; i <= 11; i++) {
+        for (int i = 0; i <= 12; i++) {
             runJava7("5.0." + i + ".Final");
         }
         runJava7("5.1.0.Final");
         runJava7("5.1.1.Final");
         runJava7("5.1.2.Final");
         runJava7("5.1.3.Final");
+        runJava7("5.1.4.Final");
         for (int i = 0; i <= 7; i++) {
             runJava8("5.2." + i + ".Final");
         }
