@@ -172,6 +172,7 @@ glowroot.directive('gtFormGroup', [
         }
         if (scope.gtType === 'codemirror') {
           scope.codeMirrorOpts = {
+            indentUnit: 4,
             lineNumbers: true,
             matchBrackets: true,
             mode: 'text/x-java'
