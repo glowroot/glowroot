@@ -663,6 +663,10 @@
         <plugins>
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <!-- exclude deprecated api from javadoc -->
+              <nodeprecated>true</nodeprecated>
+            </configuration>
             <executions>
               <execution>
                 <goals>
