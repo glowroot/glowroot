@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class PreparedStatementMirror extends StatementMirror {
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is setting parameter values into the prepared statement and executing it
     private BindParameterList parameters;
-    private boolean parametersCopied;
+    private boolean parametersShared;
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is setting parameter values into the prepared statement and executing it
     private @Nullable Collection<BindParameterList> batchedParameters;
@@ -52,7 +52,7 @@ class PreparedStatementMirror extends StatementMirror {
             batchedParameters = Queues.newConcurrentLinkedQueue();
         }
         batchedParameters.add(parameters);
-        parametersCopied = true;
+        parametersShared = true;
     }
 
     public Collection<BindParameterList> getBatchedParameters() {
@@ -63,8 +63,8 @@ class PreparedStatementMirror extends StatementMirror {
         }
     }
 
-    public @Nullable BindParameterList getParametersCopy() {
-        parametersCopied = true;
+    public @Nullable BindParameterList getParameters() {
+        parametersShared = true;
         return parameters;
     }
 
@@ -78,7 +78,7 @@ class PreparedStatementMirror extends StatementMirror {
 
     // remember parameterIndex starts at 1 not 0
     public void setParameterValue(int parameterIndex, @Nullable Object object) {
-        if (parametersCopied) {
+        if (parametersShared) {
             // separate method for less common path to not impact inlining budget of fast(er) path
             copyParameters();
         }
@@ -87,13 +87,13 @@ class PreparedStatementMirror extends StatementMirror {
 
     private void copyParameters() {
         parameters = BindParameterList.copyOf(parameters);
-        parametersCopied = false;
+        parametersShared = false;
     }
 
     public void clearParameters() {
-        if (parametersCopied) {
+        if (parametersShared) {
             parameters = new BindParameterList(parameters.size());
-            parametersCopied = false;
+            parametersShared = false;
         } else {
             parameters.clear();
         }
@@ -101,9 +101,9 @@ class PreparedStatementMirror extends StatementMirror {
 
     @Override
     public void clearBatch() {
-        if (parametersCopied) {
+        if (parametersShared) {
             parameters = new BindParameterList(parameters.size());
-            parametersCopied = false;
+            parametersShared = false;
         } else {
             parameters.clear();
         }
