@@ -40,13 +40,13 @@ class PreparedStatementMirror extends StatementMirror {
     // while that thread is setting parameter values into the prepared statement and executing it
     private @Nullable Collection<BindParameterList> batchedParameters;
 
-    public PreparedStatementMirror(String sql) {
+    PreparedStatementMirror(String sql) {
         this.sql = sql;
         // TODO delay creation to optimize case when bind parameter capture is disabled
         parameters = new BindParameterList(PARAMETERS_INITIAL_CAPACITY);
     }
 
-    public void addBatch() {
+    void addBatch() {
         // synchronization isn't an issue here as this method is called only by the monitored thread
         if (batchedParameters == null) {
             batchedParameters = Queues.newConcurrentLinkedQueue();
@@ -55,7 +55,7 @@ class PreparedStatementMirror extends StatementMirror {
         parametersShared = true;
     }
 
-    public Collection<BindParameterList> getBatchedParameters() {
+    Collection<BindParameterList> getBatchedParameters() {
         if (batchedParameters == null) {
             return ImmutableList.of();
         } else {
@@ -63,12 +63,13 @@ class PreparedStatementMirror extends StatementMirror {
         }
     }
 
-    public @Nullable BindParameterList getParameters() {
+    @Nullable
+    BindParameterList getParameters() {
         parametersShared = true;
         return parameters;
     }
 
-    public String getSql() {
+    String getSql() {
         return sql;
     }
 
@@ -77,7 +78,7 @@ class PreparedStatementMirror extends StatementMirror {
     }
 
     // remember parameterIndex starts at 1 not 0
-    public void setParameterValue(int parameterIndex, @Nullable Object object) {
+    void setParameterValue(int parameterIndex, @Nullable Object object) {
         if (parametersShared) {
             // separate method for less common path to not impact inlining budget of fast(er) path
             copyParameters();
@@ -90,7 +91,7 @@ class PreparedStatementMirror extends StatementMirror {
         parametersShared = false;
     }
 
-    public void clearParameters() {
+    void clearParameters() {
         if (parametersShared) {
             parameters = new BindParameterList(parameters.size());
             parametersShared = false;
@@ -111,13 +112,16 @@ class PreparedStatementMirror extends StatementMirror {
     }
 
     static class ByteArrayParameterValue {
+
         private final int length;
         private final byte /*@Nullable*/[] bytes;
-        public ByteArrayParameterValue(byte[] bytes, boolean displayAsHex) {
+
+        ByteArrayParameterValue(byte[] bytes, boolean displayAsHex) {
             length = bytes.length;
             // only retain bytes if needed for displaying as hex
             this.bytes = displayAsHex ? bytes : null;
         }
+
         @Override
         public String toString() {
             if (bytes != null) {
@@ -129,10 +133,13 @@ class PreparedStatementMirror extends StatementMirror {
     }
 
     static class StreamingParameterValue {
+
         private final Class<?> clazz;
-        public StreamingParameterValue(Class<?> clazz) {
+
+        StreamingParameterValue(Class<?> clazz) {
             this.clazz = clazz;
         }
+
         @Override
         public String toString() {
             return "{stream:" + clazz.getSimpleName() + "}";

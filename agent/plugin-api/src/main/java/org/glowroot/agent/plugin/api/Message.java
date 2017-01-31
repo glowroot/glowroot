@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,15 +46,12 @@ import org.glowroot.agent.plugin.api.internal.ReadableMessage;
  */
 public abstract class Message {
 
-    private static final int MESSAGE_CHAR_LIMIT;
+    // default is 512k characters so that memory limit is 1mb since 1 character = 2 bytes
+    private static final int MESSAGE_CHAR_LIMIT =
+            Integer.getInteger("glowroot.message.char.limit", 512 * 1024);
 
     private static final String[] EMPTY_ARGS = new String[0];
     private static final ImmutableMap<String, Object> EMPTY_DETAIL = ImmutableMap.of();
-
-    static {
-        // default is 512k characters so that memory limit is 1mb since 1 character = 2 bytes
-        MESSAGE_CHAR_LIMIT = Integer.getInteger("glowroot.message.char.limit", 512 * 1024);
-    }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static Message create(@Nullable String message) {
