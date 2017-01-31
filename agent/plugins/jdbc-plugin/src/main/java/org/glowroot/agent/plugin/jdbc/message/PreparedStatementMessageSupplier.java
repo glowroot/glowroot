@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ public class PreparedStatementMessageSupplier extends QueryMessageSupplier {
         return QueryMessage.create("jdbc execution: ", suffix);
     }
 
-    static String appendParameters(StringBuilder sb, BindParameterList parameters) {
+    static void appendParameters(StringBuilder sb, BindParameterList parameters) {
         sb.append(" [");
         boolean first = true;
         for (Object parameter : parameters) {
@@ -59,6 +59,5 @@ public class PreparedStatementMessageSupplier extends QueryMessageSupplier {
             first = false;
         }
         sb.append("]");
-        return sb.toString();
     }
 }
