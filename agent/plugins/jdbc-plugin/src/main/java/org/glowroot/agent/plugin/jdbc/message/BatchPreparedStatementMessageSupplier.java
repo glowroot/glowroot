@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,31 +22,54 @@ import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 
 public class BatchPreparedStatementMessageSupplier extends QueryMessageSupplier {
 
-    private final Collection<BindParameterList> batchedParameters;
+    // default is 512k characters so that memory limit is 1mb since 1 character = 2 bytes
+    //
+    // this same property is used to define similar limit in org.glowroot.agent.plugin.api.Message
+    private static final int MESSAGE_CHAR_LIMIT =
+            Integer.getInteger("glowroot.message.char.limit", 512 * 1024);
 
-    public BatchPreparedStatementMessageSupplier(Collection<BindParameterList> batchedParameters) {
+    private final Collection<BindParameterList> batchedParameters;
+    private final int batchSize;
+
+    public BatchPreparedStatementMessageSupplier(Collection<BindParameterList> batchedParameters,
+            int batchSize) {
         this.batchedParameters = batchedParameters;
+        this.batchSize = batchSize;
     }
 
     @Override
     public QueryMessage get() {
-        String prefix;
-        int batchSize = batchedParameters.size();
-        if (batchSize > 1) {
-            // print out number of batches to make it easy to identify
-            prefix = "jdbc execution: " + batchSize + " x ";
-        } else {
-            prefix = "jdbc execution: ";
-        }
+        // not using size() since capturedBatchSize is ConcurrentLinkedQueue
+        int capturedBatchSize = 0;
         String suffix;
         if (batchedParameters.isEmpty()) {
             suffix = "";
         } else {
             StringBuilder sb = new StringBuilder();
+            boolean exceededMessageCharLimit = false;
             for (BindParameterList oneParameters : batchedParameters) {
                 PreparedStatementMessageSupplier.appendParameters(sb, oneParameters);
+                capturedBatchSize++;
+                if (sb.length() > MESSAGE_CHAR_LIMIT) {
+                    sb.setLength(MESSAGE_CHAR_LIMIT);
+                    sb.append(" [truncated to ");
+                    sb.append(MESSAGE_CHAR_LIMIT);
+                    sb.append(" characters]");
+                    exceededMessageCharLimit = true;
+                    break;
+                }
+            }
+            if (!exceededMessageCharLimit && batchSize > capturedBatchSize) {
+                sb.append(" ...");
             }
             suffix = sb.toString();
+        }
+        String prefix;
+        if (batchSize > 1) {
+            // print out number of batches to make it easy to identify
+            prefix = "jdbc execution: " + batchSize + " x ";
+        } else {
+            prefix = "jdbc execution: ";
         }
         return QueryMessage.create(prefix, suffix);
     }

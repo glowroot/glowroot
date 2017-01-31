@@ -29,6 +29,8 @@ import org.glowroot.agent.plugin.jdbc.message.BindParameterList;
 // PreparedStatement values cannot be inspected after they have been set
 class PreparedStatementMirror extends StatementMirror {
 
+    private static final int CAPTURED_BATCH_SIZE_LIMIT = 1000;
+
     private static final int PARAMETERS_INITIAL_CAPACITY = 4;
 
     private final String sql;
@@ -39,6 +41,7 @@ class PreparedStatementMirror extends StatementMirror {
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is setting parameter values into the prepared statement and executing it
     private @Nullable Collection<BindParameterList> batchedParameters;
+    private int batchSize;
 
     PreparedStatementMirror(String sql) {
         this.sql = sql;
@@ -51,8 +54,10 @@ class PreparedStatementMirror extends StatementMirror {
         if (batchedParameters == null) {
             batchedParameters = Queues.newConcurrentLinkedQueue();
         }
-        batchedParameters.add(parameters);
-        parametersShared = true;
+        if (batchSize++ < CAPTURED_BATCH_SIZE_LIMIT) {
+            batchedParameters.add(parameters);
+            parametersShared = true;
+        }
     }
 
     Collection<BindParameterList> getBatchedParameters() {
@@ -74,7 +79,7 @@ class PreparedStatementMirror extends StatementMirror {
     }
 
     int getBatchSize() {
-        return batchedParameters == null ? 0 : batchedParameters.size();
+        return batchSize;
     }
 
     // remember parameterIndex starts at 1 not 0
@@ -109,6 +114,7 @@ class PreparedStatementMirror extends StatementMirror {
             parameters.clear();
         }
         batchedParameters = null;
+        batchSize = 0;
     }
 
     static class ByteArrayParameterValue {
