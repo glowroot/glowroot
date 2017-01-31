@@ -16,18 +16,13 @@
 package org.glowroot.ui;
 
 import java.io.File;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.util.Clock;
 import org.glowroot.ui.HttpServer.SocketBindException;
 
 class LazyHttpServer {
@@ -37,38 +32,20 @@ class LazyHttpServer {
 
     private final String bindAddress;
     private final int port;
-    private final HttpSessionManager httpSessionManager;
-    private final IndexHtmlHttpService indexHtmlHttpService;
-    private final LayoutService layoutService;
     private final ConfigRepository configRepository;
-    private final TraceDetailHttpService traceDetailHttpService;
-    private final TraceExportHttpService traceExportHttpService;
-    private final GlowrootLogHttpService glowrootLogHttpService;
-    private final List<Object> jsonServices;
+    private final CommonHandler commonHandler;
     private final File baseDir;
-    private final Clock clock;
     private final int numWorkerThreads;
 
     private volatile @Nullable HttpServer httpServer;
 
-    LazyHttpServer(String bindAddress, int port, HttpSessionManager httpSessionManager,
-            IndexHtmlHttpService indexHtmlHttpService, LayoutService layoutService,
-            ConfigRepository configRepository, TraceDetailHttpService traceDetailHttpService,
-            TraceExportHttpService traceExportHttpService,
-            GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
-            File baseDir, Clock clock, int numWorkerThreads) {
+    LazyHttpServer(String bindAddress, int port, ConfigRepository configRepository,
+            CommonHandler commonHandler, File baseDir, int numWorkerThreads) {
         this.bindAddress = bindAddress;
         this.port = port;
-        this.httpSessionManager = httpSessionManager;
-        this.indexHtmlHttpService = indexHtmlHttpService;
-        this.layoutService = layoutService;
         this.configRepository = configRepository;
-        this.traceDetailHttpService = traceDetailHttpService;
-        this.traceExportHttpService = traceExportHttpService;
-        this.glowrootLogHttpService = glowrootLogHttpService;
-        this.jsonServices = jsonServices;
+        this.commonHandler = commonHandler;
         this.baseDir = baseDir;
-        this.clock = clock;
         this.numWorkerThreads = numWorkerThreads;
     }
 
@@ -106,27 +83,7 @@ class LazyHttpServer {
 
     // httpServer is only null if it could not even bind to port 0 (any available port)
     private HttpServer build() throws Exception {
-        Map<Pattern, HttpService> httpServices = Maps.newHashMap();
-        // http services
-        httpServices.put(Pattern.compile("^/$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/transaction/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/profile/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
-        // export service is not bound under /backend since the export url is visible to users
-        // as the download url for the export file
-        httpServices.put(Pattern.compile("^/export/trace$"), traceExportHttpService);
-        httpServices.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
-        httpServices.put(Pattern.compile("^/backend/trace/main-thread-profile$"),
-                traceDetailHttpService);
-        httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),
-                traceDetailHttpService);
-        httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
-        return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, configRepository,
-                httpServices, httpSessionManager, jsonServices, baseDir, clock);
+        return new HttpServer(bindAddress, port, numWorkerThreads, configRepository, commonHandler,
+                baseDir);
     }
 }

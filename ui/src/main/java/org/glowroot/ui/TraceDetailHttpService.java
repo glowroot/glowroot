@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,26 +19,17 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpUtil;
-import io.netty.handler.codec.http.QueryStringDecoder;
+import com.google.common.net.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.ui.CommonHandler.CommonRequest;
+import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class TraceDetailHttpService implements HttpService {
 
@@ -57,27 +48,25 @@ class TraceDetailHttpService implements HttpService {
     }
 
     @Override
-    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
-            Authentication authentication) throws Exception {
-        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        String path = decoder.path();
+    public CommonResponse handleRequest(CommonRequest request, Authentication authentication)
+            throws Exception {
+        String path = request.getPath();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
-        List<String> agentRollupIds = decoder.parameters().get("agent-rollup-id");
-        checkNotNull(agentRollupIds, "Missing agent rollup in query string: %s", request.uri());
+        List<String> agentRollupIds = request.getParameters("agent-rollup-id");
+        checkState(!agentRollupIds.isEmpty(), "Missing agent rollup in query string: %s",
+                request.getUri());
         String agentRollupId = agentRollupIds.get(0);
-        List<String> agentIds = decoder.parameters().get("agent-id");
-        checkNotNull(agentIds, "Missing agent id in query string: %s", request.uri());
+        List<String> agentIds = request.getParameters("agent-id");
+        checkState(!agentIds.isEmpty(), "Missing agent id in query string: %s", request.getUri());
         String agentId = agentIds.get(0);
-        List<String> traceIds = decoder.parameters().get("trace-id");
-        checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
+        List<String> traceIds = request.getParameters("trace-id");
+        checkState(!traceIds.isEmpty(), "Missing trace id in query string: %s", request.getUri());
         String traceId = traceIds.get(0);
         // check-live-traces is an optimization so the central collector only has to check with
         // remote agents when necessary
-        List<String> checkLiveTracesParams = decoder.parameters().get("check-live-traces");
-        boolean checkLiveTraces = false;
-        if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {
-            checkLiveTraces = Boolean.parseBoolean(checkLiveTracesParams.get(0));
-        }
+        List<String> checkLiveTracesParams = request.getParameters("check-live-traces");
+        boolean checkLiveTraces = !checkLiveTracesParams.isEmpty()
+                && Boolean.parseBoolean(checkLiveTracesParams.get(0));
         logger.debug("handleRequest(): traceComponent={}, agentRollupId={}, agentId={}, traceId={},"
                 + " checkLiveTraces={}", traceComponent, agentRollupId, agentId, traceId,
                 checkLiveTraces);
@@ -85,25 +74,9 @@ class TraceDetailHttpService implements HttpService {
         ChunkSource detail = getDetailChunkSource(traceComponent, agentRollupId, agentId, traceId,
                 checkLiveTraces);
         if (detail == null) {
-            return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
+            return new CommonResponse(NOT_FOUND);
         }
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=UTF-8");
-        boolean keepAlive = HttpUtil.isKeepAlive(request);
-        if (keepAlive && !request.protocolVersion().isKeepAliveDefault()) {
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-        }
-        HttpServices.preventCaching(response);
-        ctx.write(response);
-        // TODO no more point in chunking here
-        ChannelFuture future = ctx.write(ChunkedInputs.create(detail));
-        HttpServices.addErrorListener(future);
-        if (!keepAlive) {
-            HttpServices.addCloseListener(future);
-        }
-        // return null to indicate streaming
-        return null;
+        return new CommonResponse(OK, MediaType.JSON_UTF_8, detail);
     }
 
     private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String agentRollupId,

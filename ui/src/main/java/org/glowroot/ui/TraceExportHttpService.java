@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,36 +21,22 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpUtil;
-import io.netty.handler.codec.http.QueryStringDecoder;
-import io.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.ui.CommonHandler.CommonRequest;
+import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.TraceCommonService.TraceExport;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class TraceExportHttpService implements HttpService {
 
@@ -72,24 +58,21 @@ class TraceExportHttpService implements HttpService {
     }
 
     @Override
-    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
-            Authentication authentication) throws Exception {
-        auditLogger.info("{} - GET {}", authentication.caseAmbiguousUsername(), request.uri());
-        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        List<String> agentRollupIds = decoder.parameters().get("agent-rollup-id");
-        String agentRollupId = agentRollupIds == null ? "" : agentRollupIds.get(0);
-        List<String> agentIds = decoder.parameters().get("agent-id");
-        String agentId = agentIds == null ? "" : agentIds.get(0);
-        List<String> traceIds = decoder.parameters().get("trace-id");
-        checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
+    public CommonResponse handleRequest(CommonRequest request, Authentication authentication)
+            throws Exception {
+        auditLogger.info("{} - GET {}", authentication.caseAmbiguousUsername(), request.getUri());
+        List<String> agentRollupIds = request.getParameters("agent-rollup-id");
+        String agentRollupId = agentRollupIds.isEmpty() ? "" : agentRollupIds.get(0);
+        List<String> agentIds = request.getParameters("agent-id");
+        String agentId = agentIds.isEmpty() ? "" : agentIds.get(0);
+        List<String> traceIds = request.getParameters("trace-id");
+        checkState(!traceIds.isEmpty(), "Missing trace id in query string: %s", request.getUri());
         String traceId = traceIds.get(0);
         // check-live-traces is an optimization so the central collector only has to check with
         // remote agents when necessary
-        List<String> checkLiveTracesParams = decoder.parameters().get("check-live-traces");
-        boolean checkLiveTraces = false;
-        if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {
-            checkLiveTraces = Boolean.parseBoolean(checkLiveTracesParams.get(0));
-        }
+        List<String> checkLiveTracesParams = request.getParameters("check-live-traces");
+        boolean checkLiveTraces = !checkLiveTracesParams.isEmpty()
+                && Boolean.parseBoolean(checkLiveTracesParams.get(0));
         logger.debug(
                 "handleRequest(): agentRollupId={}, agentId={}, traceId={}, checkLiveTraces={}",
                 agentRollupId, agentId, traceId, checkLiveTraces);
@@ -100,33 +83,14 @@ class TraceExportHttpService implements HttpService {
                 traceCommonService.getExport(agentRollupId, agentId, traceId, checkLiveTraces);
         if (traceExport == null) {
             logger.warn("no trace found for id: {}", traceId);
-            return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
+            return new CommonResponse(NOT_FOUND);
         }
-        ChunkedInput<HttpContent> in = getExportChunkedInput(traceExport);
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, MediaType.ZIP.toString());
-        response.headers().set("Content-Disposition",
-                "attachment; filename=" + traceExport.fileName() + ".zip");
-        boolean keepAlive = HttpUtil.isKeepAlive(request);
-        if (keepAlive && !request.protocolVersion().isKeepAliveDefault()) {
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-        }
-        HttpServices.preventCaching(response);
-        ctx.write(response);
-        ChannelFuture future = ctx.write(in);
-        HttpServices.addErrorListener(future);
-        if (!keepAlive) {
-            HttpServices.addCloseListener(future);
-        }
-        // return null to indicate streaming
-        return null;
-    }
-
-    private ChunkedInput<HttpContent> getExportChunkedInput(TraceExport traceExport)
-            throws IOException {
         ChunkSource chunkSource = render(traceExport);
-        return ChunkedInputs.createZipFileDownload(chunkSource, traceExport.fileName());
+        CommonResponse response = new CommonResponse(OK, MediaType.ZIP, chunkSource);
+        response.setZipFileName(traceExport.fileName());
+        response.setHeader("Content-Disposition",
+                "attachment; filename=" + traceExport.fileName() + ".zip");
+        return response;
     }
 
     private ChunkSource render(TraceExport traceExport) throws IOException {

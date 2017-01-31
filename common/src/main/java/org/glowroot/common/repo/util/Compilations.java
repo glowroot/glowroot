@@ -16,10 +16,13 @@
 package org.glowroot.common.repo.util;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.CodeSource;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -34,6 +37,8 @@ import javax.tools.JavaCompiler;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -56,9 +61,11 @@ public class Compilations {
 
         IsolatedClassLoader isolatedClassLoader = new IsolatedClassLoader();
 
+        StandardJavaFileManager standardFileManager = javaCompiler
+                .getStandardFileManager(diagnosticCollector, Locale.ENGLISH, Charsets.UTF_8);
+        standardFileManager.setLocation(StandardLocation.CLASS_PATH, getCompilationClassPath());
         JavaFileManager fileManager =
-                new IsolatedJavaFileManager(javaCompiler.getStandardFileManager(diagnosticCollector,
-                        Locale.ENGLISH, Charsets.UTF_8), isolatedClassLoader);
+                new IsolatedJavaFileManager(standardFileManager, isolatedClassLoader);
         try {
             List<JavaFileObject> compilationUnits = Lists.newArrayList();
 
@@ -93,6 +100,23 @@ public class Compilations {
         } finally {
             fileManager.close();
         }
+    }
+
+    private static List<File> getCompilationClassPath() throws Exception {
+        // selenium-api, selenium-support and guava are needed for compilation
+        // cannot use default system classpath when running in a servlet container
+        return ImmutableList.of(getJarFile("org.openqa.selenium.WebDriver"),
+                getJarFile("org.openqa.selenium.support.ui.ExpectedConditions"),
+                getJarFile("com.google.common.base.Function"));
+    }
+
+    private static File getJarFile(String className) throws Exception {
+        CodeSource codeSource = Class.forName(className).getProtectionDomain().getCodeSource();
+        if (codeSource == null) {
+            throw new IllegalStateException("Code source is null for class: " + className);
+        }
+        URL location = codeSource.getLocation();
+        return new File(location.toURI());
     }
 
     @VisibleForTesting

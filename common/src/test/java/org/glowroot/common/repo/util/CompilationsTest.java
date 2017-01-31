@@ -15,8 +15,6 @@
  */
 package org.glowroot.common.repo.util;
 
-import java.lang.reflect.Method;
-
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,13 +51,5 @@ public class CompilationsTest {
                 .isEqualTo("a.b.X");
         assertThat(Compilations.getPublicClassName("\n  package a.b; \n public class X {}"))
                 .isEqualTo("a.b.X");
-    }
-
-    @Test
-    public void testCompilation() throws Exception {
-        Class<?> clazz = Compilations
-                .compile("public class A { public static void main(String[] args) {} } class B {}");
-        Method main = clazz.getMethod("main", new Class[] {String[].class});
-        main.invoke(null, new Object[] {new String[0]});
     }
 }

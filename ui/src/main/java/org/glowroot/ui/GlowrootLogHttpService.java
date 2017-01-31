@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,29 +19,19 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
+import com.google.common.net.MediaType;
 import com.google.common.primitives.Longs;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpUtil;
-import io.netty.handler.codec.http.QueryStringDecoder;
 
+import org.glowroot.ui.CommonHandler.CommonRequest;
+import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class GlowrootLogHttpService implements HttpService {
 
@@ -66,13 +56,12 @@ class GlowrootLogHttpService implements HttpService {
     }
 
     @Override
-    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
-            Authentication authentication) throws Exception {
-        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        List<String> maxLinesParams = decoder.parameters().get("max-lines");
-        if (maxLinesParams == null) {
-            DefaultFullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, FOUND);
-            response.headers().set(HttpHeaderNames.LOCATION, "log?max-lines=" + DEFAULT_MAX_LINES);
+    public CommonResponse handleRequest(CommonRequest request, Authentication authentication)
+            throws Exception {
+        List<String> maxLinesParams = request.getParameters("max-lines");
+        if (maxLinesParams.isEmpty()) {
+            CommonResponse response = new CommonResponse(FOUND);
+            response.setHeader(HttpHeaderNames.LOCATION, "log?max-lines=" + DEFAULT_MAX_LINES);
             return response;
         }
         int maxLines = Integer.parseInt(maxLinesParams.get(0));
@@ -108,21 +97,6 @@ class GlowrootLogHttpService implements HttpService {
         for (String line : lines) {
             chunkSources.add(ChunkSource.wrap(line + '\n'));
         }
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
-        boolean keepAlive = HttpUtil.isKeepAlive(request);
-        if (keepAlive && !request.protocolVersion().isKeepAliveDefault()) {
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-        }
-        HttpServices.preventCaching(response);
-        ctx.write(response);
-        ChannelFuture future = ctx.write(ChunkedInputs.create(ChunkSource.concat(chunkSources)));
-        HttpServices.addErrorListener(future);
-        if (!keepAlive) {
-            HttpServices.addCloseListener(future);
-        }
-        // return null to indicate streaming
-        return null;
+        return new CommonResponse(OK, MediaType.PLAIN_TEXT_UTF_8, ChunkSource.concat(chunkSources));
     }
 }

@@ -16,36 +16,17 @@
 package org.glowroot.ui;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.sql.SQLException;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.io.CharStreams;
-import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -55,115 +36,49 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.EmptyHttpHeaders;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.stream.ChunkedInput;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import org.h2.api.ErrorCode;
-import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.Glowroot;
 import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.util.Clock;
-import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.ui.HttpSessionManager.Authentication;
+import org.glowroot.ui.CommonHandler.CommonRequest;
+import org.glowroot.ui.CommonHandler.CommonResponse;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
 import static io.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpResponseStatus.REQUEST_TIMEOUT;
-import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Sharable
 class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
-    private static final Logger auditLogger = LoggerFactory.getLogger("audit");
-
-    private static final ObjectMapper mapper = ObjectMappers.create();
-
-    private static final long TEN_YEARS = DAYS.toMillis(365 * 10);
-    private static final long ONE_DAY = DAYS.toMillis(1);
-    private static final long FIVE_MINUTES = MINUTES.toMillis(5);
-
-    private static final String RESOURCE_BASE = "org/glowroot/ui/app-dist";
-    // only null when running tests with glowroot.ui.skip=true (e.g. travis "deploy" build)
-    private static final @Nullable String RESOURCE_BASE_URL_PREFIX;
-
-    private static final ImmutableMap<String, MediaType> mediaTypes =
-            ImmutableMap.<String, MediaType>builder()
-                    .put("html", MediaType.HTML_UTF_8)
-                    .put("js", MediaType.JAVASCRIPT_UTF_8)
-                    .put("css", MediaType.CSS_UTF_8)
-                    .put("ico", MediaType.ICO)
-                    .put("woff", MediaType.WOFF)
-                    .put("woff2", MediaType.create("application", "font-woff2"))
-                    .put("swf", MediaType.create("application", "vnd.adobe.flash-movie"))
-                    .put("map", MediaType.JSON_UTF_8)
-                    .build();
-
-    static {
-        URL resourceBaseUrl = getUrlForPath(RESOURCE_BASE);
-        if (resourceBaseUrl == null) {
-            RESOURCE_BASE_URL_PREFIX = null;
-        } else {
-            RESOURCE_BASE_URL_PREFIX = resourceBaseUrl.toExternalForm();
-        }
-    }
 
     private final ChannelGroup allChannels;
 
-    private final LayoutService layoutService;
     private final ConfigRepository configRepository;
-    private final ImmutableMap<Pattern, HttpService> httpServices;
-    private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
-    private final HttpSessionManager httpSessionManager;
-    private final Clock clock;
+
+    private final CommonHandler commonHandler;
 
     private final ThreadLocal</*@Nullable*/ Channel> currentChannel =
             new ThreadLocal</*@Nullable*/ Channel>();
 
-    HttpServerHandler(LayoutService layoutService, ConfigRepository configRepository,
-            Map<Pattern, HttpService> httpServices, HttpSessionManager httpSessionManager,
-            List<Object> jsonServices, Clock clock) {
-        this.layoutService = layoutService;
+    HttpServerHandler(ConfigRepository configRepository, CommonHandler commonHandler) {
         this.configRepository = configRepository;
-        this.httpServices = ImmutableMap.copyOf(httpServices);
-        this.httpSessionManager = httpSessionManager;
-        this.clock = clock;
-        List<JsonServiceMapping> jsonServiceMappings = Lists.newArrayList();
-        for (Object jsonService : jsonServices) {
-            for (Method method : jsonService.getClass().getDeclaredMethods()) {
-                GET annotationGET = method.getAnnotation(GET.class);
-                if (annotationGET != null) {
-                    jsonServiceMappings.add(build(HttpMethod.GET, annotationGET.path(),
-                            annotationGET.permission(), jsonService, method));
-                }
-                POST annotationPOST = method.getAnnotation(POST.class);
-                if (annotationPOST != null) {
-                    jsonServiceMappings.add(build(HttpMethod.POST, annotationPOST.path(),
-                            annotationPOST.permission(), jsonService, method));
-                }
-            }
-        }
-        this.jsonServiceMappings = ImmutableList.copyOf(jsonServiceMappings);
+        this.commonHandler = commonHandler;
         allChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     }
 
@@ -199,64 +114,70 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         FullHttpRequest request = (FullHttpRequest) msg;
         if (request.decoderResult().isFailure()) {
-            sendBadRequest(ctx, request.decoderResult().cause().getMessage());
+            CommonResponse response = new CommonResponse(BAD_REQUEST, MediaType.PLAIN_TEXT_UTF_8,
+                    Strings.nullToEmpty(request.decoderResult().cause().getMessage()));
+            sendResponse(ctx, request, response, false);
             return;
         }
-        logger.debug("channelRead(): request.uri={}", request.uri());
+        String uri = request.uri();
+        logger.debug("channelRead(): request.uri={}", uri);
         Channel channel = ctx.channel();
         currentChannel.set(channel);
         try {
-            QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-            String path = decoder.path();
             String contextPath = configRepository.getWebConfig().contextPath();
-            if (!path.startsWith(contextPath)) {
+            boolean keepAlive = HttpUtil.isKeepAlive(request);
+            if (!uri.startsWith(contextPath)) {
                 DefaultFullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, FOUND);
                 response.headers().set(HttpHeaderNames.LOCATION, contextPath);
-                sendFullResponse(ctx, request, response, HttpUtil.isKeepAlive(request));
+                sendFullResponse(ctx, request, response, keepAlive);
                 return;
             }
-            path = stripContextPath(path, contextPath);
-            logger.debug("handleRequest(): path={}", path);
-            FullHttpResponse response = handleIfLoginOrLogoutRequest(path, request);
-            if (response != null) {
-                sendFullResponse(ctx, request, response, HttpUtil.isKeepAlive(request));
-                return;
+            QueryStringDecoder decoder = new QueryStringDecoder(stripContextPath(uri, contextPath));
+            CommonRequest commonRequest = new NettyRequest(request, contextPath, decoder);
+            CommonResponse response = commonHandler.handle(commonRequest);
+            if (response.isCloseConnectionAfterPortChange()) {
+                response.setHeader("Connection", "close");
+                keepAlive = false;
             }
-            boolean autoRefresh = isAutoRefresh(decoder.parameters().get("auto-refresh"));
-            boolean touchSession = !autoRefresh && !request.uri().equals("/backend/layout");
-            Authentication authentication =
-                    httpSessionManager.getAuthentication(request, touchSession);
-            Glowroot.setTransactionUser(authentication.caseAmbiguousUsername());
-            response = handleRequest(path, ctx, request, authentication);
-            if (response != null) {
-                sendFullResponse(ctx, request, response, authentication);
-            }
+            sendResponse(ctx, request, response, keepAlive);
         } catch (Exception e) {
-            logger.error("error handling request {}: {}", request.uri(), e.getMessage(), e);
-            sendExceptionResponse(ctx, e);
+            logger.error("error handling request {}: {}", uri, e.getMessage(), e);
+            CommonResponse response =
+                    CommonHandler.newHttpResponseWithStackTrace(e, INTERNAL_SERVER_ERROR, null);
+            sendResponse(ctx, request, response, false);
         } finally {
             currentChannel.remove();
             request.release();
         }
     }
 
-    private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
-            FullHttpResponse response, Authentication authentication) throws Exception {
-        if (request.uri().startsWith("/backend/") && !request.uri().equals("/backend/layout")) {
-            response.headers().add("Glowroot-Layout-Version",
-                    layoutService.getLayoutVersion(authentication));
+    private void sendResponse(ChannelHandlerContext ctx, FullHttpRequest request,
+            CommonResponse response, boolean keepAlive) throws IOException {
+        Object content = response.getContent();
+        if (content instanceof ByteBuf) {
+            FullHttpResponse resp = new DefaultFullHttpResponse(HTTP_1_1, response.getStatus(),
+                    (ByteBuf) content, response.getHeaders(), EmptyHttpHeaders.INSTANCE);
+            sendFullResponse(ctx, request, resp, keepAlive);
+        } else if (content instanceof ChunkSource) {
+            HttpResponse resp = new DefaultHttpResponse(HTTP_1_1, OK, response.getHeaders());
+            resp.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+            ctx.write(resp);
+            ChunkSource chunkSource = (ChunkSource) content;
+            ChunkedInput<HttpContent> chunkedInput;
+            String zipFileName = response.getZipFileName();
+            if (zipFileName == null) {
+                chunkedInput = ChunkedInputs.create(chunkSource);
+            } else {
+                chunkedInput = ChunkedInputs.createZipFileDownload(chunkSource, zipFileName);
+            }
+            ChannelFuture future = ctx.write(chunkedInput);
+            HttpServices.addErrorListener(future);
+            if (!keepAlive) {
+                HttpServices.addCloseListener(future);
+            }
+        } else {
+            throw new IllegalStateException("Unexpected content: " + content.getClass().getName());
         }
-        boolean keepAlive = HttpUtil.isKeepAlive(request);
-        if (response.headers().contains("Glowroot-Close-Channel")) {
-            // current connection is the only open channel on the old port/protocol, keepAlive=false
-            // will add the listener below to close the channel after the response completes
-            //
-            // remove the hacky header, no need to send it back to client
-            response.headers().remove("Glowroot-Close-Channel");
-            response.headers().add("Connection", "close");
-            keepAlive = false;
-        }
-        sendFullResponse(ctx, request, response, keepAlive);
     }
 
     @SuppressWarnings("argument.type.incompatible")
@@ -272,309 +193,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    // TODO report checker framework issue that occurs without this suppression
-    @SuppressWarnings("argument.type.incompatible")
-    private void sendBadRequest(ChannelHandlerContext ctx, @Nullable String message) {
-        ByteBuf byteBuf = Unpooled.copiedBuffer(Strings.nullToEmpty(message), Charsets.ISO_8859_1);
-        DefaultFullHttpResponse response =
-                new DefaultFullHttpResponse(HTTP_1_1, BAD_REQUEST, byteBuf);
-        response.headers().add(HttpHeaderNames.CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8);
-        response.headers().add(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
-        HttpServices.preventCaching(response);
-        ChannelFuture f = ctx.write(response);
-        f.addListener(ChannelFutureListener.CLOSE);
-    }
-
-    // TODO report checker framework issue that occurs without this suppression
-    @SuppressWarnings("argument.type.incompatible")
-    private void sendExceptionResponse(ChannelHandlerContext ctx, Exception exception)
-            throws Exception {
-        FullHttpResponse response =
-                newHttpResponseWithStackTrace(exception, INTERNAL_SERVER_ERROR, null);
-        response.headers().add(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
-        ChannelFuture f = ctx.write(response);
-        f.addListener(ChannelFutureListener.CLOSE);
-    }
-
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (HttpServices.shouldLogException(cause)) {
             logger.warn(cause.getMessage(), cause);
         }
         ctx.close();
-    }
-
-    private @Nullable FullHttpResponse handleRequest(String path, ChannelHandlerContext ctx,
-            FullHttpRequest request, Authentication authentication) throws Exception {
-        HttpService httpService = getHttpService(path);
-        if (httpService != null) {
-            return handleHttpService(ctx, request, httpService, authentication);
-        }
-        JsonServiceMapping jsonServiceMapping = getJsonServiceMapping(request, path);
-        if (jsonServiceMapping != null) {
-            return handleJsonServiceMappings(request, jsonServiceMapping, authentication);
-        }
-        return handleStaticResource(path, request);
-    }
-
-    private @Nullable FullHttpResponse handleIfLoginOrLogoutRequest(String path,
-            FullHttpRequest request) throws Exception {
-        if (path.equals("/backend/login")) {
-            String content = request.content().toString(Charsets.ISO_8859_1);
-            Credentials credentials = mapper.readValue(content, ImmutableCredentials.class);
-            Glowroot.setTransactionUser(credentials.username());
-            return httpSessionManager.login(credentials.username(), credentials.password());
-        }
-        if (path.equals("/backend/sign-out")) {
-            httpSessionManager.signOut(request);
-            Authentication authentication = httpSessionManager.getAnonymousAuthentication();
-            Glowroot.setTransactionUser(authentication.caseAmbiguousUsername());
-            String anonymousLayout = layoutService.getLayout(authentication);
-            FullHttpResponse response = HttpServices.createJsonResponse(anonymousLayout, OK);
-            httpSessionManager.deleteSessionCookie(response);
-            return response;
-        }
-        if (path.equals("/backend/check-layout")) {
-            Authentication authentication = httpSessionManager.getAuthentication(request, false);
-            FullHttpResponse response = HttpServices.createJsonResponse("", OK);
-            response.headers().add("Glowroot-Layout-Version",
-                    layoutService.getLayoutVersion(authentication));
-            return response;
-        }
-        if (path.equals("/backend/layout")) {
-            Authentication authentication = httpSessionManager.getAuthentication(request, false);
-            return HttpServices.createJsonResponse(layoutService.getLayout(authentication), OK);
-        }
-        return null;
-    }
-
-    private @Nullable HttpService getHttpService(String path) throws Exception {
-        for (Entry<Pattern, HttpService> entry : httpServices.entrySet()) {
-            Matcher matcher = entry.getKey().matcher(path);
-            if (matcher.matches()) {
-                return entry.getValue();
-            }
-        }
-        return null;
-    }
-
-    private @Nullable FullHttpResponse handleHttpService(ChannelHandlerContext ctx,
-            FullHttpRequest request, HttpService httpService, Authentication authentication)
-            throws Exception {
-        String permission = httpService.getPermission();
-        if (permission.equals("")) {
-            // service does not require any permission
-            return httpService.handleRequest(ctx, request, authentication);
-        }
-        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        List<String> agentRollupIds = decoder.parameters().get("agent-rollup-id");
-        String agentRollupId = agentRollupIds == null ? "" : agentRollupIds.get(0);
-        if (!authentication.isPermitted(agentRollupId, permission)) {
-            return handleNotAuthorized(request, authentication);
-        }
-        return httpService.handleRequest(ctx, request, authentication);
-    }
-
-    private @Nullable JsonServiceMapping getJsonServiceMapping(FullHttpRequest request,
-            String path) {
-        for (JsonServiceMapping jsonServiceMapping : jsonServiceMappings) {
-            if (!jsonServiceMapping.httpMethod().name().equals(request.method().name())) {
-                continue;
-            }
-            if (jsonServiceMapping.path().equals(path)) {
-                return jsonServiceMapping;
-            }
-        }
-        return null;
-    }
-
-    private FullHttpResponse handleJsonServiceMappings(FullHttpRequest request,
-            JsonServiceMapping jsonServiceMapping, Authentication authentication) throws Exception {
-        List<Class<?>> parameterTypes = Lists.newArrayList();
-        List<Object> parameters = Lists.newArrayList();
-        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        Map<String, List<String>> queryParameters = decoder.parameters();
-        boolean permitted;
-        if (jsonServiceMapping.bindAgentId()) {
-            List<String> values = queryParameters.get("agent-id");
-            if (values == null) {
-                throw new JsonServiceException(BAD_REQUEST, "missing agent-id query parameter");
-            }
-            String agentId = values.get(0);
-            parameterTypes.add(String.class);
-            parameters.add(agentId);
-            queryParameters.remove("agent-id");
-            permitted = authentication.isAgentPermitted(agentId, jsonServiceMapping.permission());
-        } else if (jsonServiceMapping.bindAgentRollup()) {
-            List<String> agentRollupIds = queryParameters.get("agent-rollup-id");
-            if (agentRollupIds == null) {
-                throw new JsonServiceException(BAD_REQUEST,
-                        "missing agent-rollup-id query parameter");
-            }
-            String agentRollupId = agentRollupIds.get(0);
-            parameterTypes.add(String.class);
-            parameters.add(agentRollupId);
-            queryParameters.remove("agent-rollup-id");
-            permitted =
-                    authentication.isAgentPermitted(agentRollupId, jsonServiceMapping.permission());
-        } else {
-            permitted = jsonServiceMapping.permission().isEmpty()
-                    || authentication.isAdminPermitted(jsonServiceMapping.permission());
-        }
-        if (!permitted) {
-            return handleNotAuthorized(request, authentication);
-        }
-        Object responseObject;
-        try {
-            responseObject = callMethod(jsonServiceMapping, parameterTypes, parameters,
-                    queryParameters, authentication, request);
-        } catch (Exception e) {
-            return newHttpResponseFromException(request, authentication, e);
-        }
-        return buildJsonResponse(responseObject);
-    }
-
-    FullHttpResponse newHttpResponseFromException(FullHttpRequest request,
-            Authentication authentication, Exception exception) throws Exception {
-        Exception e = exception;
-        if (e instanceof InvocationTargetException) {
-            Throwable cause = e.getCause();
-            if (cause instanceof Exception) {
-                e = (Exception) cause;
-            }
-        }
-        if (e instanceof JsonServiceException) {
-            // this is an "expected" exception, no need to log
-            JsonServiceException jsonServiceException = (JsonServiceException) e;
-            if (jsonServiceException.getStatus() == FORBIDDEN) {
-                return handleNotAuthorized(request, authentication);
-            } else {
-                return newHttpResponseWithMessage(jsonServiceException.getStatus(),
-                        jsonServiceException.getMessage());
-            }
-        }
-        logger.error(e.getMessage(), e);
-        if (e instanceof SQLException
-                && ((SQLException) e).getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED) {
-            return newHttpResponseWithMessage(REQUEST_TIMEOUT,
-                    "Query timed out (timeout is configurable under Configuration > Advanced)");
-        }
-        return newHttpResponseWithStackTrace(e, INTERNAL_SERVER_ERROR, null);
-    }
-
-    private FullHttpResponse buildJsonResponse(@Nullable Object responseObject) {
-        FullHttpResponse response;
-        if (responseObject == null) {
-            response = new DefaultFullHttpResponse(HTTP_1_1, OK);
-        } else if (responseObject instanceof FullHttpResponse) {
-            response = (FullHttpResponse) responseObject;
-        } else if (responseObject instanceof String) {
-            ByteBuf content = Unpooled.copiedBuffer(responseObject.toString(), Charsets.ISO_8859_1);
-            response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
-        } else {
-            logger.warn("unexpected type of json service response: {}",
-                    responseObject.getClass().getName());
-            return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
-        }
-        response.headers().add(HttpHeaderNames.CONTENT_TYPE, MediaType.JSON_UTF_8);
-        HttpServices.preventCaching(response);
-        return response;
-    }
-
-    private FullHttpResponse handleNotAuthorized(FullHttpRequest request,
-            Authentication authentication) throws Exception {
-        if (authentication.anonymous()) {
-            if (httpSessionManager.getSessionId(request) != null) {
-                return HttpServices.createJsonResponse("{\"timedOut\":true}", UNAUTHORIZED);
-            } else {
-                return new DefaultFullHttpResponse(HTTP_1_1, UNAUTHORIZED);
-            }
-        } else {
-            return new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN);
-        }
-    }
-
-    private FullHttpResponse handleStaticResource(String path, HttpRequest request)
-            throws IOException {
-        URL url = getSecureUrlForPath(RESOURCE_BASE + path);
-        if (url == null) {
-            // log at debug only since this is typically just exploit bot spam
-            logger.debug("unexpected path: {}", path);
-            return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
-        }
-        Date expires = getExpiresForPath(path);
-        if (request.headers().contains(HttpHeaderNames.IF_MODIFIED_SINCE) && expires == null) {
-            // all static resources without explicit expires are versioned and can be safely
-            // cached forever
-            return new DefaultFullHttpResponse(HTTP_1_1, NOT_MODIFIED);
-        }
-        ByteBuf content = Unpooled.copiedBuffer(Resources.toByteArray(url));
-        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
-        if (expires != null) {
-            response.headers().add(HttpHeaderNames.EXPIRES, expires);
-        } else {
-            response.headers().add(HttpHeaderNames.LAST_MODIFIED, new Date(0));
-            response.headers().add(HttpHeaderNames.EXPIRES,
-                    new Date(clock.currentTimeMillis() + TEN_YEARS));
-        }
-        int extensionStartIndex = path.lastIndexOf('.');
-        checkState(extensionStartIndex != -1, "found path under %s with no extension: %s",
-                RESOURCE_BASE, path);
-        String extension = path.substring(extensionStartIndex + 1);
-        MediaType mediaType = mediaTypes.get(extension);
-        checkNotNull(mediaType, "found extension under %s with no media type: %s", RESOURCE_BASE,
-                extension);
-        response.headers().add(HttpHeaderNames.CONTENT_TYPE, mediaType);
-        response.headers().add(HttpHeaderNames.CONTENT_LENGTH, Resources.toByteArray(url).length);
-        return response;
-    }
-
-    private @Nullable Date getExpiresForPath(String path) {
-        if (path.startsWith("org/glowroot/ui/app-dist/favicon.")) {
-            return new Date(clock.currentTimeMillis() + ONE_DAY);
-        } else if (path.endsWith(".js.map") || path.startsWith("/sources/")) {
-            // javascript source maps and source files are not versioned
-            return new Date(clock.currentTimeMillis() + FIVE_MINUTES);
-        } else {
-            return null;
-        }
-    }
-
-    private static JsonServiceMapping build(HttpMethod httpMethod, String path,
-            String permission, Object jsonService, Method method) {
-        boolean bindAgentId = false;
-        boolean bindAgentRollup = false;
-        Class<?> bindRequest = null;
-        boolean bindAutoRefresh = false;
-        boolean bindAuthentication = false;
-        for (int i = 0; i < method.getParameterAnnotations().length; i++) {
-            Annotation[] parameterAnnotations = method.getParameterAnnotations()[i];
-            for (Annotation annotation : parameterAnnotations) {
-                if (annotation.annotationType() == BindAgentId.class) {
-                    bindAgentId = true;
-                } else if (annotation.annotationType() == BindAgentRollupId.class) {
-                    bindAgentRollup = true;
-                } else if (annotation.annotationType() == BindRequest.class) {
-                    bindRequest = method.getParameterTypes()[i];
-                } else if (annotation.annotationType() == BindAutoRefresh.class) {
-                    bindAutoRefresh = true;
-                } else if (annotation.annotationType() == BindAuthentication.class) {
-                    bindAuthentication = true;
-                }
-            }
-        }
-        return ImmutableJsonServiceMapping.builder()
-                .httpMethod(httpMethod)
-                .path(path)
-                .permission(permission)
-                .service(jsonService)
-                .method(method)
-                .bindAgentId(bindAgentId)
-                .bindAgentRollup(bindAgentRollup)
-                .bindRequest(bindRequest)
-                .bindAutoRefresh(bindAutoRefresh)
-                .bindAuthentication(bindAuthentication)
-                .build();
     }
 
     @VisibleForTesting
@@ -588,143 +212,63 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         return path.substring(contextPath.length());
     }
 
-    private static @Nullable URL getSecureUrlForPath(String path) {
-        URL url = getUrlForPath(path);
-        if (url != null && RESOURCE_BASE_URL_PREFIX != null
-                && url.toExternalForm().startsWith(RESOURCE_BASE_URL_PREFIX)) {
-            return url;
-        }
-        return null;
-    }
+    private static class NettyRequest implements CommonRequest {
 
-    private static @Nullable URL getUrlForPath(String path) {
-        ClassLoader classLoader = HttpServerHandler.class.getClassLoader();
-        if (classLoader == null) {
-            return ClassLoader.getSystemResource(path);
-        } else {
-            return classLoader.getResource(path);
-        }
-    }
+        private final FullHttpRequest request;
+        private final String contextPath;
+        private final QueryStringDecoder decoder;
 
-    private static FullHttpResponse newHttpResponseWithMessage(HttpResponseStatus status,
-            @Nullable String message) {
-        // this is an "expected" exception, no need to send back stack trace
-        StringBuilder sb = new StringBuilder();
-        try {
-            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-            jg.writeStartObject();
-            jg.writeStringField("message", message);
-            jg.writeEndObject();
-            jg.close();
-        } catch (IOException f) {
-            logger.error(f.getMessage(), f);
-            return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+        NettyRequest(FullHttpRequest request, String contextPath, QueryStringDecoder decoder) {
+            this.request = request;
+            this.contextPath = contextPath;
+            this.decoder = decoder;
         }
-        return HttpServices.createJsonResponse(sb.toString(), status);
-    }
 
-    private static FullHttpResponse newHttpResponseWithStackTrace(Exception e,
-            HttpResponseStatus status, @Nullable String simplifiedMessage) {
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        StringBuilder sb = new StringBuilder();
-        try {
-            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-            jg.writeStartObject();
-            String message;
-            if (simplifiedMessage == null) {
-                Throwable cause = e;
-                Throwable childCause = cause.getCause();
-                while (childCause != null) {
-                    cause = childCause;
-                    childCause = cause.getCause();
-                }
-                message = cause.getMessage();
+        @Override
+        public String getMethod() {
+            return request.method().name();
+        }
+
+        // includes context path
+        @Override
+        public String getUri() {
+            return request.uri();
+        }
+
+        @Override
+        public String getContextPath() {
+            return contextPath;
+        }
+
+        // does not include context path
+        @Override
+        public String getPath() {
+            return decoder.path();
+        }
+
+        @Override
+        public @Nullable String getHeader(CharSequence name) {
+            return request.headers().getAsString(name);
+        }
+
+        @Override
+        public Map<String, List<String>> getParameters() {
+            return decoder.parameters();
+        }
+
+        @Override
+        public List<String> getParameters(String name) {
+            List<String> params = decoder.parameters().get(name);
+            if (params == null) {
+                return ImmutableList.of();
             } else {
-                message = simplifiedMessage;
-            }
-            jg.writeStringField("message", message);
-            jg.writeStringField("stackTrace", sw.toString());
-            jg.writeEndObject();
-            jg.close();
-        } catch (IOException f) {
-            logger.error(f.getMessage(), f);
-            return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
-        }
-        return HttpServices.createJsonResponse(sb.toString(), status);
-    }
-
-    private static @Nullable Object callMethod(JsonServiceMapping jsonServiceMapping,
-            List<Class<?>> parameterTypes, List<Object> parameters,
-            Map<String, List<String>> queryParameters, Authentication authentication,
-            FullHttpRequest request) throws Exception {
-        List<String> autoRefreshParams = queryParameters.remove("auto-refresh");
-        boolean autoRefresh = isAutoRefresh(autoRefreshParams);
-        Class<?> bindRequest = jsonServiceMapping.bindRequest();
-        if (bindRequest != null) {
-            parameterTypes.add(bindRequest);
-            if (jsonServiceMapping.httpMethod() == HttpMethod.GET) {
-                parameters.add(QueryStrings.decode(queryParameters, bindRequest));
-            } else {
-                String content = request.content().toString(Charsets.ISO_8859_1);
-                auditLogger.info("{} - POST {} - {}", authentication.caseAmbiguousUsername(),
-                        request.uri(), content);
-                if (bindRequest == String.class) {
-                    parameters.add(content);
-                } else {
-                    // TODO report checker framework issue that occurs without this suppression
-                    @SuppressWarnings("argument.type.incompatible")
-                    Object param = checkNotNull(
-                            mapper.readValue(content, QueryStrings.getImmutableClass(bindRequest)));
-                    parameters.add(param);
-                }
+                return params;
             }
         }
-        if (jsonServiceMapping.bindAutoRefresh()) {
-            parameterTypes.add(boolean.class);
-            parameters.add(autoRefresh);
+
+        @Override
+        public String getContent() {
+            return request.content().toString(Charsets.ISO_8859_1);
         }
-        if (jsonServiceMapping.bindAuthentication()) {
-            parameterTypes.add(Authentication.class);
-            parameters.add(authentication);
-        }
-        Object service = jsonServiceMapping.service();
-        if (logger.isDebugEnabled()) {
-            String params = Joiner.on(", ").join(parameters);
-            logger.debug("{}.{}(): {}", service.getClass().getSimpleName(),
-                    jsonServiceMapping.method().getName(), params);
-        }
-        return jsonServiceMapping.method().invoke(service,
-                parameters.toArray(new Object[parameters.size()]));
-    }
-
-    private static boolean isAutoRefresh(@Nullable List<String> autoRefreshParams) {
-        return autoRefreshParams != null && autoRefreshParams.size() == 1
-                && Boolean.valueOf(autoRefreshParams.get(0));
-    }
-
-    @Value.Immutable
-    interface Credentials {
-        String username();
-        String password();
-    }
-
-    @Value.Immutable
-    interface JsonServiceMapping {
-        HttpMethod httpMethod();
-        String path();
-        String permission();
-        Object service();
-        Method method();
-        boolean bindAgentId();
-        boolean bindAgentRollup();
-        @Nullable
-        Class<?> bindRequest();
-        boolean bindAutoRefresh();
-        boolean bindAuthentication();
-    }
-
-    enum HttpMethod {
-        GET, POST
     }
 }

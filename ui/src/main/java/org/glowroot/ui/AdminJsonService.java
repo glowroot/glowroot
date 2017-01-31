@@ -27,15 +27,11 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
+import com.google.common.net.MediaType;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -62,6 +58,7 @@ import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.LdapAuthentication.AuthenticationException;
@@ -70,7 +67,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 @JsonService
 class AdminJsonService {
@@ -122,8 +118,6 @@ class AdminJsonService {
 
     @GET(path = "/backend/admin/web", permission = "admin:view:web")
     String getWebConfig() throws Exception {
-        // this code cannot be reached when httpServer is null
-        checkNotNull(httpServer);
         return getWebConfig(false);
     }
 
@@ -164,10 +158,16 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/web", permission = "admin:edit:web")
     Object updateWebConfig(@BindRequest WebConfigDto configDto) throws Exception {
-        // this code cannot be reached when httpServer is null
-        checkNotNull(httpServer);
         WebConfig config = configDto.convert();
-
+        if (httpServer == null) {
+            // running central inside servlet container
+            try {
+                configRepository.updateWebConfig(config, configDto.version());
+            } catch (OptimisticLockException e) {
+                throw new JsonServiceException(PRECONDITION_FAILED, e);
+            }
+            return getWebConfig(false);
+        }
         if (config.https() && !httpServer.getHttps()) {
             // validate certificate and private key exist and are valid
             File certificateFile = new File(glowrootDir, "certificate.pem");
@@ -300,13 +300,13 @@ class AdminJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private Object onSuccessfulWebUpdate(WebConfig config) throws Exception {
-        boolean closeCurrentChannel = false;
+    private CommonResponse onSuccessfulWebUpdate(WebConfig config) throws Exception {
+        boolean closeCurrentChannelAfterPortChange = false;
         boolean portChangeFailed = false;
         if (config.port() != httpServer.getPort()) {
             try {
                 httpServer.changePort(config.port());
-                closeCurrentChannel = true;
+                closeCurrentChannelAfterPortChange = true;
             } catch (PortChangeFailedException e) {
                 logger.error(e.getMessage(), e);
                 portChangeFailed = true;
@@ -316,28 +316,32 @@ class AdminJsonService {
             // only change protocol if port change did not fail, otherwise confusing to display
             // message that port change failed while at the same time redirecting user to HTTP/S
             httpServer.changeProtocol(config.https());
-            closeCurrentChannel = true;
+            closeCurrentChannelAfterPortChange = true;
         }
         String responseText = getWebConfig(portChangeFailed);
-        ByteBuf responseContent = Unpooled.copiedBuffer(responseText, Charsets.ISO_8859_1);
-        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, responseContent);
-        if (closeCurrentChannel) {
-            response.headers().set("Glowroot-Close-Channel", "true");
+        CommonResponse response = new CommonResponse(OK, MediaType.JSON_UTF_8, responseText);
+        if (closeCurrentChannelAfterPortChange) {
+            response.setCloseConnectionAfterPortChange();
         }
         return response;
     }
 
-    @RequiresNonNull("httpServer")
     private String getWebConfig(boolean portChangeFailed) throws Exception {
         WebConfig config = configRepository.getWebConfig();
-        return mapper.writeValueAsString(ImmutableWebConfigResponse.builder()
+        ImmutableWebConfigResponse.Builder builder = ImmutableWebConfigResponse.builder()
                 .config(WebConfigDto.create(config))
-                .activePort(httpServer.getPort())
-                .activeBindAddress(httpServer.getBindAddress())
-                .activeHttps(httpServer.getHttps())
                 .glowrootDir(glowrootDir.getAbsolutePath())
-                .portChangeFailed(portChangeFailed)
-                .build());
+                .portChangeFailed(portChangeFailed);
+        if (httpServer == null) {
+            builder.activePort(config.port())
+                    .activeBindAddress(config.bindAddress())
+                    .activeHttps(config.https());
+        } else {
+            builder.activePort(httpServer.getPort())
+                    .activeBindAddress(httpServer.getBindAddress())
+                    .activeHttps(httpServer.getHttps());
+        }
+        return mapper.writeValueAsString(builder.build());
     }
 
     private static String createErrorResponse(@Nullable String message) throws IOException {

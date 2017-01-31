@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2016 the original author or authors.
+  Copyright 2013-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -34,7 +34,8 @@
            gt-disabled="!layout.adminEdit"
            gt-width="7em"
            gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8">
+           gt-col-class2="col-lg-8"
+           ng-if="!layout.servlet">
         <div class="help-block">
           <div class="gt-yellow"
                ng-show="originalConfig.port !== activePort"
@@ -51,7 +52,8 @@
            gt-disabled="!layout.adminEdit"
            gt-width="7em"
            gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8">
+           gt-col-class2="col-lg-8"
+           ng-if="!layout.servlet">
         <div class="help-block">
           <div class="gt-yellow"
                ng-show="originalConfig.bindAddress !== activeBindAddress"
@@ -70,7 +72,8 @@
            gt-model="config.https"
            gt-disabled="!layout.adminEdit"
            gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8">
+           gt-col-class2="col-lg-8"
+           ng-if="!layout.servlet">
         <div class="help-block">
           <div class="gt-yellow"
                ng-show="originalConfig.https !== activeHttps"
@@ -92,7 +95,8 @@
            gt-disabled="!layout.adminEdit"
            gt-width="15em"
            gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8">
+           gt-col-class2="col-lg-8"
+           ng-if="!layout.servlet">
         <div class="help-block">
           This only needs to be changed if reverse proxying the user interface behind a non-root context path.
         </div>

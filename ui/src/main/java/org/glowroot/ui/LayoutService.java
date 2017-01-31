@@ -50,6 +50,7 @@ class LayoutService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final boolean central;
+    private final boolean servlet;
     private final boolean offline;
     private final String version;
     private final ConfigRepository configRepository;
@@ -57,11 +58,12 @@ class LayoutService {
     private final TransactionTypeRepository transactionTypeRepository;
     private final TraceAttributeNameRepository traceAttributeNameRepository;
 
-    LayoutService(boolean central, boolean offline, String version,
+    LayoutService(boolean central, boolean servlet, boolean offline, String version,
             ConfigRepository configRepository, AgentRepository agentRepository,
             TransactionTypeRepository transactionTypeRepository,
             TraceAttributeNameRepository traceAttributeNameRepository) {
         this.central = central;
+        this.servlet = servlet;
         this.offline = offline;
         this.version = version;
         this.configRepository = configRepository;
@@ -70,7 +72,7 @@ class LayoutService {
         this.traceAttributeNameRepository = traceAttributeNameRepository;
     }
 
-    String getLayout(Authentication authentication) throws Exception {
+    String getLayoutJson(Authentication authentication) throws Exception {
         Layout layout = buildLayout(authentication);
         return mapper.writeValueAsString(layout);
     }
@@ -149,6 +151,7 @@ class LayoutService {
     private ImmutableLayout createNoAccessLayout(Authentication authentication) {
         return ImmutableLayout.builder()
                 .central(central)
+                .servlet(servlet)
                 .offline(offline)
                 .glowrootVersion(version)
                 .loginEnabled(true)
@@ -177,6 +180,7 @@ class LayoutService {
         }
         return ImmutableLayout.builder()
                 .central(central)
+                .servlet(servlet)
                 .offline(offline)
                 .glowrootVersion(version)
                 .loginEnabled(offline ? false
@@ -390,6 +394,7 @@ class LayoutService {
     abstract static class Layout {
 
         abstract boolean central();
+        abstract boolean servlet();
         abstract boolean offline();
         abstract String glowrootVersion();
         abstract boolean loginEnabled();

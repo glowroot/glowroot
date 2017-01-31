@@ -13,13 +13,15 @@
       <destName>glowroot-central.jar</destName>
     </file>
   </files>
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>lib</outputDirectory>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+  </dependencySets>
   <fileSets>
     <fileSet>
-      <!-- not using ${basedir} here because maven-shade-plugin changes it to point wherever
-        dependency reduced pom is written, see https://issues.apache.org/jira/browse/MSHADE-124,
-        so using more reliable ${project.build.directory} which will not cause breakage in the case
-        that this maven-shade-plugin behavior is ever fixed -->
-      <directory>${project.build.directory}/../src/main/resources/META-INF</directory>
+      <directory>src/main/webapp/META-INF</directory>
       <includes>
         <include>LICENSE</include>
         <include>NOTICE</include>
@@ -27,16 +29,6 @@
       <outputDirectory></outputDirectory>
     </fileSet>
     <fileSet>
-      <!-- see comment above about why not using ${basedir} -->
-      <directory>${project.build.directory}/..</directory>
-      <includes>
-        <include>glowroot-central.properties</include>
-      </includes>
-      <outputDirectory></outputDirectory>
-    </fileSet>
-    <fileSet>
-      <!-- see comment above about why not using ${basedir} -->
-      <directory>${project.build.directory}/..</directory>
       <includes>
         <include>glowroot-central.properties</include>
       </includes>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ public class Bootstrap {
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0 || args[0].equals("start")) {
-            centralModule = new CentralModule();
+            centralModule = new CentralModule(false);
         } else if (args[0].equals("stop")) {
             if (centralModule != null) {
                 centralModule.shutdown();

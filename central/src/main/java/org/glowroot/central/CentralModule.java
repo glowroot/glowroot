@@ -72,6 +72,7 @@ import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
+import org.glowroot.ui.CommonHandler;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
 
@@ -112,7 +113,7 @@ class CentralModule {
     private final GrpcServer server;
     private final UiModule uiModule;
 
-    CentralModule() throws Exception {
+    CentralModule(boolean servlet) throws Exception {
         Cluster cluster = null;
         Session session = null;
         RollupService rollupService = null;
@@ -156,21 +157,23 @@ class CentralModule {
                         configRepository.getCentralStorageConfig());
             }
 
-            String uiBindAddressOverride = centralConfig.uiBindAddressOverride();
-            Integer uiPortOverride = centralConfig.uiPortOverride();
-            if (uiBindAddressOverride != null || uiPortOverride != null) {
-                // TODO supplying ui.bindAddress in glowroot-central.properties should make the bind
-                // address non-editable in admin UI, and supplying ui.port in
-                // glowroot-central.properties should make the port non-editable in admin UI
-                WebConfig webConfig = configRepository.getWebConfig();
-                ImmutableWebConfig updatedWebConfig = ImmutableWebConfig.copyOf(webConfig);
-                if (uiBindAddressOverride != null) {
-                    updatedWebConfig = updatedWebConfig.withBindAddress(uiBindAddressOverride);
+            if (!servlet) {
+                String uiBindAddressOverride = centralConfig.uiBindAddressOverride();
+                Integer uiPortOverride = centralConfig.uiPortOverride();
+                if (uiBindAddressOverride != null || uiPortOverride != null) {
+                    // TODO supplying ui.bindAddress in glowroot-central.properties should make the
+                    // bind address non-editable in admin UI, and supplying ui.port in
+                    // glowroot-central.properties should make the port non-editable in admin UI
+                    WebConfig webConfig = configRepository.getWebConfig();
+                    ImmutableWebConfig updatedWebConfig = ImmutableWebConfig.copyOf(webConfig);
+                    if (uiBindAddressOverride != null) {
+                        updatedWebConfig = updatedWebConfig.withBindAddress(uiBindAddressOverride);
+                    }
+                    if (uiPortOverride != null) {
+                        updatedWebConfig = updatedWebConfig.withPort(uiPortOverride);
+                    }
+                    configRepository.updateWebConfig(updatedWebConfig, webConfig.version());
                 }
-                if (uiPortOverride != null) {
-                    updatedWebConfig = updatedWebConfig.withPort(uiPortOverride);
-                }
-                configRepository.updateWebConfig(updatedWebConfig, webConfig.version());
             }
 
             TransactionTypeDao transactionTypeDao =
@@ -216,6 +219,7 @@ class CentralModule {
 
             uiModule = new CreateUiModuleBuilder()
                     .central(true)
+                    .servlet(servlet)
                     .offline(false)
                     .baseDir(new File("."))
                     .glowrootDir(new File("."))
@@ -267,6 +271,10 @@ class CentralModule {
         this.pingAndSyntheticAlertService = pingAndSyntheticAlertService;
         this.server = server;
         this.uiModule = uiModule;
+    }
+
+    CommonHandler getCommonHandler() {
+        return uiModule.getCommonHandler();
     }
 
     void shutdown() {

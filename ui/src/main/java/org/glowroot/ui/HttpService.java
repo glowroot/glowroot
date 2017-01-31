@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,14 @@
  */
 package org.glowroot.ui;
 
-import javax.annotation.Nullable;
-
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpRequest;
-
+import org.glowroot.ui.CommonHandler.CommonRequest;
+import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
 interface HttpService {
 
     String getPermission();
 
-    @Nullable
-    FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
-            Authentication authentication) throws Exception;
+    CommonResponse handleRequest(CommonRequest request, Authentication authentication)
+            throws Exception;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,10 @@ package org.glowroot.ui;
 
 import java.io.File;
 import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -47,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.util.Clock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -67,10 +63,9 @@ class HttpServer {
     private volatile Channel serverChannel;
     private volatile int port;
 
-    HttpServer(String bindAddress, int port, int numWorkerThreads, LayoutService layoutService,
-            ConfigRepository configRepository, Map<Pattern, HttpService> httpServices,
-            HttpSessionManager httpSessionManager, List<Object> jsonServices, File baseDir,
-            Clock clock) throws Exception {
+    HttpServer(String bindAddress, int port, int numWorkerThreads,
+            ConfigRepository configRepository, CommonHandler commonHandler, File baseDir)
+            throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -85,8 +80,7 @@ class HttpServer {
         bossGroup = new NioEventLoopGroup(1, bossThreadFactory);
         workerGroup = new NioEventLoopGroup(numWorkerThreads, workerThreadFactory);
 
-        final HttpServerHandler handler = new HttpServerHandler(layoutService, configRepository,
-                httpServices, httpSessionManager, jsonServices, clock);
+        final HttpServerHandler handler = new HttpServerHandler(configRepository, commonHandler);
 
         if (configRepository.getWebConfig().https()) {
             sslContext = SslContextBuilder

@@ -17,11 +17,14 @@ package org.glowroot.ui;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.immutables.builder.Builder;
 
 import org.glowroot.common.live.LiveAggregateRepository;
@@ -40,13 +43,20 @@ import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class UiModule {
 
-    private final LazyHttpServer lazyHttpServer;
+    // LazyHttpServer is non-null when using netty
+    private final @Nullable LazyHttpServer lazyHttpServer;
+
+    // CommonHandler is non-null when using servlet container (applies to central only)
+    private final @Nullable CommonHandler commonHandler;
 
     @Builder.Factory
     public static UiModule createUiModule(
             boolean central,
+            boolean servlet,
             boolean offline,
             File baseDir,
             File glowrootDir,
@@ -70,12 +80,11 @@ public class UiModule {
             String version) throws Exception {
 
         LayoutService layoutService =
-                new LayoutService(central, offline, version, configRepository, agentRepository,
-                        transactionTypeRepository, traceAttributeNameRepository);
+                new LayoutService(central, servlet, offline, version, configRepository,
+                        agentRepository, transactionTypeRepository, traceAttributeNameRepository);
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(central, offline, configRepository, clock, layoutService);
-        IndexHtmlHttpService indexHtmlHttpService =
-                new IndexHtmlHttpService(layoutService, configRepository);
+        IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
                 aggregateRepository, liveAggregateRepository, configRepository, clock);
         TraceCommonService traceCommonService =
@@ -124,30 +133,69 @@ public class UiModule {
         jsonServices.add(alertConfigJsonService);
         jsonServices.add(adminJsonService);
 
-        String bindAddress = configRepository.getWebConfig().bindAddress();
-        int port = configRepository.getWebConfig().port();
-        LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
-                indexHtmlHttpService, layoutService, configRepository, traceDetailHttpService,
-                traceExportHttpService, glowrootLogHttpService, jsonServices, baseDir, clock,
-                numWorkerThreads);
+        Map<Pattern, HttpService> httpServices = Maps.newHashMap();
+        // http services
+        httpServices.put(Pattern.compile("^/$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/transaction/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/profile/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
+        // export service is not bound under /backend since the export url is visible to users
+        // as the download url for the export file
+        httpServices.put(Pattern.compile("^/export/trace$"), traceExportHttpService);
+        httpServices.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
+        httpServices.put(Pattern.compile("^/backend/trace/main-thread-profile$"),
+                traceDetailHttpService);
+        httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),
+                traceDetailHttpService);
+        httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
 
-        lazyHttpServer.init(adminJsonService);
-        return new UiModule(lazyHttpServer);
+        CommonHandler commonHandler = new CommonHandler(layoutService, httpServices,
+                httpSessionManager, jsonServices, clock);
+
+        if (servlet) {
+            return new UiModule(commonHandler);
+        } else {
+            String bindAddress = configRepository.getWebConfig().bindAddress();
+            int port = configRepository.getWebConfig().port();
+            LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, configRepository,
+                    commonHandler, baseDir, numWorkerThreads);
+
+            lazyHttpServer.init(adminJsonService);
+            return new UiModule(lazyHttpServer);
+        }
     }
 
     private UiModule(LazyHttpServer lazyHttpServer) {
         this.lazyHttpServer = lazyHttpServer;
+        commonHandler = null;
+    }
+
+    private UiModule(CommonHandler commonHandler) {
+        this.commonHandler = commonHandler;
+        lazyHttpServer = null;
     }
 
     public int getPort() throws InterruptedException {
-        return getPort(lazyHttpServer.get());
+        return getPort(checkNotNull(lazyHttpServer).get());
+    }
+
+    public CommonHandler getCommonHandler() {
+        // only called when using servlet container
+        return checkNotNull(commonHandler);
     }
 
     // used by tests and by central ui
     public void close(boolean waitForChannelClose) throws InterruptedException {
-        HttpServer httpServer = lazyHttpServer.get();
-        if (httpServer != null) {
-            httpServer.close(waitForChannelClose);
+        if (lazyHttpServer != null) {
+            HttpServer httpServer = lazyHttpServer.get();
+            if (httpServer != null) {
+                httpServer.close(waitForChannelClose);
+            }
         }
     }
 

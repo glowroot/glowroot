@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,13 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpRequest;
+import com.google.common.net.MediaType;
 
-import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.ui.CommonHandler.CommonRequest;
+import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class IndexHtmlHttpService implements HttpService {
 
@@ -41,11 +35,9 @@ class IndexHtmlHttpService implements HttpService {
             System.getProperty("glowroot.internal.googleAnalyticsTrackingId");
 
     private final LayoutService layoutService;
-    private final ConfigRepository configRepository;
 
-    IndexHtmlHttpService(LayoutService layoutService, ConfigRepository configRepository) {
+    IndexHtmlHttpService(LayoutService layoutService) {
         this.layoutService = layoutService;
-        this.configRepository = configRepository;
     }
 
     @Override
@@ -55,12 +47,12 @@ class IndexHtmlHttpService implements HttpService {
     }
 
     @Override
-    public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
-            Authentication authentication) throws Exception {
+    public CommonResponse handleRequest(CommonRequest request, Authentication authentication)
+            throws Exception {
         URL url = Resources.getResource("org/glowroot/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
-        String layout = layoutService.getLayout(authentication);
-        String contextPath = configRepository.getWebConfig().contextPath();
+        String layout = layoutService.getLayoutJson(authentication);
+        String contextPath = request.getContextPath();
         String baseHref = contextPath.equals("/") ? "/" : contextPath + "/";
         indexHtml = indexHtml.replace("<base href=\"/\">",
                 "<base href=\"" + baseHref + "\"><script>var layout=" + layout
@@ -87,14 +79,10 @@ class IndexHtmlHttpService implements HttpService {
                             + "'//www.google-analytics.com/analytics.js','ga');ga('create', '"
                             + GOOGLE_ANALYTICS_TRACKING_ID + "', 'auto')</script>\n</body>");
         }
-        ByteBuf content = Unpooled.copiedBuffer(indexHtml, Charsets.ISO_8859_1);
-        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
-        HttpServices.preventCaching(response);
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
-        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, indexHtml.length());
+        CommonResponse response = new CommonResponse(OK, MediaType.HTML_UTF_8, indexHtml);
         // X-UA-Compatible must be set via header (as opposed to via meta tag)
         // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
-        response.headers().set("X-UA-Compatible", "IE=edge");
+        response.setHeader("X-UA-Compatible", "IE=edge");
         return response;
     }
 }

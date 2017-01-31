@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.io.CharSource;
 
-abstract class ChunkSource {
+public abstract class ChunkSource {
 
     public abstract ChunkCopier getCopier(Writer writer) throws IOException;
 
@@ -56,7 +56,7 @@ abstract class ChunkSource {
         };
     }
 
-    interface ChunkCopier {
+    public interface ChunkCopier {
 
         // returns false when nothing left to copy
         boolean copyNext() throws IOException;

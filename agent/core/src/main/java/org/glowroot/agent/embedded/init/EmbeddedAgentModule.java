@@ -203,6 +203,7 @@ class EmbeddedAgentModule {
         if (agentModule != null) {
             uiModule = new CreateUiModuleBuilder()
                     .central(false)
+                    .servlet(false)
                     .offline(false)
                     .baseDir(baseDir)
                     .glowrootDir(glowrootDir)
@@ -230,6 +231,7 @@ class EmbeddedAgentModule {
             checkNotNull(viewerAgentModule);
             uiModule = new CreateUiModuleBuilder()
                     .central(false)
+                    .servlet(false)
                     .offline(true)
                     .baseDir(baseDir)
                     .glowrootDir(glowrootDir)

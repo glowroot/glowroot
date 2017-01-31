@@ -27,10 +27,8 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import io.netty.handler.codec.http.FullHttpResponse;
+import com.google.common.net.MediaType;
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
@@ -45,6 +43,8 @@ import org.glowroot.common.config.RoleConfig.SimplePermission;
 import org.glowroot.common.config.UserConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
+import org.glowroot.ui.CommonHandler.CommonRequest;
+import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.LdapAuthentication.AuthenticationException;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -74,7 +74,7 @@ class HttpSessionManager {
         this.layoutService = layoutService;
     }
 
-    FullHttpResponse login(String username, String password) throws Exception {
+    CommonResponse login(String username, String password) throws Exception {
         if (username.equalsIgnoreCase("anonymous")) {
             auditFailedLogin(username);
             return buildIncorrectLoginResponse();
@@ -104,15 +104,15 @@ class HttpSessionManager {
             auditFailedLogin(username);
             return buildIncorrectLoginResponse();
         } else {
-            String text = layoutService.getLayout(authentication);
-            FullHttpResponse response = HttpServices.createJsonResponse(text, OK);
+            String layoutJson = layoutService.getLayoutJson(authentication);
+            CommonResponse response = new CommonResponse(OK, MediaType.JSON_UTF_8, layoutJson);
             createSession(response, authentication);
             auditSuccessfulLogin(username);
             return response;
         }
     }
 
-    void signOut(HttpRequest request) throws Exception {
+    void signOut(CommonRequest request) throws Exception {
         String sessionId = getSessionId(request);
         if (sessionId != null) {
             Session session = sessions.remove(sessionId);
@@ -122,16 +122,15 @@ class HttpSessionManager {
         }
     }
 
-    void deleteSessionCookie(HttpResponse response) throws Exception {
+    void deleteSessionCookie(CommonResponse response) throws Exception {
         Cookie cookie = new DefaultCookie(configRepository.getWebConfig().sessionCookieName(), "");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
         cookie.setPath("/");
-        response.headers().add(HttpHeaderNames.SET_COOKIE,
-                ServerCookieEncoder.STRICT.encode(cookie));
+        response.setHeader(HttpHeaderNames.SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie));
     }
 
-    Authentication getAuthentication(HttpRequest request, boolean touch) throws Exception {
+    Authentication getAuthentication(CommonRequest request, boolean touch) throws Exception {
         if (offline) {
             return getOfflineViewerAuthentication();
         }
@@ -154,8 +153,8 @@ class HttpSessionManager {
     }
 
     @Nullable
-    String getSessionId(HttpRequest request) throws Exception {
-        String cookieHeader = request.headers().getAsString(HttpHeaderNames.COOKIE);
+    String getSessionId(CommonRequest request) throws Exception {
+        String cookieHeader = request.getHeader(HttpHeaderNames.COOKIE);
         if (cookieHeader == null) {
             return null;
         }
@@ -183,12 +182,11 @@ class HttpSessionManager {
         return getAuthentication(userConfig.username(), userConfig.roles(), false);
     }
 
-    private FullHttpResponse buildIncorrectLoginResponse() {
-        String text = "{\"incorrectLogin\":true}";
-        return HttpServices.createJsonResponse(text, OK);
+    private CommonResponse buildIncorrectLoginResponse() {
+        return new CommonResponse(OK, MediaType.JSON_UTF_8, "{\"incorrectLogin\":true}");
     }
 
-    private void createSession(HttpResponse response, Authentication authentication)
+    private void createSession(CommonResponse response, Authentication authentication)
             throws Exception {
         String sessionId = new BigInteger(130, secureRandom).toString(32);
         sessions.put(sessionId, new Session(authentication));
@@ -196,8 +194,7 @@ class HttpSessionManager {
                 new DefaultCookie(configRepository.getWebConfig().sessionCookieName(), sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
-        response.headers().add(HttpHeaderNames.SET_COOKIE,
-                ServerCookieEncoder.STRICT.encode(cookie));
+        response.setHeader(HttpHeaderNames.SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie));
         purgeExpiredSessions();
     }
 
