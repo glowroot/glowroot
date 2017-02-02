@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.common.util.Styles;
@@ -77,6 +77,16 @@ public class TraceCreator {
                 auxProfileSampleCount);
     }
 
+    public static List<Trace.SharedQueryText> toProto(Map<String, Integer> sharedQueryTextIndexes) {
+        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        for (String sharedQueryText : sharedQueryTextIndexes.keySet()) {
+            sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                    .setFullText(sharedQueryText)
+                    .build());
+        }
+        return sharedQueryTexts;
+    }
+
     // timings for traces that are still active are normalized to the capture tick in order to
     // *attempt* to present a picture of the trace at that exact tick
     // (without using synchronization to block updates to the trace while it is being read)
@@ -97,7 +107,7 @@ public class TraceCreator {
                 .setId(transaction.getTraceId())
                 .setHeader(header)
                 .addAllEntry(entries)
-                .addAllSharedQueryText(LiveTraceRepositoryImpl.toProto(sharedQueryTextIndexes));
+                .addAllSharedQueryText(toProto(sharedQueryTextIndexes));
         if (mainThreadProfile != null) {
             builder.setMainThreadProfile(mainThreadProfile);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                         transaction.getEntriesProtobuf(ticker.read(), sharedQueryTextIndexes);
                 return ImmutableEntries.builder()
                         .addAllEntries(entries)
-                        .addAllSharedQueryTexts(toProto(sharedQueryTextIndexes))
+                        .addAllSharedQueryTexts(TraceCreator.toProto(sharedQueryTextIndexes))
                         .build();
             }
         }
@@ -260,15 +260,5 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     private boolean matchesTransactionName(Transaction transaction,
             @Nullable String transactionName) {
         return transactionName == null || transactionName.equals(transaction.getTransactionName());
-    }
-
-    public static List<Trace.SharedQueryText> toProto(Map<String, Integer> sharedQueryTextIndexes) {
-        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
-        for (String sharedQueryText : sharedQueryTextIndexes.keySet()) {
-            sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
-                    .setFullText(sharedQueryText)
-                    .build());
-        }
-        return sharedQueryTexts;
     }
 }
