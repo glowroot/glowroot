@@ -43,6 +43,7 @@ import org.glowroot.agent.impl.Aggregator;
 import org.glowroot.agent.impl.ConfigServiceImpl;
 import org.glowroot.agent.impl.GlowrootServiceImpl;
 import org.glowroot.agent.impl.ServiceRegistryImpl;
+import org.glowroot.agent.impl.StackTraceCollector;
 import org.glowroot.agent.impl.ServiceRegistryImpl.ConfigServiceFactory;
 import org.glowroot.agent.impl.TimerNameCache;
 import org.glowroot.agent.impl.TransactionCollector;

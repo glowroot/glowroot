@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,10 @@
  */
 package org.glowroot.agent.impl;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-
-import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -76,30 +72,6 @@ public class UserProfileScheduler {
                 new UserProfileRunnable(transaction, intervalMillis);
         userProfileRunnable.scheduleFirst();
         transaction.setUserProfileRunnable(userProfileRunnable);
-    }
-
-    public static void captureStackTraces(List<ThreadContextImpl> threadContexts,
-            ConfigService configService) {
-        if (threadContexts.isEmpty()) {
-            // critical not to call ThreadMXBean.getThreadInfo() with empty id list
-            // see https://bugs.openjdk.java.net/browse/JDK-8074368
-            return;
-        }
-        long[] threadIds = new long[threadContexts.size()];
-        for (int i = 0; i < threadContexts.size(); i++) {
-            threadIds[i] = threadContexts.get(i).getThreadId();
-        }
-        @Nullable
-        ThreadInfo[] threadInfos =
-                ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
-        int limit = configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction();
-        for (int i = 0; i < threadContexts.size(); i++) {
-            ThreadContextImpl threadContext = threadContexts.get(i);
-            ThreadInfo threadInfo = threadInfos[i];
-            if (threadInfo != null) {
-                threadContext.captureStackTrace(threadInfo, limit);
-            }
-        }
     }
 
     @VisibleForTesting
@@ -164,7 +136,7 @@ public class UserProfileScheduler {
                 activeThreadContexts.add(mainThreadContext);
             }
             activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
-            captureStackTraces(activeThreadContexts, configService);
+            StackTraceCollector.captureStackTraces(activeThreadContexts, configService);
         }
     }
 }

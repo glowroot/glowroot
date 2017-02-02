@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.init;
+package org.glowroot.agent.impl;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.Random;
+
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -24,16 +28,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.impl.ThreadContextImpl;
-import org.glowroot.agent.impl.Transaction;
-import org.glowroot.agent.impl.TransactionRegistry;
-import org.glowroot.agent.impl.UserProfileScheduler;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class StackTraceCollector {
+public class StackTraceCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(StackTraceCollector.class);
 
@@ -44,8 +44,8 @@ class StackTraceCollector {
     private final InternalRunnable runnable;
     private final Thread processingThread;
 
-    StackTraceCollector(TransactionRegistry transactionRegistry, final ConfigService configService,
-            Random random) {
+    public StackTraceCollector(TransactionRegistry transactionRegistry,
+            final ConfigService configService, Random random) {
         this.transactionRegistry = transactionRegistry;
         this.configService = configService;
         this.random = random;
@@ -73,10 +73,34 @@ class StackTraceCollector {
     }
 
     @OnlyUsedByTests
-    void close() throws InterruptedException {
+    public void close() throws InterruptedException {
         runnable.closed = true;
         processingThread.interrupt();
         processingThread.join();
+    }
+
+    static void captureStackTraces(List<ThreadContextImpl> threadContexts,
+            ConfigService configService) {
+        if (threadContexts.isEmpty()) {
+            // critical not to call ThreadMXBean.getThreadInfo() with empty id list
+            // see https://bugs.openjdk.java.net/browse/JDK-8074368
+            return;
+        }
+        long[] threadIds = new long[threadContexts.size()];
+        for (int i = 0; i < threadContexts.size(); i++) {
+            threadIds[i] = threadContexts.get(i).getThreadId();
+        }
+        @Nullable
+        ThreadInfo[] threadInfos =
+                ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
+        int limit = configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction();
+        for (int i = 0; i < threadContexts.size(); i++) {
+            ThreadContextImpl threadContext = threadContexts.get(i);
+            ThreadInfo threadInfo = threadInfos[i];
+            if (threadInfo != null) {
+                threadContext.captureStackTrace(threadInfo, limit);
+            }
+        }
     }
 
     private class InternalRunnable implements Runnable {
@@ -133,7 +157,7 @@ class StackTraceCollector {
                 }
                 activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
             }
-            UserProfileScheduler.captureStackTraces(activeThreadContexts, configService);
+            captureStackTraces(activeThreadContexts, configService);
         }
     }
 }
