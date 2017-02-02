@@ -238,6 +238,10 @@ class ClasspathCache {
                 // don't add synthetic or native methods to the analyzed model
                 continue;
             }
+            if (method.getName().startsWith("glowroot$")) {
+                // don't add glowroot mixin methods (this naming is just by convention)
+                continue;
+            }
             ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();
             builder.name(method.getName());
             for (Class<?> parameterType : method.getParameterTypes()) {
