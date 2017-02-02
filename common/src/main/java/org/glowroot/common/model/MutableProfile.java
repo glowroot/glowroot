@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -75,14 +76,6 @@ public class MutableProfile {
     }
 
     public void merge(List<StackTraceElement> stackTraceElements, Thread.State threadState) {
-
-        for (StackTraceElement stackTraceElement : stackTraceElements) {
-            if (stackTraceElement.getMethodName() == null) {
-                // methodName can be null after hotswapping under Eclipse debugger
-                // in which case seems best to just ignore the stack trace capture altogether
-                return;
-            }
-        }
         PeekingIterator<StackTraceElement> i =
                 Iterators.peekingIterator(Lists.reverse(stackTraceElements).iterator());
         ProfileNode lastMatchedNode = null;
@@ -105,8 +98,8 @@ public class MutableProfile {
             int packageNameIndex = getNameIndex(packageName, packageNameIndexes, packageNames);
             int classNameIndex = getNameIndex(className, classNameIndexes, classNames);
             int methodNameIndex =
-                    getNameIndex(Strings.nullToEmpty(stackTraceElement.getMethodName()),
-                            methodNameIndexes, methodNames);
+                    getNameIndex(MoreObjects.firstNonNull(stackTraceElement.getMethodName(),
+                            "<null method name>"), methodNameIndexes, methodNames);
             int fileNameIndex = getNameIndex(Strings.nullToEmpty(stackTraceElement.getFileName()),
                     fileNameIndexes, fileNames);
             int lineNumber = stackTraceElement.getLineNumber();
