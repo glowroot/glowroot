@@ -38,6 +38,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -56,6 +57,7 @@ import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.RoleDao;
 import org.glowroot.central.repo.SchemaUpgrade;
+import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.repo.TraceAttributeNameDao;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.TransactionTypeDao;
@@ -109,7 +111,7 @@ class CentralModule {
     private final Cluster cluster;
     private final Session session;
     private final RollupService rollupService;
-    private final PingAndSyntheticAlertService pingAndSyntheticAlertService;
+    private final SyntheticAlertService pingAndSyntheticAlertService;
     private final GrpcServer server;
     private final UiModule uiModule;
 
@@ -117,7 +119,7 @@ class CentralModule {
         Cluster cluster = null;
         Session session = null;
         RollupService rollupService = null;
-        PingAndSyntheticAlertService pingAndSyntheticAlertService = null;
+        SyntheticAlertService pingAndSyntheticAlertService = null;
         GrpcServer server = null;
         UiModule uiModule = null;
         try {
@@ -126,6 +128,7 @@ class CentralModule {
             SLF4JBridgeHandler.install();
 
             Clock clock = Clock.systemClock();
+            Ticker ticker = Ticker.systemTicker();
             String version = Version.getVersion(Bootstrap.class);
             startupLogger.info("Glowroot version: {}", version);
 
@@ -187,6 +190,8 @@ class CentralModule {
                     fullQueryTextDao, traceAttributeNameDao, configRepository, clock);
             GaugeValueDao gaugeValueDao =
                     new GaugeValueDao(session, agentDao, configRepository, clock);
+            SyntheticResultDao syntheticResultDao =
+                    new SyntheticResultDao(session, configRepository, clock);
             EnvironmentDao environmentDao = new EnvironmentDao(session);
             HeartbeatDao heartbeatDao = new HeartbeatDao(session, agentDao, clock);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session);
@@ -214,8 +219,8 @@ class CentralModule {
             });
             rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao, heartbeatDao,
                     configRepository, alertingService, downstreamService, clock);
-            pingAndSyntheticAlertService = new PingAndSyntheticAlertService(agentDao,
-                    configRepository, triggeredAlertDao, alertingService);
+            pingAndSyntheticAlertService = new SyntheticAlertService(agentDao, configRepository,
+                    triggeredAlertDao, alertingService, syntheticResultDao, ticker, clock);
 
             uiModule = new CreateUiModuleBuilder()
                     .central(true)

@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -79,10 +80,12 @@ import org.glowroot.central.RollupService.AgentRollupConsumer;
 import org.glowroot.central.RollupService.AlertConfigConsumer;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
+import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.repo.TriggeredAlertDao;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Encryption;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
@@ -91,18 +94,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-class PingAndSyntheticAlertService implements Runnable {
+// includes both "synthetic" and "ping" alert type
+class SyntheticAlertService implements Runnable {
 
-    private static final Logger logger =
-            LoggerFactory.getLogger(PingAndSyntheticAlertService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SyntheticAlertService.class);
 
     private static final Pattern encryptedPattern = Pattern.compile("\"ENCRYPTED:([^\"]*)\"");
 
-    // this is modified from com.machinepublishers.jbrowserdriver.RequestHeaders,
-    // with added Glowroot-Transaction-Type header
     public static final RequestHeaders REQUEST_HEADERS;
 
     static {
+        // this list is from com.machinepublishers.jbrowserdriver.RequestHeaders,
+        // with added Glowroot-Transaction-Type header
         LinkedHashMap<String, String> headersTmp = new LinkedHashMap<>();
         headersTmp.put("Host", RequestHeaders.DYNAMIC_HEADER);
         headersTmp.put("Connection", "keep-alive");
@@ -124,6 +127,10 @@ class PingAndSyntheticAlertService implements Runnable {
     private final TriggeredAlertDao triggeredAlertDao;
     private final AlertingService alertingService;
 
+    private final SyntheticResultDao syntheticResponseDao;
+    private final Ticker ticker;
+    private final Clock clock;
+
     private final ExecutorService mainLoopExecutor;
     private final ExecutorService checkExecutor;
 
@@ -134,12 +141,16 @@ class PingAndSyntheticAlertService implements Runnable {
 
     private volatile boolean closed;
 
-    PingAndSyntheticAlertService(AgentDao agentDao, ConfigRepositoryImpl configRepository,
-            TriggeredAlertDao triggeredAlertDao, AlertingService alertingService) {
+    SyntheticAlertService(AgentDao agentDao, ConfigRepositoryImpl configRepository,
+            TriggeredAlertDao triggeredAlertDao, AlertingService alertingService,
+            SyntheticResultDao syntheticResponseDao, Ticker ticker, Clock clock) {
         this.agentDao = agentDao;
         this.configRepository = configRepository;
         this.triggeredAlertDao = triggeredAlertDao;
         this.alertingService = alertingService;
+        this.syntheticResponseDao = syntheticResponseDao;
+        this.ticker = ticker;
+        this.clock = clock;
         mainLoopExecutor = Executors.newSingleThreadExecutor();
         checkExecutor = Executors.newCachedThreadPool();
         mainLoopExecutor.execute(castInitialized(this));
@@ -162,7 +173,7 @@ class PingAndSyntheticAlertService implements Runnable {
 
     void close() throws InterruptedException {
         closed = true;
-        // shutdownNow() is needed here to send interrupt to PingAndSyntheticAlertService thread
+        // shutdownNow() is needed here to send interrupt to SyntheticAlertService thread
         mainLoopExecutor.shutdownNow();
         if (!mainLoopExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
@@ -277,8 +288,9 @@ class PingAndSyntheticAlertService implements Runnable {
         if (!activeAlertConfigs.add(uniqueKey)) {
             return;
         }
+        long startTime = ticker.read();
         Stopwatch stopwatch = Stopwatch.createStarted();
-        ListenableFuture<?> future;
+        final ListenableFuture<?> future;
         try {
             future = callable.call();
         } catch (Exception e) {
@@ -293,6 +305,20 @@ class PingAndSyntheticAlertService implements Runnable {
             public void run() {
                 // remove "lock" after completion, not just after possible timeout
                 activeAlertConfigs.remove(uniqueKey);
+                long durationNanos = ticker.read() - startTime;
+                long captureTime = clock.currentTimeMillis();
+                boolean error = false;
+                try {
+                    future.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    error = true;
+                }
+                try {
+                    syntheticResponseDao.store(agentId, alertConfig.getId(), captureTime,
+                            durationNanos, error);
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }, MoreExecutors.directExecutor());
         int thresholdMillis = alertConfig.getThresholdMillis().getValue();

@@ -126,8 +126,8 @@ public class GaugeValueDao implements GaugeValueRepository {
                 + " gauge_value_rollup_1 where agent_rollup = ? and gauge_name = ?"
                 + " and capture_time = ?");
 
-        // since gauge rollup operations are idempotent, any records resurrected after
-        // gc_grace_seconds would just create extra work, but not have any other effect
+        // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
+        // would just create extra work, but not have any other effect
         //
         // 3 hours is chosen to match default max_hint_window_in_ms since hints are stored
         // with a TTL of gc_grace_seconds
@@ -288,8 +288,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     private void rollupFromChildren(String agentRollupId, @Nullable String parentAgentRollupId,
-            int ttl)
-            throws Exception {
+            int ttl) throws Exception {
         final int rollupLevel = 1;
         List<NeedsRollupFromChildren> needsRollupFromChildrenList = AggregateDao
                 .getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session);
