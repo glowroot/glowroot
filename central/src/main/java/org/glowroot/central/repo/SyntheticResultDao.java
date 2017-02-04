@@ -34,7 +34,6 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +44,8 @@ import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common.repo.ImmutableSyntheticResult;
+import org.glowroot.common.repo.SyntheticResultRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -52,7 +53,7 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 
-public class SyntheticResultDao {
+public class SyntheticResultDao implements SyntheticResultRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(SyntheticResultDao.class);
 
@@ -87,20 +88,20 @@ public class SyntheticResultDao {
         for (int i = 0; i < count; i++) {
             Sessions.createTableWithTWCS(session, "create table if not exists"
                     + " synthetic_result_rollup_" + i + " (agent_rollup_id varchar,"
-                    + " alert_config_id varchar, capture_time timestamp,"
+                    + " synthetic_config_id varchar, capture_time timestamp,"
                     + " total_duration_nanos double, execution_count bigint, error_count bigint,"
-                    + " primary key ((agent_rollup_id, alert_config_id), capture_time))",
+                    + " primary key ((agent_rollup_id, synthetic_config_id), capture_time))",
                     rollupExpirationHours.get(i));
             insertResultPS.add(session.prepare("insert into synthetic_result_rollup_" + i
-                    + " (agent_rollup_id, alert_config_id, capture_time, total_duration_nanos,"
+                    + " (agent_rollup_id, synthetic_config_id, capture_time, total_duration_nanos,"
                     + " execution_count, error_count) values (?, ?, ?, ?, ?, ?) using ttl ?"));
             readResultPS.add(session.prepare("select capture_time, total_duration_nanos,"
                     + " execution_count, error_count from synthetic_result_rollup_" + i
-                    + " where agent_rollup_id = ? and alert_config_id = ? and capture_time >= ?"
+                    + " where agent_rollup_id = ? and synthetic_config_id = ? and capture_time >= ?"
                     + " and capture_time <= ?"));
             readResultForRollupPS.add(session.prepare("select total_duration_nanos,"
                     + " execution_count, error_count from synthetic_result_rollup_" + i
-                    + " where agent_rollup_id = ? and alert_config_id = ? and capture_time > ?"
+                    + " where agent_rollup_id = ? and synthetic_config_id = ? and capture_time > ?"
                     + " and capture_time <= ?"));
         }
         this.insertResultPS = ImmutableList.copyOf(insertResultPS);
@@ -118,17 +119,18 @@ public class SyntheticResultDao {
         List<PreparedStatement> insertNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
-        for (int i = 1; i <= count; i++) {
+        for (int i = 1; i < count; i++) {
             session.execute("create table if not exists synthetic_needs_rollup_" + i
                     + " (agent_rollup_id varchar, capture_time timestamp, uniqueness timeuuid,"
-                    + " alert_config_ids set<varchar>, primary key (agent_rollup_id, capture_time,"
-                    + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and "
-                    + LCS);
+                    + " synthetic_config_ids set<varchar>, primary key (agent_rollup_id,"
+                    + " capture_time, uniqueness)) with gc_grace_seconds = "
+                    + needsRollupGcGraceSeconds + " and " + LCS);
             insertNeedsRollup.add(session.prepare("insert into synthetic_needs_rollup_" + i
-                    + " (agent_rollup_id, capture_time, uniqueness, alert_config_ids) values"
+                    + " (agent_rollup_id, capture_time, uniqueness, synthetic_config_ids) values"
                     + " (?, ?, ?, ?) using TTL ?"));
-            readNeedsRollup.add(session.prepare("select capture_time, uniqueness, alert_config_ids"
-                    + " from synthetic_needs_rollup_" + i + " where agent_rollup_id = ?"));
+            readNeedsRollup.add(session.prepare("select capture_time, uniqueness,"
+                    + " synthetic_config_ids from synthetic_needs_rollup_" + i
+                    + " where agent_rollup_id = ?"));
             deleteNeedsRollup.add(session.prepare("delete from synthetic_needs_rollup_" + i
                     + " where agent_rollup_id = ? and capture_time = ? and uniqueness = ?"));
         }
@@ -137,8 +139,8 @@ public class SyntheticResultDao {
         this.deleteNeedsRollup = deleteNeedsRollup;
     }
 
-    public void store(String agentId, String alertConfigId, long captureTime, long durationNanos,
-            boolean error) throws Exception {
+    public void store(String agentId, String syntheticMonitorId, long captureTime,
+            long durationNanos, boolean error) throws Exception {
         int ttl = getTTLs().get(0);
         long maxCaptureTime = 0;
         BoundStatement boundStatement = insertResultPS.get(0).bind();
@@ -146,7 +148,7 @@ public class SyntheticResultDao {
         int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime, clock);
         int i = 0;
         boundStatement.setString(i++, agentId);
-        boundStatement.setString(i++, alertConfigId);
+        boundStatement.setString(i++, syntheticMonitorId);
         boundStatement.setTimestamp(i++, new Date(captureTime));
         boundStatement.setDouble(i++, durationNanos);
         boundStatement.setLong(i++, 1);
@@ -166,18 +168,19 @@ public class SyntheticResultDao {
         boundStatement.setString(i++, agentId);
         boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
         boundStatement.setUUID(i++, UUIDs.timeBased());
-        boundStatement.setSet(i++, ImmutableSet.of(alertConfigId));
+        boundStatement.setSet(i++, ImmutableSet.of(syntheticMonitorId));
         boundStatement.setInt(i++, needsRollupAdjustedTTL);
         session.execute(boundStatement);
     }
 
-    // query.from() is INCLUSIVE
-    public List<SyntheticResult> readSyntheticResults(String agentRollupId, String alertConfigId,
-            long captureTimeFrom, long captureTimeTo, int rollupLevel) {
+    // captureTimeFrom is INCLUSIVE
+    @Override
+    public List<SyntheticResult> readSyntheticResults(String agentRollupId,
+            String syntheticMonitorId, long captureTimeFrom, long captureTimeTo, int rollupLevel) {
         BoundStatement boundStatement = readResultPS.get(rollupLevel).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, alertConfigId);
+        boundStatement.setString(i++, syntheticMonitorId);
         boundStatement.setTimestamp(i++, new Date(captureTimeFrom));
         boundStatement.setTimestamp(i++, new Date(captureTimeTo));
         ResultSet results = session.execute(boundStatement);
@@ -220,11 +223,11 @@ public class SyntheticResultDao {
             long captureTime = needsRollup.getCaptureTime();
             long from = captureTime - rollupIntervalMillis;
             int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime, clock);
-            Set<String> alertConfigIds = needsRollup.getKeys();
+            Set<String> syntheticMonitorIds = needsRollup.getKeys();
             List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
-            for (String alertConfigId : alertConfigIds) {
-                futures.add(rollupOne(rollupLevel, agentRollupId, alertConfigId, from, captureTime,
-                        adjustedTTL));
+            for (String syntheticMonitorId : syntheticMonitorIds) {
+                futures.add(rollupOne(rollupLevel, agentRollupId, syntheticMonitorId, from,
+                        captureTime, adjustedTTL));
             }
             if (futures.isEmpty()) {
                 // no rollups occurred, warning already logged inside rollupOne() above
@@ -232,7 +235,7 @@ public class SyntheticResultDao {
                 // TTL was introduced in 0.9.6, and when the "last needs rollup" record wasn't
                 // processed (also prior to 0.9.6), and when the corresponding old data has expired
                 AggregateDao.postRollup(agentRollupId, needsRollup.getCaptureTime(),
-                        alertConfigIds, needsRollup.getUniquenessKeysForDeletion(), null, null,
+                        syntheticMonitorIds, needsRollup.getUniquenessKeysForDeletion(), null, null,
                         deleteNeedsRollup.get(rollupLevel - 1), -1, session);
                 continue;
             }
@@ -245,7 +248,7 @@ public class SyntheticResultDao {
                     : this.insertNeedsRollup.get(rollupLevel);
             PreparedStatement deleteNeedsRollup = this.deleteNeedsRollup.get(rollupLevel - 1);
             AggregateDao.postRollup(agentRollupId, needsRollup.getCaptureTime(),
-                    alertConfigIds, needsRollup.getUniquenessKeysForDeletion(),
+                    syntheticMonitorIds, needsRollup.getUniquenessKeysForDeletion(),
                     nextRollupIntervalMillis, insertNeedsRollup, deleteNeedsRollup,
                     needsRollupAdjustedTTL, session);
         }
@@ -253,11 +256,11 @@ public class SyntheticResultDao {
 
     // from is non-inclusive
     private ListenableFuture<ResultSet> rollupOne(int rollupLevel, String agentRollupId,
-            String alertConfigId, long from, long to, int adjustedTTL) throws Exception {
+            String syntheticMonitorId, long from, long to, int adjustedTTL) throws Exception {
         BoundStatement boundStatement = readResultForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, alertConfigId);
+        boundStatement.setString(i++, syntheticMonitorId);
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
         return Futures.transformAsync(
@@ -271,19 +274,19 @@ public class SyntheticResultDao {
                             // this is unexpected since TTL for "needs rollup" records is shorter
                             // than TTL for data
                             logger.warn("no synthetic result table records found for"
-                                    + " agentRollupId={}, alertConfigId={}, from={}, to={},"
-                                    + " level={}", agentRollupId, alertConfigId, from, to,
+                                    + " agentRollupId={}, syntheticMonitorId={}, from={}, to={},"
+                                    + " level={}", agentRollupId, syntheticMonitorId, from, to,
                                     rollupLevel);
                             return Futures.immediateFuture(DummyResultSet.INSTANCE);
                         }
-                        return rollupOneFromRows(rollupLevel, agentRollupId, alertConfigId, to,
+                        return rollupOneFromRows(rollupLevel, agentRollupId, syntheticMonitorId, to,
                                 adjustedTTL, results);
                     }
                 });
     }
 
     private ListenableFuture<ResultSet> rollupOneFromRows(int rollupLevel, String agentRollupId,
-            String alertConfigId, long to, int adjustedTTL, Iterable<Row> rows) {
+            String syntheticMonitorId, long to, int adjustedTTL, Iterable<Row> rows) {
         double totalDurationNanos = 0;
         long executionCount = 0;
         long errorCount = 0;
@@ -296,7 +299,7 @@ public class SyntheticResultDao {
         BoundStatement boundStatement = insertResultPS.get(rollupLevel).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, alertConfigId);
+        boundStatement.setString(i++, syntheticMonitorId);
         boundStatement.setTimestamp(i++, new Date(to));
         boundStatement.setDouble(i++, totalDurationNanos);
         boundStatement.setLong(i++, executionCount);
@@ -323,14 +326,5 @@ public class SyntheticResultDao {
         for (int i = 1; i < configRepository.getRollupConfigs().size(); i++) {
             session.execute("truncate synthetic_needs_rollup_" + i);
         }
-    }
-
-    @Value.Immutable
-    public interface SyntheticResult {
-
-        long captureTime();
-        double totalDurationNanos();
-        long executionCount();
-        long errorCount();
     }
 }

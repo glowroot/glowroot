@@ -33,6 +33,7 @@ import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
+import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -48,6 +49,7 @@ class RollupService implements Runnable {
     private final AgentDao agentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
+    private final SyntheticResultDao syntheticResultDao;
     private final HeartbeatDao heartbeatDao;
     private final ConfigRepositoryImpl configRepository;
     private final AlertingService alertingService;
@@ -61,11 +63,13 @@ class RollupService implements Runnable {
     private volatile boolean closed;
 
     RollupService(AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
-            HeartbeatDao heartbeatDao, ConfigRepositoryImpl configRepository,
-            AlertingService alertingService, DownstreamServiceImpl downstreamService, Clock clock) {
+            SyntheticResultDao syntheticResultDao, HeartbeatDao heartbeatDao,
+            ConfigRepositoryImpl configRepository, AlertingService alertingService,
+            DownstreamServiceImpl downstreamService, Clock clock) {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
+        this.syntheticResultDao = syntheticResultDao;
         this.heartbeatDao = heartbeatDao;
         this.configRepository = configRepository;
         this.alertingService = alertingService;
@@ -106,6 +110,7 @@ class RollupService implements Runnable {
         for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
             rollupAggregates(agentRollup, null);
             rollupGauges(agentRollup, null);
+            rollupSyntheticMonitors(agentRollup);
             // checking for deleted alerts doesn't depend on rollup
             consumeAgentRollups(agentRollup, this::checkForDeletedAlerts);
             // checking transaction and gauge alerts after rollup since their calculation can depend
@@ -174,6 +179,20 @@ class RollupService implements Runnable {
         }
     }
 
+    private void rollupSyntheticMonitors(AgentRollup agentRollup) throws Exception {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            rollupSyntheticMonitors(childAgentRollup);
+        }
+        try {
+            syntheticResultDao.rollup(agentRollup.id());
+        } catch (InterruptedException e) {
+            // shutdown requested
+            throw e;
+        } catch (Exception e) {
+            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
+        }
+    }
+
     private void consumeAgentRollups(AgentRollup agentRollup,
             AgentRollupConsumer agentRollupConsumer) throws Exception {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
@@ -187,21 +206,21 @@ class RollupService implements Runnable {
     }
 
     private void checkTransactionAlerts(AgentRollup agentRollup) throws Exception {
-        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.TRANSACTION,
-                alertConfig -> checkTransactionAlert(agentRollup.id(),
-                        agentRollup.display(), alertConfig, clock.currentTimeMillis()));
+        checkAlerts(agentRollup, AlertKind.TRANSACTION,
+                alertConfig -> checkTransactionAlert(agentRollup, alertConfig,
+                        clock.currentTimeMillis()));
     }
 
     private void checkGaugeAlerts(AgentRollup agentRollup) throws Exception {
-        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.GAUGE,
-                alertConfig -> checkGaugeAlert(agentRollup.id(), agentRollup.display(),
-                        alertConfig, clock.currentTimeMillis()));
+        checkAlerts(agentRollup, AlertKind.GAUGE,
+                alertConfig -> checkGaugeAlert(agentRollup, alertConfig,
+                        clock.currentTimeMillis()));
     }
 
     private void checkHeartbeatAlerts(AgentRollup agentRollup) throws Exception {
-        checkAlerts(agentRollup.id(), agentRollup.display(), AlertKind.HEARTBEAT,
-                alertConfig -> checkHeartbeatAlert(agentRollup.id(), agentRollup.display(),
-                        alertConfig, clock.currentTimeMillis()));
+        checkAlerts(agentRollup, AlertKind.HEARTBEAT,
+                alertConfig -> checkHeartbeatAlert(agentRollup, alertConfig,
+                        clock.currentTimeMillis()));
     }
 
     private void updateAgentConfigIfConnectedAndNeeded(AgentRollup agentRollup)
@@ -219,13 +238,13 @@ class RollupService implements Runnable {
         }
     }
 
-    private void checkAlerts(String agentRollupId, String agentRollupDisplay, AlertKind alertKind,
+    private void checkAlerts(AgentRollup agentRollup, AlertKind alertKind,
             AlertConfigConsumer check) throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
-            alertConfigs = configRepository.getAlertConfigs(agentRollupId, alertKind);
+            alertConfigs = configRepository.getAlertConfigs(agentRollup.id(), alertKind);
         } catch (Exception e) {
-            logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
             return;
         }
         if (alertConfigs.isEmpty()) {
@@ -238,36 +257,37 @@ class RollupService implements Runnable {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
+                logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
             }
         }
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check transaction alert",
-            traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
-    private void checkTransactionAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, long endTime) throws Exception {
-        alertingService.checkTransactionAlert(agentRollupId, agentRollupDisplay, alertConfig,
+            traceHeadline = "Check transaction alert: {{0.id}}", timer = "check transaction alert")
+    private void checkTransactionAlert(AgentRollup agentRollup, AlertConfig alertConfig,
+            long endTime) throws Exception {
+        alertingService.checkTransactionAlert(agentRollup.id(), agentRollup.display(), alertConfig,
                 endTime);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check gauge alert",
-            traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
-    private void checkGaugeAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, long endTime) throws Exception {
-        alertingService.checkGaugeAlert(agentRollupId, agentRollupDisplay, alertConfig, endTime);
+            traceHeadline = "Check gauge alert: {{0.id}}", timer = "check gauge alert")
+    private void checkGaugeAlert(AgentRollup agentRollup, AlertConfig alertConfig, long endTime)
+            throws Exception {
+        alertingService.checkGaugeAlert(agentRollup.id(), agentRollup.display(), alertConfig,
+                endTime);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check heartbeat alert",
-            traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
-    private void checkHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, long endTime) throws Exception {
+            traceHeadline = "Check heartbeat alert: {{0.id}}", timer = "check heartbeat alert")
+    private void checkHeartbeatAlert(AgentRollup agentRollup, AlertConfig alertConfig, long endTime)
+            throws Exception {
         long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
-        boolean currentlyTriggered = !heartbeatDao.exists(agentRollupId, startTime, endTime);
-        alertingService.checkHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig,
+        boolean currentlyTriggered = !heartbeatDao.exists(agentRollup.id(), startTime, endTime);
+        alertingService.checkHeartbeatAlert(agentRollup.id(), agentRollup.display(), alertConfig,
                 currentlyTriggered);
     }
 

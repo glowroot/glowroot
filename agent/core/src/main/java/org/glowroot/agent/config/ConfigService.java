@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ public class ConfigService {
     private volatile UserRecordingConfig userRecordingConfig;
     private volatile AdvancedConfig advancedConfig;
     private volatile ImmutableList<GaugeConfig> gaugeConfigs;
+    private volatile ImmutableList<SyntheticMonitorConfig> syntheticMonitorConfigs;
     private volatile ImmutableList<AlertConfig> alertConfigs;
     private volatile ImmutableList<PluginConfig> pluginConfigs;
     private volatile ImmutableList<InstrumentationConfig> instrumentationConfigs;
@@ -119,6 +120,15 @@ public class ConfigService {
         } else {
             this.gaugeConfigs = ImmutableList.<GaugeConfig>copyOf(gaugeConfigs);
         }
+        List<ImmutableSyntheticMonitorConfig> syntheticMonitorConfigs =
+                configFile.getConfigNode("syntheticMonitors",
+                        new TypeReference<List<ImmutableSyntheticMonitorConfig>>() {}, mapper);
+        if (syntheticMonitorConfigs == null) {
+            this.syntheticMonitorConfigs = ImmutableList.of();
+        } else {
+            this.syntheticMonitorConfigs =
+                    ImmutableList.<SyntheticMonitorConfig>copyOf(syntheticMonitorConfigs);
+        }
         List<ImmutableAlertConfig> alertConfigs = configFile.getConfigNode("alerts",
                 new TypeReference<List<ImmutableAlertConfig>>() {}, mapper);
         if (alertConfigs == null) {
@@ -165,10 +175,6 @@ public class ConfigService {
         return gaugeConfigs;
     }
 
-    public List<AlertConfig> getAlertConfigs() {
-        return alertConfigs;
-    }
-
     public ImmutableList<PluginConfig> getPluginConfigs() {
         return pluginConfigs;
     }
@@ -195,6 +201,9 @@ public class ConfigService {
                 .setTransactionConfig(transactionConfig.toProto());
         for (GaugeConfig gaugeConfig : gaugeConfigs) {
             builder.addGaugeConfig(gaugeConfig.toProto());
+        }
+        for (SyntheticMonitorConfig syntheticMonitorConfig : syntheticMonitorConfigs) {
+            builder.addSyntheticMonitorConfig(syntheticMonitorConfig.toProto());
         }
         for (AlertConfig alertConfig : alertConfigs) {
             builder.addAlertConfig(alertConfig.toProto());
@@ -229,6 +238,13 @@ public class ConfigService {
     public void updateGaugeConfigs(List<GaugeConfig> updatedConfigs) throws IOException {
         configFile.writeConfig("gauges", updatedConfigs, mapper);
         gaugeConfigs = ImmutableList.copyOf(updatedConfigs);
+        notifyConfigListeners();
+    }
+
+    public void updateSyntheticMonitorConfigs(List<SyntheticMonitorConfig> updatedConfigs)
+            throws IOException {
+        configFile.writeConfig("syntheticMonitors", updatedConfigs, mapper);
+        syntheticMonitorConfigs = ImmutableList.copyOf(updatedConfigs);
         notifyConfigListeners();
     }
 
@@ -331,6 +347,7 @@ public class ConfigService {
         userRecordingConfig = ImmutableUserRecordingConfig.builder().build();
         advancedConfig = ImmutableAdvancedConfig.builder().build();
         gaugeConfigs = getDefaultGaugeConfigs();
+        syntheticMonitorConfigs = ImmutableList.of();
         alertConfigs = ImmutableList.of();
         pluginConfigs =
                 fixPluginConfigs(ImmutableList.<ImmutablePluginConfigTemp>of(), pluginDescriptors);
@@ -348,6 +365,7 @@ public class ConfigService {
         configs.put("userRecording", userRecordingConfig);
         configs.put("advanced", advancedConfig);
         configs.put("gauges", gaugeConfigs);
+        configs.put("syntheticMonitors", syntheticMonitorConfigs);
         configs.put("alerts", alertConfigs);
         configs.put("plugins", pluginConfigs);
         configs.put("instrumentation", instrumentationConfigs);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 /* global glowroot */
 
-glowroot.controller('ConfigAlertListCtrl', [
+glowroot.controller('ConfigSyntheticMonitorListCtrl', [
   '$scope',
   '$location',
   '$http',
@@ -51,7 +51,7 @@ glowroot.controller('ConfigAlertListCtrl', [
       return '?new';
     };
 
-    $http.get('backend/config/alerts?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
+    $http.get('backend/config/synthetic-monitors?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
         .then(function (response) {
           $scope.loaded = true;
           $scope.configs = response.data;

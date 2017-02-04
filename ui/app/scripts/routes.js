@@ -146,7 +146,8 @@ glowroot.config([
                   if (sortOrder === 'total-time') {
                     return (100 * summary.totalDurationNanos / overallSummary.totalDurationNanos).toFixed(1) + ' %';
                   } else if (sortOrder === 'average-time') {
-                    return $filter('gtMillis')(summary.totalDurationNanos / (1000000 * summary.transactionCount)) + ' ms';
+                    return $filter('gtMillis')(summary.totalDurationNanos / (1000000 * summary.transactionCount))
+                        + ' ms';
                   } else if (sortOrder === 'throughput') {
                     return (60 * 1000 * summary.transactionCount / durationMillis).toFixed(1) + '/min';
                   }
@@ -382,6 +383,22 @@ glowroot.config([
       templateUrl: 'views/jvm/capabilities.html',
       controller: 'JvmCapabilitiesCtrl'
     });
+    $stateProvider.state('syntheticMonitors', {
+      url: '/synthetic-monitors?agent-id&agent-rollup-id',
+      templateUrl: 'views/synthetic-monitors.html',
+      controller: 'SyntheticMonitorsCtrl',
+      resolve: {
+        waitForLayout: waitForLayout(false)
+      }
+    });
+    $stateProvider.state('alerts', {
+      url: '/alerts',
+      templateUrl: 'views/alerts.html',
+      controller: 'AlertsCtrl',
+      resolve: {
+        waitForLayout: waitForLayout(false)
+      }
+    });
     $stateProvider.state('report', {
       url: '/report',
       templateUrl: 'views/report.html',
@@ -417,6 +434,16 @@ glowroot.config([
       url: '/gauge?agent-id&v',
       templateUrl: 'views/config/gauge.html',
       controller: 'ConfigGaugeCtrl'
+    });
+    $stateProvider.state('config.syntheticMonitorList', {
+      url: '/synthetic-monitor-list?agent-id&agent-rollup-id',
+      templateUrl: 'views/config/synthetic-monitor-list.html',
+      controller: 'ConfigSyntheticMonitorListCtrl'
+    });
+    $stateProvider.state('config.syntheticMonitor', {
+      url: '/synthetic-monitor?agent-id&agent-rollup-id&id',
+      templateUrl: 'views/config/synthetic-monitor.html',
+      controller: 'ConfigSyntheticMonitorCtrl'
     });
     $stateProvider.state('config.alertList', {
       url: '/alert-list?agent-id&agent-rollup-id',

@@ -213,7 +213,7 @@
                      ng-model="page.permissions.config.view"
                      ng-disabled="page.permissions.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(page.permissions)">
-              View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
+              View (Transactions, Gauges, UI, Plugins, Instrumentation, Advanced)
               <span ng-if="!page.permissions.config.view && viewConfigRequired(page.permissions)"
                     style="font-style: italic;">
                 -- required for edit permission
@@ -479,6 +479,20 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
+                     ng-model="page.permissions.syntheticMonitor"
+                     ng-disabled="!layout.adminEdit">Synthetic monitors
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox"
+                     ng-model="page.permissions.alert"
+                     ng-disabled="!layout.adminEdit">Alerts
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox"
                      ng-model="page.permissions.config._"
                      ng-disabled="!layout.adminEdit">Configuration
             </label>
@@ -491,7 +505,7 @@
                      ng-model="page.permissions.config.view"
                      ng-disabled="page.permissions.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(page.permissions)">
-              View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
+              View (Transactions, Gauges, Synthetic monitors, Alerts, UI, Plugins, Instrumentation, Advanced)
               <span ng-if="!page.permissions.config.view && viewConfigRequired(page.permissions)"
                     style="font-style: italic;">
                 -- required for edit permission
@@ -773,6 +787,20 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
+                     ng-model="permissionBlock.syntheticMonitor"
+                     ng-disabled="!layout.adminEdit">Synthetic monitors
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox"
+                     ng-model="permissionBlock.alert"
+                     ng-disabled="!layout.adminEdit">Alerts
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox"
                      ng-model="permissionBlock.config._"
                      ng-disabled="!layout.adminEdit">Configuration
             </label>
@@ -785,7 +813,7 @@
                      ng-model="permissionBlock.config.view"
                      ng-disabled="permissionBlock.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(permissionBlock)">
-              View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
+              View (Transactions, Gauges, Synthetic monitors, Alerts, UI, Plugins, Instrumentation, Advanced)
               <span ng-if="!permissionBlock.config.view && viewConfigRequired(permissionBlock)"
                     style="font-style: italic;">
                 -- required for edit permission

@@ -160,13 +160,9 @@ glowroot.controller('TransactionAverageCtrl', [
         content: function (label, xval, yval, flotItem) {
           var total = 0;
           var seriesIndex;
-          var dataSeries;
-          var value;
           var plotData = chartState.plot.getData();
           for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
-            dataSeries = plotData[seriesIndex];
-            value = dataSeries.data[flotItem.dataIndex][1];
-            total += value;
+            total += plotData[seriesIndex].data[flotItem.dataIndex][1];
           }
           if (total === 0) {
             return 'No data';

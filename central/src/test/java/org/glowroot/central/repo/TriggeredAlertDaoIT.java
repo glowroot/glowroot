@@ -15,13 +15,17 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.List;
+
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
+import org.glowroot.common.repo.TriggeredAlertRepository.TriggeredAlert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,8 +46,6 @@ public class TriggeredAlertDaoIT {
         session.execute("use glowroot_unit_tests");
 
         triggeredAlertDao = new TriggeredAlertDao(session);
-
-        session.execute("truncate triggered_alert");
     }
 
     @AfterClass
@@ -51,6 +53,11 @@ public class TriggeredAlertDaoIT {
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();
+    }
+
+    @Before
+    public void beforeEach() {
+        session.execute("truncate triggered_alert");
     }
 
     @Test
@@ -70,5 +77,13 @@ public class TriggeredAlertDaoIT {
         triggeredAlertDao.insert(AGENT_ID, "3333");
         triggeredAlertDao.delete(AGENT_ID, "3333");
         assertThat(triggeredAlertDao.exists(AGENT_ID, "3333")).isFalse();
+    }
+
+    @Test
+    public void shouldReadAll() throws Exception {
+        triggeredAlertDao.insert("xyz", "444");
+        triggeredAlertDao.insert("abc", "555");
+        List<TriggeredAlert> triggeredAlerts = triggeredAlertDao.readAll();
+        assertThat(triggeredAlerts).hasSize(2);
     }
 }

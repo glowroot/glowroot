@@ -111,7 +111,7 @@ class CentralModule {
     private final Cluster cluster;
     private final Session session;
     private final RollupService rollupService;
-    private final SyntheticAlertService pingAndSyntheticAlertService;
+    private final SyntheticMonitorService pingAndSyntheticAlertService;
     private final GrpcServer server;
     private final UiModule uiModule;
 
@@ -119,7 +119,7 @@ class CentralModule {
         Cluster cluster = null;
         Session session = null;
         RollupService rollupService = null;
-        SyntheticAlertService pingAndSyntheticAlertService = null;
+        SyntheticMonitorService pingAndSyntheticAlertService = null;
         GrpcServer server = null;
         UiModule uiModule = null;
         try {
@@ -217,9 +217,10 @@ class CentralModule {
                     checkNotNull(downstreamService).updateAgentConfigIfConnectedAndNeeded(agentId);
                 }
             });
-            rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao, heartbeatDao,
-                    configRepository, alertingService, downstreamService, clock);
-            pingAndSyntheticAlertService = new SyntheticAlertService(agentDao, configRepository,
+            rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
+                    syntheticResultDao, heartbeatDao, configRepository, alertingService,
+                    downstreamService, clock);
+            pingAndSyntheticAlertService = new SyntheticMonitorService(agentDao, configRepository,
                     triggeredAlertDao, alertingService, syntheticResultDao, ticker, clock);
 
             uiModule = new CreateUiModuleBuilder()
@@ -238,6 +239,8 @@ class CentralModule {
                     .traceRepository(traceDao)
                     .aggregateRepository(aggregateDao)
                     .gaugeValueRepository(gaugeValueDao)
+                    .syntheticResultRepository(syntheticResultDao)
+                    .triggeredAlertRepository(triggeredAlertDao)
                     .repoAdmin(new RepoAdminImpl(mailService))
                     .rollupLevelService(rollupLevelService)
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService, agentDao))

@@ -71,11 +71,18 @@
            ng-if="!isAgentRollup()">
       </div>
       <div gt-sidebar-item
-           ng-if="layout.central"
+           gt-display="Synthetic monitors"
+           gt-url="config/synthetic-monitor-list{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/synthetic-monitor-list'"
+           gt-sub-active="currentUrl() === 'config/synthetic-monitor'"
+           ng-if="layout.central">
+      </div>
+      <div gt-sidebar-item
            gt-display="Alerts"
            gt-url="config/alert-list{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/alert-list'"
-           gt-sub-active="currentUrl() === 'config/alert'">
+           gt-sub-active="currentUrl() === 'config/alert'"
+           ng-if="layout.central">
       </div>
       <div gt-sidebar-item
            gt-display="UI"

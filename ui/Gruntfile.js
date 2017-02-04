@@ -57,6 +57,8 @@ module.exports = function (grunt) {
         {from: '^/transaction/.*$', to: '/index.html'},
         {from: '^/error/.*$', to: '/index.html'},
         {from: '^/jvm/.*$', to: '/index.html'},
+        {from: '^/synthetic-monitors(|\\?.*)$', to: '/index.html'},
+        {from: '^/alerts(|\\?.*)$', to: '/index.html'},
         {from: '^/report/.*$', to: '/index.html'},
         {from: '^/config/.*$', to: '/index.html'},
         {from: '^/admin/.*$', to: '/index.html'},

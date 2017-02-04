@@ -75,17 +75,8 @@
               <input type="radio"
                      ng-model="config.kind"
                      ng-disabled="!agentPermissions.config.edit.alert"
-                     value="ping">
-              Ping
-            </label>
-          </div>
-          <div class="radio">
-            <label>
-              <input type="radio"
-                     ng-model="config.kind"
-                     ng-disabled="!agentPermissions.config.edit.alert"
-                     value="synthetic">
-              Synthetic user test
+                     value="synthetic-monitor">
+              Synthetic monitor
             </label>
           </div>
         </div>
@@ -240,64 +231,28 @@
           </div>
         </div>
       </div>
-      <div ng-if="config.kind === 'ping'">
-        <div gt-form-group
-             gt-type="url"
-             gt-label="Ping URL"
-             gt-model="config.pingUrl"
-             gt-pattern="/^https?:\/\//"
-             gt-required="loaded"
-             gt-disabled="!agentPermissions.config.edit.alert"
-             gt-rows="10"
-             class="gt-alert-java-class">
-          <div class="help-block">
-            The HTTP or HTTPS URL to ping with a simple GET request.
-          </div>
-        </div>
-        <div gt-form-group
-             gt-label="Threshold"
-             gt-model="config.thresholdMillis"
-             gt-number="true"
-             gt-pattern="pattern.integer"
-             gt-required="loaded"
-             gt-disabled="!agentPermissions.config.edit.alert"
-             gt-width="7em"
-             gt-addon="milliseconds">
-          <div class="help-block">
-            If the HTTP/S request takes more than this threshold, then an alert will be triggered.
-          </div>
-        </div>
-      </div>
-      <div ng-if="config.kind === 'synthetic'">
-        <!-- the id below is needed for css style (see config.less) -->
-        <div gt-form-group
-             gt-type="codemirror"
-             gt-label="Synthetic user test"
-             gt-model="config.syntheticUserTest"
-             gt-required="loaded"
-             gt-disabled="!agentPermissions.config.edit.alert"
-             id="gtSyntheticUserTest"
-             class="gt-alert-java-class"
-             ng-class="{'has-error': !config.syntheticUserTest}">
-          <div class="help-block">
-            A Java class that executes the synthetic user test.
-          </div>
-          <div class="help-block">
-            The class can be named anything.
-            The entry method must be named <em>test</em> and take a single parameter of
-            type <em>org.openqa.selenium.WebDriver</em>.
-          </div>
-          <div class="help-block">
-            Any string constants that begins with the text "ENCRYPT:" will be encrypted
-            (using two-way encryption so they can be decrypted when running the test).
-            The encryption/decryption key is unique to your glowroot central instance and is stored in the file named
-            <em>secret</em> inside the glowroot central directory.
-          </div>
-          <div ng-if="syntheticUserTestCompilationErrors"
-               class="gt-button-message-error"
-               style="font-weight: bold;">
-            <div ng-repeat="compilationError in syntheticUserTestCompilationErrors">
-              {{compilationError}}
+      <div ng-if="config.kind === 'synthetic-monitor'">
+        <div class="form-group" ng-class="{'has-error': formCtrl.syntheticMonitorId.$invalid}">
+          <label class="col-lg-3 control-label"
+                 for="syntheticMonitorId">
+            Synthetic monitor
+          </label>
+          <div class="col-lg-9">
+            <select ng-model="config.syntheticMonitorId"
+                    class="form-control"
+                    ng-required="loaded"
+                    ng-disabled="!agentPermissions.config.edit.alert"
+                    name="syntheticMonitorId"
+                    id="syntheticMonitorId"
+                    style="width: auto;">
+              <option ng-repeat="syntheticMonitor in syntheticMonitors"
+                      value="{{syntheticMonitor.id}}"
+                      ng-selected="syntheticMonitor.id === config.syntheticMonitorId">
+                {{syntheticMonitor.display}}
+              </option>
+            </select>
+            <div class="help-block">
+              The synthetic monitor that this alert is based on.
             </div>
           </div>
         </div>
@@ -311,7 +266,7 @@
              gt-width="7em"
              gt-addon="milliseconds">
           <div class="help-block">
-            If the synthetic user test takes more than this threshold, then an alert will be triggered.
+            If the synthetic monitor takes more than this threshold, then an alert will be triggered.
           </div>
         </div>
       </div>

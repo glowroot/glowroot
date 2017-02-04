@@ -18,8 +18,6 @@ package org.glowroot.central;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.util.Locale;
 
 import javax.crypto.SecretKey;
 import javax.mail.Message;
@@ -222,63 +220,6 @@ public class AlertingServiceTest {
         shouldReturnCorrectPercentileName(50.22, "nd");
         shouldReturnCorrectPercentileName(50.23, "rd");
         shouldReturnCorrectPercentileName(50.24, "th");
-    }
-
-    @Test
-    public void testGaugeValueFormattingInEnglishLocale() {
-        testGaugeValueFormattingInLocale(new Locale("en"), ',', '.');
-    }
-
-    @Test
-    public void testGaugeValueFormattingInUkraineLocale() {
-        // unicode 160 is non-breaking space
-        testGaugeValueFormattingInLocale(new Locale("uk"), (char) 160, ',');
-    }
-
-    private void testGaugeValueFormattingInLocale(Locale locale, char ts, char ds) {
-        NumberFormat nf = NumberFormat.getNumberInstance(locale);
-        assertThat(AlertingService.displaySixDigitsOfPrecision(3, nf))
-                .isEqualTo("3");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(333333, nf))
-                .isEqualTo("333" + ts + "333");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(3333333, nf))
-                .isEqualTo("3" + ts + "333" + ts + "333");
-
-        assertThat(AlertingService.displaySixDigitsOfPrecision(3.3, nf))
-                .isEqualTo("3" + ds + "3");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(3333.3, nf))
-                .isEqualTo("3" + ts + "333" + ds + "3");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(3333333.3, nf))
-                .isEqualTo("3" + ts + "333" + ts + "333");
-
-        assertThat(AlertingService.displaySixDigitsOfPrecision(3.33333, nf))
-                .isEqualTo("3" + ds + "33333");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(3.333333, nf))
-                .isEqualTo("3" + ds + "33333");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(3.3333333, nf))
-                .isEqualTo("3" + ds + "33333");
-
-        assertThat(AlertingService.displaySixDigitsOfPrecision(0.333333, nf))
-                .isEqualTo("0" + ds + "333333");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(0.3333333, nf))
-                .isEqualTo("0" + ds + "333333");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(0.33333333, nf))
-                .isEqualTo("0" + ds + "333333");
-
-        assertThat(AlertingService.displaySixDigitsOfPrecision(0.0333333, nf))
-                .isEqualTo("0" + ds + "0333333");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(0.03333333, nf))
-                .isEqualTo("0" + ds + "0333333");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(0.033333333, nf))
-                .isEqualTo("0" + ds + "0333333");
-
-        assertThat(AlertingService.displaySixDigitsOfPrecision(0.000000333333, nf))
-                .isEqualTo("0" + ds + "000000333333");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(0.0000003333333, nf))
-                .isEqualTo("0" + ds + "000000333333");
-        assertThat(AlertingService.displaySixDigitsOfPrecision(0.00000033333333, nf))
-                .isEqualTo("0" + ds + "000000333333");
-
     }
 
     private void setupForTransaction(long... histogramValues) throws Exception {

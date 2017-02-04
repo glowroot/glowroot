@@ -15,6 +15,10 @@ public class HttpContentCompressor {
     @Nullable Result beginEncode(HttpResponse headers, String acceptEncoding);
 }
 
+public class HttpResponseStatus {
+    boolean equals(@Nullable Object o);
+}
+
 /* ========================================================================== */
 package io.netty.handler.stream;
 

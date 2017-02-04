@@ -67,7 +67,7 @@ public class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 17;
+    private static final int CURR_SCHEMA_VERSION = 19;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -160,6 +160,15 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 17) {
             redoOnTriggeredAlertTable();
             updateSchemaVersion(17);
+        }
+        // 0.9.10 to 0.9.11
+        if (initialSchemaVersion < 18) {
+            addSyntheticMonitorAndAlertPermissions();
+            updateSchemaVersion(18);
+        }
+        if (initialSchemaVersion < 19) {
+            anotherRedoOnTriggeredAlertTable();
+            updateSchemaVersion(19);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -536,7 +545,7 @@ public class SchemaUpgrade {
                     .clearAlertConfig();
             for (AlertConfig alertConfig : alertConfigs) {
                 updatedAgentConfig.addAlertConfig(alertConfig.toBuilder()
-                        .setId(ConfigRepositoryImpl.generateAlertConfigId()));
+                        .setId(ConfigDao.generateNewId()));
             }
             boundStatement = insertConfigPS.bind();
             i = 0;
@@ -642,6 +651,35 @@ public class SchemaUpgrade {
                 + WITH_LCS);
     }
 
+    private void addSyntheticMonitorAndAlertPermissions() {
+        PreparedStatement insertPS =
+                session.prepare("insert into role (name, permissions) values (?, ?)");
+        ResultSet results = session.execute("select name, permissions from role");
+        for (Row row : results) {
+            String name = row.getString(0);
+            Set<String> permissions = row.getSet(1, String.class);
+            Set<String> permissionsToBeAdded = upgradePermissions2(permissions);
+            if (permissionsToBeAdded.isEmpty()) {
+                continue;
+            }
+            permissions.addAll(permissionsToBeAdded);
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, name);
+            boundStatement.setSet(1, permissions, String.class);
+            session.execute(boundStatement);
+        }
+    }
+
+    private void anotherRedoOnTriggeredAlertTable() throws InterruptedException {
+        if (columnExists("triggered_alert", "alert_id")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTable("triggered_alert");
+        session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
+                + " alert_id varchar, primary key (agent_rollup_id, alert_id)) " + WITH_LCS);
+    }
+
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType) {
         if (!columnExists(tableName, columnName)) {
             session.execute("alter table " + tableName + " add " + columnName + " " + cqlType);
@@ -684,7 +722,7 @@ public class SchemaUpgrade {
             } else {
                 return storageConfig.rollupExpirationHours().get(rollupLevel - 1);
             }
-        } else if (tableName.startsWith("aggregate_")) {
+        } else if (tableName.startsWith("aggregate_") || tableName.startsWith("synthetic_")) {
             int rollupLevel = Integer.parseInt(tableName.substring(tableName.lastIndexOf('_') + 1));
             return storageConfig.rollupExpirationHours().get(rollupLevel);
         } else if (tableName.equals("heartbeat")) {
@@ -734,6 +772,28 @@ public class SchemaUpgrade {
             updatedPermissions.add("admin");
         }
         return updatedPermissions;
+    }
+
+    @VisibleForTesting
+    static Set<String> upgradePermissions2(Set<String> permissions) {
+        Set<String> permissionsToBeAdded = Sets.newHashSet();
+        for (String permission : permissions) {
+            if (!permission.startsWith("agent:")) {
+                continue;
+            }
+            PermissionParser parser = new PermissionParser(permission);
+            parser.parse();
+            String perm = parser.getPermission();
+            if (perm.equals("agent:transaction")) {
+                permissionsToBeAdded.add("agent:"
+                        + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                        + ":syntheticMonitor");
+                permissionsToBeAdded.add("agent:"
+                        + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                        + ":alert");
+            }
+        }
+        return permissionsToBeAdded;
     }
 
     private static @Nullable Integer getSchemaVersion(Session session, KeyspaceMetadata keyspace) {

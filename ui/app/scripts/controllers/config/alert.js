@@ -30,32 +30,22 @@ glowroot.controller('ConfigAlertCtrl', [
     var id = $location.search().id;
 
     function onNewData(data) {
-      $scope.config = data;
-      $scope.originalConfig = angular.copy(data);
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
 
-      if (data.emailAddresses.length) {
-        if (data.timePeriodSeconds === undefined) {
+      if (data.heading) {
+        if (data.config.timePeriodSeconds === undefined) {
           $scope.page.timePeriodMinutes = undefined;
         } else {
-          $scope.page.timePeriodMinutes = data.timePeriodSeconds / 60;
+          $scope.page.timePeriodMinutes = data.config.timePeriodSeconds / 60;
         }
-        if (data.kind === 'transaction') {
-          $scope.heading = data.transactionType + ' - ' + data.transactionPercentile
-              + $scope.percentileSuffix(data.transactionPercentile) + ' percentile over a '
-              + data.timePeriodSeconds + ' minute period';
-        } else if (data.kind === 'gauge') {
-          $scope.heading = data.gaugeDisplay + ' - average over a ' + data.timePeriodSeconds / 60 + ' minute period';
-        } else if (data.kind === 'heartbeat') {
-          $scope.heading = 'Heartbeat - no heartbeat received for ' + data.timePeriodSeconds + ' second period';
-        } else if (data.kind === 'ping') {
-          $scope.heading = 'Ping - ' + data.pingUrl;
-        } else if (data.kind === 'synthetic') {
-          $scope.heading = 'Synthetic user test';
-        }
-        $scope.emailAddresses = data.emailAddresses.join(', ');
+        $scope.heading = data.heading;
+        $scope.emailAddresses = data.config.emailAddresses.join(', ');
       } else {
         $scope.heading = '<New>';
       }
+      $scope.gauges = data.gauges;
+      $scope.syntheticMonitors = data.syntheticMonitors;
     }
 
     $scope.unit = function () {
@@ -72,40 +62,32 @@ glowroot.controller('ConfigAlertCtrl', [
       return '';
     };
 
-    var halfLoaded;
-
-    function onHalfLoad() {
-      if (halfLoaded) {
-        $scope.loaded = true;
-      } else {
-        halfLoaded = true;
-      }
-    }
-
-    $http.get('backend/jvm/all-gauges?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
-        .then(function (response) {
-          onHalfLoad();
-          $scope.gaugeNames = [];
-          $scope.gauges = response.data;
-        }, function (response) {
-          httpErrors.handle(response, $scope);
-        });
-
     if (id) {
       $http.get('backend/config/alerts?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId) + '&id=' + id)
           .then(function (response) {
-            onHalfLoad();
             onNewData(response.data);
+            $scope.loaded = true;
           }, function (response) {
             httpErrors.handle(response, $scope);
           });
     } else {
-      onHalfLoad();
-      onNewData({
-        kind: 'transaction',
-        transactionType: $scope.defaultTransactionType(),
-        emailAddresses: []
-      });
+      var url = 'backend/config/alert-dropdowns?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId)
+          + '&id=' + id;
+      $http.get(url)
+          .then(function (response) {
+            onNewData({
+              config: {
+                kind: 'transaction',
+                transactionType: $scope.defaultTransactionType(),
+                emailAddresses: []
+              },
+              gauges: response.data.gauges,
+              syntheticMonitors: response.data.syntheticMonitors
+            });
+            $scope.loaded = true;
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     }
 
     $scope.$watch('config.kind', function (newValue, oldValue) {
@@ -120,29 +102,12 @@ glowroot.controller('ConfigAlertCtrl', [
       $scope.config.minTransactionCount = undefined;
       $scope.config.gaugeName = undefined;
       $scope.config.gaugeThreshold = undefined;
-      $scope.config.pingUrl = undefined;
-      $scope.config.syntheticUserTest = undefined;
+      $scope.config.syntheticMonitorId = undefined;
       $scope.config.thresholdMillis = undefined;
       $scope.config.timePeriodSeconds = undefined;
       $scope.page.timePeriodMinutes = undefined;
       if (newValue === 'transaction') {
         $scope.config.transactionType = $scope.defaultTransactionType();
-      }
-      if (newValue === 'synthetic') {
-        $scope.config.syntheticUserTest = 'import org.openqa.selenium.*;\n'
-            + 'import org.openqa.selenium.support.ui.*;\n\n'
-            + 'import static org.openqa.selenium.support.ui.ExpectedConditions.*;\n\n'
-            + 'public class Example {\n\n'
-            + '    public void test(WebDriver driver) throws Exception {\n\n'
-            + '        // e.g.\n'
-            + '        driver.get("https://www.example.org");\n'
-            + '        new WebDriverWait(driver, 30).until(\n'
-            + '                  visibilityOfElementLocated(By.xpath("//h1[text()=\'Example Domain\']")));\n'
-            + '        WebElement element = driver.findElement(By.linkText("More information..."));\n'
-            + '        element.click();\n'
-            + '        // ...\n'
-            + '    }\n'
-            + '}';
       }
     });
 
@@ -189,12 +154,6 @@ glowroot.controller('ConfigAlertCtrl', [
       var agentRollupId = $scope.agentRollupId;
       $http.post(url + '?agent-rollup-id=' + encodeURIComponent(agentRollupId), postData)
           .then(function (response) {
-            if (response.data.syntheticUserTestCompilationErrors) {
-              $scope.syntheticUserTestCompilationErrors = response.data.syntheticUserTestCompilationErrors;
-              deferred.reject('compile errors (see above)');
-              return;
-            }
-            $scope.syntheticUserTestCompilationErrors = [];
             onNewData(response.data);
             if (id) {
               deferred.resolve('Saved');

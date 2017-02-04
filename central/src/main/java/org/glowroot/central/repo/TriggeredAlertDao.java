@@ -24,9 +24,12 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.Lists;
 
+import org.glowroot.common.repo.ImmutableTriggeredAlert;
+import org.glowroot.common.repo.TriggeredAlertRepository;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class TriggeredAlertDao {
+public class TriggeredAlertDao implements TriggeredAlertRepository {
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -38,46 +41,49 @@ public class TriggeredAlertDao {
     private final PreparedStatement deletePS;
     private final PreparedStatement readPS;
 
+    private final PreparedStatement readAllPS;
+
     public TriggeredAlertDao(Session session) {
         this.session = session;
 
         session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
-                + " alert_config_id varchar, primary key (agent_rollup_id, alert_config_id)) "
-                + WITH_LCS);
+                + " alert_id varchar, primary key (agent_rollup_id, alert_id)) " + WITH_LCS);
 
-        insertPS = session.prepare("insert into triggered_alert (agent_rollup_id,"
-                + " alert_config_id) values (?, ?)");
+        insertPS = session.prepare("insert into triggered_alert (agent_rollup_id, alert_id) values"
+                + " (?, ?)");
 
         existsPS = session.prepare("select agent_rollup_id from triggered_alert where"
-                + " agent_rollup_id = ? and alert_config_id = ?");
+                + " agent_rollup_id = ? and alert_id = ?");
 
         deletePS = session.prepare("delete from triggered_alert where agent_rollup_id = ?"
-                + " and alert_config_id = ?");
+                + " and alert_id = ?");
 
         readPS = session
-                .prepare("select alert_config_id from triggered_alert where agent_rollup_id = ?");
+                .prepare("select alert_id from triggered_alert where agent_rollup_id = ?");
+
+        readAllPS = session.prepare("select agent_rollup_id, alert_id from triggered_alert");
     }
 
-    public boolean exists(String agentRollupId, String alertConfigId) throws Exception {
+    public boolean exists(String agentRollupId, String alertId) throws Exception {
         BoundStatement boundStatement = existsPS.bind();
         boundStatement.setString(0, agentRollupId);
-        boundStatement.setString(1, alertConfigId);
+        boundStatement.setString(1, alertId);
         ResultSet results = session.execute(boundStatement);
         return !results.isExhausted();
     }
 
-    public void delete(String agentRollupId, String alertConfigId) throws Exception {
+    public void delete(String agentRollupId, String alertId) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, agentRollupId);
-        boundStatement.setString(1, alertConfigId);
+        boundStatement.setString(1, alertId);
         session.execute(boundStatement);
     }
 
-    public void insert(String agentRollupId, String alertConfigId) throws Exception {
+    public void insert(String agentRollupId, String alertId) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, alertConfigId);
+        boundStatement.setString(i++, alertId);
         session.execute(boundStatement);
     }
 
@@ -85,10 +91,24 @@ public class TriggeredAlertDao {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentRollupId);
         ResultSet results = session.execute(boundStatement);
-        List<String> alertConfigIds = Lists.newArrayList();
+        List<String> alertIds = Lists.newArrayList();
         for (Row row : results) {
-            alertConfigIds.add(checkNotNull(row.getString(0)));
+            alertIds.add(checkNotNull(row.getString(0)));
         }
-        return alertConfigIds;
+        return alertIds;
+    }
+
+    @Override
+    public List<TriggeredAlert> readAll() throws Exception {
+        BoundStatement boundStatement = readAllPS.bind();
+        ResultSet results = session.execute(boundStatement);
+        List<TriggeredAlert> triggeredAlerts = Lists.newArrayList();
+        for (Row row : results) {
+            triggeredAlerts.add(ImmutableTriggeredAlert.builder()
+                    .agentRollupId(checkNotNull(row.getString(0)))
+                    .alertId(checkNotNull(row.getString(1)))
+                    .build());
+        }
+        return triggeredAlerts;
     }
 }

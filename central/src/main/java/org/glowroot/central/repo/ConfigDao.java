@@ -18,6 +18,7 @@ package org.glowroot.central.repo;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -28,18 +29,23 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 
@@ -48,8 +54,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 // TODO agent config records never expire for abandoned agent rollup ids
 public class ConfigDao {
 
+    private static final Logger logger = LoggerFactory.getLogger(ConfigDao.class);
+
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
+
+    private static final Random random = new Random();
 
     private final Session session;
 
@@ -86,7 +96,7 @@ public class ConfigDao {
         AgentConfig existingAgentConfig = read(agentId);
         AgentConfig updatedAgentConfig;
         if (existingAgentConfig == null) {
-            updatedAgentConfig = agentConfig;
+            updatedAgentConfig = generateNewIds(agentConfig);
         } else {
             // sync list of plugin properties, central property values win
             Map<String, PluginConfig> existingPluginConfigs = Maps.newHashMap();
@@ -215,6 +225,45 @@ public class ConfigDao {
         boundStatement.setString(i++, agentId);
         boundStatement.setUUID(i++, configUpdateToken);
         session.execute(boundStatement);
+    }
+
+    static String generateNewId() {
+        byte[] bytes = new byte[16];
+        random.nextBytes(bytes);
+        return BaseEncoding.base16().lowerCase().encode(bytes);
+    }
+
+    // generate alert ids since these are not stored on agent side
+    // also generate new synthetic monitor ids (which are stored agent side in order to reference
+    // from alerts) to allow copying from another deployment
+    @VisibleForTesting
+    static AgentConfig generateNewIds(AgentConfig agentConfig) {
+        AgentConfig.Builder builder = AgentConfig.newBuilder(agentConfig);
+        builder.clearSyntheticMonitorConfig();
+        Map<String, String> syntheticMonitorIdMap = Maps.newHashMap();
+        for (AgentConfig.SyntheticMonitorConfig config : agentConfig
+                .getSyntheticMonitorConfigList()) {
+            String newId = generateNewId();
+            builder.addSyntheticMonitorConfig(config.toBuilder()
+                    .setId(newId));
+            syntheticMonitorIdMap.put(config.getId(), newId);
+        }
+        builder.clearAlertConfig();
+        for (AgentConfig.AlertConfig config : agentConfig.getAlertConfigList()) {
+            AgentConfig.AlertConfig.Builder alertConfigBuilder = config.toBuilder()
+                    .setId(generateNewId());
+            if (config.getKind() == AlertKind.SYNTHETIC_MONITOR) {
+                String id = config.getSyntheticMonitorId();
+                String newId = syntheticMonitorIdMap.get(id);
+                if (newId == null) {
+                    logger.warn("synthetic monitor id not found: {}", id);
+                    continue;
+                }
+                alertConfigBuilder.setSyntheticMonitorId(newId);
+            }
+            builder.addAlertConfig(alertConfigBuilder);
+        }
+        return builder.build();
     }
 
     private class AgentConfigCacheLoader extends CacheLoader<String, Optional<AgentConfig>> {

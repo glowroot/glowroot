@@ -37,9 +37,11 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.repo.SyntheticResultRepository;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
+import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 
@@ -71,6 +73,8 @@ public class UiModule {
             TraceAttributeNameRepository traceAttributeNameRepository,
             TraceRepository traceRepository,
             GaugeValueRepository gaugeValueRepository,
+            @Nullable SyntheticResultRepository syntheticResultRepository, // null for embedded
+            @Nullable TriggeredAlertRepository triggeredAlertRepository, // null for embedded
             RepoAdmin repoAdmin,
             RollupLevelService rollupLevelService,
             LiveTraceRepository liveTraceRepository,
@@ -104,14 +108,10 @@ public class UiModule {
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);
-        ReportJsonService reportJsonService =
-                new ReportJsonService(aggregateRepository, agentRepository, gaugeValueRepository);
-        ConfigJsonService configJsonService =
-                new ConfigJsonService(agentRepository, configRepository);
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, agentRepository, configRepository);
-        AlertConfigJsonService alertConfigJsonService =
-                new AlertConfigJsonService(configRepository);
+        ConfigJsonService configJsonService =
+                new ConfigJsonService(agentRepository, configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(central, glowrootDir,
                 configRepository, repoAdmin, liveAggregateRepository);
 
@@ -122,7 +122,6 @@ public class UiModule {
         jsonServices.add(errorJsonService);
         jsonServices.add(gaugeValueJsonService);
         jsonServices.add(new JvmJsonService(environmentRepository, liveJvmService));
-        jsonServices.add(reportJsonService);
         jsonServices.add(configJsonService);
         jsonServices.add(new AgentConfigJsonService(configRepository, agentRepository));
         jsonServices.add(new UserConfigJsonService(configRepository));
@@ -130,8 +129,20 @@ public class UiModule {
         jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
         jsonServices.add(new InstrumentationConfigJsonService(configRepository, liveWeavingService,
                 liveJvmService));
-        jsonServices.add(alertConfigJsonService);
         jsonServices.add(adminJsonService);
+
+        if (central) {
+            checkNotNull(syntheticResultRepository);
+            checkNotNull(triggeredAlertRepository);
+            jsonServices.add(new SyntheticResultJsonService(syntheticResultRepository,
+                    rollupLevelService, configRepository));
+            jsonServices.add(new AlertIncidentJsonService(triggeredAlertRepository,
+                    configRepository));
+            jsonServices.add(new ReportJsonService(aggregateRepository, agentRepository,
+                    gaugeValueRepository));
+            jsonServices.add(new SyntheticMonitorConfigJsonService(configRepository));
+            jsonServices.add(new AlertConfigJsonService(configRepository, gaugeValueRepository));
+        }
 
         Map<Pattern, HttpService> httpServices = Maps.newHashMap();
         // http services
@@ -139,7 +150,6 @@ public class UiModule {
         httpServices.put(Pattern.compile("^/transaction/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/profile/.*$"), indexHtmlHttpService);
@@ -153,6 +163,12 @@ public class UiModule {
         httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
+
+        if (central) {
+            httpServices.put(Pattern.compile("^/synthetic-monitors$"), indexHtmlHttpService);
+            httpServices.put(Pattern.compile("^/alerts$"), indexHtmlHttpService);
+            httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
+        }
 
         CommonHandler commonHandler = new CommonHandler(layoutService, httpServices,
                 httpSessionManager, jsonServices, clock);

@@ -195,13 +195,24 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public List<AgentConfig.SyntheticMonitorConfig> getSyntheticMonitorConfigs(
+            String agentRollupId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public @Nullable AgentConfig.SyntheticMonitorConfig getSyntheticMonitorConfig(
+            String agentRollupId, String syntheticMonitorId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<AgentConfig.AlertConfig> getAlertConfigs(String agentRollupId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public @Nullable AgentConfig.AlertConfig getAlertConfig(String agentRollupId,
-            String alertConfigId) {
+    public @Nullable AgentConfig.AlertConfig getAlertConfig(String agentRollupId, String alertId) {
         throw new UnsupportedOperationException();
     }
 
@@ -235,11 +246,10 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public @Nullable AgentConfig.InstrumentationConfig getInstrumentationConfig(String agentId,
             String version) {
-        for (InstrumentationConfig instrumentationConfig : configService
-                .getInstrumentationConfigs()) {
-            AgentConfig.InstrumentationConfig config = instrumentationConfig.toProto();
-            if (Versions.getVersion(config).equals(version)) {
-                return config;
+        for (InstrumentationConfig config : configService.getInstrumentationConfigs()) {
+            AgentConfig.InstrumentationConfig protoConfig = config.toProto();
+            if (Versions.getVersion(protoConfig).equals(version)) {
+                return protoConfig;
             }
         }
         return null;
@@ -257,9 +267,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public @Nullable UserConfig getUserConfig(String username) {
-        for (UserConfig userConfig : userConfigs) {
-            if (userConfig.username().equals(username)) {
-                return userConfig;
+        for (UserConfig config : userConfigs) {
+            if (config.username().equals(username)) {
+                return config;
             }
         }
         return null;
@@ -267,9 +277,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
-        for (UserConfig userConfig : userConfigs) {
-            if (userConfig.username().equalsIgnoreCase(username)) {
-                return userConfig;
+        for (UserConfig config : userConfigs) {
+            if (config.username().equalsIgnoreCase(username)) {
+                return config;
             }
         }
         return null;
@@ -277,8 +287,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public boolean namedUsersExist() {
-        for (UserConfig userConfig : userConfigs) {
-            if (!userConfig.username().equalsIgnoreCase("anonymous")) {
+        for (UserConfig config : userConfigs) {
+            if (!config.username().equalsIgnoreCase("anonymous")) {
                 return true;
             }
         }
@@ -292,9 +302,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public @Nullable RoleConfig getRoleConfig(String name) {
-        for (RoleConfig roleConfig : roleConfigs) {
-            if (roleConfig.name().equals(name)) {
-                return roleConfig;
+        for (RoleConfig config : roleConfigs) {
+            if (config.name().equals(name)) {
+                return config;
             }
         }
         return null;
@@ -327,8 +337,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateTransactionConfig(String agentId,
-            AgentConfig.TransactionConfig updatedConfig, String priorVersion) throws Exception {
-        TransactionConfig config = TransactionConfig.create(updatedConfig);
+            AgentConfig.TransactionConfig protoConfig, String priorVersion) throws Exception {
+        TransactionConfig config = TransactionConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion =
                     Versions.getVersion(configService.getTransactionConfig().toProto());
@@ -338,14 +348,14 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertGaugeConfig(String agentId, AgentConfig.GaugeConfig gaugeConfig)
+    public void insertGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig)
             throws Exception {
-        GaugeConfig config = GaugeConfig.create(gaugeConfig);
+        GaugeConfig config = GaugeConfig.create(protoConfig);
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             // check for duplicate mbeanObjectName
             for (GaugeConfig loopConfig : configs) {
-                if (loopConfig.mbeanObjectName().equals(gaugeConfig.getMbeanObjectName())) {
+                if (loopConfig.mbeanObjectName().equals(protoConfig.getMbeanObjectName())) {
                     throw new DuplicateMBeanObjectNameException();
                 }
             }
@@ -356,9 +366,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateGaugeConfig(String agentId, AgentConfig.GaugeConfig gaugeConfig,
+    public void updateGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig,
             String priorVersion) throws Exception {
-        GaugeConfig config = GaugeConfig.create(gaugeConfig);
+        GaugeConfig config = GaugeConfig.create(protoConfig);
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             boolean found = false;
@@ -368,7 +378,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
                 if (loopVersion.equals(priorVersion)) {
                     i.set(config);
                     found = true;
-                } else if (loopConfig.mbeanObjectName().equals(gaugeConfig.getMbeanObjectName())) {
+                } else if (loopConfig.mbeanObjectName().equals(protoConfig.getMbeanObjectName())) {
                     throw new DuplicateMBeanObjectNameException();
                 }
                 // no need to check for exact match since redundant with dup mbean object name check
@@ -402,26 +412,44 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String insertAlertConfig(String agentRollupId,
-            AgentConfig.AlertConfig alertConfigWithoutId) throws Exception {
+    public String insertSyntheticMonitorConfig(String agentRollupId,
+            AgentConfig.SyntheticMonitorConfig configWithoutId) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateAlertConfig(String agentRollupId, AgentConfig.AlertConfig alertConfig,
+    public void updateSyntheticMonitorConfig(String agentRollupId,
+            AgentConfig.SyntheticMonitorConfig config, String priorVersion) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId)
+            throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig configWithoutId)
+            throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateAlertConfig(String agentRollupId, AgentConfig.AlertConfig config,
             String priorVersion) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void deleteAlertConfig(String agentRollupId, String alertConfigId) throws Exception {
+    public void deleteAlertConfig(String agentRollupId, String alertId) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateUiConfig(String agentId, AgentConfig.UiConfig uiConfig, String priorVersion)
-            throws Exception {
-        UiConfig config = UiConfig.create(uiConfig);
+    public void updateUiConfig(String agentId, AgentConfig.UiConfig protoConfig,
+            String priorVersion) throws Exception {
+        UiConfig config = UiConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion = Versions.getVersion(configService.getUiConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
@@ -454,8 +482,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void insertInstrumentationConfig(String agentId,
-            AgentConfig.InstrumentationConfig instrumentationConfig) throws Exception {
-        InstrumentationConfig config = InstrumentationConfig.create(instrumentationConfig);
+            AgentConfig.InstrumentationConfig protoConfig) throws Exception {
+        InstrumentationConfig config = InstrumentationConfig.create(protoConfig);
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
@@ -467,9 +495,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateInstrumentationConfig(String agentId,
-            AgentConfig.InstrumentationConfig instrumentationConfig, String priorVersion)
-            throws Exception {
-        InstrumentationConfig config = InstrumentationConfig.create(instrumentationConfig);
+            AgentConfig.InstrumentationConfig protoConfig, String priorVersion) throws Exception {
+        InstrumentationConfig config = InstrumentationConfig.create(protoConfig);
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
@@ -515,28 +542,28 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void insertInstrumentationConfigs(String agentId,
-            List<AgentConfig.InstrumentationConfig> instrumentationConfigs) throws Exception {
-        List<InstrumentationConfig> newConfigs = Lists.newArrayList();
-        for (AgentConfig.InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
+            List<AgentConfig.InstrumentationConfig> protoConfigs) throws Exception {
+        List<InstrumentationConfig> configs = Lists.newArrayList();
+        for (AgentConfig.InstrumentationConfig instrumentationConfig : protoConfigs) {
             InstrumentationConfig config = InstrumentationConfig.create(instrumentationConfig);
-            newConfigs.add(config);
+            configs.add(config);
         }
         synchronized (writeLock) {
-            List<InstrumentationConfig> configs =
+            List<InstrumentationConfig> existingConfigs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
-            for (InstrumentationConfig config : newConfigs) {
-                checkInstrumentationDoesNotExist(config, configs);
-                configs.add(config);
+            for (InstrumentationConfig config : configs) {
+                checkInstrumentationDoesNotExist(config, existingConfigs);
+                existingConfigs.add(config);
             }
-            configService.updateInstrumentationConfigs(configs);
+            configService.updateInstrumentationConfigs(existingConfigs);
         }
     }
 
     @Override
     public void updateUserRecordingConfig(String agentId,
-            AgentConfig.UserRecordingConfig userRecordingConfig, String priorVersion)
+            AgentConfig.UserRecordingConfig protoConfig, String priorVersion)
             throws Exception {
-        UserRecordingConfig config = UserRecordingConfig.create(userRecordingConfig);
+        UserRecordingConfig config = UserRecordingConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion =
                     Versions.getVersion(configService.getUserRecordingConfig().toProto());
@@ -546,9 +573,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateAdvancedConfig(String agentId, AgentConfig.AdvancedConfig advancedConfig,
+    public void updateAdvancedConfig(String agentId, AgentConfig.AdvancedConfig protoConfig,
             String priorVersion) throws Exception {
-        AdvancedConfig config = AdvancedConfig.create(advancedConfig);
+        AdvancedConfig config = AdvancedConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion = Versions.getVersion(configService.getAdvancedConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
@@ -567,33 +594,33 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertUserConfig(UserConfig userConfig) throws Exception {
+    public void insertUserConfig(UserConfig config) throws Exception {
         synchronized (writeLock) {
             List<UserConfig> configs = Lists.newArrayList(userConfigs);
             // check for case-insensitive duplicate
-            String username = userConfig.username();
+            String username = config.username();
             for (UserConfig loopConfig : configs) {
                 if (loopConfig.username().equalsIgnoreCase(username)) {
                     throw new DuplicateUsernameException();
                 }
             }
-            configs.add(userConfig);
+            configs.add(config);
             configService.updateAdminConfig(USERS_KEY, configs);
             userConfigs = ImmutableList.copyOf(configs);
         }
     }
 
     @Override
-    public void updateUserConfig(UserConfig userConfig, String priorVersion) throws Exception {
+    public void updateUserConfig(UserConfig config, String priorVersion) throws Exception {
         synchronized (writeLock) {
             List<UserConfig> configs = Lists.newArrayList(userConfigs);
-            String username = userConfig.username();
+            String username = config.username();
             boolean found = false;
             for (ListIterator<UserConfig> i = configs.listIterator(); i.hasNext();) {
                 UserConfig loopConfig = i.next();
                 if (loopConfig.username().equals(username)) {
                     if (loopConfig.version().equals(priorVersion)) {
-                        i.set(userConfig);
+                        i.set(config);
                         found = true;
                         break;
                     } else {
@@ -634,33 +661,33 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertRoleConfig(RoleConfig roleConfig) throws Exception {
+    public void insertRoleConfig(RoleConfig config) throws Exception {
         synchronized (writeLock) {
             List<RoleConfig> configs = Lists.newArrayList(roleConfigs);
             // check for case-insensitive duplicate
-            String name = roleConfig.name();
+            String name = config.name();
             for (RoleConfig loopConfig : configs) {
                 if (loopConfig.name().equalsIgnoreCase(name)) {
                     throw new DuplicateRoleNameException();
                 }
             }
-            configs.add(roleConfig);
+            configs.add(config);
             configService.updateAdminConfig(ROLES_KEY, configs);
             roleConfigs = ImmutableList.copyOf(configs);
         }
     }
 
     @Override
-    public void updateRoleConfig(RoleConfig roleConfig, String priorVersion) throws Exception {
+    public void updateRoleConfig(RoleConfig config, String priorVersion) throws Exception {
         synchronized (writeLock) {
             List<RoleConfig> configs = Lists.newArrayList(roleConfigs);
-            String name = roleConfig.name();
+            String name = config.name();
             boolean found = false;
             for (ListIterator<RoleConfig> i = configs.listIterator(); i.hasNext();) {
                 RoleConfig loopConfig = i.next();
                 if (loopConfig.name().equals(name)) {
                     if (loopConfig.version().equals(priorVersion)) {
-                        i.set(roleConfig);
+                        i.set(config);
                         found = true;
                         break;
                     } else {
@@ -701,42 +728,40 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateWebConfig(WebConfig updatedConfig, String priorVersion)
-            throws Exception {
+    public void updateWebConfig(WebConfig config, String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(webConfig.version(), priorVersion);
-            configService.updateAdminConfig(WEB_KEY, updatedConfig);
-            webConfig = updatedConfig;
+            configService.updateAdminConfig(WEB_KEY, config);
+            webConfig = config;
         }
     }
 
     @Override
-    public void updateFatStorageConfig(FatStorageConfig updatedConfig, String priorVersion)
+    public void updateFatStorageConfig(FatStorageConfig config, String priorVersion)
             throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(storageConfig.version(), priorVersion);
-            configService.updateAdminConfig(STORAGE_KEY, updatedConfig);
-            storageConfig = updatedConfig;
+            configService.updateAdminConfig(STORAGE_KEY, config);
+            storageConfig = config;
         }
     }
 
     @Override
-    public void updateCentralStorageConfig(CentralStorageConfig updatedConfig,
-            String priorVersion) {
+    public void updateCentralStorageConfig(CentralStorageConfig config, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateSmtpConfig(SmtpConfig updatedConfig, String priorVersion) {
+    public void updateSmtpConfig(SmtpConfig config, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateLdapConfig(LdapConfig updatedConfig, String priorVersion) throws Exception {
+    public void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(ldapConfig.version(), priorVersion);
-            configService.updateAdminConfig(LDAP_KEY, updatedConfig);
-            ldapConfig = updatedConfig;
+            configService.updateAdminConfig(LDAP_KEY, config);
+            ldapConfig = config;
         }
     }
 
@@ -815,15 +840,14 @@ class ConfigRepositoryImpl implements ConfigRepository {
         }
     }
 
-    private static FatStorageConfig withCorrectedLists(FatStorageConfig storageConfig) {
+    private static FatStorageConfig withCorrectedLists(FatStorageConfig config) {
         FatStorageConfig defaultConfig = ImmutableFatStorageConfig.builder().build();
         ImmutableList<Integer> rollupExpirationHours =
-                fix(storageConfig.rollupExpirationHours(), defaultConfig.rollupExpirationHours());
-        ImmutableList<Integer> rollupCappedDatabaseSizesMb =
-                fix(storageConfig.rollupCappedDatabaseSizesMb(),
-                        defaultConfig.rollupCappedDatabaseSizesMb());
+                fix(config.rollupExpirationHours(), defaultConfig.rollupExpirationHours());
+        ImmutableList<Integer> rollupCappedDatabaseSizesMb = fix(
+                config.rollupCappedDatabaseSizesMb(), defaultConfig.rollupCappedDatabaseSizesMb());
         return ImmutableFatStorageConfig.builder()
-                .copyFrom(storageConfig)
+                .copyFrom(config)
                 .rollupExpirationHours(rollupExpirationHours)
                 .rollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb)
                 .build();

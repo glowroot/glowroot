@@ -77,7 +77,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.RollupService.AgentRollupConsumer;
-import org.glowroot.central.RollupService.AlertConfigConsumer;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.SyntheticResultDao;
@@ -88,16 +87,15 @@ import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-// includes both "synthetic" and "ping" alert type
-class SyntheticAlertService implements Runnable {
+class SyntheticMonitorService implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(SyntheticAlertService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SyntheticMonitorService.class);
 
     private static final Pattern encryptedPattern = Pattern.compile("\"ENCRYPTED:([^\"]*)\"");
 
@@ -134,14 +132,15 @@ class SyntheticAlertService implements Runnable {
     private final ExecutorService mainLoopExecutor;
     private final ExecutorService checkExecutor;
 
-    private final Set<AlertConfigUniqueKey> activeAlertConfigs = Sets.newConcurrentHashSet();
+    private final Set<SyntheticMonitorUniqueKey> activeSyntheticMonitors =
+            Sets.newConcurrentHashSet();
 
     private final ListeningExecutorService syntheticUserTestExecutor =
             MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
 
     private volatile boolean closed;
 
-    SyntheticAlertService(AgentDao agentDao, ConfigRepositoryImpl configRepository,
+    SyntheticMonitorService(AgentDao agentDao, ConfigRepositoryImpl configRepository,
             TriggeredAlertDao triggeredAlertDao, AlertingService alertingService,
             SyntheticResultDao syntheticResponseDao, Ticker ticker, Clock clock) {
         this.agentDao = agentDao;
@@ -173,7 +172,7 @@ class SyntheticAlertService implements Runnable {
 
     void close() throws InterruptedException {
         closed = true;
-        // shutdownNow() is needed here to send interrupt to SyntheticAlertService thread
+        // shutdownNow() is needed here to send interrupt to SyntheticMonitorService thread
         mainLoopExecutor.shutdownNow();
         if (!mainLoopExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
@@ -181,89 +180,88 @@ class SyntheticAlertService implements Runnable {
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
-            transactionName = "Outer ping/synthetic alert loop",
-            traceHeadline = "Outer ping/synthetic alert loop",
-            timer = "outer ping/synthetic alert loop")
+            transactionName = "Outer synthetic monitor loop",
+            traceHeadline = "Outer synthetic monitor loop",
+            timer = "outer synthetic monitor loop")
     private void runInternal() throws Exception {
         Glowroot.setTransactionOuter();
         for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
-            consumeLeafAgentRollups(agentRollup, this::checkPingAlerts);
-            consumeLeafAgentRollups(agentRollup, this::checkSyntheticAlerts);
+            consumeAgentRollups(agentRollup, this::runSyntheticMonitors);
         }
     }
 
-    private void consumeLeafAgentRollups(AgentRollup agentRollup,
-            AgentRollupConsumer leafAgentRollupConsumer) throws Exception {
-        List<AgentRollup> childAgentRollups = agentRollup.children();
-        if (childAgentRollups.isEmpty()) {
-            leafAgentRollupConsumer.accept(agentRollup);
-        } else {
-            for (AgentRollup childAgentRollup : childAgentRollups) {
-                consumeLeafAgentRollups(childAgentRollup, leafAgentRollupConsumer);
-            }
+    private void consumeAgentRollups(AgentRollup agentRollup,
+            AgentRollupConsumer agentRollupConsumer) throws Exception {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            consumeAgentRollups(childAgentRollup, agentRollupConsumer);
         }
+        agentRollupConsumer.accept(agentRollup);
     }
 
-    private void checkPingAlerts(AgentRollup leafAgentRollup) throws Exception {
-        checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.PING,
-                alertConfig -> checkPingAlert(leafAgentRollup.id(), leafAgentRollup.display(),
-                        alertConfig));
-    }
-
-    private void checkSyntheticAlerts(AgentRollup leafAgentRollup) throws Exception {
-        checkAlerts(leafAgentRollup.id(), leafAgentRollup.display(), AlertKind.SYNTHETIC,
-                alertConfig -> checkSyntheticAlert(leafAgentRollup.id(), leafAgentRollup.display(),
-                        alertConfig));
-    }
-
-    private void checkAlerts(String agentId, String agentDisplay, AlertKind alertKind,
-            AlertConfigConsumer check) throws InterruptedException {
-        List<AlertConfig> alertConfigs;
+    private void runSyntheticMonitors(AgentRollup agentRollup) throws InterruptedException {
+        List<SyntheticMonitorConfig> syntheticMonitorConfigs;
         try {
-            alertConfigs = configRepository.getAlertConfigs(agentId, alertKind);
+            syntheticMonitorConfigs = configRepository.getSyntheticMonitorConfigs(agentRollup.id());
         } catch (Exception e) {
-            logger.error("{} - {}", agentDisplay, e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
             return;
         }
-        if (alertConfigs.isEmpty()) {
+        if (syntheticMonitorConfigs.isEmpty()) {
             return;
         }
-        for (AlertConfig alertConfig : alertConfigs) {
+        for (SyntheticMonitorConfig syntheticMonitorConfig : syntheticMonitorConfigs) {
+            List<AlertConfig> alertConfigs;
+            try {
+                alertConfigs = configRepository.getAlertConfigsForSyntheticMonitorId(
+                        agentRollup.id(), syntheticMonitorConfig.getId());
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                continue;
+            }
             checkExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        check.accept(alertConfig);
+                        switch (syntheticMonitorConfig.getKind()) {
+                            case PING:
+                                runPing(agentRollup, syntheticMonitorConfig, alertConfigs);
+                                break;
+                            case JAVA:
+                                runJava(agentRollup, syntheticMonitorConfig, alertConfigs);
+                                break;
+                            default:
+                                throw new IllegalStateException(
+                                        "Unexpected synthetic kind: "
+                                                + syntheticMonitorConfig.getKind());
+                        }
                     } catch (Exception e) {
-                        logger.error("{} - {}", agentDisplay, e.getMessage(), e);
+                        logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
                     }
                 }
             });
         }
     }
 
-    // call in separate thread, as this can block for as long as alertConfig's thresholdMillis
     @Instrumentation.Transaction(transactionType = "Background",
-            transactionName = "Check ping alert", traceHeadline = "Check ping alert: {{0}}",
-            timer = "check ping alert")
-    public void checkPingAlert(final String agentId, final String agentDisplay,
-            final AlertConfig alertConfig) throws Exception {
-        checkPingOrSyntheticAlert(agentId, agentDisplay, alertConfig,
+            transactionName = "Synthetic monitor", traceHeadline = "Synthetic monitor: {{0.id}}",
+            timer = "synthetic monitor")
+    public void runPing(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
+            List<AlertConfig> alertConfigs) throws Exception {
+        runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,
                 new Callable<ListenableFuture<?>>() {
                     @Override
                     public ListenableFuture<?> call() throws Exception {
-                        return ping(alertConfig.getPingUrl());
+                        return runPing(syntheticMonitorConfig.getPingUrl());
                     }
                 });
     }
 
-    // call in separate thread, as this can block for as long as alertConfig's thresholdMillis
     @Instrumentation.Transaction(transactionType = "Background",
-            transactionName = "Check synthetic alert",
-            traceHeadline = "Check synthetic alert: {{0}}", timer = "check synthetic alert")
-    public void checkSyntheticAlert(final String agentId, final String agentDisplay,
-            final AlertConfig alertConfig) throws Exception {
-        Matcher matcher = encryptedPattern.matcher(alertConfig.getSyntheticUserTest());
+            transactionName = "Synthetic monitor", traceHeadline = "Synthetic monitor: {{0.id}}",
+            timer = "synthetic monitor")
+    public void runJava(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
+            List<AlertConfig> alertConfigs) throws Exception {
+        Matcher matcher = encryptedPattern.matcher(syntheticMonitorConfig.getJavaSource());
         StringBuffer sb = new StringBuffer();
         while (matcher.find()) {
             String encryptedPassword = checkNotNull(matcher.group(1));
@@ -272,20 +270,22 @@ class SyntheticAlertService implements Runnable {
                             configRepository.getSecretKey()) + "\"");
         }
         matcher.appendTail(sb);
-        checkPingOrSyntheticAlert(agentId, agentDisplay, alertConfig,
+        runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,
                 new Callable<ListenableFuture<?>>() {
                     @Override
                     public ListenableFuture<?> call() throws Exception {
-                        return runSyntheticUserTest(sb.toString());
+                        return runJava(sb.toString());
                     }
                 });
     }
 
-    private void checkPingOrSyntheticAlert(String agentId, String agentDisplay,
-            AlertConfig alertConfig, Callable<ListenableFuture<?>> callable) throws Exception {
-        final AlertConfigUniqueKey uniqueKey =
-                ImmutableAlertConfigUniqueKey.of(agentId, alertConfig);
-        if (!activeAlertConfigs.add(uniqueKey)) {
+    private void runSyntheticMonitor(AgentRollup agentRollup,
+            SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
+            Callable<ListenableFuture<?>> callable) throws Exception {
+        final SyntheticMonitorUniqueKey uniqueKey =
+                ImmutableSyntheticMonitorUniqueKey.of(agentRollup.id(),
+                        syntheticMonitorConfig.getId());
+        if (!activeSyntheticMonitors.add(uniqueKey)) {
             return;
         }
         long startTime = ticker.read();
@@ -295,16 +295,22 @@ class SyntheticAlertService implements Runnable {
             future = callable.call();
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
-            activeAlertConfigs.remove(uniqueKey);
-            sendPingOrSyntheticAlertIfStatusChanged(agentId, agentDisplay, alertConfig, true,
-                    e.getMessage());
+            activeSyntheticMonitors.remove(uniqueKey);
+            long durationNanos = ticker.read() - startTime;
+            long captureTime = clock.currentTimeMillis();
+            syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
+                    captureTime, durationNanos, true);
+            for (AlertConfig alertConfig : alertConfigs) {
+                sendPingOrSyntheticAlertIfStatusChanged(agentRollup, syntheticMonitorConfig,
+                        alertConfig, true, e.getMessage());
+            }
             return;
         }
         future.addListener(new Runnable() {
             @Override
             public void run() {
                 // remove "lock" after completion, not just after possible timeout
-                activeAlertConfigs.remove(uniqueKey);
+                activeSyntheticMonitors.remove(uniqueKey);
                 long durationNanos = ticker.read() - startTime;
                 long captureTime = clock.currentTimeMillis();
                 boolean error = false;
@@ -314,49 +320,69 @@ class SyntheticAlertService implements Runnable {
                     error = true;
                 }
                 try {
-                    syntheticResponseDao.store(agentId, alertConfig.getId(), captureTime,
-                            durationNanos, error);
+                    syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
+                            captureTime, durationNanos, error);
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
             }
         }, MoreExecutors.directExecutor());
-        int thresholdMillis = alertConfig.getThresholdMillis().getValue();
-        boolean currentlyTriggered;
-        String errorMessage = null;
+        int maxThresholdMillis = Integer.MAX_VALUE;
+        for (AlertConfig alertConfig : alertConfigs) {
+            maxThresholdMillis =
+                    Math.max(maxThresholdMillis, alertConfig.getThresholdMillis().getValue());
+        }
+        boolean success;
+        String errorMessage;
         try {
-            future.get(thresholdMillis, MILLISECONDS);
-            currentlyTriggered = stopwatch.elapsed(MILLISECONDS) >= thresholdMillis;
+            future.get(maxThresholdMillis, MILLISECONDS);
+            success = true;
+            errorMessage = null;
         } catch (TimeoutException e) {
             logger.debug(e.getMessage(), e);
-            currentlyTriggered = true;
+            success = false;
+            errorMessage = null;
         } catch (ExecutionException e) {
             logger.debug(e.getMessage(), e);
-            currentlyTriggered = true;
+            success = false;
             errorMessage = getRootCause(e).getMessage();
         }
-        sendPingOrSyntheticAlertIfStatusChanged(agentId, agentDisplay, alertConfig,
-                currentlyTriggered, errorMessage);
-    }
-
-    private void sendPingOrSyntheticAlertIfStatusChanged(String agentId, String agentDisplay,
-            AlertConfig alertConfig, boolean currentlyTriggered, @Nullable String errorMessage)
-            throws Exception {
-        boolean previouslyTriggered = triggeredAlertDao.exists(agentId, alertConfig.getId());
-        if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertDao.delete(agentId, alertConfig.getId());
-            sendPingOrSyntheticAlert(agentDisplay, alertConfig, true, null);
-        } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertDao.insert(agentId, alertConfig.getId());
-            sendPingOrSyntheticAlert(agentDisplay, alertConfig, false, errorMessage);
+        if (success) {
+            for (AlertConfig alertConfig : alertConfigs) {
+                boolean currentlyTriggered = stopwatch.elapsed(MILLISECONDS) >= alertConfig
+                        .getThresholdMillis().getValue();
+                sendPingOrSyntheticAlertIfStatusChanged(agentRollup, syntheticMonitorConfig,
+                        alertConfig, currentlyTriggered, null);
+            }
+        } else {
+            for (AlertConfig alertConfig : alertConfigs) {
+                sendPingOrSyntheticAlertIfStatusChanged(agentRollup, syntheticMonitorConfig,
+                        alertConfig, true, errorMessage);
+            }
         }
     }
 
-    private ListenableFuture<?> runSyntheticUserTest(final String syntheticUserTest) {
+    private void sendPingOrSyntheticAlertIfStatusChanged(AgentRollup agentRollup,
+            SyntheticMonitorConfig syntheticMonitorConfig, AlertConfig alertConfig,
+            boolean currentlyTriggered, @Nullable String errorMessage) throws Exception {
+        boolean previouslyTriggered =
+                triggeredAlertDao.exists(agentRollup.id(), alertConfig.getId());
+        if (previouslyTriggered && !currentlyTriggered) {
+            triggeredAlertDao.delete(agentRollup.id(), alertConfig.getId());
+            sendAlert(agentRollup.display(), syntheticMonitorConfig, alertConfig, true,
+                    null);
+        } else if (!previouslyTriggered && currentlyTriggered) {
+            triggeredAlertDao.insert(agentRollup.id(), alertConfig.getId());
+            sendAlert(agentRollup.display(), syntheticMonitorConfig, alertConfig, false,
+                    errorMessage);
+        }
+    }
+
+    private ListenableFuture<?> runJava(final String javaSource) {
         return syntheticUserTestExecutor.submit(new Callable</*@Nullable*/ Void>() {
             @Override
             public @Nullable Void call() throws Exception {
-                Class<?> syntheticUserTestClass = Compilations.compile(syntheticUserTest);
+                Class<?> syntheticUserTestClass = Compilations.compile(javaSource);
                 // validation for default constructor and test method occurs on save
                 Constructor<?> defaultConstructor = syntheticUserTestClass.getConstructor();
                 Method method =
@@ -374,24 +400,16 @@ class SyntheticAlertService implements Runnable {
         });
     }
 
-    private void sendPingOrSyntheticAlert(String agentDisplay, AlertConfig alertConfig, boolean ok,
-            @Nullable String errorMessage) throws Exception {
+    private void sendAlert(String agentDisplay, SyntheticMonitorConfig syntheticMonitorConfig,
+            AlertConfig alertConfig, boolean ok, @Nullable String errorMessage) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentDisplay.equals("")) {
             subject += " - " + agentDisplay;
         }
-        String name;
-        if (alertConfig.getKind() == AlertKind.PING) {
-            name = " Ping";
-        } else if (alertConfig.getKind() == AlertKind.SYNTHETIC) {
-            name = " Synthetic user test";
-        } else {
-            throw new IllegalStateException("Unexpected alert kind: " + alertConfig.getKind());
-        }
-        subject += " - " + name;
+        subject += " - " + syntheticMonitorConfig.getDisplay();
         StringBuilder sb = new StringBuilder();
-        sb.append(name);
+        sb.append(syntheticMonitorConfig.getDisplay());
         if (errorMessage == null) {
             if (ok) {
                 sb.append(" time has dropped back below alert threshold of ");
@@ -426,7 +444,7 @@ class SyntheticAlertService implements Runnable {
         return obj;
     }
 
-    private static ListenableFuture<HttpResponseStatus> ping(String url) throws Exception {
+    private static ListenableFuture<HttpResponseStatus> runPing(String url) throws Exception {
         URI uri = new URI(url);
         String scheme = uri.getScheme();
         if (scheme == null) {
@@ -480,8 +498,7 @@ class SyntheticAlertService implements Runnable {
                     public void operationComplete(ChannelFuture future) {
                         if (future.isSuccess()) {
                             HttpResponseStatus responseStatus = httpClientHandler.responseStatus;
-                            checkNotNull(responseStatus);
-                            if (responseStatus.equals(HttpResponseStatus.OK)) {
+                            if (HttpResponseStatus.OK.equals(responseStatus)) {
                                 settableFuture.set(responseStatus);
                             } else {
                                 settableFuture.setException(new Exception(
@@ -500,9 +517,9 @@ class SyntheticAlertService implements Runnable {
 
     @Value.Immutable
     @Styles.AllParameters
-    interface AlertConfigUniqueKey {
-        String agentId();
-        AlertConfig alertConfig();
+    interface SyntheticMonitorUniqueKey {
+        String agentRollupId();
+        String syntheticMonitorId();
     }
 
     private static class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> {

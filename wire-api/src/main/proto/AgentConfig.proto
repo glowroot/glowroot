@@ -16,6 +16,7 @@ message AgentConfig {
   AdvancedConfig advanced_config = 5;
 
   repeated GaugeConfig gauge_config = 10;
+  repeated SyntheticMonitorConfig synthetic_monitor_config = 14;
   repeated AlertConfig alert_config = 11;
   repeated PluginConfig plugin_config = 12;
   repeated InstrumentationConfig instrumentation_config = 13;
@@ -53,6 +54,19 @@ message AgentConfig {
     repeated MBeanAttribute mbean_attribute = 2;
   }
 
+  message SyntheticMonitorConfig {
+    string id = 1;
+    string display = 2;
+    SyntheticMonitorKind kind = 3;
+    string ping_url = 4;
+    string java_source = 5;
+
+    enum SyntheticMonitorKind {
+      PING = 0;
+      JAVA = 1;
+    }
+  }
+
   message AlertConfig {
     AlertKind kind = 1;
     string transaction_type = 2;
@@ -60,9 +74,8 @@ message AgentConfig {
     OptionalInt32 min_transaction_count = 5;
     string gauge_name = 6;
     OptionalDouble gauge_threshold = 7;
-    string ping_url = 10;
-    string synthetic_user_test = 11;
-    OptionalInt32 threshold_millis = 4; // used by TRANSACTION, PING, SYNTHETIC
+    string synthetic_monitor_id = 12;
+    OptionalInt32 threshold_millis = 4; // used by TRANSACTION, SYNTHETIC_MONITOR
     int32 time_period_seconds = 8; // used by TRANSACTION, GAUGE, HEARTBEAT
     repeated string email_address = 9;
 
@@ -72,8 +85,7 @@ message AgentConfig {
       TRANSACTION = 0;
       GAUGE = 1;
       HEARTBEAT = 2;
-      PING = 3;
-      SYNTHETIC = 4;
+      SYNTHETIC_MONITOR = 4;
     }
   }
 

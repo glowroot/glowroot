@@ -15,11 +15,7 @@
  */
 package org.glowroot.central;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.net.InetAddress;
-import java.text.NumberFormat;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -34,7 +30,6 @@ import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
@@ -54,6 +49,7 @@ import org.glowroot.common.repo.Utils;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.repo.util.Gauges;
 import org.glowroot.common.repo.util.RollupLevelService;
+import org.glowroot.common.util.Formatting;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
@@ -87,13 +83,13 @@ public class AlertingService {
     }
 
     public void checkForDeletedAlerts(String agentRollupId) throws Exception {
-        Set<String> alertConfigIds = Sets.newHashSet();
+        Set<String> alertIds = Sets.newHashSet();
         for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollupId)) {
-            alertConfigIds.add(alertConfig.getId());
+            alertIds.add(alertConfig.getId());
         }
-        for (String alertConfigId : triggeredAlertDao.read(agentRollupId)) {
-            if (!alertConfigIds.contains(alertConfigId)) {
-                triggeredAlertDao.delete(agentRollupId, alertConfigId);
+        for (String alertId : triggeredAlertDao.read(agentRollupId)) {
+            if (!alertIds.contains(alertId)) {
+                triggeredAlertDao.delete(agentRollupId, alertId);
             }
         }
     }
@@ -254,11 +250,15 @@ public class AlertingService {
         } else {
             sb.append(" exceeded alert threshold of ");
         }
-        sb.append(displaySixDigitsOfPrecision(threshold));
         String unit = gauge.unit();
-        if (!unit.isEmpty()) {
+        if (unit.equals("bytes")) {
+            sb.append(Formatting.formatBytes((long) threshold));
+        } else if (!unit.isEmpty()) {
+            sb.append(Formatting.displaySixDigitsOfPrecision(threshold));
             sb.append(" ");
             sb.append(unit);
+        } else {
+            sb.append(Formatting.displaySixDigitsOfPrecision(threshold));
         }
         sb.append(".\n\n");
         sendNotification(alertConfig, subject, sb.toString());
@@ -319,23 +319,6 @@ public class AlertingService {
         message.setSubject(subject);
         message.setText(messageText);
         mailService.send(message);
-    }
-
-    private static String displaySixDigitsOfPrecision(double value) {
-        return displaySixDigitsOfPrecision(value, NumberFormat.getNumberInstance());
-    }
-
-    // this mimics the javascript function of same name in gauge-values.js
-    @VisibleForTesting
-    static String displaySixDigitsOfPrecision(double value, NumberFormat numberFormat) {
-        numberFormat.setMaximumFractionDigits(20);
-        if (value < 1000000) {
-            return numberFormat
-                    .format(BigDecimal.valueOf(value)
-                            .round(new MathContext(6, RoundingMode.HALF_UP)));
-        } else {
-            return numberFormat.format(Math.round(value));
-        }
     }
 
     private static Session createMailSession(SmtpConfig smtpConfig, SecretKey secretKey)

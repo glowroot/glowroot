@@ -64,8 +64,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonService
 class TransactionJsonService {
 
-    private static final ObjectMapper mapper = ObjectMappers.create();
     private static final double NANOSECONDS_PER_MILLISECOND = 1000000.0;
+
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final TransactionCommonService transactionCommonService;
     private final AggregateRepository aggregateRepository;

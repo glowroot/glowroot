@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2017 the original author or authors.
+  Copyright 2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>Alerts</h2>
+    <h2>Synthetic monitors</h2>
   </div>
   <div class="panel-body">
     <div ng-hide="hideMainContent()">
@@ -24,21 +24,21 @@
       <div style="margin: 15px;">
         <div ng-if="!configs.length"
              style="font-style: italic;">
-          There are no configured alerts
+          There are no configured synthetic monitors
         </div>
         <div ng-repeat="config in configs"
              class="gt-second-line-indent"
              style="padding-bottom: 8px;">
-          <a ng-href="config/alert{{configQueryString(config)}}">
+          <a ng-href="config/synthetic-monitor{{configQueryString(config)}}">
             {{config.display}}
           </a>
         </div>
         <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
-             before it gets pushed down by existing alerts -->
-        <div ng-if="loaded && agentPermissions.config.edit.alert"
+             before it gets pushed down by existing synthetic monitors -->
+        <div ng-if="loaded && agentPermissions.config.edit.syntheticMonitor"
              style="margin-top: 30px;">
           <a class="btn btn-primary"
-             href="config/alert{{newQueryString()}}">
+             href="config/synthetic-monitor{{newQueryString()}}">
             Add new
           </a>
         </div>

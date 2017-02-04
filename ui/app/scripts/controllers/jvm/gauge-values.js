@@ -155,7 +155,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     var location;
 
     function addToQuery(query) {
-      query.gaugeNames = $scope.gaugeNames;
+      // singular name is used since it is query string
+      query.gaugeName = $scope.gaugeNames;
     }
 
     function onRefreshData(data) {
@@ -458,7 +459,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       var index = $scope.gaugeNames.indexOf(gaugeName);
       if (index === -1) {
         $scope.gaugeNames.push(gaugeName);
-        // maintain selected gauge ordering matching to match ordering of allGaugeNames
+        // maintain selected gauge ordering to match ordering of allGaugeNames
         // (which are ordered server-side by case insensitive gauge display)
         var ordering = {};
         angular.forEach(allGaugeNames, function (gaugeName, index) {

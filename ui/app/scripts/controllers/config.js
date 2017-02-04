@@ -80,13 +80,15 @@ glowroot.controller('ConfigCtrl', [
       if (agentRollup.agent) {
         return agentRollupUrl(path, agentRollup);
       }
-      if (path === 'config/alert-list'
+      if (path === 'config/synthetic-monitor-list'
+          || path === 'config/synthetic-monitor'
+          || path === 'config/alert-list'
           || path === 'config/alert'
           || path === 'config/ui'
           || path === 'config/advanced') {
         return agentRollupUrl(path, agentRollup);
       } else {
-        return agentRollupUrl('config/alert-list', agentRollup);
+        return agentRollupUrl('config/synthetic-monitor-list', agentRollup);
       }
     };
 

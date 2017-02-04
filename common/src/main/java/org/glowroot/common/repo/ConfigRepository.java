@@ -39,6 +39,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
@@ -82,12 +83,20 @@ public interface ConfigRepository {
     @Nullable
     GaugeConfig getGaugeConfig(String agentId, String version) throws Exception;
 
+    // central supports synthetic monitor configs on rollups
+    List<SyntheticMonitorConfig> getSyntheticMonitorConfigs(String agentRollupId) throws Exception;
+
+    // central supports synthetic monitor configs on rollups
+    @Nullable
+    SyntheticMonitorConfig getSyntheticMonitorConfig(String agentRollupId,
+            String syntheticMonitorId) throws Exception;
+
     // central supports alert configs on rollups
     List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception;
 
     // central supports alert configs on rollups
     @Nullable
-    AlertConfig getAlertConfig(String agentRollupId, String alertConfigId) throws Exception;
+    AlertConfig getAlertConfig(String agentRollupId, String alertId) throws Exception;
 
     List<PluginConfig> getPluginConfigs(String agentId) throws Exception;
 
@@ -127,27 +136,39 @@ public interface ConfigRepository {
 
     LdapConfig getLdapConfig() throws Exception;
 
-    void updateTransactionConfig(String agentId, TransactionConfig transactionConfig,
-            String priorVersion) throws Exception;
+    void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion)
+            throws Exception;
 
-    void insertGaugeConfig(String agentId, GaugeConfig gaugeConfig) throws Exception;
+    void insertGaugeConfig(String agentId, GaugeConfig config) throws Exception;
 
-    void updateGaugeConfig(String agentId, GaugeConfig gaugeConfig, String priorVersion)
+    void updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion)
             throws Exception;
 
     void deleteGaugeConfig(String agentId, String version) throws Exception;
 
+    // central supports synthetic monitor configs on rollups
+    // returns id
+    String insertSyntheticMonitorConfig(String agentRollupId,
+            SyntheticMonitorConfig configWithoutId) throws Exception;
+
+    // central supports synthetic monitor configs on rollups
+    void updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,
+            String priorVersion) throws Exception;
+
+    // central supports synthetic monitor configs on rollups
+    void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId)
+            throws Exception;
+
     // central supports alert configs on rollups
     // returns id
-    String insertAlertConfig(String agentRollupId, AlertConfig alertConfigWithoutId)
+    String insertAlertConfig(String agentRollupId, AlertConfig configWithoutId) throws Exception;
+
+    // central supports alert configs on rollups
+    void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion)
             throws Exception;
 
     // central supports alert configs on rollups
-    void updateAlertConfig(String agentRollupId, AlertConfig alertConfig, String priorVersion)
-            throws Exception;
-
-    // central supports alert configs on rollups
-    void deleteAlertConfig(String agentRollupId, String alertConfigId) throws Exception;
+    void deleteAlertConfig(String agentRollupId, String alertId) throws Exception;
 
     // central supports ui config on rollups
     void updateUiConfig(String agentRollupId, UiConfig uiConfig, String priorVersion)
@@ -157,53 +178,50 @@ public interface ConfigRepository {
     void updatePluginConfig(String agentId, String pluginId, List<PluginProperty> properties,
             String priorVersion) throws Exception;
 
-    void insertInstrumentationConfig(String agentId, InstrumentationConfig instrumentationConfig)
-            throws Exception;
+    void insertInstrumentationConfig(String agentId, InstrumentationConfig config) throws Exception;
 
-    void updateInstrumentationConfig(String agentId, InstrumentationConfig instrumentationConfig,
+    void updateInstrumentationConfig(String agentId, InstrumentationConfig config,
             String priorVersion) throws Exception;
 
     void deleteInstrumentationConfigs(String agentId, List<String> versions) throws Exception;
 
-    void insertInstrumentationConfigs(String agentId,
-            List<InstrumentationConfig> instrumentationConfigs) throws Exception;
+    void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs)
+            throws Exception;
 
-    void updateUserRecordingConfig(String agentId, UserRecordingConfig userRecordingConfig,
-            String priorVersion) throws Exception;
+    void updateUserRecordingConfig(String agentId, UserRecordingConfig config, String priorVersion)
+            throws Exception;
 
     // central supports advanced config on rollups
     // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
-    void updateAdvancedConfig(String agentRollupId, AdvancedConfig advancedConfig,
-            String priorVersion) throws Exception;
-
-    void updateAgentRollupConfig(AgentRollupConfig agentRollupConfig, String priorVersion)
+    void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion)
             throws Exception;
+
+    void updateAgentRollupConfig(AgentRollupConfig config, String priorVersion) throws Exception;
 
     void deleteAgentRollupConfig(String agentRollupId) throws Exception;
 
-    void insertUserConfig(UserConfig userConfig) throws Exception;
+    void insertUserConfig(UserConfig config) throws Exception;
 
-    void updateUserConfig(UserConfig userConfig, String priorVersion) throws Exception;
+    void updateUserConfig(UserConfig config, String priorVersion) throws Exception;
 
     void deleteUserConfig(String username) throws Exception;
 
-    void insertRoleConfig(RoleConfig roleConfig) throws Exception;
+    void insertRoleConfig(RoleConfig config) throws Exception;
 
-    void updateRoleConfig(RoleConfig roleConfig, String priorVersion) throws Exception;
+    void updateRoleConfig(RoleConfig config, String priorVersion) throws Exception;
 
     void deleteRoleConfig(String name) throws Exception;
 
-    void updateWebConfig(WebConfig webConfig, String priorVersion) throws Exception;
+    void updateWebConfig(WebConfig config, String priorVersion) throws Exception;
 
-    void updateFatStorageConfig(FatStorageConfig storageConfig, String priorVersion)
+    void updateFatStorageConfig(FatStorageConfig config, String priorVersion) throws Exception;
+
+    void updateCentralStorageConfig(CentralStorageConfig config, String priorVersion)
             throws Exception;
 
-    void updateCentralStorageConfig(CentralStorageConfig storageConfig, String priorVersion)
-            throws Exception;
+    void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception;
 
-    void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception;
-
-    void updateLdapConfig(LdapConfig ldapConfig, String priorVersion) throws Exception;
+    void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception;
 
     StorageConfig getStorageConfig() throws Exception;
 
@@ -263,6 +281,9 @@ public interface ConfigRepository {
     class DuplicateMBeanObjectNameException extends Exception {}
 
     @SuppressWarnings("serial")
+    class DuplicateSyntheticMonitorDisplayException extends Exception {}
+
+    @SuppressWarnings("serial")
     class DuplicateUsernameException extends Exception {}
 
     @SuppressWarnings("serial")
@@ -270,6 +291,9 @@ public interface ConfigRepository {
 
     @SuppressWarnings("serial")
     class AgentRollupNotFoundException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class SyntheticNotFoundException extends Exception {}
 
     @SuppressWarnings("serial")
     class AlertNotFoundException extends Exception {}

@@ -50,8 +50,9 @@ public class AlertConfigIT extends WebDriverIT {
         createTransactionAlert();
 
         // then
-        Utils.withWait(driver, linkText("Web - 95th percentile over a 1 minute period"
-                + " exceeds 1000 milliseconds")).click();
+        Utils.withWait(driver,
+                linkText("Web - 95th percentile over the last 1 minute exceeds 1000 milliseconds"))
+                .click();
         assertThat(alertPage.getKindTransactionRadioButton().isSelected()).isTrue();
         assertThat(
                 alertPage.getTransactionTypeSelect().getFirstSelectedOption().getAttribute("value"))
@@ -88,7 +89,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over a 1 minute period exceeds 2.0 KB")).click();
+                + " - average over the last 1 minute exceeds 2.0 KB")).click();
         assertThat(alertPage.getKindGaugeRadioButton().isSelected()).isTrue();
         assertThat(alertPage.getGaugeNameSelect().getFirstSelectedOption().getAttribute("value"))
                 .isEqualTo("java.lang:type=Memory:HeapMemoryUsage.used");
@@ -116,8 +117,9 @@ public class AlertConfigIT extends WebDriverIT {
 
         // when
         createTransactionAlert();
-        Utils.withWait(driver, linkText("Web - 95th percentile over a 1 minute period"
-                + " exceeds 1000 milliseconds")).click();
+        Utils.withWait(driver,
+                linkText("Web - 95th percentile over the last 1 minute exceeds 1000 milliseconds"))
+                .click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
@@ -126,8 +128,9 @@ public class AlertConfigIT extends WebDriverIT {
         driver.findElement(linkText("Return to list")).click();
 
         // then
-        Utils.withWait(driver, linkText("Web - 95th percentile over a 2 minute period"
-                + " exceeds 1000 milliseconds")).click();
+        Utils.withWait(driver,
+                linkText("Web - 95th percentile over the last 2 minutes exceeds 1000 milliseconds"))
+                .click();
     }
 
     @Test
@@ -149,7 +152,7 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createGaugeAlert();
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over a 1 minute period exceeds 2.0 KB")).click();
+                + " - average over the last 1 minute exceeds 2.0 KB")).click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
@@ -159,7 +162,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over a 2 minute period exceeds 2.0 KB")).click();
+                + " - average over the last 2 minutes exceeds 2.0 KB")).click();
     }
 
     @Test
@@ -180,16 +183,17 @@ public class AlertConfigIT extends WebDriverIT {
 
         // when
         createTransactionAlert();
-        Utils.withWait(driver, linkText("Web - 95th percentile over a 1 minute period"
-                + " exceeds 1000 milliseconds")).click();
+        Utils.withWait(driver,
+                linkText("Web - 95th percentile over the last 1 minute exceeds 1000 milliseconds"))
+                .click();
         alertPage.getDeleteButton().click();
 
         // then
         getNewAlertButton();
         boolean notFound = false;
         try {
-            driver.findElement(linkText("Web - 95th percentile over a 1 minute period"
-                    + " exceeds 1000 milliseconds"));
+            driver.findElement(linkText(
+                    "Web - 95th percentile over the last 1 minute exceeds 1000 milliseconds"));
         } catch (NoSuchElementException e) {
             notFound = true;
         }

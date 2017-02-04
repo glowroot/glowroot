@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,57 +32,63 @@ public abstract class AlertConfig {
 
     public abstract AlertKind kind();
 
-    // transaction alert
-    public abstract @Nullable String transactionType();
+    // === transaction alerts ===
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String transactionType() {
+        return "";
+    }
+
     public abstract @Nullable Double transactionPercentile();
+
     public abstract @Nullable Integer minTransactionCount();
 
-    // gauge alert
+    // === gauge alerts ===
+
+    @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public abstract @Nullable String gaugeName();
+    public String gaugeName() {
+        return "";
+    }
+
     public abstract @Nullable Double gaugeThreshold();
 
-    // ping alert
-    public abstract @Nullable String pingUrl();
+    // === synthetic monitor alerts ===
 
-    // synthetic alert
-    public abstract @Nullable String syntheticUserTest();
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String syntheticMonitorId() {
+        return "";
+    }
 
-    // used by transaction, ping and synthetic alerts
+    // === transaction and synthetic monitor alerts ===
+
     public abstract @Nullable Integer thresholdMillis();
-    // used by transaction, gauge and heartbeat alerts
+
+    // === transaction, gauge and heartbeat alerts ===
+
     public abstract @Nullable Integer timePeriodSeconds();
+
+    // === all alerts ===
 
     public abstract ImmutableList<String> emailAddresses();
 
     public static AlertConfig create(AgentConfig.AlertConfig config) {
         ImmutableAlertConfig.Builder builder = ImmutableAlertConfig.builder()
-                .kind(config.getKind());
-        String transactionType = config.getTransactionType();
-        if (!transactionType.isEmpty()) {
-            builder.transactionType(transactionType);
-        }
+                .kind(config.getKind())
+                .transactionType(config.getTransactionType());
         if (config.hasTransactionPercentile()) {
             builder.transactionPercentile(config.getTransactionPercentile().getValue());
         }
         if (config.hasMinTransactionCount()) {
             builder.minTransactionCount(config.getMinTransactionCount().getValue());
         }
-        String gaugeName = config.getGaugeName();
-        if (!gaugeName.isEmpty()) {
-            builder.gaugeName(gaugeName);
-        }
+        builder.gaugeName(config.getGaugeName());
         if (config.hasGaugeThreshold()) {
             builder.gaugeThreshold(config.getGaugeThreshold().getValue());
         }
-        String pingUrl = config.getPingUrl();
-        if (!pingUrl.isEmpty()) {
-            builder.pingUrl(pingUrl);
-        }
-        String syntheticUserTest = config.getSyntheticUserTest();
-        if (!syntheticUserTest.isEmpty()) {
-            builder.syntheticUserTest(syntheticUserTest);
-        }
+        builder.syntheticMonitorId(config.getSyntheticMonitorId());
         if (config.hasThresholdMillis()) {
             builder.thresholdMillis(config.getThresholdMillis().getValue());
         }
@@ -96,11 +102,8 @@ public abstract class AlertConfig {
 
     public AgentConfig.AlertConfig toProto() {
         AgentConfig.AlertConfig.Builder builder = AgentConfig.AlertConfig.newBuilder()
-                .setKind(kind());
-        String transactionType = transactionType();
-        if (transactionType != null) {
-            builder.setTransactionType(transactionType);
-        }
+                .setKind(kind())
+                .setTransactionType(transactionType());
         Double transactionPercentile = transactionPercentile();
         if (transactionPercentile != null) {
             builder.setTransactionPercentile(OptionalDouble.newBuilder()
@@ -111,23 +114,13 @@ public abstract class AlertConfig {
             builder.setMinTransactionCount(OptionalInt32.newBuilder()
                     .setValue(minTransactionCount));
         }
-        String gaugeName = gaugeName();
-        if (gaugeName != null) {
-            builder.setGaugeName(gaugeName);
-        }
+        builder.setGaugeName(gaugeName());
         Double gaugeThreshold = gaugeThreshold();
         if (gaugeThreshold != null) {
             builder.setGaugeThreshold(OptionalDouble.newBuilder()
                     .setValue(gaugeThreshold));
         }
-        String pingUrl = pingUrl();
-        if (pingUrl != null) {
-            builder.setPingUrl(pingUrl);
-        }
-        String syntheticUserTest = syntheticUserTest();
-        if (syntheticUserTest != null) {
-            builder.setSyntheticUserTest(syntheticUserTest);
-        }
+        builder.setSyntheticMonitorId(syntheticMonitorId());
         Integer thresholdMillis = thresholdMillis();
         if (thresholdMillis != null) {
             builder.setThresholdMillis(OptionalInt32.newBuilder().setValue(thresholdMillis));

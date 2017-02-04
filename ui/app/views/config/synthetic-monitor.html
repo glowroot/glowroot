@@ -1,0 +1,149 @@
+<!--
+  Copyright 2017 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>
+      <a class="pull-right"
+         style="font-size: 16px; padding-top: 14px;"
+         href="config/synthetic-monitor-list{{agentQueryString()}}">
+        Return to list
+      </a>
+      <span ng-class="{'gt-lighten-font': !loaded && !httpError}">
+        Synthetic monitors
+        <span class="gt-inline-block gt-separator">
+          |
+        </span>
+        <span style="font-size: 24px;">{{heading}}</span>
+      </span>
+    </h2>
+  </div>
+  <div class="panel-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <!-- intentionally not using gt-form-autofocus-on-first-input as it doesn't make the most sense on this form -->
+    <div ng-form
+         class="form-horizontal"
+         name="formCtrl"
+         style="padding-top: 15px;">
+      <div class="form-group gt-form-group-without-help-block">
+        <label class="col-lg-3 control-label">
+          Synthetic monitor type
+        </label>
+        <div class="col-lg-9">
+          <div class="radio">
+            <label>
+              <input type="radio"
+                     ng-model="config.kind"
+                     ng-disabled="!agentPermissions.config.edit.syntheticMonitor"
+                     value="ping">
+              Ping
+            </label>
+          </div>
+          <div class="radio">
+            <label>
+              <input type="radio"
+                     ng-model="config.kind"
+                     ng-disabled="!agentPermissions.config.edit.syntheticMonitor"
+                     value="java">
+              Java
+            </label>
+          </div>
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Display"
+           gt-model="config.display"
+           gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
+           gt-width="40em"
+           gt-required="loaded">
+        <div class="help-block">
+          Display for this synthetic monitor. Must be unique across synthetic monitors for the same
+          agent{{isAgentRollup() ? ' rollup' : ''}}.
+        </div>
+      </div>
+      <div ng-if="config.kind === 'ping'">
+        <div gt-form-group
+             gt-type="url"
+             gt-label="Ping URL"
+             gt-model="config.pingUrl"
+             gt-pattern="/^https?:\/\//"
+             gt-required="loaded"
+             gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
+             gt-rows="10"
+             class="gt-alert-java-class">
+          <div class="help-block">
+            The HTTP or HTTPS URL to ping with a simple GET request.
+          </div>
+        </div>
+      </div>
+      <div ng-if="config.kind === 'java'">
+        <!-- the id below is needed for css style (see config.less) -->
+        <div gt-form-group
+             gt-type="codemirror"
+             gt-label="Java source"
+             gt-model="config.javaSource"
+             gt-required="loaded"
+             gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
+             id="gtSyntheticJavaSource"
+             class="gt-synthetic-java-source"
+             ng-class="{'has-error': !config.javaSource}">
+          <div class="help-block">
+            A Java class that executes the synthetic monitor.
+          </div>
+          <div class="help-block">
+            The class can be named anything.
+            The entry method must be named <em>test</em> and take a single parameter of
+            type <em>org.openqa.selenium.WebDriver</em>.
+          </div>
+          <div class="help-block">
+            Any string constants that begins with the text "ENCRYPT:" will be encrypted
+            (using two-way encryption so they can be decrypted when running the synthetic monitor).
+            The encryption/decryption key is unique to your glowroot central instance and is stored in the file named
+            <em>secret</em> inside the glowroot central directory.
+          </div>
+          <div ng-if="javaSourceCompilationErrors"
+               class="gt-button-message-error"
+               style="font-weight: bold;">
+            <div ng-repeat="compilationError in javaSourceCompilationErrors">
+              {{compilationError}}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group gt-form-buttons"
+           ng-if="agentPermissions.config.edit.syntheticMonitor">
+        <div class="col-lg-offset-3 col-lg-9">
+          <div gt-button-group>
+            <div gt-button
+                 gt-label="{{config.version ? 'Save changes' : 'Add'}}"
+                 gt-click="save(deferred)"
+                 gt-disabled="formCtrl.$invalid"
+                 class="gt-inline-block">
+            </div>
+            <!-- using ng-show instead of gt-show -->
+            <div gt-button
+                 ng-show="config.version"
+                 gt-label="Delete"
+                 gt-click="delete(deferred)"
+                 gt-btn-class="btn-default"
+                 class="gt-inline-block">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

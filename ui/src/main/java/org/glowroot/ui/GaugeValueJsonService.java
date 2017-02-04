@@ -80,7 +80,7 @@ class GaugeValueJsonService {
         long revisedTo = request.to() + intervalMillis;
 
         Map<String, List<GaugeValue>> map = Maps.newLinkedHashMap();
-        for (String gaugeName : request.gaugeNames()) {
+        for (String gaugeName : request.gaugeName()) {
             map.put(gaugeName,
                     getGaugeValues(agentRollupId, revisedFrom, revisedTo, gaugeName, rollupLevel));
         }
@@ -131,12 +131,12 @@ class GaugeValueJsonService {
         return gaugeValues;
     }
 
-    private void syncManualRollupCaptureTimes(Map<String, List<GaugeValue>> map, int rollupLevel) {
+    private <K> void syncManualRollupCaptureTimes(Map<K, List<GaugeValue>> map, int rollupLevel) {
         long fixedIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
-        Map<String, Long> manualRollupCaptureTimes = Maps.newHashMap();
+        Map<K, Long> manualRollupCaptureTimes = Maps.newHashMap();
         long maxCaptureTime = Long.MIN_VALUE;
-        for (Entry<String, List<GaugeValue>> entry : map.entrySet()) {
+        for (Entry<K, List<GaugeValue>> entry : map.entrySet()) {
             List<GaugeValue> gaugeValues = entry.getValue();
             if (gaugeValues.isEmpty()) {
                 continue;
@@ -154,7 +154,7 @@ class GaugeValueJsonService {
         }
         long maxRollupCaptureTime = Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
         long maxDiffToSync = Math.min(fixedIntervalMillis / 5, 60000);
-        for (Entry<String, Long> entry : manualRollupCaptureTimes.entrySet()) {
+        for (Entry<K, Long> entry : manualRollupCaptureTimes.entrySet()) {
             Long captureTime = entry.getValue();
             if (Utils.getRollupCaptureTime(captureTime,
                     fixedIntervalMillis) != maxRollupCaptureTime) {
@@ -164,15 +164,15 @@ class GaugeValueJsonService {
                 // only sync up times that are close to each other
                 continue;
             }
-            String gaugeName = entry.getKey();
-            List<GaugeValue> gaugeValues = checkNotNull(map.get(gaugeName));
+            K key = entry.getKey();
+            List<GaugeValue> gaugeValues = checkNotNull(map.get(key));
             // make copy in case ImmutableList
             gaugeValues = Lists.newArrayList(gaugeValues);
             GaugeValue lastGaugeValue = gaugeValues.get(gaugeValues.size() - 1);
             gaugeValues.set(gaugeValues.size() - 1, lastGaugeValue.toBuilder()
                     .setCaptureTime(maxCaptureTime)
                     .build());
-            map.put(gaugeName, gaugeValues);
+            map.put(key, gaugeValues);
         }
     }
 
@@ -232,7 +232,8 @@ class GaugeValueJsonService {
     interface GaugeValueRequest {
         long from();
         long to();
-        ImmutableList<String> gaugeNames();
+        // singular because this is used in query string
+        ImmutableList<String> gaugeName();
     }
 
     static class GaugeOrdering extends Ordering<Gauge> {

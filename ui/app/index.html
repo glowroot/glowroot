@@ -123,7 +123,19 @@
                ng-if="layout.showNavbarJvm">
           </div>
           <div gt-navbar-item
-               gt-display="Reports"
+               gt-display="Synthetic"
+               gt-item-name="syntheticMonitor"
+               gt-url="synthetic-monitors{{queryString(true)}}"
+               ng-if="layout.central && layout.showNavbarSyntheticMonitor">
+          </div>
+          <div gt-navbar-item
+               gt-display="Alerts"
+               gt-item-name="alert"
+               gt-url="alerts"
+               ng-if="layout.central && layout.showNavbarAlert">
+          </div>
+          <div gt-navbar-item
+               gt-display="Reporting"
                gt-item-name="report"
                gt-url="report/ad-hoc"
                ng-if="layout.central && layout.showNavbarReport">
@@ -313,12 +325,16 @@
 <script src="scripts/controllers/jvm/system-properties.js"></script>
 <script src="scripts/controllers/jvm/environment.js"></script>
 <script src="scripts/controllers/jvm/capabilities.js"></script>
+<script src="scripts/controllers/synthetic-monitors.js"></script>
+<script src="scripts/controllers/alerts.js"></script>
 <script src="scripts/controllers/report.js"></script>
 <script src="scripts/controllers/report/adhoc.js"></script>
 <script src="scripts/controllers/config.js"></script>
 <script src="scripts/controllers/config/transaction.js"></script>
 <script src="scripts/controllers/config/gauge-list.js"></script>
 <script src="scripts/controllers/config/gauge.js"></script>
+<script src="scripts/controllers/config/synthetic-monitor-list.js"></script>
+<script src="scripts/controllers/config/synthetic-monitor.js"></script>
 <script src="scripts/controllers/config/alert-list.js"></script>
 <script src="scripts/controllers/config/alert.js"></script>
 <script src="scripts/controllers/config/ui.js"></script>

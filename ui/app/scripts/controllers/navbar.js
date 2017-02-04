@@ -56,7 +56,7 @@ glowroot.controller('NavbarCtrl', [
       if ($scope.layout.central && $scope.agentPermissions && $scope.agentPermissions.config.view) {
         // using query string instead of layout.agentRollups[agentRollupId].agent in case agentRollupId doesn't exist
         if ($location.search()['agent-rollup-id']) {
-          return 'config/alert-list?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId);
+          return 'config/synthetic-monitor-list?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId);
         } else {
           return 'config/transaction?agent-id=' + encodeURIComponent($scope.agentRollupId);
         }

@@ -24,6 +24,9 @@ import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,5 +86,30 @@ public class ConfigDaoIT {
         AgentConfig readAgentConfig = configDao.read("a");
         // then
         assertThat(readAgentConfig).isEqualTo(agentConfig);
+    }
+
+    @Test
+    public void shouldRegenerateIds() {
+        // given
+        AgentConfig agentConfig = AgentConfig.newBuilder()
+                .addSyntheticMonitorConfig(SyntheticMonitorConfig.newBuilder()
+                        .setId("11"))
+                .addSyntheticMonitorConfig(SyntheticMonitorConfig.newBuilder()
+                        .setId("22"))
+                .addAlertConfig(AlertConfig.newBuilder()
+                        .setKind(AlertKind.SYNTHETIC_MONITOR)
+                        .setSyntheticMonitorId("11"))
+                .build();
+        // when
+        AgentConfig updatedAgentConfig = ConfigDao.generateNewIds(agentConfig);
+        // then
+        assertThat(updatedAgentConfig.getSyntheticMonitorConfigList()).hasSize(2);
+        String syntheticMonitorId = updatedAgentConfig.getSyntheticMonitorConfig(0).getId();
+        assertThat(syntheticMonitorId).hasSize(32);
+        assertThat(updatedAgentConfig.getSyntheticMonitorConfig(1).getId()).hasSize(32);
+        assertThat(updatedAgentConfig.getAlertConfigList()).hasSize(1);
+        assertThat(updatedAgentConfig.getAlertConfig(0).getId()).hasSize(32);
+        assertThat(updatedAgentConfig.getAlertConfig(0).getSyntheticMonitorId())
+                .isEqualTo(syntheticMonitorId);
     }
 }
