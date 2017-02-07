@@ -600,7 +600,7 @@ public class CommonHandler {
         private boolean closeConnectionAfterPortChange;
 
         CommonResponse(HttpResponseStatus status, MediaType mediaType, String content) {
-            this(status, mediaType, Unpooled.copiedBuffer(content, Charsets.ISO_8859_1), true);
+            this(status, mediaType, Unpooled.copiedBuffer(content, Charsets.UTF_8), true);
         }
 
         CommonResponse(HttpResponseStatus status, MediaType mediaType, ChunkSource content) {

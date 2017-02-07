@@ -268,7 +268,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
         @Override
         public String getContent() {
-            return request.content().toString(Charsets.ISO_8859_1);
+            return request.content().toString(Charsets.UTF_8);
         }
     }
 }
