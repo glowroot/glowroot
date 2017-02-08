@@ -173,7 +173,7 @@
       <!-- this is included to test weaving against jdk 1.7 bytecode -->
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
-      <version>1.4.8.Final</version>
+      <version>1.4.9.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -346,6 +346,12 @@
                   <artifact>com.h2database:h2</artifact>
                   <excludes>
                     <exclude>META-INF/services/java.sql.Driver</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>ch.qos.logback:logback-classic</artifact>
+                  <excludes>
+                    <exclude>META-INF/services/javax.servlet.ServletContainerInitializer</exclude>
                   </excludes>
                 </filter>
               </filters>
