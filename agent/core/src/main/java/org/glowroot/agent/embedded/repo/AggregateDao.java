@@ -630,9 +630,10 @@ public class AggregateDao implements AggregateRepository {
                 // this is an aggregate query so this should be impossible
                 throw new SQLException("Aggregate query did not return any results");
             }
-            double totalDurationNanos = resultSet.getDouble(1);
-            long transactionCount = resultSet.getLong(2);
-            long captureTime = resultSet.getLong(3);
+            int i = 1;
+            double totalDurationNanos = resultSet.getDouble(i++);
+            long transactionCount = resultSet.getLong(i++);
+            long captureTime = resultSet.getLong(i++);
             collector.mergeSummary(totalDurationNanos, transactionCount, captureTime);
             return null;
         }
@@ -687,12 +688,13 @@ public class AggregateDao implements AggregateRepository {
         @Override
         public @Nullable Void processResultSet(ResultSet resultSet) throws Exception {
             while (resultSet.next()) {
-                String transactionName = checkNotNull(resultSet.getString(1));
-                double totalDurationNanos = resultSet.getDouble(2);
-                long transactionCount = resultSet.getLong(3);
-                long maxCaptureTime = resultSet.getLong(4);
-                collector.collect(transactionName, totalDurationNanos,
-                        transactionCount, maxCaptureTime);
+                int i = 1;
+                String transactionName = checkNotNull(resultSet.getString(i++));
+                double totalDurationNanos = resultSet.getDouble(i++);
+                long transactionCount = resultSet.getLong(i++);
+                long maxCaptureTime = resultSet.getLong(i++);
+                collector.collect(transactionName, totalDurationNanos, transactionCount,
+                        maxCaptureTime);
             }
             return null;
         }
@@ -748,9 +750,10 @@ public class AggregateDao implements AggregateRepository {
                 // this is an aggregate query so this should be impossible
                 throw new SQLException("Aggregate query did not return any results");
             }
-            long errorCount = resultSet.getLong(1);
-            long transactionCount = resultSet.getLong(2);
-            long captureTime = resultSet.getLong(3);
+            int i = 1;
+            long errorCount = resultSet.getLong(i++);
+            long transactionCount = resultSet.getLong(i++);
+            long captureTime = resultSet.getLong(i++);
             collector.mergeErrorSummary(errorCount, transactionCount, captureTime);
             return null;
         }
@@ -805,12 +808,12 @@ public class AggregateDao implements AggregateRepository {
         @Override
         public @Nullable Void processResultSet(ResultSet resultSet) throws Exception {
             while (resultSet.next()) {
-                String transactionName = checkNotNull(resultSet.getString(1));
-                long errorCount = resultSet.getLong(2);
-                long transactionCount = resultSet.getLong(3);
-                long maxCaptureTime = resultSet.getLong(4);
-                collector.collect(transactionName, errorCount,
-                        transactionCount, maxCaptureTime);
+                int i = 1;
+                String transactionName = checkNotNull(resultSet.getString(i++));
+                long errorCount = resultSet.getLong(i++);
+                long transactionCount = resultSet.getLong(i++);
+                long maxCaptureTime = resultSet.getLong(i++);
+                collector.collect(transactionName, errorCount, transactionCount, maxCaptureTime);
             }
             return null;
         }
@@ -1087,8 +1090,9 @@ public class AggregateDao implements AggregateRepository {
             ScratchBuffer scratchBuffer = new ScratchBuffer();
             MutableTransactionAggregate curr = null;
             while (resultSet.next()) {
-                String transactionType = checkNotNull(resultSet.getString(1));
-                String transactionName = checkNotNull(resultSet.getString(2));
+                int i = 1;
+                String transactionType = checkNotNull(resultSet.getString(i++));
+                String transactionName = checkNotNull(resultSet.getString(i++));
                 if (curr == null || !transactionType.equals(curr.transactionType())
                         || !transactionName.equals(curr.transactionName())) {
                     if (curr != null) {
@@ -1100,7 +1104,7 @@ public class AggregateDao implements AggregateRepository {
                             new MutableAggregate(maxAggregateQueriesPerType,
                                     maxAggregateServiceCallsPerType));
                 }
-                merge(curr.aggregate(), resultSet, 3, fromRollupLevel);
+                merge(curr.aggregate(), resultSet, i++, fromRollupLevel);
             }
             if (curr != null) {
                 dataSource.update(new AggregateInsert(curr.transactionType(),

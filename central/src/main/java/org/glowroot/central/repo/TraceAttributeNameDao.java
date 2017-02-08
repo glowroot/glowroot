@@ -131,9 +131,10 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
             ResultSet results = session.execute(boundStatement);
             Map<String, Map<String, List<String>>> traceAttributeNames = Maps.newHashMap();
             for (Row row : results) {
-                String agentRollup = checkNotNull(row.getString(0));
-                String transactionType = checkNotNull(row.getString(1));
-                String traceAttributeName = checkNotNull(row.getString(2));
+                int i = 0;
+                String agentRollup = checkNotNull(row.getString(i++));
+                String transactionType = checkNotNull(row.getString(i++));
+                String traceAttributeName = checkNotNull(row.getString(i++));
                 Map<String, List<String>> innerMap =
                         traceAttributeNames.computeIfAbsent(agentRollup, k -> new HashMap<>());
                 innerMap.computeIfAbsent(transactionType, k -> new ArrayList<>())

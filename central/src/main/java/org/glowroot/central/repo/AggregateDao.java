@@ -491,10 +491,11 @@ public class AggregateDao implements AggregateRepository {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
         ResultSet results = createBoundStatement(agentRollupId, query, summaryTable);
         for (Row row : results) {
+            int i = 0;
             // results are ordered by capture time so Math.max() is not needed here
-            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
-            double totalDurationNanos = row.getDouble(1);
-            long transactionCount = row.getLong(2);
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            double totalDurationNanos = row.getDouble(i++);
+            long transactionCount = row.getLong(i++);
             collector.mergeSummary(totalDurationNanos, transactionCount, captureTime);
         }
     }
@@ -513,12 +514,12 @@ public class AggregateDao implements AggregateRepository {
         bindQuery(boundStatement, agentRollupId, query);
         ResultSet results = session.execute(boundStatement);
         for (Row row : results) {
-            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
-            String transactionName = checkNotNull(row.getString(1));
-            double totalDurationNanos = row.getDouble(2);
-            long transactionCount = row.getLong(3);
-            collector.collect(transactionName, totalDurationNanos,
-                    transactionCount, captureTime);
+            int i = 0;
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            String transactionName = checkNotNull(row.getString(i++));
+            double totalDurationNanos = row.getDouble(i++);
+            long transactionCount = row.getLong(i++);
+            collector.collect(transactionName, totalDurationNanos, transactionCount, captureTime);
         }
     }
 
@@ -529,10 +530,11 @@ public class AggregateDao implements AggregateRepository {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
         ResultSet results = createBoundStatement(agentRollupId, query, errorSummaryTable);
         for (Row row : results) {
+            int i = 0;
             // results are ordered by capture time so Math.max() is not needed here
-            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
-            long errorCount = row.getLong(1);
-            long transactionCount = row.getLong(2);
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long errorCount = row.getLong(i++);
+            long transactionCount = row.getLong(i++);
             collector.mergeErrorSummary(errorCount, transactionCount, captureTime);
         }
     }
@@ -552,10 +554,11 @@ public class AggregateDao implements AggregateRepository {
         bindQuery(boundStatement, agentRollupId, query);
         ResultSet results = session.execute(boundStatement);
         for (Row row : results) {
-            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
-            String transactionName = checkNotNull(row.getString(1));
-            long errorCount = row.getLong(2);
-            long transactionCount = row.getLong(3);
+            int i = 0;
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            String transactionName = checkNotNull(row.getString(i++));
+            long errorCount = row.getLong(i++);
+            long transactionCount = row.getLong(i++);
             collector.collect(transactionName, errorCount, transactionCount, captureTime);
         }
     }
@@ -618,10 +621,11 @@ public class AggregateDao implements AggregateRepository {
         ResultSet results = executeQuery(agentRollupId, query, histogramTable);
         List<PercentileAggregate> percentileAggregates = Lists.newArrayList();
         for (Row row : results) {
-            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
-            double totalDurationNanos = row.getDouble(1);
-            long transactionCount = row.getLong(2);
-            ByteBuffer bytes = checkNotNull(row.getBytes(3));
+            int i = 0;
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            double totalDurationNanos = row.getDouble(i++);
+            long transactionCount = row.getLong(i++);
+            ByteBuffer bytes = checkNotNull(row.getBytes(i++));
             Aggregate.Histogram durationNanosHistogram =
                     Aggregate.Histogram.parseFrom(ByteString.copyFrom(bytes));
             percentileAggregates.add(ImmutablePercentileAggregate.builder()
@@ -1089,14 +1093,15 @@ public class AggregateDao implements AggregateRepository {
         BoundStatement boundStatement;
         Map<String, MutableSummary> summaries = Maps.newHashMap();
         for (Row row : rows) {
-            String transactionName = checkNotNull(row.getString(0));
+            int i = 0;
+            String transactionName = checkNotNull(row.getString(i++));
             MutableSummary summary = summaries.get(transactionName);
             if (summary == null) {
                 summary = new MutableSummary();
                 summaries.put(transactionName, summary);
             }
-            summary.totalDurationNanos += row.getDouble(1);
-            summary.transactionCount += row.getLong(2);
+            summary.totalDurationNanos += row.getDouble(i++);
+            summary.transactionCount += row.getLong(i++);
         }
         List<ResultSetFuture> futures = Lists.newArrayList();
         PreparedStatement preparedStatement =
@@ -1147,14 +1152,15 @@ public class AggregateDao implements AggregateRepository {
         BoundStatement boundStatement;
         Map<String, MutableErrorSummary> summaries = Maps.newHashMap();
         for (Row row : rows) {
-            String transactionName = checkNotNull(row.getString(0));
+            int i = 0;
+            String transactionName = checkNotNull(row.getString(i++));
             MutableErrorSummary summary = summaries.get(transactionName);
             if (summary == null) {
                 summary = new MutableErrorSummary();
                 summaries.put(transactionName, summary);
             }
-            summary.errorCount += row.getLong(1);
-            summary.transactionCount += row.getLong(2);
+            summary.errorCount += row.getLong(i++);
+            summary.transactionCount += row.getLong(i++);
         }
         PreparedStatement preparedStatement =
                 getInsertTransactionPS(errorSummaryTable, rollup.rollupLevel());
@@ -1301,9 +1307,10 @@ public class AggregateDao implements AggregateRepository {
         long transactionCount = 0;
         LazyHistogram durationNanosHistogram = new LazyHistogram();
         for (Row row : rows) {
-            totalDurationNanos += row.getDouble(0);
-            transactionCount += row.getLong(1);
-            ByteBuffer bytes = checkNotNull(row.getBytes(2));
+            int i = 0;
+            totalDurationNanos += row.getDouble(i++);
+            transactionCount += row.getLong(i++);
+            ByteBuffer bytes = checkNotNull(row.getBytes(i++));
             durationNanosHistogram.merge(Aggregate.Histogram.parseFrom(ByteString.copyFrom(bytes)));
         }
         BoundStatement boundStatement;

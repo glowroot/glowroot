@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ public interface GaugeValueRepository {
 
     List<Gauge> getGauges(String agentRollupId) throws Exception;
 
-    // query.from() is INCLUSIVE
-    List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long captureTimeFrom,
-            long captureTimeTo, int rollupLevel) throws Exception;
+    // from is INCLUSIVE
+    List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from, long to,
+            int rollupLevel) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

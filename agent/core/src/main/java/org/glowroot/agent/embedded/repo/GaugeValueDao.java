@@ -151,7 +151,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
     }
 
-    // query.from() is INCLUSIVE
+    // from is INCLUSIVE
     @Override
     public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
             long to, int rollupLevel) throws Exception {
@@ -303,10 +303,11 @@ public class GaugeValueDao implements GaugeValueRepository {
 
         @Override
         public GaugeValue mapRow(ResultSet resultSet) throws SQLException {
+            int i = 1;
             return GaugeValue.newBuilder()
-                    .setCaptureTime(resultSet.getLong(1))
-                    .setValue(resultSet.getDouble(2))
-                    .setWeight(resultSet.getLong(3))
+                    .setCaptureTime(resultSet.getLong(i++))
+                    .setValue(resultSet.getDouble(i++))
+                    .setWeight(resultSet.getLong(i++))
                     .build();
         }
     }

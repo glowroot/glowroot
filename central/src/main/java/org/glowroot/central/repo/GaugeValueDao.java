@@ -229,23 +229,24 @@ public class GaugeValueDao implements GaugeValueRepository {
         return gauges;
     }
 
-    // query.from() is INCLUSIVE
+    // from is INCLUSIVE
     @Override
-    public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName,
-            long captureTimeFrom, long captureTimeTo, int rollupLevel) {
+    public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
+            long to, int rollupLevel) {
         BoundStatement boundStatement = readValuePS.get(rollupLevel).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, gaugeName);
-        boundStatement.setTimestamp(i++, new Date(captureTimeFrom));
-        boundStatement.setTimestamp(i++, new Date(captureTimeTo));
+        boundStatement.setTimestamp(i++, new Date(from));
+        boundStatement.setTimestamp(i++, new Date(to));
         ResultSet results = session.execute(boundStatement);
         List<GaugeValue> gaugeValues = Lists.newArrayList();
         for (Row row : results) {
+            i = 0;
             gaugeValues.add(GaugeValue.newBuilder()
-                    .setCaptureTime(checkNotNull(row.getTimestamp(0)).getTime())
-                    .setValue(row.getDouble(1))
-                    .setWeight(row.getLong(2))
+                    .setCaptureTime(checkNotNull(row.getTimestamp(i++)).getTime())
+                    .setValue(row.getDouble(i++))
+                    .setWeight(row.getLong(i++))
                     .build());
         }
         return gaugeValues;

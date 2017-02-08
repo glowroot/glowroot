@@ -173,16 +173,16 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         session.execute(boundStatement);
     }
 
-    // captureTimeFrom is INCLUSIVE
+    // from is INCLUSIVE
     @Override
     public List<SyntheticResult> readSyntheticResults(String agentRollupId,
-            String syntheticMonitorId, long captureTimeFrom, long captureTimeTo, int rollupLevel) {
+            String syntheticMonitorId, long from, long to, int rollupLevel) {
         BoundStatement boundStatement = readResultPS.get(rollupLevel).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, syntheticMonitorId);
-        boundStatement.setTimestamp(i++, new Date(captureTimeFrom));
-        boundStatement.setTimestamp(i++, new Date(captureTimeTo));
+        boundStatement.setTimestamp(i++, new Date(from));
+        boundStatement.setTimestamp(i++, new Date(to));
         ResultSet results = session.execute(boundStatement);
         List<SyntheticResult> syntheticResults = Lists.newArrayList();
         for (Row row : results) {

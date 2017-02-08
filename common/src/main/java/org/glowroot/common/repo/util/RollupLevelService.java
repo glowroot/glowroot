@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@ public class RollupLevelService {
         this.clock = clock;
     }
 
-    public int getRollupLevelForView(long captureTimeFrom, long captureTimeTo) throws Exception {
-        long millis = captureTimeTo - captureTimeFrom;
-        long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
+    public int getRollupLevelForView(long from, long to) throws Exception {
+        long millis = to - from;
+        long timeAgoMillis = clock.currentTimeMillis() - from;
         List<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -50,10 +50,9 @@ public class RollupLevelService {
         return rollupConfigs.size() - 1;
     }
 
-    public int getGaugeRollupLevelForView(long captureTimeFrom, long captureTimeTo)
-            throws Exception {
-        long millis = captureTimeTo - captureTimeFrom;
-        long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
+    public int getGaugeRollupLevelForView(long from, long to) throws Exception {
+        long millis = to - from;
+        long timeAgoMillis = clock.currentTimeMillis() - from;
         List<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -75,10 +74,9 @@ public class RollupLevelService {
         return rollupConfigs.size();
     }
 
-    public long getDataPointIntervalMillis(long captureTimeFrom, long captureTimeTo)
-            throws Exception {
-        long millis = captureTimeTo - captureTimeFrom;
-        long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
+    public long getDataPointIntervalMillis(long from, long to) throws Exception {
+        long millis = to - from;
+        long timeAgoMillis = clock.currentTimeMillis() - from;
         List<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();

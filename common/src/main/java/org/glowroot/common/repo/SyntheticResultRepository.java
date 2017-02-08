@@ -21,9 +21,9 @@ import org.immutables.value.Value;
 
 public interface SyntheticResultRepository {
 
-    // captureTimeFrom is INCLUSIVE
+    // from is INCLUSIVE
     public List<SyntheticResult> readSyntheticResults(String agentRollupId,
-            String syntheticMonitorId, long captureTimeFrom, long captureTimeTo, int rollupLevel);
+            String syntheticMonitorId, long from, long to, int rollupLevel);
 
     @Value.Immutable
     public interface SyntheticResult {
