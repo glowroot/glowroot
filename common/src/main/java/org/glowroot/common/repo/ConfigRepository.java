@@ -263,7 +263,19 @@ public interface ConfigRepository {
     class OptimisticLockException extends Exception {}
 
     @SuppressWarnings("serial")
-    class AgentConfigNotFoundException extends Exception {}
+    class AgentConfigNotFoundException extends Exception {
+
+        private final String agentRollupId;
+
+        public AgentConfigNotFoundException(String agentRollupId) {
+            this.agentRollupId = agentRollupId;
+        }
+
+        @Override
+        public String getMessage() {
+            return agentRollupId;
+        }
+    }
 
     @SuppressWarnings("serial")
     class UserNotFoundException extends Exception {}

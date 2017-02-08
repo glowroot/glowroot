@@ -117,7 +117,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         AgentConfig agentConfig = configDao.read(agentId);
         if (agentConfig == null) {
             // for some reason received data from agent, but not initial agent config
-            throw new AgentConfigNotFoundException();
+            throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getTransactionConfig();
     }
@@ -128,7 +128,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         AgentConfig agentConfig = configDao.read(agentRollupId);
         if (agentConfig == null) {
             // for some reason received data from agent, but not initial agent config
-            throw new AgentConfigNotFoundException();
+            throw new AgentConfigNotFoundException(agentRollupId);
         }
         return agentConfig.getUiConfig();
     }
@@ -138,7 +138,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         AgentConfig agentConfig = configDao.read(agentId);
         if (agentConfig == null) {
             // for some reason received data from agent, but not initial agent config
-            throw new AgentConfigNotFoundException();
+            throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getUserRecordingConfig();
     }
@@ -150,7 +150,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         AgentConfig agentConfig = configDao.read(agentRollupId);
         if (agentConfig == null) {
             // for some reason received data from agent, but not initial agent config
-            throw new AgentConfigNotFoundException();
+            throw new AgentConfigNotFoundException(agentRollupId);
         }
         return agentConfig.getAdvancedConfig();
     }
