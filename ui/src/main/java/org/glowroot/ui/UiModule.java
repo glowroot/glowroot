@@ -61,7 +61,7 @@ public class UiModule {
             boolean servlet,
             boolean offline,
             File baseDir,
-            File glowrootDir,
+            File certificateDir,
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
             Clock clock,
             @Nullable LiveJvmService liveJvmService,
@@ -112,7 +112,7 @@ public class UiModule {
                 gaugeValueRepository, rollupLevelService, agentRepository, configRepository);
         ConfigJsonService configJsonService =
                 new ConfigJsonService(agentRepository, configRepository);
-        AdminJsonService adminJsonService = new AdminJsonService(central, glowrootDir,
+        AdminJsonService adminJsonService = new AdminJsonService(central, certificateDir,
                 configRepository, repoAdmin, liveAggregateRepository);
 
         List<Object> jsonServices = Lists.newArrayList();

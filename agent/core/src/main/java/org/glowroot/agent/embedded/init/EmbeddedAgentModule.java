@@ -67,7 +67,7 @@ class EmbeddedAgentModule {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private final File baseDir;
-    private final File glowrootDir;
+    private final File certificateDir;
     private final Ticker ticker;
     private final Clock clock;
     // only null in viewer mode
@@ -188,9 +188,9 @@ class EmbeddedAgentModule {
 
         this.baseDir = baseDir;
         if (glowrootJarFile == null) {
-            glowrootDir = baseDir;
+            certificateDir = baseDir;
         } else {
-            glowrootDir = MoreObjects.firstNonNull(glowrootJarFile.getParentFile(), baseDir);
+            certificateDir = MoreObjects.firstNonNull(glowrootJarFile.getParentFile(), baseDir);
         }
         this.version = glowrootVersion;
     }
@@ -206,7 +206,7 @@ class EmbeddedAgentModule {
                     .servlet(false)
                     .offline(false)
                     .baseDir(baseDir)
-                    .glowrootDir(glowrootDir)
+                    .certificateDir(certificateDir)
                     .ticker(ticker)
                     .clock(clock)
                     .liveJvmService(agentModule.getLiveJvmService())
@@ -236,7 +236,7 @@ class EmbeddedAgentModule {
                     .servlet(false)
                     .offline(true)
                     .baseDir(baseDir)
-                    .glowrootDir(glowrootDir)
+                    .certificateDir(certificateDir)
                     .ticker(ticker)
                     .clock(clock)
                     .liveJvmService(null)

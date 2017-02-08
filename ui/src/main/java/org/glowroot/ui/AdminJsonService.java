@@ -75,17 +75,17 @@ class AdminJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final boolean central;
-    private final File glowrootDir;
+    private final File certificateDir;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final LiveAggregateRepository liveAggregateRepository;
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    AdminJsonService(boolean central, File glowrootDir, ConfigRepository configRepository,
+    AdminJsonService(boolean central, File certificateDir, ConfigRepository configRepository,
             RepoAdmin repoAdmin, LiveAggregateRepository liveAggregateRepository) {
         this.central = central;
-        this.glowrootDir = glowrootDir;
+        this.certificateDir = certificateDir;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.liveAggregateRepository = liveAggregateRepository;
@@ -170,17 +170,16 @@ class AdminJsonService {
         }
         if (config.https() && !httpServer.getHttps()) {
             // validate certificate and private key exist and are valid
-            File certificateFile = new File(glowrootDir, "certificate.pem");
+            File certificateFile = new File(certificateDir, "certificate.pem");
             if (!certificateFile.exists()) {
                 return "{\"httpsRequiredFilesDoNotExist\":true}";
             }
-            File privateKeyFile = new File(glowrootDir, "private.pem");
+            File privateKeyFile = new File(certificateDir, "private.pem");
             if (!privateKeyFile.exists()) {
                 return "{\"httpsRequiredFilesDoNotExist\":true}";
             }
             try {
-                SslContextBuilder.forServer(new File(glowrootDir, "certificate.pem"),
-                        new File(glowrootDir, "private.pem"));
+                SslContextBuilder.forServer(certificateFile, privateKeyFile);
             } catch (Exception e) {
                 logger.debug(e.getMessage(), e);
                 StringWriter sw = new StringWriter();
@@ -330,7 +329,7 @@ class AdminJsonService {
         WebConfig config = configRepository.getWebConfig();
         ImmutableWebConfigResponse.Builder builder = ImmutableWebConfigResponse.builder()
                 .config(WebConfigDto.create(config))
-                .glowrootDir(glowrootDir.getAbsolutePath())
+                .certificateDir(certificateDir.getAbsolutePath())
                 .portChangeFailed(portChangeFailed);
         if (httpServer == null) {
             builder.activePort(config.port())
@@ -367,7 +366,7 @@ class AdminJsonService {
         int activePort();
         String activeBindAddress();
         boolean activeHttps();
-        String glowrootDir();
+        String certificateDir();
         boolean portChangeFailed();
     }
 

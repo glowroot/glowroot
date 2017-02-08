@@ -27,7 +27,7 @@ public class Bootstrap {
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0 || args[0].equals("start")) {
-            centralModule = new CentralModule(false);
+            centralModule = new CentralModule();
         } else if (args[0].equals("stop")) {
             if (centralModule != null) {
                 centralModule.shutdown();

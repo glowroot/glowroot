@@ -16,15 +16,14 @@
 package org.glowroot.central;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.security.CodeSource;
 import java.util.List;
 import java.util.Properties;
 
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
+import javax.servlet.ServletConfig;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -33,13 +32,16 @@ import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.ByteStreams;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,30 +85,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 class CentralModule {
 
-    private static final Logger startupLogger;
-
-    static {
-        CodeSource codeSource = CentralModule.class.getProtectionDomain().getCodeSource();
-        File glowrootCentralJarFile = null;
-        Exception exception = null;
-        try {
-            glowrootCentralJarFile = getGlowrootCentralJarFile(codeSource);
-        } catch (URISyntaxException e) {
-            exception = e;
-        }
-        if (glowrootCentralJarFile != null) {
-            File logbackXmlOverride =
-                    new File(glowrootCentralJarFile.getParentFile(), "logback.xml");
-            if (logbackXmlOverride.exists()) {
-                System.setProperty("logback.configurationFile",
-                        logbackXmlOverride.getAbsolutePath());
-            }
-        }
-        startupLogger = LoggerFactory.getLogger("org.glowroot");
-        if (exception != null) {
-            startupLogger.error(exception.getMessage(), exception);
-        }
-    }
+    private static volatile @MonotonicNonNull Logger startupLogger;
 
     private final Cluster cluster;
     private final Session session;
@@ -115,7 +94,11 @@ class CentralModule {
     private final GrpcServer server;
     private final UiModule uiModule;
 
-    CentralModule(boolean servlet) throws Exception {
+    CentralModule() throws Exception {
+        this(null);
+    }
+
+    CentralModule(@Nullable ServletConfig config) throws Exception {
         Cluster cluster = null;
         Session session = null;
         RollupService rollupService = null;
@@ -123,6 +106,21 @@ class CentralModule {
         GrpcServer server = null;
         UiModule uiModule = null;
         try {
+            File baseDir;
+            if (config == null) {
+                baseDir = new File(".");
+            } else {
+                baseDir = getServletBaseDir();
+                File propFile = new File(baseDir, "glowroot-central.properties");
+                if (!propFile.exists()) {
+                    try (FileOutputStream out = new FileOutputStream(propFile)) {
+                        ByteStreams.copy(config.getServletContext()
+                                .getResourceAsStream("/META-INF/glowroot-central.properties"), out);
+                    }
+                }
+            }
+            // init logger as early as possible
+            initLogging(baseDir);
             // install jul-to-slf4j bridge for protobuf which logs to jul
             SLF4JBridgeHandler.removeHandlersForRootLogger();
             SLF4JBridgeHandler.install();
@@ -131,8 +129,17 @@ class CentralModule {
             Ticker ticker = Ticker.systemTicker();
             String version = Version.getVersion(Bootstrap.class);
             startupLogger.info("Glowroot version: {}", version);
+            if (config != null) {
+                String extra = "";
+                if (Strings.isNullOrEmpty(System.getProperty("glowroot.dir"))) {
+                    extra = ", this can be changed by specifying -Dglowroot.dir=... in your servlet"
+                            + " container's JVM args";
+                }
+                startupLogger.info("Glowroot dir: {} (location for glowroot.properties file{})",
+                        baseDir.getAbsolutePath(), extra);
+            }
 
-            CentralConfiguration centralConfig = getCentralConfiguration();
+            CentralConfiguration centralConfig = getCentralConfiguration(baseDir);
             session = connect(centralConfig);
             cluster = session.getCluster();
             Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
@@ -160,7 +167,7 @@ class CentralModule {
                         configRepository.getCentralStorageConfig());
             }
 
-            if (!servlet) {
+            if (config == null) {
                 String uiBindAddressOverride = centralConfig.uiBindAddressOverride();
                 Integer uiPortOverride = centralConfig.uiPortOverride();
                 if (uiBindAddressOverride != null || uiPortOverride != null) {
@@ -225,10 +232,10 @@ class CentralModule {
 
             uiModule = new CreateUiModuleBuilder()
                     .central(true)
-                    .servlet(servlet)
+                    .servlet(config != null)
                     .offline(false)
-                    .baseDir(new File("."))
-                    .glowrootDir(new File("."))
+                    .baseDir(baseDir)
+                    .certificateDir(baseDir)
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(configRepository)
@@ -250,7 +257,11 @@ class CentralModule {
                     .version(version)
                     .build();
         } catch (Throwable t) {
-            startupLogger.error(t.getMessage(), t);
+            if (startupLogger == null) {
+                t.printStackTrace();
+            } else {
+                startupLogger.error(t.getMessage(), t);
+            }
             // try to shut down cleanly, otherwise apache commons daemon (via Bootstrap) doesn't
             // know service failed to start up
             if (uiModule != null) {
@@ -286,7 +297,9 @@ class CentralModule {
     }
 
     void shutdown() {
-        startupLogger.info("shutting down...");
+        if (startupLogger != null) {
+            startupLogger.info("shutting down...");
+        }
         try {
             uiModule.close(false);
             server.close();
@@ -294,24 +307,28 @@ class CentralModule {
             pingAndSyntheticAlertService.close();
             session.close();
             cluster.close();
-            startupLogger.info("shutdown complete");
+            if (startupLogger != null) {
+                startupLogger.info("shutdown complete");
+            }
         } catch (Throwable t) {
-            startupLogger.error("error during shutdown: {}", t.getMessage(), t);
+            if (startupLogger == null) {
+                t.printStackTrace();
+            } else {
+                startupLogger.error("error during shutdown: {}", t.getMessage(), t);
+            }
         }
     }
 
-    private static CentralConfiguration getCentralConfiguration() throws IOException {
+    private static CentralConfiguration getCentralConfiguration(File baseDir) throws IOException {
         ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
-        File propFile = new File("glowroot-central.properties");
+        File propFile = new File(baseDir, "glowroot-central.properties");
         if (!propFile.exists()) {
             // upgrade from 0.9.5 to 0.9.6
-            propFile = new File("glowroot-server.properties");
-            if (!propFile.exists()) {
+            File oldPropFile = new File(baseDir, "glowroot-server.properties");
+            if (!oldPropFile.exists()) {
                 return builder.build();
             }
-            java.nio.file.Files.copy(Paths.get("glowroot-server.properties"),
-                    Paths.get("glowroot-central.properties"));
-            propFile = new File("glowroot-central.properties");
+            java.nio.file.Files.copy(oldPropFile.toPath(), propFile.toPath());
         }
         // upgrade from 0.9.4 to 0.9.5
         PropertiesFiles.upgradeIfNeeded(propFile, "cassandra.contact.points=",
@@ -345,6 +362,7 @@ class CentralModule {
         return builder.build();
     }
 
+    @RequiresNonNull("startupLogger")
     private static Session connect(CentralConfiguration centralConfig) throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean waitingForCassandraLogged = false;
@@ -379,17 +397,37 @@ class CentralModule {
         throw lastException;
     }
 
-    @VisibleForTesting
-    static @Nullable File getGlowrootCentralJarFile(@Nullable CodeSource codeSource)
-            throws URISyntaxException {
-        if (codeSource == null) {
-            return null;
+    private static File getServletBaseDir() {
+        String baseDirPath = System.getProperty("glowroot.dir");
+        if (Strings.isNullOrEmpty(baseDirPath)) {
+            return getDefaultBaseDir();
         }
-        File codeSourceFile = new File(codeSource.getLocation().toURI());
-        if (codeSourceFile.getName().endsWith(".jar")) {
-            return codeSourceFile;
+        File baseDir = new File(baseDirPath);
+        baseDir.mkdirs();
+        if (!baseDir.isDirectory()) {
+            // not using logger since the base dir is needed to set up the logger
+            return getDefaultBaseDir();
         }
-        return null;
+        return baseDir;
+    }
+
+    private static File getDefaultBaseDir() {
+        File baseDir = new File("glowroot");
+        baseDir.mkdirs();
+        if (!baseDir.isDirectory()) {
+            // not using logger since the base dir is needed to set up the logger
+            return new File(".");
+        }
+        return baseDir;
+    }
+
+    @EnsuresNonNull("startupLogger")
+    private static void initLogging(File baseDir) {
+        File logbackXmlOverride = new File(baseDir, "logback.xml");
+        if (logbackXmlOverride.exists()) {
+            System.setProperty("logback.configurationFile", logbackXmlOverride.getAbsolutePath());
+        }
+        startupLogger = LoggerFactory.getLogger("org.glowroot");
     }
 
     @Value.Immutable

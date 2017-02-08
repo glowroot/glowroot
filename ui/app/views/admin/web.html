@@ -81,7 +81,7 @@
             Active value is <code>{{activeHttps}}</code>.
           </div>
           Serve the user interface over HTTPS. The SSL certificate and private key to be used must be placed in the
-          glowroot directory ({{glowrootDir}}) with filenames <em>certificate.pem</em> and
+          {{certificateDir}} with filenames <em>certificate.pem</em> and
           <em>private.pem</em> before enabling HTTPS. The private key should not have a passphrase.
           E.g. a self signed certificate can be generated at the command line using
           <em>openssl req -new -x509 -nodes -days 365 -out certificate.pem -keyout private.pem</em>
