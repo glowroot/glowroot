@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,46 +29,46 @@ public class DataDirLocking {
 
     private DataDirLocking() {}
 
-    static Closeable lockDataDir(File baseDir) throws Exception {
+    static Closeable lockDataDir(File agentDir) throws Exception {
         // lock data dir
-        File tmpDir = new File(baseDir, "tmp");
+        File tmpDir = new File(agentDir, "tmp");
         File lockFile = new File(tmpDir, ".lock");
         try {
             Files.createParentDirs(lockFile);
             Files.touch(lockFile);
         } catch (IOException e) {
-            throw new BaseDirLockedException(e);
+            throw new AgentDirLockedException(e);
         }
-        final RandomAccessFile baseDirLockFile = new RandomAccessFile(lockFile, "rw");
-        FileLock baseDirFileLock = baseDirLockFile.getChannel().tryLock();
-        if (baseDirFileLock == null) {
+        final RandomAccessFile agentDirLockFile = new RandomAccessFile(lockFile, "rw");
+        FileLock agentDirFileLock = agentDirLockFile.getChannel().tryLock();
+        if (agentDirFileLock == null) {
             // try again in case there is O/S lag on releasing prior lock on JVM restart
             Thread.sleep(1000);
-            baseDirFileLock = baseDirLockFile.getChannel().tryLock();
-            if (baseDirFileLock == null) {
-                throw new BaseDirLockedException();
+            agentDirFileLock = agentDirLockFile.getChannel().tryLock();
+            if (agentDirFileLock == null) {
+                throw new AgentDirLockedException();
             }
         }
         lockFile.deleteOnExit();
-        final FileLock baseDirFileLockFinal = baseDirFileLock;
+        final FileLock agentDirFileLockFinal = agentDirFileLock;
         return new Closeable() {
             @Override
             public void close() throws IOException {
-                checkNotNull(baseDirFileLockFinal);
-                baseDirFileLockFinal.release();
-                baseDirLockFile.close();
+                checkNotNull(agentDirFileLockFinal);
+                agentDirFileLockFinal.release();
+                agentDirLockFile.close();
             }
         };
     }
 
     @SuppressWarnings("serial")
-    public static class BaseDirLockedException extends Exception {
+    public static class AgentDirLockedException extends Exception {
 
-        private BaseDirLockedException() {
+        private AgentDirLockedException() {
             super();
         }
 
-        private BaseDirLockedException(Throwable cause) {
+        private AgentDirLockedException(Throwable cause) {
             super(cause);
         }
     }

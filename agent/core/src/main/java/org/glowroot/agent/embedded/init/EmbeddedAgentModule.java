@@ -26,7 +26,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
@@ -66,8 +65,8 @@ class EmbeddedAgentModule {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private final File baseDir;
-    private final File certificateDir;
+    private final File agentDir;
+    private final File glowrootDir;
     private final Ticker ticker;
     private final Clock clock;
     // only null in viewer mode
@@ -86,11 +85,11 @@ class EmbeddedAgentModule {
 
     private final CountDownLatch simpleRepoModuleInit = new CountDownLatch(1);
 
-    EmbeddedAgentModule(final File baseDir, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            final String glowrootVersion, boolean offline) throws Exception {
+    EmbeddedAgentModule(final File glowrootDir, final File agentDir, Map<String, String> properties,
+            @Nullable Instrumentation instrumentation, final String glowrootVersion,
+            boolean offline) throws Exception {
 
-        dataDirLockingCloseable = DataDirLocking.lockDataDir(baseDir);
+        dataDirLockingCloseable = DataDirLocking.lockDataDir(agentDir);
 
         ticker = Ticker.systemTicker();
         clock = Clock.systemClock();
@@ -98,7 +97,7 @@ class EmbeddedAgentModule {
         // mem db is only used for testing (by glowroot-agent-it-harness)
         h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
 
-        final File dataDir = new File(baseDir, "data");
+        final File dataDir = new File(agentDir, "data");
         final DataSource dataSource;
         if (h2MemDb) {
             // mem db is only used for testing (by glowroot-agent-it-harness)
@@ -109,12 +108,12 @@ class EmbeddedAgentModule {
 
         // need to perform jrebel workaround prior to loading any jackson classes
         JRebelWorkaround.performWorkaroundIfNeeded();
-        PluginCache pluginCache = PluginCache.create(glowrootJarFile, false);
+        PluginCache pluginCache = PluginCache.create(glowrootDir, false);
         if (offline) {
-            viewerAgentModule = new ViewerAgentModule(baseDir, glowrootJarFile);
+            viewerAgentModule = new ViewerAgentModule(glowrootDir, agentDir);
             backgroundExecutor = null;
             agentModule = null;
-            ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
+            ConfigRepository configRepository = ConfigRepositoryImpl.create(glowrootDir,
                     viewerAgentModule.getConfigService(), pluginCache);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, null);
@@ -127,19 +126,19 @@ class EmbeddedAgentModule {
             // services/java.sql.Driver, and those drivers need to be woven
             final CollectorProxy collectorProxy = new CollectorProxy();
             ConfigService configService =
-                    ConfigService.create(baseDir, pluginCache.pluginDescriptors());
+                    ConfigService.create(agentDir, pluginCache.pluginDescriptors());
 
             // need to delay creation of the scheduled executor until instrumentation is set up
             Supplier<ScheduledExecutorService> backgroundExecutorSupplier =
                     GlowrootThinAgentInit.createBackgroundExecutorSupplier();
 
             agentModule = new AgentModule(clock, null, pluginCache, configService,
-                    backgroundExecutorSupplier, collectorProxy, instrumentation, baseDir);
+                    backgroundExecutorSupplier, collectorProxy, instrumentation, agentDir);
 
             backgroundExecutor = backgroundExecutorSupplier.get();
 
             PreInitializeStorageShutdownClasses.preInitializeClasses();
-            final ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
+            final ConfigRepository configRepository = ConfigRepositoryImpl.create(glowrootDir,
                     agentModule.getConfigService(), pluginCache);
             Executors.newSingleThreadExecutor().execute(new Runnable() {
                 @Override
@@ -163,7 +162,8 @@ class EmbeddedAgentModule {
                                 simpleRepoModule.getGaugeValueDao());
                         collectorProxy.setInstance(collectorImpl);
                         // embedded CollectorImpl does nothing with agent config parameter
-                        collectorImpl.init(baseDir, EnvironmentCreator.create(glowrootVersion),
+                        collectorImpl.init(glowrootDir, agentDir,
+                                EnvironmentCreator.create(glowrootVersion),
                                 AgentConfig.getDefaultInstance(), new AgentConfigUpdater() {
                                     @Override
                                     public void update(AgentConfig agentConfig) {}
@@ -185,13 +185,8 @@ class EmbeddedAgentModule {
             simpleRepoModuleInit.await(5, SECONDS);
             viewerAgentModule = null;
         }
-
-        this.baseDir = baseDir;
-        if (glowrootJarFile == null) {
-            certificateDir = baseDir;
-        } else {
-            certificateDir = MoreObjects.firstNonNull(glowrootJarFile.getParentFile(), baseDir);
-        }
+        this.glowrootDir = glowrootDir;
+        this.agentDir = agentDir;
         this.version = glowrootVersion;
     }
 
@@ -205,8 +200,8 @@ class EmbeddedAgentModule {
                     .central(false)
                     .servlet(false)
                     .offline(false)
-                    .baseDir(baseDir)
-                    .certificateDir(certificateDir)
+                    .certificateDir(glowrootDir)
+                    .logDir(agentDir)
                     .ticker(ticker)
                     .clock(clock)
                     .liveJvmService(agentModule.getLiveJvmService())
@@ -235,8 +230,8 @@ class EmbeddedAgentModule {
                     .central(false)
                     .servlet(false)
                     .offline(true)
-                    .baseDir(baseDir)
-                    .certificateDir(certificateDir)
+                    .certificateDir(glowrootDir)
+                    .logDir(agentDir)
                     .ticker(ticker)
                     .clock(clock)
                     .liveJvmService(null)

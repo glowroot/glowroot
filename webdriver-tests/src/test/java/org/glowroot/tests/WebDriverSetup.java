@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,7 +166,7 @@ public class WebDriverSetup {
 
     private static WebDriverSetup createSetup(boolean shared) throws Exception {
         int uiPort = getAvailablePort();
-        File baseDir = Files.createTempDir();
+        File testDir = Files.createTempDir();
         Container container;
         if (useCentral) {
             CassandraWrapper.start();
@@ -182,9 +182,9 @@ public class WebDriverSetup {
             session.execute("drop table if exists central_config");
             session.close();
             cluster.close();
-            container = createCentralAndContainer(uiPort, baseDir);
+            container = createCentralAndContainer(uiPort, testDir);
         } else {
-            container = createContainer(uiPort, baseDir);
+            container = createContainer(uiPort, testDir);
         }
         if (SauceLabs.useSauceLabs()) {
             return new WebDriverSetup(container, uiPort, shared, null);
@@ -202,19 +202,19 @@ public class WebDriverSetup {
         }
     }
 
-    private static Container createContainer(int uiPort, File baseDir) throws Exception {
-        File adminFile = new File(baseDir, "admin.json");
+    private static Container createContainer(int uiPort, File testDir) throws Exception {
+        File adminFile = new File(testDir, "admin.json");
         Files.write("{\"web\":{\"port\":" + uiPort + "}}", adminFile, Charsets.UTF_8);
         if (Containers.useJavaagent()) {
-            return new JavaagentContainer(baseDir, true,
+            return new JavaagentContainer(testDir, true,
                     ImmutableList.of("-Dglowroot.collector.host="));
         } else {
-            return new LocalContainer(baseDir, true,
+            return new LocalContainer(testDir, true,
                     ImmutableMap.of("glowroot.collector.host", ""));
         }
     }
 
-    private static Container createCentralAndContainer(int uiPort, File baseDir) throws Exception {
+    private static Container createCentralAndContainer(int uiPort, File testDir) throws Exception {
         int grpcPort = getAvailablePort();
         PrintWriter props = new PrintWriter("glowroot-central.properties");
         props.println("cassandra.keyspace=glowroot_unit_tests");
@@ -226,11 +226,11 @@ public class WebDriverSetup {
         mainMethod.invoke(null, (Object) new String[] {"start"});
         if (Containers.useJavaagent()) {
             // -Xmx is to limit memory usage on travis-ci builds
-            return new JavaagentContainer(baseDir, false,
+            return new JavaagentContainer(testDir, false,
                     ImmutableList.of("-Dglowroot.collector.host=localhost",
                             "-Dglowroot.collector.port=" + grpcPort, "-Xmx64m"));
         } else {
-            return new LocalContainer(baseDir, false,
+            return new LocalContainer(testDir, false,
                     ImmutableMap.of("glowroot.collector.host", "localhost",
                             "glowroot.collector.port", Integer.toString(grpcPort)));
         }

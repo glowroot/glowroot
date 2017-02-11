@@ -85,6 +85,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 class CentralModule {
 
+    // need to wait to init logger until after establishing centralDir
     private static volatile @MonotonicNonNull Logger startupLogger;
 
     private final Cluster cluster;
@@ -106,12 +107,11 @@ class CentralModule {
         GrpcServer server = null;
         UiModule uiModule = null;
         try {
-            File baseDir;
-            if (config == null) {
-                baseDir = new File(".");
-            } else {
-                baseDir = getServletBaseDir();
-                File propFile = new File(baseDir, "glowroot-central.properties");
+            File centralDir = config == null ? new File(".") : getCentralDir();
+            // init logger as early as possible
+            initLogging(centralDir);
+            if (config != null) {
+                File propFile = new File(centralDir, "glowroot-central.properties");
                 if (!propFile.exists()) {
                     try (FileOutputStream out = new FileOutputStream(propFile)) {
                         ByteStreams.copy(config.getServletContext()
@@ -119,8 +119,6 @@ class CentralModule {
                     }
                 }
             }
-            // init logger as early as possible
-            initLogging(baseDir);
             // install jul-to-slf4j bridge for protobuf which logs to jul
             SLF4JBridgeHandler.removeHandlersForRootLogger();
             SLF4JBridgeHandler.install();
@@ -131,15 +129,15 @@ class CentralModule {
             startupLogger.info("Glowroot version: {}", version);
             if (config != null) {
                 String extra = "";
-                if (Strings.isNullOrEmpty(System.getProperty("glowroot.dir"))) {
-                    extra = ", this can be changed by specifying -Dglowroot.dir=... in your servlet"
-                            + " container's JVM args";
+                if (Strings.isNullOrEmpty(System.getProperty("glowroot.home.dir"))) {
+                    extra = ", this can be changed by specifying -Dglowroot.home.dir=... in your"
+                            + " servlet container's JVM args";
                 }
-                startupLogger.info("Glowroot dir: {} (location for glowroot.properties file{})",
-                        baseDir.getAbsolutePath(), extra);
+                startupLogger.info("Glowroot home: {} (location for glowroot.properties file{})",
+                        centralDir.getAbsolutePath(), extra);
             }
 
-            CentralConfiguration centralConfig = getCentralConfiguration(baseDir);
+            CentralConfiguration centralConfig = getCentralConfiguration(centralDir);
             session = connect(centralConfig);
             cluster = session.getCluster();
             Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
@@ -234,8 +232,8 @@ class CentralModule {
                     .central(true)
                     .servlet(config != null)
                     .offline(false)
-                    .baseDir(baseDir)
-                    .certificateDir(baseDir)
+                    .certificateDir(centralDir)
+                    .logDir(centralDir)
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(configRepository)
@@ -319,12 +317,13 @@ class CentralModule {
         }
     }
 
-    private static CentralConfiguration getCentralConfiguration(File baseDir) throws IOException {
+    private static CentralConfiguration getCentralConfiguration(File centralDir)
+            throws IOException {
         ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
-        File propFile = new File(baseDir, "glowroot-central.properties");
+        File propFile = new File(centralDir, "glowroot-central.properties");
         if (!propFile.exists()) {
             // upgrade from 0.9.5 to 0.9.6
-            File oldPropFile = new File(baseDir, "glowroot-server.properties");
+            File oldPropFile = new File(centralDir, "glowroot-server.properties");
             if (!oldPropFile.exists()) {
                 return builder.build();
             }
@@ -397,37 +396,50 @@ class CentralModule {
         throw lastException;
     }
 
-    private static File getServletBaseDir() {
-        String baseDirPath = System.getProperty("glowroot.dir");
-        if (Strings.isNullOrEmpty(baseDirPath)) {
-            return getDefaultBaseDir();
+    private static File getCentralDir() {
+        String centralDirPath = System.getProperty("glowroot.home.dir");
+        if (Strings.isNullOrEmpty(centralDirPath)) {
+            return getDefaultCentralDir();
         }
-        File baseDir = new File(baseDirPath);
-        baseDir.mkdirs();
-        if (!baseDir.isDirectory()) {
-            // not using logger since the base dir is needed to set up the logger
-            return getDefaultBaseDir();
+        File centralDir = new File(centralDirPath);
+        centralDir.mkdirs();
+        if (!centralDir.isDirectory()) {
+            // not using logger since the home dir is needed to set up the logger
+            return getDefaultCentralDir();
         }
-        return baseDir;
+        return centralDir;
     }
 
-    private static File getDefaultBaseDir() {
-        File baseDir = new File("glowroot");
-        baseDir.mkdirs();
-        if (!baseDir.isDirectory()) {
-            // not using logger since the base dir is needed to set up the logger
+    private static File getDefaultCentralDir() {
+        File centralDir = new File("glowroot");
+        centralDir.mkdirs();
+        if (!centralDir.isDirectory()) {
+            // not using logger since the home dir is needed to set up the logger
             return new File(".");
         }
-        return baseDir;
+        return centralDir;
     }
 
+    // TODO report checker framework issue that occurs without this suppression
+    @SuppressWarnings("contracts.postcondition.not.satisfied")
     @EnsuresNonNull("startupLogger")
-    private static void initLogging(File baseDir) {
-        File logbackXmlOverride = new File(baseDir, "logback.xml");
+    private static void initLogging(File centralDir) {
+        File logbackXmlOverride = new File(centralDir, "logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("logback.configurationFile", logbackXmlOverride.getAbsolutePath());
         }
-        startupLogger = LoggerFactory.getLogger("org.glowroot");
+        String prior = System.getProperty("glowroot.log.dir");
+        try {
+            System.setProperty("glowroot.log.dir", centralDir.getPath());
+            startupLogger = LoggerFactory.getLogger("org.glowroot");
+        } finally {
+            System.clearProperty("glowroot.logback.configurationFile");
+            if (prior == null) {
+                System.clearProperty("glowroot.log.dir");
+            } else {
+                System.setProperty("glowroot.log.dir", prior);
+            }
+        }
     }
 
     @Value.Immutable

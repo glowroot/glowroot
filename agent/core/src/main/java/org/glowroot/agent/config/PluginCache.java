@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,20 +61,17 @@ public abstract class PluginCache {
     public abstract ImmutableList<File> pluginJars();
     public abstract ImmutableList<PluginDescriptor> pluginDescriptors();
 
-    public static PluginCache create(@Nullable File glowrootJarFile, boolean offline)
-            throws Exception {
+    public static PluginCache create(File glowrootDir, boolean offline) throws Exception {
         ImmutablePluginCache.Builder builder = ImmutablePluginCache.builder();
         List<URL> descriptorURLs = Lists.newArrayList();
-        if (glowrootJarFile != null) {
-            List<File> pluginJars = getPluginJars(glowrootJarFile);
-            builder.addAllPluginJars(pluginJars);
-            for (File pluginJar : pluginJars) {
-                descriptorURLs.add(
-                        new URL("jar:" + pluginJar.toURI() + "!/META-INF/glowroot.plugin.json"));
-            }
-            for (File file : getStandaloneDescriptors(glowrootJarFile)) {
-                descriptorURLs.add(file.toURI().toURL());
-            }
+        List<File> pluginJars = getPluginJars(glowrootDir);
+        builder.addAllPluginJars(pluginJars);
+        for (File pluginJar : pluginJars) {
+            descriptorURLs
+                    .add(new URL("jar:" + pluginJar.toURI() + "!/META-INF/glowroot.plugin.json"));
+        }
+        for (File file : getStandaloneDescriptors(glowrootDir)) {
+            descriptorURLs.add(file.toURI().toURL());
         }
         // also add descriptors on the class path (this is primarily for integration tests)
         descriptorURLs.addAll(getResources("META-INF/glowroot.plugin.json"));
@@ -94,9 +91,9 @@ public abstract class PluginCache {
         return builder.build();
     }
 
-    private static ImmutableList<File> getPluginJars(File glowrootJarFile)
+    private static ImmutableList<File> getPluginJars(File glowrootDir)
             throws URISyntaxException, IOException {
-        File pluginsDir = getPluginsDir(glowrootJarFile);
+        File pluginsDir = getPluginsDir(glowrootDir);
         if (pluginsDir == null) {
             return ImmutableList.of();
         }
@@ -113,9 +110,9 @@ public abstract class PluginCache {
         return ImmutableList.copyOf(pluginJars);
     }
 
-    private static ImmutableList<File> getStandaloneDescriptors(File glowrootJarFile)
+    private static ImmutableList<File> getStandaloneDescriptors(File glowrootDir)
             throws IOException, URISyntaxException {
-        File pluginsDir = getPluginsDir(glowrootJarFile);
+        File pluginsDir = getPluginsDir(glowrootDir);
         if (pluginsDir == null) {
             return ImmutableList.of();
         }
@@ -132,9 +129,8 @@ public abstract class PluginCache {
         return ImmutableList.copyOf(pluginDescriptorFiles);
     }
 
-    private static @Nullable File getPluginsDir(File glowrootJarFile)
-            throws IOException, URISyntaxException {
-        File pluginsDir = new File(glowrootJarFile.getParentFile(), "plugins");
+    private static @Nullable File getPluginsDir(File glowrootDir) throws IOException {
+        File pluginsDir = new File(glowrootDir, "plugins");
         if (!pluginsDir.exists()) {
             // it is ok to run without any plugins
             return null;

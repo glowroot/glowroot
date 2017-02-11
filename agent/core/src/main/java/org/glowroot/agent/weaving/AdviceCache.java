@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class AdviceCache {
     private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
     private final @Nullable Instrumentation instrumentation;
-    private final File baseDir;
+    private final File agentDir;
 
     private volatile ImmutableList<Advice> reweavableAdvisors;
     private volatile ImmutableSet<String> reweavableConfigVersions;
@@ -69,7 +69,7 @@ public class AdviceCache {
 
     public AdviceCache(List<PluginDescriptor> pluginDescriptors, List<File> pluginJars,
             List<InstrumentationConfig> reweavableConfigs,
-            @Nullable Instrumentation instrumentation, File baseDir) throws Exception {
+            @Nullable Instrumentation instrumentation, File agentDir) throws Exception {
 
         List<Advice> pluginAdvisors = Lists.newArrayList();
         List<ShimType> shimTypes = Lists.newArrayList();
@@ -110,7 +110,7 @@ public class AdviceCache {
             checkNotNull(loader);
             ClassLoaders.defineClassesInClassLoader(lazyAdvisors.values(), loader);
         } else {
-            File generatedJarDir = new File(baseDir, "tmp");
+            File generatedJarDir = new File(agentDir, "tmp");
             ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
                     "plugin-pointcuts.jar");
             if (!lazyAdvisors.isEmpty()) {
@@ -123,9 +123,9 @@ public class AdviceCache {
         this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.instrumentation = instrumentation;
-        this.baseDir = baseDir;
+        this.agentDir = agentDir;
         reweavableAdvisors =
-                createReweavableAdvisors(reweavableConfigs, instrumentation, baseDir, true);
+                createReweavableAdvisors(reweavableConfigs, instrumentation, agentDir, true);
         reweavableConfigVersions = createReweavableConfigVersions(reweavableConfigs);
         allAdvisors = ImmutableList.copyOf(Iterables.concat(pluginAdvisors, reweavableAdvisors));
     }
@@ -151,7 +151,7 @@ public class AdviceCache {
 
     public void updateAdvisors(List<InstrumentationConfig> reweavableConfigs) throws Exception {
         reweavableAdvisors =
-                createReweavableAdvisors(reweavableConfigs, instrumentation, baseDir, false);
+                createReweavableAdvisors(reweavableConfigs, instrumentation, agentDir, false);
         reweavableConfigVersions = createReweavableConfigVersions(reweavableConfigs);
         allAdvisors = ImmutableList.copyOf(Iterables.concat(pluginAdvisors, reweavableAdvisors));
     }
@@ -202,7 +202,7 @@ public class AdviceCache {
 
     private static ImmutableList<Advice> createReweavableAdvisors(
             List<InstrumentationConfig> reweavableConfigs,
-            @Nullable Instrumentation instrumentation, File baseDir, boolean cleanTmpDir)
+            @Nullable Instrumentation instrumentation, File agentDir, boolean cleanTmpDir)
             throws Exception {
         ImmutableMap<Advice, LazyDefinedClass> advisors =
                 AdviceGenerator.createAdvisors(reweavableConfigs, null, true);
@@ -212,7 +212,7 @@ public class AdviceCache {
             checkNotNull(loader);
             ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
         } else {
-            File generatedJarDir = new File(baseDir, "tmp");
+            File generatedJarDir = new File(agentDir, "tmp");
             if (cleanTmpDir) {
                 ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
                         "config-pointcuts");

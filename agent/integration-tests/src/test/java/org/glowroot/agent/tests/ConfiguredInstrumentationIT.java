@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ConfiguredInstrumentationIT {
 
     protected static Container container;
-    private static File baseDir;
+    private static File testDir;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+        testDir = TempDirs.createTempDir("glowroot-test-dir");
         // see subclass (ReweavePointcutsTest) for JavaagentContainer test
-        container = LocalContainer.create(baseDir);
+        container = LocalContainer.create(testDir);
         List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
         instrumentationConfigs.add(buildInstrumentationForExecute1());
         instrumentationConfigs.add(buildInstrumentationForExecute1TimerOnly());
@@ -60,13 +60,13 @@ public class ConfiguredInstrumentationIT {
         // re-start now with pointcut configs
         container.close();
         // see subclass (ReweavePointcutsTest) for JavaagentContainer test
-        container = LocalContainer.create(baseDir);
+        container = LocalContainer.create(testDir);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         container.close();
-        TempDirs.deleteRecursively(baseDir);
+        TempDirs.deleteRecursively(testDir);
     }
 
     @After

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,8 @@ public class LocalContainer implements Container {
         Reflection.initialize(InitLogging.class);
     }
 
-    private final File baseDir;
-    private final boolean deleteBaseDirOnClose;
+    private final File testDir;
+    private final boolean deleteTestDirOnClose;
 
     private volatile @Nullable IsolatedWeavingClassLoader isolatedWeavingClassLoader;
     private final @Nullable GrpcServerWrapper server;
@@ -57,23 +57,23 @@ public class LocalContainer implements Container {
 
     private volatile @Nullable Thread executingAppThread;
 
-    public static LocalContainer create(File baseDir) throws Exception {
-        return new LocalContainer(baseDir, false, ImmutableMap.<String, String>of());
+    public static LocalContainer create(File testDir) throws Exception {
+        return new LocalContainer(testDir, false, ImmutableMap.<String, String>of());
     }
 
-    public LocalContainer(@Nullable File baseDir, boolean embedded,
+    public LocalContainer(@Nullable File testDir, boolean embedded,
             Map<String, String> extraProperties) throws Exception {
-        if (baseDir == null) {
-            this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
-            deleteBaseDirOnClose = true;
+        if (testDir == null) {
+            this.testDir = TempDirs.createTempDir("glowroot-test-dir");
+            deleteTestDirOnClose = true;
         } else {
-            this.baseDir = baseDir;
-            deleteBaseDirOnClose = false;
+            this.testDir = testDir;
+            deleteTestDirOnClose = false;
         }
 
         boolean pointingToCentral = extraProperties.containsKey("glowroot.collector.host");
         final Map<String, String> properties = Maps.newHashMap();
-        properties.put("glowroot.base.dir", this.baseDir.getAbsolutePath());
+        properties.put("glowroot.test.dir", this.testDir.getAbsolutePath());
         if (embedded || pointingToCentral) {
             traceCollector = null;
             server = null;
@@ -174,8 +174,8 @@ public class LocalContainer implements Container {
             server.close();
         }
         glowrootAgentInit.awaitClose();
-        if (deleteBaseDirOnClose) {
-            TempDirs.deleteRecursively(baseDir);
+        if (deleteTestDirOnClose) {
+            TempDirs.deleteRecursively(testDir);
         }
         // release class loader to prevent PermGen OOM during maven test
         isolatedWeavingClassLoader = null;

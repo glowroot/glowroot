@@ -34,18 +34,18 @@ class LazyHttpServer {
     private final int port;
     private final ConfigRepository configRepository;
     private final CommonHandler commonHandler;
-    private final File baseDir;
+    private final File certificateDir;
     private final int numWorkerThreads;
 
     private volatile @Nullable HttpServer httpServer;
 
     LazyHttpServer(String bindAddress, int port, ConfigRepository configRepository,
-            CommonHandler commonHandler, File baseDir, int numWorkerThreads) {
+            CommonHandler commonHandler, File certificateDir, int numWorkerThreads) {
         this.bindAddress = bindAddress;
         this.port = port;
         this.configRepository = configRepository;
         this.commonHandler = commonHandler;
-        this.baseDir = baseDir;
+        this.certificateDir = certificateDir;
         this.numWorkerThreads = numWorkerThreads;
     }
 
@@ -84,6 +84,6 @@ class LazyHttpServer {
     // httpServer is only null if it could not even bind to port 0 (any available port)
     private HttpServer build() throws Exception {
         return new HttpServer(bindAddress, port, numWorkerThreads, configRepository, commonHandler,
-                baseDir);
+                certificateDir);
     }
 }

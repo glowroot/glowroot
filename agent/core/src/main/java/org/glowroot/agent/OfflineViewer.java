@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.glowroot.agent;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.security.CodeSource;
-import java.sql.SQLException;
 
 import javax.annotation.Nullable;
 
@@ -41,21 +40,20 @@ public class OfflineViewer {
     public static void main(String... args) throws Exception {
         CodeSource codeSource = OfflineViewer.class.getProtectionDomain().getCodeSource();
         File glowrootJarFile = getGlowrootJarFile(codeSource);
-
-        String baseDirPath = System.getProperty("glowroot.base.dir");
-        File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
-        MainEntryPoint.initLogging(baseDir);
+        File glowrootDir = GlowrootDir.getGlowrootDir(glowrootJarFile);
+        File agentDir = GlowrootDir.getAgentDir(glowrootDir);
+        MainEntryPoint.initLogging(glowrootDir);
         startupLogger = LoggerFactory.getLogger("org.glowroot");
 
         if (args.length == 1 && args[0].equals("h2")) {
-            h2(glowrootJarFile);
+            h2(agentDir);
             return;
         }
         if (args.length == 1 && args[0].equals("recover")) {
-            recover(glowrootJarFile);
+            recover(agentDir);
             return;
         }
-        MainEntryPoint.runViewer(baseDir, glowrootJarFile);
+        MainEntryPoint.runViewer(glowrootDir, agentDir);
     }
 
     @VisibleForTesting
@@ -71,19 +69,15 @@ public class OfflineViewer {
         return null;
     }
 
-    private static void h2(@Nullable File glowrootJarFile) throws SQLException {
-        String baseDirPath = System.getProperty("glowroot.base.dir");
-        File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
-        File dataDir = new File(baseDir, "data");
+    private static void h2(File agentDir) throws Exception {
+        File dataDir = new File(agentDir, "data");
         Console.main(new String[] {"-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data",
                 "-user", "sa"});
     }
 
     @RequiresNonNull("startupLogger")
-    private static void recover(@Nullable File glowrootJarFile) throws SQLException {
-        String baseDirPath = System.getProperty("glowroot.base.dir");
-        File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
-        File dataDir = new File(baseDir, "data");
+    private static void recover(File agentDir) throws Exception {
+        File dataDir = new File(agentDir, "data");
         File recoverFile = new File(dataDir, "data.h2.sql");
         if (recoverFile.exists() && !recoverFile.delete()) {
             startupLogger.warn("recover failed: cannot delete existing data.h2.sql");

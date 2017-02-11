@@ -55,9 +55,9 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     private @MonotonicNonNull ScheduledExecutorService backgroundExecutor;
 
     @Override
-    public void init(final File baseDir, final @Nullable String collectorHost,
-            final @Nullable Collector customCollector, final Map<String, String> properties,
-            final @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
+    public void init(final File glowrootDir, final File agentDir,
+            final @Nullable String collectorHost, final @Nullable Collector customCollector,
+            final Map<String, String> properties, final @Nullable Instrumentation instrumentation,
             final String glowrootVersion, boolean offline) throws Exception {
 
         Ticker ticker = Tickers.getTicker();
@@ -65,9 +65,9 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
         // need to perform jrebel workaround prior to loading any jackson classes
         JRebelWorkaround.performWorkaroundIfNeeded();
-        final PluginCache pluginCache = PluginCache.create(glowrootJarFile, false);
+        final PluginCache pluginCache = PluginCache.create(glowrootDir, false);
         final ConfigService configService =
-                ConfigService.create(baseDir, pluginCache.pluginDescriptors());
+                ConfigService.create(agentDir, pluginCache.pluginDescriptors());
 
         final CollectorProxy collectorProxy = new CollectorProxy();
 
@@ -83,7 +83,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 createBackgroundExecutorSupplier();
 
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
-                backgroundExecutorSupplier, collectorProxy, instrumentation, baseDir);
+                backgroundExecutorSupplier, collectorProxy, instrumentation, agentDir);
 
         final ScheduledExecutorService backgroundExecutor = backgroundExecutorSupplier.get();
 
@@ -104,7 +104,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                     collector = customCollector;
                 }
                 collectorProxy.setInstance(collector);
-                collector.init(baseDir, EnvironmentCreator.create(glowrootVersion),
+                collector.init(glowrootDir, agentDir, EnvironmentCreator.create(glowrootVersion),
                         configService.getAgentConfig(), agentConfigUpdater);
             }
         });

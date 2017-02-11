@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ package org.glowroot.agent.embedded.init;
 
 import java.io.File;
 
-import javax.annotation.Nullable;
-
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 
@@ -27,9 +25,9 @@ class ViewerAgentModule {
     private final PluginCache pluginCache;
     private final ConfigService configService;
 
-    ViewerAgentModule(File baseDir, @Nullable File glowrootJarFile) throws Exception {
-        pluginCache = PluginCache.create(glowrootJarFile, true);
-        configService = ConfigService.create(baseDir, pluginCache.pluginDescriptors());
+    ViewerAgentModule(File glowrootDir, File agentDir) throws Exception {
+        pluginCache = PluginCache.create(glowrootDir, true);
+        configService = ConfigService.create(agentDir, pluginCache.pluginDescriptors());
     }
 
     ConfigService getConfigService() {

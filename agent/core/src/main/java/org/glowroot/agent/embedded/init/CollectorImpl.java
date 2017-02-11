@@ -45,8 +45,8 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
-            AgentConfigUpdater agentConfigUpdater) throws Exception {
+    public void init(File glowrootDir, File agentDir, Environment environment,
+            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) throws Exception {
         agentDao.store(environment);
     }
 

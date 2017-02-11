@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 package org.glowroot.agent.it.harness;
-
-import java.io.File;
-
-import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -53,7 +49,19 @@ public class Containers {
     private Containers() {}
 
     public static Container create() throws Exception {
-        return create(null);
+        switch (harness) {
+            case JAVAAGENT:
+                // this is the most realistic way to run tests because it launches an external JVM
+                // process using -javaagent:glowroot.jar
+                logger.debug("create(): using javaagent container");
+                return new JavaagentContainer(null, false, ImmutableList.<String>of());
+            case LOCAL:
+                // this is the easiest way to run/debug tests inside of Eclipse
+                logger.debug("create(): using local container");
+                return new LocalContainer(null, false, ImmutableMap.<String, String>of());
+            default:
+                throw new IllegalStateException("Unexpected harness enum value: " + harness);
+        }
     }
 
     public static Container createJavaagent() throws Exception {
@@ -62,23 +70,6 @@ public class Containers {
 
     public static Container createLocal() throws Exception {
         return new LocalContainer(null, false, ImmutableMap.<String, String>of());
-    }
-
-    // since baseDir is passed to the container, the container will not delete baseDir on close
-    private static Container create(@Nullable File baseDir) throws Exception {
-        switch (harness) {
-            case JAVAAGENT:
-                // this is the most realistic way to run tests because it launches an external JVM
-                // process using -javaagent:glowroot.jar
-                logger.debug("create(): using javaagent container");
-                return new JavaagentContainer(baseDir, false, ImmutableList.<String>of());
-            case LOCAL:
-                // this is the easiest way to run/debug tests inside of Eclipse
-                logger.debug("create(): using local container");
-                return new LocalContainer(baseDir, false, ImmutableMap.<String, String>of());
-            default:
-                throw new IllegalStateException("Unexpected harness enum value: " + harness);
-        }
     }
 
     public static boolean useJavaagent() {

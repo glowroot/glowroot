@@ -74,8 +74,8 @@ public class JavaagentContainer implements Container {
         Reflection.initialize(InitLogging.class);
     }
 
-    private final File baseDir;
-    private final boolean deleteBaseDirOnClose;
+    private final File testDir;
+    private final boolean deleteTestDirOnClose;
 
     private final ServerSocket heartbeatListenerSocket;
     private final ExecutorService heartbeatListenerExecutor;
@@ -95,8 +95,8 @@ public class JavaagentContainer implements Container {
         return new JavaagentContainer(null, false, ImmutableList.<String>of());
     }
 
-    public static JavaagentContainer create(File baseDir) throws Exception {
-        return new JavaagentContainer(baseDir, false, ImmutableList.<String>of());
+    public static JavaagentContainer create(File testDir) throws Exception {
+        return new JavaagentContainer(testDir, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer createWithExtraJvmArgs(List<String> extraJvmArgs)
@@ -104,14 +104,14 @@ public class JavaagentContainer implements Container {
         return new JavaagentContainer(null, false, extraJvmArgs);
     }
 
-    public JavaagentContainer(@Nullable File baseDir, boolean embedded, List<String> extraJvmArgs)
+    public JavaagentContainer(@Nullable File testDir, boolean embedded, List<String> extraJvmArgs)
             throws Exception {
-        if (baseDir == null) {
-            this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
-            deleteBaseDirOnClose = true;
+        if (testDir == null) {
+            this.testDir = TempDirs.createTempDir("glowroot-test-dir");
+            deleteTestDirOnClose = true;
         } else {
-            this.baseDir = baseDir;
-            deleteBaseDirOnClose = false;
+            this.testDir = testDir;
+            deleteTestDirOnClose = false;
         }
 
         // need to start heartbeat socket listener before spawning process
@@ -151,7 +151,7 @@ public class JavaagentContainer implements Container {
         }
         int javaagentServicePort = LocalContainer.getAvailablePort();
         List<String> command = buildCommand(heartbeatListenerSocket.getLocalPort(), collectorPort,
-                javaagentServicePort, this.baseDir, extraJvmArgs);
+                javaagentServicePort, this.testDir, extraJvmArgs);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         final Process process = processBuilder.start();
@@ -300,8 +300,8 @@ public class JavaagentContainer implements Container {
         }
         heartbeatListenerSocket.close();
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
-        if (deleteBaseDirOnClose) {
-            TempDirs.deleteRecursively(baseDir);
+        if (deleteTestDirOnClose) {
+            TempDirs.deleteRecursively(testDir);
         }
     }
 
@@ -312,7 +312,7 @@ public class JavaagentContainer implements Container {
     }
 
     private static List<String> buildCommand(int heartbeatPort, int collectorPort,
-            int javaagentServicePort, File baseDir, List<String> extraJvmArgs) throws Exception {
+            int javaagentServicePort, File testDir, List<String> extraJvmArgs) throws Exception {
         List<String> command = Lists.newArrayList();
         String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
                 + File.separator + "java";
@@ -412,13 +412,13 @@ public class JavaagentContainer implements Container {
         command.add(Joiner.on(File.pathSeparatorChar).join(paths));
         if (javaagentJarFile == null) {
             // create jar file in data dir since that gets cleaned up at end of test already
-            javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(baseDir);
+            javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(testDir);
             command.add("-javaagent:" + javaagentJarFile);
             command.add("-DdelegateJavaagent=" + AgentPremain.class.getName());
         } else {
             command.add("-javaagent:" + javaagentJarFile);
         }
-        command.add("-Dglowroot.base.dir=" + baseDir.getAbsolutePath());
+        command.add("-Dglowroot.test.dir=" + testDir.getAbsolutePath());
         if (collectorPort != 0) {
             command.add("-Dglowroot.collector.host=localhost");
             command.add("-Dglowroot.collector.port=" + collectorPort);

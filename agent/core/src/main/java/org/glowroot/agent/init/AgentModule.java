@@ -112,7 +112,7 @@ public class AgentModule {
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, final PluginCache pluginCache,
             final ConfigService configService,
             Supplier<ScheduledExecutorService> backgroundExecutorSupplier, Collector collector,
-            @Nullable Instrumentation instrumentation, File baseDir) throws Exception {
+            @Nullable Instrumentation instrumentation, File agentDir) throws Exception {
 
         Ticker ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
         this.configService = configService;
@@ -124,7 +124,7 @@ public class AgentModule {
             }
         }
         adviceCache = new AdviceCache(pluginCache.pluginDescriptors(), pluginCache.pluginJars(),
-                configService.getInstrumentationConfigs(), instrumentation, baseDir);
+                configService.getInstrumentationConfigs(), instrumentation, agentDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes());
         final TimerNameCache timerNameCache = new TimerNameCache();

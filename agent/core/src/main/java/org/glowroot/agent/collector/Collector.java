@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Collector {
 
-    void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
+    void init(File glowrootDir, File agentDir, Environment environment, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception;
 
     void collectAggregates(long captureTime, Aggregates aggregates) throws Exception;

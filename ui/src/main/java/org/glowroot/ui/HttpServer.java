@@ -57,14 +57,14 @@ class HttpServer {
     private final EventLoopGroup workerGroup;
 
     private final String bindAddress;
-    private final File baseDir;
+    private final File certificateDir;
 
     private volatile @Nullable SslContext sslContext;
     private volatile Channel serverChannel;
     private volatile int port;
 
     HttpServer(String bindAddress, int port, int numWorkerThreads,
-            ConfigRepository configRepository, CommonHandler commonHandler, File baseDir)
+            ConfigRepository configRepository, CommonHandler commonHandler, File certificateDir)
             throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
@@ -84,11 +84,11 @@ class HttpServer {
 
         if (configRepository.getWebConfig().https()) {
             sslContext = SslContextBuilder
-                    .forServer(new File(baseDir, "certificate.pem"),
-                            new File(baseDir, "private.pem"))
+                    .forServer(new File(certificateDir, "certificate.pem"),
+                            new File(certificateDir, "private.pem"))
                     .build();
         }
-        this.baseDir = baseDir;
+        this.certificateDir = certificateDir;
 
         bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
@@ -168,8 +168,8 @@ class HttpServer {
     void changeProtocol(boolean ssl) throws Exception {
         if (ssl) {
             sslContext = SslContextBuilder
-                    .forServer(new File(baseDir, "certificate.pem"),
-                            new File(baseDir, "private.pem"))
+                    .forServer(new File(certificateDir, "certificate.pem"),
+                            new File(certificateDir, "private.pem"))
                     .build();
         } else {
             sslContext = null;

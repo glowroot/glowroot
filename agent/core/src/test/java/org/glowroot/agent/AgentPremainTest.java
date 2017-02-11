@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.junit.rules.ExpectedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AgentTest {
+public class AgentPremainTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -39,11 +39,11 @@ public class AgentTest {
 
     @Test
     public void testNullCodeSourceWithDelegateJavaagent() throws Exception {
-        System.setProperty("delegateJavaagent", "true");
+        System.setProperty("glowroot.test.dir", ".");
         try {
             assertThat(AgentPremain.getGlowrootJarFile(null)).isNull();
         } finally {
-            System.clearProperty("delegateJavaagent");
+            System.clearProperty("glowroot.test.dir");
         }
     }
 
@@ -63,14 +63,14 @@ public class AgentTest {
     }
 
     @Test
-    public void testWithNotGlowrootJarButWithDelegateJavaagent() throws Exception {
-        System.setProperty("delegateJavaagent", "true");
+    public void testWithNotGlowrootJarButWithTestDir() throws Exception {
+        System.setProperty("glowroot.test.dir", ".");
         try {
             File glowrootJar = new File("x/classes");
             CodeSource codeSource = new CodeSource(glowrootJar.toURI().toURL(), new Certificate[0]);
             assertThat(AgentPremain.getGlowrootJarFile(codeSource)).isNull();
         } finally {
-            System.clearProperty("delegateJavaagent");
+            System.clearProperty("glowroot.test.dir");
         }
     }
 }

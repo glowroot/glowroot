@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ public class UiSandboxMain {
 
     public static void main(String... args) throws Exception {
         Container container;
-        File baseDir = new File("target");
-        File configFile = new File(baseDir, "config.json");
+        File testDir = new File("target");
+        File configFile = new File(testDir, "config.json");
         if (!configFile.exists()) {
             Files.write(
                     "{\"transactions\":{\"profilingIntervalMillis\":100},"
@@ -50,19 +50,19 @@ public class UiSandboxMain {
                     configFile, Charsets.UTF_8);
         }
         if (useJavaagent && useGlowrootCentral) {
-            container = new JavaagentContainer(baseDir, false,
+            container = new JavaagentContainer(testDir, false,
                     ImmutableList.of("-Dglowroot.agent.id=\"UI Sandbox\"",
                             "-Dglowroot.collector.host=localhost",
                             "-Dglowroot.collector.port=8181"));
         } else if (useJavaagent) {
-            container = new JavaagentContainer(baseDir, true, ImmutableList.<String>of());
+            container = new JavaagentContainer(testDir, true, ImmutableList.<String>of());
         } else if (useGlowrootCentral) {
-            container = new LocalContainer(baseDir, false,
+            container = new LocalContainer(testDir, false,
                     ImmutableMap.of("glowroot.agent.id", "UI Sandbox",
                             "glowroot.collector.host", "localhost",
                             "glowroot.collector.port", "8181"));
         } else {
-            container = new LocalContainer(baseDir, true, ImmutableMap.<String, String>of());
+            container = new LocalContainer(testDir, true, ImmutableMap.<String, String>of());
         }
         container.executeNoExpectedTrace(GenerateTraces.class);
     }

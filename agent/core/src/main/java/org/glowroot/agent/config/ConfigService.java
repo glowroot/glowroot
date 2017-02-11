@@ -69,8 +69,8 @@ public class ConfigService {
     // memory barrier is used to ensure memory visibility of config values
     private volatile boolean memoryBarrier;
 
-    public static ConfigService create(File baseDir, List<PluginDescriptor> pluginDescriptors) {
-        ConfigService configService = new ConfigService(baseDir, pluginDescriptors);
+    public static ConfigService create(File agentDir, List<PluginDescriptor> pluginDescriptors) {
+        ConfigService configService = new ConfigService(agentDir, pluginDescriptors);
         // it's nice to update config.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
         try {
@@ -81,9 +81,9 @@ public class ConfigService {
         return configService;
     }
 
-    private ConfigService(File baseDir, List<PluginDescriptor> pluginDescriptors) {
+    private ConfigService(File agentDir, List<PluginDescriptor> pluginDescriptors) {
         configFile =
-                new ConfigFile(new File(baseDir, "config.json"), new File(baseDir, "admin.json"));
+                new ConfigFile(new File(agentDir, "config.json"), new File(agentDir, "admin.json"));
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         TransactionConfig transactionConfig =
                 configFile.getConfigNode("transactions", ImmutableTransactionConfig.class, mapper);

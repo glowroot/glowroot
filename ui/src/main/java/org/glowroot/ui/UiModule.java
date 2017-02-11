@@ -60,8 +60,8 @@ public class UiModule {
             boolean central,
             boolean servlet,
             boolean offline,
-            File baseDir,
             File certificateDir,
+            File logDir,
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
             Clock clock,
             @Nullable LiveJvmService liveJvmService,
@@ -103,7 +103,7 @@ public class UiModule {
                 new TraceDetailHttpService(traceCommonService);
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService, version);
-        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(baseDir);
+        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(logDir);
         ErrorCommonService errorCommonService =
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
@@ -179,7 +179,7 @@ public class UiModule {
             String bindAddress = configRepository.getWebConfig().bindAddress();
             int port = configRepository.getWebConfig().port();
             LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, configRepository,
-                    commonHandler, baseDir, numWorkerThreads);
+                    commonHandler, certificateDir, numWorkerThreads);
 
             lazyHttpServer.init(adminJsonService);
             return new UiModule(lazyHttpServer);

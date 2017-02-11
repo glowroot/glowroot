@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class AgentPremain {
     @SuppressWarnings("return.type.incompatible")
     static File getGlowrootJarFile(CodeSource codeSource) throws Exception {
         if (codeSource == null) {
-            if (System.getProperty("delegateJavaagent") != null) {
+            if (System.getProperty("glowroot.test.dir") != null) {
                 // this is ok, running tests under delegating javaagent
                 return null;
             }
@@ -74,7 +74,7 @@ public class AgentPremain {
         if (codeSourceFile.getName().endsWith(".jar")) {
             return codeSourceFile;
         }
-        if (System.getProperty("delegateJavaagent") != null) {
+        if (System.getProperty("glowroot.test.dir") != null) {
             // this is ok, running tests under delegating javaagent
             return null;
         }
