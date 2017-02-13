@@ -214,11 +214,9 @@ public class WebDriverSetup {
         File adminFile = new File(testDir, "admin.json");
         Files.write("{\"web\":{\"port\":" + uiPort + "}}", adminFile, Charsets.UTF_8);
         if (Containers.useJavaagent()) {
-            return new JavaagentContainer(testDir, true,
-                    ImmutableList.of("-Dglowroot.collector.host="));
+            return new JavaagentContainer(testDir, true, ImmutableList.of());
         } else {
-            return new LocalContainer(testDir, true,
-                    ImmutableMap.of("glowroot.collector.host", ""));
+            return new LocalContainer(testDir, true, ImmutableMap.of());
         }
     }
 
