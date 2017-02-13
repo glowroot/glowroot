@@ -906,12 +906,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
                     addErrorEntry(currTick, currTick, null, null, errorMessage);
             if (t == null) {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                // need to strip back a few stack calls:
-                // skip i=0 which is "java.lang.Thread.getStackTrace()"
-                // skip i=1 which is "...TransactionServiceImpl.addErrorEntryInternal()"
-                // skip i=2 which is "...TransactionServiceImpl.addErrorEntry()"
-                // skip i=3 which is the plugin advice
-                entry.setStackTrace(ImmutableList.copyOf(stackTrace).subList(4, stackTrace.length));
+                // strip up through this method, plus 2 additional methods:
+                // ThreadContextImpl.addErrorEntry() and the plugin advice method
+                int index = getNormalizedStartIndex(stackTrace, "addErrorEntryInternal", 2);
+                entry.setStackTrace(
+                        ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
             }
         }
     }
@@ -971,6 +970,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
                     new TraceEntryImpl(this, rootEntry, DETACHED_MESSAGE_SUPPLIER,
                             null, 0, transaction.getEndTick(), null, null));
         }
+    }
+
+    static int getNormalizedStartIndex(StackTraceElement[] stackTrace, String methodName,
+            int additionalMethodsToSkip) {
+        for (int i = 0; i < stackTrace.length; i++) {
+            if (methodName.equals(stackTrace[i].getMethodName())) {
+                return i + 1 + additionalMethodsToSkip;
+            }
+        }
+        return 0;
     }
 
     // this does not include the root trace entry
@@ -1049,13 +1058,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
                         messageSupplier, getQueryData(), errorMessage);
                 if (t == null) {
                     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                    // need to strip back a few stack calls:
-                    // skip i=0 which is "java.lang.Thread.getStackTrace()"
-                    // skip i=1 which is "...DummyTraceEntryOrQuery.endWithErrorInternal()"
-                    // skip i=2 which is "...DummyTraceEntryOrQuery.endWithError()"
-                    // skip i=3 which is the plugin advice
+                    // strip up through this method, plus 2 additional methods:
+                    // DummyTraceEntryOrQuery.endWithError() and the plugin advice method
+                    int index = getNormalizedStartIndex(stackTrace, "endWithErrorInternal", 2);
                     entry.setStackTrace(
-                            ImmutableList.copyOf(stackTrace).subList(4, stackTrace.length));
+                            ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
                 }
             }
         }

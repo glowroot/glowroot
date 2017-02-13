@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,19 @@
  */
 package org.glowroot.agent.util;
 
+import com.google.common.base.StandardSystemProperty;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ThreadAllocatedBytesTest {
+
+    @Before
+    public void beforeEach() {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VM_NAME.value().startsWith("IBM"));
+    }
 
     @Test
     public void testIsSupportedReturnsNull() throws Exception {

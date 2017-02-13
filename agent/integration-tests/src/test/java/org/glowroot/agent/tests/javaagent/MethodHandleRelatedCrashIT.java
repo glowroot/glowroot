@@ -48,7 +48,8 @@ public class MethodHandleRelatedCrashIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        assumeJdk8();
+        // the javascript used in the test fails in jdk 6 javascript engine
+        assumeNotJdk6();
         // need to run with embedded=true so it starts up the Netty UI
         testDir = Files.createTempDir();
         File adminFile = new File(testDir, "admin.json");
@@ -62,7 +63,9 @@ public class MethodHandleRelatedCrashIT {
         if (container != null) {
             container.close();
         }
-        TempDirs.deleteRecursively(testDir);
+        if (testDir != null) {
+            TempDirs.deleteRecursively(testDir);
+        }
     }
 
     @After
@@ -94,9 +97,8 @@ public class MethodHandleRelatedCrashIT {
         }
     }
 
-    private static void assumeJdk8() {
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        Assume.assumeFalse(javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7"));
+    private static void assumeNotJdk6() {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
     }
 
     private static int getAvailablePort() throws Exception {

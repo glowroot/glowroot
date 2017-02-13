@@ -924,6 +924,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             push(index);
             visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/BootstrapMetaHolders",
                     "getClassMeta", "(I)Ljava/lang/Object;", false);
+            mv.visitTypeInsn(CHECKCAST, classMetaFieldType.getInternalName());
         } else {
             visitFieldInsn(GETSTATIC, metaHolderInternalName, classMetaFieldName,
                     classMetaFieldType.getDescriptor());
@@ -941,6 +942,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             push(index);
             visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/BootstrapMetaHolders",
                     "getMethodMeta", "(I)Ljava/lang/Object;", false);
+            mv.visitTypeInsn(CHECKCAST, methodMetaFieldType.getInternalName());
         } else {
             visitFieldInsn(GETSTATIC, metaHolderInternalName, methodMetaFieldName,
                     methodMetaFieldType.getDescriptor());

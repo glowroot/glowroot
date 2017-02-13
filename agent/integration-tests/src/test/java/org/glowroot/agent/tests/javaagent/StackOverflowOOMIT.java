@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.tests.javaagent;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,7 +35,12 @@ public class StackOverflowOOMIT {
     @BeforeClass
     public static void setUp() throws Exception {
         // need memory limited javaagent
-        container = JavaagentContainer.createWithExtraJvmArgs(ImmutableList.of("-Xmx64m"));
+        if (StandardSystemProperty.JAVA_VM_NAME.value().startsWith("IBM")) {
+            // baseline memory seems just slightly higher for IBM JVM
+            container = JavaagentContainer.createWithExtraJvmArgs(ImmutableList.of("-Xmx80m"));
+        } else {
+            container = JavaagentContainer.createWithExtraJvmArgs(ImmutableList.of("-Xmx64m"));
+        }
     }
 
     @AfterClass

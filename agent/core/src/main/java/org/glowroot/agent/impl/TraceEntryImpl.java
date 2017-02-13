@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -220,11 +220,10 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         long thresholdNanos = unit.toNanos(threshold);
         if (endTick - startTick >= thresholdNanos) {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            // need to strip back a few stack calls:
-            // skip i=0 which is "java.lang.Thread.getStackTrace()"
-            // skip i=1 which is "...TraceEntry.endWithStackTrace()"
-            // skip i=2 which is the plugin advice
-            this.stackTrace = ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length);
+            // strip up through this method, plus 1 additional method (the plugin advice method)
+            int index =
+                    ThreadContextImpl.getNormalizedStartIndex(stackTrace, "endWithStackTrace", 1);
+            setStackTrace(ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
         } else {
             // store threshold in case this trace entry is extended, see extend() below
             stackTraceThreshold = thresholdNanos;
@@ -299,11 +298,9 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
             if (!isAsync() && stackTrace == null && stackTraceThreshold != 0
                     && endTick - revisedStartTick >= stackTraceThreshold) {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                // need to strip back a few stack calls:
-                // skip i=0 which is "java.lang.Thread.getStackTrace()"
-                // skip i=1 which is "...Timer.stop()"
-                // skip i=2 which is the plugin advice
-                this.stackTrace = ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length);
+                // strip up through this method, plus 1 additional method (the plugin advice method)
+                int index = ThreadContextImpl.getNormalizedStartIndex(stackTrace, "stop", 1);
+                setStackTrace(ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
             }
         }
     }
@@ -360,12 +357,11 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         // ended by a different thread (and by not capturing, it reduces thread safety needs)
         if (!isAsync() && t == null) {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            // need to strip back a few stack calls:
-            // skip i=0 which is "java.lang.Thread.getStackTrace()"
-            // skip i=1 which is "...TraceEntryImpl.endWithErrorInternal()"
-            // skip i=2 which is "...TraceEntryImpl.endWithError()"
-            // skip i=3 which is the plugin advice
-            setStackTrace(ImmutableList.copyOf(stackTrace).subList(4, stackTrace.length));
+            // strip up through this method, plus 2 additional methods:
+            // TraceEntryImpl.endWithError() and the plugin advice method
+            int index = ThreadContextImpl.getNormalizedStartIndex(stackTrace,
+                    "endWithErrorInternal", 2);
+            setStackTrace(ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
         }
     }
 
