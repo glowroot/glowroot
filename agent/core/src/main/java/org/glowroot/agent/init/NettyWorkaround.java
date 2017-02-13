@@ -38,9 +38,12 @@ public class NettyWorkaround {
         if (instrumentation == null) {
             doNettyInit.execute(false);
         } else {
-            // cannot start netty in premain otherwise can crash JVM
+            // cannot start netty in premain otherwise can crash JVM, at least using Java 1.8.0_25
+            // on Windows (though fixed now in Java 1.8.0_91)
+            //
             // see https://github.com/netty/netty/issues/3233
             // and https://bugs.openjdk.java.net/browse/JDK-8041920
+            // also see repro for the issue in MethodHandleRelatedCrashIT.java
             Executors.newSingleThreadExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
