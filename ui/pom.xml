@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.9.11</version>
+    <version>0.9.12-SNAPSHOT</version>
   </parent>
 
   <artifactId>glowroot-ui</artifactId>
