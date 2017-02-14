@@ -111,6 +111,7 @@
     "org.glowroot.agent.plugin.servlet.ResponseHeaderAspect",
     "org.glowroot.agent.plugin.servlet.RequestDispatcherAspect",
     "org.glowroot.agent.plugin.servlet.SessionAspect",
-    "org.glowroot.agent.plugin.servlet.CatalinaAppStartupAspect"
+    "org.glowroot.agent.plugin.servlet.CatalinaAppStartupAspect",
+    "org.glowroot.agent.plugin.servlet.WebSphereAppStartupAspect"
   ]
 }

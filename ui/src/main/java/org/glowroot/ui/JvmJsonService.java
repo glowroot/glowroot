@@ -48,6 +48,7 @@ import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.common.util.NotAvailableAware;
@@ -184,6 +185,9 @@ class JvmJsonService {
         } catch (UnavailableDueToRunningInJreException e) {
             logger.debug(e.getMessage(), e);
             return "{\"unavailableDueToRunningInJre\":true}";
+        } catch (UnavailableDueToRunningInIbmJvmException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"unavailableDueToRunningInIbmJvm\":true}";
         } catch (AgentUnsupportedOperationException e) {
             // this operation introduced in 0.9.2
             logger.debug(e.getMessage(), e);
@@ -261,6 +265,9 @@ class JvmJsonService {
         } catch (UnavailableDueToRunningInJreException e) {
             logger.debug(e.getMessage(), e);
             return "{\"unavailableDueToRunningInJre\":true}";
+        } catch (UnavailableDueToRunningInIbmJvmException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"unavailableDueToRunningInIbmJvm\":true}";
         } catch (AgentUnsupportedOperationException e) {
             // this operation introduced in 0.9.2
             logger.debug(e.getMessage(), e);

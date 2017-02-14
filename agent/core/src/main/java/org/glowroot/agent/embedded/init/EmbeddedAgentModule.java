@@ -148,12 +148,10 @@ class EmbeddedAgentModule {
                         checkNotNull(clock);
                         checkNotNull(ticker);
                         checkNotNull(agentModule);
-
                         SimpleRepoModule simpleRepoModule = new SimpleRepoModule(dataSource,
                                 dataDir, clock, ticker, configRepository, backgroundExecutor);
                         simpleRepoModule.registerMBeans(new PlatformMBeanServerLifecycleImpl(
                                 agentModule.getLazyPlatformMBeanServer()));
-
                         // now inject the real collector into the proxy
                         CollectorImpl collectorImpl = new CollectorImpl(
                                 simpleRepoModule.getEnvironmentDao(),
@@ -168,9 +166,7 @@ class EmbeddedAgentModule {
                                     @Override
                                     public void update(AgentConfig agentConfig) {}
                                 });
-
                         EmbeddedAgentModule.this.simpleRepoModule = simpleRepoModule;
-
                     } catch (Throwable t) {
                         startupLogger.error("Glowroot cannot start: {}", t.getMessage(), t);
                     } finally {

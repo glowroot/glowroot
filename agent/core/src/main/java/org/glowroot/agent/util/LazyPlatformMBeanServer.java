@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
@@ -61,18 +60,32 @@ public class LazyPlatformMBeanServer {
     @GuardedBy("initListeners")
     private final List<InitListener> initListeners = Lists.newArrayList();
 
-    private final boolean waitForMBeanServer;
+    private final boolean waitForContainerToCreatePlatformMBeanServer;
     private final boolean needsManualPatternMatching;
+    private final boolean websphere;
 
     private final List<ObjectNamePair> toBeRegistered = Lists.newCopyOnWriteArrayList();
     private final List<ObjectName> toBeUnregistered = Lists.newCopyOnWriteArrayList();
 
-    private volatile @MonotonicNonNull MBeanServer mbeanServer;
+    private volatile @MonotonicNonNull MBeanServer platformMBeanServer;
 
-    public LazyPlatformMBeanServer() {
-        waitForMBeanServer = AppServerDetection.isJBossModules() || AppServerDetection.isOldJBoss()
-                || AppServerDetection.isGlassfish();
+    public static LazyPlatformMBeanServer create() throws InterruptedException {
+        LazyPlatformMBeanServer lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
+        if (!lazyPlatformMBeanServer.waitForContainerToCreatePlatformMBeanServer) {
+            // it is useful to init right away in this case in order to avoid condition where really
+            // should wait for container, but works most of the time by luck due to timing of when
+            // ensureInit() is first called
+            lazyPlatformMBeanServer.ensureInit();
+        }
+        return lazyPlatformMBeanServer;
+    }
+
+    private LazyPlatformMBeanServer() throws InterruptedException {
+        waitForContainerToCreatePlatformMBeanServer =
+                AppServerDetection.isJBossModules() || AppServerDetection.isOldJBoss()
+                        || AppServerDetection.isGlassfish() || AppServerDetection.isWebSphere();
         needsManualPatternMatching = AppServerDetection.isOldJBoss();
+        websphere = AppServerDetection.isWebSphere();
     }
 
     public void lazyRegisterMBean(Object object, String name) {
@@ -84,7 +97,7 @@ public class LazyPlatformMBeanServer {
             return;
         }
         synchronized (initListeners) {
-            if (mbeanServer == null) {
+            if (platformMBeanServer == null) {
                 toBeRegistered.add(ImmutableObjectNamePair.of(object, objectName));
                 toBeUnregistered.add(objectName);
             } else {
@@ -101,36 +114,36 @@ public class LazyPlatformMBeanServer {
     public void invoke(ObjectName name, String operationName, Object[] params, String[] signature)
             throws Exception {
         ensureInit();
-        mbeanServer.invoke(name, operationName, params, signature);
+        platformMBeanServer.invoke(name, operationName, params, signature);
     }
 
     public Set<ObjectName> queryNames(@Nullable ObjectName name, @Nullable QueryExp query)
             throws InterruptedException {
         ensureInit();
         if (needsManualPatternMatching && name != null && name.isPattern()) {
-            return mbeanServer.queryNames(null, new ObjectNamePatternQueryExp(name));
+            return platformMBeanServer.queryNames(null, new ObjectNamePatternQueryExp(name));
         } else {
-            return mbeanServer.queryNames(name, query);
+            return platformMBeanServer.queryNames(name, query);
         }
     }
 
     public MBeanInfo getMBeanInfo(ObjectName name) throws Exception {
         ensureInit();
-        return mbeanServer.getMBeanInfo(name);
+        return platformMBeanServer.getMBeanInfo(name);
     }
 
     public Object getAttribute(ObjectName name, String attribute) throws Exception {
         ensureInit();
-        return mbeanServer.getAttribute(name, attribute);
+        return platformMBeanServer.getAttribute(name, attribute);
     }
 
     public void addInitListener(InitListener initListener) {
         synchronized (initListeners) {
-            if (mbeanServer == null) {
+            if (platformMBeanServer == null) {
                 initListeners.add(initListener);
             } else {
                 try {
-                    initListener.postInit(mbeanServer);
+                    initListener.postInit(platformMBeanServer);
                 } catch (Throwable t) {
                     logger.error(t.getMessage(), t);
                 }
@@ -138,10 +151,10 @@ public class LazyPlatformMBeanServer {
         }
     }
 
-    @RequiresNonNull("mbeanServer")
+    @RequiresNonNull("platformMBeanServer")
     private void safeRegisterMBean(Object object, ObjectName name) {
         try {
-            mbeanServer.registerMBean(object, name);
+            platformMBeanServer.registerMBean(object, name);
         } catch (InstanceAlreadyExistsException e) {
             // this happens during unit tests when a non-shared local container is used
             // (so that then there are two local containers in the same jvm)
@@ -167,48 +180,74 @@ public class LazyPlatformMBeanServer {
     public void close() throws Exception {
         ensureInit();
         for (ObjectName name : toBeUnregistered) {
-            mbeanServer.unregisterMBean(name);
+            platformMBeanServer.unregisterMBean(name);
         }
     }
 
-    @EnsuresNonNull("mbeanServer")
+    @EnsuresNonNull("platformMBeanServer")
     private void ensureInit() throws InterruptedException {
-        if (mbeanServer == null && waitForMBeanServer) {
-            waitForMBeanServer(Stopwatch.createUnstarted());
-        }
         synchronized (initListeners) {
-            if (mbeanServer == null) {
-                List<MBeanServer> mbeanServers = MBeanServerFactory.findMBeanServer(null);
-                if (mbeanServers.size() == 1) {
-                    mbeanServer = mbeanServers.get(0);
-                } else {
-                    mbeanServer = ManagementFactory.getPlatformMBeanServer();
-                }
-                for (InitListener initListener : initListeners) {
-                    try {
-                        initListener.postInit(mbeanServer);
-                    } catch (Throwable t) {
-                        logger.error(t.getMessage(), t);
-                    }
-                }
-                initListeners.clear();
-                for (ObjectNamePair objectNamePair : toBeRegistered) {
-                    safeRegisterMBean(objectNamePair.object(), objectNamePair.name());
-                }
-                toBeRegistered.clear();
+            if (platformMBeanServer != null) {
+                return;
             }
+            if (platformMBeanServer == null && waitForContainerToCreatePlatformMBeanServer) {
+                waitForContainerToCreatePlatformMBeanServer(Stopwatch.createUnstarted());
+            }
+            platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+            for (InitListener initListener : initListeners) {
+                try {
+                    initListener.postInit(platformMBeanServer);
+                } catch (Throwable t) {
+                    logger.error(t.getMessage(), t);
+                }
+            }
+            initListeners.clear();
+            for (ObjectNamePair objectNamePair : toBeRegistered) {
+                safeRegisterMBean(objectNamePair.object(), objectNamePair.name());
+            }
+            toBeRegistered.clear();
         }
     }
 
-    @VisibleForTesting
-    public static void waitForMBeanServer(Stopwatch stopwatch) throws InterruptedException {
+    private void waitForContainerToCreatePlatformMBeanServer(Stopwatch stopwatch)
+            throws InterruptedException {
         stopwatch.start();
-        while (stopwatch.elapsed(SECONDS) < 60
-                && MBeanServerFactory.findMBeanServer(null).isEmpty()) {
+        while (stopwatch.elapsed(SECONDS) < 60 && !isPlatformMBeanServerCreated(false)) {
             Thread.sleep(100);
         }
-        if (MBeanServerFactory.findMBeanServer(null).isEmpty()) {
-            logger.error("mbean server was never created by container");
+        if (!isPlatformMBeanServerCreated(true)) {
+            logger.error("platform mbean server was never created by container");
+        }
+    }
+
+    private boolean isPlatformMBeanServerCreated(boolean logError) {
+        List<MBeanServer> mbeanServers = MBeanServerFactory.findMBeanServer(null);
+        if (!websphere) {
+            return !mbeanServers.isEmpty();
+        }
+        for (MBeanServer mbeanServer : mbeanServers) {
+            if (isWebSpherePlatformMbeanServerAndReady(mbeanServer, logError)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isWebSpherePlatformMbeanServerAndReady(MBeanServer mbeanServer,
+            boolean logError) {
+        Class<?> mbeanServerClass = mbeanServer.getClass();
+        if (!mbeanServerClass.getName().equals("com.ibm.ws.management.PlatformMBeanServer")) {
+            return false;
+        }
+        try {
+            // ready when getAdminService() returns non-null
+            return mbeanServerClass.getMethod("getAdminService").invoke(mbeanServer) != null;
+        } catch (Exception e) {
+            logger.debug(e.getMessage(), e);
+            if (logError) {
+                logger.error(e.getMessage(), e);
+            }
+            return false;
         }
     }
 

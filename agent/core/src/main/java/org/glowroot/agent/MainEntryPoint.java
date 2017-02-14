@@ -130,8 +130,8 @@ public class MainEntryPoint {
                     logbackXmlOverride.getAbsolutePath());
         }
         String prior = System.getProperty("glowroot.log.dir");
+        System.setProperty("glowroot.log.dir", glowrootDir.getPath());
         try {
-            System.setProperty("glowroot.log.dir", glowrootDir.getPath());
             startupLogger = LoggerFactory.getLogger("org.glowroot");
         } finally {
             System.clearProperty("glowroot.logback.configurationFile");

@@ -38,6 +38,7 @@ import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -413,6 +414,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             if (response.getUnavailableDueToRunningInJre()) {
                 throw new UnavailableDueToRunningInJreException();
             }
+            if (response.getUnavailableDueToRunningInIbmJvm()) {
+                throw new UnavailableDueToRunningInIbmJvmException();
+            }
             return response.getJstack();
         }
 
@@ -450,6 +454,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             HeapHistogramResponse response = responseWrapper.getHeapHistogramResponse();
             if (response.getUnavailableDueToRunningInJre()) {
                 throw new UnavailableDueToRunningInJreException();
+            }
+            if (response.getUnavailableDueToRunningInIbmJvm()) {
+                throw new UnavailableDueToRunningInIbmJvmException();
             }
             return response.getHeapHistogram();
         }

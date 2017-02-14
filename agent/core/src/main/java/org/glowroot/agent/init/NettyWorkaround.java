@@ -21,8 +21,11 @@ import java.util.concurrent.Executors;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Stopwatch;
+import io.netty.util.internal.PlatformDependent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.agent.util.AppServerDetection;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -35,6 +38,24 @@ public class NettyWorkaround {
 
     public static void run(final @Nullable Instrumentation instrumentation,
             final NettyInit doNettyInit) throws Exception {
+        if (AppServerDetection.isIbmJvm()) {
+            // WebSphere crashes on startup without this workaround (at least when pointing to
+            // glowroot central and using WebSphere 8.5.5.11)
+            String prior = System.getProperty("io.netty.noUnsafe");
+            System.setProperty("io.netty.noUnsafe", "true");
+            try {
+                if (PlatformDependent.hasUnsafe()) {
+                    throw new IllegalStateException("Netty property to disable usage of UNSAFE was"
+                            + " not set early enough, please report to the Glowroot project");
+                }
+            } finally {
+                if (prior == null) {
+                    System.clearProperty("io.netty.noUnsafe");
+                } else {
+                    System.setProperty("io.netty.noUnsafe", prior);
+                }
+            }
+        }
         if (instrumentation == null) {
             doNettyInit.execute(false);
         } else {

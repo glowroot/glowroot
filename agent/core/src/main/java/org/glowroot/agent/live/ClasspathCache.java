@@ -194,9 +194,8 @@ class ClasspathCache {
         for (String path : Splitter.on(File.pathSeparatorChar).split(javaClassPath)) {
             File file = new File(path);
             Location location = getLocationFromFile(file);
-            if (location != null && !classpathLocations.contains(location)) {
+            if (location != null) {
                 loadClassNames(location, newClassNameLocations);
-                classpathLocations.add(location);
             }
         }
     }
@@ -211,9 +210,8 @@ class ClasspathCache {
         for (String path : Splitter.on(File.pathSeparatorChar).split(bootClassPath)) {
             File file = new File(path);
             Location location = getLocationFromFile(file);
-            if (location != null && !classpathLocations.contains(location)) {
+            if (location != null) {
                 loadClassNames(location, newClassNameLocations);
-                classpathLocations.add(location);
             }
         }
     }
@@ -272,10 +270,7 @@ class ClasspathCache {
             }
         }
         for (Location location : locations) {
-            if (!classpathLocations.contains(location)) {
-                loadClassNames(location, newClassNameLocations);
-                classpathLocations.add(location);
-            }
+            loadClassNames(location, newClassNameLocations);
         }
     }
 
@@ -343,8 +338,14 @@ class ClasspathCache {
         return loaders;
     }
 
-    private static void loadClassNames(Location location,
+    private void loadClassNames(Location location,
             Multimap<String, Location> newClassNameLocations) {
+        if (classpathLocations.contains(location)) {
+            return;
+        }
+        // add to classpath at top of method to avoid infinite recursion in case of cycle in
+        // Manifest Class-Path
+        classpathLocations.add(location);
         try {
             File dir = location.directory();
             File jarFile = location.jarFile();
@@ -387,7 +388,7 @@ class ClasspathCache {
         }
     }
 
-    private static void loadClassNamesFromJarFile(File jarFile, Location location,
+    private void loadClassNamesFromJarFile(File jarFile, Location location,
             Multimap<String, Location> newClassNameLocations) throws IOException {
         Closer closer = Closer.create();
         InputStream s = new FileInputStream(jarFile);
@@ -399,6 +400,26 @@ class ClasspathCache {
             throw closer.rethrow(t);
         } finally {
             closer.close();
+        }
+    }
+
+    private void loadClassNamesFromManifestClassPath(JarInputStream jarIn, File jarFile,
+            Multimap<String, Location> newClassNameLocations) {
+        Manifest manifest = jarIn.getManifest();
+        if (manifest == null) {
+            return;
+        }
+        String classpath = manifest.getMainAttributes().getValue("Class-Path");
+        if (classpath == null) {
+            return;
+        }
+        URI baseUri = jarFile.toURI();
+        for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
+            File file = new File(baseUri.resolve(path));
+            Location location = getLocationFromFile(file);
+            if (location != null) {
+                loadClassNames(location, newClassNameLocations);
+            }
         }
     }
 
@@ -421,26 +442,6 @@ class ClasspathCache {
             throw closer.rethrow(t);
         } finally {
             closer.close();
-        }
-    }
-
-    private static void loadClassNamesFromManifestClassPath(JarInputStream jarIn, File jarFile,
-            Multimap<String, Location> newClassNameLocations) {
-        Manifest manifest = jarIn.getManifest();
-        if (manifest == null) {
-            return;
-        }
-        String classpath = manifest.getMainAttributes().getValue("Class-Path");
-        if (classpath == null) {
-            return;
-        }
-        URI baseUri = jarFile.toURI();
-        for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
-            File file = new File(baseUri.resolve(path));
-            Location location = getLocationFromFile(file);
-            if (location != null) {
-                loadClassNames(location, newClassNameLocations);
-            }
         }
     }
 
@@ -571,8 +572,7 @@ class ClasspathCache {
             return ImmutableLocation.builder().jarFile(jarFile).build();
         }
         // strip off trailing !/
-        nestedJarFilePath =
-                nestedJarFilePath.substring(0, nestedJarFilePath.length() - 2);
+        nestedJarFilePath = nestedJarFilePath.substring(0, nestedJarFilePath.length() - 2);
         return ImmutableLocation.builder()
                 .jarFile(jarFile)
                 .nestedJarFilePath(nestedJarFilePath)

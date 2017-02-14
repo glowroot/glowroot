@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
+import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
@@ -114,6 +115,9 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public String getJstack(String agentId) throws Exception {
+        if (AppServerDetection.isIbmJvm()) {
+            throw new UnavailableDueToRunningInIbmJvmException();
+        }
         if (ToolProvider.getSystemJavaCompiler() == null) {
             throw new UnavailableDueToRunningInJreException();
         }
@@ -163,26 +167,35 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         if (!dir.exists() || !dir.isDirectory()) {
             throw new DirectoryDoesNotExistException();
         }
-        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
-        File file = new File(dir, "heap-dump-" + timestamp + ".hprof");
-        int i = 1;
-        while (file.exists()) {
-            // this seems unlikely now that timestamp is included in file name
-            i++;
-            file = new File(dir, "heap-dump-" + timestamp + "-" + i + ".hprof");
+        File file;
+        if (AppServerDetection.isIbmJvm()) {
+            file = ibmHeapDump(dir);
+        } else {
+            file = heapDump(dir);
         }
-        ObjectName objectName = ObjectName.getInstance(HOT_SPOT_DIAGNOSTIC_MBEAN_NAME);
-        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
-                new Object[] {file.getAbsolutePath(), false},
-                new String[] {"java.lang.String", "boolean"});
         return HeapDumpFileInfo.newBuilder()
                 .setFilePath(file.getAbsolutePath())
                 .setFileSizeBytes(file.length())
                 .build();
     }
 
+    private File generateHeapDumpFileName(File dir, String extension) {
+        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+        File file = new File(dir, "heap-dump-" + timestamp + extension);
+        int i = 1;
+        while (file.exists()) {
+            // this seems unlikely now that timestamp is included in file name
+            i++;
+            file = new File(dir, "heap-dump-" + timestamp + "-" + i + extension);
+        }
+        return file;
+    }
+
     @Override
     public HeapHistogram heapHistogram(String agentId) throws Exception {
+        if (AppServerDetection.isIbmJvm()) {
+            throw new UnavailableDueToRunningInIbmJvmException();
+        }
         if (ToolProvider.getSystemJavaCompiler() == null) {
             throw new UnavailableDueToRunningInJreException();
         }
@@ -240,6 +253,24 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             default:
                 throw new IllegalStateException("Unexpected mbean dump kind: " + mbeanDumpKind);
         }
+    }
+
+    private File heapDump(File directory) throws Exception {
+        File file = generateHeapDumpFileName(directory, ".hprof");
+        ObjectName objectName = ObjectName.getInstance(HOT_SPOT_DIAGNOSTIC_MBEAN_NAME);
+        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
+                new Object[] {file.getAbsolutePath(), false},
+                new String[] {"java.lang.String", "boolean"});
+        return file;
+    }
+
+    private File ibmHeapDump(File directory) throws Exception {
+        File file = generateHeapDumpFileName(directory, ".phd");
+        Class<?> clazz = Class.forName("com.ibm.jvm.Dump");
+        Method method = clazz.getMethod("heapDumpToFile", String.class);
+        String actualHeapDumpPath =
+                (String) checkNotNull(method.invoke(null, file.getAbsolutePath()));
+        return new File(actualHeapDumpPath);
     }
 
     private List<MBeanDump.MBeanInfo> getAllMBeanInfos(List<String> includeAttrsForObjectNames)

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2016 the original author or authors.
+  Copyright 2013-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -25,7 +25,10 @@
 <div ng-if="unavailableDueToRunningInJre" class="alert alert-danger">
   This feature is only available when the agent is running in a JDK (currently running in a JRE).
 </div>
-<div ng-if="loaded && !agentNotConnected && !agentUnsupportedOperation && !unavailableDueToRunningInJre">
+<div ng-if="unavailableDueToRunningInIbmJvm" class="alert alert-danger">
+  This feature is not available when the agent is running in IBM J9 VM.
+</div>
+<div ng-if="loaded && !agentNotConnected && !agentUnsupportedOperation && !unavailableDueToRunningInJre && !unavailableDueToRunningInIbmJvm">
   <div class="clearfix"
        style="float: right;">
     <button class="btn btn-default"

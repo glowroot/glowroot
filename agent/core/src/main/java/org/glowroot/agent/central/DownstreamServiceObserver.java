@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -340,6 +341,14 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                             .setUnavailableDueToRunningInJre(true))
                     .build());
             return;
+        } catch (UnavailableDueToRunningInIbmJvmException e) {
+            logger.debug(e.getMessage(), e);
+            responseObserver.onNext(AgentResponse.newBuilder()
+                    .setRequestId(request.getRequestId())
+                    .setJstackResponse(JstackResponse.newBuilder()
+                            .setUnavailableDueToRunningInIbmJvm(true))
+                    .build());
+            return;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -415,6 +424,14 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                     .setRequestId(request.getRequestId())
                     .setHeapHistogramResponse(HeapHistogramResponse.newBuilder()
                             .setUnavailableDueToRunningInJre(true))
+                    .build());
+            return;
+        } catch (UnavailableDueToRunningInIbmJvmException e) {
+            logger.debug(e.getMessage(), e);
+            responseObserver.onNext(AgentResponse.newBuilder()
+                    .setRequestId(request.getRequestId())
+                    .setHeapHistogramResponse(HeapHistogramResponse.newBuilder()
+                            .setUnavailableDueToRunningInIbmJvm(true))
                     .build());
             return;
         } catch (Exception e) {
