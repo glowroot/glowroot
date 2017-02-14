@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,14 @@
  */
 package org.glowroot.agent.jul;
 
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.Set;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import org.immutables.value.Value;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -25,6 +33,46 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class LoggerTest {
+
+    @Test
+    public void testImplementsAllMethods() {
+        Set<MethodSignature> glowrootLoggerMethods = Sets.newHashSet();
+        for (Method method : Logger.class.getMethods()) {
+            ImmutableMethodSignature.Builder builder = ImmutableMethodSignature.builder()
+                    .name(method.getName());
+            for (Class<?> clazz : method.getParameterTypes()) {
+                String parameterType = clazz.getName();
+                builder.addParameterTypes(parameterType.replaceFirst("org.glowroot.agent.jul.",
+                        "java.util.logging."));
+            }
+            glowrootLoggerMethods.add(builder
+                    .returnType(method.getReturnType().getName()
+                            .replaceFirst("org.glowroot.agent.jul.", "java.util.logging."))
+                    .build());
+        }
+        Set<MethodSignature> loggerMethods = Sets.newHashSet();
+        for (Method method : java.util.logging.Logger.class.getMethods()) {
+            String methodName = method.getName();
+            if (methodName.contains("Handler") || methodName.contains("Filter")) {
+                continue;
+            }
+            ImmutableMethodSignature.Builder builder = ImmutableMethodSignature.builder()
+                    .name(methodName);
+            List<String> parameterTypes = Lists.newArrayList();
+            for (Class<?> clazz : method.getParameterTypes()) {
+                parameterTypes.add(clazz.getName());
+            }
+            if (parameterTypes.contains("java.util.function.Supplier")) {
+                // FIXME it would be good to include Java 8 methods
+                continue;
+            }
+            loggerMethods.add(builder
+                    .addAllParameterTypes(parameterTypes)
+                    .returnType(method.getReturnType().getName())
+                    .build());
+        }
+        assertThat(glowrootLoggerMethods).containsAll(loggerMethods);
+    }
 
     @Test
     public void testGetLogger() {
@@ -560,13 +608,59 @@ public class LoggerTest {
         Logger logger = new Logger(slf4jLogger);
 
         // when
-        logger.logrb(Level.SEVERE, null, null, null, "ereves: {0},{1}", new Object[] {"a", "b"});
-        logger.logrb(Level.WARNING, null, null, null, "gninraw: {0},{1}", new Object[] {"b", "c"});
-        logger.logrb(Level.INFO, null, null, null, "ofni: {0},{1}", new Object[] {"c", "d"});
-        logger.logrb(Level.CONFIG, null, null, null, "gifnoc: {0},{1}", new Object[] {"d", "e"});
-        logger.logrb(Level.FINE, null, null, null, "enif: {0},{1}", new Object[] {"e", "f"});
-        logger.logrb(Level.FINER, null, null, null, "renif: {0},{1}", new Object[] {"f", "g"});
-        logger.logrb(Level.FINEST, null, null, null, "tsenif: {0},{1}", new Object[] {"g", "h"});
+        logger.logrb(Level.SEVERE, null, null, (String) null, "ereves: {0},{1}",
+                new Object[] {"a", "b"});
+        logger.logrb(Level.WARNING, null, null, (String) null, "gninraw: {0},{1}",
+                new Object[] {"b", "c"});
+        logger.logrb(Level.INFO, null, null, (String) null, "ofni: {0},{1}",
+                new Object[] {"c", "d"});
+        logger.logrb(Level.CONFIG, null, null, (String) null, "gifnoc: {0},{1}",
+                new Object[] {"d", "e"});
+        logger.logrb(Level.FINE, null, null, (String) null, "enif: {0},{1}",
+                new Object[] {"e", "f"});
+        logger.logrb(Level.FINER, null, null, (String) null, "renif: {0},{1}",
+                new Object[] {"f", "g"});
+        logger.logrb(Level.FINEST, null, null, (String) null, "tsenif: {0},{1}",
+                new Object[] {"g", "h"});
+
+        // then
+        InOrder inOrder = Mockito.inOrder(slf4jLogger);
+        inOrder.verify(slf4jLogger).isErrorEnabled();
+        inOrder.verify(slf4jLogger).error("ereves: a,b");
+        inOrder.verify(slf4jLogger).isWarnEnabled();
+        inOrder.verify(slf4jLogger).warn("gninraw: b,c");
+        inOrder.verify(slf4jLogger).isInfoEnabled();
+        inOrder.verify(slf4jLogger).info("ofni: c,d");
+        inOrder.verify(slf4jLogger).isInfoEnabled();
+        inOrder.verify(slf4jLogger).info("gifnoc: d,e");
+        inOrder.verify(slf4jLogger).isDebugEnabled();
+        inOrder.verify(slf4jLogger).debug("enif: e,f");
+        inOrder.verify(slf4jLogger).isTraceEnabled();
+        inOrder.verify(slf4jLogger).trace("renif: f,g");
+        inOrder.verify(slf4jLogger).isTraceEnabled();
+        inOrder.verify(slf4jLogger).trace("tsenif: g,h");
+        verifyNoMoreInteractions(slf4jLogger);
+    }
+
+    @Test
+    public void testLogrbParameterizedLevelMethodsWithVarArgsOfParams() {
+        // given
+        org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
+        when(slf4jLogger.isTraceEnabled()).thenReturn(true);
+        when(slf4jLogger.isDebugEnabled()).thenReturn(true);
+        when(slf4jLogger.isInfoEnabled()).thenReturn(true);
+        when(slf4jLogger.isWarnEnabled()).thenReturn(true);
+        when(slf4jLogger.isErrorEnabled()).thenReturn(true);
+        Logger logger = new Logger(slf4jLogger);
+
+        // when
+        logger.logrb(Level.SEVERE, null, null, null, "ereves: {0},{1}", "a", "b");
+        logger.logrb(Level.WARNING, null, null, null, "gninraw: {0},{1}", "b", "c");
+        logger.logrb(Level.INFO, null, null, null, "ofni: {0},{1}", "c", "d");
+        logger.logrb(Level.CONFIG, null, null, null, "gifnoc: {0},{1}", "d", "e");
+        logger.logrb(Level.FINE, null, null, null, "enif: {0},{1}", "e", "f");
+        logger.logrb(Level.FINER, null, null, null, "renif: {0},{1}", "f", "g");
+        logger.logrb(Level.FINEST, null, null, null, "tsenif: {0},{1}", "g", "h");
 
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
@@ -601,13 +695,47 @@ public class LoggerTest {
         Throwable g = new Throwable();
 
         // when
-        logger.logrb(Level.SEVERE, null, null, null, "ereves", a);
-        logger.logrb(Level.WARNING, null, null, null, "gninraw", b);
-        logger.logrb(Level.INFO, null, null, null, "ofni", c);
-        logger.logrb(Level.CONFIG, null, null, null, "gifnoc", d);
-        logger.logrb(Level.FINE, null, null, null, "enif", e);
-        logger.logrb(Level.FINER, null, null, null, "renif", f);
-        logger.logrb(Level.FINEST, null, null, null, "tsenif", g);
+        logger.logrb(Level.SEVERE, null, null, (String) null, "ereves", a);
+        logger.logrb(Level.WARNING, null, null, (String) null, "gninraw", b);
+        logger.logrb(Level.INFO, null, null, (String) null, "ofni", c);
+        logger.logrb(Level.CONFIG, null, null, (String) null, "gifnoc", d);
+        logger.logrb(Level.FINE, null, null, (String) null, "enif", e);
+        logger.logrb(Level.FINER, null, null, (String) null, "renif", f);
+        logger.logrb(Level.FINEST, null, null, (String) null, "tsenif", g);
+
+        // then
+        InOrder inOrder = Mockito.inOrder(slf4jLogger);
+        inOrder.verify(slf4jLogger).error("ereves", a);
+        inOrder.verify(slf4jLogger).warn("gninraw", b);
+        inOrder.verify(slf4jLogger).info("ofni", c);
+        inOrder.verify(slf4jLogger).info("gifnoc", d);
+        inOrder.verify(slf4jLogger).debug("enif", e);
+        inOrder.verify(slf4jLogger).trace("renif", f);
+        inOrder.verify(slf4jLogger).trace("tsenif", g);
+        verifyNoMoreInteractions(slf4jLogger);
+    }
+
+    @Test
+    public void testLogrbParameterizedLevelMethodsWithResourceBundleObjectAndThrowable() {
+        // given
+        org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
+        Logger logger = new Logger(slf4jLogger);
+        Throwable a = new Throwable();
+        Throwable b = new Throwable();
+        Throwable c = new Throwable();
+        Throwable d = new Throwable();
+        Throwable e = new Throwable();
+        Throwable f = new Throwable();
+        Throwable g = new Throwable();
+
+        // when
+        logger.logrb(Level.SEVERE, null, null, (ResourceBundle) null, "ereves", a);
+        logger.logrb(Level.WARNING, null, null, (ResourceBundle) null, "gninraw", b);
+        logger.logrb(Level.INFO, null, null, (ResourceBundle) null, "ofni", c);
+        logger.logrb(Level.CONFIG, null, null, (ResourceBundle) null, "gifnoc", d);
+        logger.logrb(Level.FINE, null, null, (ResourceBundle) null, "enif", e);
+        logger.logrb(Level.FINER, null, null, (ResourceBundle) null, "renif", f);
+        logger.logrb(Level.FINEST, null, null, (ResourceBundle) null, "tsenif", g);
 
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
@@ -651,5 +779,12 @@ public class LoggerTest {
         assertThat(logger.getResourceBundle()).isNull();
         assertThat(logger.getResourceBundleName()).isNull();
         verifyNoMoreInteractions(slf4jLogger);
+    }
+
+    @Value.Immutable
+    interface MethodSignature {
+        String name();
+        List<String> parameterTypes();
+        String returnType();
     }
 }

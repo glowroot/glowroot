@@ -77,6 +77,13 @@ public class FileChannel {
 }
 
 /* ========================================================================== */
+package java.text;
+
+public class MessageFormat {
+    public static String format(String pattern, @Nullable Object ... arguments);
+}
+
+/* ========================================================================== */
 package java.util;
 
 public class Arrays {

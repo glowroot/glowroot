@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,27 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 // the use of java.util.logging is changed during shading to use org.glowroot.agent.jul instead
 // so that shaded libraries that use java.util.logging (e.g. shaded guava), will be redirected to
 // use the glowroot (shaded) sl4j logger instead
 public class Logger {
 
+    public static final String GLOBAL_LOGGER_NAME = "global";
+
+    public static final Logger global = new Logger(GLOBAL_LOGGER_NAME);
+
     private final org.slf4j.Logger slf4jLogger;
 
+    private @Nullable ResourceBundle resourceBundle;
+
     public static Logger getLogger(String name) {
+        return new Logger(name);
+    }
+
+    public static Logger getLogger(String name,
+            @SuppressWarnings("unused") String resourceBundleName) {
         return new Logger(name);
     }
 
@@ -79,6 +92,31 @@ public class Logger {
         slf4jLogger.trace(msg);
     }
 
+    public void log(LogRecord record) {
+        Level level = record.getLevel();
+        if (level.intValue() >= Level.SEVERE.intValue()) {
+            if (slf4jLogger.isErrorEnabled()) {
+                slf4jLogger.error(getMessage(record), record.getThrown());
+            }
+        } else if (level.intValue() >= Level.WARNING.intValue()) {
+            if (slf4jLogger.isWarnEnabled()) {
+                slf4jLogger.warn(getMessage(record), record.getThrown());
+            }
+        } else if (level.intValue() >= Level.CONFIG.intValue()) {
+            if (slf4jLogger.isInfoEnabled()) {
+                slf4jLogger.info(getMessage(record), record.getThrown());
+            }
+        } else if (level.intValue() >= Level.FINE.intValue()) {
+            if (slf4jLogger.isDebugEnabled()) {
+                slf4jLogger.debug(getMessage(record), record.getThrown());
+            }
+        } else {
+            if (slf4jLogger.isTraceEnabled()) {
+                slf4jLogger.trace(getMessage(record), record.getThrown());
+            }
+        }
+    }
+
     public void log(Level level, String msg) {
         if (level.intValue() >= Level.SEVERE.intValue()) {
             slf4jLogger.error(msg);
@@ -93,7 +131,7 @@ public class Logger {
         }
     }
 
-    public void log(Level level, String msg, Object param1) {
+    public void log(Level level, String msg, @Nullable Object param1) {
         if (level.intValue() >= Level.SEVERE.intValue()) {
             if (slf4jLogger.isErrorEnabled()) {
                 slf4jLogger.error(MessageFormat.format(msg, param1));
@@ -117,7 +155,7 @@ public class Logger {
         }
     }
 
-    public void log(Level level, String msg, Object[] params) {
+    public void log(Level level, String msg, @Nullable Object[] params) {
         if (level.intValue() >= Level.SEVERE.intValue()) {
             if (slf4jLogger.isErrorEnabled()) {
                 slf4jLogger.error(MessageFormat.format(msg, params));
@@ -227,7 +265,19 @@ public class Logger {
     }
 
     @SuppressWarnings("unused")
+    public void logrb(Level level, String sourceClass, String sourceMethod, ResourceBundle bundle,
+            String msg, Object... params) {
+        log(level, msg, params);
+    }
+
+    @SuppressWarnings("unused")
     public void logrb(Level level, String sourceClass, String sourceMethod, String bundleName,
+            String msg, Throwable thrown) {
+        log(level, msg, thrown);
+    }
+
+    @SuppressWarnings("unused")
+    public void logrb(Level level, String sourceClass, String sourceMethod, ResourceBundle bundle,
             String msg, Throwable thrown) {
         log(level, msg, thrown);
     }
@@ -251,10 +301,46 @@ public class Logger {
     public void throwing(String sourceClass, String sourceMethod, Throwable thrown) {}
 
     public @Nullable ResourceBundle getResourceBundle() {
-        return null;
+        return resourceBundle;
+    }
+
+    public void setResourceBundle(ResourceBundle resourceBundle) {
+        this.resourceBundle = resourceBundle;
     }
 
     public @Nullable String getResourceBundleName() {
         return null;
+    }
+
+    public Logger getParent() {
+        return getLogger("");
+    }
+
+    public void setParent(@SuppressWarnings("unused") Logger parent) {}
+
+    public void setLevel(@SuppressWarnings("unused") Level newLevel) {}
+
+    public static Logger getAnonymousLogger() {
+        return getLogger("");
+    }
+
+    public static Logger getAnonymousLogger(@SuppressWarnings("unused") String resourceBundleName) {
+        return getLogger("");
+    }
+
+    public static final Logger getGlobal() {
+        return global;
+    }
+
+    private static @Nullable String getMessage(LogRecord record) {
+        String msg = record.getMessage();
+        @Nullable
+        Object[] params = record.getParameters();
+        if (params == null) {
+            return msg;
+        } else {
+            checkNotNull(msg);
+            return MessageFormat.format(msg, params);
+        }
     }
 }
