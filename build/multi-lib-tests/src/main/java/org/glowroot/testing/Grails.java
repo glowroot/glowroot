@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,14 @@ public class Grails {
             }
             run("3.0." + i);
         }
-        for (int i = 0; i <= 13; i++) {
-            if (i == 1 || i == 8) {
-                // there is no 3.1.1 or 3.1.8 in maven central
+        for (int i = 0; i <= 15; i++) {
+            if (i == 1 || i == 8 || i == 14) {
+                // there is no 3.1.1, 3.1.8 or 3.1.14 in maven central
+                continue;
+            }
+            if (i == 15) {
+                // grails-web-url-mappings 3.1.15 (in maven central) depends on
+                // grails-datastore-core 5.0.13.BUILD-SNAPSHOT (which is not in maven central)
                 continue;
             }
             run("3.1." + i);
@@ -40,6 +45,8 @@ public class Grails {
         runSpecial320("3.2.0");
         run("3.2.1");
         run("3.2.4");
+        run("3.2.5");
+        run("3.2.6");
     }
 
     private static void run(String version) throws Exception {

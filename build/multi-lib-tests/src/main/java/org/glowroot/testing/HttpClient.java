@@ -116,6 +116,10 @@ public class HttpClient {
         updateLibVersion("apache.httpcore.version", "4.4.5");
         updateLibVersion("apache.httpclient.version", "4.5.2");
         run(test);
+        updateLibVersion("apache.httpasyncclient.version", "4.1.3");
+        updateLibVersion("apache.httpcore.version", "4.4.6");
+        updateLibVersion("apache.httpclient.version", "4.5.3");
+        run(test);
     }
 
     private static void apacheHttpClient3x() throws Exception {
@@ -204,7 +208,7 @@ public class HttpClient {
             updateLibVersion("cxf.version", "3.0." + i);
             run(test);
         }
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= 10; i++) {
             updateLibVersion("cxf.version", "3.1." + i);
             runJava7(test);
         }

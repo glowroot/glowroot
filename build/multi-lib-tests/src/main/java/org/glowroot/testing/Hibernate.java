@@ -52,7 +52,7 @@ public class Hibernate {
         runJava7("5.1.2.Final");
         runJava7("5.1.3.Final");
         runJava7("5.1.4.Final");
-        for (int i = 0; i <= 7; i++) {
+        for (int i = 0; i <= 8; i++) {
             runJava8("5.2." + i + ".Final");
         }
     }

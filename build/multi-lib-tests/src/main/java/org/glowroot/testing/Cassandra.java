@@ -39,17 +39,12 @@ public class Cassandra {
         run("2.1.10.1");
         run("2.1.10.2");
         run("2.1.10.3");
-        run("3.0.0");
-        run("3.0.1");
-        run("3.0.2");
-        run("3.0.3");
-        run("3.0.4");
-        run("3.0.5");
-        run("3.0.6");
-        run("3.1.0");
-        run("3.1.1");
-        run("3.1.2");
-        run("3.1.3");
+        for (int i = 0; i <= 7; i++) {
+            run("3.0." + i);
+        }
+        for (int i = 0; i <= 4; i++) {
+            run("3.1." + i);
+        }
     }
 
     private static void run(String version) throws Exception {
