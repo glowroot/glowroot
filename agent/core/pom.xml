@@ -396,6 +396,12 @@
                   <shadedPattern>org.glowroot.agent.shaded.grpc</shadedPattern>
                 </relocation>
                 <relocation>
+                  <!-- environment variable checked in io.grpc.netty.NettyChannelBuilder -->
+                  <rawString>true</rawString>
+                  <pattern>^GRPC_PROXY_EXP$</pattern>
+                  <shadedPattern>GLOWROOT_GRPC_PROXY_EXP</shadedPattern>
+                </relocation>
+                <relocation>
                   <pattern>org.HdrHistogram</pattern>
                   <shadedPattern>org.glowroot.agent.shaded.HdrHistogram</shadedPattern>
                 </relocation>
