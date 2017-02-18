@@ -18,8 +18,8 @@ package org.glowroot.common.util;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Locale;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -28,11 +28,29 @@ public class Formatting {
     private Formatting() {}
 
     public static String displaySixDigitsOfPrecision(double value) {
-        return displaySixDigitsOfPrecision(value, NumberFormat.getNumberInstance());
+        return displaySixDigitsOfPrecision(value, Locale.getDefault());
+    }
+
+    public static String formatBytes(long bytes) {
+        return formatBytes(bytes, Locale.getDefault());
+    }
+
+    // this mimics the javascript function of same name in gauge-values.js
+    @VisibleForTesting
+    static String displaySixDigitsOfPrecision(double value, Locale locale) {
+        NumberFormat format = NumberFormat.getInstance(locale);
+        format.setMaximumFractionDigits(20);
+        if (value < 1000000) {
+            return format.format(
+                    BigDecimal.valueOf(value).round(new MathContext(6, RoundingMode.HALF_UP)));
+        } else {
+            return format.format(Math.round(value));
+        }
     }
 
     // this mimics the javascript function of same name in handlebars-rendering.js
-    public static String formatBytes(long bytes) {
+    @VisibleForTesting
+    static String formatBytes(long bytes, Locale locale) {
         if (bytes == 0) {
             // no unit needed
             return "0";
@@ -47,21 +65,12 @@ public class Formatting {
         if (number == 0) {
             return Math.round(num) + " bytes";
         } else {
-            DecimalFormat format = new DecimalFormat("0.0");
+            NumberFormat format = NumberFormat.getInstance(locale);
+            format.setGroupingUsed(false);
             format.setRoundingMode(RoundingMode.HALF_UP);
+            format.setMinimumFractionDigits(1);
+            format.setMaximumFractionDigits(1);
             return format.format(num) + ' ' + units[number];
-        }
-    }
-
-    // this mimics the javascript function of same name in gauge-values.js
-    @VisibleForTesting
-    static String displaySixDigitsOfPrecision(double value, NumberFormat numberFormat) {
-        numberFormat.setMaximumFractionDigits(20);
-        if (value < 1000000) {
-            return numberFormat.format(
-                    BigDecimal.valueOf(value).round(new MathContext(6, RoundingMode.HALF_UP)));
-        } else {
-            return numberFormat.format(Math.round(value));
         }
     }
 }
