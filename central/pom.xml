@@ -206,7 +206,7 @@
               <goal>war</goal>
             </goals>
             <configuration>
-              <primaryArtifact>false</primaryArtifact>
+              <classifier>dist</classifier>
               <archive>
                 <manifestEntries>
                   <Implementation-Title>${project.name}</Implementation-Title>
