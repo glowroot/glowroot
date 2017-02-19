@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests;
 
+import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import org.junit.Test;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -120,8 +121,14 @@ public class InstrumentationConfigIT extends WebDriverIT {
         assertThat(configPage.getTimerNameTextField().getAttribute("value")).isEqualTo("a timer");
         assertThat(configPage.getTraceEntryMessageTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace entry");
-        assertThat(configPage.getTraceEntryStackThresholdTextField().getAttribute("value"))
-                .isEqualTo("");
+        if (driver instanceof JBrowserDriver) {
+            // just a little workaround
+            assertThat(configPage.getTraceEntryStackThresholdTextField().getAttribute("value"))
+                    .isNull();
+        } else {
+            assertThat(configPage.getTraceEntryStackThresholdTextField().getAttribute("value"))
+                    .isEqualTo("");
+        }
     }
 
     @Test

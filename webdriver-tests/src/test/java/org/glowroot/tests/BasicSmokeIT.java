@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Stopwatch;
+import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Request;
 import com.ning.http.client.Response;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -178,7 +178,7 @@ public class BasicSmokeIT extends WebDriverIT {
                     + traceId);
         }
         asyncHttpClient.close();
-        clickAroundInTraceModal(false);
+        clickAroundInTraceModal(traceId, false);
     }
 
     @Test
@@ -191,8 +191,11 @@ public class BasicSmokeIT extends WebDriverIT {
         globalNavbar.getJvmLink().click();
         jvmSidebar.getThreadDumpLink().click();
 
-        Utils.withWait(driver, By.linkText("view trace")).click();
-        clickAroundInTraceModal(true);
+        WebElement viewTraceLink = Utils.withWait(driver, By.linkText("view trace"));
+        String href = viewTraceLink.getAttribute("href");
+        String traceId = new QueryStringDecoder(href).parameters().get("modal-trace-id").get(0);
+        viewTraceLink.click();
+        clickAroundInTraceModal(traceId, true);
     }
 
     @Test
@@ -244,8 +247,7 @@ public class BasicSmokeIT extends WebDriverIT {
 
         jvmSidebar.getThreadDumpLink().click();
         // jstack view is not accessible via jvm sidebar currently
-        String jstackUrl = driver.getCurrentUrl().replace("/jvm/thread-dump", "/jvm/jstack");
-        driver.navigate().to(jstackUrl);
+        app.open("/jvm/jstack");
 
         jvmSidebar.getHeapDumpLink().click();
         if (!WebDriverSetup.useCentral) {
@@ -278,14 +280,14 @@ public class BasicSmokeIT extends WebDriverIT {
         }
         // test the refresh of opened items
         driver.navigate().refresh();
-        // need to go back to top of page b/c sidebar links need to be viewable before they can be
-        // clicked in chrome and safari drivers
-        ((JavascriptExecutor) driver).executeScript("scroll(0, 0)");
+        if (!(driver instanceof JBrowserDriver)) {
+            // need to go back to top of page b/c sidebar links need to be viewable before they can
+            // be clicked in chrome and safari drivers
+            ((JavascriptExecutor) driver).executeScript("scroll(0, 0)");
+        }
 
         // jvm capabilities is not accessible via config sidebar currently
-        String capabilitiesUrl =
-                driver.getCurrentUrl().replace("/jvm/mbean-tree", "/jvm/capabilities");
-        driver.navigate().to(capabilitiesUrl);
+        app.open("/jvm/capabilities");
     }
 
     @Test
@@ -300,18 +302,13 @@ public class BasicSmokeIT extends WebDriverIT {
         asyncHttpClient.close();
     }
 
-    private void clickAroundInTraceModal(boolean active) throws Exception {
+    private void clickAroundInTraceModal(String traceId, boolean active) throws Exception {
         Utils.withWait(driver, By.className("gt-entries-toggle")).click();
         Utils.withWait(driver,
                 By.xpath("//div[starts-with(normalize-space(.),'jdbc execution:')]"));
         Utils.withWait(driver, By.className("gt-main-thread-profile-toggle")).click();
         // wait for profile to open
         Thread.sleep(1000);
-
-        Pattern pattern = Pattern.compile("modal-trace-id=([0-9a-f]*)");
-        Matcher matcher = pattern.matcher(driver.getCurrentUrl());
-        matcher.find();
-        String traceId = matcher.group(1);
 
         // "click download", verify no error
         String download;

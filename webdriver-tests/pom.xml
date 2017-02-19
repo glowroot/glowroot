@@ -72,6 +72,18 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.machinepublishers</groupId>
+      <artifactId>jbrowserdriver</artifactId>
+      <version>0.17.5</version>
+      <exclusions>
+        <exclusion>
+          <!-- a later version of jna with a different groupId is already included by selenium -->
+          <groupId>com.sun.jna</groupId>
+          <artifactId>jna</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>kr.motd.maven</groupId>
       <artifactId>os-maven-plugin</artifactId>
       <version>1.5.0.Final</version>

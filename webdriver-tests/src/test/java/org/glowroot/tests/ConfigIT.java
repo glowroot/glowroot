@@ -99,9 +99,7 @@ public class ConfigIT extends WebDriverIT {
         app.open();
         globalNavbar.getConfigLink().click();
         // user recording config is not accessible via config sidebar currently
-        String userRecordingUrl =
-                driver.getCurrentUrl().replace("/config/transaction", "/config/user-recording");
-        driver.navigate().to(userRecordingUrl);
+        app.open("/config/user-recording");
 
         // when
         page.getUsersTextField().clear();
@@ -116,7 +114,7 @@ public class ConfigIT extends WebDriverIT {
         app.open();
         globalNavbar.getConfigLink().click();
         // user recording config is not accessible via config sidebar currently
-        driver.navigate().to(userRecordingUrl);
+        app.open("/config/user-recording");
         assertThat(page.getUsersTextField().getAttribute("value")).isEqualTo("abc, xyz");
         assertThat(page.getProfileIntervalTextField().getAttribute("value")).isEqualTo("2345");
     }

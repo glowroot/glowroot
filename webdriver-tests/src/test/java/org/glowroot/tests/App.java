@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.tests;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.openqa.selenium.WebDriver;
 
@@ -24,18 +25,29 @@ class App {
 
     private final WebDriver driver;
     private final String baseUrl;
+    private final String queryString;
 
-    App(WebDriver driver, String baseUrl) {
+    App(WebDriver driver, String baseUrl) throws UnknownHostException {
         this.driver = driver;
         this.baseUrl = baseUrl;
+        if (WebDriverSetup.useCentral) {
+            this.queryString = "?agent-id=" + InetAddress.getLocalHost().getHostName();
+        } else {
+            this.queryString = "";
+        }
+
     }
 
     void open() throws IOException {
         driver.get(baseUrl);
         if (WebDriverSetup.useCentral) {
-            driver.get(driver.getCurrentUrl() + "?agent-id="
-                    + InetAddress.getLocalHost().getHostName());
+            // this will add the agent-id query string
+            open("/transaction/average");
         }
+    }
+
+    void open(String path) {
+        driver.get(getBaseUrl() + path + queryString);
     }
 
     String getBaseUrl() {

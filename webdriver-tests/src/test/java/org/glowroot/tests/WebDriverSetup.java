@@ -30,6 +30,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
+import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.saucelabs.common.SauceOnDemandAuthentication;
 import com.saucelabs.common.SauceOnDemandSessionIdProvider;
 import com.saucelabs.junit.SauceOnDemandTestWatcher;
@@ -55,6 +56,8 @@ public class WebDriverSetup {
 
     protected static final boolean useCentral =
             Boolean.getBoolean("glowroot.internal.webdriver.useCentral");
+
+    private static final boolean USE_FIREFOX = false;
 
     private static final String GECKO_DRIVER_VERSION = "0.11.1";
 
@@ -190,10 +193,15 @@ public class WebDriverSetup {
             return new WebDriverSetup(container, uiPort, shared, null);
         } else {
             // single webdriver instance for much better performance
-            File geckoDriverExecutable = downloadGeckoDriverIfNeeded();
-            System.setProperty("webdriver.gecko.driver",
-                    geckoDriverExecutable.getAbsolutePath());
-            WebDriver driver = new FirefoxDriver();
+            WebDriver driver;
+            if (USE_FIREFOX) {
+                File geckoDriverExecutable = downloadGeckoDriverIfNeeded();
+                System.setProperty("webdriver.gecko.driver",
+                        geckoDriverExecutable.getAbsolutePath());
+                driver = new FirefoxDriver();
+            } else {
+                driver = new JBrowserDriver();
+            }
             // 768 is bootstrap media query breakpoint for screen-sm-min
             // 992 is bootstrap media query breakpoint for screen-md-min
             // 1200 is bootstrap media query breakpoint for screen-lg-min
