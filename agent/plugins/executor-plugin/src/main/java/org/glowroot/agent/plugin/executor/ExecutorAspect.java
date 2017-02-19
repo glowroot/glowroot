@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,18 @@ package org.glowroot.agent.plugin.executor;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
+import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
@@ -40,6 +43,10 @@ import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class ExecutorAspect {
+
+    private static final Logger logger = Agent.getLogger(ExecutorAspect.class);
+
+    private static final AtomicBoolean isDoneExceptionLogged = new AtomicBoolean();
 
     // the field and method names are verbose to avoid conflict since they will become fields
     // and methods in all classes that extend Runnable, Callable and/or ForkJoinTask
@@ -224,10 +231,25 @@ public class ExecutorAspect {
     public static class FutureGetAdvice {
         private static final TimerName timerName = Agent.getTimerName(FutureGetAdvice.class);
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver Future<?> future) {
+        public static boolean isEnabled(@BindReceiver Future<?> future,
+                @BindClassMeta FutureClassMeta futureClassMeta) {
+            if (futureClassMeta.isNonStandardFuture()) {
+                // this is to handle known non-standard Future implementations
+                return false;
+            }
             // don't capture if already done, primarily this is to avoid caching pattern where
             // a future is used to store the value to ensure only-once initialization
-            return !future.isDone();
+            try {
+                return !future.isDone();
+            } catch (Exception e) {
+                logger.debug(e.getMessage(), e);
+                if (!isDoneExceptionLogged.getAndSet(true)) {
+                    logger.info("encountered a non-standard java.util.concurrent.Future"
+                            + " implementation, please report this stack trace to the Glowroot"
+                            + " project:", e);
+                }
+                return false;
+            }
         }
         @OnBefore
         public static Timer onBefore(ThreadContext context) {

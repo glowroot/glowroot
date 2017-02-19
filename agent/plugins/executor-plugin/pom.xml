@@ -44,6 +44,17 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- this particular artifact's javax.ejb.AsyncResult.isDone() method throws
+        IllegalStateException, which is valid per spec
+        http://docs.oracle.com/javaee/7/api/javax/ejb/AsyncResult.html
+        (see EjbAsyncResultIT.java)
+      -->
+      <groupId>javax.ejb</groupId>
+      <artifactId>javax.ejb-api</artifactId>
+      <version>3.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
