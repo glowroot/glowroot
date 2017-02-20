@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.init;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
@@ -54,12 +55,15 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
     private @MonotonicNonNull ScheduledExecutorService backgroundExecutor;
 
+    private @MonotonicNonNull Closeable agentDirLockingCloseable;
+
     @Override
     public void init(final File glowrootDir, final File agentDir,
             final @Nullable String collectorHost, final @Nullable Collector customCollector,
             final Map<String, String> properties, final @Nullable Instrumentation instrumentation,
             final String glowrootVersion, boolean offline) throws Exception {
 
+        agentDirLockingCloseable = AgentDirLocking.lockAgentDir(agentDir);
         Ticker ticker = Tickers.getTicker();
         Clock clock = Clock.systemClock();
 
@@ -138,6 +142,10 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         backgroundExecutor.shutdown();
         if (!backgroundExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
+        }
+        // and unlock the agent directory
+        if (agentDirLockingCloseable != null) {
+            agentDirLockingCloseable.close();
         }
     }
 

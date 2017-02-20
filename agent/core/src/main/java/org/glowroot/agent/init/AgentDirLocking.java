@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.embedded.init;
+package org.glowroot.agent.init;
 
 import java.io.Closeable;
 import java.io.File;
@@ -25,12 +25,11 @@ import com.google.common.io.Files;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class DataDirLocking {
+public class AgentDirLocking {
 
-    private DataDirLocking() {}
+    private AgentDirLocking() {}
 
-    static Closeable lockDataDir(File agentDir) throws Exception {
-        // lock data dir
+    public static Closeable lockAgentDir(File agentDir) throws Exception {
         File tmpDir = new File(agentDir, "tmp");
         File lockFile = new File(tmpDir, ".lock");
         try {

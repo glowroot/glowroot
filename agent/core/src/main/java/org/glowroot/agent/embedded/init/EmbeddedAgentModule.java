@@ -40,6 +40,7 @@ import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.embedded.repo.PlatformMBeanServerLifecycle;
 import org.glowroot.agent.embedded.repo.SimpleRepoModule;
 import org.glowroot.agent.embedded.util.DataSource;
+import org.glowroot.agent.init.AgentDirLocking;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.EnvironmentCreator;
@@ -75,7 +76,7 @@ class EmbeddedAgentModule {
     private final @Nullable AgentModule agentModule;
     private final @Nullable ViewerAgentModule viewerAgentModule;
 
-    private final Closeable dataDirLockingCloseable;
+    private final Closeable agentDirLockingCloseable;
 
     private final String version;
 
@@ -89,7 +90,7 @@ class EmbeddedAgentModule {
             @Nullable Instrumentation instrumentation, final String glowrootVersion,
             boolean offline) throws Exception {
 
-        dataDirLockingCloseable = DataDirLocking.lockDataDir(agentDir);
+        agentDirLockingCloseable = AgentDirLocking.lockAgentDir(agentDir);
 
         ticker = Ticker.systemTicker();
         clock = Clock.systemClock();
@@ -302,8 +303,8 @@ class EmbeddedAgentModule {
                 throw new IllegalStateException("Could not terminate executor");
             }
         }
-        // and unlock the data directory
-        dataDirLockingCloseable.close();
+        // and unlock the agent directory
+        agentDirLockingCloseable.close();
     }
 
     private static class PlatformMBeanServerLifecycleImpl implements PlatformMBeanServerLifecycle {

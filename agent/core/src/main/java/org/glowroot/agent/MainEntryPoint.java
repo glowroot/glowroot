@@ -43,8 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
-import org.glowroot.agent.embedded.init.DataDirLocking.AgentDirLockedException;
 import org.glowroot.agent.embedded.init.GlowrootFatAgentInit;
+import org.glowroot.agent.init.AgentDirLocking.AgentDirLockedException;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
