@@ -30,10 +30,6 @@
     </developer>
   </developers>
 
-  <prerequisites>
-    <maven>3.2.2</maven>
-  </prerequisites>
-
   <modules>
     <module>build/license-bundle</module>
     <module>build/checker-jdk6</module>
@@ -321,11 +317,12 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <!-- immutables annotations processors require java 7 -->
+                  <!-- immutables annotation processors require java 7+ -->
                   <version>[1.7,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>[3.0,)</version>
+                  <!-- os-maven-plugin requires maven 3.1.0+ -->
+                  <version>[3.1.0,)</version>
                 </requireMavenVersion>
                 <requireUpperBoundDeps />
               </rules>
