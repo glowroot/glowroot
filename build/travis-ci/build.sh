@@ -23,6 +23,9 @@ case "$1" in
                                  $skip_shading_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
+               # --no-snapshot-updates is used in the builds below because maven-remote-resources-plugin uses an old version of
+               # its parent pom that includes the snapshot repository http://repository.apache.org/snapshots, causing maven to
+               # check for glowroot snapshot artifacts in that repository, sometimes causing slowness during travis-ci builds
                if [[ "$java_version" > "1.8" && "$SKIP_SHADING" == "true" ]]
                then
                  # glowroot central requires java 8+
@@ -31,6 +34,7 @@ case "$1" in
                                   -Dglowroot.internal.webdriver.useCentral=true \
                                   -DargLine="$surefire_jvm_args" \
                                   -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                  --no-snapshot-updates \
                                   -B
                fi
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
@@ -38,18 +42,21 @@ case "$1" in
                                 $skip_shading_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
+                                --no-snapshot-updates \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
                                 $skip_shading_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
+                                --no-snapshot-updates \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
                                 $skip_shading_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
+                                --no-snapshot-updates \
                                 -B
                ;;
 
