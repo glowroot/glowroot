@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests;
 
+import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import org.junit.Test;
 import org.openqa.selenium.WebElement;
 
@@ -98,10 +99,17 @@ public class LoginIT extends WebDriverIT {
         driver.findElement(linkText("Return to list")).click();
     }
 
-    private void login(GlobalNavbar globalNavbar, String username, String password) {
+    private void login(GlobalNavbar globalNavbar, String username, String password)
+            throws InterruptedException {
         globalNavbar.getSignInLink().click();
         sendKeys(globalNavbar.getLoginUsernameTextField(), username);
         sendKeys(globalNavbar.getLoginPasswordTextField(), password);
+        if (driver instanceof JBrowserDriver) {
+            // previously tried waiting for button to be not(@disabled)
+            // but that didn't resolve sporadic issue with login action never occurring
+            // (and being left on login page, timing out waiting for "sign out" link below
+            Thread.sleep(500);
+        }
         globalNavbar.getLoginButton().click();
         // wait for sign out button to appear, means login success
         globalNavbar.getSignOutLink();

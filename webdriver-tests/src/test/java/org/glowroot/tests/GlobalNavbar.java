@@ -93,9 +93,7 @@ class GlobalNavbar {
     }
 
     WebElement getLoginButton() {
-        // not(@disabled) is needed (at least using JBrowserDriver) in order to wait until the
-        // button is clickable after entering username and password
-        return Utils.withWait(driver, xpath("//div[@gt-label='Login']//button[not(@disabled)]"));
+        return Utils.withWait(driver, xpath("//div[@gt-label='Login']//button"));
     }
 
     public static WebElement getNavbarLink(final WebDriver driver, final By by) {
