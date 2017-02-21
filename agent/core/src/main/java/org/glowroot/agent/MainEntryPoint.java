@@ -153,9 +153,6 @@ public class MainEntryPoint {
         String version = Version.getVersion(MainEntryPoint.class);
         startupLogger.info("Glowroot version: {}", version);
         String collectorHost = properties.get("glowroot.collector.host");
-        if (Strings.isNullOrEmpty(collectorHost)) {
-            collectorHost = System.getProperty("glowroot.collector.host");
-        }
         Collector customCollector = loadCustomCollector(glowrootDir);
         if (Strings.isNullOrEmpty(collectorHost) && customCollector == null) {
             glowrootAgentInit = new GlowrootFatAgentInit();

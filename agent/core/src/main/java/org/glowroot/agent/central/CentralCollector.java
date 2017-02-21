@@ -87,9 +87,6 @@ public class CentralCollector implements Collector {
             agentId = InetAddress.getLocalHost().getHostName();
         }
         String collectorPortStr = properties.get("glowroot.collector.port");
-        if (Strings.isNullOrEmpty(collectorPortStr)) {
-            collectorPortStr = System.getProperty("glowroot.collector.port");
-        }
         int collectorPort;
         if (Strings.isNullOrEmpty(collectorPortStr)) {
             collectorPort = 8181;
