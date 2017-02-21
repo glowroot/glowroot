@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
 
 import javax.annotation.Nullable;
 import javax.management.ObjectName;
@@ -34,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -320,10 +320,7 @@ class JvmJsonService {
             logger.debug(e.getMessage(), e);
             return "{\"agentNotConnected\":true}";
         }
-        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
-        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
-        Map<String, MBeanTreeInnerNode> sortedRootNodes =
-                new TreeMap<String, MBeanTreeInnerNode>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, MBeanTreeInnerNode> sortedRootNodes = Maps.newTreeMap();
         for (MBeanDump.MBeanInfo mbeanInfo : mbeanDump.getMbeanInfoList()) {
             ObjectName objectName = ObjectName.getInstance(mbeanInfo.getObjectName());
             String domain = objectName.getDomain();
@@ -381,16 +378,11 @@ class JvmJsonService {
             logger.debug(e.getMessage(), e);
             return getAgentUnsupportedOperationResponse(agentId);
         }
-        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
-        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
-        Map<String, String> sortedProperties =
-                new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-        sortedProperties.putAll(properties);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeArrayFieldStart("properties");
-        for (Entry<String, String> entry : sortedProperties.entrySet()) {
+        for (Entry<String, String> entry : ImmutableSortedMap.copyOf(properties).entrySet()) {
             jg.writeStartObject();
             String propertyName = entry.getKey();
             jg.writeStringField("name", propertyName);
@@ -608,10 +600,7 @@ class JvmJsonService {
 
     private static Map<String, /*@Nullable*/ Object> getSortedAttributeMap(
             List<MBeanDump.MBeanAttribute> attributes) {
-        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
-        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
-        Map<String, /*@Nullable*/ Object> sortedAttributeMap =
-                new TreeMap<String, /*@Nullable*/ Object>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, /*@Nullable*/ Object> sortedAttributeMap = Maps.newTreeMap();
         for (MBeanDump.MBeanAttribute attribute : attributes) {
             sortedAttributeMap.put(attribute.getName(), getAttributeValue(attribute.getValue()));
         }

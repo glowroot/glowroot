@@ -49,9 +49,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Ordering;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.google.common.collect.TreeMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
 import com.google.common.io.Resources;
@@ -166,8 +166,9 @@ class ClasspathCache {
         updateCacheWithClasspathClasses(newClassNameLocations);
         updateCacheWithBootstrapClasses(newClassNameLocations);
         if (!newClassNameLocations.isEmpty()) {
-            Multimap<String, Location> newMap =
-                    TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, Ordering.allEqual());
+            // multimap that sorts keys and de-dups values while maintains value ordering
+            SetMultimap<String, Location> newMap =
+                    MultimapBuilder.treeKeys().linkedHashSetValues().build();
             newMap.putAll(classNameLocations);
             newMap.putAll(newClassNameLocations);
             classNameLocations = ImmutableMultimap.copyOf(newMap);

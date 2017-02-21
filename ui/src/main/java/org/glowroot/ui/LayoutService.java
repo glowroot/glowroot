@@ -105,7 +105,7 @@ class LayoutService {
         // a couple of special cases for embedded ui
         UiConfig uiConfig = configRepository.getUiConfig(AGENT_ID);
         String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
-        Set<String> transactionTypes = Sets.newTreeSet(String.CASE_INSENSITIVE_ORDER);
+        Set<String> transactionTypes = Sets.newTreeSet();
         List<String> storedTransactionTypes = transactionTypeRepository.read().get(AGENT_ID);
         if (storedTransactionTypes != null) {
             transactionTypes.addAll(storedTransactionTypes);
@@ -358,7 +358,7 @@ class LayoutService {
             UiConfig uiConfig = configRepository.getUiConfig(agentRollup.id());
             String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
             List<Double> defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
-            Set<String> transactionTypes = Sets.newTreeSet(String.CASE_INSENSITIVE_ORDER);
+            Set<String> transactionTypes = Sets.newTreeSet();
             List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.id());
             if (storedTransactionTypes != null) {
                 transactionTypes.addAll(storedTransactionTypes);

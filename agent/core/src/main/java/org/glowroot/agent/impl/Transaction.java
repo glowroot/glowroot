@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -289,8 +289,7 @@ public class Transaction {
         if (attributes == null) {
             return ImmutableSetMultimap.of();
         }
-        SetMultimap<String, String> orderedAttributes =
-                TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, String.CASE_INSENSITIVE_ORDER);
+        SetMultimap<String, String> orderedAttributes = TreeMultimap.create();
         synchronized (attributes) {
             orderedAttributes.putAll(attributes);
         }

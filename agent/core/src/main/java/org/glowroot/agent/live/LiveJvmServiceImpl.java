@@ -320,8 +320,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 names.add(objectNameStr);
             }
         }
-        ImmutableList<String> sortedNames =
-                Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(names);
+        ImmutableList<String> sortedNames = Ordering.natural().immutableSortedCopy(names);
         if (sortedNames.size() > limit) {
             sortedNames = sortedNames.subList(0, limit);
         }
@@ -331,8 +330,8 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     @Override
     public MBeanMeta getMBeanMeta(String agentId, String mbeanObjectName) throws Exception {
         Set<ObjectName> objectNames = getObjectNames(mbeanObjectName);
-        ImmutableList<String> attributeNames = Ordering.from(String.CASE_INSENSITIVE_ORDER)
-                .immutableSortedCopy(getAttributeNames(objectNames));
+        ImmutableList<String> attributeNames =
+                Ordering.natural().immutableSortedCopy(getAttributeNames(objectNames));
         boolean pattern = mbeanObjectName.contains("*");
         return MBeanMeta.newBuilder()
                 .setUnmatched(objectNames.isEmpty() && pattern)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class TransactionAttributesIT {
         assertThat(attributes.get(1).getName()).isEqualTo("Xee Three");
         assertThat(attributes.get(1).getValueList()).containsExactly("xx");
         assertThat(attributes.get(2).getName()).isEqualTo("Yee Two");
-        assertThat(attributes.get(2).getValueList()).containsExactly("yy", "Yy2", "yy3");
+        assertThat(attributes.get(2).getValueList()).containsExactly("Yy2", "yy", "yy3");
         assertThat(attributes.get(3).getName()).isEqualTo("Zee One");
         assertThat(attributes.get(3).getValueList()).containsExactly("bx");
     }
