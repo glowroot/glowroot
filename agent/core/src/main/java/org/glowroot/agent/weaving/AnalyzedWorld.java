@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.glowroot.agent.weaving;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.security.CodeSource;
 import java.util.Collections;
@@ -331,9 +332,6 @@ public class AnalyzedWorld {
         new ClassReader(bytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
                 mixinTypes, loader, this, null, bytes);
-        if (classAnalyzer.isShortCircuitBeforeAnalyzeMethods()) {
-            return classAnalyzer.getAnalyzedClass();
-        }
         classAnalyzer.analyzeMethods();
         return classAnalyzer.getAnalyzedClass();
     }
@@ -466,6 +464,7 @@ public class AnalyzedWorld {
                 // don't add synthetic methods to the analyzed model
                 continue;
             }
+            int modifiers = method.getModifiers();
             List<String> methodAnnotations = Lists.newArrayList();
             for (Annotation annotation : method.getAnnotations()) {
                 methodAnnotations.add(annotation.annotationType().getName());
@@ -475,9 +474,8 @@ public class AnalyzedWorld {
                 parameterTypes.add(Type.getType(parameterType));
             }
             Type returnType = Type.getType(method.getReturnType());
-            List<Advice> matchingAdvisors =
-                    getMatchingAdvisors(method.getModifiers(), method.getName(), methodAnnotations,
-                            parameterTypes, returnType, adviceMatchers);
+            List<Advice> matchingAdvisors = getMatchingAdvisors(modifiers, method.getName(),
+                    methodAnnotations, parameterTypes, returnType, adviceMatchers);
             List<Advice> extraAdvisors = bridgeTargetAdvisors.get(method);
             if (extraAdvisors != null) {
                 matchingAdvisors.addAll(extraAdvisors);
@@ -490,13 +488,22 @@ public class AnalyzedWorld {
                     methodBuilder.addParameterTypes(parameterType.getClassName());
                 }
                 methodBuilder.returnType(returnType.getClassName());
-                methodBuilder.modifiers(method.getModifiers());
+                methodBuilder.modifiers(modifiers);
                 // FIXME re-build signature and set in AnalyzedMethod.signature()
                 for (Class<?> exceptionType : method.getExceptionTypes()) {
                     methodBuilder.addExceptions(exceptionType.getName());
                 }
                 methodBuilder.addAllAdvisors(matchingAdvisors);
                 classBuilder.addAnalyzedMethods(methodBuilder.build());
+            }
+            if (Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers)) {
+                ImmutablePublicFinalMethod.Builder publicFinalMethodBuilder =
+                        ImmutablePublicFinalMethod.builder()
+                                .name(method.getName());
+                for (Type parameterType : parameterTypes) {
+                    publicFinalMethodBuilder.addParameterTypes(parameterType.getClassName());
+                }
+                classBuilder.addPublicFinalMethods(publicFinalMethodBuilder.build());
             }
         }
         return classBuilder.build();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,13 @@ abstract class AnalyzedClass {
     abstract @Nullable String superName();
     abstract ImmutableList<String> interfaceNames();
     abstract ImmutableList<AnalyzedMethod> analyzedMethods();
+    // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
+    // to prevent final methods from being overridden
+    // only need to track public methods since only public methods can implement interface method
+    // and overrideAndWeaveInheritedMethod() is only used on "methodsThatOnlyNowFulfillAdvice"
+    // which occurs when method in superclass is used to implement interface that is only added in
+    // subclass
+    abstract ImmutableList<PublicFinalMethod> publicFinalMethods();
     abstract ImmutableList<ShimType> shimTypes();
     abstract ImmutableList<MixinType> mixinTypes();
 

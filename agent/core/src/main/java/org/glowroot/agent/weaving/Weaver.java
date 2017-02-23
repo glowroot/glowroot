@@ -136,10 +136,6 @@ public class Weaver {
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
                 mixinTypes, loader, analyzedWorld, codeSource, classBytes);
-        if (classAnalyzer.isShortCircuitBeforeAnalyzeMethods()) {
-            analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
-            return maybeFelixBytes;
-        }
         classAnalyzer.analyzeMethods();
         if (!classAnalyzer.isWeavingRequired()) {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);

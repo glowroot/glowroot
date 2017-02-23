@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -328,6 +328,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup");
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableParseContext");
+        types.add("org.glowroot.agent.weaving.ImmutablePublicFinalMethod");
+        types.add("org.glowroot.agent.weaving.ImmutablePublicFinalMethod$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableThinClass");
         types.add("org.glowroot.agent.weaving.ImmutableThinClass$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableThinMethod");
@@ -342,6 +344,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
                 + "$TransactionAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.MixinType");
+        types.add("org.glowroot.agent.weaving.PublicFinalMethod");
         types.add("org.glowroot.agent.weaving.ShimType");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$AnnotationCaptureMethodVisitor");
@@ -479,6 +482,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableAdviceParameter$1");
         types.add("org.glowroot.agent.weaving.ImmutableLazyDefinedClass$1");
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup$1");
+        types.add("org.glowroot.agent.weaving.ImmutablePublicFinalMethod$1");
         types.add("org.glowroot.agent.weaving.ImmutableThinClass$1");
         types.add("org.glowroot.agent.weaving.ImmutableThinMethod$1");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor$1");

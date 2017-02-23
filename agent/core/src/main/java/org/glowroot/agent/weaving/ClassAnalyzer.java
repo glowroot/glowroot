@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -137,10 +138,6 @@ class ClassAnalyzer {
         this.classBytes = classBytes;
     }
 
-    boolean isShortCircuitBeforeAnalyzeMethods() {
-        return shortCircuitBeforeAnalyzeMethods;
-    }
-
     void analyzeMethods() {
         methodAdvisors = Maps.newHashMap();
         bridgeTargetAdvisors = Maps.newHashMap();
@@ -199,6 +196,17 @@ class ClassAnalyzer {
     @RequiresNonNull("bridgeTargetAdvisors")
     private List<Advice> analyzeMethod(ThinMethod thinMethod) {
         List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(thinMethod.desc()));
+        if (Modifier.isFinal(thinMethod.access()) && Modifier.isPublic(thinMethod.access())) {
+            ImmutablePublicFinalMethod.Builder builder = ImmutablePublicFinalMethod.builder()
+                    .name(thinMethod.name());
+            for (Type parameterType : parameterTypes) {
+                builder.addParameterTypes(parameterType.getClassName());
+            }
+            analyzedClassBuilder.addPublicFinalMethods(builder.build());
+        }
+        if (shortCircuitBeforeAnalyzeMethods) {
+            return ImmutableList.of();
+        }
         Type returnType = Type.getReturnType(thinMethod.desc());
         List<String> methodAnnotations = thinMethod.annotations();
         List<Advice> matchingAdvisors = getMatchingAdvisors(thinMethod, methodAnnotations,
@@ -307,13 +315,17 @@ class ClassAnalyzer {
         }
         Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets =
                 getInheritedInterfaceMethodsWithAdvice();
+        if (matchingAdvisorSets.isEmpty()) {
+            return ImmutableList.of();
+        }
         for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
             matchingAdvisorSets.remove(AnalyzedMethodKey.wrap(analyzedMethod));
         }
         removeAdviceAlreadyWovenIntoSuperClass(matchingAdvisorSets);
+        removeMethodsThatWouldOverridePublicFinalMethodsFromSuperClass(matchingAdvisorSets);
         List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice = Lists.newArrayList();
         for (Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
-            AnalyzedMethod inheritedMethod = entry.getKey().analyzedMethod();
+            AnalyzedMethod inheritedMethod = checkNotNull(entry.getKey().analyzedMethod());
             Set<Advice> advisors = entry.getValue();
             if (!advisors.isEmpty()) {
                 methodsThatOnlyNowFulfillAdvice.add(ImmutableAnalyzedMethod.builder()
@@ -362,6 +374,46 @@ class ClassAnalyzer {
                 }
                 matchingAdvisorSet.removeAll(superAnalyzedMethod.advisors());
             }
+        }
+    }
+
+    private void removeMethodsThatWouldOverridePublicFinalMethodsFromSuperClass(
+            Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets) {
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            if (superAnalyzedClass.isInterface()) {
+                continue;
+            }
+            if (superAnalyzedClass.publicFinalMethods().isEmpty()) {
+                continue;
+            }
+            for (PublicFinalMethod publicFinalMethod : superAnalyzedClass.publicFinalMethods()) {
+                ImmutableAnalyzedMethodKey key = ImmutableAnalyzedMethodKey.builder()
+                        .name(publicFinalMethod.name())
+                        .addAllParameterTypes(publicFinalMethod.parameterTypes())
+                        .build();
+                Set<Advice> value = matchingAdvisorSets.remove(key);
+                // need to check if empty due to removeAdviceAlreadyWovenIntoSuperClass() above
+                if (value != null && !value.isEmpty()) {
+                    logOverridePublicFinalMethodInfo(superAnalyzedClass, publicFinalMethod);
+                }
+            }
+        }
+    }
+
+    private void logOverridePublicFinalMethodInfo(AnalyzedClass superAnalyzedClass,
+            PublicFinalMethod publicFinalMethod) {
+        String format = "Not able to override and instrument final method {}.{}({}) which is"
+                + " being used by a subclass {} to implement one or more instrumented interfaces";
+        String arg1 = superAnalyzedClass.name();
+        String arg2 = publicFinalMethod.name();
+        String arg3 = Joiner.on(", ").join(publicFinalMethod.parameterTypes());
+        String arg4 = className;
+        if (superAnalyzedClass.name().equals("org.jooq.tools.jdbc.JDBC41ResultSet")) {
+            // this is a known case, and is only worth logging at debug level since all that these
+            // methods in JDBC41ResultSet do is throw an UnsupportedOperationException
+            logger.debug(format, arg1, arg2, arg3, arg4);
+        } else {
+            logger.info(format, arg1, arg2, arg3, arg4);
         }
     }
 
@@ -460,8 +512,9 @@ class ClassAnalyzer {
 
         abstract String name();
         abstract ImmutableList<String> parameterTypes();
+        // null is only used when constructing key purely for lookup
         @Value.Auxiliary
-        abstract AnalyzedMethod analyzedMethod();
+        abstract @Nullable AnalyzedMethod analyzedMethod();
 
         private static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
             return ImmutableAnalyzedMethodKey.builder()

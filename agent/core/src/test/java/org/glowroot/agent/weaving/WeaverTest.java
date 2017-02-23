@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,6 +113,7 @@ import org.glowroot.agent.weaving.SomeAspectThreadLocals.IntegerThreadLocal;
 import org.glowroot.agent.weaving.other.ArrayMisc;
 import org.glowroot.agent.weaving.targets.AbstractMisc.ExtendsAbstractMisc;
 import org.glowroot.agent.weaving.targets.AbstractNotMisc.ExtendsAbstractNotMisc;
+import org.glowroot.agent.weaving.targets.AbstractNotMiscWithFinal.ExtendsAbstractNotMiscWithFinal;
 import org.glowroot.agent.weaving.targets.AccessibilityMisc;
 import org.glowroot.agent.weaving.targets.BasicMisc;
 import org.glowroot.agent.weaving.targets.BytecodeWithStackFramesMisc;
@@ -1219,6 +1220,17 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotCrashOnInheritedFinalMethodFulfillingAnInterface() throws Exception {
+        // given
+        Misc test = newWovenObject(ExtendsAbstractNotMiscWithFinal.class, Misc.class,
+                BasicAdvice.class);
+        // when
+        test.execute1();
+        // then
+        // do not crash with java.lang.VerifyError
     }
 
     @Test
