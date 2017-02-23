@@ -123,7 +123,7 @@ public class CentralCollector implements Collector {
                 .setEnvironment(environment)
                 .setAgentConfig(agentConfig)
                 .build();
-        centralConnection.callUntilSuccessful(new GrpcCall<InitResponse>() {
+        centralConnection.callInit(new GrpcCall<InitResponse>() {
             @Override
             public void call(StreamObserver<InitResponse> responseObserver) {
                 collectorServiceStub.collectInit(initMessage, responseObserver);

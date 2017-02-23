@@ -105,7 +105,6 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     private volatile @Nullable StreamObserver<AgentResponse> currResponseObserver;
     private volatile boolean closedByCentralCollector;
 
-    private final AtomicBoolean hasInitialConnection = new AtomicBoolean();
     private final AtomicBoolean inMaybeConnectionFailure = new AtomicBoolean();
     private final AtomicBoolean inConnectionFailure;
 
@@ -130,20 +129,12 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     @Override
     public void onNext(CentralRequest request) {
-        final boolean initialConnect = !hasInitialConnection.getAndSet(true);
         inMaybeConnectionFailure.set(false);
         boolean errorFixed = inConnectionFailure.getAndSet(false);
-        if (initialConnect || errorFixed) {
-            if (initialConnect) {
-                // don't need to suppress sending this log message to the central collector because
-                // startup logger info messages are never sent to the central collector
-                startupLogger.info("downstream connection established with the central collector");
-            } else {
-                // don't need to suppress sending this log message to the central collector because
-                // startup logger info messages are never sent to the central collector
-                startupLogger
-                        .info("downstream connection re-established with the central collector");
-            }
+        if (errorFixed) {
+            // don't need to suppress sending this log message to the central collector because
+            // startup logger info messages are never sent to the central collector
+            startupLogger.info("re-established connection to the central collector");
         }
         if (request.getMessageCase() == MessageCase.HELLO_ACK) {
             return;
@@ -168,8 +159,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             centralConnection.suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {
-                    startupLogger.warn("unable to establish downstream connection with the central"
-                            + " collector (will keep trying): {}", t.getMessage());
+                    startupLogger.warn("lost connection to the central collector (will keep trying"
+                            + " to re-establish): {}", t.getMessage());
                     logger.debug(t.getMessage(), t);
                 }
             });

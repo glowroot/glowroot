@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ class CentralConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralConnection.class);
 
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
     // back pressure on connection to the central collector
     private static final int PENDING_LIMIT = 100;
 
@@ -66,12 +69,15 @@ class CentralConnection {
 
     private final RateLimitedLogger backPressureLogger =
             new RateLimitedLogger(CentralConnection.class);
+
+    // count does not include init call
     @GuardedBy("backPressureLogger")
     private int pendingRequestCount;
 
     private final RateLimitedLogger connectionErrorLogger =
             new RateLimitedLogger(CentralConnection.class);
 
+    private volatile boolean initCallSucceeded;
     private volatile boolean closed;
 
     CentralConnection(String collectorHost, int collectorPort, AtomicBoolean inConnectionFailure) {
@@ -137,25 +143,25 @@ class CentralConnection {
                 @Override
                 public void run() {
                     try {
-                        call.call(new RetryingStreamObserver<T>(call, 60, 60));
+                        call.call(new RetryingStreamObserver<T>(call, 60, 60, false));
                     } catch (Throwable t) {
                         logger.error(t.getMessage(), t);
                     }
                 }
             }, initialDelayMillis, MILLISECONDS);
         } else {
-            call.call(new RetryingStreamObserver<T>(call, 60, 60));
+            call.call(new RetryingStreamObserver<T>(call, 60, 60, false));
         }
     }
 
     // important that these calls are idempotent
-    <T extends /*@NonNull*/ Object> void callUntilSuccessful(GrpcCall<T> call) {
+    <T extends /*@NonNull*/ Object> void callInit(GrpcCall<T> call) {
         if (closed) {
             return;
         }
         // important here not to check inConnectionFailure, since need this to succeed if/when
         // connection is re-established
-        call.call(new RetryingStreamObserver<T>(call, 15, -1));
+        call.call(new RetryingStreamObserver<T>(call, 15, -1, true));
     }
 
     void suppressLogCollector(Runnable runnable) {
@@ -203,15 +209,18 @@ class CentralConnection {
         private final GrpcCall<T> grpcCall;
         private final int maxSingleDelayInSeconds;
         private final int maxTotalInSeconds;
+        private final boolean init;
         private final Stopwatch stopwatch = Stopwatch.createStarted();
 
+        private volatile boolean initErrorLogged;
         private volatile long nextDelayInSeconds = 4;
 
         private RetryingStreamObserver(GrpcCall<T> grpcCall, int maxSingleDelayInSeconds,
-                int maxTotalInSeconds) {
+                int maxTotalInSeconds, boolean init) {
             this.grpcCall = grpcCall;
             this.maxSingleDelayInSeconds = maxSingleDelayInSeconds;
             this.maxTotalInSeconds = maxTotalInSeconds;
+            this.init = init;
         }
 
         @Override
@@ -222,9 +231,17 @@ class CentralConnection {
         @Override
         public void onError(final Throwable t) {
             if (closed) {
+                decrementPendingRequestCount();
                 return;
             }
+            if (init && !initErrorLogged) {
+                startupLogger.warn("unable to establish connection with the central collector"
+                        + " (will keep trying): {}", t.getMessage());
+                logger.debug(t.getMessage(), t);
+                initErrorLogged = true;
+            }
             if (inConnectionFailure.get()) {
+                decrementPendingRequestCount();
                 return;
             }
             suppressLogCollector(new Runnable() {
@@ -233,12 +250,12 @@ class CentralConnection {
                     logger.debug(t.getMessage(), t);
                 }
             });
-            if (maxTotalInSeconds != -1 && stopwatch.elapsed(SECONDS) > maxTotalInSeconds) {
-                connectionErrorLogger.warn("error sending data to the central collector: {}",
-                        t.getMessage(), t);
-                synchronized (backPressureLogger) {
-                    pendingRequestCount--;
+            if (!init && stopwatch.elapsed(SECONDS) > maxTotalInSeconds) {
+                if (initCallSucceeded) {
+                    connectionErrorLogger.warn("error sending data to the central collector: {}",
+                            t.getMessage(), t);
                 }
+                decrementPendingRequestCount();
                 return;
             }
 
@@ -269,8 +286,17 @@ class CentralConnection {
 
         @Override
         public void onCompleted() {
-            synchronized (backPressureLogger) {
-                pendingRequestCount--;
+            if (init) {
+                initCallSucceeded = true;
+            }
+            decrementPendingRequestCount();
+        }
+
+        private void decrementPendingRequestCount() {
+            if (!init) {
+                synchronized (backPressureLogger) {
+                    pendingRequestCount--;
+                }
             }
         }
     }
