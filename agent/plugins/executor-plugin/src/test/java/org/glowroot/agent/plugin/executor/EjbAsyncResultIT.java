@@ -60,7 +60,7 @@ public class EjbAsyncResultIT {
 
         @Override
         public void transactionMarker() throws Exception {
-            new javax.ejb.AsyncResult<>(null).get();
+            new javax.ejb.AsyncResult<Object>(null).get();
         }
     }
 }
