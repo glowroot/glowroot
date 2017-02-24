@@ -44,6 +44,11 @@ public class AppServerDetection {
         return command != null && command.equals("com.sun.enterprise.glassfish.bootstrap.ASMain");
     }
 
+    static boolean isWebLogic() {
+        String command = getCommand();
+        return command != null && command.equals("weblogic.Server");
+    }
+
     static boolean isWebSphere() {
         String command = getCommand();
         return command != null && command.equals("com.ibm.wsspi.bootstrap.WSPreLauncher");

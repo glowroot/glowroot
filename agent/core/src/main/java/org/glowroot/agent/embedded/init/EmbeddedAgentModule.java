@@ -18,6 +18,7 @@ package org.glowroot.agent.embedded.init;
 import java.io.Closeable;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -80,8 +81,6 @@ class EmbeddedAgentModule {
 
     private final String version;
 
-    private final boolean h2MemDb;
-
     private volatile @MonotonicNonNull UiModule uiModule;
 
     private final CountDownLatch simpleRepoModuleInit = new CountDownLatch(1);
@@ -96,16 +95,8 @@ class EmbeddedAgentModule {
         clock = Clock.systemClock();
 
         // mem db is only used for testing (by glowroot-agent-it-harness)
-        h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
-
+        final boolean h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
         final File dataDir = new File(agentDir, "data");
-        final DataSource dataSource;
-        if (h2MemDb) {
-            // mem db is only used for testing (by glowroot-agent-it-harness)
-            dataSource = new DataSource();
-        } else {
-            dataSource = new DataSource(new File(dataDir, "data.h2.db"));
-        }
 
         // need to perform jrebel workaround prior to loading any jackson classes
         JRebelWorkaround.performWorkaroundIfNeeded();
@@ -116,6 +107,7 @@ class EmbeddedAgentModule {
             agentModule = null;
             ConfigRepository configRepository = ConfigRepositoryImpl.create(glowrootDir,
                     viewerAgentModule.getConfigService(), pluginCache);
+            DataSource dataSource = createDataSource(h2MemDb, dataDir);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, null);
             simpleRepoModuleInit.countDown();
@@ -149,6 +141,7 @@ class EmbeddedAgentModule {
                         checkNotNull(clock);
                         checkNotNull(ticker);
                         checkNotNull(agentModule);
+                        DataSource dataSource = createDataSource(h2MemDb, dataDir);
                         SimpleRepoModule simpleRepoModule = new SimpleRepoModule(dataSource,
                                 dataDir, clock, ticker, configRepository, backgroundExecutor);
                         simpleRepoModule.registerMBeans(new PlatformMBeanServerLifecycleImpl(
@@ -305,6 +298,15 @@ class EmbeddedAgentModule {
         }
         // and unlock the agent directory
         agentDirLockingCloseable.close();
+    }
+
+    private static DataSource createDataSource(boolean h2MemDb, File dataDir) throws SQLException {
+        if (h2MemDb) {
+            // mem db is only used for testing (by glowroot-agent-it-harness)
+            return new DataSource();
+        } else {
+            return new DataSource(new File(dataDir, "data.h2.db"));
+        }
     }
 
     private static class PlatformMBeanServerLifecycleImpl implements PlatformMBeanServerLifecycle {

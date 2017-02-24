@@ -30,23 +30,22 @@ import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 
-public class WebSphereAppStartupAspect {
+public class WebLogicAppStartupAspect {
 
-    @Shim("com.ibm.ws.webcontainer.webapp.WebApp")
-    public interface WebApp {
+    @Shim("weblogic.servlet.internal.WebAppModule")
+    public interface WebAppModule {
         @Nullable
         String getContextPath();
     }
 
-    @Pointcut(className = "com.ibm.ws.webcontainer.webapp.WebApp",
-            methodName = "commonInitializationFinally", methodParameterTypes = {"java.util.List"},
-            nestingGroup = "servlet-startup", timerName = "startup")
+    @Pointcut(className = "weblogic.servlet.internal.WebAppModule", methodName = "start",
+            methodParameterTypes = {}, nestingGroup = "servlet-startup", timerName = "startup")
     public static class StartAdvice {
         private static final TimerName timerName = Agent.getTimerName(StartAdvice.class);
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
-                @BindReceiver WebApp webApp) {
-            String path = webApp.getContextPath();
+                @BindReceiver WebAppModule webAppModule) {
+            String path = webAppModule.getContextPath();
             return CatalinaAppStartupAspect.onBeforeCommon(context, path, timerName);
         }
         @OnReturn

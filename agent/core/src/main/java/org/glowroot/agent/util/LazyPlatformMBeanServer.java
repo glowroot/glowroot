@@ -81,9 +81,9 @@ public class LazyPlatformMBeanServer {
     }
 
     private LazyPlatformMBeanServer() throws InterruptedException {
-        waitForContainerToCreatePlatformMBeanServer =
-                AppServerDetection.isJBossModules() || AppServerDetection.isOldJBoss()
-                        || AppServerDetection.isGlassfish() || AppServerDetection.isWebSphere();
+        waitForContainerToCreatePlatformMBeanServer = AppServerDetection.isJBossModules()
+                || AppServerDetection.isOldJBoss() || AppServerDetection.isGlassfish()
+                || AppServerDetection.isWebLogic() || AppServerDetection.isWebSphere();
         needsManualPatternMatching = AppServerDetection.isOldJBoss();
         websphere = AppServerDetection.isWebSphere();
     }

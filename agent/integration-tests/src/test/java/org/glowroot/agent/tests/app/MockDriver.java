@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,11 @@ import java.sql.DriverPropertyInfo;
 import java.util.Properties;
 
 public class MockDriver implements Driver {
+
+    static {
+        MockDriverState.setLoaded();
+        new Exception().printStackTrace();
+    }
 
     @Override
     public Connection connect(String url, Properties info) {

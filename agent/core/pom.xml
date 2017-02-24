@@ -506,6 +506,18 @@
                   <shadedPattern>Glowroot-H2 Generate Seed</shadedPattern>
                 </relocation>
                 <relocation>
+                  <!-- this is needed to prevent H2 from initializing java.sql.DriverManager which
+                    then initializes jdbc drivers via META-INF/services/java.sql.Driver -->
+                  <pattern>java.sql.DriverManager</pattern>
+                  <shadedPattern>org.glowroot.agent.sql.DriverManager</shadedPattern>
+                </relocation>
+                <relocation>
+                  <!-- SQLException uses DriverManager, so this is needed for the same reason as
+                    above -->
+                  <pattern>java.sql.SQLException</pattern>
+                  <shadedPattern>org.glowroot.agent.sql.SQLException</shadedPattern>
+                </relocation>
+                <relocation>
                   <pattern>com.ning.compress</pattern>
                   <shadedPattern>org.glowroot.agent.shaded.ning.compress</shadedPattern>
                 </relocation>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,17 +55,7 @@ public class CatalinaAppStartupAspect {
         public static TraceEntry onBefore(OptionalThreadContext context,
                 @BindReceiver StandardContext standardContext) {
             String path = standardContext.getPath();
-            String transactionName;
-            if (path == null || path.isEmpty()) {
-                // root context path is empty "", but makes more sense to display "/"
-                transactionName = "Servlet context: /";
-            } else {
-                transactionName = "Servlet context: " + path;
-            }
-            TraceEntry traceEntry = context.startTransaction("Startup", transactionName,
-                    MessageSupplier.create(transactionName), timerName);
-            context.setTransactionSlowThreshold(0, MILLISECONDS, Priority.CORE_PLUGIN);
-            return traceEntry;
+            return onBeforeCommon(context, path, timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
@@ -76,5 +66,20 @@ public class CatalinaAppStartupAspect {
                 @BindTraveler TraceEntry traceEntry) {
             traceEntry.endWithError(t);
         }
+    }
+
+    static TraceEntry onBeforeCommon(OptionalThreadContext context, @Nullable String path,
+            TimerName timerName) {
+        String transactionName;
+        if (path == null || path.isEmpty()) {
+            // root context path is empty "", but makes more sense to display "/"
+            transactionName = "Servlet context: /";
+        } else {
+            transactionName = "Servlet context: " + path;
+        }
+        TraceEntry traceEntry = context.startTransaction("Startup", transactionName,
+                MessageSupplier.create(transactionName), timerName);
+        context.setTransactionSlowThreshold(0, MILLISECONDS, Priority.CORE_PLUGIN);
+        return traceEntry;
     }
 }
