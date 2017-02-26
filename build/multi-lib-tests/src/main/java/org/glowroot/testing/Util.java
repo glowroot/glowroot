@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,11 @@ class Util {
         Files.write(pom, pomFile, Charsets.UTF_8);
         System.out.println(property + " : " + version);
         report.println(property + " : " + version);
+    }
+
+    static void log(String message) {
+        System.out.println(message);
+        report.println(message);
     }
 
     static void runTests(String modulePath, JavaVersion... javaVersions) throws Exception {
