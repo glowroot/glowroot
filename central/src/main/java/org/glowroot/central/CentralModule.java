@@ -129,9 +129,9 @@ class CentralModule {
             startupLogger.info("Glowroot version: {}", version);
             if (config != null) {
                 String extra = "";
-                if (Strings.isNullOrEmpty(System.getProperty("glowroot.home.dir"))) {
-                    extra = ", this can be changed by specifying -Dglowroot.home.dir=... in your"
-                            + " servlet container's JVM args";
+                if (Strings.isNullOrEmpty(System.getProperty("glowroot.central.dir"))) {
+                    extra = ", this can be changed by adding the JVM arg -Dglowroot.central.dir=..."
+                            + " to your servlet container startup";
                 }
                 startupLogger.info("Glowroot home: {} (location for glowroot.properties file{})",
                         centralDir.getAbsolutePath(), extra);
@@ -396,8 +396,8 @@ class CentralModule {
         throw lastException;
     }
 
-    private static File getCentralDir() {
-        String centralDirPath = System.getProperty("glowroot.home.dir");
+    private static File getCentralDir() throws IOException {
+        String centralDirPath = System.getProperty("glowroot.central.dir");
         if (Strings.isNullOrEmpty(centralDirPath)) {
             return getDefaultCentralDir();
         }
@@ -410,19 +410,25 @@ class CentralModule {
         return centralDir;
     }
 
-    private static File getDefaultCentralDir() {
-        File centralDir = new File("glowroot");
+    private static File getDefaultCentralDir() throws IOException {
+        File centralDir = new File("glowroot-central");
+        if (!centralDir.exists()) {
+            // upgrade from 0.9.11 to 0.9.12 if needed
+            File oldCentralDir = new File("glowroot");
+            if (oldCentralDir.exists()) {
+                oldCentralDir.renameTo(centralDir);
+            }
+        }
         centralDir.mkdirs();
         if (!centralDir.isDirectory()) {
-            // not using logger since the home dir is needed to set up the logger
-            return new File(".");
+            throw new IOException("Could not create directory: " + centralDir.getAbsolutePath());
         }
         return centralDir;
     }
 
     // TODO report checker framework issue that occurs without this suppression
-    @SuppressWarnings("contracts.postcondition.not.satisfied")
     @EnsuresNonNull("startupLogger")
+    @SuppressWarnings("contracts.postcondition.not.satisfied")
     private static void initLogging(File centralDir) {
         File logbackXmlOverride = new File(centralDir, "logback.xml");
         if (logbackXmlOverride.exists()) {
