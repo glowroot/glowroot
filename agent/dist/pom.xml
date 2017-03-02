@@ -147,7 +147,7 @@
                 <Implementation-Version>${project.version}</Implementation-Version>
                 <Build-Commit>${glowroot.build.commit}</Build-Commit>
                 <Build-Time>${maven.build.timestamp}</Build-Time>
-                <Main-Class>org.glowroot.agent.OfflineViewer</Main-Class>
+                <Main-Class>org.glowroot.agent.ToolMain</Main-Class>
                 <Premain-Class>org.glowroot.agent.AgentPremain</Premain-Class>
                 <Can-Redefine-Classes>true</Can-Redefine-Classes>
                 <Can-Retransform-Classes>true</Can-Retransform-Classes>

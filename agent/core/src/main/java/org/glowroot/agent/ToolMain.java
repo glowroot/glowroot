@@ -30,15 +30,15 @@ import org.h2.tools.RunScript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OfflineViewer {
+public class ToolMain {
 
     // need to wait to init logger until
     private static volatile @MonotonicNonNull Logger startupLogger;
 
-    private OfflineViewer() {}
+    private ToolMain() {}
 
     public static void main(String... args) throws Exception {
-        CodeSource codeSource = OfflineViewer.class.getProtectionDomain().getCodeSource();
+        CodeSource codeSource = ToolMain.class.getProtectionDomain().getCodeSource();
         File glowrootJarFile = getGlowrootJarFile(codeSource);
         File glowrootDir = GlowrootDir.getGlowrootDir(glowrootJarFile);
         File agentDir = GlowrootDir.getAgentDir(glowrootDir);
