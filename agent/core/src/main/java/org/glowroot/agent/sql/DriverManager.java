@@ -20,6 +20,7 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Properties;
@@ -28,30 +29,32 @@ import javax.annotation.Nullable;
 
 public class DriverManager {
 
+    private static final Driver driver = new org.h2.Driver();
+
     private static volatile int loginTimeout;
     private static volatile @Nullable PrintWriter logWriter;
     private static volatile @Nullable PrintStream logStream;
 
     private DriverManager() {}
 
-    @SuppressWarnings("unused")
-    public static Connection getConnection(String url, Properties info) throws SQLException {
-        throw new UnsupportedOperationException();
+    public static Connection getConnection(String url) throws SQLException {
+        return getConnection(url, new Properties());
     }
 
-    @SuppressWarnings("unused")
     public static Connection getConnection(String url, String user, String password)
             throws SQLException {
-        throw new UnsupportedOperationException();
+        Properties info = new Properties();
+        info.put("user", user);
+        info.put("password", password);
+        return getConnection(url, info);
     }
 
-    public static Connection getConnection(@SuppressWarnings("unused") String url)
-            throws SQLException {
-        throw new UnsupportedOperationException();
+    public static Connection getConnection(String url, Properties info) throws SQLException {
+        return driver.connect(url, info);
     }
 
     public static Driver getDriver(@SuppressWarnings("unused") String url) throws SQLException {
-        throw new UnsupportedOperationException();
+        return driver;
     }
 
     public static void registerDriver(@SuppressWarnings("unused") Driver driver)
@@ -60,7 +63,7 @@ public class DriverManager {
     public static void deregisterDriver(@SuppressWarnings("unused") Driver driver) {}
 
     public static Enumeration<Driver> getDrivers() {
-        return Collections.enumeration(Collections.<Driver>emptyList());
+        return Collections.enumeration(Arrays.asList(driver));
     }
 
     public static int getLoginTimeout() {
