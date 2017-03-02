@@ -16,6 +16,8 @@
 package org.glowroot.agent;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.security.CodeSource;
 
@@ -51,6 +53,10 @@ public class ToolMain {
         }
         if (args.length == 1 && args[0].equals("recover")) {
             recover(agentDir);
+            return;
+        }
+        if (args.length == 1 && args[0].equals("mask-central-data")) {
+            maskCentralData(agentDir);
             return;
         }
         MainEntryPoint.runViewer(glowrootDir, agentDir);
@@ -106,5 +112,38 @@ public class ToolMain {
         if (!recoverFile.delete()) {
             startupLogger.info("failed to clean-up, cannot delete file: {}", recoverFile.getPath());
         }
+    }
+
+    @RequiresNonNull("startupLogger")
+    private static void maskCentralData(File agentDir) throws Exception {
+        File dataDir = new File(agentDir, "data");
+        File maskScriptFile = File.createTempFile("mask-central-data", ".sql");
+        PrintWriter out = new PrintWriter(new FileWriter(maskScriptFile));
+        try {
+            // mask agent ids and agent rollup ids
+            out.println("update trace set headline = left(headline, position(': ', headline) + 1)"
+                    + " || " + applyHash("substr(headline, position(': ', headline) + 2)")
+                    + " where transaction_type <> 'Web' and headline like '%: %';");
+            // mask query strings
+            out.println("update trace set headline = left(headline, position('?', headline))"
+                    + " || " + applyHash("substr(headline, position('?', headline) + 1)")
+                    + " where transaction_type = 'Web' and headline like '%?%';");
+            // mask usernames
+            out.println("update trace set user = " + applyHash("user")
+                    + " where transaction_type = 'Web'" + " and user is not null;");
+        } finally {
+            out.close();
+        }
+        RunScript.main(
+                new String[] {"-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data",
+                        "-user", "sa", "-script", maskScriptFile.getPath()});
+        // just a temp file, no need to log if delete fails
+        maskScriptFile.delete();
+        // re-create data file to eliminate any trace of previous values
+        recover(agentDir);
+    }
+
+    private static String applyHash(String sql) {
+        return "left(hash('sha256', stringtoutf8(" + sql + "), 100000), 40)";
     }
 }

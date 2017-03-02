@@ -447,7 +447,15 @@ public class TraceDao implements TraceRepository {
             } else {
                 preparedStatement.setNull(i++, Types.VARCHAR);
             }
-            preparedStatement.setBytes(i++, header.toByteArray());
+            // clear the headline and user in protobuf since they are stored as separate columns
+            // already, and headline and user can be necessary to mask before submitting the
+            // glowroot agent database when using glowroot agent to record an issue with glowroot
+            // central
+            preparedStatement.setBytes(i++, header.toBuilder()
+                    .setHeadline("")
+                    .setUser("")
+                    .build()
+                    .toByteArray());
             RowMappers.setLong(preparedStatement, i++, entriesCappedId);
             RowMappers.setLong(preparedStatement, i++, sharedQueryTextsCappedId);
             RowMappers.setLong(preparedStatement, i++, mainThreadProfileId);
@@ -532,8 +540,9 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public @Untainted String getSql() {
-            return "select header, entries_capped_id, main_thread_profile_capped_id,"
-                    + " aux_thread_profile_capped_id from trace where id = ?";
+            return "select headline, user, header, entries_capped_id,"
+                    + " main_thread_profile_capped_id, aux_thread_profile_capped_id from trace"
+                    + " where id = ?";
         }
 
         @Override
@@ -544,7 +553,9 @@ public class TraceDao implements TraceRepository {
         @Override
         public HeaderPlus mapRow(ResultSet resultSet) throws Exception {
             int i = 1;
-            byte[] header = checkNotNull(resultSet.getBytes(i++));
+            String headline = checkNotNull(resultSet.getString(i++));
+            String user = resultSet.getString(i++);
+            byte[] headerBytes = checkNotNull(resultSet.getBytes(i++));
             Existence entriesExistence =
                     RowMappers.getExistence(resultSet, i++, traceCappedDatabase);
             Existence mainThreadProfileExistence =
@@ -562,7 +573,10 @@ public class TraceDao implements TraceRepository {
                 profileExistence = Existence.NO;
             }
             return ImmutableHeaderPlus.builder()
-                    .header(Trace.Header.parseFrom(header))
+                    .header(Trace.Header.parseFrom(headerBytes).toBuilder()
+                            .setHeadline(headline)
+                            .setUser(Strings.nullToEmpty(user))
+                            .build())
                     .entriesExistence(entriesExistence)
                     .profileExistence(profileExistence)
                     .build();
