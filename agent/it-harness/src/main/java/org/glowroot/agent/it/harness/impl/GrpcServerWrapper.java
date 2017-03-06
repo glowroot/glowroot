@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -183,18 +184,33 @@ class GrpcServerWrapper {
             return new StreamObserver<TraceStreamMessage>() {
 
                 private List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
-                private @MonotonicNonNull Trace trace;
+                private List<Trace.Entry> entries = Lists.newArrayList();
+                private @MonotonicNonNull Profile mainThreadProfile;
+                private @MonotonicNonNull Profile auxThreadProfile;
+                // TODO report checker framework issue that occurs with normal annotation placement
+                private Trace./*@MonotonicNonNull*/Header header;
 
                 @Override
                 public void onNext(TraceStreamMessage value) {
                     switch (value.getMessageCase()) {
-                        case HEADER:
+                        case STREAM_HEADER:
                             break;
                         case SHARED_QUERY_TEXT:
                             sharedQueryTexts.add(value.getSharedQueryText());
                             break;
-                        case TRACE:
-                            trace = value.getTrace();
+                        case ENTRY:
+                            entries.add(value.getEntry());
+                            break;
+                        case MAIN_THREAD_PROFILE:
+                            mainThreadProfile = value.getMainThreadProfile();
+                            break;
+                        case AUX_THREAD_PROFILE:
+                            auxThreadProfile = value.getAuxThreadProfile();
+                            break;
+                        case HEADER:
+                            header = value.getHeader();
+                            break;
+                        case STREAM_COUNTS:
                             break;
                         default:
                             throw new RuntimeException(
@@ -209,11 +225,19 @@ class GrpcServerWrapper {
 
                 @Override
                 public void onCompleted() {
-                    checkNotNull(trace);
+                    checkNotNull(header);
+                    Trace.Builder trace = Trace.newBuilder()
+                            .setHeader(header)
+                            .addAllSharedQueryText(sharedQueryTexts)
+                            .addAllEntry(entries);
+                    if (mainThreadProfile != null) {
+                        trace.setMainThreadProfile(mainThreadProfile);
+                    }
+                    if (auxThreadProfile != null) {
+                        trace.setAuxThreadProfile(auxThreadProfile);
+                    }
                     try {
-                        collector.collectTrace(trace.toBuilder()
-                                .addAllSharedQueryText(sharedQueryTexts)
-                                .build());
+                        collector.collectTrace(trace.build());
                     } catch (Throwable t) {
                         responseObserver.onError(t);
                         return;

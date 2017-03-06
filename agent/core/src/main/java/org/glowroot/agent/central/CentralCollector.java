@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,12 +52,12 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent.Level;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OverallAggregate;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamCounts;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamHeader;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
-
-import static com.google.common.base.Preconditions.checkState;
 
 public class CentralCollector implements Collector {
 
@@ -148,9 +149,9 @@ public class CentralCollector implements Collector {
 
     // collecting even when no aggregates since collection triggers transaction-based alerts
     @Override
-    public void collectAggregates(final long captureTime, final Aggregates aggregates) {
+    public void collectAggregates(AggregateReader aggregateReader) {
         centralConnection.callWithAFewRetries(nextAggregateDelayMillis,
-                new CollectAggregatesGrpcCall(aggregates, captureTime));
+                new CollectAggregatesGrpcCall(aggregateReader));
     }
 
     @Override
@@ -168,53 +169,14 @@ public class CentralCollector implements Collector {
     }
 
     @Override
-    public void collectTrace(Trace trace) {
-        final List<String> sharedQueryTexts = Lists.newArrayList();
-        for (Trace.SharedQueryText sharedQueryText : trace.getSharedQueryTextList()) {
-            // local collection always passes in full text
-            checkState(sharedQueryText.getTruncatedText().isEmpty());
-            checkState(sharedQueryText.getTruncatedEndText().isEmpty());
-            checkState(sharedQueryText.getFullTextSha1().isEmpty());
-            sharedQueryTexts.add(sharedQueryText.getFullText());
+    public void collectTrace(TraceReader traceReader) {
+        if (traceReader.partial()) {
+            // do not retry partial transactions since they are live and reading from the trace
+            // reader will not be idempotent, so could lead to confusing results
+            centralConnection.callOnce(new CollectTraceGrpcCall(traceReader));
+        } else {
+            centralConnection.callWithAFewRetries(new CollectTraceGrpcCall(traceReader));
         }
-        final Trace traceWithoutSharedQueryText = trace.toBuilder()
-                .clearSharedQueryText()
-                .build();
-        final List<String> fullTextSha1s = Lists.newArrayList();
-        centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
-            @Override
-            public void call(StreamObserver<EmptyMessage> responseObserver) {
-                StreamObserver<TraceStreamMessage> requestObserver =
-                        collectorServiceStub.collectTraceStream(responseObserver);
-                requestObserver.onNext(TraceStreamMessage.newBuilder()
-                        .setHeader(TraceStreamHeader.newBuilder()
-                                .setAgentId(agentId))
-                        .build());
-                // need to clear in case this is a retry
-                fullTextSha1s.clear();
-                for (String sharedQueryText : sharedQueryTexts) {
-                    Trace.SharedQueryText traceSharedQueryText =
-                            sharedQueryTextLimiter.buildTraceSharedQueryText(sharedQueryText);
-                    String fullTextSha1 = traceSharedQueryText.getFullTextSha1();
-                    if (!fullTextSha1.isEmpty()) {
-                        fullTextSha1s.add(fullTextSha1);
-                    }
-                    requestObserver.onNext(TraceStreamMessage.newBuilder()
-                            .setSharedQueryText(traceSharedQueryText)
-                            .build());
-                }
-                requestObserver.onNext(TraceStreamMessage.newBuilder()
-                        .setTrace(traceWithoutSharedQueryText)
-                        .build());
-                requestObserver.onCompleted();
-            }
-            @Override
-            public void doWithResponse(EmptyMessage response) {
-                for (String fullTextSha1 : fullTextSha1s) {
-                    sharedQueryTextLimiter.onSuccessfullySentToCentralCollector(fullTextSha1);
-                }
-            }
-        });
     }
 
     @Override
@@ -251,13 +213,55 @@ public class CentralCollector implements Collector {
 
     private class CollectAggregatesGrpcCall extends GrpcCall<AggregateResponseMessage> {
 
-        private final Aggregates aggregates;
-        private final long captureTime;
+        private class AggregateVisitorImpl implements AggregateVisitor {
+            private final StreamObserver<AggregateStreamMessage> requestObserver;
+            private AggregateVisitorImpl(StreamObserver<AggregateStreamMessage> requestObserver) {
+                this.requestObserver = requestObserver;
+            }
+            @Override
+            public void visitOverallAggregate(String transactionType,
+                    List<String> sharedQueryTexts, Aggregate overallAggregate) {
+                for (String sharedQueryText : sharedQueryTexts) {
+                    Aggregate.SharedQueryText aggregateSharedQueryText = sharedQueryTextLimiter
+                            .buildAggregateSharedQueryText(sharedQueryText);
+                    String fullTextSha1 = aggregateSharedQueryText.getFullTextSha1();
+                    if (!fullTextSha1.isEmpty()) {
+                        fullTextSha1s.add(fullTextSha1);
+                    }
+                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                            .setSharedQueryText(aggregateSharedQueryText)
+                            .build());
+                }
+                requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                        .setOverallAggregate(OverallAggregate.newBuilder()
+                                .setTransactionType(transactionType)
+                                .setAggregate(overallAggregate))
+                        .build());
+            }
+            @Override
+            public void visitTransactionAggregate(String transactionType,
+                    String transactionName, List<String> sharedQueryTexts,
+                    Aggregate transactionAggregate) {
+                for (String sharedQueryText : sharedQueryTexts) {
+                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                            .setSharedQueryText(sharedQueryTextLimiter
+                                    .buildAggregateSharedQueryText(sharedQueryText))
+                            .build());
+                }
+                requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                        .setTransactionAggregate(TransactionAggregate.newBuilder()
+                                .setTransactionType(transactionType)
+                                .setTransactionName(transactionName)
+                                .setAggregate(transactionAggregate))
+                        .build());
+            }
+        }
+
+        private final AggregateReader aggregateReader;
         private final List<String> fullTextSha1s = Lists.newArrayList();
 
-        private CollectAggregatesGrpcCall(Aggregates aggregates, long captureTime) {
-            this.aggregates = aggregates;
-            this.captureTime = captureTime;
+        private CollectAggregatesGrpcCall(AggregateReader aggregateReader) {
+            this.aggregateReader = aggregateReader;
         }
 
         @Override
@@ -265,53 +269,22 @@ public class CentralCollector implements Collector {
             final StreamObserver<AggregateStreamMessage> requestObserver =
                     collectorServiceStub.collectAggregateStream(responseObserver);
             requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                    .setHeader(AggregateStreamHeader.newBuilder()
+                    .setStreamHeader(AggregateStreamHeader.newBuilder()
                             .setAgentId(agentId)
-                            .setCaptureTime(captureTime))
+                            .setCaptureTime(aggregateReader.captureTime()))
                     .build());
             // need to clear in case this is a retry
             fullTextSha1s.clear();
-            aggregates.accept(new AggregateVisitor<RuntimeException>() {
-                @Override
-                public void visitOverallAggregate(String transactionType,
-                        List<String> sharedQueryTexts, Aggregate overallAggregate) {
-                    for (String sharedQueryText : sharedQueryTexts) {
-                        Aggregate.SharedQueryText aggregateSharedQueryText = sharedQueryTextLimiter
-                                .buildAggregateSharedQueryText(sharedQueryText);
-                        String fullTextSha1 = aggregateSharedQueryText.getFullTextSha1();
-                        if (!fullTextSha1.isEmpty()) {
-                            fullTextSha1s.add(fullTextSha1);
-                        }
-                        requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                                .setSharedQueryText(aggregateSharedQueryText)
-                                .build());
-                    }
-                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                            .setOverallAggregate(OverallAggregate.newBuilder()
-                                    .setTransactionType(transactionType)
-                                    .setAggregate(overallAggregate))
-                            .build());
-                }
-                @Override
-                public void visitTransactionAggregate(String transactionType,
-                        String transactionName, List<String> sharedQueryTexts,
-                        Aggregate transactionAggregate) {
-                    for (String sharedQueryText : sharedQueryTexts) {
-                        requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                                .setSharedQueryText(sharedQueryTextLimiter
-                                        .buildAggregateSharedQueryText(sharedQueryText))
-                                .build());
-                    }
-                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                            .setTransactionAggregate(TransactionAggregate.newBuilder()
-                                    .setTransactionType(transactionType)
-                                    .setTransactionName(transactionName)
-                                    .setAggregate(transactionAggregate))
-                            .build());
-                }
-            });
+            try {
+                aggregateReader.accept(new AggregateVisitorImpl(requestObserver));
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                requestObserver.onError(t);
+                return;
+            }
             requestObserver.onCompleted();
         }
+
         @Override
         public void doWithResponse(AggregateResponseMessage response) {
             // Math.min is just for safety
@@ -319,6 +292,119 @@ public class CentralCollector implements Collector {
             for (String fullTextSha1 : fullTextSha1s) {
                 sharedQueryTextLimiter.onSuccessfullySentToCentralCollector(fullTextSha1);
             }
+        }
+    }
+
+    private class CollectTraceGrpcCall extends GrpcCall<EmptyMessage> {
+
+        private final TraceReader traceReader;
+
+        private final List<String> fullTextSha1s = Lists.newArrayList();
+
+        private CollectTraceGrpcCall(TraceReader traceReader) {
+            this.traceReader = traceReader;
+        }
+
+        @Override
+        public void call(StreamObserver<EmptyMessage> responseObserver) {
+            StreamObserver<TraceStreamMessage> requestObserver =
+                    collectorServiceStub.collectTraceStream(responseObserver);
+            requestObserver.onNext(TraceStreamMessage.newBuilder()
+                    .setStreamHeader(TraceStreamHeader.newBuilder()
+                            .setAgentId(agentId)
+                            .setTraceId(traceReader.traceId())
+                            .setUpdate(traceReader.update()))
+                    .build());
+            // need to clear in case this is a retry
+            fullTextSha1s.clear();
+            TraceVisitorImpl traceVisitor = new TraceVisitorImpl(requestObserver, fullTextSha1s);
+            try {
+                traceReader.accept(traceVisitor);
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                requestObserver.onError(t);
+                return;
+            }
+            requestObserver.onNext(TraceStreamMessage.newBuilder()
+                    .setStreamCounts(TraceStreamCounts.newBuilder()
+                            .setSharedQueryTextCount(traceVisitor.sharedQueryTextCount)
+                            .setEntryCount(traceVisitor.entryCount))
+                    .build());
+            requestObserver.onCompleted();
+        }
+
+        @Override
+        public void doWithResponse(EmptyMessage response) {
+            for (String fullTextSha1 : fullTextSha1s) {
+                sharedQueryTextLimiter.onSuccessfullySentToCentralCollector(fullTextSha1);
+            }
+        }
+    }
+
+    private class TraceVisitorImpl implements TraceVisitor {
+
+        private final StreamObserver<TraceStreamMessage> requestObserver;
+        private final List<String> fullTextSha1s;
+
+        private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
+
+        private int sharedQueryTextCount;
+        private int entryCount;
+
+        private TraceVisitorImpl(StreamObserver<TraceStreamMessage> requestObserver,
+                List<String> fullTextSha1s) {
+            this.requestObserver = requestObserver;
+            this.fullTextSha1s = fullTextSha1s;
+        }
+
+        @Override
+        public int visitSharedQueryText(String sharedQueryText) {
+            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(sharedQueryText);
+            if (sharedQueryTextIndex != null) {
+                return sharedQueryTextIndex;
+            }
+            sharedQueryTextIndex = sharedQueryTextIndexes.size();
+            sharedQueryTextIndexes.put(sharedQueryText, sharedQueryTextIndex);
+            Trace.SharedQueryText traceSharedQueryText =
+                    sharedQueryTextLimiter.buildTraceSharedQueryText(sharedQueryText);
+            String fullTextSha1 = traceSharedQueryText.getFullTextSha1();
+            if (!fullTextSha1.isEmpty()) {
+                fullTextSha1s.add(fullTextSha1);
+            }
+            requestObserver.onNext(TraceStreamMessage.newBuilder()
+                    .setSharedQueryText(traceSharedQueryText)
+                    .build());
+            sharedQueryTextCount++;
+            return sharedQueryTextIndex;
+        }
+
+        @Override
+        public void visitEntry(Trace.Entry entry) {
+            requestObserver.onNext(TraceStreamMessage.newBuilder()
+                    .setEntry(entry)
+                    .build());
+            entryCount++;
+        }
+
+        @Override
+        public void visitMainThreadProfile(Profile profile) {
+            requestObserver.onNext(TraceStreamMessage.newBuilder()
+                    .setMainThreadProfile(profile)
+                    .build());
+        }
+
+        @Override
+        public void visitAuxThreadProfile(Profile profile) {
+            requestObserver.onNext(TraceStreamMessage.newBuilder()
+                    .setAuxThreadProfile(profile)
+                    .build());
+        }
+
+        @Override
+        public void visitHeader(Trace.Header header) {
+            requestObserver.onNext(TraceStreamMessage.newBuilder()
+                    .setHeader(header)
+                    .build());
         }
     }
 }

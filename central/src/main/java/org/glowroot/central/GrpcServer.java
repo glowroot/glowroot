@@ -31,6 +31,7 @@ import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,13 +66,16 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldAggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldTraceMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OverallAggregate;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamCounts;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamHeader;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 class GrpcServer {
 
@@ -122,6 +126,9 @@ class GrpcServer {
         server = NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port))
                 .addService(new CollectorServiceImpl().bindService())
                 .addService(downstreamService.bindService())
+                // need to override default max message size of 4mb until streaming is implemented
+                // for DownstreamService.EntriesResponse and FullTraceResponse
+                .maxMessageSize(64 * 1024 * 1024)
                 .build()
                 .start();
 
@@ -191,7 +198,7 @@ class GrpcServer {
                 final StreamObserver<AggregateResponseMessage> responseObserver) {
             return new StreamObserver<AggregateStreamMessage>() {
 
-                private @MonotonicNonNull AggregateStreamHeader header;
+                private @MonotonicNonNull AggregateStreamHeader streamHeader;
                 private List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
                 private Map<String, OldAggregatesByType.Builder> aggregatesByTypeMap =
                         Maps.newHashMap();
@@ -199,8 +206,8 @@ class GrpcServer {
                 @Override
                 public void onNext(AggregateStreamMessage value) {
                     switch (value.getMessageCase()) {
-                        case HEADER:
-                            header = value.getHeader();
+                        case STREAM_HEADER:
+                            streamHeader = value.getStreamHeader();
                             break;
                         case SHARED_QUERY_TEXT:
                             sharedQueryTexts.add(value.getSharedQueryText());
@@ -231,10 +238,10 @@ class GrpcServer {
 
                 @Override
                 public void onError(Throwable t) {
-                    if (header == null) {
+                    if (streamHeader == null) {
                         logger.error(t.getMessage(), t);
                     } else {
-                        logger.error("{} - {}", getDisplayForLogging(header.getAgentId()),
+                        logger.error("{} - {}", getDisplayForLogging(streamHeader.getAgentId()),
                                 t.getMessage(), t);
                     }
                 }
@@ -245,13 +252,14 @@ class GrpcServer {
                         timer = "aggregates")
                 @Override
                 public void onCompleted() {
-                    checkNotNull(header);
+                    checkNotNull(streamHeader);
                     List<OldAggregatesByType> aggregatesByTypeList = Lists.newArrayList();
                     for (OldAggregatesByType.Builder aggregatesByType : aggregatesByTypeMap
                             .values()) {
                         aggregatesByTypeList.add(aggregatesByType.build());
                     }
-                    collectAggregatesInternal(header.getAgentId(), header.getCaptureTime(),
+                    collectAggregatesInternal(streamHeader.getAgentId(),
+                            streamHeader.getCaptureTime(),
                             sharedQueryTexts, aggregatesByTypeList, responseObserver);
                 }
             };
@@ -349,9 +357,9 @@ class GrpcServer {
             String agentDisplay;
             try {
                 agentDisplay = agentDao.readAgentRollupDisplay(agentId);
-            } catch (Exception e) {
-                logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
-                responseObserver.onError(e);
+            } catch (Throwable t) {
+                logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
+                responseObserver.onError(t);
                 return;
             }
             final long captureTime = maxCaptureTime;
@@ -369,21 +377,43 @@ class GrpcServer {
                 final StreamObserver<EmptyMessage> responseObserver) {
             return new StreamObserver<TraceStreamMessage>() {
 
-                private @MonotonicNonNull TraceStreamHeader header;
+                private @MonotonicNonNull TraceStreamHeader streamHeader;
                 private List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
                 private @MonotonicNonNull Trace trace;
+                private List<Trace.Entry> entries = Lists.newArrayList();
+                private @MonotonicNonNull Profile mainThreadProfile;
+                private @MonotonicNonNull Profile auxThreadProfile;
+                // TODO report checker framework issue that occurs with normal annotation placement
+                private Trace./*@MonotonicNonNull*/Header header;
+                private @MonotonicNonNull TraceStreamCounts streamCounts;
 
                 @Override
                 public void onNext(TraceStreamMessage value) {
                     switch (value.getMessageCase()) {
-                        case HEADER:
-                            header = value.getHeader();
+                        case STREAM_HEADER:
+                            streamHeader = value.getStreamHeader();
                             break;
                         case SHARED_QUERY_TEXT:
                             sharedQueryTexts.add(value.getSharedQueryText());
                             break;
                         case TRACE:
+                            // this is for 0.9.12 and prior agents
                             trace = value.getTrace();
+                            break;
+                        case ENTRY:
+                            entries.add(value.getEntry());
+                            break;
+                        case MAIN_THREAD_PROFILE:
+                            mainThreadProfile = value.getMainThreadProfile();
+                            break;
+                        case AUX_THREAD_PROFILE:
+                            auxThreadProfile = value.getAuxThreadProfile();
+                            break;
+                        case HEADER:
+                            header = value.getHeader();
+                            break;
+                        case STREAM_COUNTS:
+                            streamCounts = value.getStreamCounts();
                             break;
                         default:
                             throw new RuntimeException(
@@ -393,10 +423,10 @@ class GrpcServer {
 
                 @Override
                 public void onError(Throwable t) {
-                    if (header == null) {
+                    if (streamHeader == null) {
                         logger.error(t.getMessage(), t);
                     } else {
-                        logger.error("{} - {}", getDisplayForLogging(header.getAgentId()),
+                        logger.error("{} - {}", getDisplayForLogging(streamHeader.getAgentId()),
                                 t.getMessage(), t);
                     }
                 }
@@ -405,20 +435,73 @@ class GrpcServer {
                         traceHeadline = "Collect trace: {{this.header.agentId}}", timer = "trace")
                 @Override
                 public void onCompleted() {
-                    checkNotNull(header);
-                    checkNotNull(trace);
-                    try {
-                        traceDao.store(header.getAgentId(), trace.toBuilder()
+                    checkNotNull(streamHeader);
+                    if (trace == null) {
+                        checkNotNull(streamCounts);
+                        // this is for 0.9.13 and later agents
+                        if (!isEverythingReceived()) {
+                            // no point in calling onError to force re-try since gRPC maxMessageSize
+                            // limit will just be hit again
+                            responseObserver.onNext(EmptyMessage.getDefaultInstance());
+                            responseObserver.onCompleted();
+                        }
+                        Trace.Builder builder = Trace.newBuilder()
+                                .setId(streamHeader.getTraceId())
+                                .setUpdate(streamHeader.getUpdate())
+                                .setHeader(checkNotNull(header))
+                                .addAllEntry(entries)
+                                .addAllSharedQueryText(sharedQueryTexts);
+                        if (mainThreadProfile != null) {
+                            builder.setMainThreadProfile(mainThreadProfile);
+                        }
+                        if (auxThreadProfile != null) {
+                            builder.setAuxThreadProfile(auxThreadProfile);
+                        }
+                        trace = builder.build();
+                    } else {
+                        trace = trace.toBuilder()
                                 .addAllSharedQueryText(sharedQueryTexts)
-                                .build());
+                                .build();
+                    }
+                    try {
+                        traceDao.store(streamHeader.getAgentId(), trace);
                     } catch (Throwable t) {
-                        logger.error("{} - {}", getDisplayForLogging(header.getAgentId()),
+                        logger.error("{} - {}", getDisplayForLogging(streamHeader.getAgentId()),
                                 t.getMessage(), t);
                         responseObserver.onError(t);
                         return;
                     }
                     responseObserver.onNext(EmptyMessage.getDefaultInstance());
                     responseObserver.onCompleted();
+                }
+
+                @RequiresNonNull({"streamHeader", "streamCounts"})
+                private boolean isEverythingReceived() {
+                    // validate that all data was received, may not receive everything due to gRPC
+                    // maxMessageSize limit exceeded: "Compressed frame exceeds maximum frame size"
+                    if (header == null) {
+                        logger.error("{} - did not receive header, likely due to gRPC"
+                                + " maxMessageSize limit exceeded",
+                                getDisplayForLogging(streamHeader.getAgentId()));
+                        return false;
+                    }
+                    if (sharedQueryTexts.size() < streamCounts.getSharedQueryTextCount()) {
+                        logger.error("{} - expected {} shared query texts, but only received {},"
+                                + " likely due to gRPC maxMessageSize limit exceeded for some of"
+                                + " them", getDisplayForLogging(streamHeader.getAgentId()),
+                                streamCounts.getSharedQueryTextCount(), sharedQueryTexts.size());
+                        return false;
+                    }
+                    if (entries.size() < streamCounts.getEntryCount()) {
+                        logger.error("{} - expected {} entries, but only received {},"
+                                + " likely due to gRPC maxMessageSize limit exceeded for some of"
+                                + " them", getDisplayForLogging(streamHeader.getAgentId()),
+                                streamCounts.getEntryCount(), entries.size());
+                        return false;
+                    }
+                    checkState(sharedQueryTexts.size() == streamCounts.getSharedQueryTextCount());
+                    checkState(entries.size() == streamCounts.getEntryCount());
+                    return true;
                 }
             };
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
+import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -136,8 +136,9 @@ public class TransactionCollector {
             @Override
             public void run() {
                 try {
-                    Trace trace = TraceCreator.createCompletedTrace(transaction, slow);
-                    collector.collectTrace(trace);
+                    TraceReader traceReader =
+                            TraceCreator.createTraceReaderForCompleted(transaction, slow);
+                    collector.collectTrace(traceReader);
                 } catch (Throwable t) {
                     logger.error(t.getMessage(), t);
                 } finally {
@@ -151,12 +152,12 @@ public class TransactionCollector {
     // single thread executor in PartialTraceStorageWatcher
     public void storePartialTrace(Transaction transaction) {
         try {
-            Trace trace = TraceCreator.createPartialTrace(transaction, clock.currentTimeMillis(),
-                    ticker.read());
+            TraceReader traceReader = TraceCreator.createTraceReaderForPartial(transaction,
+                    clock.currentTimeMillis(), ticker.read());
             // one last check if transaction has completed
             if (!transaction.isCompleted()) {
                 transaction.setPartiallyStored();
-                collector.collectTrace(trace);
+                collector.collectTrace(traceReader);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);

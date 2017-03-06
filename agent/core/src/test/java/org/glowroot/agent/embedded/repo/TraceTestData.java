@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.glowroot.agent.embedded.repo;
 
 import java.util.UUID;
 
+import org.glowroot.agent.collector.Collector.TraceReader;
+import org.glowroot.agent.collector.Collector.TraceVisitor;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -25,8 +27,16 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @Styles.Private
 class TraceTestData {
 
-    static Trace createTrace() {
-        Trace.Header header = Trace.Header.newBuilder()
+    static TraceReader createTraceReader() {
+        return new TraceReaderImpl(createTraceHeader());
+    }
+
+    static TraceReader createTraceReader(Trace.Header header) {
+        return new TraceReaderImpl(header);
+    }
+
+    static Trace.Header createTraceHeader() {
+        return Trace.Header.newBuilder()
                 .setSlow(true)
                 .setStartTime(1)
                 .setCaptureTime(11)
@@ -53,9 +63,41 @@ class TraceTestData {
                         .setTotalNanos(123)
                         .setCount(1))
                 .build();
-        return Trace.newBuilder()
-                .setId(UUID.randomUUID().toString())
-                .setHeader(header)
-                .build();
+    }
+
+    private static class TraceReaderImpl implements TraceReader {
+
+        private final String traceId;
+        private final Trace.Header header;
+
+        private TraceReaderImpl(Trace.Header header) {
+            this.header = header;
+            traceId = UUID.randomUUID().toString();
+        }
+
+        @Override
+        public long captureTime() {
+            return header.getCaptureTime();
+        }
+
+        @Override
+        public String traceId() {
+            return traceId;
+        }
+
+        @Override
+        public boolean partial() {
+            return false;
+        }
+
+        @Override
+        public boolean update() {
+            return false;
+        }
+
+        @Override
+        public void accept(TraceVisitor traceVisitor) throws Exception {
+            traceVisitor.visitHeader(header);
+        }
     }
 }

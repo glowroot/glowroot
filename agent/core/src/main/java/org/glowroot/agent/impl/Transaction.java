@@ -50,6 +50,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
@@ -73,7 +74,6 @@ import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Traverser;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castInitialized;
@@ -456,8 +456,7 @@ public class Transaction {
                 * AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER;
     }
 
-    public List<Trace.Entry> getEntriesProtobuf(long captureTick,
-            Map<String, Integer> sharedQueryTextIndexes) {
+    public void accept(long captureTick, EntryVisitor entryVisitor) throws Exception {
         memoryBarrierRead();
         ListMultimap<TraceEntryImpl, ThreadContextImpl> priorEntryChildThreadContextMap =
                 buildPriorEntryChildThreadContextMap();
@@ -474,10 +473,8 @@ public class Transaction {
         }
         new ParentChildMapTrimmer(mainThreadContext.getRootEntry(), parentChildMap, captureTick)
                 .traverse();
-        List<Trace.Entry> entries = Lists.newArrayList();
         addProtobufChildEntries(mainThreadContext.getRootEntry(), parentChildMap, startTick,
-                captureTick, 0, entries, sharedQueryTextIndexes, async);
-        return entries;
+                captureTick, 0, entryVisitor, async);
     }
 
     long getMainThreadProfileSampleCount() {
@@ -899,10 +896,10 @@ public class Transaction {
         return true;
     }
 
-    private static void addProtobufChildEntries(TraceEntryImpl entry,
+    private static <T extends Exception> void addProtobufChildEntries(TraceEntryImpl entry,
             ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
-            long captureTick, int depth, List<Trace.Entry> entries,
-            Map<String, Integer> sharedQueryTextIndexes, boolean removeSingleAuxEntry) {
+            long captureTick, int depth, EntryVisitor entryVisitor, boolean removeSingleAuxEntry)
+            throws Exception {
         if (!parentChildMap.containsKey(entry)) {
             // check containsKey to avoid creating garbage empty list via ListMultimap
             return;
@@ -912,12 +909,11 @@ public class Transaction {
             boolean singleAuxEntry = childEntries.size() == 1 && childEntry.isAuxThreadRoot();
             if (singleAuxEntry && removeSingleAuxEntry) {
                 addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
-                        captureTick, depth, entries, sharedQueryTextIndexes, removeSingleAuxEntry);
+                        captureTick, depth, entryVisitor, removeSingleAuxEntry);
             } else {
-                entries.add(childEntry.toProto(depth, transactionStartTick, captureTick,
-                        sharedQueryTextIndexes));
+                childEntry.accept(depth, transactionStartTick, captureTick, entryVisitor);
                 addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
-                        captureTick, depth + 1, entries, sharedQueryTextIndexes, false);
+                        captureTick, depth + 1, entryVisitor, false);
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
-import org.glowroot.agent.collector.Collector.Aggregates;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.common.live.ImmutableOverallQuery;
@@ -135,10 +135,13 @@ public class AggregateDaoTest {
 
     // also used by TransactionCommonServiceTest
     public void populateAggregates() throws Exception {
-        aggregateDao.store(10000, new Aggregates() {
+        aggregateDao.store(new AggregateReader() {
             @Override
-            public <T extends Exception> void accept(AggregateVisitor<T> aggregateVisitor)
-                    throws T {
+            public long captureTime() {
+                return 10000;
+            }
+            @Override
+            public void accept(AggregateVisitor aggregateVisitor) throws Exception {
                 aggregateVisitor.visitOverallAggregate("a type", new ArrayList<String>(),
                         Aggregate.newBuilder()
                                 .setTotalDurationNanos(1000000)
@@ -170,10 +173,13 @@ public class AggregateDaoTest {
             }
         });
 
-        aggregateDao.store(20000, new Aggregates() {
+        aggregateDao.store(new AggregateReader() {
             @Override
-            public <T extends Exception> void accept(AggregateVisitor<T> aggregateVisitor)
-                    throws T {
+            public long captureTime() {
+                return 20000;
+            }
+            @Override
+            public void accept(AggregateVisitor aggregateVisitor) throws Exception {
                 aggregateVisitor.visitOverallAggregate("a type", new ArrayList<String>(),
                         Aggregate.newBuilder()
                                 .setTotalDurationNanos(1000000)

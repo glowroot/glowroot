@@ -32,8 +32,8 @@ import com.google.protobuf.Parser;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
 
+import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
-import org.glowroot.agent.collector.Collector.Aggregates;
 import org.glowroot.agent.embedded.repo.model.Stored;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
@@ -192,12 +192,13 @@ public class AggregateDao implements AggregateRepository {
         // TODO initial rollup in case store is not called in a reasonable time
     }
 
-    public void store(final long captureTime, Aggregates aggregates) throws Exception {
+    public void store(AggregateReader aggregateReader) throws Exception {
+        final long captureTime = aggregateReader.captureTime();
         // intentionally not using batch update as that could cause memory spike while preparing a
         // large batch
         final CappedDatabase cappedDatabase = rollupCappedDatabases.get(0);
         final List<TruncatedQueryText> truncatedQueryTexts = Lists.newArrayList();
-        aggregates.accept(new AggregateVisitor<Exception>() {
+        aggregateReader.accept(new AggregateVisitor() {
             @Override
             public void visitOverallAggregate(String transactionType, List<String> sharedQueryTexts,
                     Aggregate overallAggregate) throws Exception {

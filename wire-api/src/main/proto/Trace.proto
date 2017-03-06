@@ -9,17 +9,18 @@ option java_package = "org.glowroot.wire.api.model";
 
 message Trace {
 
+  // starting in 0.9.13, trace fields moved to TraceMessage for streaming over the wire
+  // (though Trace still used by DownstreamService FullTraceResponse)
+
   string id = 1; // this is a uuid
   Header header = 2;
-  // entry ordering is pre-order depth-first
-  // there are typically multiple "root" nodes (with depth=0)
-  repeated Entry entry = 3;
+  repeated Entry entry = 3; // entry ordering is pre-order depth-first
+                            // there are typically multiple "root" nodes (with depth=0)
   Profile main_thread_profile = 4;
   Profile aux_thread_profile = 5;
   bool update = 6; // optimization so the central collector does not need to check for prior partial
                    // trace in common case where this is not an update
-  repeated SharedQueryText shared_query_text = 8; // deprecated in 0.9.5,
-                                                  // moved to TraceMessage stream
+  repeated SharedQueryText shared_query_text = 8;
 
   message Header {
     bool partial = 1;

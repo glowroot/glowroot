@@ -3,6 +3,7 @@ syntax = "proto3";
 import "AgentConfig.proto";
 import "Aggregate.proto";
 import "Trace.proto";
+import "Profile.proto";
 import "Common.proto";
 
 package org_glowroot_wire_api_model;
@@ -44,7 +45,7 @@ message OldAggregateMessage {
 
 message AggregateStreamMessage {
   oneof message {
-    AggregateStreamHeader header = 1;
+    AggregateStreamHeader stream_header = 1;
     Aggregate.SharedQueryText shared_query_text = 2;
     OverallAggregate overall_aggregate = 3;
     TransactionAggregate transaction_aggregate = 4;
@@ -67,9 +68,15 @@ message OldTraceMessage {
 
 message TraceStreamMessage {
   oneof message {
-    TraceStreamHeader header = 1;
+    TraceStreamHeader stream_header = 1;
     Trace.SharedQueryText shared_query_text = 2;
-    Trace trace = 3;
+    Trace trace = 3; // deprecated in 0.9.13
+    Trace.Entry entry = 4; // entry ordering is pre-order depth-first
+                           // there are typically multiple "root" nodes (with depth=0)
+    Profile main_thread_profile = 5;
+    Profile aux_thread_profile = 6;
+    Trace.Header header = 7;
+    TraceStreamCounts stream_counts = 8;
   }
 }
 
@@ -133,6 +140,13 @@ message GaugeValue {
 
 message TraceStreamHeader {
   string agent_id = 1;
+  string trace_id = 2;
+  bool update = 3;
+}
+
+message TraceStreamCounts {
+  int32 shared_query_text_count = 1;
+  int32 entry_count = 2;
 }
 
 message LogEvent {

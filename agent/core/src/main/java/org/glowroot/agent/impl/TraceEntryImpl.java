@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.impl;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -27,6 +26,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.model.AsyncTimerImpl;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
@@ -109,8 +109,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         return errorMessage;
     }
 
-    Trace.Entry toProto(int depth, long transactionStartTick, long captureTick,
-            Map<String, Integer> sharedQueryTextIndexes) {
+    void accept(int depth, long transactionStartTick, long captureTick, EntryVisitor entryVisitor)
+            throws Exception {
         long offsetNanos = startTick - transactionStartTick;
         long durationNanos;
         boolean active;
@@ -141,11 +141,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
             builder.addAllDetailEntry(DetailMapWriter.toProto(readableMessage.getDetail()));
         } else if (messageSupplier instanceof QueryMessageSupplier) {
             String queryText = checkNotNull(getQueryText());
-            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
-            if (sharedQueryTextIndex == null) {
-                sharedQueryTextIndex = sharedQueryTextIndexes.size();
-                sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
-            }
+            int sharedQueryTextIndex = entryVisitor.visitSharedQueryText(queryText);
             ReadableQueryMessage readableQueryMessage =
                     (ReadableQueryMessage) ((QueryMessageSupplier) messageSupplier).get();
             Trace.QueryEntryMessage.Builder queryMessage = Trace.QueryEntryMessage.newBuilder()
@@ -182,7 +178,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
                         .build();
             }
         }
-        return builder.build();
+        entryVisitor.visitEntry(builder.build());
     }
 
     long getStartTick() {

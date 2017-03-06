@@ -109,6 +109,10 @@ class CentralConnection {
         return channel;
     }
 
+    <T extends /*@NonNull*/ Object> void callOnce(GrpcCall<T> call) {
+        callWithAFewRetries(0, -1, call);
+    }
+
     // important that these calls are idempotent
     <T extends /*@NonNull*/ Object> void callWithAFewRetries(GrpcCall<T> call) {
         callWithAFewRetries(0, call);
@@ -116,7 +120,13 @@ class CentralConnection {
 
     // important that these calls are idempotent
     <T extends /*@NonNull*/ Object> void callWithAFewRetries(int initialDelayMillis,
-            final GrpcCall<T> call) {
+            GrpcCall<T> call) {
+        callWithAFewRetries(initialDelayMillis, 60, call);
+    }
+
+    // important that these calls are idempotent
+    private <T extends /*@NonNull*/ Object> void callWithAFewRetries(int initialDelayMillis,
+            final int maxTotalInSeconds, final GrpcCall<T> call) {
         if (closed) {
             return;
         }
@@ -143,14 +153,16 @@ class CentralConnection {
                 @Override
                 public void run() {
                     try {
-                        call.call(new RetryingStreamObserver<T>(call, 60, 60, false));
+                        call.call(new RetryingStreamObserver<T>(call, maxTotalInSeconds,
+                                maxTotalInSeconds, false));
                     } catch (Throwable t) {
                         logger.error(t.getMessage(), t);
                     }
                 }
             }, initialDelayMillis, MILLISECONDS);
         } else {
-            call.call(new RetryingStreamObserver<T>(call, 60, 60, false));
+            call.call(new RetryingStreamObserver<T>(call, maxTotalInSeconds, maxTotalInSeconds,
+                    false));
         }
     }
 

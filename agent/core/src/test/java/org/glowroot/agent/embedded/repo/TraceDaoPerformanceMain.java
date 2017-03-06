@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.Mockito.mock;
@@ -45,8 +44,7 @@ public class TraceDaoPerformanceMain {
 
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (int i = 0; i < 1000; i++) {
-            Trace trace = TraceTestData.createTrace();
-            traceDao.store(trace);
+            traceDao.store(TraceTestData.createTraceReader());
         }
         logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
     }

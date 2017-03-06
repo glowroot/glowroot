@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
+import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
-import org.glowroot.agent.collector.Collector.Aggregates;
 import org.glowroot.agent.model.Profile;
 import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
@@ -236,7 +236,7 @@ public class AggregateIntervalCollector {
     }
 
     void flush(Collector collector) throws Exception {
-        collector.collectAggregates(captureTime, new AggregatesImpl());
+        collector.collectAggregates(new AggregatesImpl(captureTime));
     }
 
     void clear() {
@@ -337,9 +337,21 @@ public class AggregateIntervalCollector {
         }
     }
 
-    private class AggregatesImpl implements Aggregates {
+    private class AggregatesImpl implements AggregateReader {
+
+        private final long captureTime;
+
+        private AggregatesImpl(long captureTime) {
+            this.captureTime = captureTime;
+        }
+
         @Override
-        public <T extends Exception> void accept(AggregateVisitor<T> aggregateVisitor) throws T {
+        public long captureTime() {
+            return captureTime;
+        }
+
+        @Override
+        public void accept(AggregateVisitor aggregateVisitor) throws Exception {
             synchronized (lock) {
                 SharedQueryTextCollector sharedQueryTextCollector = new SharedQueryTextCollector();
                 ScratchBuffer scratchBuffer = new ScratchBuffer();

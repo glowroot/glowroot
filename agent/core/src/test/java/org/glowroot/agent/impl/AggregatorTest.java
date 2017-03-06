@@ -30,7 +30,6 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,8 +99,8 @@ public class AggregatorTest {
                 AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) {}
 
         @Override
-        public void collectAggregates(long captureTime, Aggregates aggregates) {
-            aggregates.accept(new AggregateVisitor<RuntimeException>() {
+        public void collectAggregates(AggregateReader aggregateReader) throws Exception {
+            aggregateReader.accept(new AggregateVisitor() {
                 @Override
                 public void visitOverallAggregate(String transactionType,
                         List<String> sharedQueryTexts, Aggregate overallAggregate) {
@@ -121,7 +120,7 @@ public class AggregatorTest {
         public void collectGaugeValues(List<GaugeValue> gaugeValues) {}
 
         @Override
-        public void collectTrace(Trace trace) {}
+        public void collectTrace(TraceReader traceReader) {}
 
         @Override
         public void log(LogEvent logEvent) {}

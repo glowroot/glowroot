@@ -22,16 +22,20 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector.TraceReader;
+import org.glowroot.agent.collector.Collector.TraceVisitor;
 import org.glowroot.agent.embedded.repo.TracePointQueryBuilder.ParameterizedSql;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
@@ -62,7 +66,6 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static org.glowroot.agent.util.Checkers.castUntainted;
 
 public class TraceDao implements TraceRepository {
@@ -155,35 +158,18 @@ public class TraceDao implements TraceRepository {
         dataSource.syncIndexes("trace_attribute", traceAttributeIndexes);
     }
 
-    public void store(Trace trace) throws Exception {
+    public void store(TraceReader traceReader) throws Exception {
+        final long captureTime = traceReader.captureTime();
+        final Trace.Builder builder = Trace.newBuilder()
+                .setId(traceReader.traceId())
+                .setUpdate(traceReader.update());
+
+        TraceVisitorImpl traceVisitor = new TraceVisitorImpl(captureTime, builder);
+        traceReader.accept(traceVisitor);
+        Trace trace = builder.build();
         Trace.Header header = trace.getHeader();
 
-        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
-        for (Trace.SharedQueryText sharedQueryText : trace.getSharedQueryTextList()) {
-            // local collection always passes in full text
-            checkState(sharedQueryText.getTruncatedText().isEmpty());
-            checkState(sharedQueryText.getTruncatedEndText().isEmpty());
-            checkState(sharedQueryText.getFullTextSha1().isEmpty());
-            String fullText = sharedQueryText.getFullText();
-            if (fullText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
-                String truncatedText =
-                        fullText.substring(0, StorageConfig.TRACE_QUERY_TEXT_TRUNCATE);
-                String truncatedEndText = fullText.substring(
-                        fullText.length() - StorageConfig.TRACE_QUERY_TEXT_TRUNCATE,
-                        fullText.length());
-                String fullTextSha1 =
-                        fullQueryTextDao.updateLastCaptureTime(fullText, header.getCaptureTime());
-                sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
-                        .setTruncatedText(truncatedText)
-                        .setTruncatedEndText(truncatedEndText)
-                        .setFullTextSha1(fullTextSha1)
-                        .build());
-            } else {
-                sharedQueryTexts.add(sharedQueryText);
-            }
-        }
-
-        dataSource.update(new TraceMerge(trace, sharedQueryTexts));
+        dataSource.update(new TraceMerge(trace, traceVisitor.sharedQueryTexts));
         if (header.getAttributeCount() > 0) {
             if (trace.getUpdate()) {
                 dataSource.update("delete from trace_attribute where trace_id = ?", trace.getId());
@@ -375,6 +361,63 @@ public class TraceDao implements TraceRepository {
             preparedStatement.setString(i++, '%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
         }
         return i;
+    }
+
+    private class TraceVisitorImpl implements TraceVisitor {
+
+        private final long captureTime;
+        private final Trace.Builder builder;
+        private final List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
+
+        private TraceVisitorImpl(long captureTime, Trace.Builder builder) {
+            this.captureTime = captureTime;
+            this.builder = builder;
+        }
+        @Override
+        public int visitSharedQueryText(String sharedQueryText) throws SQLException {
+            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(sharedQueryText);
+            if (sharedQueryTextIndex != null) {
+                return sharedQueryTextIndex;
+            }
+            sharedQueryTextIndex = sharedQueryTextIndexes.size();
+            sharedQueryTextIndexes.put(sharedQueryText, sharedQueryTextIndex);
+            if (sharedQueryText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
+                String truncatedText =
+                        sharedQueryText.substring(0, StorageConfig.TRACE_QUERY_TEXT_TRUNCATE);
+                String truncatedEndText = sharedQueryText.substring(
+                        sharedQueryText.length() - StorageConfig.TRACE_QUERY_TEXT_TRUNCATE,
+                        sharedQueryText.length());
+                String fullTextSha1 =
+                        fullQueryTextDao.updateLastCaptureTime(sharedQueryText, captureTime);
+                sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                        .setTruncatedText(truncatedText)
+                        .setTruncatedEndText(truncatedEndText)
+                        .setFullTextSha1(fullTextSha1)
+                        .build());
+            } else {
+                sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                        .setFullText(sharedQueryText)
+                        .build());
+            }
+            return sharedQueryTextIndex;
+        }
+        @Override
+        public void visitEntry(Trace.Entry entry) {
+            builder.addEntry(entry);
+        }
+        @Override
+        public void visitMainThreadProfile(Profile profile) {
+            builder.setMainThreadProfile(profile);
+        }
+        @Override
+        public void visitAuxThreadProfile(Profile profile) {
+            builder.setAuxThreadProfile(profile);
+        }
+        @Override
+        public void visitHeader(Trace.Header header) {
+            builder.setHeader(header);
+        }
     }
 
     private class TraceMerge implements JdbcUpdate {

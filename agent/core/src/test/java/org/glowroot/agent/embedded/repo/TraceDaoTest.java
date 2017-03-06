@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.common.live.ImmutableTracePointFilter;
@@ -72,8 +73,8 @@ public class TraceDaoTest {
     @Test
     public void shouldReadTrace() throws Exception {
         // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace);
+        Trace.Header header = TraceTestData.createTraceHeader();
+        traceDao.store(TraceTestData.createTraceReader(header));
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -83,24 +84,23 @@ public class TraceDaoTest {
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // when
-        Trace.Header header = traceDao
+        Trace.Header header2 = traceDao
                 .readHeaderPlus(AGENT_ROLLUP, AGENT_ID, queryResult.records().get(0).traceId())
                 .header();
 
         // then
-        assertThat(header.getPartial()).isEqualTo(trace.getHeader().getPartial());
-        assertThat(header.getStartTime()).isEqualTo(trace.getHeader().getStartTime());
-        assertThat(header.getCaptureTime()).isEqualTo(trace.getHeader().getCaptureTime());
-        assertThat(header.getDurationNanos()).isEqualTo(trace.getHeader().getDurationNanos());
-        assertThat(header.getHeadline()).isEqualTo("test headline");
-        assertThat(header.getUser()).isEqualTo(trace.getHeader().getUser());
+        assertThat(header2.getPartial()).isEqualTo(header.getPartial());
+        assertThat(header2.getStartTime()).isEqualTo(header.getStartTime());
+        assertThat(header2.getCaptureTime()).isEqualTo(header.getCaptureTime());
+        assertThat(header2.getDurationNanos()).isEqualTo(header.getDurationNanos());
+        assertThat(header2.getHeadline()).isEqualTo("test headline");
+        assertThat(header2.getUser()).isEqualTo(header.getUser());
     }
 
     @Test
     public void shouldReadTraceWithAttributeQualifier() throws Exception {
         // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace);
+        traceDao.store(TraceTestData.createTraceReader());
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -122,8 +122,7 @@ public class TraceDaoTest {
     @Test
     public void shouldReadTraceWithAttributeQualifier2() throws Exception {
         // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace);
+        traceDao.store(TraceTestData.createTraceReader());
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -145,8 +144,7 @@ public class TraceDaoTest {
     @Test
     public void shouldReadTraceWithAttributeQualifier3() throws Exception {
         // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace);
+        traceDao.store(TraceTestData.createTraceReader());
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -168,8 +166,7 @@ public class TraceDaoTest {
     @Test
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier() throws Exception {
         // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace);
+        traceDao.store(TraceTestData.createTraceReader());
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -191,8 +188,7 @@ public class TraceDaoTest {
     @Test
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier2() throws Exception {
         // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace);
+        traceDao.store(TraceTestData.createTraceReader());
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -214,11 +210,11 @@ public class TraceDaoTest {
     @Test
     public void shouldDeletedTrace() throws Exception {
         // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace);
+        TraceReader traceReader = TraceTestData.createTraceReader();
+        traceDao.store(traceReader);
         // when
         traceDao.deleteBefore(100);
         // then
-        assertThat(traceDao.readHeaderPlus(AGENT_ROLLUP, AGENT_ID, trace.getId())).isNull();
+        assertThat(traceDao.readHeaderPlus(AGENT_ROLLUP, AGENT_ID, traceReader.traceId())).isNull();
     }
 }

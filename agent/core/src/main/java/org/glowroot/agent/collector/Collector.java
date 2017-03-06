@@ -24,6 +24,7 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Collector {
@@ -31,11 +32,11 @@ public interface Collector {
     void init(File glowrootDir, File agentDir, Environment environment, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception;
 
-    void collectAggregates(long captureTime, Aggregates aggregates) throws Exception;
+    void collectAggregates(AggregateReader aggregateReader) throws Exception;
 
     void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception;
 
-    void collectTrace(Trace trace) throws Exception;
+    void collectTrace(TraceReader traceReader) throws Exception;
 
     void log(LogEvent logEvent) throws Exception;
 
@@ -43,14 +44,35 @@ public interface Collector {
         void update(AgentConfig agentConfig) throws IOException;
     }
 
-    public interface Aggregates {
-        <T extends Exception> void accept(AggregateVisitor<T> aggregateVisitor) throws T;
+    public interface AggregateReader {
+        long captureTime();
+        void accept(AggregateVisitor aggregateVisitor) throws Exception;
     }
 
-    public interface AggregateVisitor<T extends Exception> {
+    public interface TraceReader {
+        long captureTime();
+        String traceId();
+        boolean partial();
+        boolean update();
+        void accept(TraceVisitor traceVisitor) throws Exception;
+    }
+
+    public interface AggregateVisitor {
         void visitOverallAggregate(String transactionType, List<String> sharedQueryTexts,
-                Aggregate overallAggregate) throws T;
+                Aggregate overallAggregate) throws Exception;
         void visitTransactionAggregate(String transactionType, String transactionName,
-                List<String> sharedQueryTexts, Aggregate transactionAggregate) throws T;
+                List<String> sharedQueryTexts, Aggregate transactionAggregate) throws Exception;
+    }
+
+    public interface TraceVisitor extends EntryVisitor {
+        void visitMainThreadProfile(Profile profile);
+        void visitAuxThreadProfile(Profile profile);
+        void visitHeader(Trace.Header header);
+    }
+
+    public interface EntryVisitor {
+        // returns index to be used in Trace.Entry that is passed to visitEntry()
+        int visitSharedQueryText(String sharedQueryText) throws Exception;
+        void visitEntry(Trace.Entry entry);
     }
 }

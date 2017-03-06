@@ -30,6 +30,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
+import org.glowroot.agent.collector.Collector.EntryVisitor;
+import org.glowroot.agent.collector.Collector.TraceReader;
+import org.glowroot.agent.collector.Collector.TraceVisitor;
 import org.glowroot.agent.impl.TraceCreator;
 import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.impl.TransactionCollector;
@@ -65,7 +68,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     // traces) to make sure that the trace is not missed if it is in transition between these states
     @Override
     public @Nullable Trace.Header getHeader(String agentRollupId, String agentId, String traceId)
-            throws IOException {
+            throws Exception {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -76,16 +79,18 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Entries getEntries(String agentRollupId, String agentId, String traceId) {
+    public @Nullable Entries getEntries(String agentRollupId, String agentId, String traceId)
+            throws Exception {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
-                Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
-                List<Trace.Entry> entries =
-                        transaction.getEntriesProtobuf(ticker.read(), sharedQueryTextIndexes);
+                // FIXME stream to central, similar to collectTrace
+                CollectingEntryVisitor entryVisitor = new CollectingEntryVisitor();
+                transaction.accept(ticker.read(), entryVisitor);
                 return ImmutableEntries.builder()
-                        .addAllEntries(entries)
-                        .addAllSharedQueryTexts(TraceCreator.toProto(sharedQueryTextIndexes))
+                        .addAllEntries(entryVisitor.entries)
+                        .addAllSharedQueryTexts(
+                                TraceCreator.toProto(entryVisitor.sharedQueryTextIndexes))
                         .build();
             }
         }
@@ -119,11 +124,30 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     @Override
     public @Nullable Trace getFullTrace(String agentRollupId, String agentId, String traceId)
-            throws IOException {
+            throws Exception {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
-                return createFullTrace(transaction);
+                // FIXME stream to central, similar to collectTrace
+                CollectingTraceVisitor traceVisitor = new CollectingTraceVisitor();
+                TraceReader traceReader = createTraceReader(transaction);
+                traceReader.accept(traceVisitor);
+                Trace.Builder builder = Trace.newBuilder()
+                        .setId(traceId)
+                        .setUpdate(transaction.isPartiallyStored());
+                Profile mainThreadProfile = traceVisitor.mainThreadProfile;
+                if (mainThreadProfile != null) {
+                    builder.setMainThreadProfile(mainThreadProfile);
+                }
+                Profile auxThreadProfile = traceVisitor.auxThreadProfile;
+                if (auxThreadProfile != null) {
+                    builder.setAuxThreadProfile(auxThreadProfile);
+                }
+                return builder.setHeader(checkNotNull(traceVisitor.header))
+                        .addAllEntry(((CollectingEntryVisitor) traceVisitor).entries)
+                        .addAllSharedQueryText(TraceCreator.toProto(
+                                ((CollectingEntryVisitor) traceVisitor).sharedQueryTextIndexes))
+                        .build();
             }
         }
         return null;
@@ -211,7 +235,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         return true;
     }
 
-    private Trace.Header createTraceHeader(Transaction transaction) throws IOException {
+    private Trace.Header createTraceHeader(Transaction transaction) throws Exception {
         // capture time before checking if complete to guard against condition where partial
         // trace header is created with captureTime > the real (completed) capture time
         long captureTime = clock.currentTimeMillis();
@@ -223,11 +247,11 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         }
     }
 
-    private Trace createFullTrace(Transaction transaction) throws IOException {
+    private TraceReader createTraceReader(Transaction transaction) throws Exception {
         if (transaction.isCompleted()) {
-            return TraceCreator.createCompletedTrace(transaction, true);
+            return TraceCreator.createTraceReaderForCompleted(transaction, true);
         } else {
-            return TraceCreator.createPartialTrace(transaction, clock.currentTimeMillis(),
+            return TraceCreator.createTraceReaderForPartial(transaction, clock.currentTimeMillis(),
                     ticker.read());
         }
     }
@@ -260,5 +284,50 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     private boolean matchesTransactionName(Transaction transaction,
             @Nullable String transactionName) {
         return transactionName == null || transactionName.equals(transaction.getTransactionName());
+    }
+
+    private static class CollectingEntryVisitor implements EntryVisitor {
+
+        private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
+        private final List<Trace.Entry> entries = Lists.newArrayList();
+
+        @Override
+        public int visitSharedQueryText(String sharedQueryText) {
+            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(sharedQueryText);
+            if (sharedQueryTextIndex != null) {
+                return sharedQueryTextIndex;
+            }
+            sharedQueryTextIndex = sharedQueryTextIndexes.size();
+            sharedQueryTextIndexes.put(sharedQueryText, sharedQueryTextIndex);
+            return sharedQueryTextIndex;
+        }
+
+        @Override
+        public void visitEntry(Trace.Entry entry) {
+            entries.add(entry);
+        }
+    }
+
+    private static class CollectingTraceVisitor extends CollectingEntryVisitor
+            implements TraceVisitor {
+
+        private @Nullable Profile mainThreadProfile;
+        private @Nullable Profile auxThreadProfile;
+        private @Nullable Trace.Header header;
+
+        @Override
+        public void visitMainThreadProfile(Profile profile) {
+            mainThreadProfile = profile;
+        }
+
+        @Override
+        public void visitAuxThreadProfile(Profile profile) {
+            auxThreadProfile = profile;
+        }
+
+        @Override
+        public void visitHeader(Trace.Header header) {
+            this.header = header;
+        }
     }
 }

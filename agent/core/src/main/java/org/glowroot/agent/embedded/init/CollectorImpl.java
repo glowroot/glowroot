@@ -27,7 +27,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CollectorImpl implements Collector {
 
@@ -51,8 +50,8 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectAggregates(long captureTime, Aggregates aggregates) throws Exception {
-        aggregateDao.store(captureTime, aggregates);
+    public void collectAggregates(AggregateReader aggregateReader) throws Exception {
+        aggregateDao.store(aggregateReader);
     }
 
     @Override
@@ -65,8 +64,8 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectTrace(Trace trace) throws Exception {
-        traceDao.store(trace);
+    public void collectTrace(TraceReader traceReader) throws Exception {
+        traceDao.store(traceReader);
     }
 
     @Override
