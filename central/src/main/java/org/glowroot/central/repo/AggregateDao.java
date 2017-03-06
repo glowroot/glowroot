@@ -1874,7 +1874,7 @@ public class AggregateDao implements AggregateRepository {
         } else {
             boundStatement.setToNull(i++);
         }
-        Aggregate.ThreadStats auxThreadStats = aggregate.getMainThreadStats();
+        Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
         if (auxThreadStats.hasTotalCpuNanos()) {
             boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos().getValue());
         } else {
