@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.glowroot.agent.plugin.jdbc;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+
+import javax.annotation.Nullable;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
@@ -72,10 +74,10 @@ public class DataSourceAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn Connection connection,
+        public static void onReturn(@BindReturn @Nullable Connection connection,
                 @BindTraveler Object entryOrTimer) {
             if (entryOrTimer instanceof TraceEntry) {
-                onReturnTraceEntry(connection, entryOrTimer);
+                onReturnTraceEntry(connection, (TraceEntry) entryOrTimer);
             } else {
                 ((Timer) entryOrTimer).stop();
             }
@@ -89,9 +91,9 @@ public class DataSourceAspect {
             }
         }
         // split out to separate method so it doesn't affect inlining budget of common case
-        private static void onReturnTraceEntry(Connection connection, Object entryOrTimer) {
-            TraceEntry traceEntry = (TraceEntry) entryOrTimer;
-            if (captureTransactionLifecycleTraceEntries.value()) {
+        private static void onReturnTraceEntry(@Nullable Connection connection,
+                TraceEntry traceEntry) {
+            if (captureTransactionLifecycleTraceEntries.value() && connection != null) {
                 GetConnectionMessageSupplier messageSupplier =
                         (GetConnectionMessageSupplier) traceEntry.getMessageSupplier();
                 if (messageSupplier != null) {
