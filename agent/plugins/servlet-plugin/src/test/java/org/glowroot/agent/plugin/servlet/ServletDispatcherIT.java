@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,10 +60,10 @@ public class ServletDispatcherIT {
     @Test
     public void testForwardServlet() throws Exception {
         // when
-        Trace trace = container.execute(InvokeFowardServlet.class);
+        Trace trace = container.execute(InvokeForwardServlet.class);
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.execute(InvokeFowardServlet.class);
+            trace = container.execute(InvokeForwardServlet.class);
         }
         if (hasServletInit(trace)) {
             throw new AssertionError("Timed out waiting for the real trace");
@@ -84,12 +84,64 @@ public class ServletDispatcherIT {
     }
 
     @Test
+    public void testForwardServletUsingContext() throws Exception {
+        // when
+        Trace trace = container.execute(InvokeForwardServletUsingContext.class);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
+            trace = container.execute(InvokeForwardServletUsingContext.class);
+        }
+        if (hasServletInit(trace)) {
+            throw new AssertionError("Timed out waiting for the real trace");
+        }
+
+        // then
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("/first-forward-using-context");
+        assertThat(header.getTransactionName()).isEqualTo("/first-forward-using-context");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("servlet dispatch: /second");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
+    public void testForwardServletUsingNamed() throws Exception {
+        // when
+        Trace trace = container.execute(InvokeForwardServletUsingNamed.class);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
+            trace = container.execute(InvokeForwardServletUsingNamed.class);
+        }
+        if (hasServletInit(trace)) {
+            throw new AssertionError("Timed out waiting for the real trace");
+        }
+
+        // then
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("/first-forward-using-named");
+        assertThat(header.getTransactionName()).isEqualTo("/first-forward-using-named");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("servlet dispatch: yyy");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
     public void testIncludeServlet() throws Exception {
         // when
         Trace trace = container.execute(InvokeIncludeServlet.class);
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.execute(InvokeFowardServlet.class);
+            trace = container.execute(InvokeForwardServlet.class);
         }
         if (hasServletInit(trace)) {
             throw new AssertionError("Timed out waiting for the real trace");
@@ -114,7 +166,7 @@ public class ServletDispatcherIT {
         return lastEntry.getMessage().startsWith("servlet init: ");
     }
 
-    public static class InvokeFowardServlet extends InvokeServletInTomcat {
+    public static class InvokeForwardServlet extends InvokeServletInTomcat {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
@@ -127,6 +179,50 @@ public class ServletDispatcherIT {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
             }
             statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/first-forward")
+                    .execute().get().getStatusCode();
+            asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
+        }
+    }
+
+    public static class InvokeForwardServletUsingContext extends InvokeServletInTomcat {
+        @Override
+        protected void doTest(int port) throws Exception {
+            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+            // send initial to trigger servlet init methods so they don't end up in trace
+            int statusCode = asyncHttpClient
+                    .prepareGet("http://localhost:" + port + "/first-forward-using-context")
+                    .execute().get().getStatusCode();
+            if (statusCode != 200) {
+                asyncHttpClient.close();
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
+            statusCode = asyncHttpClient
+                    .prepareGet("http://localhost:" + port + "/first-forward-using-context")
+                    .execute().get().getStatusCode();
+            asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
+        }
+    }
+
+    public static class InvokeForwardServletUsingNamed extends InvokeServletInTomcat {
+        @Override
+        protected void doTest(int port) throws Exception {
+            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+            // send initial to trigger servlet init methods so they don't end up in trace
+            int statusCode = asyncHttpClient
+                    .prepareGet("http://localhost:" + port + "/first-forward-using-named")
+                    .execute().get().getStatusCode();
+            if (statusCode != 200) {
+                asyncHttpClient.close();
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
+            statusCode = asyncHttpClient
+                    .prepareGet("http://localhost:" + port + "/first-forward-using-named")
                     .execute().get().getStatusCode();
             asyncHttpClient.close();
             if (statusCode != 200) {
@@ -166,6 +262,26 @@ public class ServletDispatcherIT {
         }
     }
 
+    @WebServlet("/first-forward-using-context")
+    @SuppressWarnings("serial")
+    public static class FirstForwardUsingContextServlet extends HttpServlet {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException {
+            getServletContext().getRequestDispatcher("/second").forward(request, response);
+        }
+    }
+
+    @WebServlet("/first-forward-using-named")
+    @SuppressWarnings("serial")
+    public static class FirstForwardUsingNamedServlet extends HttpServlet {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException {
+            getServletContext().getNamedDispatcher("yyy").forward(request, response);
+        }
+    }
+
     @WebServlet("/first-include")
     @SuppressWarnings("serial")
     public static class FirstIncludeServlet extends HttpServlet {
@@ -176,7 +292,7 @@ public class ServletDispatcherIT {
         }
     }
 
-    @WebServlet("/second")
+    @WebServlet(urlPatterns = "/second", name = "yyy")
     @SuppressWarnings("serial")
     public static class SecondServlet extends HttpServlet {
         @Override

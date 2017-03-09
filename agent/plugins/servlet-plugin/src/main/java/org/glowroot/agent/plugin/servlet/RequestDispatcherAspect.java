@@ -63,7 +63,8 @@ public class RequestDispatcherAspect {
         void glowroot$setPath(@Nullable String path);
     }
 
-    @Pointcut(className = "javax.servlet.ServletRequest", methodName = "getRequestDispatcher",
+    @Pointcut(className = "javax.servlet.ServletRequest|javax.servlet.ServletContext",
+            methodName = "getRequestDispatcher|getNamedDispatcher",
             methodParameterTypes = {"java.lang.String"}, nestingGroup = "servlet-inner-call")
     public static class GetParameterAdvice {
         @OnReturn
