@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,22 @@ public class RestTemplatePluginIT {
     }
 
     @Test
+    public void shouldCaptureHttpGetWithUriVariables() throws Exception {
+        // when
+        Trace trace = container.execute(ExecuteHttpGetWithUriVariables.class);
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
+                .matches("http client request: GET http://localhost:\\d+/hello1/one/two");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
     public void shouldCaptureHttpPost() throws Exception {
         // when
         Trace trace = container.execute(ExecuteHttpPost.class);
@@ -85,6 +101,15 @@ public class RestTemplatePluginIT {
         public void transactionMarker() throws Exception {
             RestTemplate rest = new RestTemplate();
             rest.getForObject("http://localhost:" + getPort() + "/hello1/", String.class);
+        }
+    }
+
+    public static class ExecuteHttpGetWithUriVariables extends ExecuteHttpBase {
+        @Override
+        public void transactionMarker() throws Exception {
+            RestTemplate rest = new RestTemplate();
+            rest.getForObject("http://localhost:" + getPort() + "/hello1/{x}/{y}", String.class,
+                    "one", "two");
         }
     }
 
