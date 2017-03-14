@@ -127,7 +127,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>4.3.6.RELEASE</version>
+      <version>4.3.7.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -135,7 +135,7 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>4.3.6.RELEASE</version>
+      <version>4.3.7.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -205,7 +205,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
-      <version>9.4.1.v20170120</version>
+      <version>9.4.2.v20170220</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

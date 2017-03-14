@@ -10,19 +10,19 @@
     "grunt-contrib-copy": "1.0.0",
     "grunt-contrib-cssmin": "2.0.0",
     "grunt-contrib-handlebars": "1.0.0",
-    "grunt-contrib-htmlmin": "2.2.0",
+    "grunt-contrib-htmlmin": "2.3.0",
     "grunt-contrib-jshint": "1.1.0",
-    "grunt-contrib-less": "1.4.0",
+    "grunt-contrib-less": "1.4.1",
     "grunt-connect-proxy": "0.2.0",
     "grunt-connect-rewrite": "0.2.1",
-    "grunt-contrib-uglify": "2.1.0",
+    "grunt-contrib-uglify": "2.2.0",
     "grunt-contrib-watch": "1.0.0",
     "grunt-filerev": "2.3.1",
     "grunt-newer": "1.2.0",
     "grunt-usemin": "3.1.1",
     "jshint-stylish": "2.2.1",
     "load-grunt-tasks": "3.5.2",
-    "serve-static": "1.11.2",
+    "serve-static": "1.12.1",
     "time-grunt": "1.4.0"
   }
 }

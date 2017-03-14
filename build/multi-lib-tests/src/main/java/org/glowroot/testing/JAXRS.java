@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,12 +60,14 @@ public class JAXRS {
         runJava7("2.22.1");
         runJava7("2.22.2");
         runJava7("2.22.3");
+        runJava7("2.22.4");
         runJava7("2.23");
         runJava7("2.23.1");
         runJava7("2.23.2");
         runJava7("2.24");
         runJava7("2.24.1");
         runJava7("2.25");
+        runJava7("2.25.1");
     }
 
     private static void run(String version) throws Exception {

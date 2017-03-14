@@ -55,11 +55,6 @@
       <artifactId>HdrHistogram</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <version>1.3.176</version>
-    </dependency>
-    <dependency>
       <groupId>${checker.qual.group.id}</groupId>
       <artifactId>${checker.qual.artifact.id}</artifactId>
       <version>${checker.qual.version}</version>

@@ -93,7 +93,7 @@
     <!-- sticking to slf4j version that is used by the logback version above -->
     <slf4j.version>1.7.22</slf4j.version>
     <immutables.version>2.4.3</immutables.version>
-    <jmh.version>1.17.4</jmh.version>
+    <jmh.version>1.18</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -250,7 +250,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.7.9</version>
+        <version>2.7.18</version>
       </dependency>
       <dependency>
         <groupId>com.ning</groupId>
@@ -506,7 +506,7 @@
         <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
-          <version>3.2</version>
+          <version>3.3.0.603</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -571,19 +571,6 @@
                     <versionRange>[1.0.0,)</versionRange>
                     <goals>
                       <goal>copy</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <versionRange>[1.0.0,)</versionRange>
-                    <goals>
-                      <goal>exec</goal>
                     </goals>
                   </pluginExecutionFilter>
                   <action>
@@ -752,7 +739,7 @@
               <dependency>
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_core</artifactId>
-                <version>2.0.17</version>
+                <version>2.0.19</version>
               </dependency>
             </dependencies>
           </plugin>
@@ -765,7 +752,7 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>2.1.8</checker.qual.version>
+        <checker.qual.version>2.1.9</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>

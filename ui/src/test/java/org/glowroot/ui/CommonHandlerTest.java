@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.h2.api.ErrorCode;
 import org.junit.Test;
 
 import org.glowroot.common.util.Clock;
@@ -38,6 +37,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class CommonHandlerTest {
+
+    // this constant is from org.h2.api.ErrorCode.STATEMENT_WAS_CANCELED
+    // (but h2 jar is not a dependency of glowroot-ui)
+    private static final int H2_STATEMENT_WAS_CANCELED = 57014;
 
     private static final CommonHandler HTTP_SERVER_HANDLER =
             new CommonHandler(mock(LayoutService.class), new HashMap<Pattern, HttpService>(),
@@ -104,7 +107,7 @@ public class CommonHandlerTest {
     @Test
     public void shouldCreateSqlTimeoutResponse() throws Exception {
         // given
-        Exception e = new SQLException("", "", ErrorCode.STATEMENT_WAS_CANCELED);
+        Exception e = new SQLException("", "", H2_STATEMENT_WAS_CANCELED);
         // when
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);
@@ -118,7 +121,7 @@ public class CommonHandlerTest {
     @Test
     public void shouldCreateNonTimeoutSqlExceptionResponse() throws Exception {
         // given
-        Exception e = new SQLException("Another message", "", ErrorCode.STATEMENT_WAS_CANCELED + 1);
+        Exception e = new SQLException("Another message", "", H2_STATEMENT_WAS_CANCELED + 1);
         // when
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);

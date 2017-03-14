@@ -47,7 +47,6 @@ import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.h2.api.ErrorCode;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,6 +95,10 @@ public class CommonHandler {
                     .put("swf", MediaType.create("application", "vnd.adobe.flash-movie"))
                     .put("map", MediaType.JSON_UTF_8)
                     .build();
+
+    // this constant is from org.h2.api.ErrorCode.STATEMENT_WAS_CANCELED
+    // (but h2 jar is not a dependency of glowroot-ui)
+    private static final int H2_STATEMENT_WAS_CANCELED = 57014;
 
     static {
         URL resourceBaseUrl = getUrlForPath(RESOURCE_BASE);
@@ -307,7 +310,7 @@ public class CommonHandler {
         }
         logger.error(e.getMessage(), e);
         if (e instanceof SQLException
-                && ((SQLException) e).getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED) {
+                && ((SQLException) e).getErrorCode() == H2_STATEMENT_WAS_CANCELED) {
             return newHttpResponseWithMessage(REQUEST_TIMEOUT,
                     "Query timed out (timeout is configurable under Configuration > Advanced)");
         }
