@@ -32,6 +32,7 @@ import javax.naming.ldap.LdapContext;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
 
+import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.repo.util.Encryption;
 
@@ -92,6 +93,7 @@ class LdapAuthentication {
         return new InitialLdapContext(env, null);
     }
 
+    @Instrumentation.TraceEntry(message = "get ldap user DN for username: {{1}}", timer = "ldap")
     private static @Nullable String getUserDn(LdapContext ldapContext, String username,
             LdapConfig ldapConfig) throws NamingException {
         SearchControls searchCtls = new SearchControls();
@@ -113,6 +115,7 @@ class LdapAuthentication {
         }
     }
 
+    @Instrumentation.TraceEntry(message = "get ldap group DNs for user DN: {{1}}", timer = "ldap")
     private static Set<String> getGroupDnsForUserDn(LdapContext ldapContext, String userDn,
             LdapConfig ldapConfig) throws NamingException {
         SearchControls searchCtls = new SearchControls();
