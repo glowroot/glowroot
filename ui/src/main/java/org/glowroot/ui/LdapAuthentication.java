@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,16 +98,19 @@ class LdapAuthentication {
         searchCtls.setSearchScope(SearchControls.SUBTREE_SCOPE);
         NamingEnumeration<?> namingEnum = ldapContext.search(ldapConfig.userBaseDn(),
                 ldapConfig.userSearchFilter(), new String[] {username}, searchCtls);
-        if (!namingEnum.hasMore()) {
-            return null;
+        try {
+            if (!namingEnum.hasMore()) {
+                return null;
+            }
+            SearchResult result = (SearchResult) checkNotNull(namingEnum.next());
+            String userDn = result.getNameInNamespace();
+            if (namingEnum.hasMore()) {
+                throw new IllegalStateException("More than matching user: " + username);
+            }
+            return userDn;
+        } finally {
+            namingEnum.close();
         }
-        SearchResult result = (SearchResult) checkNotNull(namingEnum.next());
-        String userDn = result.getNameInNamespace();
-        if (namingEnum.hasMore()) {
-            throw new IllegalStateException("More than matching user: " + username);
-        }
-        namingEnum.close();
-        return userDn;
     }
 
     private static Set<String> getGroupDnsForUserDn(LdapContext ldapContext, String userDn,
@@ -116,13 +119,16 @@ class LdapAuthentication {
         searchCtls.setSearchScope(SearchControls.SUBTREE_SCOPE);
         NamingEnumeration<?> namingEnum = ldapContext.search(ldapConfig.groupBaseDn(),
                 ldapConfig.groupSearchFilter(), new String[] {userDn}, searchCtls);
-        Set<String> ldapGroups = Sets.newHashSet();
-        while (namingEnum.hasMore()) {
-            SearchResult result = (SearchResult) checkNotNull(namingEnum.next());
-            ldapGroups.add(result.getNameInNamespace());
+        try {
+            Set<String> ldapGroups = Sets.newHashSet();
+            while (namingEnum.hasMore()) {
+                SearchResult result = (SearchResult) checkNotNull(namingEnum.next());
+                ldapGroups.add(result.getNameInNamespace());
+            }
+            return ldapGroups;
+        } finally {
+            namingEnum.close();
         }
-        namingEnum.close();
-        return ldapGroups;
     }
 
     @Value.Immutable
