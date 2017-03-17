@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,12 @@
  */
 package org.glowroot.agent.api;
 
-public class Instrumentation {
+import java.lang.annotation.Retention;
 
-    private Instrumentation() {}
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
+@Retention(SOURCE)
+public @interface Instrumentation {
 
     public @interface Timer {
         String value(); // the timer name
