@@ -81,7 +81,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       }
     }
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh'],
+    // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
+    // (see https://github.com/angular/angular.js/pull/12643)
+    $scope.$watch('[range.chartFrom, range.chartTo, range.chartRefresh, range.chartAutoRefresh]',
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
             watchListener(newValues[3] !== oldValues[3]);

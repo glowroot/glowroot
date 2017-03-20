@@ -29,7 +29,9 @@ glowroot.controller('TransactionTabCtrl', [
     var filteredTraceTabCount;
     var concurrentUpdateCount = 0;
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'range.chartAutoRefresh', 'transactionName'],
+    // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
+    // (see https://github.com/angular/angular.js/pull/12643)
+    $scope.$watch('[range.chartFrom, range.chartTo, range.chartRefresh, range.chartAutoRefresh, transactionName]',
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
             $timeout(function () {
