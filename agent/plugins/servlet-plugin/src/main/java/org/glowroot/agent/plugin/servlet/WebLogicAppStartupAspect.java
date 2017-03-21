@@ -32,20 +32,20 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class WebLogicAppStartupAspect {
 
-    @Shim("weblogic.servlet.internal.WebAppModule")
-    public interface WebAppModule {
+    @Shim("weblogic.servlet.internal.WebAppServletContext")
+    public interface WebAppServletContext {
         @Nullable
         String getContextPath();
     }
 
-    @Pointcut(className = "weblogic.servlet.internal.WebAppModule", methodName = "start",
+    @Pointcut(className = "weblogic.servlet.internal.WebAppServletContext", methodName = "start",
             methodParameterTypes = {}, nestingGroup = "servlet-startup", timerName = "startup")
     public static class StartAdvice {
         private static final TimerName timerName = Agent.getTimerName(StartAdvice.class);
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
-                @BindReceiver WebAppModule webAppModule) {
-            String path = webAppModule.getContextPath();
+                @BindReceiver WebAppServletContext webAppServletContext) {
+            String path = webAppServletContext.getContextPath();
             return CatalinaAppStartupAspect.onBeforeCommon(context, path, timerName);
         }
         @OnReturn
