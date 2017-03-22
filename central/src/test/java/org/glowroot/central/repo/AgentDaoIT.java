@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
 
@@ -33,6 +34,7 @@ public class AgentDaoIT {
 
     private static Cluster cluster;
     private static Session session;
+    private static ClusterManager clusterManager;
     private static AgentDao agentDao;
 
     @BeforeClass
@@ -42,12 +44,14 @@ public class AgentDaoIT {
         session = cluster.newSession();
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
+        clusterManager = ClusterManager.create();
 
-        agentDao = new AgentDao(session);
+        agentDao = new AgentDao(session, clusterManager);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
+        clusterManager.close();
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();

@@ -17,10 +17,12 @@ package org.glowroot.agent.embedded.init;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.Serializable;
 import java.lang.instrument.Instrumentation;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,6 +33,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +59,7 @@ import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.ui.CreateUiModuleBuilder;
+import org.glowroot.ui.SessionMapFactory;
 import org.glowroot.ui.UiModule;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
@@ -211,6 +215,12 @@ class EmbeddedAgentModule {
                     .liveTraceRepository(agentModule.getLiveTraceRepository())
                     .liveAggregateRepository(agentModule.getLiveAggregateRepository())
                     .liveWeavingService(agentModule.getLiveWeavingService())
+                    .sessionMapFactory(new SessionMapFactory() {
+                        @Override
+                        public <V extends /*@NonNull*/ Serializable> ConcurrentMap<String, V> create() {
+                            return Maps.newConcurrentMap();
+                        }
+                    })
                     .numWorkerThreads(2)
                     .version(version)
                     .build();
@@ -241,6 +251,12 @@ class EmbeddedAgentModule {
                     .liveTraceRepository(new LiveTraceRepositoryNop())
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(null)
+                    .sessionMapFactory(new SessionMapFactory() {
+                        @Override
+                        public <V extends /*@NonNull*/ Serializable> ConcurrentMap<String, V> create() {
+                            return Maps.newConcurrentMap();
+                        }
+                    })
                     .numWorkerThreads(10)
                     .version(version)
                     .build();

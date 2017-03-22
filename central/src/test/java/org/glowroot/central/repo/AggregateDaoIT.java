@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ConfigDefaults;
@@ -75,6 +76,7 @@ public class AggregateDaoIT {
 
     private static Cluster cluster;
     private static Session session;
+    private static ClusterManager clusterManager;
     private static AgentDao agentDao;
     private static ConfigDao configDao;
     private static AggregateDao aggregateDao;
@@ -87,12 +89,13 @@ public class AggregateDaoIT {
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
         KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+        clusterManager = ClusterManager.create();
 
-        agentDao = new AgentDao(session);
-        configDao = new ConfigDao(session);
-        CentralConfigDao centralConfigDao = new CentralConfigDao(session);
-        UserDao userDao = new UserDao(session, keyspace);
-        RoleDao roleDao = new RoleDao(session, keyspace);
+        agentDao = new AgentDao(session, clusterManager);
+        configDao = new ConfigDao(session, clusterManager);
+        CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+        UserDao userDao = new UserDao(session, keyspace, clusterManager);
+        RoleDao roleDao = new RoleDao(session, keyspace, clusterManager);
         ConfigRepository configRepository = new ConfigRepositoryImpl(agentDao, configDao,
                 centralConfigDao, userDao, roleDao);
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
@@ -101,7 +104,8 @@ public class AggregateDaoIT {
                         .copyOf(storageConfig)
                         .withRollupExpirationHours(0, 0, 0, 0),
                 storageConfig.version());
-        TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session, configRepository);
+        TransactionTypeDao transactionTypeDao =
+                new TransactionTypeDao(session, configRepository, clusterManager);
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
         aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao, fullQueryTextDao,
                 configRepository, Clock.systemClock());
@@ -109,6 +113,7 @@ public class AggregateDaoIT {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        clusterManager.close();
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.UserConfig;
@@ -32,6 +33,7 @@ public class UserDaoIT {
 
     private static Cluster cluster;
     private static Session session;
+    private static ClusterManager clusterManager;
     private static UserDao userDao;
 
     @BeforeClass
@@ -43,11 +45,13 @@ public class UserDaoIT {
         session.execute("use glowroot_unit_tests");
         KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
-        userDao = new UserDao(session, keyspace);
+        clusterManager = ClusterManager.create();
+        userDao = new UserDao(session, keyspace, clusterManager);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
+        clusterManager.close();
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();

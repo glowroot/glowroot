@@ -24,9 +24,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -34,6 +31,9 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.immutables.value.Value;
 
+import org.glowroot.central.util.Cache;
+import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository;
@@ -58,10 +58,10 @@ public class TransactionTypeDao implements TransactionTypeRepository {
 
     private final RateLimiter<TransactionTypeKey> rateLimiter = new RateLimiter<>();
 
-    private final LoadingCache<String, Map<String, List<String>>> cache =
-            CacheBuilder.newBuilder().build(new TransactionTypeCacheLoader());
+    private final Cache<String, Map<String, List<String>>> transactionTypesCache;
 
-    public TransactionTypeDao(Session session, ConfigRepository configRepository) {
+    public TransactionTypeDao(Session session, ConfigRepository configRepository,
+            ClusterManager clusterManager) {
         this.session = session;
         this.configRepository = configRepository;
 
@@ -73,11 +73,14 @@ public class TransactionTypeDao implements TransactionTypeRepository {
                 + " transaction_type) values (1, ?, ?) using ttl ?");
         readPS = session.prepare(
                 "select agent_rollup, transaction_type from transaction_type where one = 1");
+
+        transactionTypesCache = clusterManager.createCache("transactionTypesCache",
+                new TransactionTypeCacheLoader());
     }
 
     @Override
     public Map<String, List<String>> read() throws Exception {
-        return cache.get(SINGLE_CACHE_KEY);
+        return transactionTypesCache.get(SINGLE_CACHE_KEY);
     }
 
     List<ResultSetFuture> store(List<String> agentRollups, String transactionType)
@@ -96,7 +99,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
             boundStatement.setInt(i++, getMaxTTL());
             ResultSetFuture future = Sessions.executeAsyncWithOnFailure(session, boundStatement,
                     () -> rateLimiter.invalidate(rateLimiterKey));
-            future.addListener(() -> cache.invalidate(SINGLE_CACHE_KEY),
+            future.addListener(() -> transactionTypesCache.invalidate(SINGLE_CACHE_KEY),
                     MoreExecutors.directExecutor());
             futures.add(future);
         }
@@ -124,7 +127,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     private class TransactionTypeCacheLoader
-            extends CacheLoader<String, Map<String, List<String>>> {
+            implements CacheLoader<String, Map<String, List<String>>> {
         @Override
         public Map<String, List<String>> load(String key) {
             ResultSet results = session.execute(readPS.bind());

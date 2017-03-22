@@ -19,13 +19,13 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.net.MediaType;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -33,6 +33,7 @@ import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,15 +64,16 @@ class HttpSessionManager {
     private final LayoutService layoutService;
 
     private final SecureRandom secureRandom = new SecureRandom();
-    private final Map<String, Session> sessions = Maps.newConcurrentMap();
+    private final ConcurrentMap<String, ImmutableSession> sessionMap;
 
     HttpSessionManager(boolean central, boolean offline, ConfigRepository configRepository,
-            Clock clock, LayoutService layoutService) {
+            Clock clock, LayoutService layoutService, SessionMapFactory sessionMapFactory) {
         this.central = central;
         this.offline = offline;
         this.configRepository = configRepository;
         this.clock = clock;
         this.layoutService = layoutService;
+        this.sessionMap = sessionMapFactory.create();
     }
 
     CommonResponse login(String username, String password) throws Exception {
@@ -79,7 +81,6 @@ class HttpSessionManager {
             auditFailedLogin(username);
             return buildIncorrectLoginResponse();
         }
-        Authentication authentication = null;
         UserConfig userConfig = getUserConfigCaseInsensitive(username);
         if (userConfig == null || userConfig.ldap()) {
             Set<String> roles;
@@ -95,29 +96,21 @@ class HttpSessionManager {
                 roles.addAll(userConfig.roles());
             }
             if (!roles.isEmpty()) {
-                authentication = getAuthentication(username, roles, true);
+                return createSession(username, roles, true);
             }
         } else if (validatePassword(password, userConfig.passwordHash())) {
-            authentication = getAuthentication(userConfig.username(), userConfig.roles(), false);
+            return createSession(userConfig.username(), userConfig.roles(), false);
         }
-        if (authentication == null) {
-            auditFailedLogin(username);
-            return buildIncorrectLoginResponse();
-        } else {
-            String layoutJson = layoutService.getLayoutJson(authentication);
-            CommonResponse response = new CommonResponse(OK, MediaType.JSON_UTF_8, layoutJson);
-            createSession(response, authentication);
-            auditSuccessfulLogin(username);
-            return response;
-        }
+        auditFailedLogin(username);
+        return buildIncorrectLoginResponse();
     }
 
     void signOut(CommonRequest request) throws Exception {
         String sessionId = getSessionId(request);
         if (sessionId != null) {
-            Session session = sessions.remove(sessionId);
+            Session session = sessionMap.remove(sessionId);
             if (session != null) {
-                auditLogout(session.authentication.caseAmbiguousUsername());
+                auditLogout(session.caseAmbiguousUsername());
             }
         }
     }
@@ -138,18 +131,24 @@ class HttpSessionManager {
         if (sessionId == null) {
             return getAnonymousAuthentication();
         }
-        Session session = sessions.get(sessionId);
+        Session session = sessionMap.get(sessionId);
         if (session == null) {
             return getAnonymousAuthentication();
         }
         long currentTimeMillis = clock.currentTimeMillis();
-        if (session.isTimedOut(currentTimeMillis)) {
+        long timeoutMillis =
+                MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
+        if (session.isTimedOut(currentTimeMillis, timeoutMillis)) {
             return getAnonymousAuthentication();
         }
         if (touch) {
-            session.touch(currentTimeMillis);
+            // need to re-put in order to force replication when using clustered central
+            sessionMap.put(sessionId, ImmutableSession.builder()
+                    .copyFrom(session)
+                    .lastRequest(currentTimeMillis)
+                    .build());
         }
-        return session.authentication;
+        return session.createAuthentication(central, configRepository);
     }
 
     @Nullable
@@ -167,47 +166,46 @@ class HttpSessionManager {
         return null;
     }
 
-    Authentication getAnonymousAuthentication() {
+    Authentication getAnonymousAuthentication() throws Exception {
         UserConfig userConfig = getUserConfigCaseInsensitive("anonymous");
-        if (userConfig == null) {
-            return ImmutableAuthentication.builder()
-                    .central(central)
-                    .offline(false)
-                    .anonymous(true)
-                    .ldap(false)
-                    .caseAmbiguousUsername("anonymous")
-                    .configRepository(configRepository)
-                    .build();
-        }
-        return getAuthentication(userConfig.username(), userConfig.roles(), false);
+        return ImmutableAuthentication.builder()
+                .central(central)
+                .offline(false)
+                .anonymous(true)
+                .ldap(false)
+                .caseAmbiguousUsername("anonymous")
+                .roles(userConfig == null ? ImmutableSet.<String>of() : userConfig.roles())
+                .configRepository(configRepository)
+                .build();
     }
 
     private CommonResponse buildIncorrectLoginResponse() {
         return new CommonResponse(OK, MediaType.JSON_UTF_8, "{\"incorrectLogin\":true}");
     }
 
-    private void createSession(CommonResponse response, Authentication authentication)
+    private CommonResponse createSession(String username, Set<String> roles, boolean ldap)
             throws Exception {
         String sessionId = new BigInteger(130, secureRandom).toString(32);
-        sessions.put(sessionId, new Session(authentication));
+        ImmutableSession session = ImmutableSession.builder()
+                .caseAmbiguousUsername(username)
+                .ldap(ldap)
+                .roles(roles)
+                .lastRequest(clock.currentTimeMillis())
+                .build();
+        sessionMap.put(sessionId, session);
+
+        String layoutJson = layoutService
+                .getLayoutJson(session.createAuthentication(central, configRepository));
+        CommonResponse response = new CommonResponse(OK, MediaType.JSON_UTF_8, layoutJson);
         Cookie cookie =
                 new DefaultCookie(configRepository.getWebConfig().sessionCookieName(), sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         response.setHeader(HttpHeaderNames.SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie));
         purgeExpiredSessions();
-    }
 
-    private Authentication getAuthentication(String username, Set<String> roles, boolean ldap) {
-        return ImmutableAuthentication.builder()
-                .central(central)
-                .offline(false)
-                .anonymous(username.equalsIgnoreCase("anonymous"))
-                .ldap(ldap)
-                .caseAmbiguousUsername(username)
-                .roles(roles)
-                .configRepository(configRepository)
-                .build();
+        auditSuccessfulLogin(username);
+        return response;
     }
 
     private Authentication getOfflineViewerAuthentication() {
@@ -221,7 +219,7 @@ class HttpSessionManager {
                 .build();
     }
 
-    private @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
+    private @Nullable UserConfig getUserConfigCaseInsensitive(String username) throws Exception {
         for (UserConfig userConfig : configRepository.getUserConfigs()) {
             if (userConfig.username().equalsIgnoreCase(username)) {
                 return userConfig;
@@ -232,12 +230,14 @@ class HttpSessionManager {
 
     private void purgeExpiredSessions() throws Exception {
         long currentTimeMillis = clock.currentTimeMillis();
-        Iterator<Entry<String, Session>> i = sessions.entrySet().iterator();
+        long timeoutMillis =
+                MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
+        Iterator<Entry<String, ImmutableSession>> i = sessionMap.entrySet().iterator();
         while (i.hasNext()) {
             Session session = i.next().getValue();
-            if (session.isTimedOut(currentTimeMillis)) {
+            if (session.isTimedOut(currentTimeMillis, timeoutMillis)) {
                 i.remove();
-                auditSessionTimeout(session.authentication.caseAmbiguousUsername());
+                auditSessionTimeout(session.caseAmbiguousUsername());
             }
         }
     }
@@ -280,26 +280,29 @@ class HttpSessionManager {
         }
     }
 
-    private class Session {
+    @Value.Immutable
+    @Serial.Structural
+    abstract static class Session {
 
-        private final Authentication authentication;
-        private volatile long lastRequest;
+        abstract String caseAmbiguousUsername(); // the case is exactly as user entered during login
+        abstract boolean ldap();
+        abstract Set<String> roles();
+        abstract long lastRequest();
 
-        private Session(Authentication authentication) {
-            this.authentication = authentication;
-            lastRequest = clock.currentTimeMillis();
+        Authentication createAuthentication(boolean central, ConfigRepository configRepository) {
+            return ImmutableAuthentication.builder()
+                    .central(central)
+                    .offline(false)
+                    .anonymous(false) // sessions are only for non-anonymous authentication
+                    .ldap(ldap())
+                    .caseAmbiguousUsername(caseAmbiguousUsername())
+                    .roles(roles())
+                    .configRepository(configRepository)
+                    .build();
         }
 
-        private boolean isTimedOut(long currentTimeMillis) throws Exception {
-            return lastRequest < currentTimeMillis - getTimeoutMillis();
-        }
-
-        private void touch(long currentTimeMillis) {
-            lastRequest = currentTimeMillis;
-        }
-
-        private long getTimeoutMillis() throws Exception {
-            return MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
+        private boolean isTimedOut(long currentTimeMillis, long timeoutMillis) {
+            return lastRequest() < currentTimeMillis - timeoutMillis;
         }
     }
 

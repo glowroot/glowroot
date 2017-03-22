@@ -232,13 +232,11 @@ public class WebDriverSetup {
         mainMethod.invoke(null, (Object) new String[] {"start"});
         if (Containers.useJavaagent()) {
             // -Xmx is to limit memory usage on travis-ci builds
-            return new JavaagentContainer(testDir, false,
-                    ImmutableList.of("-Dglowroot.collector.host=localhost",
-                            "-Dglowroot.collector.port=" + grpcPort, "-Xmx64m"));
+            return new JavaagentContainer(testDir, false, ImmutableList
+                    .of("-Dglowroot.collector.address=localhost:" + grpcPort, "-Xmx64m"));
         } else {
-            return new LocalContainer(testDir, false,
-                    ImmutableMap.of("glowroot.collector.host", "localhost",
-                            "glowroot.collector.port", Integer.toString(grpcPort)));
+            return new LocalContainer(testDir, false, ImmutableMap.of("glowroot.collector.address",
+                    "localhost:" + Integer.toString(grpcPort)));
         }
     }
 

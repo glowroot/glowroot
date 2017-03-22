@@ -26,14 +26,14 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.immutables.value.Value;
 
+import org.glowroot.central.util.Cache;
+import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository;
@@ -59,10 +59,10 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
     private final RateLimiter<TraceAttributeNameKey> rateLimiter = new RateLimiter<>();
 
-    private final LoadingCache<String, Map<String, Map<String, List<String>>>> cache =
-            CacheBuilder.newBuilder().build(new TraceAttributeNameCacheLoader());
+    private final Cache<String, Map<String, Map<String, List<String>>>> traceAttributeNamesCache;
 
-    public TraceAttributeNameDao(Session session, ConfigRepository configRepository) {
+    public TraceAttributeNameDao(Session session, ConfigRepository configRepository,
+            ClusterManager clusterManager) {
         this.session = session;
         this.configRepository = configRepository;
 
@@ -74,11 +74,14 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
                 + " transaction_type, trace_attribute_name) values (?, ?, ?) using ttl ?");
         readPS = session.prepare("select agent_rollup, transaction_type, trace_attribute_name"
                 + " from trace_attribute_name");
+
+        traceAttributeNamesCache = clusterManager.createCache("traceAttributeNamesCache",
+                new TraceAttributeNameCacheLoader());
     }
 
     @Override
     public Map<String, Map<String, List<String>>> read() throws Exception {
-        return cache.get(SINGLE_CACHE_KEY);
+        return traceAttributeNamesCache.get(SINGLE_CACHE_KEY);
     }
 
     void store(String agentRollupId, String transactionType, String traceAttributeName,
@@ -96,10 +99,10 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
         boundStatement.setInt(i++, getMaxTTL());
         ResultSetFuture future = Sessions.executeAsyncWithOnFailure(session, boundStatement,
                 () -> rateLimiter.invalidate(rateLimiterKey));
-        future.addListener(() -> cache.invalidate(SINGLE_CACHE_KEY),
+        future.addListener(() -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY),
                 MoreExecutors.directExecutor());
         futures.add(future);
-        cache.invalidate(SINGLE_CACHE_KEY);
+        traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY);
     }
 
     private int getMaxTTL() throws Exception {
@@ -124,7 +127,7 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
     }
 
     private class TraceAttributeNameCacheLoader
-            extends CacheLoader<String, Map<String, Map<String, List<String>>>> {
+            implements CacheLoader<String, Map<String, Map<String, List<String>>>> {
         @Override
         public Map<String, Map<String, List<String>>> load(String key) {
             BoundStatement boundStatement = readPS.bind();

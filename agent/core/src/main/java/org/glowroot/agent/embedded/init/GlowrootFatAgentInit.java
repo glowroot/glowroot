@@ -43,7 +43,7 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
     private @MonotonicNonNull EmbeddedAgentModule fatAgentModule;
 
     @Override
-    public void init(File glowrootDir, File agentDir, @Nullable String collectorHost,
+    public void init(File glowrootDir, File agentDir, @Nullable String collectorAddress,
             @Nullable Collector customCollector, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, String glowrootVersion, boolean offline)
             throws Exception {

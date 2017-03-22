@@ -15,6 +15,10 @@
  */
 package org.glowroot.agent.central;
 
+import java.net.SocketAddress;
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,11 +28,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.grpc.Attributes;
 import io.grpc.ManagedChannel;
+import io.grpc.NameResolver;
+import io.grpc.ResolvedServerInfo;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import io.grpc.util.RoundRobinLoadBalancerFactory;
 import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +89,7 @@ class CentralConnection {
     private volatile boolean initCallSucceeded;
     private volatile boolean closed;
 
-    CentralConnection(String collectorHost, int collectorPort, AtomicBoolean inConnectionFailure) {
+    CentralConnection(List<SocketAddress> collectorAddresses, AtomicBoolean inConnectionFailure) {
         eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         channelExecutor = Executors.newSingleThreadExecutor(
                 new ThreadFactoryBuilder()
@@ -88,7 +97,9 @@ class CentralConnection {
                         .setNameFormat("Glowroot-GRPC-Executor")
                         .build());
         channel = NettyChannelBuilder
-                .forAddress(collectorHost, collectorPort)
+                .forTarget("dummy")
+                .nameResolverFactory(new SimpleNameResolverFactory(collectorAddresses))
+                .loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
                 .eventLoopGroup(eventLoopGroup)
                 .executor(channelExecutor)
                 .negotiationType(NegotiationType.PLAINTEXT)
@@ -311,5 +322,51 @@ class CentralConnection {
                 }
             }
         }
+    }
+
+    private static class SimpleNameResolverFactory extends NameResolver.Factory {
+
+        private final List<SocketAddress> collectorAddresses;
+
+        private SimpleNameResolverFactory(List<SocketAddress> collectorAddresses) {
+            this.collectorAddresses = collectorAddresses;
+        }
+
+        @Override
+        public NameResolver newNameResolver(URI targetUri, Attributes params) {
+            return new SimpleNameResolver(collectorAddresses);
+        }
+
+        @Override
+        public String getDefaultScheme() {
+            return "dummy-scheme";
+        }
+    }
+
+    private static class SimpleNameResolver extends NameResolver {
+
+        private final List<SocketAddress> collectorAddresses;
+
+        private SimpleNameResolver(List<SocketAddress> collectorAddresses) {
+            this.collectorAddresses = collectorAddresses;
+        }
+
+        @Override
+        public String getServiceAuthority() {
+            return "dummy-service-authority";
+        }
+
+        @Override
+        public void start(Listener listener) {
+            List<ResolvedServerInfo> resolvedServerInfos = Lists.newArrayList();
+            for (SocketAddress collectorAddress : collectorAddresses) {
+                resolvedServerInfos.add(new ResolvedServerInfo(collectorAddress, Attributes.EMPTY));
+            }
+            Collections.shuffle(resolvedServerInfos);
+            listener.onUpdate(Collections.singletonList(resolvedServerInfos), Attributes.EMPTY);
+        }
+
+        @Override
+        public void shutdown() {}
     }
 }

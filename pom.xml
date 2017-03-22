@@ -90,7 +90,7 @@
     <logback.version>1.1.9</logback.version>
     <!-- sticking to slf4j version that is used by the logback version above -->
     <slf4j.version>1.7.22</slf4j.version>
-    <immutables.version>2.4.3</immutables.version>
+    <immutables.version>2.4.6</immutables.version>
     <jmh.version>1.18</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

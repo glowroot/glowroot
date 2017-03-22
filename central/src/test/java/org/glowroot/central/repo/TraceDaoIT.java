@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.live.ImmutableTracePointFilter;
@@ -46,6 +47,7 @@ public class TraceDaoIT {
 
     private static Cluster cluster;
     private static Session session;
+    private static ClusterManager clusterManager;
     private static TraceDao traceDao;
 
     @BeforeClass
@@ -56,16 +58,18 @@ public class TraceDaoIT {
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
 
+        clusterManager = ClusterManager.create();
         ConfigRepository configRepository = mock(ConfigRepository.class);
         when(configRepository.getStorageConfig())
                 .thenReturn(ImmutableCentralStorageConfig.builder().build());
-        traceDao = new TraceDao(session, new AgentDao(session), mock(TransactionTypeDao.class),
-                mock(FullQueryTextDao.class), mock(TraceAttributeNameDao.class), configRepository,
-                Clock.systemClock());
+        traceDao = new TraceDao(session, new AgentDao(session, clusterManager),
+                mock(TransactionTypeDao.class), mock(FullQueryTextDao.class),
+                mock(TraceAttributeNameDao.class), configRepository, Clock.systemClock());
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
+        clusterManager.close();
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();

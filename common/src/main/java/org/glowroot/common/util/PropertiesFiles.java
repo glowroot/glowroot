@@ -41,10 +41,11 @@ public class PropertiesFiles {
 
     public static void upgradeIfNeeded(File propFile, String find, String replace)
             throws IOException {
-        String content = Files.toString(propFile, Charsets.UTF_8);
+        // properties files must be ISO_8859_1
+        String content = Files.toString(propFile, Charsets.ISO_8859_1);
         if (content.contains(find)) {
             content = content.replace(find, replace);
-            Files.write(content, propFile, Charsets.UTF_8);
+            Files.write(content, propFile, Charsets.ISO_8859_1);
         }
     }
 }

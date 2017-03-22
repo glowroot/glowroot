@@ -15,6 +15,7 @@
  */
 package org.glowroot.central;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Exchanger;
@@ -23,17 +24,21 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 
-import com.google.common.cache.Cache;
+import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.Maps;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
+import org.infinispan.util.function.SerializableFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
 import org.glowroot.central.repo.ConfigDao;
+import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.DistributedExecutionMap;
 import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
@@ -41,7 +46,6 @@ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
@@ -61,7 +65,6 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderRequest;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpResponse;
@@ -91,6 +94,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRequest
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -101,13 +105,14 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private final Map<String, ConnectedAgent> connectedAgents = Maps.newConcurrentMap();
+    private final DistributedExecutionMap<String, ConnectedAgent> connectedAgents;
     private final AgentDao agentDao;
     private final ConfigDao configDao;
 
-    DownstreamServiceImpl(AgentDao agentDao, ConfigDao configDao) {
+    DownstreamServiceImpl(AgentDao agentDao, ConfigDao configDao, ClusterManager clusterManager) {
         this.agentDao = agentDao;
         this.configDao = configDao;
+        connectedAgents = clusterManager.createDistributedExecutionMap("connectedAgents");
     }
 
     @Override
@@ -116,204 +121,217 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     void updateAgentConfigIfConnectedAndNeeded(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent != null) {
-            AgentConfigUpdate agentConfigUpdate = configDao.readForUpdate(agentId);
-            if (agentConfigUpdate != null) {
-                connectedAgent.updateAgentConfig(agentConfigUpdate.config());
-                configDao.markUpdated(agentId, agentConfigUpdate.configUpdateToken());
-            }
-        }
+        connectedAgents.execute(agentId, ConnectedAgent::updateAgentConfigIfConnectedAndNeeded);
     }
 
-    boolean isAvailable(String agentId) {
-        return connectedAgents.containsKey(agentId);
+    boolean isAvailable(String agentId) throws Exception {
+        java.util.Optional<Boolean> optional =
+                connectedAgents.execute(agentId, ConnectedAgent::isAvailable);
+        return optional.isPresent();
     }
 
     ThreadDump threadDump(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.threadDump();
+        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::threadDump);
+        return responseWrapper.getThreadDumpResponse().getThreadDump();
     }
 
     String jstack(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
+        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::jstack);
+        JstackResponse response = responseWrapper.getJstackResponse();
+        if (response.getUnavailableDueToRunningInJre()) {
+            throw new UnavailableDueToRunningInJreException();
         }
-        return connectedAgent.jstack();
+        if (response.getUnavailableDueToRunningInIbmJvm()) {
+            throw new UnavailableDueToRunningInIbmJvmException();
+        }
+        return response.getJstack();
     }
 
     long availableDiskSpaceBytes(String agentId, String directory) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
+        AgentResponse responseWrapper = runOnCluster(agentId,
+                connectedAgent -> connectedAgent.availableDiskSpaceBytes(directory));
+        AvailableDiskSpaceResponse response = responseWrapper.getAvailableDiskSpaceResponse();
+        if (response.getDirectoryDoesNotExist()) {
+            throw new DirectoryDoesNotExistException();
         }
-        return connectedAgent.availableDiskSpaceBytes(directory);
+        return response.getAvailableBytes();
     }
 
     HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
+        AgentResponse responseWrapper =
+                runOnCluster(agentId, connectedAgent -> connectedAgent.heapDump(directory));
+        HeapDumpResponse response = responseWrapper.getHeapDumpResponse();
+        if (response.getDirectoryDoesNotExist()) {
+            throw new DirectoryDoesNotExistException();
         }
-        return connectedAgent.heapDump(directory);
+        return response.getHeapDumpFileInfo();
     }
 
     HeapHistogram heapHistogram(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
+        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::heapHistogram);
+        HeapHistogramResponse response = responseWrapper.getHeapHistogramResponse();
+        if (response.getUnavailableDueToRunningInJre()) {
+            throw new UnavailableDueToRunningInJreException();
         }
-        return connectedAgent.heapHistogram();
+        if (response.getUnavailableDueToRunningInIbmJvm()) {
+            throw new UnavailableDueToRunningInIbmJvmException();
+        }
+        return response.getHeapHistogram();
     }
 
     void gc(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        connectedAgent.gc();
+        runOnCluster(agentId, ConnectedAgent::gc);
     }
 
     MBeanDump mbeanDump(String agentId, MBeanDumpKind mbeanDumpKind, List<String> objectNames)
             throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.mbeanDump(mbeanDumpKind, objectNames);
+        AgentResponse responseWrapper = runOnCluster(agentId,
+                connectedAgent -> connectedAgent.mbeanDump(mbeanDumpKind, objectNames));
+        return responseWrapper.getMbeanDumpResponse().getMbeanDump();
     }
 
     List<String> matchingMBeanObjectNames(String agentId, String partialObjectName, int limit)
             throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.matchingMBeanObjectNames(partialObjectName, limit);
+        AgentResponse responseWrapper = runOnCluster(agentId, connectedAgent -> connectedAgent
+                .matchingMBeanObjectNames(partialObjectName, limit));
+        return responseWrapper.getMatchingMbeanObjectNamesResponse().getObjectNameList();
     }
 
     MBeanMeta mbeanMeta(String agentId, String objectName) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.mbeanMeta(objectName);
+        AgentResponse responseWrapper =
+                runOnCluster(agentId, connectedAgent -> connectedAgent.mbeanMeta(objectName));
+        return responseWrapper.getMbeanMetaResponse().getMbeanMeta();
     }
 
     Map<String, String> systemProperties(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.systemProperties();
+        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::systemProperties);
+        return responseWrapper.getSystemPropertiesResponse().getSystemPropertiesMap();
     }
 
     Capabilities capabilities(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.capabilities();
+        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::capabilities);
+        return responseWrapper.getCapabilitiesResponse().getCapabilities();
     }
 
     GlobalMeta globalMeta(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.globalMeta();
+        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::globalMeta);
+        return responseWrapper.getGlobalMetaResponse().getGlobalMeta();
     }
 
     void preloadClasspathCache(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        connectedAgent.preloadClasspathCache();
+        runOnCluster(agentId, ConnectedAgent::preloadClasspathCache);
     }
 
     List<String> matchingClassNames(String agentId, String partialClassName, int limit)
             throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.matchingClassNames(partialClassName, limit);
+        AgentResponse responseWrapper = runOnCluster(agentId,
+                connectedAgent -> connectedAgent.matchingClassNames(partialClassName, limit));
+        return responseWrapper.getMatchingClassNamesResponse().getClassNameList();
     }
 
     List<String> matchingMethodNames(String agentId, String className, String partialMethodName,
             int limit) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.matchingMethodNames(className, partialMethodName, limit);
+        AgentResponse responseWrapper = runOnCluster(agentId, connectedAgent -> connectedAgent
+                .matchingMethodNames(className, partialMethodName, limit));
+        return responseWrapper.getMatchingMethodNamesResponse().getMethodNameList();
     }
 
     List<MethodSignature> methodSignatures(String agentId, String className, String methodName)
             throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.methodSignatures(className, methodName);
+        AgentResponse responseWrapper = runOnCluster(agentId,
+                connectedAgent -> connectedAgent.methodSignatures(className, methodName));
+        return responseWrapper.getMethodSignaturesResponse().getMethodSignatureList();
     }
 
     int reweave(String agentId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.reweave();
+        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::reweave);
+        return responseWrapper.getReweaveResponse().getClassUpdateCount();
     }
 
     @Nullable
     Trace.Header getHeader(String agentId, String traceId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.getHeader(traceId);
+        AgentResponse responseWrapper =
+                runOnCluster(agentId, connectedAgent -> connectedAgent.getHeader(traceId));
+        return responseWrapper.getHeaderResponse().getHeader();
     }
 
     @Nullable
     Entries getEntries(String agentId, String traceId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
+        AgentResponse responseWrapper =
+                runOnCluster(agentId, connectedAgent -> connectedAgent.getEntries(traceId));
+        EntriesResponse response = responseWrapper.getEntriesResponse();
+        List<Trace.Entry> entries = response.getEntryList();
+        if (entries.isEmpty()) {
+            return null;
+        } else {
+            return ImmutableEntries.builder()
+                    .addAllEntries(entries)
+                    .addAllSharedQueryTexts(response.getSharedQueryTextList())
+                    .build();
         }
-        return connectedAgent.getEntries(traceId);
     }
 
     @Nullable
     Profile getMainThreadProfile(String agentId, String traceId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
+        AgentResponse responseWrapper = runOnCluster(agentId,
+                connectedAgent -> connectedAgent.getMainThreadProfile(traceId));
+        MainThreadProfileResponse response = responseWrapper.getMainThreadProfileResponse();
+        if (response.hasProfile()) {
+            return response.getProfile();
+        } else {
+            return null;
         }
-        return connectedAgent.getMainThreadProfile(traceId);
     }
 
     @Nullable
     Profile getAuxThreadProfile(String agentId, String traceId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
+        AgentResponse responseWrapper = runOnCluster(agentId,
+                connectedAgent -> connectedAgent.getAuxThreadProfile(traceId));
+        AuxThreadProfileResponse response = responseWrapper.getAuxThreadProfileResponse();
+        if (response.hasProfile()) {
+            return response.getProfile();
+        } else {
+            return null;
         }
-        return connectedAgent.getAuxThreadProfile(traceId);
     }
 
     @Nullable
     Trace getFullTrace(String agentId, String traceId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
+        AgentResponse responseWrapper = runOnCluster(agentId,
+                connectedAgent -> connectedAgent.getFullTrace(traceId));
+        FullTraceResponse response = responseWrapper.getFullTraceResponse();
+        if (response.hasTrace()) {
+            return response.getTrace();
+        } else {
+            return null;
+        }
+    }
+
+    private AgentResponse runOnCluster(String agentId,
+            SerializableFunction<ConnectedAgent, AgentResult> task) throws Exception {
+        java.util.Optional<AgentResult> result = connectedAgents.execute(agentId, task);
+        if (result.isPresent()) {
+            return getResponseWrapper(result.get());
+        } else {
             throw new AgentNotConnectedException();
         }
-        return connectedAgent.getFullTrace(traceId);
+    }
+
+    private static AgentResponse getResponseWrapper(AgentResult result) throws Exception {
+        if (result.interrupted()) {
+            throw new InterruptedException();
+        }
+        if (result.timeout()) {
+            throw new TimeoutException();
+        }
+        AgentResponse response = result.value().get();
+        if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
+            throw new AgentUnsupportedOperationException();
+        }
+        if (response.getMessageCase() == MessageCase.EXCEPTION_RESPONSE) {
+            throw new AgentException();
+        }
+        return response;
     }
 
     private class ConnectedAgent implements StreamObserver<AgentResponse> {
@@ -321,9 +339,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         private final AtomicLong nextRequestId = new AtomicLong(1);
 
         // expiration in the unlikely case that response is never returned from agent
-        private final Cache<Long, ResponseHolder> responseHolders = CacheBuilder.newBuilder()
-                .expireAfterWrite(1, HOURS)
-                .build();
+        private final com.google.common.cache.Cache<Long, ResponseHolder> responseHolders =
+                CacheBuilder.newBuilder()
+                        .expireAfterWrite(1, HOURS)
+                        .build();
 
         private volatile @MonotonicNonNull String agentId;
 
@@ -389,264 +408,213 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             }
         }
 
-        private void updateAgentConfig(AgentConfig agentConfig) throws Exception {
+        // dummy return value, just needs to be serializable
+        private boolean updateAgentConfigIfConnectedAndNeeded() {
+            checkNotNull(agentId);
+            AgentConfigUpdate agentConfigUpdate;
+            try {
+                agentConfigUpdate = configDao.readForUpdate(agentId);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                return false;
+            }
+            if (agentConfigUpdate == null) {
+                return false;
+            }
             sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
-                            .setAgentConfig(agentConfig))
+                            .setAgentConfig(agentConfigUpdate.config()))
                     .build());
+            try {
+                configDao.markUpdated(agentId, agentConfigUpdate.configUpdateToken());
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                return false;
+            }
+            return false;
         }
 
-        private ThreadDump threadDump() throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private boolean isAvailable() {
+            return true;
+        }
+
+        private AgentResult threadDump() {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setThreadDumpRequest(ThreadDumpRequest.getDefaultInstance())
                     .build());
-            return responseWrapper.getThreadDumpResponse().getThreadDump();
         }
 
-        private String jstack() throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult jstack() {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setJstackRequest(JstackRequest.getDefaultInstance())
                     .build());
-            JstackResponse response = responseWrapper.getJstackResponse();
-            if (response.getUnavailableDueToRunningInJre()) {
-                throw new UnavailableDueToRunningInJreException();
-            }
-            if (response.getUnavailableDueToRunningInIbmJvm()) {
-                throw new UnavailableDueToRunningInIbmJvmException();
-            }
-            return response.getJstack();
         }
 
-        private long availableDiskSpaceBytes(String directory) throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult availableDiskSpaceBytes(String directory) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setAvailableDiskSpaceRequest(AvailableDiskSpaceRequest.newBuilder()
                             .setDirectory(directory))
                     .build());
-            AvailableDiskSpaceResponse response = responseWrapper.getAvailableDiskSpaceResponse();
-            if (response.getDirectoryDoesNotExist()) {
-                throw new DirectoryDoesNotExistException();
-            }
-            return response.getAvailableBytes();
         }
 
-        private HeapDumpFileInfo heapDump(String directory) throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult heapDump(String directory) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setHeapDumpRequest(HeapDumpRequest.newBuilder()
                             .setDirectory(directory))
                     .build());
-            HeapDumpResponse response = responseWrapper.getHeapDumpResponse();
-            if (response.getDirectoryDoesNotExist()) {
-                throw new DirectoryDoesNotExistException();
-            }
-            return response.getHeapDumpFileInfo();
         }
 
-        private HeapHistogram heapHistogram() throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult heapHistogram() {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setHeapHistogramRequest(HeapHistogramRequest.newBuilder())
                     .build());
-            HeapHistogramResponse response = responseWrapper.getHeapHistogramResponse();
-            if (response.getUnavailableDueToRunningInJre()) {
-                throw new UnavailableDueToRunningInJreException();
-            }
-            if (response.getUnavailableDueToRunningInIbmJvm()) {
-                throw new UnavailableDueToRunningInIbmJvmException();
-            }
-            return response.getHeapHistogram();
         }
 
-        private void gc() throws Exception {
-            sendRequest(CentralRequest.newBuilder()
+        private AgentResult gc() {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setGcRequest(GcRequest.getDefaultInstance())
                     .build());
         }
 
-        private MBeanDump mbeanDump(MBeanDumpKind mbeanDumpKind, List<String> objectNames)
-                throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult mbeanDump(MBeanDumpKind mbeanDumpKind, List<String> objectNames) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMbeanDumpRequest(MBeanDumpRequest.newBuilder()
                             .setKind(mbeanDumpKind)
                             .addAllObjectName(objectNames))
                     .build());
-            return responseWrapper.getMbeanDumpResponse().getMbeanDump();
         }
 
-        private List<String> matchingMBeanObjectNames(String partialObjectName, int limit)
-                throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult matchingMBeanObjectNames(String partialObjectName, int limit) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMatchingMbeanObjectNamesRequest(MatchingMBeanObjectNamesRequest.newBuilder()
                             .setPartialObjectName(partialObjectName)
                             .setLimit(limit))
                     .build());
-            return responseWrapper.getMatchingMbeanObjectNamesResponse().getObjectNameList();
         }
 
-        private MBeanMeta mbeanMeta(String objectName) throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult mbeanMeta(String objectName) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMbeanMetaRequest(MBeanMetaRequest.newBuilder()
                             .setObjectName(objectName))
                     .build());
-            return responseWrapper.getMbeanMetaResponse().getMbeanMeta();
         }
 
-        private Map<String, String> systemProperties() throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult systemProperties() {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setSystemPropertiesRequest(SystemPropertiesRequest.getDefaultInstance())
                     .build());
-            return responseWrapper.getSystemPropertiesResponse().getSystemPropertiesMap();
         }
 
-        private Capabilities capabilities() throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult capabilities() {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setCapabilitiesRequest(CapabilitiesRequest.getDefaultInstance())
                     .build());
-            return responseWrapper.getCapabilitiesResponse().getCapabilities();
         }
 
-        private GlobalMeta globalMeta() throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult globalMeta() {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setGlobalMetaRequest(GlobalMetaRequest.getDefaultInstance())
                     .build());
-            return responseWrapper.getGlobalMetaResponse().getGlobalMeta();
         }
 
-        private void preloadClasspathCache() throws Exception {
-            sendRequest(CentralRequest.newBuilder()
+        private AgentResult preloadClasspathCache() {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setPreloadClasspathCacheRequest(
                             PreloadClasspathCacheRequest.getDefaultInstance())
                     .build());
         }
 
-        private List<String> matchingClassNames(String partialClassName, int limit)
-                throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult matchingClassNames(String partialClassName, int limit) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMatchingClassNamesRequest(MatchingClassNamesRequest.newBuilder()
                             .setPartialClassName(partialClassName)
                             .setLimit(limit))
                     .build());
-            return responseWrapper.getMatchingClassNamesResponse().getClassNameList();
         }
 
-        private List<String> matchingMethodNames(String className, String partialMethodName,
-                int limit) throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult matchingMethodNames(String className, String partialMethodName,
+                int limit) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMatchingMethodNamesRequest(MatchingMethodNamesRequest.newBuilder()
                             .setClassName(className)
                             .setPartialMethodName(partialMethodName)
                             .setLimit(limit))
                     .build());
-            return responseWrapper.getMatchingMethodNamesResponse().getMethodNameList();
         }
 
-        private List<MethodSignature> methodSignatures(String className, String methodName)
-                throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult methodSignatures(String className, String methodName) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMethodSignaturesRequest(MethodSignaturesRequest.newBuilder()
                             .setClassName(className)
                             .setMethodName(methodName))
                     .build());
-            return responseWrapper.getMethodSignaturesResponse().getMethodSignatureList();
         }
 
-        private int reweave() throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult reweave() {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setReweaveRequest(ReweaveRequest.getDefaultInstance())
                     .build());
-            return responseWrapper.getReweaveResponse().getClassUpdateCount();
         }
 
-        private @Nullable Trace.Header getHeader(String traceId) throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult getHeader(String traceId) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setHeaderRequest(HeaderRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            HeaderResponse response = responseWrapper.getHeaderResponse();
-            if (response.hasHeader()) {
-                return response.getHeader();
-            } else {
-                return null;
-            }
         }
 
-        private @Nullable Entries getEntries(String traceId) throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult getEntries(String traceId) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setEntriesRequest(EntriesRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            EntriesResponse response = responseWrapper.getEntriesResponse();
-            List<Trace.Entry> entries = response.getEntryList();
-            if (entries.isEmpty()) {
-                return null;
-            }
-            return ImmutableEntries.builder()
-                    .addAllEntries(entries)
-                    .addAllSharedQueryTexts(response.getSharedQueryTextList())
-                    .build();
         }
 
-        private @Nullable Profile getMainThreadProfile(String traceId) throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult getMainThreadProfile(String traceId) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMainThreadProfileRequest(MainThreadProfileRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            MainThreadProfileResponse response = responseWrapper.getMainThreadProfileResponse();
-            if (response.hasProfile()) {
-                return response.getProfile();
-            } else {
-                return null;
-            }
         }
 
-        private @Nullable Profile getAuxThreadProfile(String traceId) throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult getAuxThreadProfile(String traceId) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setAuxThreadProfileRequest(AuxThreadProfileRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            AuxThreadProfileResponse response = responseWrapper.getAuxThreadProfileResponse();
-            if (response.hasProfile()) {
-                return response.getProfile();
-            } else {
-                return null;
-            }
         }
 
-        private @Nullable Trace getFullTrace(String traceId) throws Exception {
-            AgentResponse responseWrapper = sendRequest(CentralRequest.newBuilder()
+        private AgentResult getFullTrace(String traceId) {
+            return sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setFullTraceRequest(FullTraceRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            FullTraceResponse response = responseWrapper.getFullTraceResponse();
-            if (response.hasTrace()) {
-                return response.getTrace();
-            } else {
-                return null;
-            }
         }
 
-        private AgentResponse sendRequest(CentralRequest request) throws Exception {
+        private AgentResult sendRequest(CentralRequest request) {
             ResponseHolder responseHolder = new ResponseHolder();
             responseHolders.put(request.getRequestId(), responseHolder);
             // synchronization required since individual StreamObservers are not thread-safe
@@ -655,15 +623,21 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             }
             // timeout is in case agent never responds
             // passing AgentResponse.getDefaultInstance() is just dummy (non-null) value
-            AgentResponse response = responseHolder.response
-                    .exchange(AgentResponse.getDefaultInstance(), 1, MINUTES);
-            if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
-                throw new AgentUnsupportedOperationException();
+            try {
+                AgentResponse response = responseHolder.response
+                        .exchange(AgentResponse.getDefaultInstance(), 1, MINUTES);
+                return ImmutableAgentResult.builder()
+                        .value(response)
+                        .build();
+            } catch (InterruptedException e) {
+                return ImmutableAgentResult.builder()
+                        .interrupted(true)
+                        .build();
+            } catch (TimeoutException e) {
+                return ImmutableAgentResult.builder()
+                        .timeout(true)
+                        .build();
             }
-            if (response.getMessageCase() == MessageCase.EXCEPTION_RESPONSE) {
-                throw new AgentException();
-            }
-            return response;
         }
 
         private String getDisplayForLogging(String agentRollupId) {
@@ -673,6 +647,44 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 logger.error("{} - {}", agentRollupId, e.getMessage(), e);
                 return "id:" + agentRollupId;
             }
+        }
+    }
+
+    @Value.Immutable
+    @Serial.Structural
+    interface AgentResult extends Serializable {
+
+        Optional<AgentResponse> value();
+
+        @Value.Default
+        default boolean timeout() {
+            return false;
+        }
+
+        @Value.Default
+        default boolean interrupted() {
+            return false;
+        }
+    }
+
+    @Value.Immutable
+    @Serial.Structural
+    interface UpdateAgentConfigResult extends Serializable {
+
+        @Value.Default
+        default boolean timeout() {
+            return false;
+        }
+
+        @Value.Default
+        default boolean interrupted() {
+            return false;
+        }
+
+        // exception occurred on central side (e.g. Cassandra exception)
+        @Value.Default
+        default boolean exception() {
+            return false;
         }
     }
 

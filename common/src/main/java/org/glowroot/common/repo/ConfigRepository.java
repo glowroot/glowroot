@@ -111,7 +111,7 @@ public interface ConfigRepository {
     @Nullable
     AgentRollupConfig getAgentRollupConfig(String agentRollupId) throws Exception;
 
-    List<UserConfig> getUserConfigs();
+    List<UserConfig> getUserConfigs() throws Exception;
 
     @Nullable
     UserConfig getUserConfig(String username) throws Exception;

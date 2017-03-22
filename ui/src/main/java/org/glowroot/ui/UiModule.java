@@ -80,14 +80,15 @@ public class UiModule {
             LiveTraceRepository liveTraceRepository,
             LiveAggregateRepository liveAggregateRepository,
             @Nullable LiveWeavingService liveWeavingService,
+            SessionMapFactory sessionMapFactory,
             int numWorkerThreads,
             String version) throws Exception {
 
         LayoutService layoutService =
                 new LayoutService(central, servlet, offline, version, configRepository,
                         agentRepository, transactionTypeRepository, traceAttributeNameRepository);
-        HttpSessionManager httpSessionManager =
-                new HttpSessionManager(central, offline, configRepository, clock, layoutService);
+        HttpSessionManager httpSessionManager = new HttpSessionManager(central, offline,
+                configRepository, clock, layoutService, sessionMapFactory);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
                 aggregateRepository, liveAggregateRepository, configRepository, clock);

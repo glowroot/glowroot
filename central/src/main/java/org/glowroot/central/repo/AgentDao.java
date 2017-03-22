@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,6 @@ import com.datastax.driver.core.Session;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -44,9 +41,13 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
 
+import org.glowroot.central.util.Cache;
+import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.ImmutableAgentRollupConfig;
 import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -68,17 +69,15 @@ public class AgentDao implements AgentRepository {
     private final PreparedStatement isAgentPS;
 
     private final PreparedStatement readDisplayPS;
-    private final PreparedStatement insertDisplayPS;
+    private final PreparedStatement insertDisplayIfNotExistsPS;
+    private final PreparedStatement updateDisplayPS;
 
     private final PreparedStatement deletePS;
 
-    private final LoadingCache<String, Optional<String>> agentRollupIdCache =
-            CacheBuilder.newBuilder().build(new AgentRollupIdCacheLoader());
+    private final Cache<String, Optional<String>> agentRollupIdCache;
+    private final Cache<String, Optional<AgentRollupConfig>> agentRollupConfigCache;
 
-    private final LoadingCache<String, Optional<AgentRollupConfig>> agentRollupConfigCache =
-            CacheBuilder.newBuilder().build(new AgentRollupConfigCacheLoader());
-
-    public AgentDao(Session session) {
+    public AgentDao(Session session, ClusterManager clusterManager) {
         this.session = session;
 
         session.execute("create table if not exists agent_rollup (one int, agent_rollup_id varchar,"
@@ -99,11 +98,18 @@ public class AgentDao implements AgentRepository {
 
         readDisplayPS = session
                 .prepare("select display from agent_rollup where one = 1 and agent_rollup_id = ?");
-        insertDisplayPS = session.prepare("insert into agent_rollup (one, agent_rollup_id, display)"
-                + " values (1, ?, ?)");
+        insertDisplayIfNotExistsPS = session.prepare("insert into agent_rollup (one,"
+                + " agent_rollup_id, display) values (1, ?, ?) if not exists");
+        updateDisplayPS = session.prepare("update agent_rollup set display = ? where"
+                + " one = 1 and agent_rollup_id = ? if display = ?");
 
         deletePS =
                 session.prepare("delete from agent_rollup where one = 1 and agent_rollup_id = ?");
+
+        agentRollupIdCache =
+                clusterManager.createCache("agentRollupIdCache", new AgentRollupIdCacheLoader());
+        agentRollupConfigCache = clusterManager.createCache("agentRollupConfigCache",
+                new AgentRollupConfigCacheLoader());
     }
 
     // returns stored agent config
@@ -170,7 +176,7 @@ public class AgentDao implements AgentRepository {
 
     @Override
     public String readAgentRollupDisplay(String agentRollupId) throws Exception {
-        AgentRollupConfig agentRollupConfig = agentRollupConfigCache.get(agentRollupId).orNull();
+        AgentRollupConfig agentRollupConfig = readAgentRollupConfig(agentRollupId);
         if (agentRollupConfig == null) {
             return agentRollupId;
         }
@@ -221,13 +227,36 @@ public class AgentDao implements AgentRepository {
         return agentRollupConfigCache.get(agentRollupId).orNull();
     }
 
-    void update(AgentRollupConfig agentRollupConfig) {
-        BoundStatement boundStatement = insertDisplayPS.bind();
+    void update(AgentRollupConfig agentRollupConfig, String priorVersion)
+            throws OptimisticLockException {
+        BoundStatement boundStatement = readDisplayPS.bind();
+        boundStatement.setString(0, agentRollupConfig.id());
+        ResultSet results = session.execute(boundStatement);
+        Row row = results.one();
+        if (row == null) {
+            insertIfNotExists(agentRollupConfig);
+            return;
+        }
+        String currDisplay = row.getString(0);
+        AgentRollupConfig priorAgentRollupConfig =
+                buildAgentRollupConfig(agentRollupConfig.id(), currDisplay);
+        if (!priorAgentRollupConfig.version().equals(priorVersion)) {
+            throw new OptimisticLockException();
+        }
+        boundStatement = updateDisplayPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupConfig.id());
         boundStatement.setString(i++, Strings.emptyToNull(agentRollupConfig.display()));
+        boundStatement.setString(i++, currDisplay);
         session.execute(boundStatement);
-        agentRollupConfigCache.invalidate(agentRollupConfig.id());
+        results = session.execute(boundStatement);
+        row = checkNotNull(results.one());
+        boolean applied = row.getBool("[applied]");
+        if (applied) {
+            agentRollupConfigCache.invalidate(agentRollupConfig.id());
+        } else {
+            throw new OptimisticLockException();
+        }
     }
 
     void delete(String agentRollupId) {
@@ -252,6 +281,22 @@ public class AgentDao implements AgentRepository {
         return builder.build();
     }
 
+    private void insertIfNotExists(AgentRollupConfig agentRollupConfig)
+            throws OptimisticLockException {
+        BoundStatement boundStatement = insertDisplayIfNotExistsPS.bind();
+        int i = 0;
+        boundStatement.setString(i++, agentRollupConfig.id());
+        boundStatement.setString(i++, agentRollupConfig.display());
+        ResultSet results = session.execute(boundStatement);
+        Row row = checkNotNull(results.one());
+        boolean applied = row.getBool("[applied]");
+        if (applied) {
+            agentRollupConfigCache.invalidate(agentRollupConfig.id());
+        } else {
+            throw new OptimisticLockException();
+        }
+    }
+
     static List<String> getAgentRollupIds(String agentRollupId) {
         List<String> agentRollupIds = Lists.newArrayList();
         int lastFoundIndex = -1;
@@ -262,6 +307,14 @@ public class AgentDao implements AgentRepository {
         }
         agentRollupIds.add(agentRollupId);
         return agentRollupIds;
+    }
+
+    private static ImmutableAgentRollupConfig buildAgentRollupConfig(String id,
+            @Nullable String display) {
+        return ImmutableAgentRollupConfig.builder()
+                .id(id)
+                .display(Strings.nullToEmpty(display))
+                .build();
     }
 
     @Value.Immutable
@@ -286,9 +339,9 @@ public class AgentDao implements AgentRepository {
         }
     }
 
-    private class AgentRollupIdCacheLoader extends CacheLoader<String, Optional<String>> {
+    private class AgentRollupIdCacheLoader implements CacheLoader<String, Optional<String>> {
         @Override
-        public Optional<String> load(String agentId) throws Exception {
+        public Optional<String> load(String agentId) {
             BoundStatement boundStatement = readParentIdPS.bind();
             boundStatement.setString(0, agentId);
             ResultSet results = session.execute(boundStatement);
@@ -301,9 +354,9 @@ public class AgentDao implements AgentRepository {
     }
 
     private class AgentRollupConfigCacheLoader
-            extends CacheLoader<String, Optional<AgentRollupConfig>> {
+            implements CacheLoader<String, Optional<AgentRollupConfig>> {
         @Override
-        public Optional<AgentRollupConfig> load(String agentRollupId) throws Exception {
+        public Optional<AgentRollupConfig> load(String agentRollupId) {
             BoundStatement boundStatement = readDisplayPS.bind();
             boundStatement.setString(0, agentRollupId);
             ResultSet results = session.execute(boundStatement);
@@ -311,10 +364,7 @@ public class AgentDao implements AgentRepository {
             if (row == null) {
                 return Optional.absent();
             }
-            return Optional.of(ImmutableAgentRollupConfig.builder()
-                    .id(agentRollupId)
-                    .display(Strings.nullToEmpty(row.getString(0)))
-                    .build());
+            return Optional.of(buildAgentRollupConfig(agentRollupId, row.getString(0)));
         }
     }
 }

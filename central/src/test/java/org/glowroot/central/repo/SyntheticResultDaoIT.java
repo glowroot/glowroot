@@ -25,6 +25,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
@@ -38,6 +39,7 @@ public class SyntheticResultDaoIT {
 
     private static Cluster cluster;
     private static Session session;
+    private static ClusterManager clusterManager;
     private static AgentDao agentDao;
     private static SyntheticResultDao syntheticResultDao;
 
@@ -50,11 +52,12 @@ public class SyntheticResultDaoIT {
         session.execute("use glowroot_unit_tests");
         KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
-        CentralConfigDao centralConfigDao = new CentralConfigDao(session);
-        agentDao = new AgentDao(session);
-        ConfigDao configDao = new ConfigDao(session);
-        UserDao userDao = new UserDao(session, keyspace);
-        RoleDao roleDao = new RoleDao(session, keyspace);
+        clusterManager = ClusterManager.create();
+        CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+        agentDao = new AgentDao(session, clusterManager);
+        ConfigDao configDao = new ConfigDao(session, clusterManager);
+        UserDao userDao = new UserDao(session, keyspace, clusterManager);
+        RoleDao roleDao = new RoleDao(session, keyspace, clusterManager);
         ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentDao, configDao,
                 centralConfigDao, userDao, roleDao);
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
@@ -68,6 +71,7 @@ public class SyntheticResultDaoIT {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        clusterManager.close();
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();

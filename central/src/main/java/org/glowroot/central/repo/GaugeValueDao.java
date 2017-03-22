@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AggregateDao.NeedsRollup;
 import org.glowroot.central.repo.AggregateDao.NeedsRollupFromChildren;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Sessions;
@@ -89,13 +90,13 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final PreparedStatement deleteNeedsRollupFromChild;
 
     public GaugeValueDao(Session session, AgentDao agentDao, ConfigRepository configRepository,
-            Clock clock) throws Exception {
+            ClusterManager clusterManager, Clock clock) throws Exception {
         this.session = session;
         this.agentDao = agentDao;
         this.configRepository = configRepository;
         this.clock = clock;
 
-        gaugeNameDao = new GaugeNameDao(session, configRepository);
+        gaugeNameDao = new GaugeNameDao(session, configRepository, clusterManager);
 
         int count = configRepository.getRollupConfigs().size();
         List<Integer> rollupExpirationHours = getRollupExpirationHours(configRepository);

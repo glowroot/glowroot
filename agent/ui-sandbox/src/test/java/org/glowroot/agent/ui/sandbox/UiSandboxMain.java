@@ -52,15 +52,13 @@ public class UiSandboxMain {
         if (useJavaagent && useGlowrootCentral) {
             container = new JavaagentContainer(testDir, false,
                     ImmutableList.of("-Dglowroot.agent.id=\"UI Sandbox\"",
-                            "-Dglowroot.collector.host=localhost",
-                            "-Dglowroot.collector.port=8181"));
+                            "-Dglowroot.collector.address=localhost:8181"));
         } else if (useJavaagent) {
             container = new JavaagentContainer(testDir, true, ImmutableList.<String>of());
         } else if (useGlowrootCentral) {
             container = new LocalContainer(testDir, false,
                     ImmutableMap.of("glowroot.agent.id", "UI Sandbox",
-                            "glowroot.collector.host", "localhost",
-                            "glowroot.collector.port", "8181"));
+                            "glowroot.collector.address", "localhost:8184,localhost:8185"));
         } else {
             container = new LocalContainer(testDir, true, ImmutableMap.<String, String>of());
         }

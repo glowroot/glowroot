@@ -16,12 +16,15 @@
 package org.glowroot.central;
 
 import com.google.common.collect.ImmutableList;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.ConfigDao;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 
@@ -29,11 +32,23 @@ import static org.mockito.Mockito.mock;
 
 public class DownstreamServiceNotConnectedTest {
 
-    private DownstreamServiceImpl downstreamService =
-            new DownstreamServiceImpl(mock(AgentDao.class), mock(ConfigDao.class));
+    private static ClusterManager clusterManager;
+
+    private DownstreamServiceImpl downstreamService = new DownstreamServiceImpl(
+            mock(AgentDao.class), mock(ConfigDao.class), clusterManager);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    @BeforeClass
+    public static void setUp() throws Exception {
+        clusterManager = ClusterManager.create();
+    }
+
+    @AfterClass
+    public static void tearDown() throws Exception {
+        clusterManager.close();
+    }
 
     @Test
     public void shouldNotThrowAgentNotConnectExceptionOnUpdateAgentConfig() throws Exception {

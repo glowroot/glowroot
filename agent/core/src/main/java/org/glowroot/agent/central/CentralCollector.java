@@ -18,10 +18,13 @@ package org.glowroot.agent.central;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -68,8 +71,7 @@ public class CentralCollector implements Collector {
 
     private final String agentId;
     private final String agentRollupId;
-    private final String collectorHost;
-    private final int collectorPort;
+    private final String collectorAddress;
     private final CentralConnection centralConnection;
     private final CollectorServiceStub collectorServiceStub;
     private final DownstreamServiceObserver downstreamServiceObserver;
@@ -78,7 +80,7 @@ public class CentralCollector implements Collector {
 
     private volatile int nextAggregateDelayMillis;
 
-    public CentralCollector(Map<String, String> properties, String collectorHost,
+    public CentralCollector(Map<String, String> properties, String collectorAddress,
             LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
             LiveTraceRepositoryImpl liveTraceRepository, AgentConfigUpdater agentConfigUpdater)
             throws Exception {
@@ -87,17 +89,9 @@ public class CentralCollector implements Collector {
         if (Strings.isNullOrEmpty(agentId)) {
             agentId = InetAddress.getLocalHost().getHostName();
         }
-        String collectorPortStr = properties.get("glowroot.collector.port");
-        int collectorPort;
-        if (Strings.isNullOrEmpty(collectorPortStr)) {
-            collectorPort = 8181;
-        } else {
-            collectorPort = Integer.parseInt(collectorPortStr);
-        }
         this.agentId = agentId;
         this.agentRollupId = Strings.nullToEmpty(properties.get("glowroot.agent.rollup.id"));
-        this.collectorHost = collectorHost;
-        this.collectorPort = collectorPort;
+        this.collectorAddress = collectorAddress;
 
         if (agentRollupId.isEmpty()) {
             startupLogger.info("agent id: {}", agentId);
@@ -105,9 +99,27 @@ public class CentralCollector implements Collector {
             startupLogger.info("agent id: {}, rollup id: {}", agentId, agentRollupId);
         }
 
+        List<SocketAddress> collectorAddresses = Lists.newArrayList();
+        for (String addr : Splitter.on(',').trimResults().omitEmptyStrings()
+                .split(collectorAddress)) {
+            int index = addr.indexOf(':');
+            if (index == -1) {
+                throw new IllegalStateException(
+                        "Invalid collector.address (missing port): " + addr);
+            }
+            String host = addr.substring(0, index);
+            int port;
+            try {
+                port = Integer.parseInt(addr.substring(index + 1));
+            } catch (NumberFormatException e) {
+                logger.debug(e.getMessage(), e);
+                throw new IllegalStateException(
+                        "Invalid collector.address (invalid port): " + addr);
+            }
+            collectorAddresses.add(new InetSocketAddress(host, port));
+        }
         AtomicBoolean inConnectionFailure = new AtomicBoolean();
-        centralConnection =
-                new CentralConnection(collectorHost, collectorPort, inConnectionFailure);
+        centralConnection = new CentralConnection(collectorAddresses, inConnectionFailure);
         collectorServiceStub = CollectorServiceGrpc.newStub(centralConnection.getChannel())
                 .withCompression("gzip");
         downstreamServiceObserver = new DownstreamServiceObserver(centralConnection,
@@ -133,8 +145,8 @@ public class CentralCollector implements Collector {
             void doWithResponse(final InitResponse response) {
                 // don't need to suppress sending this log message to the central collector because
                 // startup logger info messages are never sent to the central collector
-                startupLogger.info("connected to the central collector {}:{}, version {}",
-                        collectorHost, collectorPort, response.getGlowrootCentralVersion());
+                startupLogger.info("connected to the central collector {}, version {}",
+                        collectorAddress, response.getGlowrootCentralVersion());
                 if (response.hasAgentConfig()) {
                     try {
                         agentConfigUpdater.update(response.getAgentConfig());

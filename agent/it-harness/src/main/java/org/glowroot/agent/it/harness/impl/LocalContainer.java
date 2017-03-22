@@ -71,7 +71,7 @@ public class LocalContainer implements Container {
             deleteTestDirOnClose = false;
         }
 
-        boolean pointingToCentral = extraProperties.containsKey("glowroot.collector.host");
+        boolean pointingToCentral = extraProperties.containsKey("glowroot.collector.address");
         final Map<String, String> properties = Maps.newHashMap();
         properties.put("glowroot.test.dir", this.testDir.getAbsolutePath());
         if (embedded || pointingToCentral) {
@@ -81,8 +81,8 @@ public class LocalContainer implements Container {
             int collectorPort = getAvailablePort();
             traceCollector = new TraceCollector();
             server = new GrpcServerWrapper(traceCollector, collectorPort);
-            properties.put("glowroot.collector.host", "localhost");
-            properties.put("glowroot.collector.port", Integer.toString(collectorPort));
+            properties.put("glowroot.collector.address",
+                    "localhost:" + Integer.toString(collectorPort));
         }
         isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(AppUnderTest.class);
         properties.putAll(extraProperties);

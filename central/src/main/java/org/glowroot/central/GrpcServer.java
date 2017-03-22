@@ -44,6 +44,7 @@ import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.TraceDao;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -108,7 +109,8 @@ class GrpcServer {
     GrpcServer(String bindAddress, int port, AgentDao agentDao, ConfigDao configDao,
             AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, EnvironmentDao environmentDao,
             HeartbeatDao heartbeatDao, TraceDao traceDao, ConfigRepositoryImpl configRepository,
-            AlertingService alertingService, Clock clock, String version) throws IOException {
+            AlertingService alertingService, ClusterManager clusterManager, Clock clock,
+            String version) throws IOException {
         this.agentDao = agentDao;
         this.configDao = configDao;
         this.environmentDao = environmentDao;
@@ -121,7 +123,7 @@ class GrpcServer {
         this.clock = clock;
         this.version = version;
 
-        downstreamService = new DownstreamServiceImpl(agentDao, configDao);
+        downstreamService = new DownstreamServiceImpl(agentDao, configDao, clusterManager);
 
         server = NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port))
                 .addService(new CollectorServiceImpl().bindService())

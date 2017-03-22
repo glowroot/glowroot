@@ -28,7 +28,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 public interface LiveJvmService {
 
-    boolean isAvailable(String agentId);
+    boolean isAvailable(String agentId) throws Exception;
 
     ThreadDump getThreadDump(String agentId) throws Exception;
 

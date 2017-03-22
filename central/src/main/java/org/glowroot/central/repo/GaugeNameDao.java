@@ -23,15 +23,15 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.immutables.value.Value;
 
+import org.glowroot.central.util.Cache;
+import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository;
@@ -53,10 +53,10 @@ class GaugeNameDao {
 
     private final RateLimiter<GaugeNameKey> rateLimiter = new RateLimiter<>();
 
-    private final LoadingCache<String, List<String>> cache =
-            CacheBuilder.newBuilder().build(new GaugeNameCacheLoader());
+    private final Cache<String, List<String>> gaugeNamesCache;
 
-    GaugeNameDao(Session session, ConfigRepository configRepository) {
+    GaugeNameDao(Session session, ConfigRepository configRepository,
+            ClusterManager clusterManager) {
         this.session = session;
         this.configRepository = configRepository;
 
@@ -66,10 +66,12 @@ class GaugeNameDao {
         insertPS = session.prepare("insert into gauge_name (agent_rollup, gauge_name)"
                 + " values (?, ?) using ttl ?");
         readPS = session.prepare("select gauge_name from gauge_name where agent_rollup = ?");
+
+        gaugeNamesCache = clusterManager.createCache("gaugeNamesCache", new GaugeNameCacheLoader());
     }
 
     List<String> getGaugeNames(String agentRollupId) throws Exception {
-        return cache.get(agentRollupId);
+        return gaugeNamesCache.get(agentRollupId);
     }
 
     List<ResultSetFuture> store(String agentRollupId, String gaugeName) throws Exception {
@@ -84,7 +86,8 @@ class GaugeNameDao {
         boundStatement.setInt(i++, getMaxTTL());
         ResultSetFuture future = Sessions.executeAsyncWithOnFailure(session, boundStatement,
                 () -> rateLimiter.invalidate(rateLimiterKey));
-        future.addListener(() -> cache.invalidate(agentRollupId), MoreExecutors.directExecutor());
+        future.addListener(() -> gaugeNamesCache.invalidate(agentRollupId),
+                MoreExecutors.directExecutor());
         return ImmutableList.of(future);
     }
 
@@ -108,7 +111,7 @@ class GaugeNameDao {
         String gaugeName();
     }
 
-    private class GaugeNameCacheLoader extends CacheLoader<String, List<String>> {
+    private class GaugeNameCacheLoader implements CacheLoader<String, List<String>> {
         @Override
         public List<String> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind();

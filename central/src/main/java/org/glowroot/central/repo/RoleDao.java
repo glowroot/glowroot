@@ -26,14 +26,15 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import org.glowroot.central.util.Cache;
+import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.RoleConfig;
+import org.glowroot.common.repo.ConfigRepository.DuplicateRoleNameException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -47,18 +48,17 @@ public class RoleDao {
     private final Session session;
 
     private final PreparedStatement readPS;
+    private final PreparedStatement insertIfNotExistsPS;
     private final PreparedStatement insertPS;
     private final PreparedStatement deletePS;
 
     private final PreparedStatement readOnePS;
 
-    private final LoadingCache<String, Optional<RoleConfig>> cache =
-            CacheBuilder.newBuilder().build(new RoleConfigCacheLoader());
+    private final Cache<String, Optional<RoleConfig>> roleConfigCache;
+    private final Cache<String, List<RoleConfig>> allRoleConfigsCache;
 
-    private final LoadingCache<String, List<RoleConfig>> allRolesCache =
-            CacheBuilder.newBuilder().build(new AllRolesCacheLoader());
-
-    public RoleDao(Session session, KeyspaceMetadata keyspaceMetadata) {
+    public RoleDao(Session session, KeyspaceMetadata keyspaceMetadata,
+            ClusterManager clusterManager) {
         this.session = session;
 
         boolean createAnonymousRole = keyspaceMetadata.getTable("role") == null;
@@ -67,46 +67,72 @@ public class RoleDao {
                 + " primary key (name)) " + WITH_LCS);
 
         readPS = session.prepare("select name, permissions from role");
+        insertIfNotExistsPS =
+                session.prepare("insert into role (name, permissions) values (?, ?) if not exists");
         insertPS = session.prepare("insert into role (name, permissions) values (?, ?)");
         deletePS = session.prepare("delete from role where name = ?");
 
         readOnePS = session.prepare("select name, permissions from role where name = ?");
 
         if (createAnonymousRole) {
-            BoundStatement boundStatement = insertPS.bind();
+            BoundStatement boundStatement = insertIfNotExistsPS.bind();
             int i = 0;
             boundStatement.setString(i++, "Administrator");
             boundStatement.setSet(i++, ImmutableSet.of("agent:*:transaction", "agent:*:error",
                     "agent:*:jvm", "agent:*:config", "admin"));
             session.execute(boundStatement);
         }
+
+        roleConfigCache =
+                clusterManager.createCache("roleConfigCache", new RoleConfigCacheLoader());
+        allRoleConfigsCache =
+                clusterManager.createCache("allRoleConfigsCache", new AllRolesCacheLoader());
     }
 
     List<RoleConfig> read() throws Exception {
-        return allRolesCache.get(ALL_ROLES_SINGLE_CACHE_KEY);
+        return allRoleConfigsCache.get(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
     @Nullable
     RoleConfig read(String name) throws Exception {
-        return cache.get(name).orNull();
+        return roleConfigCache.get(name).orNull();
     }
 
     void delete(String name) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, name);
         session.execute(boundStatement);
-        cache.invalidate(name);
-        allRolesCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
+        roleConfigCache.invalidate(name);
+        allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
     void insert(RoleConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
+        bindInsert(boundStatement, userConfig);
+        session.execute(boundStatement);
+        roleConfigCache.invalidate(userConfig.name());
+        allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
+
+    }
+
+    void insertIfNotExists(RoleConfig userConfig) throws Exception {
+        BoundStatement boundStatement = insertIfNotExistsPS.bind();
+        bindInsert(boundStatement, userConfig);
+        ResultSet results = session.execute(boundStatement);
+        Row row = checkNotNull(results.one());
+        boolean applied = row.getBool("[applied]");
+        if (applied) {
+            roleConfigCache.invalidate(userConfig.name());
+            allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
+        } else {
+            throw new DuplicateRoleNameException();
+        }
+    }
+
+    private static void bindInsert(BoundStatement boundStatement, RoleConfig userConfig) {
         int i = 0;
         boundStatement.setString(i++, userConfig.name());
         boundStatement.setSet(i++, userConfig.permissions());
-        session.execute(boundStatement);
-        cache.invalidate(userConfig.name());
-        allRolesCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
     private static ImmutableRoleConfig buildRole(Row row) {
@@ -118,9 +144,9 @@ public class RoleDao {
                 .build();
     }
 
-    private class RoleConfigCacheLoader extends CacheLoader<String, Optional<RoleConfig>> {
+    private class RoleConfigCacheLoader implements CacheLoader<String, Optional<RoleConfig>> {
         @Override
-        public Optional<RoleConfig> load(String name) throws Exception {
+        public Optional<RoleConfig> load(String name) {
             BoundStatement boundStatement = readOnePS.bind();
             boundStatement.setString(0, name);
             ResultSet results = session.execute(boundStatement);
@@ -135,9 +161,9 @@ public class RoleDao {
         }
     }
 
-    private class AllRolesCacheLoader extends CacheLoader<String, List<RoleConfig>> {
+    private class AllRolesCacheLoader implements CacheLoader<String, List<RoleConfig>> {
         @Override
-        public List<RoleConfig> load(String dummy) throws Exception {
+        public List<RoleConfig> load(String dummy) {
             ResultSet results = session.execute(readPS.bind());
             List<RoleConfig> users = Lists.newArrayList();
             for (Row row : results) {

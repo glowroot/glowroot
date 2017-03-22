@@ -59,7 +59,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
     @Override
     public void init(final File glowrootDir, final File agentDir,
-            final @Nullable String collectorHost, final @Nullable Collector customCollector,
+            final @Nullable String collectorAddress, final @Nullable Collector customCollector,
             final Map<String, String> properties, final @Nullable Instrumentation instrumentation,
             final String glowrootVersion, boolean offline) throws Exception {
 
@@ -100,7 +100,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 Collector collector;
                 if (customCollector == null) {
                     centralCollector = new CentralCollector(properties,
-                            checkNotNull(collectorHost), agentModule.getLiveJvmService(),
+                            checkNotNull(collectorAddress), agentModule.getLiveJvmService(),
                             agentModule.getLiveWeavingService(),
                             agentModule.getLiveTraceRepository(), agentConfigUpdater);
                     collector = centralCollector;

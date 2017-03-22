@@ -134,7 +134,7 @@ public class JavaagentContainer implements Container {
 
         boolean pointingToCentral = false;
         for (String extraJvmArg : extraJvmArgs) {
-            if (extraJvmArg.startsWith("-Dglowroot.collector.host=")) {
+            if (extraJvmArg.startsWith("-Dglowroot.collector.address=")) {
                 pointingToCentral = true;
                 break;
             }
@@ -420,8 +420,7 @@ public class JavaagentContainer implements Container {
         }
         command.add("-Dglowroot.test.dir=" + testDir.getAbsolutePath());
         if (collectorPort != 0) {
-            command.add("-Dglowroot.collector.host=localhost");
-            command.add("-Dglowroot.collector.port=" + collectorPort);
+            command.add("-Dglowroot.collector.address=localhost:" + collectorPort);
         }
         // this is used inside low-entropy docker containers
         String sourceOfRandomness = System.getProperty("java.security.egd");

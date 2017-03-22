@@ -18,8 +18,11 @@ package org.glowroot.central;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
@@ -65,6 +68,7 @@ import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.TransactionTypeDao;
 import org.glowroot.central.repo.TriggeredAlertDao;
 import org.glowroot.central.repo.UserDao;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.MailService;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ImmutableWebConfig;
@@ -78,6 +82,7 @@ import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
 import org.glowroot.ui.CommonHandler;
 import org.glowroot.ui.CreateUiModuleBuilder;
+import org.glowroot.ui.SessionMapFactory;
 import org.glowroot.ui.UiModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -88,6 +93,7 @@ class CentralModule {
     // need to wait to init logger until after establishing centralDir
     private static volatile @MonotonicNonNull Logger startupLogger;
 
+    private final ClusterManager clusterManager;
     private final Cluster cluster;
     private final Session session;
     private final RollupService rollupService;
@@ -100,6 +106,7 @@ class CentralModule {
     }
 
     CentralModule(@Nullable ServletConfig config) throws Exception {
+        ClusterManager clusterManager = null;
         Cluster cluster = null;
         Session session = null;
         RollupService rollupService = null;
@@ -138,6 +145,8 @@ class CentralModule {
             }
 
             CentralConfiguration centralConfig = getCentralConfiguration(centralDir);
+            clusterManager = ClusterManager.create(centralDir,
+                    centralConfig.jgroupsConfigurationFile(), centralConfig.jgroupProperties());
             session = connect(centralConfig);
             cluster = session.getCluster();
             Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
@@ -152,11 +161,11 @@ class CentralModule {
             } else {
                 schemaUpgrade.upgrade();
             }
-            CentralConfigDao centralConfigDao = new CentralConfigDao(session);
-            AgentDao agentDao = new AgentDao(session);
-            ConfigDao configDao = new ConfigDao(session);
-            UserDao userDao = new UserDao(session, keyspace);
-            RoleDao roleDao = new RoleDao(session, keyspace);
+            CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+            AgentDao agentDao = new AgentDao(session, clusterManager);
+            ConfigDao configDao = new ConfigDao(session, clusterManager);
+            UserDao userDao = new UserDao(session, keyspace, clusterManager);
+            RoleDao roleDao = new RoleDao(session, keyspace, clusterManager);
             ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentDao, configDao,
                     centralConfigDao, userDao, roleDao);
 
@@ -185,16 +194,16 @@ class CentralModule {
             }
 
             TransactionTypeDao transactionTypeDao =
-                    new TransactionTypeDao(session, configRepository);
+                    new TransactionTypeDao(session, configRepository, clusterManager);
             FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
             AggregateDao aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao,
                     fullQueryTextDao, configRepository, clock);
             TraceAttributeNameDao traceAttributeNameDao =
-                    new TraceAttributeNameDao(session, configRepository);
+                    new TraceAttributeNameDao(session, configRepository, clusterManager);
             TraceDao traceDao = new TraceDao(session, agentDao, transactionTypeDao,
                     fullQueryTextDao, traceAttributeNameDao, configRepository, clock);
             GaugeValueDao gaugeValueDao =
-                    new GaugeValueDao(session, agentDao, configRepository, clock);
+                    new GaugeValueDao(session, agentDao, configRepository, clusterManager, clock);
             SyntheticResultDao syntheticResultDao =
                     new SyntheticResultDao(session, configRepository, clock);
             EnvironmentDao environmentDao = new EnvironmentDao(session);
@@ -213,7 +222,7 @@ class CentralModule {
 
             server = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
                     agentDao, configDao, aggregateDao, gaugeValueDao, environmentDao, heartbeatDao,
-                    traceDao, configRepository, alertingService, clock, version);
+                    traceDao, configRepository, alertingService, clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = server.getDownstreamService();
             configRepository.addAgentConfigListener(new AgentConfigListener() {
                 @Override
@@ -228,6 +237,7 @@ class CentralModule {
             pingAndSyntheticAlertService = new SyntheticMonitorService(agentDao, configRepository,
                     triggeredAlertDao, alertingService, syntheticResultDao, ticker, clock);
 
+            ClusterManager clusterManagerEffectivelyFinal = clusterManager;
             uiModule = new CreateUiModuleBuilder()
                     .central(true)
                     .servlet(config != null)
@@ -251,6 +261,12 @@ class CentralModule {
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService, agentDao))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(new LiveWeavingServiceImpl(downstreamService))
+                    .sessionMapFactory(new SessionMapFactory() {
+                        @Override
+                        public <V extends /*@NonNull*/ Serializable> ConcurrentMap<String, V> create() {
+                            return clusterManagerEffectivelyFinal.createReplicatedMap("sessionMap");
+                        }
+                    })
                     .numWorkerThreads(50)
                     .version(version)
                     .build();
@@ -280,8 +296,12 @@ class CentralModule {
             if (cluster != null) {
                 cluster.close();
             }
+            if (clusterManager != null) {
+                clusterManager.close();
+            }
             throw t;
         }
+        this.clusterManager = clusterManager;
         this.cluster = cluster;
         this.session = session;
         this.rollupService = rollupService;
@@ -305,6 +325,7 @@ class CentralModule {
             pingAndSyntheticAlertService.close();
             session.close();
             cluster.close();
+            clusterManager.close();
             if (startupLogger != null) {
                 startupLogger.info("shutdown complete");
             }
@@ -345,6 +366,18 @@ class CentralModule {
         String grpcBindAddress = props.getProperty("grpc.bindAddress");
         if (!Strings.isNullOrEmpty(grpcBindAddress)) {
             builder.grpcBindAddress(grpcBindAddress);
+        }
+        String jgroupsConfigurationFile = props.getProperty("jgroups.configurationFile");
+        if (!Strings.isNullOrEmpty(jgroupsConfigurationFile)) {
+            builder.jgroupsConfigurationFile(jgroupsConfigurationFile);
+        }
+        for (String propName : props.stringPropertyNames()) {
+            if (propName.startsWith("jgroups.")) {
+                String propValue = props.getProperty(propName);
+                if (!Strings.isNullOrEmpty(propValue)) {
+                    builder.putJgroupProperties(propName, propValue);
+                }
+            }
         }
         String grpcPortText = props.getProperty("grpc.port");
         if (!Strings.isNullOrEmpty(grpcPortText)) {
@@ -459,24 +492,34 @@ class CentralModule {
 
     @Value.Immutable
     static abstract class CentralConfiguration {
+
         @Value.Default
         @SuppressWarnings("immutables")
         List<String> cassandraContactPoint() {
             return ImmutableList.of("127.0.0.1");
         }
+
         @Value.Default
         String cassandraKeyspace() {
             return "glowroot";
         }
+
         @Value.Default
         String grpcBindAddress() {
             return "0.0.0.0";
         }
+
         @Value.Default
         int grpcPort() {
             return 8181;
         }
+
+        abstract @Nullable String jgroupsConfigurationFile();
+
+        abstract Map<String, String> jgroupProperties();
+
         abstract @Nullable String uiBindAddressOverride();
+
         abstract @Nullable Integer uiPortOverride();
     }
 

@@ -26,7 +26,7 @@ import org.glowroot.common.util.OnlyUsedByTests;
 
 public interface GlowrootAgentInit {
 
-    void init(File glowrootDir, File agentDir, @Nullable String collectorHost,
+    void init(File glowrootDir, File agentDir, @Nullable String collectorAddress,
             @Nullable Collector customCollector, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, String glowrootVersion, boolean offline)
             throws Exception;

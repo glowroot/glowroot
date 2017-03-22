@@ -17,6 +17,7 @@ package org.glowroot.agent;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
@@ -31,11 +32,14 @@ import java.util.ServiceLoader;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -153,9 +157,9 @@ public class MainEntryPoint {
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion(MainEntryPoint.class);
         startupLogger.info("Glowroot version: {}", version);
-        String collectorHost = properties.get("glowroot.collector.host");
+        String collectorAddress = properties.get("glowroot.collector.address");
         Collector customCollector = loadCustomCollector(glowrootDir);
-        if (Strings.isNullOrEmpty(collectorHost) && customCollector == null) {
+        if (Strings.isNullOrEmpty(collectorAddress) && customCollector == null) {
             glowrootAgentInit = new GlowrootFatAgentInit();
         } else {
             if (customCollector != null) {
@@ -163,7 +167,7 @@ public class MainEntryPoint {
             }
             glowrootAgentInit = new GlowrootThinAgentInit();
         }
-        glowrootAgentInit.init(glowrootDir, agentDir, collectorHost, customCollector,
+        glowrootAgentInit.init(glowrootDir, agentDir, collectorAddress, customCollector,
                 properties, instrumentation, version, false);
     }
 
@@ -174,6 +178,8 @@ public class MainEntryPoint {
         if (propFile.exists()) {
             // upgrade from 0.9.6 to 0.9.7
             PropertiesFiles.upgradeIfNeeded(propFile, "agent.rollup=", "agent.rollup.id=");
+            // upgrade from 0.9.13 to 0.9.14
+            upgradeToCollectorAddressIfNeeded(propFile);
             Properties props = PropertiesFiles.load(propFile);
             for (String key : props.stringPropertyNames()) {
                 String value = props.getProperty(key);
@@ -253,6 +259,63 @@ public class MainEntryPoint {
             return null;
         }
         return i.next();
+    }
+
+    private static void upgradeToCollectorAddressIfNeeded(File propFile) throws IOException {
+        // properties files must be ISO_8859_1
+        List<String> lines = Files.readLines(propFile, Charsets.ISO_8859_1);
+        List<String> newLines = upgradeToCollectorAddressIfNeeded(lines);
+        if (!newLines.equals(lines)) {
+            // properties files must be ISO_8859_1
+            PrintWriter out = new PrintWriter(Files.newWriter(propFile, Charsets.ISO_8859_1));
+            try {
+                for (String newLine : newLines) {
+                    out.println(newLine);
+                }
+            } finally {
+                out.close();
+            }
+        }
+    }
+
+    @VisibleForTesting
+    static List<String> upgradeToCollectorAddressIfNeeded(List<String> lines) {
+        List<String> newLines = Lists.newArrayList();
+        String host = null;
+        String port = null;
+        int indexForAddress = -1;
+        for (String line : lines) {
+            if (line.startsWith("collector.host=")) {
+                host = line.substring("collector.host=".length());
+                if (indexForAddress == -1) {
+                    indexForAddress = newLines.size();
+                }
+            } else if (line.startsWith("collector.port=")) {
+                port = line.substring("collector.port=".length());
+                if (indexForAddress == -1) {
+                    indexForAddress = newLines.size();
+                }
+            } else if (line.startsWith("collector.address=")) {
+                return lines;
+            } else {
+                newLines.add(line);
+            }
+        }
+        if (indexForAddress == -1) {
+            return newLines;
+        }
+        if (host == null) {
+            return newLines;
+        }
+        if (host.isEmpty()) {
+            newLines.add(indexForAddress, "collector.address=");
+            return newLines;
+        }
+        if (port == null || port.isEmpty()) {
+            port = "8181";
+        }
+        newLines.add(indexForAddress, "collector.address=" + host + ":" + port);
+        return newLines;
     }
 
     @OnlyUsedByTests
