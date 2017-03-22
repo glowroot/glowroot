@@ -515,10 +515,17 @@ public class StatementAspect {
         public static void onReturn(@BindReturn int[] rowCounts,
                 @BindTraveler QueryEntry queryEntry) {
             int totalRowCount = 0;
+            boolean count = false;
             for (int rowCount : rowCounts) {
-                totalRowCount += rowCount;
+                if (rowCount > 0) {
+                    // ignore Statement.SUCCESS_NO_INFO (-2) and Statement.EXECUTE_FAILED (-3)
+                    totalRowCount += rowCount;
+                    count = true;
+                }
             }
-            queryEntry.setCurrRow(totalRowCount);
+            if (count) {
+                queryEntry.setCurrRow(totalRowCount);
+            }
             queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                     MILLISECONDS);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,10 @@ public class Connections {
         connection.close();
     }
 
+    static ConnectionType getConnectionType() {
+        return connectionType;
+    }
+
     private static Connection createHsqldbConnection() throws SQLException {
         // set up database
         Connection connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
@@ -133,8 +137,8 @@ public class Connections {
     // </dependency>
     private static Connection createOracleConnection() throws SQLException {
         // set up database
-        Connection connection = DriverManager.getConnection("jdbc:oracle:thin:@//localhost/orcl",
-                "glowroot", "glowroot");
+        Connection connection =
+                DriverManager.getConnection("jdbc:oracle:thin:@localhost", "glowroot", "glowroot");
         insertRecords(connection);
         return connection;
     }
