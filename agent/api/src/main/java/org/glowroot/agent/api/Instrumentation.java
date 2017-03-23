@@ -16,9 +16,11 @@
 package org.glowroot.agent.api;
 
 import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
+@Target({})
 @Retention(SOURCE)
 public @interface Instrumentation {
 
