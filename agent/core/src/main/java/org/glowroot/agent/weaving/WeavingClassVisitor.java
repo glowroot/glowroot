@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,6 +96,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private final List<ShimType> shimTypes;
     private final List<MixinType> mixinTypes;
+    private final List<ClassNode> mixinClassNodes;
     private final Map<String, List<Advice>> methodAdvisors;
 
     private final AnalyzedWorld analyzedWorld;
@@ -121,6 +122,17 @@ class WeavingClassVisitor extends ClassVisitor {
         this.mixinTypes = mixinTypes;
         this.methodAdvisors = methodAdvisors;
         this.analyzedWorld = analyzedWorld;
+
+        // cannot store ClassNode in MixinType and re-use across MethodClassVisitors because
+        // MethodNode.accept() cannot be called multiple times (at least not across multiple
+        // threads) without throwing an occassional NPE
+        mixinClassNodes = Lists.newArrayList();
+        for (MixinType mixinType : mixinTypes) {
+            ClassReader cr = new ClassReader(mixinType.implementationBytes());
+            ClassNode cn = new ClassNode();
+            cr.accept(cn, ClassReader.EXPAND_FRAMES);
+            mixinClassNodes.add(cn);
+        }
     }
 
     @Override
@@ -136,8 +148,11 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String desc,
+    public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/[] exceptions) {
+        if (isMixinProxy(name, desc)) {
+            return null;
+        }
         List<Advice> matchingAdvisors = methodAdvisors.get(name + desc);
         if (matchingAdvisors == null) {
             matchingAdvisors = ImmutableList.of();
@@ -161,6 +176,20 @@ class WeavingClassVisitor extends ClassVisitor {
         return visitMethodWithAdvice(access, name, desc, signature, exceptions, matchingAdvisors);
     }
 
+    private boolean isMixinProxy(String name, String desc) {
+        for (ClassNode cn : mixinClassNodes) {
+            // SuppressWarnings because generics are explicitly removed from asm binaries
+            @SuppressWarnings("unchecked")
+            List<MethodNode> methodNodes = cn.methods;
+            for (MethodNode mn : methodNodes) {
+                if (!mn.name.equals("<init>") && mn.name.equals(name) && mn.desc.equals(desc)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public void visitEnd() {
         analyzedWorld.add(analyzedClass, loader);
@@ -168,8 +197,8 @@ class WeavingClassVisitor extends ClassVisitor {
         for (ShimType shimType : shimTypes) {
             addShim(shimType);
         }
-        for (MixinType mixinType : mixinTypes) {
-            addMixin(mixinType);
+        for (ClassNode mixinClassNode : mixinClassNodes) {
+            addMixin(mixinClassNode);
         }
         if (!Modifier.isAbstract(analyzedClass.modifiers())) {
             for (AnalyzedMethod methodThatOnlyNowFulfillAdvice : methodsThatOnlyNowFulfillAdvice) {
@@ -459,20 +488,17 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @RequiresNonNull("type")
-    private void addMixin(MixinType mixinType) {
-        ClassReader cr = new ClassReader(mixinType.implementationBytes());
-        ClassNode cn = new ClassNode();
-        cr.accept(cn, ClassReader.EXPAND_FRAMES);
+    private void addMixin(ClassNode mixinClassNode) {
         // SuppressWarnings because generics are explicitly removed from asm binaries
         // see http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=316377
         @SuppressWarnings("unchecked")
-        List<FieldNode> fieldNodes = cn.fields;
+        List<FieldNode> fieldNodes = mixinClassNode.fields;
         for (FieldNode fieldNode : fieldNodes) {
             fieldNode.accept(this);
         }
         // SuppressWarnings because generics are explicitly removed from asm binaries
         @SuppressWarnings("unchecked")
-        List<MethodNode> methodNodes = cn.methods;
+        List<MethodNode> methodNodes = mixinClassNode.methods;
         for (MethodNode mn : methodNodes) {
             if (mn.name.equals("<init>")) {
                 continue;
@@ -482,7 +508,8 @@ class WeavingClassVisitor extends ClassVisitor {
             String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
             MethodVisitor mv =
                     cw.visitMethod(mn.access, mn.name, mn.desc, mn.signature, exceptions);
-            mn.accept(new MethodRemapper(mv, new SimpleRemapper(cn.name, type.getInternalName())));
+            mn.accept(new MethodRemapper(mv,
+                    new SimpleRemapper(mixinClassNode.name, type.getInternalName())));
         }
     }
 
