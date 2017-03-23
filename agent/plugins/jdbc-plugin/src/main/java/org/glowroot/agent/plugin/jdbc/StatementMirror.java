@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import org.glowroot.agent.plugin.api.QueryEntry;
 
 // used to capture and mirror the state of statements since the underlying {@link Statement} values
 // cannot be inspected after they have been set
-class StatementMirror {
+//
+// this class must be public since it is referenced from bytecode inside other packages via @Mixin
+public class StatementMirror {
 
     // this field is not used by PreparedStatementMirror subclass
     //
