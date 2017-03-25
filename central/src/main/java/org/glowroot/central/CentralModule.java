@@ -429,21 +429,30 @@ class CentralModule {
     // TODO report checker framework issue that occurs without this suppression
     @EnsuresNonNull("startupLogger")
     @SuppressWarnings("contracts.postcondition.not.satisfied")
-    private static void initLogging(File centralDir) {
+    private static void initLogging(File centralDir) throws IOException {
         File logbackXmlOverride = new File(centralDir, "logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("logback.configurationFile", logbackXmlOverride.getAbsolutePath());
         }
-        String prior = System.getProperty("glowroot.log.dir");
+        String explicitLogDirPath = System.getProperty("glowroot.log.dir");
         try {
-            System.setProperty("glowroot.log.dir", centralDir.getPath());
+            if (Strings.isNullOrEmpty(explicitLogDirPath)) {
+                System.setProperty("glowroot.log.dir", centralDir.getPath());
+            } else {
+                File explicitLogDir = new File(explicitLogDirPath);
+                explicitLogDir.mkdirs();
+                if (!explicitLogDir.isDirectory()) {
+                    throw new IOException(
+                            "Could not create log directory: " + explicitLogDir.getAbsolutePath());
+                }
+            }
             startupLogger = LoggerFactory.getLogger("org.glowroot");
         } finally {
-            System.clearProperty("glowroot.logback.configurationFile");
-            if (prior == null) {
+            System.clearProperty("logback.configurationFile");
+            if (explicitLogDirPath == null) {
                 System.clearProperty("glowroot.log.dir");
-            } else {
-                System.setProperty("glowroot.log.dir", prior);
+            } else if (explicitLogDirPath.isEmpty()) {
+                System.setProperty("glowroot.log.dir", "");
             }
         }
     }

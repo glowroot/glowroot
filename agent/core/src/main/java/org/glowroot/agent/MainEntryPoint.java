@@ -81,7 +81,8 @@ public class MainEntryPoint {
             glowrootDir = GlowrootDir.getGlowrootDir(glowrootJarFile);
             agentDir = GlowrootDir.getAgentDir(glowrootDir);
             // init logger as early as possible
-            initLogging(agentDir);
+            File logDir = GlowrootDir.getLogDir(agentDir);
+            initLogging(agentDir, logDir);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             // also, don't use logger since not initialized yet
@@ -123,14 +124,14 @@ public class MainEntryPoint {
     }
 
     @EnsuresNonNull("startupLogger")
-    static void initLogging(File glowrootDir) {
-        File logbackXmlOverride = new File(glowrootDir, "glowroot.logback.xml");
+    static void initLogging(File agentDir, File logDir) {
+        File logbackXmlOverride = new File(agentDir, "glowroot.logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("glowroot.logback.configurationFile",
                     logbackXmlOverride.getAbsolutePath());
         }
         String prior = System.getProperty("glowroot.log.dir");
-        System.setProperty("glowroot.log.dir", glowrootDir.getPath());
+        System.setProperty("glowroot.log.dir", logDir.getPath());
         try {
             startupLogger = LoggerFactory.getLogger("org.glowroot");
         } finally {
@@ -258,10 +259,10 @@ public class MainEntryPoint {
     public static void start(Map<String, String> properties) throws Exception {
         String testDirPath = properties.get("glowroot.test.dir");
         checkNotNull(testDirPath);
-        File glowrootDir = new File(testDirPath);
+        File testDir = new File(testDirPath);
         // init logger as early as possible
-        initLogging(glowrootDir);
-        start(glowrootDir, glowrootDir, properties, null);
+        initLogging(testDir, testDir);
+        start(testDir, testDir, properties, null);
     }
 
     @OnlyUsedByTests

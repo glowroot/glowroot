@@ -44,7 +44,8 @@ public class ToolMain {
         File glowrootJarFile = getGlowrootJarFile(codeSource);
         File glowrootDir = GlowrootDir.getGlowrootDir(glowrootJarFile);
         File agentDir = GlowrootDir.getAgentDir(glowrootDir);
-        MainEntryPoint.initLogging(glowrootDir);
+        File logDir = GlowrootDir.getLogDir(agentDir);
+        MainEntryPoint.initLogging(agentDir, logDir);
         startupLogger = LoggerFactory.getLogger("org.glowroot");
 
         if (args.length == 1 && args[0].equals("h2")) {

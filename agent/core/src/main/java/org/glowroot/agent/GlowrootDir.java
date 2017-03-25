@@ -31,7 +31,7 @@ class GlowrootDir {
 
     private GlowrootDir() {}
 
-    public static File getGlowrootDir(@Nullable File glowrootJarFile) {
+    static File getGlowrootDir(@Nullable File glowrootJarFile) {
         String testDirPath = System.getProperty("glowroot.test.dir");
         if (!Strings.isNullOrEmpty(testDirPath)) {
             return new File(testDirPath);
@@ -48,18 +48,41 @@ class GlowrootDir {
         return glowrootDir;
     }
 
-    public static File getAgentDir(File glowrootDir) throws IOException {
+    static File getAgentDir(File directory) throws IOException {
         String agentId = System.getProperty("glowroot.agent.id");
         if (Strings.isNullOrEmpty(agentId)) {
-            return glowrootDir;
+            return directory;
         }
-        File agentDir = new File(glowrootDir, "agent-" + makeSafeDirName(agentId));
+        // "agent-" prefix is needed to ensure uniqueness
+        File agentDir = new File(directory, "agent-" + makeSafeDirName(agentId));
         agentDir.mkdir();
         if (!agentDir.isDirectory()) {
             throw new IOException(
                     "Could not create agent directory: " + agentDir.getAbsolutePath());
         }
         return agentDir;
+    }
+
+    static File getLogDir(File agentDir) throws IOException {
+        String logDirPath = System.getProperty("glowroot.log.dir");
+        if (Strings.isNullOrEmpty(logDirPath)) {
+            return agentDir;
+        }
+        File logDir = new File(logDirPath);
+        logDir.mkdirs();
+        if (!logDir.isDirectory()) {
+            throw new IOException("Could not create log directory: " + logDir.getAbsolutePath());
+        }
+        String agentId = System.getProperty("glowroot.agent.id");
+        if (Strings.isNullOrEmpty(agentId)) {
+            return logDir;
+        }
+        logDir = new File(logDir, makeSafeDirName(agentId));
+        logDir.mkdir();
+        if (!logDir.isDirectory()) {
+            throw new IOException("Could not create log directory: " + logDir.getAbsolutePath());
+        }
+        return logDir;
     }
 
     private static String makeSafeDirName(String name) {
