@@ -81,11 +81,14 @@ public class LazyPlatformMBeanServer {
     }
 
     private LazyPlatformMBeanServer() throws InterruptedException {
-        waitForContainerToCreatePlatformMBeanServer = AppServerDetection.isJBossModules()
-                || AppServerDetection.isOldJBoss() || AppServerDetection.isGlassfish()
-                || AppServerDetection.isWebLogic() || AppServerDetection.isWebSphere();
-        needsManualPatternMatching = AppServerDetection.isOldJBoss();
-        websphere = AppServerDetection.isWebSphere();
+        String command = AppServerDetection.getCommand();
+        boolean oldJBoss = AppServerDetection.isOldJBoss(command);
+        boolean websphere = AppServerDetection.isWebSphere(command);
+        waitForContainerToCreatePlatformMBeanServer = AppServerDetection.isJBossModules(command)
+                || oldJBoss || AppServerDetection.isGlassfish(command)
+                || AppServerDetection.isWebLogic(command) || websphere;
+        needsManualPatternMatching = oldJBoss;
+        this.websphere = websphere;
     }
 
     public void lazyRegisterMBean(Object object, String name) {
@@ -190,7 +193,7 @@ public class LazyPlatformMBeanServer {
             if (platformMBeanServer != null) {
                 return;
             }
-            if (platformMBeanServer == null && waitForContainerToCreatePlatformMBeanServer) {
+            if (waitForContainerToCreatePlatformMBeanServer) {
                 waitForContainerToCreatePlatformMBeanServer(Stopwatch.createUnstarted());
             }
             platformMBeanServer = ManagementFactory.getPlatformMBeanServer();

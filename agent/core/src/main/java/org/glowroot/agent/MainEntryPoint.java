@@ -65,7 +65,7 @@ public class MainEntryPoint {
     private MainEntryPoint() {}
 
     public static void premain(Instrumentation instrumentation, @Nullable File glowrootJarFile) {
-        boolean jbossModules = AppServerDetection.isJBossModules();
+        boolean jbossModules = AppServerDetection.isJBossModules(AppServerDetection.getCommand());
         if (jbossModules) {
             String jbossModulesSystemPkgs = System.getProperty("jboss.modules.system.pkgs");
             if (Strings.isNullOrEmpty(jbossModulesSystemPkgs)) {

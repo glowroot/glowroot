@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@ public class AppServerDetectionTest {
         String previous = System.getProperty("sun.java.command");
         setJavaSunCommand(javaSunCommand);
         try {
-            assertThat(AppServerDetection.isJBossModules()).isEqualTo(jbossModules);
+            assertThat(AppServerDetection.isJBossModules(AppServerDetection.getCommand()))
+                    .isEqualTo(jbossModules);
         } finally {
             setJavaSunCommand(previous);
         }

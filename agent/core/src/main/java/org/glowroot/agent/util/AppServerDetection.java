@@ -23,43 +23,38 @@ public class AppServerDetection {
 
     private AppServerDetection() {}
 
-    public static boolean isIbmJvm() {
-        String vmName = StandardSystemProperty.JAVA_VM_NAME.value();
-        return vmName != null && vmName.equals("IBM J9 VM");
-    }
-
-    public static boolean isJBossModules() {
-        String command = getCommand();
-        return command != null && (command.equals("org.jboss.modules.Main")
-                || command.endsWith("jboss-modules.jar"));
-    }
-
-    static boolean isOldJBoss() {
-        String command = getCommand();
-        return command != null && command.equals("org.jboss.Main");
-    }
-
-    static boolean isGlassfish() {
-        String command = getCommand();
-        return command != null && command.equals("com.sun.enterprise.glassfish.bootstrap.ASMain");
-    }
-
-    static boolean isWebLogic() {
-        String command = getCommand();
-        return command != null && command.equals("weblogic.Server");
-    }
-
-    static boolean isWebSphere() {
-        String command = getCommand();
-        return command != null && command.equals("com.ibm.wsspi.bootstrap.WSPreLauncher");
-    }
-
-    private static @Nullable String getCommand() {
+    public static @Nullable String getCommand() {
         String sunJavaCommand = System.getProperty("sun.java.command");
         if (sunJavaCommand == null) {
             return null;
         }
         int index = sunJavaCommand.indexOf(' ');
         return index == -1 ? sunJavaCommand : sunJavaCommand.substring(0, index);
+    }
+
+    public static boolean isIbmJvm() {
+        String vmName = StandardSystemProperty.JAVA_VM_NAME.value();
+        return vmName != null && vmName.equals("IBM J9 VM");
+    }
+
+    public static boolean isJBossModules(@Nullable String command) {
+        return command != null && (command.equals("org.jboss.modules.Main")
+                || command.endsWith("jboss-modules.jar"));
+    }
+
+    static boolean isOldJBoss(@Nullable String command) {
+        return command != null && command.equals("org.jboss.Main");
+    }
+
+    static boolean isGlassfish(@Nullable String command) {
+        return command != null && command.equals("com.sun.enterprise.glassfish.bootstrap.ASMain");
+    }
+
+    static boolean isWebLogic(@Nullable String command) {
+        return command != null && command.equals("weblogic.Server");
+    }
+
+    static boolean isWebSphere(@Nullable String command) {
+        return command != null && command.equals("com.ibm.wsspi.bootstrap.WSPreLauncher");
     }
 }
