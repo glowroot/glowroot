@@ -156,7 +156,7 @@ class GaugeCollector extends ScheduledRunnable {
 
     @VisibleForTesting
     @RequiresNonNull("priorRawCounterValues")
-    List<GaugeValue> collectGaugeValues(GaugeConfig gaugeConfig) throws InterruptedException {
+    List<GaugeValue> collectGaugeValues(GaugeConfig gaugeConfig) throws Exception {
         String mbeanObjectName = gaugeConfig.mbeanObjectName();
         ObjectName objectName;
         try {

@@ -307,7 +307,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public List<String> getMatchingMBeanObjectNames(String agentId, String partialObjectName,
-            int limit) throws InterruptedException {
+            int limit) throws Exception {
         ObjectNameQueryExp queryExp = new ObjectNameQueryExp(partialObjectName);
         Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, queryExp);
         // unfortunately Wildfly returns lots of mbean object names without checking them against

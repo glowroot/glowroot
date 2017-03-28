@@ -147,7 +147,7 @@ public class GaugeCollectorTest {
     }
 
     @Test
-    public void shouldHandleInvalidMBeanObjectName() throws InterruptedException {
+    public void shouldHandleInvalidMBeanObjectName() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .mbeanObjectName("invalid mbean object name")

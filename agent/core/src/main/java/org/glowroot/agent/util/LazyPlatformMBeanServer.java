@@ -57,6 +57,9 @@ public class LazyPlatformMBeanServer {
 
     private static final Logger logger = LoggerFactory.getLogger(LazyPlatformMBeanServer.class);
 
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
     @GuardedBy("initListeners")
     private final List<InitListener> initListeners = Lists.newArrayList();
 
@@ -69,7 +72,7 @@ public class LazyPlatformMBeanServer {
 
     private volatile @MonotonicNonNull MBeanServer platformMBeanServer;
 
-    public static LazyPlatformMBeanServer create() throws InterruptedException {
+    public static LazyPlatformMBeanServer create() throws Exception {
         LazyPlatformMBeanServer lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
         if (!lazyPlatformMBeanServer.waitForContainerToCreatePlatformMBeanServer) {
             // it is useful to init right away in this case in order to avoid condition where really
@@ -121,7 +124,7 @@ public class LazyPlatformMBeanServer {
     }
 
     public Set<ObjectName> queryNames(@Nullable ObjectName name, @Nullable QueryExp query)
-            throws InterruptedException {
+            throws Exception {
         ensureInit();
         if (needsManualPatternMatching && name != null && name.isPattern()) {
             return platformMBeanServer.queryNames(null, new ObjectNamePatternQueryExp(name));
@@ -188,7 +191,7 @@ public class LazyPlatformMBeanServer {
     }
 
     @EnsuresNonNull("platformMBeanServer")
-    private void ensureInit() throws InterruptedException {
+    private void ensureInit() throws Exception {
         synchronized (initListeners) {
             if (platformMBeanServer != null) {
                 return;
@@ -196,7 +199,20 @@ public class LazyPlatformMBeanServer {
             if (waitForContainerToCreatePlatformMBeanServer) {
                 waitForContainerToCreatePlatformMBeanServer(Stopwatch.createUnstarted());
             }
-            platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+            try {
+                platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+            } catch (Exception e) {
+                // e.g. on old jboss: JMRuntimeException: Failed to load MBeanServerBuilder class
+                // org.jboss.mx.server.MBeanServerBuilderImpl
+                logger.debug(e.getMessage(), e);
+                List<MBeanServer> mbeanServers = MBeanServerFactory.findMBeanServer(null);
+                if (mbeanServers.isEmpty()) {
+                    throw e;
+                }
+                platformMBeanServer = mbeanServers.get(0);
+                startupLogger.info("could not load platform mbean server, using {}",
+                        platformMBeanServer.getClass().getName());
+            }
             for (InitListener initListener : initListeners) {
                 try {
                     initListener.postInit(platformMBeanServer);
