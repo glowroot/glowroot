@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,6 @@ public class PreInitializeWeavingClassesTest {
     @Test
     public void shouldCheckHardcodedListAgainstReality() throws IOException {
         GlobalCollector globalCollector = new GlobalCollector();
-        // register WeavingTimerServiceImpl since the WeavingClassFileTransformer constructor
-        // accepts the WeavingTimerService interface and so WeavingTimerServiceImpl would otherwise
-        // go unseen
-        globalCollector.registerClass("org/glowroot/agent/impl/WeavingTimerServiceImpl");
-        globalCollector.registerClass("org/glowroot/agent/weaving/ImmutableAdvice");
         // "call" AnalyzedWorld constructor to capture types used by LoadingCache
         // (so these types will be in the list of possible subtypes later on)
         globalCollector.processMethodFailIfNotFound(
