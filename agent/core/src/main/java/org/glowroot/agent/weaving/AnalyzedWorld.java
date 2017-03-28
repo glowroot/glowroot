@@ -317,15 +317,7 @@ public class AnalyzedWorld {
             // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader
             return createAnalyzedClassPlanB(className, loader);
         }
-        byte[] bytes;
-        if (loader == null) {
-            bytes = Resources.toByteArray(url);
-        } else {
-            // synchronizing on the class loader here has saved at least one deadlock
-            synchronized (loader) {
-                bytes = Resources.toByteArray(url);
-            }
-        }
+        byte[] bytes = Resources.toByteArray(url);
         List<Advice> advisors =
                 mergeInstrumentationAnnotations(this.advisors.get(), bytes, loader, className);
         ThinClassVisitor accv = new ThinClassVisitor();

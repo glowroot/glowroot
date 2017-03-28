@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 // in particular (at least prior to parallel class loading in JDK 7) initializing other classes
 // inside of a ClassFileTransformer.transform() method occasionally leads to deadlocks
 //
+// this is still a problem in JDK 7+, since parallel class loading must be opted in to by custom
+// class loaders, see ClassLoader.registerAsParallelCapable()
+//
 // to avoid initializing other classes inside of the transform() method, all classes referenced from
 // WeavingClassFileTransformer are pre-initialized (and all classes referenced from those classes,
 // etc)
@@ -309,6 +312,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ClassNames");
         types.add("org.glowroot.agent.weaving.Weaver$FelixOsgiHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$FelixOsgiHackMethodVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$JBoss4HackClassVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$JBoss4HackMethodVisitor");
         types.add("org.glowroot.agent.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$Builder");

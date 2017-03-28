@@ -125,21 +125,28 @@ public class Weaver {
                 classBytes, loader, className);
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
-        byte[] maybeFelixBytes = null;
+        byte[] maybeProcessedBytes = null;
         if (className.equals("org/apache/felix/framework/BundleWiringImpl")) {
             ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
                     loader, codeSource, className);
             ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
-            maybeFelixBytes = cw.toByteArray();
+            maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals("org/jboss/system/server/ServerImpl")) {
+            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
+                    loader, codeSource, className);
+            ClassVisitor cv = new JBoss4HackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+            maybeProcessedBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
                 mixinTypes, loader, analyzedWorld, codeSource, classBytes);
         classAnalyzer.analyzeMethods();
         if (!classAnalyzer.isWeavingRequired()) {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
-            return maybeFelixBytes;
+            return maybeProcessedBytes;
         }
         // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
         //
@@ -160,7 +167,8 @@ public class Weaver {
                         classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(),
                         classAnalyzer.getMatchedShimTypes(), classAnalyzer.getMatchedMixinTypes(),
                         classAnalyzer.getMethodAdvisors(), analyzedWorld);
-        ClassReader cr = new ClassReader(maybeFelixBytes == null ? classBytes : maybeFelixBytes);
+        ClassReader cr =
+                new ClassReader(maybeProcessedBytes == null ? classBytes : maybeProcessedBytes);
         try {
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
         } catch (RuntimeException e) {
@@ -424,6 +432,72 @@ public class Weaver {
             mv.visitInsn(IRETURN);
             mv.visitLabel(label);
 
+        }
+    }
+
+    private static class JBoss4HackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        JBoss4HackClassVisitor(ClassWriter cw) {
+            super(ASM5, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/[] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            if (name.equals("internalInitURLHandlers") && desc.equals("()V")) {
+                return new JBoss4HackMethodVisitor(mv, access, name, desc);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class JBoss4HackMethodVisitor extends AdviceAdapter {
+
+        private JBoss4HackMethodVisitor(MethodVisitor mv, int access, String name, String desc) {
+            super(ASM5, mv, access, name, desc);
+        }
+
+        @Override
+        protected void onMethodEnter() {
+            // these classes can be initialized inside of ClassFileTransformer.transform(), via
+            // Resources.toByteArray(url) inside of AnalyzedWorld.createAnalyzedClass()
+            // because jboss 4.x registers org.jboss.net.protocol.URLStreamHandlerFactory to handle
+            // "file" and "resource" URLs
+            //
+            // these classes can not be initialized in PreInitializeWeavingClasses since they are
+            // not accessible from the bootstrap or system class loader, and thus, this hack
+            Label l0 = new Label();
+            Label l1 = new Label();
+            Label l2 = new Label();
+            mv.visitTryCatchBlock(l0, l1, l2, "java/lang/Throwable");
+            mv.visitLabel(l0);
+            visitClassForName("org.jboss.net.protocol.file.Handler");
+            visitClassForName("org.jboss.net.protocol.file.FileURLConnection");
+            visitClassForName("org.jboss.net.protocol.resource.Handler");
+            visitClassForName("org.jboss.net.protocol.resource.ResourceURLConnection");
+            mv.visitLabel(l1);
+            Label l3 = new Label();
+            mv.visitJumpInsn(GOTO, l3);
+            mv.visitLabel(l2);
+            if (logger.isDebugEnabled()) {
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Throwable", "printStackTrace", "()V",
+                        false);
+            } else {
+                mv.visitInsn(POP);
+            }
+            mv.visitLabel(l3);
+        }
+
+        private void visitClassForName(String className) {
+            mv.visitLdcInsn(className);
+            mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
+                    "(Ljava/lang/String;)Ljava/lang/Class;", false);
+            mv.visitInsn(POP);
         }
     }
 
