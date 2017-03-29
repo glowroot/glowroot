@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -965,6 +965,9 @@ HandlebarsRendering = (function () {
     return Handlebars.Utils.escapeExpression(text);
   }
 
+  // these ids needs to be unique across both main thread profile and aux thread profile
+  var nextUniqueId = 0;
+
   function buildMergedStackTree(profile, selector) {
 
     var rootNode = {
@@ -991,10 +994,9 @@ HandlebarsRendering = (function () {
     }
 
     function initNodeIds() {
-      var nodeId = 1;
 
       function initNodeId(node) {
-        node.id = nodeId++;
+        node.id = nextUniqueId++;
         if (node.childNodes) {
           var i;
           for (i = 0; i < node.childNodes.length; i++) {
