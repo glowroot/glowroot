@@ -48,6 +48,7 @@ public class Grails {
         run("3.2.5");
         run("3.2.6");
         run("3.2.7");
+        run("3.2.8");
     }
 
     private static void run(String version) throws Exception {

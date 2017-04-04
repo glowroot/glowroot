@@ -74,7 +74,7 @@
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>0.17.5</version>
+      <version>0.17.6</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->
@@ -177,7 +177,7 @@
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
-      <version>3.1.4</version>
+      <version>3.2.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -205,7 +205,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
-      <version>9.4.2.v20170220</version>
+      <version>9.4.3.v20170317</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -85,6 +85,7 @@ public class PreInitializeWeavingClasses {
     private static List<String> getGuavaUsedTypes() {
         List<String> types = Lists.newArrayList();
         types.add("com.google.common.base.Charsets");
+        types.add("com.google.common.base.ExtraObjectsMethodsForWeb");
         types.add("com.google.common.base.Function");
         types.add("com.google.common.base.Joiner");
         types.add("com.google.common.base.Joiner$1");
@@ -94,7 +95,10 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.base.MoreObjects$ToStringHelper");
         types.add("com.google.common.base.MoreObjects$ToStringHelper$ValueHolder");
         types.add("com.google.common.base.Objects");
+        types.add("com.google.common.base.PatternCompiler");
         types.add("com.google.common.base.Platform");
+        types.add("com.google.common.base.Platform$1");
+        types.add("com.google.common.base.Platform$JdkPatternCompiler");
         types.add("com.google.common.base.Preconditions");
         types.add("com.google.common.base.Predicate");
         types.add("com.google.common.base.Predicates");
@@ -159,8 +163,8 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.Iterables");
         types.add("com.google.common.collect.Iterators");
         types.add("com.google.common.collect.Iterators$1");
+        types.add("com.google.common.collect.Iterators$10");
         types.add("com.google.common.collect.Iterators$11");
-        types.add("com.google.common.collect.Iterators$12");
         types.add("com.google.common.collect.Iterators$2");
         types.add("com.google.common.collect.Iterators$3");
         types.add("com.google.common.collect.Iterators$PeekingImpl");
@@ -189,6 +193,8 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.RegularImmutableBiMap$Inverse$InverseEntrySet$1");
         types.add("com.google.common.collect.RegularImmutableList");
         types.add("com.google.common.collect.RegularImmutableMap");
+        types.add("com.google.common.collect.RegularImmutableMap$KeySet");
+        types.add("com.google.common.collect.RegularImmutableMap$Values");
         types.add("com.google.common.collect.RegularImmutableSet");
         types.add("com.google.common.collect.RegularImmutableSortedSet");
         types.add("com.google.common.collect.ReverseNaturalOrdering");

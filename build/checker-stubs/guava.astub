@@ -19,6 +19,9 @@ public class Preconditions {
             @Nullable Object errorMessage);
     @EnsuresNonNull("#1")
     public static <T extends @Nullable Object> T checkNotNull(@Nullable T reference,
+            @Nullable String errorMessageTemplate, @Nullable Object p1);
+    @EnsuresNonNull("#1")
+    public static <T extends @Nullable Object> T checkNotNull(@Nullable T reference,
             @Nullable String errorMessageTemplate, @Nullable Object... errorMessageArgs);
 }
 

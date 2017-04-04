@@ -175,6 +175,10 @@ public class Logger {
         runJava7(test);
         updateLibVersion("log4j2x.version", "2.8");
         runJava7(test);
+        updateLibVersion("log4j2x.version", "2.8.1");
+        runJava7(test);
+        updateLibVersion("log4j2x.version", "2.8.2");
+        runJava7(test);
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {

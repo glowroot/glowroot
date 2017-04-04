@@ -20,20 +20,22 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Strings;
+import com.google.common.annotations.VisibleForTesting;
 
+// DO NOT USE ANY GUAVA CLASSES HERE
+// they trigger loading of jul
+// (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
 class GlowrootDir {
 
     // windows filename reserved characters
-    private static final CharMatcher RESERVED_CHARACTER_MATCHER = CharMatcher.anyOf("<>:\"/\\|?*");
-    private static final CharMatcher DOT_MATCHER = CharMatcher.anyOf(".");
+    // cannot use guava CharMatcher as that triggers loading of jul (org.glowroot.agent.jul.Logger)
+    private static final String RESERVED_CHARACTERS = "<>:\"/\\|?*";
 
     private GlowrootDir() {}
 
     static File getGlowrootDir(@Nullable File glowrootJarFile) {
         String testDirPath = System.getProperty("glowroot.test.dir");
-        if (!Strings.isNullOrEmpty(testDirPath)) {
+        if (testDirPath != null && !testDirPath.isEmpty()) {
             return new File(testDirPath);
         }
         if (glowrootJarFile == null) {
@@ -50,7 +52,7 @@ class GlowrootDir {
 
     static File getAgentDir(File directory) throws IOException {
         String agentId = System.getProperty("glowroot.agent.id");
-        if (Strings.isNullOrEmpty(agentId)) {
+        if (agentId == null || agentId.isEmpty()) {
             return directory;
         }
         // "agent-" prefix is needed to ensure uniqueness
@@ -65,7 +67,7 @@ class GlowrootDir {
 
     static File getLogDir(File agentDir) throws IOException {
         String logDirPath = System.getProperty("glowroot.log.dir");
-        if (Strings.isNullOrEmpty(logDirPath)) {
+        if (logDirPath == null || logDirPath.isEmpty()) {
             return agentDir;
         }
         File logDir = new File(logDirPath);
@@ -74,7 +76,7 @@ class GlowrootDir {
             throw new IOException("Could not create log directory: " + logDir.getAbsolutePath());
         }
         String agentId = System.getProperty("glowroot.agent.id");
-        if (Strings.isNullOrEmpty(agentId)) {
+        if (agentId == null || agentId.isEmpty()) {
             return logDir;
         }
         logDir = new File(logDir, makeSafeDirName(agentId));
@@ -85,8 +87,25 @@ class GlowrootDir {
         return logDir;
     }
 
-    private static String makeSafeDirName(String name) {
+    @VisibleForTesting
+    static String makeSafeDirName(String name) {
+        StringBuilder safeName = new StringBuilder(name.length());
+        int numTrailingDots = 0;
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (RESERVED_CHARACTERS.indexOf(c) == -1) {
+                safeName.append(c);
+            }
+            if (c == '.') {
+                numTrailingDots++;
+            } else {
+                numTrailingDots = 0;
+            }
+        }
         // windows directories ending with dot have issues
-        return DOT_MATCHER.trimTrailingFrom(RESERVED_CHARACTER_MATCHER.removeFrom(name));
+        if (numTrailingDots > 0) {
+            safeName.setLength(safeName.length() - numTrailingDots);
+        }
+        return safeName.toString();
     }
 }
