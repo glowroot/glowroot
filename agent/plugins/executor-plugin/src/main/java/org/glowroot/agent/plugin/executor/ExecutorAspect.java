@@ -385,15 +385,31 @@ public class ExecutorAspect {
 
     // KEEP THIS CODE IT IS VERY USEFUL
 
+    // private static final ThreadLocal<?> inAuxDebugLogging;
+    //
+    // static {
+    // try {
+    // Class<?> clazz = Class.forName("org.glowroot.agent.impl.AuxThreadContextImpl");
+    // Field field = clazz.getDeclaredField("inAuxDebugLogging");
+    // field.setAccessible(true);
+    // inAuxDebugLogging = (ThreadLocal<?>) field.get(null);
+    // } catch (Exception e) {
+    // throw new IllegalStateException(e);
+    // }
+    // }
+    //
     // @Pointcut(className = "/(?!org.glowroot).*/", methodName = "<init>",
     // methodParameterTypes = {".."})
     // public static class RunnableInitAdvice {
     //
     // @OnAfter
     // public static void onAfter(OptionalThreadContext context, @BindReceiver Object obj) {
-    // if (obj instanceof Runnable) {
-    // new Exception("Init " + Thread.currentThread().getName() + " " + obj.hashCode()
-    // + " " + context.getClass().getName()).printStackTrace();
+    // if (obj instanceof Runnable && isNotGlowrootThread()
+    // && inAuxDebugLogging.get() == null) {
+    // new Exception(
+    // "Init " + Thread.currentThread().getName() + " " + obj.getClass().getName()
+    // + ":" + obj.hashCode() + " " + context.getClass().getName())
+    // .printStackTrace();
     // }
     // }
     // }
@@ -402,10 +418,20 @@ public class ExecutorAspect {
     // order = 1)
     // public static class RunnableRunAdvice {
     //
+    // @IsEnabled
+    // public static boolean isEnabled() {
+    // return isNotGlowrootThread();
+    // }
+    //
     // @OnBefore
     // public static void onBefore(OptionalThreadContext context, @BindReceiver Runnable obj) {
-    // new Exception("Run " + Thread.currentThread().getName() + " " + obj.hashCode() + " "
-    // + context.getClass().getName()).printStackTrace();
+    // new Exception("Run " + Thread.currentThread().getName() + " " + obj.getClass().getName()
+    // + ":" + obj.hashCode() + " " + context.getClass().getName()).printStackTrace();
     // }
+    // }
+    //
+    // private static boolean isNotGlowrootThread() {
+    // String threadName = Thread.currentThread().getName();
+    // return !threadName.contains("GRPC") && !threadName.contains("Glowroot");
     // }
 }

@@ -724,6 +724,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
     public void setTransactionAsync() {
         if (innerTransactionThreadContext == null) {
             transaction.setAsync();
+            if (logger.isDebugEnabled() && AuxThreadContextImpl.inAuxDebugLogging.get() == null) {
+                AuxThreadContextImpl.inAuxDebugLogging.set(Boolean.TRUE);
+                try {
+                    logger.debug("set async transaction, thread context: {}, parent thread context:"
+                            + " {}, thread name: {}", hashCode(), getParentThreadContextDisplay(),
+                            Thread.currentThread().getName(), new Exception());
+                } finally {
+                    AuxThreadContextImpl.inAuxDebugLogging.remove();
+                }
+            }
         } else {
             innerTransactionThreadContext.setTransactionAsync();
         }
@@ -733,6 +743,17 @@ public class ThreadContextImpl implements ThreadContextPlus {
     public void setTransactionAsyncComplete() {
         if (innerTransactionThreadContext == null) {
             transactionAsyncComplete = true;
+            if (logger.isDebugEnabled() && AuxThreadContextImpl.inAuxDebugLogging.get() == null) {
+                AuxThreadContextImpl.inAuxDebugLogging.set(Boolean.TRUE);
+                try {
+                    logger.debug("set async transaction complete, thread context: {},"
+                            + " parent thread context: {}, thread name: {}", hashCode(),
+                            getParentThreadContextDisplay(), Thread.currentThread().getName(),
+                            new Exception());
+                } finally {
+                    AuxThreadContextImpl.inAuxDebugLogging.remove();
+                }
+            }
         } else {
             innerTransactionThreadContext.setTransactionAsyncComplete();
         }
@@ -892,42 +913,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return !traceEntryComponent.isEmpty();
     }
 
-    private boolean isAuxiliary() {
-        return parentTraceEntry != null;
-    }
-
-    private void addErrorEntryInternal(@Nullable String message, @Nullable Throwable t) {
-        // use higher entry limit when adding errors, but still need some kind of cap
-        if (transaction.allowAnotherErrorEntry()) {
-            long currTick = ticker.read();
-            ErrorMessage errorMessage =
-                    ErrorMessage.create(message, t, transaction.getThrowableFrameLimitCounter());
-            org.glowroot.agent.impl.TraceEntryImpl entry =
-                    addErrorEntry(currTick, currTick, null, null, errorMessage);
-            if (t == null) {
-                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                // strip up through this method, plus 2 additional methods:
-                // ThreadContextImpl.addErrorEntry() and the plugin advice method
-                int index = getNormalizedStartIndex(stackTrace, "addErrorEntryInternal", 2);
-                entry.setStackTrace(
-                        ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
-            }
-        }
-    }
-
-    private TimerImpl startTimer(TimerName timerName, long startTick) {
-        if (currentTimer == null) {
-            // this really shouldn't happen as current timer should be non-null unless transaction
-            // has completed
-            return TimerImpl.createRootTimer(this, (TimerNameImpl) timerName);
-        }
-        return currentTimer.startNestedTimer(timerName, startTick);
-    }
-
-    private AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
-        return transaction.startAsyncTimer(asyncTimerName, startTick);
-    }
-
     void populateParentChildMap(ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap,
             long captureTick,
             ListMultimap<TraceEntryImpl, ThreadContextImpl> priorEntryAuxThreadContextMap) {
@@ -969,6 +954,50 @@ public class ThreadContextImpl implements ThreadContextPlus {
             parentChildMap.put(rootEntry,
                     new TraceEntryImpl(this, rootEntry, DETACHED_MESSAGE_SUPPLIER,
                             null, 0, transaction.getEndTick(), null, null));
+        }
+    }
+
+    private boolean isAuxiliary() {
+        return parentTraceEntry != null;
+    }
+
+    private void addErrorEntryInternal(@Nullable String message, @Nullable Throwable t) {
+        // use higher entry limit when adding errors, but still need some kind of cap
+        if (transaction.allowAnotherErrorEntry()) {
+            long currTick = ticker.read();
+            ErrorMessage errorMessage =
+                    ErrorMessage.create(message, t, transaction.getThrowableFrameLimitCounter());
+            org.glowroot.agent.impl.TraceEntryImpl entry =
+                    addErrorEntry(currTick, currTick, null, null, errorMessage);
+            if (t == null) {
+                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                // strip up through this method, plus 2 additional methods:
+                // ThreadContextImpl.addErrorEntry() and the plugin advice method
+                int index = getNormalizedStartIndex(stackTrace, "addErrorEntryInternal", 2);
+                entry.setStackTrace(
+                        ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
+            }
+        }
+    }
+
+    private TimerImpl startTimer(TimerName timerName, long startTick) {
+        if (currentTimer == null) {
+            // this really shouldn't happen as current timer should be non-null unless transaction
+            // has completed
+            return TimerImpl.createRootTimer(this, (TimerNameImpl) timerName);
+        }
+        return currentTimer.startNestedTimer(timerName, startTick);
+    }
+
+    private AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
+        return transaction.startAsyncTimer(asyncTimerName, startTick);
+    }
+
+    private @Nullable Object getParentThreadContextDisplay() {
+        if (parentTraceEntry == null) {
+            return null;
+        } else {
+            return parentTraceEntry.getThreadContext().hashCode();
         }
     }
 
