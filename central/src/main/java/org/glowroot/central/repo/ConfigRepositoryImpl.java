@@ -24,6 +24,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -1097,10 +1098,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private static PluginConfig buildPluginConfig(PluginConfig existingPluginConfig,
             List<PluginProperty> properties) {
-        // TODO report checker framework issue that occurs without this suppression
-        @SuppressWarnings("methodref.receiver.invalid")
-        Map<String, PluginProperty> props =
-                Maps.newHashMap(Maps.uniqueIndex(properties, PluginProperty::getName));
+        Map<String, PluginProperty> props = buildMutablePropertiesMap(properties);
         PluginConfig.Builder builder = PluginConfig.newBuilder()
                 .setId(existingPluginConfig.getId())
                 .setName(existingPluginConfig.getName());
@@ -1122,6 +1120,19 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     "Unexpected property name(s): " + Joiner.on(", ").join(props.keySet()));
         }
         return builder.build();
+    }
+
+    private static Map<String, PluginProperty> buildMutablePropertiesMap(
+            List<PluginProperty> properties) {
+        // it would be nice to use "PluginProperty::getName", or even
+        // "pluginProperty -> pluginProperty.getName()" as the second argument, but both of these
+        // fail to compile under older Java 8 releases (at least 1.8.0_31)
+        return Maps.newHashMap(Maps.uniqueIndex(properties, new Function<PluginProperty, String>() {
+            @Override
+            public String apply(PluginProperty pluginProperty) {
+                return pluginProperty.getName();
+            }
+        }));
     }
 
     private static boolean isSameType(PluginProperty.Value left, PluginProperty.Value right) {

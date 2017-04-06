@@ -39,6 +39,15 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <!-- guava 21.0 is needed in order for ExpectedConditions in selenium 3.1+ to work smoothly
+        since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
+        methods still return com.google.common.base.Function, which only extends
+        java.util.function.Function guava 21.0 (since it is built for / only supports Java 8) -->
+      <version>21.0</version> <!--$NO-MVN-MAN-VER$ -->
+    </dependency>
+    <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-netty</artifactId>
     </dependency>
