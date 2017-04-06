@@ -141,7 +141,7 @@ public class ServletDispatcherIT {
         Trace trace = container.execute(InvokeIncludeServlet.class);
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.execute(InvokeForwardServlet.class);
+            trace = container.execute(InvokeIncludeServlet.class);
         }
         if (hasServletInit(trace)) {
             throw new AssertionError("Timed out waiting for the real trace");
