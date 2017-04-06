@@ -16,8 +16,8 @@
 package org.glowroot.tests;
 
 import java.util.List;
+import java.util.function.Function;
 
-import com.google.common.base.Function;
 import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;

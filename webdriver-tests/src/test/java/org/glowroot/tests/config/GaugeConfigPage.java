@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  */
 package org.glowroot.tests.config;
 
-import com.google.common.base.Predicate;
+import java.util.function.Function;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
@@ -69,9 +70,9 @@ public class GaugeConfigPage {
 
     private void clickTypeAheadItem(String label, final String text) {
         final By xpath = xpath("//div[label[normalize-space()='" + label + "']]//ul/li/a");
-        new WebDriverWait(driver, 30).until(new Predicate<WebDriver>() {
+        new WebDriverWait(driver, 30).until(new Function<WebDriver, Boolean>() {
             @Override
-            public boolean apply(WebDriver driver) {
+            public Boolean apply(WebDriver driver) {
                 for (WebElement element : driver.findElements(xpath)) {
                     if (element.getText().equals(text)) {
                         try {
