@@ -1,7 +1,0 @@
-{
-  "name": "Spray Plugin",
-  "id": "spray",
-  "aspects": [
-    "org.glowroot.agent.plugin.spray.SprayAspect"
-  ]
-}

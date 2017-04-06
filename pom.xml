@@ -58,7 +58,6 @@
     <module>agent/plugins/quartz-plugin</module>
     <module>agent/plugins/redis-plugin</module>
     <module>agent/plugins/servlet-plugin</module>
-    <module>agent/plugins/spray-plugin</module>
     <module>agent/plugins/spring-plugin</module>
     <module>agent/plugins/struts-plugin</module>
     <module>agent/benchmarks</module>
