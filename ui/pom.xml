@@ -199,7 +199,9 @@
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <arguments>install</arguments>
+              <!-- using install fails sometimes where using update succeeds, e.g. immediately after
+                updating to commit ae6eca71bece207d894afcd04b4d021001e62543 -->
+              <arguments>update</arguments>
             </configuration>
           </execution>
           <execution>
