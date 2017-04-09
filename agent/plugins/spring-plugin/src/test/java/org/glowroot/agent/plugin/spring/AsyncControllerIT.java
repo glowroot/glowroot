@@ -109,7 +109,7 @@ public class AsyncControllerIT {
 
         if (i.hasNext()) {
             // this happens sporadically on travis ci because the auxiliary thread is demarcated by
-            // WebAsyncManager$4.run() below, which calls both CallableAsyncController$1.call() and
+            // WebAsyncManager$4.run(), which calls both CallableAsyncController$1.call() and
             // calls javax.servlet.AsyncContext.dispatch(), and sporadically dispatch() can process
             // and returns the response before WebAsyncManager$4.run() completes, leading to
             // glowroot adding a trace entry under the auxiliary thread to note that
@@ -131,6 +131,8 @@ public class AsyncControllerIT {
             // org.springframework.web.context.request.async.WebAsyncManager$4.run(WebAsyncManager.java:324)
             // java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
             // java.util.concurrent.FutureTask.run(FutureTask.java:262)
+
+            // see similar issue in org.glowroot.agent.plugin.servlet.AsyncServletIT
 
             entry = i.next();
             assertThat(entry.getDepth()).isEqualTo(1);
