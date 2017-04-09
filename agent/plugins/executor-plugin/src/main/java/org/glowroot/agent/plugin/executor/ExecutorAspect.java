@@ -51,7 +51,8 @@ public class ExecutorAspect {
     // the field and method names are verbose to avoid conflict since they will become fields
     // and methods in all classes that extend Runnable, Callable and/or ForkJoinTask
     @Mixin({"java.lang.Runnable", "java.util.concurrent.Callable",
-            "java.util.concurrent.ForkJoinTask", "akka.jsr166y.ForkJoinTask"})
+            "java.util.concurrent.ForkJoinTask", "akka.jsr166y.ForkJoinTask",
+            "scala.concurrent.forkjoin.ForkJoinTask"})
     public abstract static class RunnableEtcImpl implements RunnableEtcMixin {
 
         private volatile @Nullable AuxThreadContext glowroot$auxContext;
@@ -89,7 +90,8 @@ public class ExecutorAspect {
                     + "|java.util.concurrent.ForkJoinPool"
                     + "|org.springframework.core.task.AsyncTaskExecutor"
                     + "|org.springframework.core.task.AsyncListenableTaskExecutor"
-                    + "|akka.jsr166y.ForkJoinPool",
+                    + "|akka.jsr166y.ForkJoinPool"
+                    + "|scala.concurrent.forkjoin.ForkJoinPool",
             methodName = "execute|submit|invoke|submitListenable",
             methodParameterTypes = {".."}, nestingGroup = "executor-execute")
     public static class ExecuteAdvice {
@@ -124,7 +126,7 @@ public class ExecutorAspect {
 
     @Pointcut(
             className = "java.util.concurrent.ExecutorService|java.util.concurrent.ForkJoinPool"
-                    + "|akka.jsr166y.ForkJoinPool",
+                    + "|akka.jsr166y.ForkJoinPool|scala.concurrent.forkjoin.ForkJoinPool",
             methodName = "invokeAll|invokeAny",
             methodParameterTypes = {"java.util.Collection", ".."},
             nestingGroup = "executor-execute")
@@ -343,7 +345,8 @@ public class ExecutorAspect {
 
     // the nesting group only starts applying once auxiliary thread context is started (it does not
     // apply to OptionalThreadContext that miss)
-    @Pointcut(className = "java.util.concurrent.ForkJoinTask|akka.jsr166y.ForkJoinTask",
+    @Pointcut(className = "java.util.concurrent.ForkJoinTask|akka.jsr166y.ForkJoinTask"
+            + "|scala.concurrent.forkjoin.ForkJoinTask",
             methodName = "exec", methodParameterTypes = {}, nestingGroup = "executor-run")
     public static class ExecAdvice {
         @IsEnabled
