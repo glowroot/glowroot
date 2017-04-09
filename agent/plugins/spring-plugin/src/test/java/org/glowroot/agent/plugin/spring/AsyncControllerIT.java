@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,37 @@ public class AsyncControllerIT {
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(1);
         assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        if (i.hasNext()) {
+            // this happens sporadically on travis ci because the auxiliary thread is demarcated by
+            // WebAsyncManager$4.run() below, which calls both CallableAsyncController$1.call() and
+            // calls javax.servlet.AsyncContext.dispatch(), and sporadically dispatch() can process
+            // and returns the response before WebAsyncManager$4.run() completes, leading to
+            // glowroot adding a trace entry under the auxiliary thread to note that
+            // "this auxiliary thread was still running when the transaction ended"
+
+            // this is the stack trace for the call to CallableAsyncController$1.call():
+
+            // org.glowroot.agent.plugin.spring.AsyncControllerIT$CallableAsyncController$1.call()
+            // org.springframework.web.context.request.async.WebAsyncManager$4.run(WebAsyncManager.java:316)
+            // java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+            // java.util.concurrent.FutureTask.run(FutureTask.java:262)
+
+            // this is the stack trace for the call to javax.servlet.AsyncContext.dispatch():
+
+            // org.apache.catalina.core.AsyncContextImpl.dispatch(AsyncContextImpl.java)
+            // org.springframework.web.context.request.async.StandardServletAsyncWebRequest.dispatch(StandardServletAsyncWebRequest.java:123)
+            // org.springframework.web.context.request.async.WebAsyncManager.setConcurrentResultAndDispatch(WebAsyncManager.java:353)
+            // org.springframework.web.context.request.async.WebAsyncManager.access$200(WebAsyncManager.java:58)
+            // org.springframework.web.context.request.async.WebAsyncManager$4.run(WebAsyncManager.java:324)
+            // java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+            // java.util.concurrent.FutureTask.run(FutureTask.java:262)
+
+            entry = i.next();
+            assertThat(entry.getDepth()).isEqualTo(1);
+            assertThat(entry.getMessage()).isEqualTo(
+                    "this auxiliary thread was still running when the transaction ended");
+        }
 
         assertThat(i.hasNext()).isFalse();
     }
