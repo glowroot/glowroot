@@ -78,8 +78,10 @@ public class RoleDao {
             BoundStatement boundStatement = insertIfNotExistsPS.bind();
             int i = 0;
             boundStatement.setString(i++, "Administrator");
-            boundStatement.setSet(i++, ImmutableSet.of("agent:*:transaction", "agent:*:error",
-                    "agent:*:jvm", "agent:*:config", "admin"));
+            boundStatement.setSet(i++,
+                    ImmutableSet.of("agent:*:transaction", "agent:*:error", "agent:*:jvm",
+                            "agent:*:syntheticMonitor", "agent:*:alert", "agent:*:config",
+                            "admin"));
             session.execute(boundStatement);
         }
 
