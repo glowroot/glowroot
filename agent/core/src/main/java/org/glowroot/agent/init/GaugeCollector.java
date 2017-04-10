@@ -37,7 +37,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
@@ -51,6 +50,7 @@ import org.glowroot.agent.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.agent.config.ImmutableMBeanAttribute;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
+import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.common.util.Styles;
@@ -90,15 +90,9 @@ class GaugeCollector extends ScheduledRunnable {
         this.ticker = ticker;
         startTimeMillis = clock.currentTimeMillis();
         collectionExecutor = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("Glowroot-Gauge-Collection")
-                        .build());
-        flushingExecutor = Executors.newSingleThreadExecutor(
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("Glowroot-Gauge-Flushing")
-                        .build());
+                ThreadFactories.create("Glowroot-Gauge-Collection"));
+        flushingExecutor = Executors
+                .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Gauge-Flushing"));
         lazyPlatformMBeanServer.addInitListener(new InitListener() {
             @Override
             public void postInit(MBeanServer mbeanServer) {

@@ -23,7 +23,6 @@ import java.util.concurrent.Executors;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +31,7 @@ import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.RateLimitedLogger;
+import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 
@@ -63,11 +63,8 @@ public class TransactionCollector {
         this.aggregator = aggregator;
         this.clock = clock;
         this.ticker = ticker;
-        dedicatedExecutor = Executors.newSingleThreadExecutor(
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("Glowroot-Trace-Collector")
-                        .build());
+        dedicatedExecutor = Executors
+                .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Trace-Collector"));
         configService.addConfigListener(new ConfigListener() {
             @Override
             public void onChange() {

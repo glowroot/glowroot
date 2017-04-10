@@ -29,7 +29,6 @@ import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Attributes;
 import io.grpc.ManagedChannel;
 import io.grpc.NameResolver;
@@ -43,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.util.RateLimitedLogger;
+import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -91,11 +91,8 @@ class CentralConnection {
 
     CentralConnection(List<SocketAddress> collectorAddresses, AtomicBoolean inConnectionFailure) {
         eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
-        channelExecutor = Executors.newSingleThreadExecutor(
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("Glowroot-GRPC-Executor")
-                        .build());
+        channelExecutor =
+                Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-GRPC-Executor"));
         channel = NettyChannelBuilder
                 .forTarget("dummy")
                 .nameResolverFactory(new SimpleNameResolverFactory(collectorAddresses))
@@ -105,10 +102,7 @@ class CentralConnection {
                 .negotiationType(NegotiationType.PLAINTEXT)
                 .build();
         retryExecutor = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("Glowroot-Collector-Retry")
-                        .build());
+                ThreadFactories.create("Glowroot-Collector-Retry"));
         this.inConnectionFailure = inConnectionFailure;
     }
 

@@ -22,7 +22,6 @@ import java.lang.instrument.Instrumentation;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.Nullable;
 
@@ -30,7 +29,6 @@ import ch.qos.logback.core.Context;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +39,7 @@ import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.init.NettyWorkaround.NettyInit;
+import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -161,19 +160,8 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         return Suppliers.memoize(new Supplier<ScheduledExecutorService>() {
             @Override
             public ScheduledExecutorService get() {
-                final ThreadFactory backingThreadFactory = new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("Glowroot-Background-%d")
-                        .build();
-                ThreadFactory threadFactory = new ThreadFactory() {
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread thread = backingThreadFactory.newThread(r);
-                        thread.setContextClassLoader(GlowrootThinAgentInit.class.getClassLoader());
-                        return thread;
-                    }
-                };
-                return Executors.newScheduledThreadPool(2, threadFactory);
+                return Executors.newScheduledThreadPool(2,
+                        ThreadFactories.create("Glowroot-Background-%d"));
             }
         });
     }

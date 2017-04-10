@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,12 @@ package org.glowroot.agent.central;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+
+import org.glowroot.agent.util.ThreadFactories;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -32,11 +33,8 @@ class EventLoopGroups {
 
     // copy of io.grpc.netty.Utils.DefaultEventLoopGroupResource with some modification
     static EventLoopGroup create(String name) {
-        final ExecutorService executor = Executors.newSingleThreadExecutor(
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat(name)
-                        .build());
+        final ExecutorService executor =
+                Executors.newSingleThreadExecutor(ThreadFactories.create(name));
         NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(1, executor);
         nioEventLoopGroup.terminationFuture()
                 .addListener(new GenericFutureListener<Future<Object>>() {
