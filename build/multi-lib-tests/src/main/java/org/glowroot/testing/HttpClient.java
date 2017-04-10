@@ -208,7 +208,7 @@ public class HttpClient {
             updateLibVersion("cxf.version", "3.0." + i);
             run(test);
         }
-        for (int i = 0; i <= 10; i++) {
+        for (int i = 0; i <= 11; i++) {
             updateLibVersion("cxf.version", "3.1." + i);
             runJava7(test);
         }

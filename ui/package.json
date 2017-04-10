@@ -15,7 +15,7 @@
     "grunt-contrib-less": "1.4.1",
     "grunt-connect-proxy": "0.2.0",
     "grunt-connect-rewrite": "0.2.1",
-    "grunt-contrib-uglify": "2.2.1",
+    "grunt-contrib-uglify": "2.3.0",
     "grunt-contrib-watch": "1.0.0",
     "grunt-filerev": "2.3.1",
     "grunt-newer": "1.2.0",

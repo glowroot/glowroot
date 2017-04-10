@@ -22,7 +22,7 @@
     <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
     <apache.httpcore.version>4.4.6</apache.httpcore.version>
     <okhttpclient.version>2.7.5</okhttpclient.version>
-    <cxf.version>3.1.10</cxf.version>
+    <cxf.version>3.1.11</cxf.version>
     <spring.version>4.3.7.RELEASE</spring.version>
   </properties>
 

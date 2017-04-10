@@ -18,7 +18,7 @@
     "handlebars": "4.0.5",
     "jquery": "3.2.1",
     "moment": "2.18.1",
-    "moment-timezone": "0.5.12",
+    "moment-timezone": "0.5.13",
     "sequeljs": "trask/sequeljs#glowroot-0.9.8",
     "spinjs": "2.3.2",
     "zeroclipboard": "2.3.0"
