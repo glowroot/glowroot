@@ -79,16 +79,8 @@
     <netty.version>4.1.6.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
-    <!-- logback classic 1.1.10 contains META-INF/services/javax.servlet.ServletContainerInitializer
-      which causes issues when running tests with embedded tomcat inside JavaagentContainer
-      because logback is loaded in the bootstrap class loader (see JavaagentContainer.java)
-      and so LogbackServletContainerInitializer is loaded in the bootstrap class loader which then
-      looks for ServletContainerInitializer in the bootstrap class loader, but it is not, and adding
-      tomcat to the bootstrap class loader causes NullPointerException
-      in org.apache.catalina.startup.ContextConfig -->
-    <logback.version>1.1.9</logback.version>
-    <!-- sticking to slf4j version that is used by the logback version above -->
-    <slf4j.version>1.7.22</slf4j.version>
+    <logback.version>1.2.2</logback.version>
+    <slf4j.version>1.7.25</slf4j.version>
     <immutables.version>2.4.6</immutables.version>
     <jmh.version>1.18</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

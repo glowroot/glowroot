@@ -377,6 +377,7 @@ public class JavaagentContainer implements Container {
                     || name.matches("jackson-.*\\.jar")
                     || name.matches("jzlib-.*\\.jar")
                     || name.matches("logback-.*\\.jar")
+                    || name.matches("javax.servlet-api-.*\\.jar")
                     || name.matches("netty-.*\\.jar")
                     || name.matches("protobuf-java-.*\\.jar")
                     || name.matches("slf4j-api-.*\\.jar")
