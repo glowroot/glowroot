@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.weaving;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -41,6 +42,10 @@ public class PreInitializeWeavingClasses {
 
     private static final Logger logger = LoggerFactory.getLogger(PreInitializeWeavingClasses.class);
 
+    // this is probably not needed, since preInitializeLinkedHashMapKeySetAndKeySetIterator() is
+    // only called a single time, but just to be safe ...
+    public static volatile @Nullable Object toPreventDeadCodeElimination;
+
     private PreInitializeWeavingClasses() {}
 
     public static void preInitializeClasses() {
@@ -55,6 +60,7 @@ public class PreInitializeWeavingClasses {
             // passing warnOnNotExists=false since ThreadLocalRandom only exists in jdk 1.7+
             initialize(type, loader, false);
         }
+        preInitializeLinkedHashMapKeySetAndKeySetIterator();
     }
 
     private static void initialize(String type, @Nullable ClassLoader loader,
@@ -556,5 +562,56 @@ public class PreInitializeWeavingClasses {
         // java.lang.Thread.run(Thread.java:745)[na:1.8.0_20]
         types.add("java.util.concurrent.ThreadLocalRandom");
         return types;
+    }
+
+    private static void preInitializeLinkedHashMapKeySetAndKeySetIterator() {
+        // Resources.toByteArray(), which is used during weaving (see AnalyzedWorld), calls
+        // java.io.ExpiringCache.get(), which every 300 executions calls
+        // java.io.ExpiringCache.cleanup() (see stacktrace below)
+        //
+        // sometimes this leads to a ClassCircularityError, e.g.
+        //
+        // java.lang.ClassCircularityError: java/util/LinkedHashMap$LinkedKeyIterator
+        // java.util.LinkedHashMap$LinkedKeySet.iterator(LinkedHashMap.java:539)
+        // java.io.ExpiringCache.cleanup(ExpiringCache.java:119)
+        // java.io.ExpiringCache.get(ExpiringCache.java:76)
+        // java.io.UnixFileSystem.canonicalize(UnixFileSystem.java:152)
+        // java.io.File.getCanonicalPath(File.java:618)
+        // java.io.FilePermission$1.run(FilePermission.java:215)
+        // java.io.FilePermission$1.run(FilePermission.java:203)
+        // java.security.AccessController.doPrivileged(Native Method)
+        // java.io.FilePermission.init(FilePermission.java:203)
+        // java.io.FilePermission.<init>(FilePermission.java:277)
+        // sun.net.www.protocol.file.FileURLConnection.getPermission(FileURLConnection.java:225)
+        // sun.net.www.protocol.jar.JarFileFactory.getPermission(JarFileFactory.java:156)
+        // sun.net.www.protocol.jar.JarFileFactory.getCachedJarFile(JarFileFactory.java:126)
+        // sun.net.www.protocol.jar.JarFileFactory.get(JarFileFactory.java:81)
+        // sun.net.www.protocol.jar.JarURLConnection.connect(JarURLConnection.java:122)
+        // sun.net.www.protocol.jar.JarURLConnection.getInputStream(JarURLConnection.java:150)
+        // java.net.URL.openStream(URL.java:1038)
+        // com.google.common.io.Resources$UrlByteSource.openStream(Resources.java:72)
+        // com.google.common.io.ByteSource.read(ByteSource.java:285)
+        // com.google.common.io.Resources.toByteArray(Resources.java:98)
+        // org.glowroot.agent.weaving.AnalyzedWorld.createAnalyzedClass(AnalyzedWorld.java:320)
+        // org.glowroot.agent.weaving.AnalyzedWorld.getOrCreateAnalyzedClass(AnalyzedWorld.java:232)
+        // org.glowroot.agent.weaving.AnalyzedWorld.getSuperClasses(AnalyzedWorld.java:189)
+        // org.glowroot.agent.weaving.AnalyzedWorld.getAnalyzedHierarchy(AnalyzedWorld.java:139)
+        // org.glowroot.agent.weaving.ClassAnalyzer.<init>(ClassAnalyzer.java:108)
+        // org.glowroot.agent.weaving.Weaver.weaveUnderTimer(Weaver.java:144)
+        // org.glowroot.agent.weaving.Weaver.weave(Weaver.java:95)
+        // org.glowroot.agent.weaving.WeavingClassFileTransformer.transformInternal(WeavingClassFileTransformer.java:86)
+        // org.glowroot.agent.weaving.WeavingClassFileTransformer.transform(WeavingClassFileTransformer.java:65)
+        // sun.instrument.TransformerManager.transform(TransformerManager.java:188)
+        // sun.instrument.InstrumentationImpl.transform(InstrumentationImpl.java:428)
+        //
+        // but different Java versions have different private implementation classes for
+        // LinkedHashMap "key set" and "key set iterator", e.g.
+        // Java 8 uses java.util.LinkedHashMap$LinkedKeySet and
+        // java.util.LinkedHashMap$LinkedKeyIterator
+        // while Java 6 and 7 use java.util.HashMap$KeySet and java.util.LinkedHashMap$KeyIterator
+        //
+        // so using this code to load the "occasional" dependencies of java.io.ExpiringCache
+        // instead of loading them by class name
+        toPreventDeadCodeElimination = new LinkedHashMap<Object, Object>().keySet().iterator();
     }
 }
