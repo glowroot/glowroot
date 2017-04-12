@@ -30,14 +30,14 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 
 class CollectorImpl implements Collector {
 
-    private final EnvironmentDao agentDao;
+    private final EnvironmentDao environmentDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
 
-    CollectorImpl(EnvironmentDao agentDao, AggregateDao aggregateRepository,
+    CollectorImpl(EnvironmentDao environmentDao, AggregateDao aggregateRepository,
             TraceDao traceRepository, GaugeValueDao gaugeValueRepository) {
-        this.agentDao = agentDao;
+        this.environmentDao = environmentDao;
         this.aggregateDao = aggregateRepository;
         this.traceDao = traceRepository;
         this.gaugeValueDao = gaugeValueRepository;
@@ -46,7 +46,7 @@ class CollectorImpl implements Collector {
     @Override
     public void init(File glowrootDir, File agentDir, Environment environment,
             AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) throws Exception {
-        agentDao.store(environment);
+        environmentDao.store(environment);
     }
 
     @Override
@@ -57,10 +57,6 @@ class CollectorImpl implements Collector {
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
         gaugeValueDao.store(gaugeValues);
-        long maxCaptureTime = 0;
-        for (GaugeValue gaugeValue : gaugeValues) {
-            maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
-        }
     }
 
     @Override
