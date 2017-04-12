@@ -18,6 +18,7 @@ package org.glowroot.tests;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Sets;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Request;
@@ -44,6 +46,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.glowroot.tests.jvm.JvmSidebar;
 import org.glowroot.tests.util.Utils;
 
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,15 +69,42 @@ public class BasicSmokeIT extends WebDriverIT {
                         + "\"captureThreadStats\":false,\"version\":\"" + version + "\"}")
                 .build();
         int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-        asyncHttpClient.close();
         if (statusCode != 200) {
+            asyncHttpClient.close();
             throw new AssertionError("Unexpected status code: " + statusCode);
         }
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (stopwatch.elapsed(SECONDS) < 5) {
+        for (int i = 0; i < 3; i++) {
             container.executeNoExpectedTrace(JdbcServlet.class);
             container.executeNoExpectedTrace(ErrorServlet.class);
-            Thread.sleep(100);
+        }
+        // wait until above transactions are reported in UI
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        Set<String> transactionNames = Sets.newHashSet();
+        while (stopwatch.elapsed(SECONDS) < 30) {
+            long from = System.currentTimeMillis() - HOURS.toMillis(2);
+            long to = from + HOURS.toMillis(4);
+            request = asyncHttpClient
+                    .prepareGet("http://localhost:" + getUiPort()
+                            + "/backend/transaction/summaries?agent-rollup-id=" + agentId
+                            + "&transaction-type=Web&from=" + from + "&to=" + to
+                            + "&sort-order=total-time&limit=10")
+                    .build();
+            response = asyncHttpClient.executeRequest(request).get();
+            responseNode = new ObjectMapper().readTree(response.getResponseBody());
+            for (JsonNode transactionNode : responseNode.get("transactions")) {
+                transactionNames.add(transactionNode.get("transactionName").asText());
+            }
+            if (transactionNames.contains("/jdbcservlet")
+                    && transactionNames.contains("/errorservlet")) {
+                break;
+            }
+            Thread.sleep(10);
+        }
+        asyncHttpClient.close();
+        if (!transactionNames.contains("/jdbcservlet")
+                || !transactionNames.contains("/errorservlet")) {
+            throw new AssertionError("Timed out waiting for /jdbcservlet and /errorservlet to both"
+                    + " show up in sidebar");
         }
         Executors.newSingleThreadExecutor().submit(new Callable<Void>() {
             @Override
