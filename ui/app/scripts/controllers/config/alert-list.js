@@ -36,7 +36,7 @@ glowroot.controller('ConfigAlertListCtrl', [
       } else if ($scope.agentRollupId) {
         query.agentRollupId = $scope.agentRollupId;
       }
-      query.id = config.id;
+      query.v = config.version;
       return queryStrings.encodeObject(query);
     };
 

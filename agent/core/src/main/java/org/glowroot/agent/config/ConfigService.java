@@ -175,6 +175,10 @@ public class ConfigService {
         return gaugeConfigs;
     }
 
+    public ImmutableList<AlertConfig> getAlertConfigs() {
+        return alertConfigs;
+    }
+
     public ImmutableList<PluginConfig> getPluginConfigs() {
         return pluginConfigs;
     }

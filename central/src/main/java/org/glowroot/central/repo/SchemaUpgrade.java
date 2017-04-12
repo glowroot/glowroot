@@ -51,7 +51,6 @@ import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.PermissionParser;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
@@ -67,7 +66,7 @@ public class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 19;
+    private static final int CURR_SCHEMA_VERSION = 20;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -150,7 +149,7 @@ public class SchemaUpgrade {
         }
         // 0.9.9 to 0.9.10
         if (initialSchemaVersion < 15) {
-            splitUpAgentTableAndAddAlertIdAtSameTime();
+            splitUpAgentTable();
             updateSchemaVersion(15);
         }
         if (initialSchemaVersion < 16) {
@@ -169,6 +168,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 19) {
             anotherRedoOnTriggeredAlertTable();
             updateSchemaVersion(19);
+        }
+        // 0.9.15 to 0.9.16
+        if (initialSchemaVersion < 20) {
+            yetAnotherRedoOnTriggeredAlertTable();
+            updateSchemaVersion(20);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -492,7 +496,7 @@ public class SchemaUpgrade {
         addColumnIfNotExists("trace_tn_error_point", "partial", "boolean");
     }
 
-    private void splitUpAgentTableAndAddAlertIdAtSameTime() throws InterruptedException {
+    private void splitUpAgentTable() throws InterruptedException {
         session.execute("create table if not exists config (agent_rollup_id varchar, config blob,"
                 + " config_update boolean, config_update_token uuid, primary key"
                 + " (agent_rollup_id)) " + WITH_LCS);
@@ -533,24 +537,10 @@ public class SchemaUpgrade {
             boundStatement.setBytes(1, environmentBytes);
             session.execute(boundStatement);
 
-            AgentConfig agentConfig;
-            try {
-                agentConfig = AgentConfig.parseFrom(ByteString.copyFrom(configBytes));
-            } catch (InvalidProtocolBufferException e) {
-                logger.error(e.getMessage(), e);
-                continue;
-            }
-            List<AlertConfig> alertConfigs = agentConfig.getAlertConfigList();
-            AgentConfig.Builder updatedAgentConfig = agentConfig.toBuilder()
-                    .clearAlertConfig();
-            for (AlertConfig alertConfig : alertConfigs) {
-                updatedAgentConfig.addAlertConfig(alertConfig.toBuilder()
-                        .setId(ConfigDao.generateNewId()));
-            }
             boundStatement = insertConfigPS.bind();
             i = 0;
             boundStatement.setString(i++, agentId);
-            boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.build().toByteArray()));
+            boundStatement.setBytes(i++, configBytes);
             boundStatement.setBool(i++, configUpdate);
             boundStatement.setUUID(i++, configUpdateToken);
             session.execute(boundStatement);
@@ -678,6 +668,13 @@ public class SchemaUpgrade {
         dropTable("triggered_alert");
         session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
                 + " alert_id varchar, primary key (agent_rollup_id, alert_id)) " + WITH_LCS);
+    }
+
+    private void yetAnotherRedoOnTriggeredAlertTable() throws InterruptedException {
+        dropTable("triggered_alert");
+        session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
+                + " alert_condition blob, primary key (agent_rollup_id, alert_condition)) "
+                + WITH_LCS);
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType) {

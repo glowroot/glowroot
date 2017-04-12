@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,54 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.central.repo;
+package org.glowroot.agent.embedded.repo;
 
 import java.util.List;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.central.util.Sessions;
+import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.common.repo.TriggeredAlertRepository.TriggeredAlert;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// NOTE this is mostly a copy of TriggeredAlertDaoTest in glowroot-agent
-public class TriggeredAlertDaoIT {
+// NOTE this is mostly a copy of TriggeredAlertDaoIT in glowroot-central
+//
+// this is not an integration test (*IT.java) since then it would run against shaded agent and fail
+// due to shading issues
+public class TriggeredAlertDaoTest {
 
-    private static final String AGENT_ID = "xyz";
+    private static final String AGENT_ID = "";
 
-    private static Cluster cluster;
-    private static Session session;
-    private static TriggeredAlertDao triggeredAlertDao;
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
-        cluster = Clusters.newCluster();
-        session = cluster.newSession();
-        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
-        session.execute("use glowroot_unit_tests");
-
-        triggeredAlertDao = new TriggeredAlertDao(session);
-    }
-
-    @AfterClass
-    public static void tearDown() throws Exception {
-        session.close();
-        cluster.close();
-        SharedSetupRunListener.stopCassandra();
-    }
+    private DataSource dataSource;
+    private TriggeredAlertDao triggeredAlertDao;
 
     @Before
-    public void beforeEach() {
-        session.execute("truncate triggered_alert");
+    public void beforeEachTest() throws Exception {
+        dataSource = new DataSource();
+        if (dataSource.tableExists("triggered_alert")) {
+            dataSource.execute("drop table triggered_alert");
+        }
+        triggeredAlertDao = new TriggeredAlertDao(dataSource);
+    }
+
+    @After
+    public void afterEachTest() throws Exception {
+        dataSource.close();
     }
 
     @Test

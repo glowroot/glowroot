@@ -112,7 +112,6 @@ public class ConfigDaoIT {
         assertThat(syntheticMonitorId).hasSize(32);
         assertThat(updatedAgentConfig.getSyntheticMonitorConfig(1).getId()).hasSize(32);
         assertThat(updatedAgentConfig.getAlertConfigList()).hasSize(1);
-        assertThat(updatedAgentConfig.getAlertConfig(0).getId()).hasSize(32);
         assertThat(updatedAgentConfig.getAlertConfig(0).getSyntheticMonitorId())
                 .isEqualTo(syntheticMonitorId);
     }

@@ -54,7 +54,7 @@ public class Encryption {
         return new String(decryptedBytes, Charsets.UTF_8);
     }
 
-    public static SecretKey generateNewKey() throws NoSuchAlgorithmException {
+    static SecretKey generateNewKey() throws NoSuchAlgorithmException {
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
         keyGen.init(128);
         return keyGen.generateKey();

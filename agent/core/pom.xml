@@ -360,6 +360,29 @@
                     <exclude>META-INF/services/javax.servlet.ServletContainerInitializer</exclude>
                   </excludes>
                 </filter>
+                <filter>
+                  <artifact>com.sun.mail:mailapi</artifact>
+                  <excludes>
+                    <exclude>META-INF/gfprobe-provider.xml</exclude>
+                    <exclude>META-INF/javamail.charset.map</exclude>
+                    <exclude>META-INF/mailcap</exclude>
+                    <exclude>META-INF/LICENSE.txt</exclude>
+                    <!-- pom.xml is only present in sources jar -->
+                    <exclude>pom.xml</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>com.sun.mail:smtp</artifact>
+                  <excludes>
+                    <!-- javamail.address.map and javamail.providers are replaced with
+                      glowroot.javamail.address.map and glowroot.javamail.providers -->
+                    <exclude>META-INF/javamail.address.map</exclude>
+                    <exclude>META-INF/javamail.providers</exclude>
+                    <exclude>META-INF/LICENSE.txt</exclude>
+                    <!-- pom.xml is only present in sources jar -->
+                    <exclude>pom.xml</exclude>
+                  </excludes>
+                </filter>
               </filters>
               <relocations>
                 <!-- need to shade glowroot modules so they can be used in glowroot-central without
@@ -530,6 +553,24 @@
                 <relocation>
                   <pattern>com.jcraft.jzlib</pattern>
                   <shadedPattern>org.glowroot.agent.shaded.jcraft.jzlib</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>javax.mail</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.javax.mail</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.sun.mail</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.sun.mail</shadedPattern>
+                </relocation>
+                <relocation>
+                  <rawString>true</rawString>
+                  <pattern>^META-INF/javamail.address.map$</pattern>
+                  <shadedPattern>META-INF/glowroot.javamail.address.map</shadedPattern>
+                </relocation>
+                <relocation>
+                  <rawString>true</rawString>
+                  <pattern>^META-INF/javamail.providers$</pattern>
+                  <shadedPattern>META-INF/glowroot.javamail.providers</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>

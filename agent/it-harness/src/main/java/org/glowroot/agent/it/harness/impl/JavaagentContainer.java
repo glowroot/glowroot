@@ -375,12 +375,14 @@ public class JavaagentContainer implements Container {
                     || name.matches("h2-.*\\.jar")
                     || name.matches("HdrHistogram-.*\\.jar")
                     || name.matches("jackson-.*\\.jar")
+                    || name.matches("javax.servlet-api-.*\\.jar")
                     || name.matches("jzlib-.*\\.jar")
                     || name.matches("logback-.*\\.jar")
-                    || name.matches("javax.servlet-api-.*\\.jar")
+                    || name.matches("mailapi-.*\\.jar")
                     || name.matches("netty-.*\\.jar")
                     || name.matches("protobuf-java-.*\\.jar")
                     || name.matches("slf4j-api-.*\\.jar")
+                    || name.matches("smtp-.*\\.jar")
                     || name.matches("value-.*\\.jar")) {
                 // these are glowroot-agent-core transitive dependencies
                 maybeBootstrapJar.add(path);

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.central;
+package org.glowroot.common.repo.util;
 
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
@@ -26,8 +26,6 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.central.repo.TriggeredAlertDao;
-import org.glowroot.central.util.MailService;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
@@ -41,9 +39,8 @@ import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.ImmutableAgentRollup;
+import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.Encryption;
-import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
@@ -104,7 +101,7 @@ public class AlertingServiceTest {
 
     private ConfigRepository configRepository;
     private AgentRepository agentRepository;
-    private TriggeredAlertDao triggeredAlertDao;
+    private TriggeredAlertRepository triggeredAlertRepository;
     private AggregateRepository aggregateRepository;
     private GaugeValueRepository gaugeValueRepository;
     private RollupLevelService rollupLevelService;
@@ -120,7 +117,7 @@ public class AlertingServiceTest {
                         .display("")
                         .agent(true)
                         .build()));
-        triggeredAlertDao = mock(TriggeredAlertDao.class);
+        triggeredAlertRepository = mock(TriggeredAlertRepository.class);
         aggregateRepository = mock(AggregateRepository.class);
         gaugeValueRepository = mock(GaugeValueRepository.class);
         rollupLevelService = mock(RollupLevelService.class);
@@ -134,7 +131,7 @@ public class AlertingServiceTest {
         // given
         setupForTransaction(1000000);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertDao, aggregateRepository, gaugeValueRepository,
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
         alertingService.checkTransactionAlert("", "", TRANSACTION_ALERT_CONFIG, 120000);
@@ -150,7 +147,7 @@ public class AlertingServiceTest {
         // given
         setupForTransaction(999000);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertDao, aggregateRepository, gaugeValueRepository,
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
         alertingService.checkTransactionAlert("", "", TRANSACTION_ALERT_CONFIG, 120000);
@@ -163,7 +160,7 @@ public class AlertingServiceTest {
         // given
         setupForGauge(500.1);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertDao, aggregateRepository, gaugeValueRepository,
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
         alertingService.checkGaugeAlert("", "", GAUGE_ALERT_CONFIG, 120000);
@@ -179,7 +176,7 @@ public class AlertingServiceTest {
         // given
         setupForGauge(499);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertDao, aggregateRepository, gaugeValueRepository,
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
         alertingService.checkGaugeAlert("", "", GAUGE_ALERT_CONFIG, 120000);

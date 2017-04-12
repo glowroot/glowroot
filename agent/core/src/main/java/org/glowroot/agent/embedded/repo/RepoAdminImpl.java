@@ -17,11 +17,8 @@ package org.glowroot.agent.embedded.repo;
 
 import java.util.List;
 
-import javax.crypto.SecretKey;
-
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
-import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
@@ -86,11 +83,5 @@ class RepoAdminImpl implements RepoAdmin {
         }
         traceCappedDatabase
                 .resize(configRepository.getFatStorageConfig().traceCappedDatabaseSizeMb() * 1024);
-    }
-
-    @Override
-    public void sendTestEmail(List<String> emailAddresses, String subject, String messageText,
-            SmtpConfig smtpConfig, SecretKey secretKey) {
-        throw new UnsupportedOperationException();
     }
 }

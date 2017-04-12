@@ -35,6 +35,7 @@ import org.glowroot.common.config.WebConfig;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
@@ -95,8 +96,10 @@ public interface ConfigRepository {
     List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception;
 
     // central supports alert configs on rollups
+    List<AlertConfig> getAlertConfigs(String agentRollupId, AlertKind alertKind) throws Exception;
+
     @Nullable
-    AlertConfig getAlertConfig(String agentRollupId, String alertId) throws Exception;
+    AlertConfig getAlertConfig(String agentRollupId, String version) throws Exception;
 
     List<PluginConfig> getPluginConfigs(String agentId) throws Exception;
 
@@ -160,15 +163,14 @@ public interface ConfigRepository {
             throws Exception;
 
     // central supports alert configs on rollups
-    // returns id
-    String insertAlertConfig(String agentRollupId, AlertConfig configWithoutId) throws Exception;
+    void insertAlertConfig(String agentRollupId, AlertConfig config) throws Exception;
 
     // central supports alert configs on rollups
     void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion)
             throws Exception;
 
     // central supports alert configs on rollups
-    void deleteAlertConfig(String agentRollupId, String alertId) throws Exception;
+    void deleteAlertConfig(String agentRollupId, String version) throws Exception;
 
     // central supports ui config on rollups
     void updateUiConfig(String agentRollupId, UiConfig uiConfig, String priorVersion)

@@ -34,6 +34,8 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
+import org.glowroot.common.repo.util.AlertingService;
+import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -53,9 +55,11 @@ public class SimpleRepoModule {
     private final TraceAttributeNameDao traceAttributeNameDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
+    private final TriggeredAlertDao triggeredAlertDao;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final RollupLevelService rollupLevelService;
+    private final AlertingService alertingService;
     private final @Nullable ReaperRunnable reaperRunnable;
 
     public SimpleRepoModule(DataSource dataSource, File dataDir, Clock clock, Ticker ticker,
@@ -88,11 +92,15 @@ public class SimpleRepoModule {
                 fullQueryTextDao, traceAttributeNameDao);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
+        triggeredAlertDao = new TriggeredAlertDao(dataSource);
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
                 configRepository, environmentDao, gaugeValueDao, gaugeNameDao, transactionTypeDao,
                 fullQueryTextDao, traceAttributeNameDao);
 
+        TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
+        alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
+                gaugeValueDao, rollupLevelService, new MailService());
         if (backgroundExecutor == null) {
             reaperRunnable = null;
         } else {
@@ -140,6 +148,10 @@ public class SimpleRepoModule {
         return gaugeValueDao;
     }
 
+    public TriggeredAlertDao getTriggeredAlertDao() {
+        return triggeredAlertDao;
+    }
+
     public ConfigRepository getConfigRepository() {
         return configRepository;
     }
@@ -150,6 +162,10 @@ public class SimpleRepoModule {
 
     public RollupLevelService getRollupLevelService() {
         return rollupLevelService;
+    }
+
+    public AlertingService getAlertingService() {
+        return alertingService;
     }
 
     @OnlyUsedByTests

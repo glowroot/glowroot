@@ -20,8 +20,6 @@ import java.util.List;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.TriggeredAlertRepository;
@@ -29,12 +27,9 @@ import org.glowroot.common.repo.TriggeredAlertRepository.TriggeredAlert;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.ui.HttpSessionManager.Authentication;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 
 @JsonService
 class AlertIncidentJsonService {
-
-    private static final Logger logger = LoggerFactory.getLogger(AlertIncidentJsonService.class);
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -57,17 +52,9 @@ class AlertIncidentJsonService {
             if (!authentication.isAgentPermitted(triggeredAlert.agentRollupId(), "agent:alert")) {
                 continue;
             }
-            AlertConfig alertConfig = configRepository
-                    .getAlertConfig(triggeredAlert.agentRollupId(), triggeredAlert.alertId());
-            if (alertConfig == null) {
-                logger.warn("could not find alert config in {}: {}", triggeredAlert.agentRollupId(),
-                        triggeredAlert.alertId());
-                alertItems.add(ImmutableAlertItem.of(triggeredAlert.agentRollupId(), "<UNKNOWN>"));
-            } else {
-                alertItems.add(ImmutableAlertItem.of(triggeredAlert.agentRollupId(),
-                        AlertConfigJsonService.getAlertDisplay(triggeredAlert.agentRollupId(),
-                                alertConfig, configRepository)));
-            }
+            alertItems.add(ImmutableAlertItem.of(triggeredAlert.agentRollupId(),
+                    AlertConfigJsonService.getAlertDisplay(triggeredAlert.agentRollupId(),
+                            triggeredAlert.alertCondition(), configRepository)));
         }
         return mapper.writeValueAsString(alertItems);
     }

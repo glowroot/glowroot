@@ -219,11 +219,11 @@ public abstract class WebDriverIT {
         Response response = asyncHttpClient.executeRequest(request).get();
         ArrayNode alerts = (ArrayNode) new ObjectMapper().readTree(response.getResponseBody());
         for (JsonNode alert : alerts) {
-            String id = alert.get("id").asText();
+            String version = alert.get("version").asText();
             request = asyncHttpClient
                     .preparePost("http://localhost:" + getUiPort()
                             + "/backend/config/alerts/remove?agent-rollup-id=" + agentId)
-                    .setBody("{\"id\":\"" + id + "\"}")
+                    .setBody("{\"version\":\"" + version + "\"}")
                     .build();
             int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
             if (statusCode != 200) {

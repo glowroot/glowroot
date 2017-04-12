@@ -45,6 +45,7 @@ import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -608,7 +609,7 @@ class GrpcServer {
                 traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
         private void checkHeartbeatAlert(String agentId, String agentDisplay,
                 AlertConfig alertConfig) throws Exception {
-            alertingService.checkHeartbeatAlert(agentId, agentDisplay, alertConfig, false);
+            alertingService.sendHeartbeatAlertIfNeeded(agentId, agentDisplay, alertConfig, false);
         }
 
         private String getDisplayForLogging(String agentRollupId) {

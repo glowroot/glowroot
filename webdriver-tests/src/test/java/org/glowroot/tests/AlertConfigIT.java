@@ -15,7 +15,6 @@
  */
 package org.glowroot.tests;
 
-import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
@@ -32,10 +31,6 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldAddTransactionAlert() throws Exception {
-
-        // alerting is only present in central
-        Assume.assumeTrue(WebDriverSetup.useCentral);
-
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -70,10 +65,6 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldAddGaugeAlert() throws Exception {
-
-        // alerting is only present in central
-        Assume.assumeTrue(WebDriverSetup.useCentral);
-
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -101,10 +92,6 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldUpdateTransactionAlert() throws Exception {
-
-        // alerting is only present in central
-        Assume.assumeTrue(WebDriverSetup.useCentral);
-
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -135,10 +122,6 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldUpdateGaugeAlert() throws Exception {
-
-        // alerting is only present in central
-        Assume.assumeTrue(WebDriverSetup.useCentral);
-
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -167,10 +150,6 @@ public class AlertConfigIT extends WebDriverIT {
 
     @Test
     public void shouldDeleteAlert() throws Exception {
-
-        // alerting is only present in central
-        Assume.assumeTrue(WebDriverSetup.useCentral);
-
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();

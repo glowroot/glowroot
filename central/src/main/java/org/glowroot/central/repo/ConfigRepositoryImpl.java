@@ -195,6 +195,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     // central supports alert configs on rollups
+    @Override
     public List<AlertConfig> getAlertConfigs(String agentRollupId, AlertKind alertKind)
             throws Exception {
         List<AlertConfig> configs = Lists.newArrayList();
@@ -221,14 +222,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports alert configs on rollups
     @Override
-    public @Nullable AlertConfig getAlertConfig(String agentRollupId, String alertId)
+    public @Nullable AlertConfig getAlertConfig(String agentRollupId, String configVersion)
             throws Exception {
         for (AlertConfig config : getAlertConfigs(agentRollupId)) {
-            if (config.getId().equals(alertId)) {
+            if (Versions.getVersion(config).equals(configVersion)) {
                 return config;
             }
         }
-        return null;
+        throw new IllegalStateException("Alert config not found: " + configVersion);
     }
 
     @Override
@@ -556,29 +557,24 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports alert configs on rollups
     @Override
-    public String insertAlertConfig(String agentRollupId, AlertConfig configWithoutId)
-            throws Exception {
-        checkState(configWithoutId.getId().isEmpty());
-        AlertConfig config = configWithoutId.toBuilder()
-                .setId(ConfigDao.generateNewId())
-                .build();
+    public void insertAlertConfig(String agentRollupId, AlertConfig config) throws Exception {
         configDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                checkAlertDoesNotExist(config, agentConfig.getAlertConfigList());
+                checkAlertConditionDoesNotExist(config, agentConfig.getAlertConfigList());
                 return agentConfig.toBuilder()
                         .addAlertConfig(config)
                         .build();
             }
         });
         notifyAgentConfigListeners(agentRollupId);
-        return config.getId();
     }
 
     // central supports alert configs on rollups
     @Override
     public void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion)
             throws Exception {
+        AlertConfig configWithoutDestination = getAlertConfigWithoutDestination(config);
         configDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -588,14 +584,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 boolean found = false;
                 while (i.hasNext()) {
                     AlertConfig loopConfig = i.next();
-                    if (loopConfig.getId().equals(config.getId())) {
-                        if (!Versions.getVersion(loopConfig).equals(priorVersion)) {
-                            throw new OptimisticLockException();
-                        }
+                    if (Versions.getVersion(loopConfig).equals(priorVersion)) {
                         i.set(config);
                         found = true;
-                    } else if (loopConfig.equals(config)) {
-                        throw new IllegalStateException("This exact alert already exists");
+                    } else if (getAlertConfigWithoutDestination(loopConfig)
+                            .equals(configWithoutDestination)) {
+                        throw new IllegalStateException(
+                                "This exact alert condition already exists");
                     }
                 }
                 if (!found) {
@@ -612,7 +607,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports alert configs on rollups
     @Override
-    public void deleteAlertConfig(String agentRollupId, String alertId) throws Exception {
+    public void deleteAlertConfig(String agentRollupId, String version) throws Exception {
         configDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -621,7 +616,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 ListIterator<AlertConfig> i = existingConfigs.listIterator();
                 boolean found = false;
                 while (i.hasNext()) {
-                    if (i.next().getId().equals(alertId)) {
+                    if (Versions.getVersion(i.next()).equals(version)) {
                         i.remove();
                         found = true;
                         break;
@@ -1036,13 +1031,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return left.getValCase() == right.getValCase();
     }
 
-    private static void checkAlertDoesNotExist(AlertConfig config,
+    private static void checkAlertConditionDoesNotExist(AlertConfig config,
             List<AlertConfig> configs) {
-        // compare excluding id
-        AlertConfig configWithoutId = getAlertWithoutId(config);
+        AlertConfig configWithoutDestination = getAlertConfigWithoutDestination(config);
         for (AlertConfig loopConfig : configs) {
-            if (getAlertWithoutId(loopConfig).equals(configWithoutId)) {
-                throw new IllegalStateException("This exact alert already exists");
+            if (getAlertConfigWithoutDestination(loopConfig).equals(configWithoutDestination)) {
+                throw new IllegalStateException("This exact alert condition already exists");
             }
         }
     }
@@ -1056,9 +1050,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         }
     }
 
-    private static AlertConfig getAlertWithoutId(AlertConfig config) {
+    private static AlertConfig getAlertConfigWithoutDestination(AlertConfig config) {
         return AlertConfig.newBuilder(config)
-                .setId("")
+                .clearEmailAddress()
                 .build();
     }
 

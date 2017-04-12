@@ -82,6 +82,7 @@ import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.repo.TriggeredAlertDao;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.util.Clock;
@@ -365,14 +366,13 @@ class SyntheticMonitorService implements Runnable {
     private void sendPingOrSyntheticAlertIfStatusChanged(AgentRollup agentRollup,
             SyntheticMonitorConfig syntheticMonitorConfig, AlertConfig alertConfig,
             boolean currentlyTriggered, @Nullable String errorMessage) throws Exception {
-        boolean previouslyTriggered =
-                triggeredAlertDao.exists(agentRollup.id(), alertConfig.getId());
+        boolean previouslyTriggered = triggeredAlertDao.exists(agentRollup.id(), alertConfig);
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertDao.delete(agentRollup.id(), alertConfig.getId());
+            triggeredAlertDao.delete(agentRollup.id(), alertConfig);
             sendAlert(agentRollup.display(), syntheticMonitorConfig, alertConfig, true,
                     null);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertDao.insert(agentRollup.id(), alertConfig.getId());
+            triggeredAlertDao.insert(agentRollup.id(), alertConfig);
             sendAlert(agentRollup.display(), syntheticMonitorConfig, alertConfig, false,
                     errorMessage);
         }

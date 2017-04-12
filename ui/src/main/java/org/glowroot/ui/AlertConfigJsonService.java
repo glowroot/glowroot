@@ -27,11 +27,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ConfigRepository.DuplicateMBeanObjectNameException;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common.repo.Utils;
@@ -47,12 +44,8 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMo
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
-
 @JsonService
 class AlertConfigJsonService {
-
-    private static final Logger logger = LoggerFactory.getLogger(AlertConfigJsonService.class);
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -66,20 +59,22 @@ class AlertConfigJsonService {
 
     private final ConfigRepository configRepository;
     private final GaugeValueRepository gaugeValueRepository;
+    private final boolean central;
 
     AlertConfigJsonService(ConfigRepository configRepository,
-            GaugeValueRepository gaugeValueRepository) {
+            GaugeValueRepository gaugeValueRepository, boolean central) {
         this.configRepository = configRepository;
         this.gaugeValueRepository = gaugeValueRepository;
+        this.central = central;
     }
 
     // central supports alert configs on rollups
     @GET(path = "/backend/config/alerts", permission = "agent:config:view:alert")
     String getAlert(@BindAgentRollupId String agentRollupId,
             @BindRequest AlertConfigRequest request) throws Exception {
-        Optional<String> id = request.id();
-        if (id.isPresent()) {
-            AlertConfig alertConfig = configRepository.getAlertConfig(agentRollupId, id.get());
+        Optional<String> version = request.version();
+        if (version.isPresent()) {
+            AlertConfig alertConfig = configRepository.getAlertConfig(agentRollupId, version.get());
             if (alertConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
@@ -88,7 +83,7 @@ class AlertConfigJsonService {
             List<AlertListItem> alertListItems = Lists.newArrayList();
             List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentRollupId);
             for (AlertConfig alertConfig : alertConfigs) {
-                alertListItems.add(ImmutableAlertListItem.of(alertConfig.getId(),
+                alertListItems.add(ImmutableAlertListItem.of(Versions.getVersion(alertConfig),
                         getAlertDisplay(agentRollupId, alertConfig, configRepository)));
             }
             alertListItems = orderingByName.immutableSortedCopy(alertListItems);
@@ -110,18 +105,8 @@ class AlertConfigJsonService {
     String addAlert(@BindAgentRollupId String agentRollupId, @BindRequest AlertConfigDto configDto)
             throws Exception {
         AlertConfig alertConfig = configDto.convert();
-        String id;
-        try {
-            id = configRepository.insertAlertConfig(agentRollupId, alertConfig);
-        } catch (DuplicateMBeanObjectNameException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            throw new JsonServiceException(CONFLICT, "mbeanObjectName");
-        }
-        alertConfig = alertConfig.toBuilder()
-                .setId(id)
-                .build();
-        return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
+        configRepository.insertAlertConfig(agentRollupId, alertConfig);
+        return getAlertResponse(agentRollupId, alertConfig);
     }
 
     // central supports alert configs on rollups
@@ -137,7 +122,7 @@ class AlertConfigJsonService {
     @POST(path = "/backend/config/alerts/remove", permission = "agent:config:edit:alert")
     void removeAlert(@BindAgentRollupId String agentRollupId,
             @BindRequest AlertConfigRequest request) throws Exception {
-        configRepository.deleteAlertConfig(agentRollupId, request.id().get());
+        configRepository.deleteAlertConfig(agentRollupId, request.version().get());
     }
 
     private String getAlertResponse(String agentRollupId, AlertConfig alertConfig)
@@ -157,6 +142,9 @@ class AlertConfigJsonService {
 
     private List<SyntheticMonitorItem> getSyntheticMonitorDropdownItems(String agentRollupId)
             throws Exception {
+        if (!central) {
+            return ImmutableList.of();
+        }
         List<SyntheticMonitorItem> items = Lists.newArrayList();
         for (SyntheticMonitorConfig config : configRepository
                 .getSyntheticMonitorConfigs(agentRollupId)) {
@@ -165,38 +153,40 @@ class AlertConfigJsonService {
         return items;
     }
 
-    static String getAlertDisplay(String agentRollupId, AlertConfig alertConfig,
+    static String getAlertDisplay(String agentRollupId, AlertConfig alertCondition,
             ConfigRepository configRepository) throws Exception {
-        switch (alertConfig.getKind()) {
+        switch (alertCondition.getKind()) {
             case TRANSACTION:
-                return getTransactionAlertDisplay(alertConfig);
+                return getTransactionAlertDisplay(alertCondition);
             case GAUGE:
-                return getGaugeAlertDisplay(alertConfig);
+                return getGaugeAlertDisplay(alertCondition);
             case HEARTBEAT:
-                return getHeartbeatAlertDisplay(alertConfig);
+                return getHeartbeatAlertDisplay(alertCondition);
             case SYNTHETIC_MONITOR:
                 SyntheticMonitorConfig syntheticMonitorConfig =
                         configRepository.getSyntheticMonitorConfig(agentRollupId,
-                                alertConfig.getSyntheticMonitorId());
-                return getSyntheticMonitorAlertDisplay(alertConfig, syntheticMonitorConfig);
+                                alertCondition.getSyntheticMonitorId());
+                return getSyntheticMonitorAlertDisplay(alertCondition, syntheticMonitorConfig);
             default:
-                throw new IllegalStateException("Unexpected alert kind: " + alertConfig.getKind());
+                throw new IllegalStateException(
+                        "Unexpected alert kind: " + alertCondition.getKind());
         }
     }
 
-    private static String getTransactionAlertDisplay(AlertConfig alertConfig) {
+    private static String getTransactionAlertDisplay(AlertConfig alertCondition) {
         StringBuilder sb = new StringBuilder();
-        sb.append(alertConfig.getTransactionType());
+        sb.append(alertCondition.getTransactionType());
         sb.append(" - ");
-        sb.append(Utils.getPercentileWithSuffix(alertConfig.getTransactionPercentile().getValue()));
+        sb.append(Utils
+                .getPercentileWithSuffix(alertCondition.getTransactionPercentile().getValue()));
         sb.append(" percentile over the last ");
-        sb.append(alertConfig.getTimePeriodSeconds() / 60);
+        sb.append(alertCondition.getTimePeriodSeconds() / 60);
         sb.append(" minute");
-        if (alertConfig.getTimePeriodSeconds() != 60) {
+        if (alertCondition.getTimePeriodSeconds() != 60) {
             sb.append("s");
         }
         sb.append(" exceeds ");
-        int thresholdMillis = alertConfig.getThresholdMillis().getValue();
+        int thresholdMillis = alertCondition.getThresholdMillis().getValue();
         sb.append(thresholdMillis);
         sb.append(" millisecond");
         if (thresholdMillis != 1) {
@@ -205,19 +195,19 @@ class AlertConfigJsonService {
         return sb.toString();
     }
 
-    private static String getGaugeAlertDisplay(AlertConfig alertConfig) {
-        Gauge gauge = Gauges.getGauge(alertConfig.getGaugeName());
+    private static String getGaugeAlertDisplay(AlertConfig alertCondition) {
+        Gauge gauge = Gauges.getGauge(alertCondition.getGaugeName());
         StringBuilder sb = new StringBuilder();
         sb.append("Gauge - ");
         sb.append(gauge.display());
         sb.append(" - average over the last ");
-        sb.append(alertConfig.getTimePeriodSeconds() / 60);
+        sb.append(alertCondition.getTimePeriodSeconds() / 60);
         sb.append(" minute");
-        if (alertConfig.getTimePeriodSeconds() != 60) {
+        if (alertCondition.getTimePeriodSeconds() != 60) {
             sb.append("s");
         }
         sb.append(" exceeds ");
-        double value = alertConfig.getGaugeThreshold().getValue();
+        double value = alertCondition.getGaugeThreshold().getValue();
         String unit = gauge.unit();
         if (unit.equals("bytes")) {
             sb.append(Formatting.formatBytes((long) value));
@@ -231,10 +221,10 @@ class AlertConfigJsonService {
         return sb.toString();
     }
 
-    private static String getHeartbeatAlertDisplay(AlertConfig alertConfig) {
+    private static String getHeartbeatAlertDisplay(AlertConfig alertCondition) {
         StringBuilder sb = new StringBuilder();
         sb.append("Heartbeat - not received over the last ");
-        int timePeriodSeconds = alertConfig.getTimePeriodSeconds();
+        int timePeriodSeconds = alertCondition.getTimePeriodSeconds();
         sb.append(timePeriodSeconds);
         sb.append(" second");
         if (timePeriodSeconds != 1) {
@@ -243,7 +233,7 @@ class AlertConfigJsonService {
         return sb.toString();
     }
 
-    private static String getSyntheticMonitorAlertDisplay(AlertConfig alertConfig,
+    private static String getSyntheticMonitorAlertDisplay(AlertConfig alertCondition,
             @Nullable SyntheticMonitorConfig syntheticMonitorConfig) {
         StringBuilder sb = new StringBuilder();
         sb.append("Synthetic monitor - ");
@@ -253,7 +243,7 @@ class AlertConfigJsonService {
             sb.append(syntheticMonitorConfig.getDisplay());
         }
         sb.append(" exceeds ");
-        int thresholdMillis = alertConfig.getThresholdMillis().getValue();
+        int thresholdMillis = alertCondition.getThresholdMillis().getValue();
         sb.append(thresholdMillis);
         sb.append(" millisecond");
         if (thresholdMillis != 1) {
@@ -264,13 +254,13 @@ class AlertConfigJsonService {
 
     @Value.Immutable
     interface AlertConfigRequest {
-        Optional<String> id();
+        Optional<String> version();
     }
 
     @Value.Immutable
     @Styles.AllParameters
     interface AlertListItem {
-        String id();
+        String version();
         String display();
     }
 
@@ -309,7 +299,6 @@ class AlertConfigJsonService {
         abstract @Nullable Integer thresholdMillis();
         abstract @Nullable Integer timePeriodSeconds();
         abstract ImmutableList<String> emailAddresses();
-        abstract Optional<String> id(); // absent for insert operations
         abstract Optional<String> version(); // absent for insert operations
 
         private AlertConfig convert() {
@@ -351,10 +340,6 @@ class AlertConfigJsonService {
                 builder.setTimePeriodSeconds(timePeriodSeconds);
             }
             builder.addAllEmailAddress(emailAddresses());
-            Optional<String> id = id();
-            if (id.isPresent()) {
-                builder.setId(id.get());
-            }
             return builder.build();
         }
 
@@ -400,7 +385,6 @@ class AlertConfigJsonService {
             return builder.gaugeUnit(gauge == null ? "" : gauge.unit())
                     .gaugeGrouping(gauge == null ? "" : gauge.grouping())
                     .addAllEmailAddresses(alertConfig.getEmailAddressList())
-                    .id(alertConfig.getId())
                     .version(Versions.getVersion(alertConfig))
                     .build();
         }

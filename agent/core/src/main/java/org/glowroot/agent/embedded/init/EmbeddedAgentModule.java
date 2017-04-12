@@ -51,6 +51,9 @@ import org.glowroot.agent.init.EnvironmentCreator;
 import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.init.JRebelWorkaround;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
+import org.glowroot.common.config.ImmutableRoleConfig;
+import org.glowroot.common.config.RoleConfig;
+import org.glowroot.common.config.RoleConfig.SimplePermission;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.repo.AgentRepository;
@@ -58,6 +61,7 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common.util.Versions;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.SessionMapFactory;
 import org.glowroot.ui.UiModule;
@@ -146,6 +150,9 @@ class EmbeddedAgentModule {
                         checkNotNull(ticker);
                         checkNotNull(agentModule);
                         DataSource dataSource = createDataSource(h2MemDb, dataDir);
+                        if (needToAddAlertPermission(dataSource)) {
+                            addAlertPermission(configRepository);
+                        }
                         SimpleRepoModule simpleRepoModule = new SimpleRepoModule(dataSource,
                                 dataDir, clock, ticker, configRepository, backgroundExecutor);
                         simpleRepoModule.registerMBeans(new PlatformMBeanServerLifecycleImpl(
@@ -153,9 +160,9 @@ class EmbeddedAgentModule {
                         // now inject the real collector into the proxy
                         CollectorImpl collectorImpl = new CollectorImpl(
                                 simpleRepoModule.getEnvironmentDao(),
-                                simpleRepoModule.getAggregateDao(),
-                                simpleRepoModule.getTraceDao(),
-                                simpleRepoModule.getGaugeValueDao());
+                                simpleRepoModule.getAggregateDao(), simpleRepoModule.getTraceDao(),
+                                simpleRepoModule.getGaugeValueDao(), configRepository,
+                                simpleRepoModule.getAlertingService());
                         collectorProxy.setInstance(collectorImpl);
                         // embedded CollectorImpl does nothing with agent config parameter
                         collectorImpl.init(glowrootDir, agentDir,
@@ -209,7 +216,7 @@ class EmbeddedAgentModule {
                     .traceRepository(simpleRepoModule.getTraceDao())
                     .gaugeValueRepository(simpleRepoModule.getGaugeValueDao())
                     .syntheticResultRepository(null)
-                    .triggeredAlertRepository(null)
+                    .triggeredAlertRepository(simpleRepoModule.getTriggeredAlertDao())
                     .repoAdmin(simpleRepoModule.getRepoAdmin())
                     .rollupLevelService(simpleRepoModule.getRollupLevelService())
                     .liveTraceRepository(agentModule.getLiveTraceRepository())
@@ -245,7 +252,7 @@ class EmbeddedAgentModule {
                     .traceRepository(simpleRepoModule.getTraceDao())
                     .gaugeValueRepository(simpleRepoModule.getGaugeValueDao())
                     .syntheticResultRepository(null)
-                    .triggeredAlertRepository(null)
+                    .triggeredAlertRepository(simpleRepoModule.getTriggeredAlertDao())
                     .repoAdmin(simpleRepoModule.getRepoAdmin())
                     .rollupLevelService(simpleRepoModule.getRollupLevelService())
                     .liveTraceRepository(new LiveTraceRepositoryNop())
@@ -322,6 +329,36 @@ class EmbeddedAgentModule {
             return new DataSource();
         } else {
             return new DataSource(new File(dataDir, "data.h2.db"));
+        }
+    }
+
+    private static boolean needToAddAlertPermission(DataSource dataSource) throws SQLException {
+        if (dataSource.tableExists("trace")) {
+            // new database, not an upgrade
+            return false;
+        }
+        if (!dataSource.tableExists("triggered_alert")) {
+            // upgrade from database created _after_ TriggeredAlertDao was removed
+            return true;
+        }
+        if (dataSource.columnExists("triggered_alert", "alert_config_version")) {
+            // upgrade from database created _before_ TriggeredAlertDao was removed
+            return true;
+        }
+        return false;
+    }
+
+    private static void addAlertPermission(ConfigRepository configRepository) throws Exception {
+        for (RoleConfig config : configRepository.getRoleConfigs()) {
+            if (config.isPermitted(SimplePermission.create("agent:transaction:overview"))
+                    || config.isPermitted(SimplePermission.create("agent:error:overview"))
+                    || config.isPermitted(SimplePermission.create("agent:jvm:gauges"))) {
+                ImmutableRoleConfig updatedConfig = ImmutableRoleConfig.builder()
+                        .copyFrom(config)
+                        .addPermissions("agent:alert")
+                        .build();
+                configRepository.updateRoleConfig(updatedConfig, Versions.getJsonVersion(config));
+            }
         }
     }
 

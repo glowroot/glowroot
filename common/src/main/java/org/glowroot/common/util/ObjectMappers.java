@@ -91,7 +91,7 @@ public class ObjectMappers {
             Entry<String, JsonNode> entry = i.next();
             JsonNode value = entry.getValue();
             if (value instanceof ContainerNode && ((ContainerNode<?>) value).size() == 0) {
-                // remove empty nodes, e.g. unused "ldap" node
+                // remove empty nodes, e.g. unused "smtp" and "alerts" nodes
                 i.remove();
             }
         }

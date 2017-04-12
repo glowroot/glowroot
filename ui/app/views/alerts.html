@@ -30,7 +30,8 @@
       <div ng-repeat="alert in alerts"
            class="gt-red"
            style="font-weight: bold; font-size: 16px;">
-        {{layout.agentRollups[alert.agentRollupId].display}} - {{alert.display}}
+        <span ng-if="layout.central">{{layout.agentRollups[alert.agentRollupId].display}} - </span>
+        {{alert.display}}
       </div>
     </div>
   </div>

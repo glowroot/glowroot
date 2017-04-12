@@ -183,6 +183,7 @@ public class WebDriverSetup {
             session.execute("drop table if exists user");
             session.execute("drop table if exists role");
             session.execute("drop table if exists central_config");
+            session.execute("drop table if exists config");
             session.close();
             cluster.close();
             container = createCentralAndContainer(uiPort, testDir);

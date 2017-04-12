@@ -35,6 +35,7 @@ import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
@@ -287,8 +288,8 @@ class RollupService implements Runnable {
             throws Exception {
         long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
         boolean currentlyTriggered = !heartbeatDao.exists(agentRollup.id(), startTime, endTime);
-        alertingService.checkHeartbeatAlert(agentRollup.id(), agentRollup.display(), alertConfig,
-                currentlyTriggered);
+        alertingService.sendHeartbeatAlertIfNeeded(agentRollup.id(), agentRollup.display(),
+                alertConfig, currentlyTriggered);
     }
 
     @VisibleForTesting

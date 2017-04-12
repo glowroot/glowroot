@@ -101,6 +101,8 @@ class LayoutService {
         boolean showNavbarTransaction = permissions.transaction().hasSomeAccess();
         boolean showNavbarError = permissions.error().hasSomeAccess();
         boolean showNavbarJvm = permissions.jvm().hasSomeAccess();
+        boolean showNavbarAlert =
+                permissions.alert() && !configRepository.getAlertConfigs(AGENT_ID).isEmpty();
         boolean showNavbarConfig = permissions.config().view();
         // a couple of special cases for embedded ui
         UiConfig uiConfig = configRepository.getUiConfig(AGENT_ID);
@@ -131,7 +133,7 @@ class LayoutService {
                 .build());
 
         return createLayout(authentication, agentRollups, showNavbarTransaction, showNavbarError,
-                showNavbarJvm, false, false, false, showNavbarConfig);
+                showNavbarJvm, false, showNavbarAlert, false, showNavbarConfig);
     }
 
     private Layout buildLayoutCentral(Authentication authentication) throws Exception {

@@ -118,7 +118,13 @@ public class ConfigRepositoryIT {
         }
         assertThat(exception).isTrue();
         assertThat(configRepository.getAlertConfigs(agentId)).isEmpty();
-        assertThat(configRepository.getAlertConfig(agentId, "dummy")).isNull();
+        exception = false;
+        try {
+            configRepository.getAlertConfig(agentId, "dummy");
+        } catch (IllegalStateException e) {
+            exception = true;
+        }
+        assertThat(exception).isTrue();
         assertThat(configRepository.getPluginConfigs(agentId)).isEmpty();
         exception = false;
         try {
@@ -288,10 +294,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        String id = configRepository.insertAlertConfig(agentId, alertConfig);
-        alertConfig = alertConfig.toBuilder()
-                .setId(id)
-                .build();
+        configRepository.insertAlertConfig(agentId, alertConfig);
         List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentId);
 
         // then
@@ -320,7 +323,7 @@ public class ConfigRepositoryIT {
         // and further
 
         // when
-        configRepository.deleteAlertConfig(agentId, updatedAlertConfig.getId());
+        configRepository.deleteAlertConfig(agentId, Versions.getVersion(updatedAlertConfig));
         alertConfigs = configRepository.getAlertConfigs(agentId);
 
         // then

@@ -201,6 +201,13 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
+                     ng-model="page.permissions.alert"
+                     ng-disabled="!layout.adminEdit">Alerts
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox"
                      ng-model="page.permissions.config._"
                      ng-disabled="!layout.adminEdit">Configuration
             </label>

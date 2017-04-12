@@ -260,8 +260,7 @@ public class ConfigDao {
         return BaseEncoding.base16().lowerCase().encode(bytes);
     }
 
-    // generate alert ids since these are not stored on agent side
-    // also generate new synthetic monitor ids (which are stored agent side in order to reference
+    // generate new synthetic monitor ids (which are stored agent side in order to reference
     // from alerts) to allow copying from another deployment
     @VisibleForTesting
     static AgentConfig generateNewIds(AgentConfig agentConfig) {
@@ -276,19 +275,19 @@ public class ConfigDao {
             syntheticMonitorIdMap.put(config.getId(), newId);
         }
         builder.clearAlertConfig();
-        for (AgentConfig.AlertConfig config : agentConfig.getAlertConfigList()) {
-            AgentConfig.AlertConfig.Builder alertConfigBuilder = config.toBuilder()
-                    .setId(generateNewId());
-            if (config.getKind() == AlertKind.SYNTHETIC_MONITOR) {
-                String id = config.getSyntheticMonitorId();
+        for (AgentConfig.AlertConfig alertConfig : agentConfig.getAlertConfigList()) {
+            if (alertConfig.getKind() == AlertKind.SYNTHETIC_MONITOR) {
+                String id = alertConfig.getSyntheticMonitorId();
                 String newId = syntheticMonitorIdMap.get(id);
                 if (newId == null) {
                     logger.warn("synthetic monitor id not found: {}", id);
                     continue;
                 }
-                alertConfigBuilder.setSyntheticMonitorId(newId);
+                builder.addAlertConfig(alertConfig.toBuilder()
+                        .setSyntheticMonitorId(newId));
+            } else {
+                builder.addAlertConfig(alertConfig);
             }
-            builder.addAlertConfig(alertConfigBuilder);
         }
         return builder.build();
     }

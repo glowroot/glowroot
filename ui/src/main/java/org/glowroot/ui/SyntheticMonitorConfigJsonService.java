@@ -35,11 +35,8 @@ import com.google.common.io.CharStreams;
 import com.google.common.primitives.Ints;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ConfigRepository.DuplicateMBeanObjectNameException;
 import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Compilations.CompilationException;
 import org.glowroot.common.repo.util.Encryption;
@@ -49,13 +46,9 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMo
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig.SyntheticMonitorKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
 @JsonService
 class SyntheticMonitorConfigJsonService {
-
-    private static final Logger logger =
-            LoggerFactory.getLogger(SyntheticMonitorConfigJsonService.class);
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -115,14 +108,7 @@ class SyntheticMonitorConfigJsonService {
         if (errorResponse != null) {
             return errorResponse;
         }
-        String id;
-        try {
-            id = configRepository.insertSyntheticMonitorConfig(agentRollupId, config);
-        } catch (DuplicateMBeanObjectNameException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            throw new JsonServiceException(CONFLICT, "mbeanObjectName");
-        }
+        String id = configRepository.insertSyntheticMonitorConfig(agentRollupId, config);
         config = config.toBuilder()
                 .setId(id)
                 .build();

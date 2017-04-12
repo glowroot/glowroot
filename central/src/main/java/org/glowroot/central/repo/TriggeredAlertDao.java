@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.datastax.driver.core.BoundStatement;
@@ -23,9 +24,12 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.Lists;
+import com.google.protobuf.ByteString;
 
 import org.glowroot.common.repo.ImmutableTriggeredAlert;
 import org.glowroot.common.repo.TriggeredAlertRepository;
+import org.glowroot.common.repo.util.AlertingService;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -47,55 +51,63 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         this.session = session;
 
         session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
-                + " alert_id varchar, primary key (agent_rollup_id, alert_id)) " + WITH_LCS);
+                + " alert_condition blob, primary key (agent_rollup_id, alert_condition)) "
+                + WITH_LCS);
 
-        insertPS = session.prepare("insert into triggered_alert (agent_rollup_id, alert_id) values"
-                + " (?, ?)");
+        insertPS = session.prepare("insert into triggered_alert (agent_rollup_id, alert_condition)"
+                + " values (?, ?)");
 
         existsPS = session.prepare("select agent_rollup_id from triggered_alert where"
-                + " agent_rollup_id = ? and alert_id = ?");
+                + " agent_rollup_id = ? and alert_condition = ?");
 
         deletePS = session.prepare("delete from triggered_alert where agent_rollup_id = ?"
-                + " and alert_id = ?");
+                + " and alert_condition = ?");
 
         readPS = session
-                .prepare("select alert_id from triggered_alert where agent_rollup_id = ?");
+                .prepare("select alert_condition from triggered_alert where agent_rollup_id = ?");
 
-        readAllPS = session.prepare("select agent_rollup_id, alert_id from triggered_alert");
+        readAllPS = session.prepare("select agent_rollup_id, alert_condition from triggered_alert");
     }
 
-    public boolean exists(String agentRollupId, String alertId) throws Exception {
+    @Override
+    public boolean exists(String agentRollupId, AlertConfig alertConfig) throws Exception {
+        AlertConfig alertCondition = AlertingService.toAlertCondition(alertConfig);
         BoundStatement boundStatement = existsPS.bind();
         boundStatement.setString(0, agentRollupId);
-        boundStatement.setString(1, alertId);
+        boundStatement.setBytes(1, ByteBuffer.wrap(alertCondition.toByteArray()));
         ResultSet results = session.execute(boundStatement);
         return !results.isExhausted();
     }
 
-    public void delete(String agentRollupId, String alertId) throws Exception {
+    @Override
+    public void delete(String agentRollupId, AlertConfig alertConfig) throws Exception {
+        AlertConfig alertCondition = AlertingService.toAlertCondition(alertConfig);
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, agentRollupId);
-        boundStatement.setString(1, alertId);
+        boundStatement.setBytes(1, ByteBuffer.wrap(alertCondition.toByteArray()));
         session.execute(boundStatement);
     }
 
-    public void insert(String agentRollupId, String alertId) throws Exception {
+    @Override
+    public void insert(String agentRollupId, AlertConfig alertConfig) throws Exception {
+        AlertConfig alertCondition = AlertingService.toAlertCondition(alertConfig);
         BoundStatement boundStatement = insertPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, alertId);
+        boundStatement.setString(0, agentRollupId);
+        boundStatement.setBytes(1, ByteBuffer.wrap(alertCondition.toByteArray()));
         session.execute(boundStatement);
     }
 
-    public List<String> read(String agentRollupId) throws Exception {
+    @Override
+    public List<AlertConfig> readAlertConditions(String agentRollupId) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentRollupId);
         ResultSet results = session.execute(boundStatement);
-        List<String> alertIds = Lists.newArrayList();
+        List<AlertConfig> alertConfigs = Lists.newArrayList();
         for (Row row : results) {
-            alertIds.add(checkNotNull(row.getString(0)));
+            ByteBuffer bytes = checkNotNull(row.getBytes(0));
+            alertConfigs.add(AlertConfig.parseFrom(ByteString.copyFrom(bytes)));
         }
-        return alertIds;
+        return alertConfigs;
     }
 
     @Override
@@ -104,9 +116,11 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         ResultSet results = session.execute(boundStatement);
         List<TriggeredAlert> triggeredAlerts = Lists.newArrayList();
         for (Row row : results) {
+            String agentRollupId = checkNotNull(row.getString(0));
+            ByteBuffer bytes = checkNotNull(row.getBytes(1));
             triggeredAlerts.add(ImmutableTriggeredAlert.builder()
-                    .agentRollupId(checkNotNull(row.getString(0)))
-                    .alertId(checkNotNull(row.getString(1)))
+                    .agentRollupId(agentRollupId)
+                    .alertCondition(AlertConfig.parseFrom(ByteString.copyFrom(bytes)))
                     .build());
         }
         return triggeredAlerts;

@@ -15,7 +15,6 @@
  */
 package org.glowroot.tests;
 
-import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -218,10 +217,6 @@ public class ConfigIT extends WebDriverIT {
 
     @Test
     public void shouldUpdateSmtpConfig() throws Exception {
-
-        // alerting (and therefore smtp config) is only present in central
-        Assume.assumeTrue(WebDriverSetup.useCentral);
-
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();

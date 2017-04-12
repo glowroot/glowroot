@@ -61,7 +61,7 @@
               Gauge values
             </label>
           </div>
-          <div class="radio">
+          <div class="radio" ng-if="layout.central">
             <label>
               <input type="radio"
                      ng-model="config.kind"
@@ -70,7 +70,7 @@
               Heartbeat
             </label>
           </div>
-          <div class="radio">
+          <div class="radio" ng-if="layout.central">
             <label>
               <input type="radio"
                      ng-model="config.kind"

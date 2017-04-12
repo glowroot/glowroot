@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.AdvancedConfig;
+import org.glowroot.agent.config.AlertConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.GaugeConfig;
 import org.glowroot.agent.config.InstrumentationConfig;
@@ -47,6 +48,7 @@ import org.glowroot.common.config.FatStorageConfig;
 import org.glowroot.common.config.ImmutableFatStorageConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableRoleConfig;
+import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.ImmutableWebConfig;
 import org.glowroot.common.config.LdapConfig;
@@ -60,6 +62,7 @@ import org.glowroot.common.repo.util.LazySecretKey;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -81,6 +84,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile ImmutableList<RoleConfig> roleConfigs;
     private volatile WebConfig webConfig;
     private volatile FatStorageConfig storageConfig;
+    private volatile SmtpConfig smtpConfig;
     private volatile LdapConfig ldapConfig;
 
     static ConfigRepository create(File glowrootDir, ConfigService configService,
@@ -127,8 +131,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
         if (this.roleConfigs.isEmpty()) {
             this.roleConfigs = ImmutableList.<RoleConfig>of(ImmutableRoleConfig.builder()
                     .name("Administrator")
-                    .addPermissions("agent:transaction", "agent:error", "agent:jvm", "agent:config",
-                            "admin")
+                    .addPermissions("agent:transaction", "agent:error", "agent:jvm", "agent:alert",
+                            "agent:config", "admin")
                     .build());
         }
         WebConfig webConfig = configService.getAdminConfig(WEB_KEY, ImmutableWebConfig.class);
@@ -145,6 +149,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
             this.storageConfig = withCorrectedLists(storageConfig);
         } else {
             this.storageConfig = storageConfig;
+        }
+        SmtpConfig smtpConfig = configService.getAdminConfig(SMTP_KEY, ImmutableSmtpConfig.class);
+        if (smtpConfig == null) {
+            this.smtpConfig = ImmutableSmtpConfig.builder().build();
+        } else {
+            this.smtpConfig = smtpConfig;
         }
         LdapConfig ldapConfig = configService.getAdminConfig(LDAP_KEY, ImmutableLdapConfig.class);
         if (ldapConfig == null) {
@@ -207,13 +217,36 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentRollupId) {
-        throw new UnsupportedOperationException();
+    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentRollupId) throws Exception {
+        List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
+        for (AlertConfig config : configService.getAlertConfigs()) {
+            configs.add(config.toProto());
+        }
+        return configs;
     }
 
     @Override
-    public @Nullable AgentConfig.AlertConfig getAlertConfig(String agentRollupId, String alertId) {
-        throw new UnsupportedOperationException();
+    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentRollupId,
+            AlertKind alertKind) {
+        List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
+        for (AlertConfig config : configService.getAlertConfigs()) {
+            if (config.kind() == alertKind) {
+                configs.add(config.toProto());
+            }
+        }
+        return configs;
+    }
+
+    @Override
+    public @Nullable AgentConfig.AlertConfig getAlertConfig(String agentRollupId,
+            String alertVersion) {
+        for (AlertConfig alertConfig : configService.getAlertConfigs()) {
+            AgentConfig.AlertConfig config = alertConfig.toProto();
+            if (Versions.getVersion(config).equals(alertVersion)) {
+                return config;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -327,7 +360,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public SmtpConfig getSmtpConfig() {
-        throw new UnsupportedOperationException();
+        return smtpConfig;
     }
 
     @Override
@@ -430,20 +463,62 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig configWithoutId)
+    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig configWithoutId)
             throws Exception {
-        throw new UnsupportedOperationException();
+        synchronized (writeLock) {
+            List<AlertConfig> configs =
+                    Lists.newArrayList(configService.getAlertConfigs());
+            // check for exact duplicate
+            String version = Versions.getVersion(configWithoutId);
+            for (AlertConfig loopConfig : configs) {
+                if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
+                    throw new IllegalStateException("This exact alert already exists");
+                }
+            }
+            configs.add(AlertConfig.create(configWithoutId));
+            configService.updateAlertConfigs(configs);
+        }
     }
 
     @Override
     public void updateAlertConfig(String agentRollupId, AgentConfig.AlertConfig config,
             String priorVersion) throws Exception {
-        throw new UnsupportedOperationException();
+        synchronized (writeLock) {
+            List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
+            boolean found = false;
+            for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
+                AlertConfig loopConfig = i.next();
+                String loopVersion = Versions.getVersion(loopConfig.toProto());
+                if (loopVersion.equals(priorVersion)) {
+                    i.set(AlertConfig.create(config));
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new OptimisticLockException();
+            }
+            configService.updateAlertConfigs(configs);
+        }
     }
 
     @Override
-    public void deleteAlertConfig(String agentRollupId, String alertId) throws Exception {
-        throw new UnsupportedOperationException();
+    public void deleteAlertConfig(String agentRollupId, String version) throws Exception {
+        List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
+        boolean found = false;
+        for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
+            AlertConfig loopConfig = i.next();
+            String loopVersion = Versions.getVersion(loopConfig.toProto());
+            if (version.equals(loopVersion)) {
+                i.remove();
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw new OptimisticLockException();
+        }
+        configService.updateAlertConfigs(configs);
     }
 
     @Override
@@ -652,7 +727,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new UserNotFoundException();
             }
-            if (getLdapConfig().host().isEmpty() && configs.isEmpty()) {
+            if (getSmtpConfig().host().isEmpty() && configs.isEmpty()) {
                 throw new CannotDeleteLastUserException();
             }
             configService.updateAdminConfig(USERS_KEY, configs);
@@ -752,8 +827,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateSmtpConfig(SmtpConfig config, String priorVersion) {
-        throw new UnsupportedOperationException();
+    public void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception {
+        synchronized (writeLock) {
+            checkVersionsEqual(smtpConfig.version(), priorVersion);
+            configService.updateAdminConfig(SMTP_KEY, config);
+            smtpConfig = config;
+        }
     }
 
     @Override
@@ -815,6 +894,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
                 .build());
         webConfig = ImmutableWebConfig.builder().build();
         storageConfig = ImmutableFatStorageConfig.builder().build();
+        smtpConfig = ImmutableSmtpConfig.builder().build();
         ldapConfig = ImmutableLdapConfig.builder().build();
         writeAll();
     }
@@ -826,6 +906,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
         configs.put(ROLES_KEY, roleConfigs);
         configs.put(WEB_KEY, webConfig);
         configs.put(STORAGE_KEY, storageConfig);
+        configs.put(SMTP_KEY, smtpConfig);
         configs.put(LDAP_KEY, ldapConfig);
         configService.updateAdminConfigs(configs);
     }

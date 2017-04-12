@@ -79,7 +79,7 @@ message AgentConfig {
     int32 time_period_seconds = 8; // used by TRANSACTION, GAUGE, HEARTBEAT
     repeated string email_address = 9;
 
-    string id = 1000; // not used on agent side
+    // string id = 1000; // not used on agent side
 
     enum AlertKind {
       TRANSACTION = 0;

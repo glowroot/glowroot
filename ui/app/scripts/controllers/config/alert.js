@@ -27,7 +27,7 @@ glowroot.controller('ConfigAlertCtrl', [
     // initialize page binding object
     $scope.page = {};
 
-    var id = $location.search().id;
+    var version = $location.search().v;
 
     function onNewData(data) {
       $scope.config = data.config;
@@ -62,8 +62,8 @@ glowroot.controller('ConfigAlertCtrl', [
       return '';
     };
 
-    if (id) {
-      $http.get('backend/config/alerts?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId) + '&id=' + id)
+    if (version) {
+      $http.get('backend/config/alerts?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId) + '&version=' + version)
           .then(function (response) {
             onNewData(response.data);
             $scope.loaded = true;
@@ -72,7 +72,7 @@ glowroot.controller('ConfigAlertCtrl', [
           });
     } else {
       var url = 'backend/config/alert-dropdowns?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId)
-          + '&id=' + id;
+          + '&version=' + version;
       $http.get(url)
           .then(function (response) {
             onNewData({
@@ -145,7 +145,7 @@ glowroot.controller('ConfigAlertCtrl', [
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
       var url;
-      if (id) {
+      if (version) {
         url = 'backend/config/alerts/update';
       } else {
         url = 'backend/config/alerts/add';
@@ -155,19 +155,15 @@ glowroot.controller('ConfigAlertCtrl', [
       $http.post(url + '?agent-rollup-id=' + encodeURIComponent(agentRollupId), postData)
           .then(function (response) {
             onNewData(response.data);
-            if (id) {
-              deferred.resolve('Saved');
+            deferred.resolve(version ? 'Saved' : 'Added');
+            version = response.data.config.version;
+            // fix current url (with updated version) before returning to list page in case back button is used later
+            if (agentId) {
+              $location.search({'agent-id': agentId, v: version}).replace();
+            } else if (agentRollupId) {
+              $location.search({'agent-rollup-id': agentRollupId, v: version}).replace();
             } else {
-              deferred.resolve('Added');
-              id = response.data.id;
-              // fix current url (with id) before returning to list page in case back button is used later
-              if (agentId) {
-                $location.search({'agent-id': agentId, id: id}).replace();
-              } else if (agentRollupId) {
-                $location.search({'agent-rollup-id': agentRollupId, id: id}).replace();
-              } else {
-                $location.search({id: id}).replace();
-              }
+              $location.search({v: version}).replace();
             }
           }, function (response) {
             httpErrors.handle(response, $scope, deferred);
@@ -176,7 +172,7 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        id: $scope.config.id
+        version: $scope.config.version
       };
       var agentId = $scope.agentId;
       var agentRollupId = $scope.agentRollupId;

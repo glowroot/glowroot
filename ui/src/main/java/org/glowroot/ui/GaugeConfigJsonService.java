@@ -79,7 +79,7 @@ class GaugeConfigJsonService {
             if (gaugeConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
-            return mapper.writeValueAsString(buildResponse(agentId, gaugeConfig));
+            return getGaugeResponse(agentId, gaugeConfig);
         } else {
             List<GaugeConfigWithWarningMessages> responses = Lists.newArrayList();
             List<GaugeConfig> gaugeConfigs = configRepository.getGaugeConfigs(agentId);
@@ -145,7 +145,7 @@ class GaugeConfigJsonService {
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        return mapper.writeValueAsString(buildResponse(agentId, gaugeConfig));
+        return getGaugeResponse(agentId, gaugeConfig);
     }
 
     @POST(path = "/backend/config/gauges/update", permission = "agent:config:edit:gauge")
@@ -160,7 +160,7 @@ class GaugeConfigJsonService {
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        return mapper.writeValueAsString(buildResponse(agentId, gaugeConfig));
+        return getGaugeResponse(agentId, gaugeConfig);
     }
 
     @POST(path = "/backend/config/gauges/remove", permission = "agent:config:edit:gauge")
@@ -169,7 +169,7 @@ class GaugeConfigJsonService {
         configRepository.deleteGaugeConfig(agentId, request.version().get());
     }
 
-    private GaugeResponse buildResponse(String agentId, GaugeConfig gaugeConfig) throws Exception {
+    private String getGaugeResponse(String agentId, GaugeConfig gaugeConfig) throws Exception {
         ImmutableGaugeResponse.Builder builder = ImmutableGaugeResponse.builder()
                 .config(GaugeConfigDto.create(gaugeConfig));
         MBeanMeta mbeanMeta = null;
@@ -191,7 +191,7 @@ class GaugeConfigJsonService {
         } else {
             builder.addAllMbeanAvailableAttributeNames(mbeanMeta.getAttributeNameList());
         }
-        return builder.build();
+        return mapper.writeValueAsString(builder.build());
     }
 
     @Value.Immutable

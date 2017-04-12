@@ -65,6 +65,7 @@ class ConfigFile {
         }
         if (adminFile.exists()) {
             adminRootObjectNode = getRootObjectNode(adminFile);
+            // upgrade from 0.9.1 to 0.9.2
             upgradeAdminIfNeeded(adminRootObjectNode);
         } else {
             adminRootObjectNode = mapper.createObjectNode();
