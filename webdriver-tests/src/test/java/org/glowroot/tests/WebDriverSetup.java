@@ -59,7 +59,7 @@ public class WebDriverSetup {
 
     private static final boolean USE_FIREFOX = false;
 
-    private static final String GECKO_DRIVER_VERSION = "0.11.1";
+    private static final String GECKO_DRIVER_VERSION = "0.15.0";
 
     private static final Logger logger = LoggerFactory.getLogger(WebDriverSetup.class);
 
@@ -292,28 +292,31 @@ public class WebDriverSetup {
         }
         File targetDir = new File("target");
         targetDir.mkdir();
-        File geckoDriverExecutable = new File(targetDir, "geckodriver" + optionalExt);
+        File geckoDriverExecutable =
+                new File(targetDir, "geckodriver-" + GECKO_DRIVER_VERSION + optionalExt);
         if (!geckoDriverExecutable.exists()) {
             downloadAndExtractGeckoDriver(targetDir, downloadFilenameSuffix, downloadFilenameExt,
-                    archiver);
+                    optionalExt, archiver);
 
         }
         return geckoDriverExecutable;
     }
 
     private static void downloadAndExtractGeckoDriver(File directory, String downloadFilenameSuffix,
-            String downloadFilenameExt, Archiver archiver) throws IOException {
+            String downloadFilenameExt, String optionalExt, Archiver archiver) throws IOException {
         // using System.out to make sure user sees why there is a delay here
         System.out.print("Downloading Mozilla geckodriver " + GECKO_DRIVER_VERSION + " ...");
         URL url = new URL("https://github.com/mozilla/geckodriver/releases/download/v"
-                + GECKO_DRIVER_VERSION + "/geckodriver-v" + GECKO_DRIVER_VERSION + "-"
-                + downloadFilenameSuffix + "." + downloadFilenameExt);
+                + GECKO_DRIVER_VERSION + "/geckodriver-v" + GECKO_DRIVER_VERSION + '-'
+                + downloadFilenameSuffix + '.' + downloadFilenameExt);
         InputStream in = url.openStream();
-        File archiveFile = File.createTempFile("geckodriver-" + GECKO_DRIVER_VERSION + "-",
-                "." + downloadFilenameExt);
+        File archiveFile = File.createTempFile("geckodriver-" + GECKO_DRIVER_VERSION + '-',
+                '.' + downloadFilenameExt);
         Files.asByteSink(archiveFile).writeFrom(in);
         in.close();
         archiver.extract(archiveFile, directory);
+        Files.move(new File(directory, "geckodriver" + optionalExt),
+                new File(directory, "geckodriver-" + GECKO_DRIVER_VERSION + optionalExt));
         archiveFile.delete();
         System.out.println(" OK");
     }
