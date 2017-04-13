@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -51,11 +52,37 @@ public class RestControllerIT {
 
     @Test
     public void shouldCaptureTransactionNameWithNormalServletMappingHittingRest() throws Exception {
+        shouldCaptureTransactionNameWithNormalServletMappingHittingRest("",
+                WithNormalServletMappingHittingRest.class);
+    }
+
+    @Test
+    public void shouldCaptureTransactionNameWithNormalServletMappingHittingAbc() throws Exception {
+        shouldCaptureTransactionNameWithNormalServletMappingHittingAbc("",
+                WithNormalServletMappingHittingAbc.class);
+    }
+
+    @Test
+    public void shouldCaptureTransactionNameWithContextPathAndNormalServletMappingHittingRest()
+            throws Exception {
+        shouldCaptureTransactionNameWithNormalServletMappingHittingRest("/zzz",
+                WithContextPathAndNormalServletMappingHittingRest.class);
+    }
+
+    @Test
+    public void shouldCaptureTransactionNameWithContextPathAndNormalServletMappingHittingAbc()
+            throws Exception {
+        shouldCaptureTransactionNameWithNormalServletMappingHittingAbc("/zzz",
+                WithContextPathAndNormalServletMappingHittingAbc.class);
+    }
+
+    private void shouldCaptureTransactionNameWithNormalServletMappingHittingRest(String contextPath,
+            Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(WithNormalServletMappingHittingRest.class);
+        Trace trace = container.execute(appUnderTestClass);
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/rest");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/rest");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
@@ -67,13 +94,13 @@ public class RestControllerIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    @Test
-    public void shouldCaptureTransactionNameWithNormalServletMappingHittingAbc() throws Exception {
+    private void shouldCaptureTransactionNameWithNormalServletMappingHittingAbc(String contextPath,
+            Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(WithNormalServletMappingHittingAbc.class);
+        Trace trace = container.execute(appUnderTestClass);
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/abc");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/abc");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
@@ -89,14 +116,30 @@ public class RestControllerIT {
     public static class WithNormalServletMappingHittingRest extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
-            executeApp("webapp1", "/rest");
+            executeApp("webapp1", "", "/rest");
         }
     }
 
     public static class WithNormalServletMappingHittingAbc extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
-            executeApp("webapp1", "/abc");
+            executeApp("webapp1", "", "/abc");
+        }
+    }
+
+    public static class WithContextPathAndNormalServletMappingHittingRest
+            extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "/zzz", "/rest");
+        }
+    }
+
+    public static class WithContextPathAndNormalServletMappingHittingAbc
+            extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "/zzz", "/abc");
         }
     }
 

@@ -56,6 +56,8 @@ public class ControllerAspect {
     @Shim("javax.servlet.http.HttpServletRequest")
     public interface HttpServletRequest {
         @Nullable
+        String getContextPath();
+        @Nullable
         String getServletPath();
         @Nullable
         String getPathInfo();
@@ -87,15 +89,16 @@ public class ControllerAspect {
                 return null;
             }
             HttpServletRequest request = (HttpServletRequest) req;
+            String contextPath = request.getContextPath();
             String pathInfo = request.getPathInfo();
             String servletPath;
             if (pathInfo == null) {
                 // pathInfo is null when the dispatcher servlet is mapped to "/" (not "/*") and
                 // therefore it is replacing the default servlet and getServletPath() returns the
                 // full path
-                servletPath = "";
+                servletPath = contextPath;
             } else {
-                servletPath = request.getServletPath();
+                servletPath = contextPath + request.getServletPath();
             }
             FastThreadLocal.Holder</*@Nullable*/ String> holder =
                     ControllerAspect.servletPath.getHolder();

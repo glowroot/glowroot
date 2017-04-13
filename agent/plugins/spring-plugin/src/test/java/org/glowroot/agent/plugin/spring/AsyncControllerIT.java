@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.context.request.async.DeferredResult;
 
+import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
@@ -58,12 +59,33 @@ public class AsyncControllerIT {
 
     @Test
     public void shouldCaptureCallableAsyncController() throws Exception {
+        shouldCaptureCallableAsyncController("", CallableAsyncServlet.class);
+    }
+
+    @Test
+    public void shouldCaptureDeferredResultAsyncController() throws Exception {
+        shouldCaptureDeferredResultAsyncController("", DeferredResultAsyncServlet.class);
+    }
+
+    @Test
+    public void shouldCaptureCallableAsyncControllerWithContextPath() throws Exception {
+        shouldCaptureCallableAsyncController("/zzz", CallableAsyncServletWithContextPath.class);
+    }
+
+    @Test
+    public void shouldCaptureDeferredResultAsyncControllerWithContextPath() throws Exception {
+        shouldCaptureDeferredResultAsyncController("/zzz",
+                DeferredResultAsyncServletWithContextPath.class);
+    }
+
+    private void shouldCaptureCallableAsyncController(String contextPath,
+            Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(CallableAsyncServlet.class);
+        Trace trace = container.execute(appUnderTestClass);
 
         // then
         assertThat(trace.getHeader().getAsync()).isTrue();
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/async");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/async");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
@@ -119,14 +141,14 @@ public class AsyncControllerIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    @Test
-    public void shouldCaptureDeferredResultAsyncController() throws Exception {
+    private void shouldCaptureDeferredResultAsyncController(String contextPath,
+            Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(DeferredResultAsyncServlet.class);
+        Trace trace = container.execute(appUnderTestClass);
 
         // then
         assertThat(trace.getHeader().getAsync()).isTrue();
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/async2");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/async2");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
@@ -154,14 +176,29 @@ public class AsyncControllerIT {
     public static class CallableAsyncServlet extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
-            executeApp("webapp1", "/async");
+            executeApp("webapp1", "", "/async");
         }
     }
 
     public static class DeferredResultAsyncServlet extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
-            executeApp("webapp1", "/async2");
+            executeApp("webapp1", "", "/async2");
+        }
+    }
+
+    public static class CallableAsyncServletWithContextPath extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "/zzz", "/async");
+        }
+    }
+
+    public static class DeferredResultAsyncServletWithContextPath
+            extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "/zzz", "/async2");
         }
     }
 
