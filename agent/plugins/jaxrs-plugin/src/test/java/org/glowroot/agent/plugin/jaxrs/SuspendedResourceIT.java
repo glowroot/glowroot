@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
@@ -58,11 +59,23 @@ public class SuspendedResourceIT {
 
     @Test
     public void shouldCaptureSuspendedResponse() throws Exception {
+        shouldCaptureSuspendedResponse("", WithNormalServletMappingCallSuspended.class);
+    }
+
+    @Test
+    public void shouldCaptureSuspendedResponseWithContextPath() throws Exception {
+        shouldCaptureSuspendedResponse("/zzz",
+                WithNormalServletMappingCallSuspendedWithContextPath.class);
+    }
+
+    private void shouldCaptureSuspendedResponse(String contextPath,
+            Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(WithNormalServletMappingCallSuspended.class);
+        Trace trace = container.execute(appUnderTestClass);
 
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /suspended/*");
+        assertThat(trace.getHeader().getTransactionName())
+                .isEqualTo("GET " + contextPath + "/suspended/*");
         assertThat(trace.getHeader().getAsync()).isTrue();
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
@@ -86,7 +99,15 @@ public class SuspendedResourceIT {
     public static class WithNormalServletMappingCallSuspended extends InvokeJaxrsResourceInTomcat {
         @Override
         public void executeApp() throws Exception {
-            executeApp("webapp1", "/suspended/1");
+            executeApp("webapp1", "", "/suspended/1");
+        }
+    }
+
+    public static class WithNormalServletMappingCallSuspendedWithContextPath
+            extends InvokeJaxrsResourceInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "/zzz", "/suspended/1");
         }
     }
 

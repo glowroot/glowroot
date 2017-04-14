@@ -90,6 +90,9 @@ public class ControllerAspect {
             }
             HttpServletRequest request = (HttpServletRequest) req;
             String contextPath = request.getContextPath();
+            if (contextPath == null) {
+                contextPath = "";
+            }
             String pathInfo = request.getPathInfo();
             String servletPath;
             if (pathInfo == null) {

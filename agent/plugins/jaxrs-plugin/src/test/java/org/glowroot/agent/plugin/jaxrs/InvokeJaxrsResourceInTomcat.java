@@ -27,13 +27,13 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 
 abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest {
 
-    public void executeApp(String webapp, String url) throws Exception {
+    public void executeApp(String webapp, String contextPath, String url) throws Exception {
         int port = getAvailablePort();
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");
         tomcat.setPort(port);
-        Context context =
-                tomcat.addWebapp("", new File("src/test/resources/" + webapp).getAbsolutePath());
+        Context context = tomcat.addWebapp(contextPath,
+                new File("src/test/resources/" + webapp).getAbsolutePath());
 
         WebappLoader webappLoader =
                 new WebappLoader(InvokeJaxrsResourceInTomcat.class.getClassLoader());
@@ -41,8 +41,8 @@ abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest {
 
         tomcat.start();
         AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-        int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + url).execute()
-                .get().getStatusCode();
+        int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + contextPath + url)
+                .execute().get().getStatusCode();
         asyncHttpClient.close();
         if (statusCode != 200) {
             throw new IllegalStateException("Unexpected status code: " + statusCode);
