@@ -32,6 +32,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
@@ -63,56 +64,47 @@ public class AsyncServletIT {
 
     @Test
     public void testAsyncServlet() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        testAsyncServlet("", InvokeAsync.class);
+    }
 
-        // when
-        Trace trace = container.execute(InvokeAsync.class);
-
-        // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getAsync()).isTrue();
-        assertThat(header.getHeadline()).isEqualTo("/async");
-        assertThat(header.getTransactionName()).isEqualTo("/async");
-
-        // check session attributes set across async boundary
-        assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();
-        assertThat(SessionAttributeIT.getInitialSessionAttributes(trace)).isNull();
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(trace).get("sync"))
-                .isEqualTo("a");
-        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(trace).get("async"))
-                .isEqualTo("b");
-
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
-
-        entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
-
-        entry = i.next();
-        assertThat(entry.getDepth()).isEqualTo(1);
-        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
-
-        assertThat(i.hasNext()).isFalse();
+    @Test
+    public void testAsyncServletWithContextPath() throws Exception {
+        testAsyncServlet("/zzz", InvokeAsyncWithContextPath.class);
     }
 
     @Test
     public void testAsyncServlet2() throws Exception {
+        testAsyncServlet2("", InvokeAsync2.class);
+    }
+
+    @Test
+    public void testAsyncServlet2WithContextPath() throws Exception {
+        testAsyncServlet2("/zzz", InvokeAsync2WithContextPath.class);
+    }
+
+    @Test
+    public void testAsyncServletWithDispatch() throws Exception {
+        testAsyncServletWithDispatch("", InvokeAsyncWithDispatch.class);
+    }
+
+    @Test
+    public void testAsyncServletWithDispatchWithContextPath() throws Exception {
+        testAsyncServletWithDispatch("/zzz", InvokeAsyncWithDispatchWithContextPath.class);
+    }
+
+    private void testAsyncServlet(String contextPath,
+            Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
 
         // when
-        Trace trace = container.execute(InvokeAsync2.class);
+        Trace trace = container.execute(appUnderTestClass);
 
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getAsync()).isTrue();
-        assertThat(header.getHeadline()).isEqualTo("/async2");
-        assertThat(header.getTransactionName()).isEqualTo("/async2");
+        assertThat(header.getHeadline()).isEqualTo(contextPath + "/async");
+        assertThat(header.getTransactionName()).isEqualTo(contextPath + "/async");
 
         // check session attributes set across async boundary
         assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();
@@ -139,20 +131,59 @@ public class AsyncServletIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    @Test
-    public void testAsyncServletWithDispatch() throws Exception {
+    private void testAsyncServlet2(String contextPath,
+            Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
 
         // when
-        Trace trace = container.execute(InvokeAsyncWithDispatch.class);
+        Trace trace = container.execute(appUnderTestClass);
+
+        // then
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getAsync()).isTrue();
+        assertThat(header.getHeadline()).isEqualTo(contextPath + "/async2");
+        assertThat(header.getTransactionName()).isEqualTo(contextPath + "/async2");
+
+        // check session attributes set across async boundary
+        assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();
+        assertThat(SessionAttributeIT.getInitialSessionAttributes(trace)).isNull();
+        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(trace).get("sync"))
+                .isEqualTo("a");
+        assertThat(SessionAttributeIT.getUpdatedSessionAttributes(trace).get("async"))
+                .isEqualTo("b");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    private void testAsyncServletWithDispatch(String contextPath,
+            Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+
+        // when
+        Trace trace = container.execute(appUnderTestClass);
         Thread.sleep(1000);
 
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getAsync()).isTrue();
-        assertThat(header.getHeadline()).isEqualTo("/async3");
-        assertThat(header.getTransactionName()).isEqualTo("/async3");
+        assertThat(header.getHeadline()).isEqualTo(contextPath + "/async3");
+        assertThat(header.getTransactionName()).isEqualTo(contextPath + "/async3");
 
         // and check session attributes set across async and dispatch boundary
         assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();
@@ -189,12 +220,30 @@ public class AsyncServletIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    public static class InvokeAsync extends InvokeServletInTomcat {
+    public static class InvokeAsync extends InvokeAsyncBase {
+        public InvokeAsync() {
+            super("");
+        }
+    }
+
+    public static class InvokeAsyncWithContextPath extends InvokeAsyncBase {
+        public InvokeAsyncWithContextPath() {
+            super("/zzz");
+        }
+    }
+
+    private static class InvokeAsyncBase extends InvokeServletInTomcat {
+
+        private InvokeAsyncBase(String contextPath) {
+            super(contextPath);
+        }
+
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/async")
-                    .execute().get().getStatusCode();
+            int statusCode =
+                    asyncHttpClient.prepareGet("http://localhost:" + port + contextPath + "/async")
+                            .execute().get().getStatusCode();
             asyncHttpClient.close();
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
@@ -202,12 +251,30 @@ public class AsyncServletIT {
         }
     }
 
-    public static class InvokeAsync2 extends InvokeServletInTomcat {
+    public static class InvokeAsync2 extends InvokeAsync2Base {
+        public InvokeAsync2() {
+            super("");
+        }
+    }
+
+    public static class InvokeAsync2WithContextPath extends InvokeAsync2Base {
+        public InvokeAsync2WithContextPath() {
+            super("/zzz");
+        }
+    }
+
+    private static class InvokeAsync2Base extends InvokeServletInTomcat {
+
+        private InvokeAsync2Base(String contextPath) {
+            super(contextPath);
+        }
+
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/async2")
-                    .execute().get().getStatusCode();
+            int statusCode =
+                    asyncHttpClient.prepareGet("http://localhost:" + port + contextPath + "/async2")
+                            .execute().get().getStatusCode();
             asyncHttpClient.close();
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
@@ -215,20 +282,38 @@ public class AsyncServletIT {
         }
     }
 
-    public static class InvokeAsyncWithDispatch extends InvokeServletInTomcat {
+    public static class InvokeAsyncWithDispatch extends InvokeAsyncWithDispatchBase {
+        public InvokeAsyncWithDispatch() {
+            super("");
+        }
+    }
+
+    public static class InvokeAsyncWithDispatchWithContextPath extends InvokeAsyncWithDispatchBase {
+        public InvokeAsyncWithDispatchWithContextPath() {
+            super("/zzz");
+        }
+    }
+
+    private static class InvokeAsyncWithDispatchBase extends InvokeServletInTomcat {
+
+        private InvokeAsyncWithDispatchBase(String contextPath) {
+            super(contextPath);
+        }
+
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
             // send initial to trigger servlet init methods so they don't end up in trace
             int statusCode =
-                    asyncHttpClient.prepareGet("http://localhost:" + port + "/async3")
+                    asyncHttpClient.prepareGet("http://localhost:" + port + contextPath + "/async3")
                             .execute().get().getStatusCode();
             if (statusCode != 200) {
                 asyncHttpClient.close();
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
             }
-            statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/async3")
-                    .execute().get().getStatusCode();
+            statusCode =
+                    asyncHttpClient.prepareGet("http://localhost:" + port + contextPath + "/async3")
+                            .execute().get().getStatusCode();
             asyncHttpClient.close();
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);

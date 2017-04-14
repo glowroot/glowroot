@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,11 +69,49 @@ public class AnnotatedServletIT {
         assertThat(header.getTransactionName()).isEqualTo("/hello/5");
     }
 
+    @Test
+    public void testServletWithContextPath() throws Exception {
+        // when
+        Trace trace = container.execute(InvokeServletWithContextPath.class);
+
+        // then
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("/zzz/hello/5");
+        // TODO the transaction name should ideally be /hello/*, but taking safe route for now
+        // because servlet could be mapped to another path via web.xml, in future would be good to
+        // get use actual servlet mapping, probably need to instrument tomcat/other web containers
+        // to capture this
+        assertThat(header.getTransactionName()).isEqualTo("/zzz/hello/5");
+    }
+
     public static class InvokeServlet extends InvokeServletInTomcat {
+
+        public InvokeServlet() {
+            super("");
+        }
+
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
             int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/hello/5")
+                    .execute().get().getStatusCode();
+            asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
+        }
+    }
+
+    public static class InvokeServletWithContextPath extends InvokeServletInTomcat {
+
+        public InvokeServletWithContextPath() {
+            super("/zzz");
+        }
+
+        @Override
+        protected void doTest(int port) throws Exception {
+            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+            int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/zzz/hello/5")
                     .execute().get().getStatusCode();
             asyncHttpClient.close();
             if (statusCode != 200) {

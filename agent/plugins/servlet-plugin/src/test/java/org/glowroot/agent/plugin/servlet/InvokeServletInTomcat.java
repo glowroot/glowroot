@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,12 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 
 abstract class InvokeServletInTomcat implements AppUnderTest {
 
+    protected final String contextPath;
+
+    protected InvokeServletInTomcat(String contextPath) {
+        this.contextPath = contextPath;
+    }
+
     @Override
     public void executeApp() throws Exception {
         int port = getAvailablePort();
@@ -34,7 +40,7 @@ abstract class InvokeServletInTomcat implements AppUnderTest {
         tomcat.setBaseDir("target/tomcat");
         tomcat.setPort(port);
         Context context =
-                tomcat.addWebapp("", new File("src/test/resources").getAbsolutePath());
+                tomcat.addWebapp(contextPath, new File("src/test/resources").getAbsolutePath());
 
         WebappLoader webappLoader =
                 new WebappLoader(InvokeServletInTomcat.class.getClassLoader());
