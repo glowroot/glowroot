@@ -51,7 +51,7 @@ If you are modifying web assets, you either need to run grunt to re-build them a
 
 Integration tests are run during Maven's standard `integration-test` lifecycle phase.
 
-The Glowroot agent has an [integration test harness](agent-parent/it-harness) which makes it easy to run sample application code and then validate the data captured by the agent.  The integration test harness is able to run tests both using a custom weaving class loader (which is very convenient for running and debugging inside your favorite IDE), and by spawning a JVM with the -javaagent flag (which more correctly simulates real world conditions).
+The Glowroot agent has an [integration test harness](agent/it-harness) which makes it easy to run sample application code and then validate the data captured by the agent.  The integration test harness is able to run tests both using a custom weaving class loader (which is very convenient for running and debugging inside your favorite IDE), and by spawning a JVM with the -javaagent flag (which more correctly simulates real world conditions).
 
 Browser-based integration tests are run using WebDriver.  By default they run against Firefox.  Thanks to [Sauce Labs](https://saucelabs.com), they also run against Chrome, IE (9, 10, 11) and Safari (6, 7, 8, 9) during every Travis CI build (see the jobs with TARGET=saucelabs).
 
