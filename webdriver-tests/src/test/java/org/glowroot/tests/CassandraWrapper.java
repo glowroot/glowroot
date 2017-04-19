@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,9 +45,9 @@ class CassandraWrapper {
         if (System.getProperty("os.name").startsWith("Windows")) {
             // Cassandra 2.1 has issues on Windows
             // see https://issues.apache.org/jira/browse/CASSANDRA-10673
-            CASSANDRA_VERSION = "2.2.8";
+            CASSANDRA_VERSION = "2.2.9";
         } else {
-            CASSANDRA_VERSION = "2.1.16";
+            CASSANDRA_VERSION = "2.1.17";
         }
     }
 
