@@ -28,8 +28,10 @@ import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import javax.servlet.ServletConfig;
 
+import com.datastax.driver.core.AuthProvider;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.PlainTextAuthProvider;
 import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
@@ -363,6 +365,20 @@ class CentralModule {
         if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
             builder.cassandraKeyspace(cassandraKeyspace);
         }
+        final String cassandraAuthType = props.getProperty("cassandra.authType");
+        if (!Strings.isNullOrEmpty(cassandraAuthType)) {
+            switch (cassandraAuthType) {
+                case "plain-text" : {
+                    final String userName = props.getProperty("cassandra.username");
+                    final String password = props.getProperty("cassandra.password");
+                    builder.cassandraAuthProvider(new PlainTextAuthProvider(userName, password));
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException("Unsupported value '" +  cassandraAuthType + "' for cassandra.authType");
+                }
+            }
+        }
         String grpcBindAddress = props.getProperty("grpc.bindAddress");
         if (!Strings.isNullOrEmpty(grpcBindAddress)) {
             builder.grpcBindAddress(grpcBindAddress);
@@ -404,6 +420,8 @@ class CentralModule {
                 Cluster cluster = Cluster.builder()
                         .addContactPoints(
                                 centralConfig.cassandraContactPoint().toArray(new String[0]))
+                        // credentials
+                        .withAuthProvider(centralConfig.cassandraAuthProvider())
                         // aggressive reconnect policy seems ok since not many clients
                         .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
                         // let driver know that only idempotent queries are used so it will retry on
@@ -513,6 +531,8 @@ class CentralModule {
         int grpcPort() {
             return 8181;
         }
+
+        abstract @Nullable AuthProvider cassandraAuthProvider();
 
         abstract @Nullable String jgroupsConfigurationFile();
 
