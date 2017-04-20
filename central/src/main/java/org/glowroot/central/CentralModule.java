@@ -361,6 +361,14 @@ class CentralModule {
         if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
             builder.cassandraKeyspace(cassandraKeyspace);
         }
+        String cassandraUsername = props.getProperty("cassandra.username");
+        if (!Strings.isNullOrEmpty(cassandraUsername)) {
+            builder.cassandraUsername(cassandraUsername);
+        }
+        String cassandraPassword = props.getProperty("cassandra.password");
+        if (!Strings.isNullOrEmpty(cassandraPassword)) {
+            builder.cassandraPassword(cassandraPassword);
+        }
         String grpcBindAddress = props.getProperty("grpc.bindAddress");
         if (!Strings.isNullOrEmpty(grpcBindAddress)) {
             builder.grpcBindAddress(grpcBindAddress);
@@ -399,7 +407,7 @@ class CentralModule {
         NoHostAvailableException lastException = null;
         while (stopwatch.elapsed(MINUTES) < 10) {
             try {
-                Cluster cluster = Cluster.builder()
+                Cluster.Builder builder = Cluster.builder()
                         .addContactPoints(
                                 centralConfig.cassandraContactPoint().toArray(new String[0]))
                         // aggressive reconnect policy seems ok since not many clients
@@ -409,9 +417,13 @@ class CentralModule {
                         .withQueryOptions(new QueryOptions().setDefaultIdempotence(true))
                         // central runs lots of parallel async queries and is very spiky since all
                         // aggregates come in right after each minute marker
-                        .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096))
-                        .build();
-                return cluster.connect();
+                        .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096));
+                String cassandraUsername = centralConfig.cassandraUsername();
+                if (!cassandraUsername.isEmpty()) {
+                    // empty password is strange but valid
+                    builder.withCredentials(cassandraUsername, centralConfig.cassandraPassword());
+                }
+                return builder.build().connect();
             } catch (NoHostAvailableException e) {
                 startupLogger.debug(e.getMessage(), e);
                 lastException = e;
@@ -498,6 +510,16 @@ class CentralModule {
         }
 
         @Value.Default
+        String cassandraUsername() {
+            return "";
+        }
+
+        @Value.Default
+        String cassandraPassword() {
+            return "";
+        }
+
+        @Value.Default
         String cassandraKeyspace() {
             return "glowroot";
         }
@@ -511,7 +533,6 @@ class CentralModule {
         int grpcPort() {
             return 8181;
         }
-
         abstract @Nullable String jgroupsConfigurationFile();
 
         abstract Map<String, String> jgroupProperties();
