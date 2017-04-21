@@ -348,8 +348,10 @@ class InstrumentationConfigJsonService {
         private InstrumentationConfig convert() {
             InstrumentationConfig.Builder builder = InstrumentationConfig.newBuilder()
                     .setClassName(className())
+                    .setClassAnnotation(classAnnotation())
                     .setMethodDeclaringClassName(methodDeclaringClassName())
                     .setMethodName(methodName())
+                    .setMethodAnnotation(methodAnnotation())
                     .addAllMethodParameterType(methodParameterTypes())
                     .setMethodReturnType(methodReturnType())
                     .addAllMethodModifier(methodModifiers())
