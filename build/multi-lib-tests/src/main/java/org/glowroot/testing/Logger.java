@@ -129,9 +129,11 @@ public class Logger {
             updateLibVersion("logback.version", "1.2." + i);
             run(test);
         }
-        updateLibVersion("slf4j.version", "1.7.25");
-        updateLibVersion("logback.version", "1.2.2");
-        run(test);
+        for (int i = 2; i <= 3; i++) {
+            updateLibVersion("slf4j.version", "1.7.25");
+            updateLibVersion("logback.version", "1.2.2");
+            run(test);
+        }
     }
 
     private static void log4j() throws Exception {

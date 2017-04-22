@@ -163,14 +163,14 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
-      <version>4.3.7.RELEASE</version>
+      <version>4.3.8.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>4.3.7.RELEASE</version>
+      <version>4.3.8.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
