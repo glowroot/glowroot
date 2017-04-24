@@ -29,7 +29,18 @@ public class AppServerDetection {
             return null;
         }
         int index = sunJavaCommand.indexOf(' ');
-        return index == -1 ? sunJavaCommand : sunJavaCommand.substring(0, index);
+        if (index == -1) {
+            return sunJavaCommand;
+        }
+        String firstArg = sunJavaCommand.substring(0, index);
+        if (firstArg.startsWith("org.tanukisoftware.wrapper.")) {
+            int nextIndex = sunJavaCommand.indexOf(' ', index + 1);
+            if (nextIndex == -1) {
+                return sunJavaCommand.substring(index + 1);
+            }
+            return sunJavaCommand.substring(index + 1, nextIndex);
+        }
+        return firstArg;
     }
 
     public static boolean isIbmJvm() {

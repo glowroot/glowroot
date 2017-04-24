@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class AppServerDetectionTest {
 
     @Test
-    public void testNonParseable() {
+    public void test() {
         checkJavaSunCommand(null, false);
         checkJavaSunCommand("", false);
         checkJavaSunCommand("org.example.Main", false);
@@ -30,6 +30,15 @@ public class AppServerDetectionTest {
         checkJavaSunCommand("org.jboss.modules.Main 1 2", true);
         checkJavaSunCommand("path/to/jboss-modules.jar", true);
         checkJavaSunCommand("path/to/jboss-modules.jar 1 2", true);
+        checkJavaSunCommand("org.tanukisoftware.wrapper.WrapperSimpleApp org.example.Main", false);
+        checkJavaSunCommand("org.tanukisoftware.wrapper.WrapperSimpleApp org.jboss.modules.Main",
+                true);
+        checkJavaSunCommand(
+                "org.tanukisoftware.wrapper.WrapperSimpleApp org.jboss.modules.Main 1 2", true);
+        checkJavaSunCommand("org.tanukisoftware.wrapper.WrapperSimpleApp path/to/jboss-modules.jar",
+                true);
+        checkJavaSunCommand(
+                "org.tanukisoftware.wrapper.WrapperSimpleApp path/to/jboss-modules.jar 1 2", true);
     }
 
     private static void checkJavaSunCommand(String javaSunCommand, boolean jbossModules) {
