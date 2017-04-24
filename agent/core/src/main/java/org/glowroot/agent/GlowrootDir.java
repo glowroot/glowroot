@@ -22,8 +22,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 
-// DO NOT USE ANY GUAVA CLASSES HERE
-// they trigger loading of jul
+// DO NOT USE ANY GUAVA CLASSES HERE because they trigger loading of jul
 // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
 class GlowrootDir {
 
