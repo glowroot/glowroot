@@ -172,6 +172,22 @@ public class AsyncControllerIT {
         assertThat(entry.getDepth()).isEqualTo(2);
         assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
 
+        if (i.hasNext()) {
+            // this happens sporadically on travis ci because the auxiliary thread
+            // (DeferredResultAsyncController$1) calls javax.servlet.AsyncContext.dispatch(), and
+            // sporadically dispatch() can process and returns the response before
+            // DeferredResultAsyncController$1.run() completes, leading to glowroot adding a trace
+            // entry under the auxiliary thread to note that "this auxiliary thread was still
+            // running when the transaction ended"
+
+            // see similar issue in org.glowroot.agent.plugin.spring.AsyncControllerIT
+
+            entry = i.next();
+            assertThat(entry.getDepth()).isEqualTo(2);
+            assertThat(entry.getMessage()).isEqualTo(
+                    "this auxiliary thread was still running when the transaction ended");
+        }
+
         assertThat(i.hasNext()).isFalse();
     }
 
