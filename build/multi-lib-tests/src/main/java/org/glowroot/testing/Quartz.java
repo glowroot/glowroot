@@ -39,11 +39,16 @@ public class Quartz {
         run("2.2.1");
         run("2.2.2");
         run("2.2.3");
-        run("2.3.0");
+        runJava7("2.3.0");
     }
 
     private static void run(String version, String... profiles) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "quartz.version", version);
         Util.runTests(MODULE_PATH, profiles, JAVA6, JAVA7, JAVA8);
+    }
+
+    private static void runJava7(String version) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "quartz.version", version);
+        Util.runTests(MODULE_PATH, JAVA7, JAVA8);
     }
 }
