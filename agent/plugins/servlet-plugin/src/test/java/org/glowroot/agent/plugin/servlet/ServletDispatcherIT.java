@@ -158,7 +158,7 @@ public class ServletDispatcherIT {
         Trace trace = container.execute(appUnderTestClass);
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.execute(InvokeForwardServletUsingNamed.class);
+            trace = container.execute(appUnderTestClass);
         }
         if (hasServletInit(trace)) {
             throw new AssertionError("Timed out waiting for the real trace");
@@ -185,7 +185,7 @@ public class ServletDispatcherIT {
         Trace trace = container.execute(appUnderTestClass);
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.execute(InvokeIncludeServlet.class);
+            trace = container.execute(appUnderTestClass);
         }
         if (hasServletInit(trace)) {
             throw new AssertionError("Timed out waiting for the real trace");
