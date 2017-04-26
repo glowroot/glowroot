@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import javax.servlet.ServletConfig;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.QueryOptions;
@@ -414,7 +415,9 @@ class CentralModule {
                         .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
                         // let driver know that only idempotent queries are used so it will retry on
                         // timeout
-                        .withQueryOptions(new QueryOptions().setDefaultIdempotence(true))
+                        .withQueryOptions(new QueryOptions()
+                                .setDefaultIdempotence(true)
+                                .setConsistencyLevel(ConsistencyLevel.QUORUM))
                         // central runs lots of parallel async queries and is very spiky since all
                         // aggregates come in right after each minute marker
                         .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096));
