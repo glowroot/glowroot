@@ -93,6 +93,9 @@ public class UiModule {
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         MailService mailService = new MailService();
 
+        AdminJsonService adminJsonService = new AdminJsonService(central, certificateDir,
+                configRepository, repoAdmin, liveAggregateRepository, mailService);
+
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(new TransactionJsonService(transactionCommonService, aggregateRepository,
                 configRepository, rollupLevelService, clock));
@@ -115,8 +118,7 @@ public class UiModule {
         jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
         jsonServices.add(new InstrumentationConfigJsonService(configRepository, liveWeavingService,
                 liveJvmService));
-        jsonServices.add(new AdminJsonService(central, certificateDir, configRepository, repoAdmin,
-                liveAggregateRepository, mailService));
+        jsonServices.add(adminJsonService);
 
         if (central) {
             checkNotNull(syntheticResultRepository);
@@ -176,9 +178,7 @@ public class UiModule {
             int port = configRepository.getWebConfig().port();
             LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, configRepository,
                     commonHandler, certificateDir, numWorkerThreads);
-
-            lazyHttpServer.init(new AdminJsonService(central, certificateDir,
-                    configRepository, repoAdmin, liveAggregateRepository, mailService));
+            lazyHttpServer.init(adminJsonService);
             return new UiModule(lazyHttpServer);
         }
     }
