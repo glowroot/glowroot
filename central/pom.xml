@@ -223,6 +223,7 @@
               <goal>jar</goal>
             </goals>
             <configuration>
+              <forceCreation>true</forceCreation>
               <archive>
                 <manifest>
                   <addClasspath>true</addClasspath>
