@@ -133,9 +133,11 @@ public abstract class ClusterManager {
             if (file.exists()) {
                 return file.getAbsolutePath();
             }
-            String resourcePath = "default-configs/" + jgroupsConfigurationFile;
-            if (ClusterManager.class.getResource("/" + resourcePath) != null) {
-                return resourcePath;
+            if (jgroupsConfigurationFile.equals("default-jgroups-udp.xml")) {
+                return "default-configs/" + jgroupsConfigurationFile;
+            }
+            if (jgroupsConfigurationFile.equals("default-jgroups-tcp.xml")) {
+                return jgroupsConfigurationFile;
             }
             throw new IllegalStateException(
                     "Could not find jgroups.configurationFile: " + jgroupsConfigurationFile);
