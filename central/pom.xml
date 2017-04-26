@@ -242,11 +242,8 @@
         <executions>
           <execution>
             <configuration>
-              <!-- maven-shade-plugin changes ${basedir} to point wherever the dependency
-                reduced pom is written, see https://issues.apache.org/jira/browse/MSHADE-124,
-                so cannot use simple relative path "dist.xml" here -->
               <descriptors>
-                <descriptor>${project.build.directory}/../dist.xml</descriptor>
+                <descriptor>dist.xml</descriptor>
               </descriptors>
             </configuration>
             <phase>package</phase>
