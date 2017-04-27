@@ -62,7 +62,7 @@
                   id="reportMetric"
                   style="width: auto;">
             <option value="" ng-disabled="report.metricId"></option>
-            <option ng-repeat="metric in metrics"
+            <option ng-repeat="metric in metrics track by metric.id"
                     value="{{metric.id}}"
                     ng-disabled="metric.disabled"
                     ng-selected="metric.id === report.metricId"
