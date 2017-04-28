@@ -533,15 +533,15 @@ class GrpcServer {
             String agentId = request.getAgentId();
             try {
                 LogEvent logEvent = request.getLogEvent();
-                Proto.Throwable t = logEvent.getThrowable();
                 Level level = logEvent.getLevel();
                 String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
-                if (t == null) {
+                if (logEvent.hasThrowable()) {
+                    log(level, "{} -- {} -- {} -- {}\n{}", agentDisplay, level,
+                            logEvent.getLoggerName(), logEvent.getMessage(),
+                            toString(logEvent.getThrowable()));
+                } else {
                     log(level, "{} -- {} -- {} -- {}", agentDisplay, level,
                             logEvent.getLoggerName(), logEvent.getMessage());
-                } else {
-                    log(level, "{} -- {} -- {} -- {}\n{}", agentDisplay, level,
-                            logEvent.getLoggerName(), logEvent.getMessage(), t);
                 }
             } catch (Throwable t) {
                 logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
@@ -619,6 +619,33 @@ class GrpcServer {
                 logger.error("{} - {}", agentRollupId, e.getMessage(), e);
                 return "id:" + agentRollupId;
             }
+        }
+
+        private String toString(Proto.Throwable t) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(t.getClassName());
+            String message = t.getMessage();
+            if (!message.isEmpty()) {
+                sb.append(": ");
+                sb.append(message);
+            }
+            for (Proto.StackTraceElement stackTraceElement : t.getStackTraceElementList()) {
+                sb.append("\n\tat ");
+                sb.append(new StackTraceElement(stackTraceElement.getClassName(),
+                        stackTraceElement.getMethodName(), stackTraceElement.getFileName(),
+                        stackTraceElement.getLineNumber()));
+            }
+            int framesInCommonWithEnclosing = t.getFramesInCommonWithEnclosing();
+            if (framesInCommonWithEnclosing > 0) {
+                sb.append("\n\t... ");
+                sb.append(framesInCommonWithEnclosing);
+                sb.append(" more");
+            }
+            if (t.hasCause()) {
+                sb.append("\nCaused by: ");
+                sb.append(toString(t.getCause()));
+            }
+            return sb.toString();
         }
 
         private void log(Level level, String format, Object... arguments) {
