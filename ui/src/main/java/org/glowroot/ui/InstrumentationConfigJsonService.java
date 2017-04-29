@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -322,7 +323,14 @@ class InstrumentationConfigJsonService {
 
         abstract String className();
         abstract String classAnnotation();
-        abstract String methodDeclaringClassName();
+        abstract String subTypeRestriction();
+        // pointcuts with methodDeclaringClassName are no longer supported in 0.9.16, but
+        // included here to help with transitioning of old instrumentation config
+        //
+        // also included here to support glowroot central 0.9.16 or newer running agent 0.9.15 or
+        // older
+        @Deprecated
+        abstract @Nullable String methodDeclaringClassName();
         abstract String methodName();
         abstract String methodAnnotation();
         abstract ImmutableList<String> methodParameterTypes();
@@ -349,7 +357,13 @@ class InstrumentationConfigJsonService {
             InstrumentationConfig.Builder builder = InstrumentationConfig.newBuilder()
                     .setClassName(className())
                     .setClassAnnotation(classAnnotation())
-                    .setMethodDeclaringClassName(methodDeclaringClassName())
+                    .setSubTypeRestriction(subTypeRestriction())
+                    // pointcuts with methodDeclaringClassName are no longer supported in 0.9.16,
+                    // but included here to help with transitioning of old instrumentation config
+                    //
+                    // also included here to support glowroot central 0.9.16 or newer running agent
+                    // 0.9.15 or older
+                    .setMethodDeclaringClassName(Strings.nullToEmpty(methodDeclaringClassName()))
                     .setMethodName(methodName())
                     .setMethodAnnotation(methodAnnotation())
                     .addAllMethodParameterType(methodParameterTypes())
@@ -382,11 +396,20 @@ class InstrumentationConfigJsonService {
         }
 
         private static InstrumentationConfigDto create(InstrumentationConfig config) {
+            @SuppressWarnings("deprecation")
             ImmutableInstrumentationConfigDto.Builder builder =
                     ImmutableInstrumentationConfigDto.builder()
                             .className(config.getClassName())
                             .classAnnotation(config.getClassAnnotation())
-                            .methodDeclaringClassName(config.getMethodDeclaringClassName())
+                            .subTypeRestriction(config.getSubTypeRestriction())
+                            // pointcuts with methodDeclaringClassName are no longer supported in
+                            // 0.9.16, but included here to help with transitioning of old
+                            // instrumentation config
+                            //
+                            // also included here to support glowroot central 0.9.16 or newer
+                            // running agent 0.9.15 or older
+                            .methodDeclaringClassName(
+                                    Strings.emptyToNull(config.getMethodDeclaringClassName()))
                             .methodName(config.getMethodName())
                             .methodAnnotation(config.getMethodAnnotation())
                             .addAllMethodParameterTypes(config.getMethodParameterTypeList())

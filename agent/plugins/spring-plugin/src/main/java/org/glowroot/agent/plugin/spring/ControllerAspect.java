@@ -77,9 +77,9 @@ public class ControllerAspect {
         Set<String> getPatterns();
     }
 
-    @Pointcut(className = "org.springframework.web.servlet.DispatcherServlet",
-            methodDeclaringClassName = "javax.servlet.Servlet", methodName = "service",
-            methodParameterTypes = {"javax.servlet.ServletRequest",
+    @Pointcut(className = "javax.servlet.Servlet",
+            subTypeRestriction = "org.springframework.web.servlet.DispatcherServlet",
+            methodName = "service", methodParameterTypes = {"javax.servlet.ServletRequest",
                     "javax.servlet.ServletResponse"})
     public static class CaptureServletPathAdvice {
         @OnBefore

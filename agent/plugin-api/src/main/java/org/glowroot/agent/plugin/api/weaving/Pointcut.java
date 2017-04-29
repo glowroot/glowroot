@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,17 +25,49 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 public @interface Pointcut {
 
-    // target class name
+    /**
+     * Restrict the pointcut to methods that are declared in a classes (or interfaces) matching the
+     * given name.
+     * 
+     * | and * can be used for limited regular expressions. Full regular expressions can be used by
+     * starting and ending methodName with /
+     */
     String className() default "";
-    // optionally (in addition to className or instead of className) restrict pointcut to classes
-    // with the given annotation
+
+    /**
+     * Optionally (in addition to className or instead of className) restrict the pointcut to
+     * methods that are declared in a classes (or interfaces) matching the given annotation.
+     * 
+     * | and * can be used for limited regular expressions. Full regular expressions can be used by
+     * starting and ending methodName with /
+     */
     String classAnnotation() default "";
-    // restrict pointcut to the given subclass and below
-    // e.g. useful for pointcut on java.lang.Runnable.run(), but only for classes
-    // matching com.yourcompany.*
-    // also useful for pointcut on java.util.concurrent.Future.get(), but only for classes
-    // under com.ning.http.client.ListenableFuture
+
+    /**
+     * E.g. pointcut on className="java.util.concurrent.Future", methodName="get",
+     * methodParameterTypes={}, but only for classes with
+     * subTypeRestriction="com.ning.http.client.ListenableFuture"
+     * 
+     * | and * can be used for limited regular expressions. Full regular expressions can be used by
+     * starting and ending methodName with /
+     */
+    String subTypeRestriction() default "";
+
+    /**
+     * E.g. pointcut on className="com.yourcompany.*", methodName="run", methodParameterTypes={},
+     * but only for classes with superTypeRestriction="java.lang.Runnable"
+     * 
+     * | and * can be used for limited regular expressions. Full regular expressions can be used by
+     * starting and ending methodName with /
+     */
+    String superTypeRestriction() default "";
+
+    /**
+     * Use case replaced by subTypeRestriction and superTypeRestriction.
+     */
+    @Deprecated
     String methodDeclaringClassName() default "";
+
     /**
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
      * starting and ending methodName with /.

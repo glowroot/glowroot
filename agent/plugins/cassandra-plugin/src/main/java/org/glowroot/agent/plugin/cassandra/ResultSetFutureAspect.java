@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,9 +94,9 @@ public class ResultSetFutureAspect {
         void glowroot$setAsyncQueryEntry(@Nullable AsyncQueryEntry asyncQueryEntry);
     }
 
-    @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
-            methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
-            methodParameterTypes = {".."}, suppressionKey = "wait-on-future")
+    @Pointcut(className = "java.util.concurrent.Future",
+            subTypeRestriction = "com.datastax.driver.core.ResultSetFuture",
+            methodName = "get", methodParameterTypes = {".."}, suppressionKey = "wait-on-future")
     public static class FutureGetAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver ResultSetFutureMixin resultSetFuture) {
@@ -150,8 +150,8 @@ public class ResultSetFutureAspect {
         }
     }
 
-    @Pointcut(className = "com.datastax.driver.core.DefaultResultSetFuture",
-            methodDeclaringClassName = "com.google.common.util.concurrent.AbstractFuture",
+    @Pointcut(className = "com.google.common.util.concurrent.AbstractFuture",
+            subTypeRestriction = "com.datastax.driver.core.DefaultResultSetFuture",
             methodName = "setException", methodParameterTypes = {"java.lang.Throwable"})
     public static class FutureSetExceptionAdvice {
         // using @OnBefore instead of @OnReturn to ensure that async trace entry is ended prior to
@@ -174,8 +174,8 @@ public class ResultSetFutureAspect {
         }
     }
 
-    @Pointcut(className = "com.datastax.driver.core.DefaultResultSetFuture",
-            methodDeclaringClassName = "com.google.common.util.concurrent.AbstractFuture",
+    @Pointcut(className = "com.google.common.util.concurrent.AbstractFuture",
+            subTypeRestriction = "com.datastax.driver.core.DefaultResultSetFuture",
             methodName = "set", methodParameterTypes = {"java.lang.Object"})
     public static class FutureSetAdvice {
         // using @OnBefore instead of @OnReturn to ensure that async trace entry is ended prior to

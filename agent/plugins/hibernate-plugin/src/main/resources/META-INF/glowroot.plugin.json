@@ -13,7 +13,7 @@
     },
     {
       "className": "javax.persistence.TypedQuery",
-      "methodDeclaringClassName": "org.hibernate.*",
+      "subTypeRestriction": "org.hibernate.*",
       "methodName": "getResultList",
       "methodParameterTypes": [
       ],
@@ -42,8 +42,8 @@
       "traceEntryMessageTemplate": "hibernate rollback"
     },
     {
-      "className": "org.hibernate.Transaction",
-      "methodDeclaringClassName": "javax.persistence.EntityTransaction",
+      "className": "javax.persistence.EntityTransaction",
+      "subTypeRestriction": "org.hibernate.Transaction",
       "methodName": "commit",
       "methodParameterTypes": [
       ],
@@ -53,8 +53,8 @@
       "traceEntryMessageTemplate": "hibernate commit"
     },
     {
-      "className": "org.hibernate.Transaction",
-      "methodDeclaringClassName": "javax.persistence.EntityTransaction",
+      "className": "javax.persistence.EntityTransaction",
+      "subTypeRestriction": "org.hibernate.Transaction",
       "methodName": "rollback",
       "methodParameterTypes": [
       ],

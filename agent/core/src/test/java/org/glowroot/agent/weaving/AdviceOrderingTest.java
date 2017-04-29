@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,6 @@ public class AdviceOrderingTest {
 
     private final Advice advicePriority1 = ImmutableAdvice.builder()
             .pointcut(pointcutPriority1)
-            .pointcutClassName("")
-            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .hasBindThreadContext(false)
@@ -55,8 +53,6 @@ public class AdviceOrderingTest {
 
     private final Advice advicePriority2 = ImmutableAdvice.builder()
             .pointcut(pointcutPriority2)
-            .pointcutClassName("")
-            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .hasBindThreadContext(false)
@@ -65,8 +61,6 @@ public class AdviceOrderingTest {
 
     private final Advice adviceTimerNameA = ImmutableAdvice.builder()
             .pointcut(pointcutTimerNameA)
-            .pointcutClassName("")
-            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .hasBindThreadContext(false)
@@ -75,8 +69,6 @@ public class AdviceOrderingTest {
 
     private final Advice adviceTimerNameB = ImmutableAdvice.builder()
             .pointcut(pointcutTimerNameB)
-            .pointcutClassName("")
-            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .hasBindThreadContext(false)
@@ -85,8 +77,6 @@ public class AdviceOrderingTest {
 
     private final Advice adviceTimerNameEmpty1 = ImmutableAdvice.builder()
             .pointcut(pointcutTimerNameEmpty1)
-            .pointcutClassName("")
-            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .hasBindThreadContext(false)
@@ -95,8 +85,6 @@ public class AdviceOrderingTest {
 
     private final Advice adviceTimerNameEmpty2 = ImmutableAdvice.builder()
             .pointcut(pointcutTimerNameEmpty2)
-            .pointcutClassName("")
-            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .hasBindThreadContext(false)

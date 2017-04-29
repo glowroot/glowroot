@@ -91,50 +91,57 @@ class ClassAnalyzer {
                 .name(className)
                 .superName(superClassName)
                 .addAllInterfaceNames(interfaceNames);
-        adviceMatchers =
-                AdviceMatcher.getAdviceMatchers(className, thinClass.annotations(), advisors);
-        if (Modifier.isInterface(thinClass.access())) {
-            superAnalyzedClasses = ImmutableList.of();
+
+        ParseContext parseContext = ImmutableParseContext.of(className, codeSource);
+        List<AnalyzedClass> interfaceAnalyzedHierarchy = Lists.newArrayList();
+        // it's ok if there are duplicates in the superAnalyzedClasses list (e.g. an interface
+        // that appears twice in a type hierarchy), it's rare, dups don't cause an issue for
+        // callers, and so it doesn't seem worth the (minor) performance hit to de-dup every
+        // time
+        List<AnalyzedClass> superAnalyzedClasses = Lists.newArrayList();
+        for (String interfaceName : interfaceNames) {
+            interfaceAnalyzedHierarchy.addAll(
+                    analyzedWorld.getAnalyzedHierarchy(interfaceName, loader, parseContext));
+        }
+        superAnalyzedClasses.addAll(interfaceAnalyzedHierarchy);
+
+        boolean intf = Modifier.isInterface(thinClass.access());
+        if (intf) {
             matchedShimTypes = getMatchedShimTypes(shimTypes, className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
             matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
-            shortCircuitBeforeAnalyzeMethods = adviceMatchers.isEmpty();
         } else {
-            ParseContext parseContext = ImmutableParseContext.of(className, codeSource);
-            List<AnalyzedClass> superAnalyzedHierarchy =
-                    analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext);
-            List<AnalyzedClass> interfaceAnalyzedHierarchy = Lists.newArrayList();
-            for (String interfaceName : interfaceNames) {
-                interfaceAnalyzedHierarchy.addAll(
-                        analyzedWorld.getAnalyzedHierarchy(interfaceName, loader, parseContext));
-            }
-            // it's ok if there are duplicates in the superAnalyzedClasses list (e.g. an interface
-            // that appears twice in a type hierarchy), it's rare, dups don't cause an issue for
-            // callers, and so it doesn't seem worth the (minor) performance hit to de-dup every
-            // time
-            List<AnalyzedClass> superAnalyzedClasses = Lists.newArrayList();
-            superAnalyzedClasses.addAll(superAnalyzedHierarchy);
-            superAnalyzedClasses.addAll(interfaceAnalyzedHierarchy);
-            this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
-            matchedShimTypes = getMatchedShimTypes(shimTypes, className, superAnalyzedHierarchy,
+            superAnalyzedClasses.addAll(
+                    analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext));
+            matchedShimTypes = getMatchedShimTypes(shimTypes, className,
+                    analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext),
                     interfaceAnalyzedHierarchy);
             analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
-            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, superAnalyzedHierarchy,
+            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className,
+                    analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext),
                     interfaceAnalyzedHierarchy);
             analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
-            shortCircuitBeforeAnalyzeMethods =
-                    !hasSuperAdvice(superAnalyzedClasses) && matchedShimTypes.isEmpty()
-                            && matchedMixinTypes.isEmpty() && adviceMatchers.isEmpty();
         }
+        this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
+
         Set<String> superClassNames = Sets.newHashSet();
         superClassNames.add(className);
         for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
             superClassNames.add(analyzedClass.name());
         }
         this.superClassNames = ImmutableSet.copyOf(superClassNames);
+        adviceMatchers = AdviceMatcher.getAdviceMatchers(className, thinClass.annotations(),
+                superClassNames, advisors);
+        if (intf) {
+            shortCircuitBeforeAnalyzeMethods = adviceMatchers.isEmpty();
+        } else {
+            shortCircuitBeforeAnalyzeMethods =
+                    !hasSuperAdvice(superAnalyzedClasses) && matchedShimTypes.isEmpty()
+                            && matchedMixinTypes.isEmpty() && adviceMatchers.isEmpty();
+        }
         this.classBytes = classBytes;
     }
 
@@ -225,23 +232,21 @@ class ClassAnalyzer {
         for (String exception : thinMethod.exceptions()) {
             builder.addExceptions(ClassNames.fromInternalName(exception));
         }
-        List<Advice> declaredOnlyMatchingAdvisors = Lists.newArrayList();
+        List<Advice> subTypeRestrictedAdvisors = Lists.newArrayList();
         for (Iterator<Advice> i = matchingAdvisors.iterator(); i.hasNext();) {
             Advice advice = i.next();
-            if (advice.pointcutClassName().equals(advice.pointcutMethodDeclaringClassName())) {
-                continue;
-            } else if (!isTargetClassNameMatch(advice, superClassNames)) {
-                declaredOnlyMatchingAdvisors.add(advice);
+            if (!isSubTypeRestrictionMatch(advice, superClassNames)) {
+                subTypeRestrictedAdvisors.add(advice);
                 i.remove();
             }
         }
         builder.addAllAdvisors(matchingAdvisors);
-        builder.addAllDeclaredOnlyAdvisors(declaredOnlyMatchingAdvisors);
+        builder.addAllSubTypeRestrictedAdvisors(subTypeRestrictedAdvisors);
         analyzedClassBuilder.addAnalyzedMethods(builder.build());
         return matchingAdvisors;
     }
 
-    // returns mutable list if non-empty
+    // returns mutable list if non-empty so items can be removed
     @RequiresNonNull("bridgeTargetAdvisors")
     private List<Advice> getMatchingAdvisors(ThinMethod thinMethod, List<String> methodAnnotations,
             List<Type> parameterTypes, Type returnType) {
@@ -257,7 +262,12 @@ class ClassAnalyzer {
             for (AnalyzedMethod analyzedMethod : superAnalyzedClass.analyzedMethods()) {
                 if (analyzedMethod.isOverriddenBy(thinMethod.name(), parameterTypes)) {
                     matchingAdvisors.addAll(analyzedMethod.advisors());
-                    matchingAdvisors.addAll(analyzedMethod.declaredOnlyAdvisors());
+                    for (Advice subTypeRestrictedAdvice : analyzedMethod
+                            .subTypeRestrictedAdvisors()) {
+                        if (isSubTypeRestrictionMatch(subTypeRestrictedAdvice, superClassNames)) {
+                            matchingAdvisors.add(subTypeRestrictedAdvice);
+                        }
+                    }
                 }
             }
         }
@@ -331,7 +341,6 @@ class ClassAnalyzer {
                 methodsThatOnlyNowFulfillAdvice.add(ImmutableAnalyzedMethod.builder()
                         .copyFrom(inheritedMethod)
                         .advisors(advisors)
-                        .declaredOnlyAdvisors(ImmutableList.<Advice>of())
                         .build());
             }
         }
@@ -348,12 +357,11 @@ class ClassAnalyzer {
                     matchingAdvisorSet = Sets.newHashSet();
                     matchingAdvisorSets.put(key, matchingAdvisorSet);
                 }
-                if (superAnalyzedClass.isInterface()) {
-                    addToMatchingAdvisorsIfTargetClassNameMatch(matchingAdvisorSet,
-                            superAnalyzedMethod.advisors(), superClassNames);
-                } else {
-                    addToMatchingAdvisorsIfTargetClassNameMatch(matchingAdvisorSet,
-                            superAnalyzedMethod.declaredOnlyAdvisors(), superClassNames);
+                matchingAdvisorSet.addAll(superAnalyzedMethod.advisors());
+                for (Advice advice : superAnalyzedMethod.subTypeRestrictedAdvisors()) {
+                    if (isSubTypeRestrictionMatch(advice, superClassNames)) {
+                        matchingAdvisorSet.add(advice);
+                    }
                 }
             }
         }
@@ -417,15 +425,6 @@ class ClassAnalyzer {
         }
     }
 
-    private static void addToMatchingAdvisorsIfTargetClassNameMatch(Set<Advice> matchingAdvisors,
-            List<Advice> advisors, Set<String> superClassNames) {
-        for (Advice advice : advisors) {
-            if (isTargetClassNameMatch(advice, superClassNames)) {
-                matchingAdvisors.add(advice);
-            }
-        }
-    }
-
     private static ImmutableList<ShimType> getMatchedShimTypes(List<ShimType> shimTypes,
             String className, Iterable<AnalyzedClass> superAnalyzedClasses,
             List<AnalyzedClass> newInterfaceAnalyzedClasses) {
@@ -480,14 +479,14 @@ class ClassAnalyzer {
         return false;
     }
 
-    private static boolean isTargetClassNameMatch(Advice advice, Set<String> superClassNames) {
-        Pattern classNamePattern = advice.pointcutClassNamePattern();
-        if (classNamePattern == null) {
-            String className = advice.pointcutClassName();
-            return className.isEmpty() || superClassNames.contains(className);
+    private static boolean isSubTypeRestrictionMatch(Advice advice, Set<String> superClassNames) {
+        Pattern pointcutSubTypeRestrictionPattern = advice.pointcutSubTypeRestrictionPattern();
+        if (pointcutSubTypeRestrictionPattern == null) {
+            String subTypeRestriction = advice.pointcut().subTypeRestriction();
+            return subTypeRestriction.isEmpty() || superClassNames.contains(subTypeRestriction);
         }
         for (String superClassName : superClassNames) {
-            if (classNamePattern.matcher(superClassName).matches()) {
+            if (pointcutSubTypeRestrictionPattern.matcher(superClassName).matches()) {
                 return true;
             }
         }

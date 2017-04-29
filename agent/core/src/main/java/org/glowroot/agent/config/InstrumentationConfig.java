@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,15 @@ public abstract class InstrumentationConfig {
         return "";
     }
 
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String subTypeRestriction() {
+        return "";
+    }
+
+    // pointcuts with methodDeclaringClassName are no longer supported in 0.9.16, but included here
+    // to help with transitioning of old instrumentation config
+    @Deprecated
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
     public String methodDeclaringClassName() {
@@ -208,6 +217,9 @@ public abstract class InstrumentationConfig {
         if (!timerName().matches("[a-zA-Z0-9 ]*")) {
             errors.add("timerName contains invalid characters: " + timerName());
         }
+        if (!methodDeclaringClassName().isEmpty()) {
+            errors.add("methodDeclaringClassName is no longer supported");
+        }
         return ImmutableList.copyOf(errors);
     }
 
@@ -224,6 +236,10 @@ public abstract class InstrumentationConfig {
                 AgentConfig.InstrumentationConfig.newBuilder()
                         .setClassName(className())
                         .setClassAnnotation(classAnnotation())
+                        .setSubTypeRestriction(subTypeRestriction())
+                        // pointcuts with methodDeclaringClassName are no longer supported in
+                        // 0.9.16, but included here to help with transitioning of old
+                        // instrumentation config
                         .setMethodDeclaringClassName(methodDeclaringClassName())
                         .setMethodName(methodName())
                         .setMethodAnnotation(methodAnnotation())
@@ -256,9 +272,13 @@ public abstract class InstrumentationConfig {
     }
 
     public static InstrumentationConfig create(AgentConfig.InstrumentationConfig config) {
+        @SuppressWarnings("deprecation")
         ImmutableInstrumentationConfig.Builder builder = ImmutableInstrumentationConfig.builder()
                 .className(config.getClassName())
                 .classAnnotation(config.getClassAnnotation())
+                .subTypeRestriction(config.getSubTypeRestriction())
+                // pointcuts with methodDeclaringClassName are no longer supported in 0.9.16, but
+                // included here to help with transitioning of old instrumentation config
                 .methodDeclaringClassName(config.getMethodDeclaringClassName())
                 .methodName(config.getMethodName())
                 .methodAnnotation(config.getMethodAnnotation())

@@ -417,16 +417,24 @@ public class AnalyzedWorld {
         Class<?> superClass = clazz.getSuperclass();
         String superName = superClass == null ? null : superClass.getName();
         classBuilder.superName(superName);
+        List<String> superClassNames = Lists.newArrayList();
+        if (superName != null) {
+            superClassNames.add(superName);
+        }
         for (Class<?> interfaceClass : clazz.getInterfaces()) {
-            classBuilder.addInterfaceNames(interfaceClass.getName());
+            String interfaceClassName = interfaceClass.getName();
+            classBuilder.addInterfaceNames(interfaceClassName);
+            superClassNames.add(interfaceClassName);
         }
         // FIXME handle @Instrumentation.*
         List<String> classAnnotations = Lists.newArrayList();
         for (Annotation annotation : clazz.getAnnotations()) {
             classAnnotations.add(annotation.annotationType().getName());
         }
-        List<AdviceMatcher> adviceMatchers =
-                AdviceMatcher.getAdviceMatchers(clazz.getName(), classAnnotations, advisors);
+        // TODO document limitations of superClassNames only containing first level super classes
+        // (e.g. doesn't include super class's super class)
+        List<AdviceMatcher> adviceMatchers = AdviceMatcher.getAdviceMatchers(clazz.getName(),
+                classAnnotations, superClassNames, advisors);
         Map<Method, List<Advice>> bridgeTargetAdvisors = Maps.newHashMap();
         for (Method method : clazz.getDeclaredMethods()) {
             if (!method.isBridge()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,9 +84,9 @@ public class ResultSetAspect {
         }
     }
 
-    @Pointcut(className = "com.datastax.driver.core.ResultSet",
-            methodDeclaringClassName = "java.lang.Iterable", methodName = "iterator",
-            methodParameterTypes = {})
+    @Pointcut(className = "java.lang.Iterable",
+            subTypeRestriction = "com.datastax.driver.core.ResultSet",
+            methodName = "iterator", methodParameterTypes = {})
     public static class IteratorAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver ResultSet resultSet) {
@@ -99,9 +99,9 @@ public class ResultSetAspect {
         }
     }
 
-    @Pointcut(className = "com.datastax.driver.core.ResultSet",
-            methodDeclaringClassName = "com.datastax.driver.core.PagingIterable"
-                    + "|com.datastax.driver.core.ResultSet",
+    @Pointcut(className = "com.datastax.driver.core.PagingIterable"
+            + "|com.datastax.driver.core.ResultSet",
+            subTypeRestriction = "com.datastax.driver.core.ResultSet",
             methodName = "isExhausted", methodParameterTypes = {})
     public static class IsExhaustedAdvice {
         @OnReturn

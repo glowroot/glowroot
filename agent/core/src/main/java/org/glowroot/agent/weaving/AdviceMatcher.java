@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -38,10 +39,11 @@ abstract class AdviceMatcher {
     private static final Logger logger = LoggerFactory.getLogger(AdviceMatcher.class);
 
     static ImmutableList<AdviceMatcher> getAdviceMatchers(String className,
-            List<String> classAnnotations, List<Advice> advisors) {
+            List<String> classAnnotations, Collection<String> superClassNames,
+            List<Advice> advisors) {
         List<AdviceMatcher> adviceMatchers = Lists.newArrayList();
         for (Advice advice : advisors) {
-            if (isDeclaringClassMatch(className, classAnnotations, advice)) {
+            if (isClassMatch(className, classAnnotations, superClassNames, advice)) {
                 adviceMatchers.add(ImmutableAdviceMatcher.of(advice));
             }
         }
@@ -138,18 +140,36 @@ abstract class AdviceMatcher {
         }
     }
 
-    private static boolean isDeclaringClassMatch(String className, List<String> classAnnotations,
-            Advice advice) {
-        if (!isAnnotationMatch(classAnnotations, advice.pointcutClassNameAnnotationPattern(),
+    private static boolean isClassMatch(String className, List<String> classAnnotations,
+            Collection<String> superClassNames, Advice advice) {
+        if (!isAnnotationMatch(classAnnotations, advice.pointcutClassAnnotationPattern(),
                 advice.pointcut().classAnnotation())) {
             return false;
         }
-        Pattern methodDeclaringClassNamePattern = advice.pointcutMethodDeclaringClassNamePattern();
-        if (methodDeclaringClassNamePattern != null) {
-            return methodDeclaringClassNamePattern.matcher(className).matches();
+        if (!isClassNameMatch(className, advice)) {
+            return false;
         }
-        String methodDeclaringClassName = advice.pointcutMethodDeclaringClassName();
-        return methodDeclaringClassName.isEmpty() || methodDeclaringClassName.equals(className);
+        Pattern pointcutSuperTypeRestrictionPattern = advice.pointcutSuperTypeRestrictionPattern();
+        if (pointcutSuperTypeRestrictionPattern != null) {
+            for (String superClassName : superClassNames) {
+                if (pointcutSuperTypeRestrictionPattern.matcher(superClassName).matches()) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            String superTypeRestriction = advice.pointcut().superTypeRestriction();
+            return superTypeRestriction.isEmpty() || superClassNames.contains(superTypeRestriction);
+        }
+    }
+
+    private static boolean isClassNameMatch(String className, Advice advice) {
+        Pattern classNamePattern = advice.pointcutClassNamePattern();
+        if (classNamePattern != null) {
+            return classNamePattern.matcher(className).matches();
+        }
+        String pointcutClassName = advice.pointcut().className();
+        return pointcutClassName.isEmpty() || pointcutClassName.equals(className);
     }
 
     private static boolean isAnnotationMatch(List<String> annotations, @Nullable Pattern pattern,

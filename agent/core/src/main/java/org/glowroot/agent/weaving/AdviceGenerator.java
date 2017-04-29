@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,7 +154,7 @@ class AdviceGenerator {
                 cw.visitAnnotation("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;", true);
         annotationVisitor.visit("className", config.className());
         annotationVisitor.visit("classAnnotation", config.classAnnotation());
-        annotationVisitor.visit("methodDeclaringClassName", config.methodDeclaringClassName());
+        annotationVisitor.visit("subTypeRestriction", config.subTypeRestriction());
         annotationVisitor.visit("methodName", config.methodName());
         annotationVisitor.visit("methodAnnotation", config.methodAnnotation());
         AnnotationVisitor arrayAnnotationVisitor =

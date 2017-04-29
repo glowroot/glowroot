@@ -64,9 +64,9 @@ public class ResourceAspect {
         String getPathInfo();
     }
 
-    @Pointcut(className = "org.glassfish.jersey.servlet.ServletContainer",
-            methodDeclaringClassName = "javax.servlet.Servlet", methodName = "service",
-            methodParameterTypes = {"javax.servlet.ServletRequest",
+    @Pointcut(className = "javax.servlet.Servlet",
+            subTypeRestriction = "org.glassfish.jersey.servlet.ServletContainer",
+            methodName = "service", methodParameterTypes = {"javax.servlet.ServletRequest",
                     "javax.servlet.ServletResponse"})
     public static class CaptureServletPathAdvice {
         @OnBefore

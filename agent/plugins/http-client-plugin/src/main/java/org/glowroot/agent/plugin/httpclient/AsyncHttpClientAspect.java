@@ -187,10 +187,10 @@ public class AsyncHttpClientAspect {
         }
     }
 
-    @Pointcut(className = "org.asynchttpclient.ListenableFuture"
-            + "|com.ning.http.client.ListenableFuture",
-            methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
-            methodParameterTypes = {".."}, suppressionKey = "wait-on-future")
+    @Pointcut(className = "java.util.concurrent.Future",
+            subTypeRestriction = "org.asynchttpclient.ListenableFuture"
+                    + "|com.ning.http.client.ListenableFuture",
+            methodName = "get", methodParameterTypes = {".."}, suppressionKey = "wait-on-future")
     public static class FutureGetAdvice {
         @IsEnabled
         public static boolean isEnabled() {

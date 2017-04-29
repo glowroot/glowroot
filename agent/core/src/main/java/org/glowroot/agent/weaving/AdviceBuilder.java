@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,6 +115,7 @@ class AdviceBuilder {
         builder.reweavable(reweavable);
     }
 
+    @SuppressWarnings("deprecation")
     Advice build() throws Exception {
         Class<?> adviceClass = this.adviceClass;
         if (adviceClass == null) {
@@ -131,23 +132,17 @@ class AdviceBuilder {
             adviceClass = ClassLoaders.defineClass(lazyAdviceClass, tempClassLoader);
         }
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
-        checkState(pointcut != null, "Class has no @Pointcut annotation");
-        checkNotNull(pointcut);
+        checkNotNull(pointcut, "Class has no @Pointcut annotation");
+        if (!pointcut.methodDeclaringClassName().isEmpty()) {
+            throw new AdviceConstructionException("Pointcuts with methodDeclaringClassName are no"
+                    + " longer supported, use subTypeRestriction or superTypeRestriction depending"
+                    + " on the need");
+        }
         builder.pointcut(pointcut);
         builder.adviceType(Type.getType(adviceClass));
-
-        String pointcutClassName = pointcut.className();
-        builder.pointcutClassName(pointcutClassName);
-        builder.pointcutClassNamePattern(buildPattern(pointcutClassName));
-        builder.pointcutClassNameAnnotationPattern(buildPattern(pointcut.classAnnotation()));
-        if (pointcut.methodDeclaringClassName().equals("")) {
-            builder.pointcutMethodDeclaringClassName(pointcutClassName);
-            builder.pointcutMethodDeclaringClassNamePattern(buildPattern(pointcutClassName));
-        } else {
-            builder.pointcutMethodDeclaringClassName(pointcut.methodDeclaringClassName());
-            builder.pointcutMethodDeclaringClassNamePattern(
-                    buildPattern(pointcut.methodDeclaringClassName()));
-        }
+        builder.pointcutClassNamePattern(buildPattern(pointcut.className()));
+        builder.pointcutClassAnnotationPattern(buildPattern(pointcut.classAnnotation()));
+        builder.pointcutSubTypeRestrictionPattern(buildPattern(pointcut.subTypeRestriction()));
         builder.pointcutMethodNamePattern(buildPattern(pointcut.methodName()));
         builder.pointcutMethodAnnotationPattern(buildPattern(pointcut.methodAnnotation()));
         builder.pointcutMethodParameterTypes(buildPatterns(pointcut.methodParameterTypes()));
