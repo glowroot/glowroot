@@ -16,13 +16,11 @@
 package org.glowroot.ui;
 
 import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
-import javax.crypto.SecretKey;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +38,8 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Compilations.CompilationException;
 import org.glowroot.common.repo.util.Encryption;
+import org.glowroot.common.repo.util.LazySecretKey;
+import org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
@@ -103,7 +103,12 @@ class SyntheticMonitorConfigJsonService {
     String addSyntheticMonitor(@BindAgentRollupId String agentRollupId,
             @BindRequest SyntheticMonitorConfigDto configDto)
             throws Exception {
-        SyntheticMonitorConfig config = configDto.convert(configRepository.getSecretKey());
+        SyntheticMonitorConfig config;
+        try {
+            config = configDto.convert(configRepository.getLazySecretKey());
+        } catch (SymmetricEncryptionKeyMissingException e) {
+            return "{\"symmetricEncryptionKeyMissing\":true}";
+        }
         String errorResponse = validate(config);
         if (errorResponse != null) {
             return errorResponse;
@@ -120,7 +125,12 @@ class SyntheticMonitorConfigJsonService {
             permission = "agent:config:edit:syntheticMonitor")
     String updateSyntheticMonitor(@BindAgentRollupId String agentRollupId,
             @BindRequest SyntheticMonitorConfigDto configDto) throws Exception {
-        SyntheticMonitorConfig config = configDto.convert(configRepository.getSecretKey());
+        SyntheticMonitorConfig config;
+        try {
+            config = configDto.convert(configRepository.getLazySecretKey());
+        } catch (SymmetricEncryptionKeyMissingException e) {
+            return "{\"symmetricEncryptionKeyMissing\":true}";
+        }
         String errorResponse = validate(config);
         if (errorResponse != null) {
             return errorResponse;
@@ -194,8 +204,7 @@ class SyntheticMonitorConfigJsonService {
         abstract Optional<String> id(); // absent for insert operations
         abstract Optional<String> version(); // absent for insert operations
 
-        private SyntheticMonitorConfig convert(SecretKey secretKey)
-                throws GeneralSecurityException {
+        private SyntheticMonitorConfig convert(LazySecretKey lazySecretKey) throws Exception {
             SyntheticMonitorConfig.Builder builder = SyntheticMonitorConfig.newBuilder()
                     .setDisplay(display())
                     .setKind(kind());
@@ -210,7 +219,7 @@ class SyntheticMonitorConfigJsonService {
                 while (matcher.find()) {
                     String unencryptedPassword = checkNotNull(matcher.group(1));
                     matcher.appendReplacement(sb, "\"ENCRYPTED:"
-                            + Encryption.encrypt(unencryptedPassword, secretKey) + "\"");
+                            + Encryption.encrypt(unencryptedPassword, lazySecretKey) + "\"");
                 }
                 matcher.appendTail(sb);
                 builder.setJavaSource(sb.toString());

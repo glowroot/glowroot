@@ -18,7 +18,6 @@ package org.glowroot.common.repo;
 import java.util.List;
 
 import javax.annotation.Nullable;
-import javax.crypto.SecretKey;
 
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
@@ -34,6 +33,7 @@ import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.config.UserConfig;
 import org.glowroot.common.config.WebConfig;
+import org.glowroot.common.repo.util.LazySecretKey;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -240,7 +240,7 @@ public interface ConfigRepository {
 
     List<RollupConfig> getRollupConfigs();
 
-    SecretKey getSecretKey() throws Exception;
+    LazySecretKey getLazySecretKey() throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

@@ -266,9 +266,9 @@ class SyntheticMonitorService implements Runnable {
         StringBuffer sb = new StringBuffer();
         while (matcher.find()) {
             String encryptedPassword = checkNotNull(matcher.group(1));
-            matcher.appendReplacement(sb,
-                    "\"" + Encryption.decrypt(encryptedPassword,
-                            configRepository.getSecretKey()) + "\"");
+            matcher.appendReplacement(sb, "\""
+                    + Encryption.decrypt(encryptedPassword, configRepository.getLazySecretKey())
+                    + "\"");
         }
         matcher.appendTail(sb);
         runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,

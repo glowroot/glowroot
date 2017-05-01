@@ -60,6 +60,7 @@ import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Encryption;
+import org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.ui.CommonHandler.CommonResponse;
@@ -246,6 +247,8 @@ class AdminJsonService {
         try {
             configRepository.updateSmtpConfig(configDto.convert(configRepository),
                     configDto.version());
+        } catch (SymmetricEncryptionKeyMissingException e) {
+            return "{\"symmetricEncryptionKeyMissing\":true}";
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -257,6 +260,8 @@ class AdminJsonService {
         try {
             configRepository.updateLdapConfig(configDto.convert(configRepository),
                     configDto.version());
+        } catch (SymmetricEncryptionKeyMissingException e) {
+            return "{\"symmetricEncryptionKeyMissing\":true}";
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -265,14 +270,30 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/send-test-email", permission = "admin:edit:smtp")
     String sendTestEmail(@BindRequest SmtpConfigDto configDto) throws IOException {
-        String testEmailRecipient = configDto.testEmailRecipient();
+        // capturing newPlainPassword separately so that newPassword doesn't go through
+        // encryption/decryption which has possibility of throwing
+        // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
+        SmtpConfigDto configDtoWithoutNewPassword;
+        String passwordOverride;
+        String newPassword = configDto.newPassword();
+        if (newPassword.isEmpty()) {
+            configDtoWithoutNewPassword = configDto;
+            passwordOverride = null;
+        } else {
+            configDtoWithoutNewPassword = ImmutableSmtpConfigDto.builder()
+                    .copyFrom(configDto)
+                    .newPassword("")
+                    .build();
+            passwordOverride = newPassword;
+        }
+        String testEmailRecipient = configDtoWithoutNewPassword.testEmailRecipient();
         checkNotNull(testEmailRecipient);
         List<String> emailAddresses =
                 Splitter.on(',').trimResults().splitToList(testEmailRecipient);
         try {
             AlertingService.sendEmail(emailAddresses, "Test email from Glowroot", "",
-                    configDto.convert(configRepository), configRepository.getSecretKey(),
-                    mailService);
+                    configDtoWithoutNewPassword.convert(configRepository), passwordOverride,
+                    configRepository.getLazySecretKey(), mailService);
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
             return createErrorResponse(e.getMessage());
@@ -282,13 +303,30 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/test-ldap-connection", permission = "admin:edit:ldap")
     String testLdapConnection(@BindRequest LdapConfigDto configDto) throws Exception {
-        LdapConfig config = configDto.convert(configRepository);
-        String authTestUsername = checkNotNull(configDto.authTestUsername());
-        String authTestPassword = checkNotNull(configDto.authTestPassword());
+        // capturing newPlainPassword separately so that newPassword doesn't go through
+        // encryption/decryption which has possibility of throwing
+        // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
+        LdapConfigDto configDtoWithoutNewPassword;
+        String passwordOverride;
+        String newPassword = configDto.newPassword();
+        if (newPassword.isEmpty()) {
+            configDtoWithoutNewPassword = configDto;
+            passwordOverride = null;
+        } else {
+            configDtoWithoutNewPassword = ImmutableLdapConfigDto.builder()
+                    .copyFrom(configDto)
+                    .newPassword("")
+                    .build();
+            passwordOverride = newPassword;
+        }
+        LdapConfig config = configDtoWithoutNewPassword.convert(configRepository);
+        String authTestUsername = checkNotNull(configDtoWithoutNewPassword.authTestUsername());
+        String authTestPassword = checkNotNull(configDtoWithoutNewPassword.authTestPassword());
         Set<String> ldapGroupDns;
         try {
             ldapGroupDns = LdapAuthentication.authenticateAndGetLdapGroupDns(authTestUsername,
-                    authTestPassword, config, configRepository.getSecretKey());
+                    authTestPassword, config, passwordOverride,
+                    configRepository.getLazySecretKey());
         } catch (AuthenticationException e) {
             logger.debug(e.getMessage(), e);
             return createErrorResponse(e.getMessage());
@@ -561,7 +599,7 @@ class AdminJsonService {
             } else if (passwordExists() && !newPassword().isEmpty()) {
                 // change password
                 String newPassword =
-                        Encryption.encrypt(newPassword(), configRepository.getSecretKey());
+                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey());
                 builder.password(newPassword);
             } else {
                 // keep existing password
@@ -623,7 +661,7 @@ class AdminJsonService {
             } else if (passwordExists() && !newPassword().isEmpty()) {
                 // change password
                 String newPassword =
-                        Encryption.encrypt(newPassword(), configRepository.getSecretKey());
+                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey());
                 builder.password(newPassword);
             } else {
                 // keep existing password

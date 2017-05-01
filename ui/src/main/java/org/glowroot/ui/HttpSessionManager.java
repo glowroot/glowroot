@@ -250,7 +250,7 @@ class HttpSessionManager {
             throw new AuthenticationException("LDAP is not configured");
         }
         Set<String> ldapGroupDns = LdapAuthentication.authenticateAndGetLdapGroupDns(username,
-                password, ldapConfig, configRepository.getSecretKey());
+                password, ldapConfig, null, configRepository.getLazySecretKey());
         return LdapAuthentication.getGlowrootRoles(ldapGroupDns, ldapConfig);
     }
 

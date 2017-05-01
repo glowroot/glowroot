@@ -97,7 +97,7 @@ public class AggregateDaoIT {
         UserDao userDao = new UserDao(session, keyspace, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspace, clusterManager);
         ConfigRepository configRepository = new ConfigRepositoryImpl(agentDao, configDao,
-                centralConfigDao, userDao, roleDao);
+                centralConfigDao, userDao, roleDao, "");
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         configRepository.updateCentralStorageConfig(
                 ImmutableCentralStorageConfig

@@ -88,8 +88,8 @@ public class ConfigRepositoryIT {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, keyspace, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspace, clusterManager);
-        configRepository =
-                new ConfigRepositoryImpl(agentDao, configDao, centralConfigDao, userDao, roleDao);
+        configRepository = new ConfigRepositoryImpl(agentDao, configDao, centralConfigDao, userDao,
+                roleDao, "");
     }
 
     @AfterClass

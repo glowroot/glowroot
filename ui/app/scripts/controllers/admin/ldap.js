@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@
 glowroot.controller('AdminLdapCtrl', [
   '$scope',
   '$http',
+  'encryptionKeyMessage',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, confirmIfHasChanges, httpErrors) {
+  function ($scope, $http, encryptionKeyMessage, confirmIfHasChanges, httpErrors) {
 
     // initialize page binding object
     $scope.page = {};
@@ -82,6 +83,11 @@ glowroot.controller('AdminLdapCtrl', [
     $scope.save = function (deferred) {
       $http.post('backend/admin/ldap', $scope.config)
           .then(function (response) {
+            if (response.data.symmetricEncryptionKeyMissing) {
+              deferred.reject('cassandra.symmetricEncryptionKey must be configured in the glowroot-central.properties'
+                  + ' file before LDAP password can be saved to cassandra' + encryptionKeyMessage.extra());
+              return;
+            }
             deferred.resolve('Saved');
             onNewData(response.data);
           }, function (response) {

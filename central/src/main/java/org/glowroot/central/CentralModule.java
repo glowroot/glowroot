@@ -17,6 +17,7 @@ package org.glowroot.central;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
@@ -42,8 +43,11 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -168,9 +172,9 @@ class CentralModule {
             ConfigDao configDao = new ConfigDao(session, clusterManager);
             UserDao userDao = new UserDao(session, keyspace, clusterManager);
             RoleDao roleDao = new RoleDao(session, keyspace, clusterManager);
-            ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentDao, configDao,
-                    centralConfigDao, userDao, roleDao);
-
+            ConfigRepositoryImpl configRepository =
+                    new ConfigRepositoryImpl(agentDao, configDao, centralConfigDao, userDao,
+                            roleDao, centralConfig.cassandraSymmetricEncryptionKey());
             if (initialSchemaVersion != null) {
                 schemaUpgrade.updateToMoreRecentCassandraOptions(
                         configRepository.getCentralStorageConfig());
@@ -373,6 +377,32 @@ class CentralModule {
             PropertiesFiles.upgradeIfNeeded(propFile, upgradePropertyNames);
             props = PropertiesFiles.load(propFile);
         }
+        // upgrade from 0.9.15 to 0.9.16
+        File secretFile = new File(centralDir, "secret");
+        if (secretFile.exists()) {
+            String existingValue = props.getProperty("cassandra.symmetricEncryptionKey");
+            if (Strings.isNullOrEmpty(existingValue)) {
+                byte[] bytes = Files.toByteArray(secretFile);
+                String newValue = BaseEncoding.base16().lowerCase().encode(bytes);
+                if (existingValue == null) {
+                    FileWriter out = new FileWriter(propFile, true);
+                    out.write("\ncassandra.symmetricEncryptionKey=");
+                    out.write(newValue);
+                    out.write("\n");
+                    out.close();
+                } else {
+                    // existingValue is ""
+                    PropertiesFiles.upgradeIfNeeded(propFile,
+                            ImmutableMap.of("cassandra.symmetricEncryptionKey=",
+                                    "cassandra.symmetricEncryptionKey=" + newValue));
+                }
+                props = PropertiesFiles.load(propFile);
+                if (!secretFile.delete()) {
+                    throw new IOException("Could not delete secret file after moving symmetric"
+                            + " encryption key to glowroot-central.properties");
+                }
+            }
+        }
         String cassandraContactPoints = props.getProperty("cassandra.contactPoints");
         if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
             builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
@@ -381,6 +411,15 @@ class CentralModule {
         String cassandraKeyspace = props.getProperty("cassandra.keyspace");
         if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
             builder.cassandraKeyspace(cassandraKeyspace);
+        }
+        String cassandraSymmetricEncryptionKey =
+                props.getProperty("cassandra.symmetricEncryptionKey");
+        if (!Strings.isNullOrEmpty(cassandraSymmetricEncryptionKey)) {
+            if (!cassandraSymmetricEncryptionKey.matches("[0-9a-fA-F]{32}")) {
+                throw new IllegalStateException("Invalid cassandra.symmetricEncryptionKey value,"
+                        + " it must be a 32 character hex string");
+            }
+            builder.cassandraSymmetricEncryptionKey(cassandraSymmetricEncryptionKey);
         }
         String cassandraUsername = props.getProperty("cassandra.username");
         if (!Strings.isNullOrEmpty(cassandraUsername)) {
@@ -549,6 +588,11 @@ class CentralModule {
         @Value.Default
         String cassandraKeyspace() {
             return "glowroot";
+        }
+
+        @Value.Default
+        String cassandraSymmetricEncryptionKey() {
+            return "";
         }
 
         @Value.Default

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,10 @@ glowroot.controller('AdminSmtpCtrl', [
   '$scope',
   '$http',
   'modals',
+  'encryptionKeyMessage',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, modals, confirmIfHasChanges, httpErrors) {
+  function ($scope, $http, modals, encryptionKeyMessage, confirmIfHasChanges, httpErrors) {
 
     // initialize page binding object
     $scope.page = {};
@@ -54,6 +55,11 @@ glowroot.controller('AdminSmtpCtrl', [
     $scope.save = function (deferred) {
       $http.post('backend/admin/smtp', $scope.config)
           .then(function (response) {
+            if (response.data.symmetricEncryptionKeyMissing) {
+              deferred.reject('cassandra.symmetricEncryptionKey must be configured in the glowroot-central.properties'
+                  + ' file before SMTP password can be saved to cassandra' + encryptionKeyMessage.extra());
+              return;
+            }
             onNewData(response.data);
             deferred.resolve('Saved');
           }, function (response) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,41 +15,17 @@
  */
 package org.glowroot.common.repo.util;
 
-import java.io.File;
-
+import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
-import com.google.common.io.Files;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+public interface LazySecretKey {
 
-public class LazySecretKey {
+    @Nullable
+    SecretKey getExisting() throws Exception;
 
-    private final File secretFile;
+    SecretKey getOrCreate() throws Exception;
 
-    // volatile not needed as access is guarded by secretFile
-    private @MonotonicNonNull SecretKey secretKey;
-
-    public LazySecretKey(File secretFile) {
-        this.secretFile = secretFile;
-    }
-
-    public SecretKey get() throws Exception {
-        synchronized (secretFile) {
-            if (secretKey == null) {
-                if (secretFile.exists()) {
-                    secretKey = loadKey(secretFile);
-                } else {
-                    secretKey = Encryption.generateNewKey();
-                    Files.write(secretKey.getEncoded(), secretFile);
-                }
-            }
-            return secretKey;
-        }
-    }
-
-    private static SecretKey loadKey(File secretFile) throws Exception {
-        byte[] bytes = Files.toByteArray(secretFile);
-        return new SecretKeySpec(bytes, "AES");
-    }
+    // this is only used by central
+    @SuppressWarnings("serial")
+    public class SymmetricEncryptionKeyMissingException extends Exception {}
 }

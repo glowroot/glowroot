@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,21 @@ import javax.crypto.SecretKey;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class EncryptionTest {
 
     @Test
     public void testEncryptionDecryption() throws Exception {
         // given
+        LazySecretKey lazySecretKey = mock(LazySecretKey.class);
         SecretKey secretKey = Encryption.generateNewKey();
-        String encrypted = Encryption.encrypt("test", secretKey);
+        when(lazySecretKey.getExisting()).thenReturn(secretKey);
+        when(lazySecretKey.getOrCreate()).thenReturn(secretKey);
+        String encrypted = Encryption.encrypt("test", lazySecretKey);
         // when
-        String decrypted = Encryption.decrypt(encrypted, secretKey);
+        String decrypted = Encryption.decrypt(encrypted, lazySecretKey);
         // then
         assertThat(decrypted).isEqualTo("test");
     }

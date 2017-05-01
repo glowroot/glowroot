@@ -22,7 +22,6 @@ import java.util.ListIterator;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-import javax.crypto.SecretKey;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
@@ -78,7 +77,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
-    private final LazySecretKey secretKey;
+    private final LazySecretKey lazySecretKey;
 
     private final Object writeLock = new Object();
 
@@ -108,7 +107,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
         this.configService = configService;
         this.pluginCache = pluginCache;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
-        secretKey = new LazySecretKey(new File(glowrootDir, "secret"));
+        lazySecretKey = new LazySecretKeyImpl(new File(glowrootDir, "secret"));
 
         List<ImmutableUserConfig> userConfigs = configService.getAdminConfig(USERS_KEY,
                 new TypeReference<List<ImmutableUserConfig>>() {});
@@ -878,10 +877,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
         return rollupConfigs;
     }
 
-    // lazy create secret file only when needed
     @Override
-    public SecretKey getSecretKey() throws Exception {
-        return secretKey.get();
+    public LazySecretKey getLazySecretKey() throws Exception {
+        return lazySecretKey;
     }
 
     private PluginDescriptor getPluginDescriptor(String pluginId) {

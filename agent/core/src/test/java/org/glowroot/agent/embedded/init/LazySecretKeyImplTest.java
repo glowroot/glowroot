@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.common.repo.util;
+package org.glowroot.agent.embedded.init;
 
 import java.io.File;
 
@@ -22,9 +22,12 @@ import javax.crypto.SecretKey;
 import com.google.common.io.Files;
 import org.junit.Test;
 
+import org.glowroot.common.repo.util.Encryption;
+import org.glowroot.common.repo.util.LazySecretKey;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LazySecretKeyTest {
+public class LazySecretKeyImplTest {
 
     @Test
     public void testLoadSecretKey() throws Exception {
@@ -34,9 +37,24 @@ public class LazySecretKeyTest {
         byte[] encodedKey = secretKey.getEncoded();
         Files.write(encodedKey, secretKeyFile);
         // when
-        LazySecretKey lazySecretKey = new LazySecretKey(secretKeyFile);
+        LazySecretKey lazySecretKey = new LazySecretKeyImpl(secretKeyFile);
         // then
-        assertThat(lazySecretKey.get().getEncoded()).isEqualTo(encodedKey);
+        assertThat(lazySecretKey.getOrCreate().getEncoded()).isEqualTo(encodedKey);
+        // cleanup
+        secretKeyFile.delete();
+    }
+
+    @Test
+    public void testLoadSecretKey2() throws Exception {
+        // given
+        SecretKey secretKey = Encryption.generateNewKey();
+        File secretKeyFile = File.createTempFile("glowroot-unit-test-", "");
+        byte[] encodedKey = secretKey.getEncoded();
+        Files.write(encodedKey, secretKeyFile);
+        // when
+        LazySecretKey lazySecretKey = new LazySecretKeyImpl(secretKeyFile);
+        // then
+        assertThat(lazySecretKey.getExisting().getEncoded()).isEqualTo(encodedKey);
         // cleanup
         secretKeyFile.delete();
     }

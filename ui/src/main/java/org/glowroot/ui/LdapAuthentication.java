@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-import javax.crypto.SecretKey;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -35,6 +34,7 @@ import org.immutables.value.Value;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.repo.util.Encryption;
+import org.glowroot.common.repo.util.LazySecretKey;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -52,13 +52,14 @@ class LdapAuthentication {
         return glowrootRoles;
     }
 
+    // optional newPlainPassword can be passed in to test LDAP from
+    // AdminJsonService.testLdapConnection() without possibility of throwing
+    // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
     static Set<String> authenticateAndGetLdapGroupDns(String username, String password,
-            LdapConfig ldapConfig, SecretKey secretKey) throws Exception {
+            LdapConfig ldapConfig, @Nullable String passwordOverride, LazySecretKey lazySecretKey)
+            throws Exception {
         String systemUsername = ldapConfig.username();
-        String systemPassword = ldapConfig.password();
-        if (!systemPassword.isEmpty()) {
-            systemPassword = Encryption.decrypt(systemPassword, secretKey);
-        }
+        String systemPassword = getPassword(ldapConfig, passwordOverride, lazySecretKey);
         LdapContext ldapContext;
         try {
             ldapContext = createLdapContext(systemUsername, systemPassword, ldapConfig);
@@ -91,6 +92,18 @@ class LdapAuthentication {
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         env.put(Context.PROVIDER_URL, ldapConfig.url());
         return new InitialLdapContext(env, null);
+    }
+
+    private static String getPassword(LdapConfig ldapConfig, @Nullable String passwordOverride,
+            LazySecretKey lazySecretKey) throws Exception {
+        if (passwordOverride != null) {
+            return passwordOverride;
+        }
+        String password = ldapConfig.password();
+        if (password.isEmpty()) {
+            return "";
+        }
+        return Encryption.decrypt(password, lazySecretKey);
     }
 
     @Instrumentation.TraceEntry(message = "get ldap user DN for username: {{1}}", timer = "ldap")

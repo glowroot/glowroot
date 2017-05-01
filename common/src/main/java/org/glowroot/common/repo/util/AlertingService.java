@@ -21,7 +21,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.crypto.SecretKey;
+import javax.annotation.Nullable;
 import javax.mail.Address;
 import javax.mail.Authenticator;
 import javax.mail.Message;
@@ -292,8 +292,8 @@ public class AlertingService {
             }
             return;
         }
-        sendEmail(alertConfig.getEmailAddressList(), subject, messageText, smtpConfig,
-                configRepository.getSecretKey(), mailService);
+        sendEmail(alertConfig.getEmailAddressList(), subject, messageText, smtpConfig, null,
+                configRepository.getLazySecretKey(), mailService);
     }
 
     public static AlertConfig toAlertCondition(AlertConfig alertConfig) {
@@ -302,9 +302,13 @@ public class AlertingService {
                 .build();
     }
 
+    // optional newPlainPassword can be passed in to test SMTP from
+    // AdminJsonService.sentTestEmail() without possibility of throwing
+    // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
     public static void sendEmail(List<String> emailAddresses, String subject, String messageText,
-            SmtpConfig smtpConfig, SecretKey secretKey, MailService mailService) throws Exception {
-        Session session = createMailSession(smtpConfig, secretKey);
+            SmtpConfig smtpConfig, @Nullable String passwordOverride, LazySecretKey lazySecretKey,
+            MailService mailService) throws Exception {
+        Session session = createMailSession(smtpConfig, passwordOverride, lazySecretKey);
         Message message = new MimeMessage(session);
         String fromEmailAddress = smtpConfig.fromEmailAddress();
         if (fromEmailAddress.isEmpty()) {
@@ -326,8 +330,11 @@ public class AlertingService {
         mailService.send(message);
     }
 
-    private static Session createMailSession(SmtpConfig smtpConfig, SecretKey secretKey)
-            throws Exception {
+    // optional newPlainPassword can be passed in to test SMTP from
+    // AdminJsonService.sentTestEmail() without possibility of throwing
+    // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
+    private static Session createMailSession(SmtpConfig smtpConfig,
+            @Nullable String passwordOverride, LazySecretKey lazySecretKey) throws Exception {
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpConfig.host());
         Integer port = smtpConfig.port();
@@ -343,10 +350,10 @@ public class AlertingService {
             props.put(entry.getKey(), entry.getValue());
         }
         Authenticator authenticator = null;
-        if (!smtpConfig.password().isEmpty()) {
+        final String password = getPassword(smtpConfig, passwordOverride, lazySecretKey);
+        if (!password.isEmpty()) {
             props.put("mail.smtp.auth", "true");
             final String username = smtpConfig.username();
-            final String password = Encryption.decrypt(smtpConfig.password(), secretKey);
             authenticator = new Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
@@ -355,5 +362,17 @@ public class AlertingService {
             };
         }
         return Session.getInstance(props, authenticator);
+    }
+
+    private static String getPassword(SmtpConfig smtpConfig, @Nullable String passwordOverride,
+            LazySecretKey lazySecretKey) throws Exception {
+        if (passwordOverride != null) {
+            return passwordOverride;
+        }
+        String password = smtpConfig.password();
+        if (password.isEmpty()) {
+            return "";
+        }
+        return Encryption.decrypt(password, lazySecretKey);
     }
 }

@@ -20,9 +20,10 @@ glowroot.controller('ConfigSyntheticMonitorCtrl', [
   '$scope',
   '$location',
   '$http',
+  'encryptionKeyMessage',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $location, $http, confirmIfHasChanges, httpErrors) {
+  function ($scope, $location, $http, encryptionKeyMessage, confirmIfHasChanges, httpErrors) {
 
     // initialize page binding object
     $scope.page = {};
@@ -101,6 +102,12 @@ glowroot.controller('ConfigSyntheticMonitorCtrl', [
       var agentRollupId = $scope.agentRollupId;
       $http.post(url + '?agent-rollup-id=' + encodeURIComponent(agentRollupId), postData)
           .then(function (response) {
+            if (response.data.symmetricEncryptionKeyMissing) {
+              deferred.reject('cassandra.symmetricEncryptionKey must be configured in the glowroot-central.properties'
+                  + ' file before string constants beginning with the text "ENCRYPT:" can be encrypted'
+                  + encryptionKeyMessage.extra());
+              return;
+            }
             if (response.data.javaSourceCompilationErrors) {
               $scope.javaSourceCompilationErrors = response.data.javaSourceCompilationErrors;
               deferred.reject('compile errors (see above)');

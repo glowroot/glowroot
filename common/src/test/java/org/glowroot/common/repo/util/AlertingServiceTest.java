@@ -15,8 +15,6 @@
  */
 package org.glowroot.common.repo.util;
 
-import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 
 import javax.crypto.SecretKey;
@@ -77,24 +75,25 @@ public class AlertingServiceTest {
             .addEmailAddress("to@example.org")
             .build();
 
-    private static final SecretKey SECRET_KEY;
+    private static final LazySecretKey LAZY_SECRET_KEY;
 
     private static final SmtpConfig SMTP_CONFIG;
 
     static {
         try {
-            SECRET_KEY = Encryption.generateNewKey();
+            SecretKey secretKey = Encryption.generateNewKey();
+            LAZY_SECRET_KEY = mock(LazySecretKey.class);
+            when(LAZY_SECRET_KEY.getOrCreate()).thenReturn(secretKey);
+            when(LAZY_SECRET_KEY.getExisting()).thenReturn(secretKey);
             SMTP_CONFIG = ImmutableSmtpConfig.builder()
                     .host("localhost")
                     .ssl(true)
                     .username("u")
-                    .password(Encryption.encrypt("test", SECRET_KEY))
+                    .password(Encryption.encrypt("test", LAZY_SECRET_KEY))
                     .putAdditionalProperties("a", "x")
                     .putAdditionalProperties("b", "y")
                     .build();
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        } catch (GeneralSecurityException e) {
+        } catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }
@@ -122,7 +121,7 @@ public class AlertingServiceTest {
         gaugeValueRepository = mock(GaugeValueRepository.class);
         rollupLevelService = mock(RollupLevelService.class);
         mailService = new MockMailService();
-        when(configRepository.getSecretKey()).thenReturn(SECRET_KEY);
+        when(configRepository.getLazySecretKey()).thenReturn(LAZY_SECRET_KEY);
         when(configRepository.getSmtpConfig()).thenReturn(SMTP_CONFIG);
     }
 

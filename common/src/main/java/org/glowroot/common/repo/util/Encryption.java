@@ -15,7 +15,6 @@
  */
 package org.glowroot.common.repo.util;
 
-import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
@@ -34,7 +33,8 @@ public class Encryption {
 
     private Encryption() {}
 
-    public static String encrypt(String text, SecretKey secretKey) throws GeneralSecurityException {
+    public static String encrypt(String text, LazySecretKey lazySecretKey) throws Exception {
+        SecretKey secretKey = lazySecretKey.getOrCreate();
         byte[] iv = new byte[16];
         secureRandom.nextBytes(iv);
         Cipher aesCipherForEncryption = Cipher.getInstance("AES/CBC/PKCS5Padding");
@@ -43,8 +43,12 @@ public class Encryption {
         return encoder.encode(encryptedBytes) + ':' + encoder.encode(iv);
     }
 
-    public static String decrypt(String encrypted, SecretKey secretKey)
-            throws GeneralSecurityException {
+    public static String decrypt(String encrypted, LazySecretKey lazySecretKey) throws Exception {
+        SecretKey secretKey = lazySecretKey.getExisting();
+        if (secretKey == null) {
+            throw new IllegalStateException(
+                    "Cannot decrypt encrypted value, secret key is missing");
+        }
         String[] parts = encrypted.split(":");
         byte[] encryptedText = encoder.decode(parts[0]);
         byte[] iv = encoder.decode(parts[1]);
@@ -54,7 +58,7 @@ public class Encryption {
         return new String(decryptedBytes, Charsets.UTF_8);
     }
 
-    static SecretKey generateNewKey() throws NoSuchAlgorithmException {
+    public static SecretKey generateNewKey() throws NoSuchAlgorithmException {
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
         keyGen.init(128);
         return keyGen.generateKey();

@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.URL;
+import java.security.SecureRandom;
 import java.util.Properties;
 
 import com.datastax.driver.core.Cluster;
@@ -29,6 +30,7 @@ import com.datastax.driver.core.Session;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.Files;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.saucelabs.common.SauceOnDemandAuthentication;
@@ -225,6 +227,10 @@ public class WebDriverSetup {
         int grpcPort = getAvailablePort();
         PrintWriter props = new PrintWriter("glowroot-central.properties");
         props.println("cassandra.keyspace=glowroot_unit_tests");
+        byte[] bytes = new byte[16];
+        new SecureRandom().nextBytes(bytes);
+        props.println("cassandra.symmetricEncryptionKey="
+                + BaseEncoding.base16().lowerCase().encode(bytes));
         props.println("grpc.port=" + grpcPort);
         props.println("ui.port=" + uiPort);
         props.close();

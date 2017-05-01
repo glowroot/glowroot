@@ -15,14 +15,15 @@
  */
 package org.glowroot.central.repo;
 
-import java.io.File;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -30,6 +31,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.BaseEncoding;
 
 import org.glowroot.central.repo.ConfigDao.AgentConfigUpdater;
 import org.glowroot.common.config.AgentRollupConfig;
@@ -81,19 +83,20 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
-    private final LazySecretKey secretKey;
+    private final LazySecretKey lazySecretKey;
 
     private final Set<AgentConfigListener> agentConfigListeners = Sets.newCopyOnWriteArraySet();
 
     public ConfigRepositoryImpl(AgentDao agentDao, ConfigDao configDao,
-            CentralConfigDao centralConfigDao, UserDao userDao, RoleDao roleDao) {
+            CentralConfigDao centralConfigDao, UserDao userDao, RoleDao roleDao,
+            String symmetricEncryptionKey) {
         this.agentDao = agentDao;
         this.configDao = configDao;
         this.centralConfigDao = centralConfigDao;
         this.userDao = userDao;
         this.roleDao = roleDao;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
-        secretKey = new LazySecretKey(new File("secret"));
+        lazySecretKey = new LazySecretKeyImpl(symmetricEncryptionKey);
 
         centralConfigDao.addKeyType(WEB_KEY, ImmutableCentralWebConfig.class);
         centralConfigDao.addKeyType(STORAGE_KEY, ImmutableCentralStorageConfig.class);
@@ -979,10 +982,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return rollupConfigs;
     }
 
-    // lazy create secret file only when needed
     @Override
-    public SecretKey getSecretKey() throws Exception {
-        return secretKey.get();
+    public LazySecretKey getLazySecretKey() throws Exception {
+        return lazySecretKey;
     }
 
     public void addAgentConfigListener(AgentConfigListener listener) {
@@ -1101,5 +1103,33 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         // this avoids race condition worries that two updates may get sent to the receiver in the
         // wrong order
         void onChange(String agentRollupId) throws Exception;
+    }
+
+    private static class LazySecretKeyImpl implements LazySecretKey {
+
+        private final @Nullable SecretKey secretKey;
+
+        private LazySecretKeyImpl(String symmetricEncryptionKey) {
+            if (symmetricEncryptionKey.isEmpty()) {
+                secretKey = null;
+            } else {
+                byte[] bytes = BaseEncoding.base16()
+                        .decode(symmetricEncryptionKey.toUpperCase(Locale.ENGLISH));
+                secretKey = new SecretKeySpec(bytes, "AES");
+            }
+        }
+
+        @Override
+        public @Nullable SecretKey getExisting() throws Exception {
+            return secretKey;
+        }
+
+        @Override
+        public SecretKey getOrCreate() throws Exception {
+            if (secretKey == null) {
+                throw new SymmetricEncryptionKeyMissingException();
+            }
+            return secretKey;
+        }
     }
 }
