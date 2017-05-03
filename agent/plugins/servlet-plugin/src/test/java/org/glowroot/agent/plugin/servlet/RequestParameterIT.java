@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.After;
@@ -122,6 +123,19 @@ public class RequestParameterIT {
     }
 
     @Test
+    public void testLargeRequestParameters() throws Exception {
+        // when
+        Trace trace = container.execute(GetLargeParameter.class);
+
+        // then
+        Map<String, Object> requestParameters =
+                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+        assertThat(requestParameters).hasSize(1);
+        assertThat(requestParameters.get("large")).isEqualTo(
+                Strings.repeat("0123456789", 1000) + " [truncated to 10000 characters]");
+    }
+
+    @Test
     public void testOutsideServlet() throws Exception {
         // when
         container.executeNoExpectedTrace(GetParameterOutsideServlet.class);
@@ -181,6 +195,19 @@ public class RequestParameterIT {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getParameterValues("z");
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class GetLargeParameter extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setParameter("large",
+                    Strings.repeat("0123456789", 2000));
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getParameter("large");
         }
     }
 

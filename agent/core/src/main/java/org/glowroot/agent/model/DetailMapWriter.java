@@ -23,7 +23,6 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +34,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class DetailMapWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(DetailMapWriter.class);
+
+    private static final int MESSAGE_CHAR_LIMIT =
+            Integer.getInteger("glowroot.message.char.limit", 100000);
 
     private static final String UNSHADED_GUAVA_OPTIONAL_CLASS_NAME;
 
@@ -62,10 +64,11 @@ public class DetailMapWriter {
                 logger.warn("detail map has null key");
                 continue;
             }
-            String name = key.toString();
-            if (name == null) {
-                // skip invalid data
-                continue;
+            String name;
+            if (key instanceof String) {
+                name = (String) key;
+            } else {
+                name = convertToStringAndTruncate(key);
             }
             entries.add(createDetailEntry(name, entry.getValue()));
         }
@@ -105,7 +108,7 @@ public class DetailMapWriter {
             builder.addValueBuilder().setDouble(((Number) value).doubleValue()).build();
         } else {
             logger.warn("detail map has unexpected value type: {}", value.getClass().getName());
-            builder.addValueBuilder().setString(Strings.nullToEmpty(value.toString())).build();
+            builder.addValueBuilder().setString(convertToStringAndTruncate(value)).build();
         }
     }
 
@@ -142,5 +145,24 @@ public class DetailMapWriter {
     private static boolean isGuavaOptionalInAnotherClassLoader(Object value) {
         Class<?> superClass = value.getClass().getSuperclass();
         return superClass != null && superClass.getName().equals(Optional.class.getName());
+    }
+
+    // unexpected keys and values are not truncated in org.glowroot.agent.plugin.api.MessageImpl, so
+    // need to be truncated here after converting them to strings
+    private static String convertToStringAndTruncate(Object obj) {
+        String str = obj.toString();
+        if (str == null) {
+            return "";
+        }
+        return truncate(str);
+    }
+
+    private static String truncate(String s) {
+        if (s.length() <= MESSAGE_CHAR_LIMIT) {
+            return s;
+        } else {
+            return s.substring(0, MESSAGE_CHAR_LIMIT) + " [truncated to " + MESSAGE_CHAR_LIMIT
+                    + " characters]";
+        }
     }
 }

@@ -15,11 +15,15 @@
  */
 package org.glowroot.agent.plugin.api;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,9 +50,11 @@ import org.glowroot.agent.plugin.api.internal.ReadableMessage;
  */
 public abstract class Message {
 
-    // default is 512k characters so that memory limit is 1mb since 1 character = 2 bytes
     private static final int MESSAGE_CHAR_LIMIT =
-            Integer.getInteger("glowroot.message.char.limit", 512 * 1024);
+            Integer.getInteger("glowroot.message.char.limit", 100000);
+
+    private static final int MESSAGE_DETAIL_CHAR_LIMIT =
+            Integer.getInteger("glowroot.message.detail.char.limit", 10000);
 
     private static final String[] EMPTY_ARGS = new String[0];
     private static final ImmutableMap<String, Object> EMPTY_DETAIL = ImmutableMap.of();
@@ -83,12 +89,16 @@ public abstract class Message {
 
         private MessageImpl(@Nullable String template, @Nullable String[] args,
                 Map<String, ? extends /*@Nullable*/ Object> detail) {
-            this.template = truncateToMessageCharLimit(template);
+            this.template = truncateMessageIfNeeded(template);
             for (int i = 0; i < args.length; i++) {
-                args[i] = truncateToMessageCharLimit(args[i]);
+                args[i] = truncateMessageIfNeeded(args[i]);
             }
             this.args = args;
-            this.detail = detail;
+            if (needsTruncateDetail(detail)) {
+                this.detail = truncateDetail(detail);
+            } else {
+                this.detail = detail;
+            }
         }
 
         @Override
@@ -121,7 +131,7 @@ public abstract class Message {
                 }
             }
             text.append(template.substring(curr));
-            return truncateToMessageCharLimit(text.toString());
+            return truncateMessageIfNeeded(text.toString());
         }
 
         @Override
@@ -129,12 +139,130 @@ public abstract class Message {
             return detail;
         }
 
-        private static @PolyNull String truncateToMessageCharLimit(@PolyNull String s) {
+        private static @PolyNull String truncateMessageIfNeeded(@PolyNull String s) {
             if (s == null || s.length() <= MESSAGE_CHAR_LIMIT) {
                 return s;
             } else {
                 return s.substring(0, MESSAGE_CHAR_LIMIT) + " [truncated to " + MESSAGE_CHAR_LIMIT
                         + " characters]";
+            }
+        }
+
+        private static boolean needsTruncateDetail(Map<?, ?> detail) {
+            for (Map.Entry<?, ?> entry : detail.entrySet()) {
+                Object key = entry.getKey();
+                if (key instanceof String && needsTruncateDetail((String) key)) {
+                    return true;
+                }
+                if (needsTruncateDetail(entry.getValue())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean needsTruncateDetail(@Nullable Object value) {
+            if (value instanceof Map) {
+                return needsTruncateDetail((Map<?, ?>) value);
+            } else if (value instanceof List) {
+                return needsTruncateDetail((List<?>) value);
+            } else if (value instanceof Optional<?>) {
+                return needsTruncateDetail((Optional<?>) value);
+            } else if (value instanceof String) {
+                return needsTruncateDetail((String) value);
+            } else {
+                return false;
+            }
+        }
+
+        private static boolean needsTruncateDetail(List<?> detail) {
+            for (Object value : detail) {
+                if (needsTruncateDetail(value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean needsTruncateDetail(Optional<?> optional) {
+            if (!optional.isPresent()) {
+                return false;
+            }
+            Object value = optional.get();
+            return value instanceof String && needsTruncateDetail((String) value);
+        }
+
+        private static boolean needsTruncateDetail(String value) {
+            return value.length() > MESSAGE_DETAIL_CHAR_LIMIT;
+        }
+
+        private static Map<String, ?> truncateDetail(Map<String, ?> detail) {
+            // cannot use immutable map since detail map may contain null values
+            Map<String, /*@Nullable*/ Object> truncatedDetail = Maps.newHashMap();
+            for (Map.Entry<String, ?> entry : detail.entrySet()) {
+                truncatedDetail.put(truncateDetailIfNeeded(entry.getKey()),
+                        truncate(entry.getValue()));
+            }
+            return truncatedDetail;
+        }
+
+        private static @Nullable Object truncate(@Nullable Object value) {
+            if (value instanceof Map) {
+                return truncateDetailNested((Map<?, ?>) value);
+            } else if (value instanceof List) {
+                return truncateDetail((List<?>) value);
+            } else if (value instanceof Optional<?>) {
+                return truncateDetailIfNeeded((Optional<?>) value);
+            } else if (value instanceof String) {
+                return truncateDetailIfNeeded((String) value);
+            } else {
+                return value;
+            }
+        }
+
+        private static Map<?, ?> truncateDetailNested(Map<?, ?> detail) {
+            // cannot use immutable map since detail map may contain null values
+            Map</*@Nullable*/ Object, /*@Nullable*/ Object> truncatedDetail = Maps.newHashMap();
+            for (Map.Entry<?, ?> entry : detail.entrySet()) {
+                Object key = entry.getKey();
+                if (key instanceof String) {
+                    key = truncateDetailIfNeeded((String) key);
+                }
+                truncatedDetail.put(key, truncate(entry.getValue()));
+            }
+            return truncatedDetail;
+        }
+
+        private static List</*@Nullable*/ Object> truncateDetail(List<?> detail) {
+            // cannot use immutable list since detail list may contain null values
+            List</*@Nullable*/ Object> truncatedDetail = Lists.newArrayList();
+            for (Object value : detail) {
+                truncatedDetail.add(truncate(value));
+            }
+            return truncatedDetail;
+        }
+
+        private static Optional<?> truncateDetailIfNeeded(Optional<?> optional) {
+            if (!optional.isPresent()) {
+                return optional;
+            }
+            Object value = optional.get();
+            if (!(value instanceof String)) {
+                return optional;
+            }
+            String val = (String) value;
+            if (needsTruncateDetail(val)) {
+                return Optional.of(truncateDetailIfNeeded(val));
+            }
+            return optional;
+        }
+
+        private static String truncateDetailIfNeeded(String s) {
+            if (s.length() <= MESSAGE_DETAIL_CHAR_LIMIT) {
+                return s;
+            } else {
+                return s.substring(0, MESSAGE_DETAIL_CHAR_LIMIT) + " [truncated to "
+                        + MESSAGE_DETAIL_CHAR_LIMIT + " characters]";
             }
         }
     }
