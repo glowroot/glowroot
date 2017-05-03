@@ -296,7 +296,7 @@ public class Transaction {
         return ImmutableSetMultimap.copyOf(orderedAttributes);
     }
 
-    Map<String, ? extends /*@Nullable*/ Object> getDetail() {
+    Map<String, ?> getDetail() {
         Object messageSupplier = mainThreadContext.getRootEntry().getMessageSupplier();
         // root trace entry messageSupplier is never null
         checkNotNull(messageSupplier);

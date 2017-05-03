@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,13 +51,13 @@ public class DetailMapWriter {
     private DetailMapWriter() {}
 
     public static List<Trace.DetailEntry> toProto(
-            Map<String, ? extends /*@Nullable*/ Object> detail) {
+            Map<String, ?> detail) {
         return writeMap(detail);
     }
 
     private static List<Trace.DetailEntry> writeMap(Map<?, ?> detail) {
         List<Trace.DetailEntry> entries = Lists.newArrayListWithCapacity(detail.size());
-        for (Entry<?, ? extends /*@Nullable*/ Object> entry : detail.entrySet()) {
+        for (Entry<?, ?> entry : detail.entrySet()) {
             Object key = entry.getKey();
             if (key == null) {
                 // skip invalid data

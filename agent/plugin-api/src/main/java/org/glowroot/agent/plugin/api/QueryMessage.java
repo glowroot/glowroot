@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public abstract class QueryMessage {
     }
 
     public static QueryMessage create(String prefix, String suffix,
-            Map<String, ? extends /*@Nullable*/ Object> detail) {
+            Map<String, ?> detail) {
         return new QueryMessageImpl(prefix, suffix, detail);
     }
 
@@ -64,10 +64,10 @@ public abstract class QueryMessage {
 
         private final String prefix;
         private final String suffix;
-        private final Map<String, ? extends /*@Nullable*/ Object> detail;
+        private final Map<String, ?> detail;
 
         private QueryMessageImpl(String prefix, String suffix,
-                Map<String, ? extends /*@Nullable*/ Object> detail) {
+                Map<String, ?> detail) {
             this.prefix = prefix;
             this.suffix = suffix;
             this.detail = detail;
@@ -84,7 +84,7 @@ public abstract class QueryMessage {
         }
 
         @Override
-        public Map<String, ? extends /*@Nullable*/ Object> getDetail() {
+        public Map<String, ?> getDetail() {
             return detail;
         }
     }
