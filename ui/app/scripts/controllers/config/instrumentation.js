@@ -93,7 +93,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       methodAnnotation: '',
       nestingGroup: '',
       order: 0,
-      captureKind: 'transaction',
+      captureKind: 'timer',
       transactionType: '',
       transactionNameTemplate: '',
       transactionUserTemplate: '',
