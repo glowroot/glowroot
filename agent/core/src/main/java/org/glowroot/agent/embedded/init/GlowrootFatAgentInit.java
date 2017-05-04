@@ -83,11 +83,6 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
         });
     }
 
-    @OnlyUsedByTests
-    public int getUiPort() throws InterruptedException {
-        return checkNotNull(fatAgentModule).getUiModule().getPort();
-    }
-
     @Override
     @OnlyUsedByTests
     public void setSlowThresholdToZero() throws IOException {

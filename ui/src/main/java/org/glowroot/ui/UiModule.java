@@ -193,10 +193,6 @@ public class UiModule {
         lazyHttpServer = null;
     }
 
-    public int getPort() throws InterruptedException {
-        return getPort(checkNotNull(lazyHttpServer).get());
-    }
-
     public CommonHandler getCommonHandler() {
         // only called when using servlet container
         return checkNotNull(commonHandler);
@@ -210,9 +206,5 @@ public class UiModule {
                 httpServer.close(waitForChannelClose);
             }
         }
-    }
-
-    private static int getPort(@Nullable HttpServer httpServer) {
-        return httpServer == null ? -1 : httpServer.getPort();
     }
 }
