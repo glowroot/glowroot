@@ -147,9 +147,11 @@
       </fieldset>
       <fieldset>
         <legend style="margin-bottom: 15px;">What to capture</legend>
-        <div class="form-group"
-             style="margin-bottom: 40px;">
-          <div class="col-lg-offset-3 col-lg-9">
+        <div class="form-group">
+          <label class="col-lg-3 control-label">
+            What to capture
+          </label>
+          <div class="col-lg-9">
             <div class="radio">
               <label>
                 <input type="radio"
@@ -185,6 +187,20 @@
                        value="other">
                 Optional transaction overrides only
               </label>
+            </div>
+            <div class="help-block">
+              A timer captures the total time and count of the above method(s) to produce the data in the
+              <em>breakdown</em> section on the <a href="transaction/average{{agentQueryString()}}">average response
+              time page</a>, and the data in the <em>breakdown</em> section when viewing an individual trace (on the
+              <a href="transaction/traces{{agentQueryString()}}">slow traces</a> or
+              <a href="error/traces{{agentQueryString()}}">error traces</a> pages).
+            </div>
+            <div class="help-block">
+              A trace entry is a timer plus it captures a message on each invocation of the above method(s) to produce
+              the data in the <em>trace entries</em> section when viewing an individual trace.
+            </div>
+            <div class="help-block">
+              A transaction defines the capture point boundary for a new request or background operation.
             </div>
           </div>
         </div>
