@@ -84,6 +84,27 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       }
     }
 
+    var NEW_CONFIG = {
+      // when these are updated, make sure to update similar list in importFromJson
+      // (see instrumentation-list.js)
+      classAnnotation: '',
+      subTypeRestriction: '',
+      superTypeRestriction: '',
+      methodAnnotation: '',
+      nestingGroup: '',
+      order: 0,
+      captureKind: 'transaction',
+      transactionType: '',
+      transactionNameTemplate: '',
+      transactionUserTemplate: '',
+      transactionOuter: false,
+      traceEntryMessageTemplate: '',
+      traceEntryCaptureSelfNested: false,
+      timerName: '',
+      enabledProperty: '',
+      traceEntryEnabledProperty: ''
+    };
+
     if (version) {
       $http.get('backend/config/instrumentation?agent-id=' + encodeURIComponent($scope.agentId) + '&version=' + version)
           .then(function (response) {
@@ -93,45 +114,25 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           }, function (response) {
             httpErrors.handle(response, $scope);
           });
-    } else {
+    } else if ($scope.layout.central) {
       $http.get('backend/config/new-instrumentation-check-agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
           .then(function (response) {
             $scope.loaded = true;
             $scope.agentNotConnected = !response.data;
-            if ($scope.agentNotConnected) {
-              $scope.methodSignatures = [{
-                name: '',
-                parameterTypes: ['..'],
-                returnType: '',
-                modifiers: []
-              }];
-              $scope.selectedMethodSignature = $scope.methodSignatures[0];
-            }
+            resetMethodSignatures('');
             onNewData({
-              config: {
-                // when these are updated, make sure to update similar list in importFromJson
-                // (see instrumentation-list.js)
-                classAnnotation: '',
-                subTypeRestriction: '',
-                superTypeRestriction: '',
-                methodAnnotation: '',
-                nestingGroup: '',
-                order: 0,
-                captureKind: 'transaction',
-                transactionType: '',
-                transactionNameTemplate: '',
-                transactionUserTemplate: '',
-                transactionOuter: false,
-                traceEntryMessageTemplate: '',
-                traceEntryCaptureSelfNested: false,
-                timerName: '',
-                enabledProperty: '',
-                traceEntryEnabledProperty: ''
-              }
+              config: NEW_CONFIG
             });
           }, function (response) {
             httpErrors.handle(response, $scope);
           });
+    } else {
+      $scope.loaded = true;
+      $scope.agentNotConnected = false;
+      resetMethodSignatures('');
+      onNewData({
+        config: NEW_CONFIG
+      });
     }
 
     $scope.hasChanges = function () {
@@ -139,12 +140,6 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           && !angular.equals($scope.config, $scope.originalConfig);
     };
     var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
-
-    $scope.hasMethodSignatureError = function () {
-      // checking $scope.formCtrl below is to protect against javascript error when moving away from page
-      return !$scope.methodSignatures || !$scope.methodSignatures.length
-          || ($scope.formCtrl && $scope.formCtrl.selectedMethodSignature.$invalid);
-    };
 
     $scope.showClassNameSpinner = 0;
     $scope.showMethodNameSpinner = 0;
@@ -240,16 +235,13 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     };
 
     function resetMethodSignatures(methodName) {
-      if ($scope.agentNotConnected) {
-        $scope.methodSignatures = [{
-          name: methodName,
-          parameterTypes: ['..'],
-          returnType: '',
-          modifiers: []
-        }];
-      } else {
-        $scope.methodSignatures = [];
-      }
+      $scope.methodSignatures = [{
+        name: methodName,
+        parameterTypes: ['..'],
+        returnType: '',
+        modifiers: []
+      }];
+      $scope.selectedMethodSignature = $scope.methodSignatures[0];
     }
 
     $scope.onBlurMethodName = function () {
@@ -374,11 +366,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
               returnType: '',
               modifiers: []
             });
-            if (response.data.length === 1) {
-              $scope.selectedMethodSignature = response.data[0];
-            } else {
-              $scope.selectedMethodSignature = undefined;
-            }
+            $scope.selectedMethodSignature = $scope.methodSignatures[0];
           }, function (response) {
             httpErrors.handle(response, $scope);
           });
