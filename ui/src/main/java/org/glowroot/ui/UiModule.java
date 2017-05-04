@@ -50,8 +50,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class UiModule {
 
-    // LazyHttpServer is non-null when using netty
-    private final @Nullable LazyHttpServer lazyHttpServer;
+    // non-null when using netty
+    private final @Nullable HttpServer httpServer;
 
     // CommonHandler is non-null when using servlet container (applies to central only)
     private final @Nullable CommonHandler commonHandler;
@@ -176,21 +176,22 @@ public class UiModule {
         } else {
             String bindAddress = configRepository.getWebConfig().bindAddress();
             int port = configRepository.getWebConfig().port();
-            LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, configRepository,
-                    commonHandler, certificateDir, numWorkerThreads);
-            lazyHttpServer.init(adminJsonService);
-            return new UiModule(lazyHttpServer);
+            HttpServer httpServer = new HttpServer(bindAddress, numWorkerThreads, configRepository,
+                    commonHandler, certificateDir);
+            adminJsonService.setHttpServer(httpServer);
+            httpServer.bindEventually(port);
+            return new UiModule(httpServer);
         }
     }
 
-    private UiModule(LazyHttpServer lazyHttpServer) {
-        this.lazyHttpServer = lazyHttpServer;
+    private UiModule(HttpServer httpServer) {
+        this.httpServer = httpServer;
         commonHandler = null;
     }
 
     private UiModule(CommonHandler commonHandler) {
         this.commonHandler = commonHandler;
-        lazyHttpServer = null;
+        httpServer = null;
     }
 
     public CommonHandler getCommonHandler() {
@@ -200,11 +201,8 @@ public class UiModule {
 
     // used by tests and by central ui
     public void close(boolean waitForChannelClose) throws InterruptedException {
-        if (lazyHttpServer != null) {
-            HttpServer httpServer = lazyHttpServer.get();
-            if (httpServer != null) {
-                httpServer.close(waitForChannelClose);
-            }
+        if (httpServer != null) {
+            httpServer.close(waitForChannelClose);
         }
     }
 }

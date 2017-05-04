@@ -40,16 +40,22 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.repo.ConfigRepository;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class HttpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
+
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private final ServerBootstrap bootstrap;
     private final HttpServerHandler handler;
@@ -60,12 +66,11 @@ class HttpServer {
     private final File certificateDir;
 
     private volatile @Nullable SslContext sslContext;
-    private volatile Channel serverChannel;
-    private volatile int port;
+    private volatile @MonotonicNonNull Channel serverChannel;
+    private volatile @MonotonicNonNull Integer port;
 
-    HttpServer(String bindAddress, int port, int numWorkerThreads,
-            ConfigRepository configRepository, CommonHandler commonHandler, File certificateDir)
-            throws Exception {
+    HttpServer(String bindAddress, int numWorkerThreads, ConfigRepository configRepository,
+            CommonHandler commonHandler, File certificateDir) throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -113,28 +118,46 @@ class HttpServer {
                     }
                 });
         this.handler = handler;
-        logger.debug("<init>(): binding http server to port {}", port);
         this.bindAddress = bindAddress;
-        Channel serverChannel;
+    }
+
+    void bindEventually(int port) {
         try {
             serverChannel =
                     bootstrap.bind(new InetSocketAddress(bindAddress, port)).sync().channel();
+            onBindSuccess();
         } catch (Exception e) {
             // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
-            bossGroup.shutdownGracefully(0, 0, SECONDS);
-            workerGroup.shutdownGracefully(0, 0, SECONDS);
-            throw new SocketBindException(e);
+            logger.debug(e.getMessage(), e);
+            startupLogger.error("Error binding to {}:{}, the UI will not be available"
+                    + " (will keep trying to bind): {}", bindAddress, port, e.getMessage());
+            ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("Glowroot-Init")
+                    .build();
+            Executors.newSingleThreadExecutor(threadFactory).execute(new BindEventually(port));
         }
-        this.serverChannel = serverChannel;
-        this.port = ((InetSocketAddress) serverChannel.localAddress()).getPort();
-        logger.debug("<init>(): http server bound");
+    }
+
+    @RequiresNonNull("serverChannel")
+    private void onBindSuccess() {
+        port = ((InetSocketAddress) serverChannel.localAddress()).getPort();
+        if (bindAddress.equals("127.0.0.1")) {
+            startupLogger.info("UI listening on {}:{} (to access the UI from remote machines,"
+                    + " change the bind address to 0.0.0.0, either in the Glowroot UI under"
+                    + " Configuration > Web or directly in the admin.json file, and then restart"
+                    + " JVM to take effect)", bindAddress, port);
+        } else {
+            startupLogger.info("UI listening on {}:{}", bindAddress, port);
+        }
     }
 
     String getBindAddress() {
         return bindAddress;
     }
 
-    int getPort() {
+    @Nullable
+    Integer getPort() {
         return port;
     }
 
@@ -143,9 +166,10 @@ class HttpServer {
     }
 
     void changePort(int newPort) throws PortChangeFailedException {
+        checkNotNull(serverChannel);
         // need to call from separate thread, since netty throws exception if I/O thread (serving
         // http request) calls awaitUninterruptibly(), which is called by bind() below
-        Channel previousServerChannel = this.serverChannel;
+        Channel previousServerChannel = serverChannel;
         ChangePort changePort = new ChangePort(newPort);
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setDaemon(true)
@@ -180,15 +204,49 @@ class HttpServer {
     // used by tests and by central ui
     void close(boolean waitForChannelClose) {
         logger.debug("close(): stopping http server");
-        if (waitForChannelClose) {
-            serverChannel.close().awaitUninterruptibly();
-        } else {
-            serverChannel.close().awaitUninterruptibly(1, SECONDS);
+        if (serverChannel != null) {
+            if (waitForChannelClose) {
+                serverChannel.close().awaitUninterruptibly();
+            } else {
+                serverChannel.close().awaitUninterruptibly(1, SECONDS);
+            }
         }
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         handler.close(waitForChannelClose);
         logger.debug("close(): http server stopped");
+    }
+
+    private class BindEventually implements Runnable {
+
+        private final int port;
+
+        private BindEventually(int port) {
+            this.port = port;
+        }
+
+        @Override
+        public void run() {
+            long backoffMillis = 100;
+            while (true) {
+                try {
+                    serverChannel = bootstrap.bind(new InetSocketAddress(bindAddress, port)).sync()
+                            .channel();
+                    onBindSuccess();
+                    return;
+                } catch (Exception e) {
+                    // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
+                    logger.debug(e.getMessage(), e);
+                    try {
+                        Thread.sleep(backoffMillis);
+                    } catch (InterruptedException f) {
+                        Thread.interrupted();
+                        return;
+                    }
+                    backoffMillis = Math.min(backoffMillis * 2, 10000);
+                }
+            }
+        }
     }
 
     private class ChangePort implements Callable</*@Nullable*/ Void> {
@@ -202,16 +260,9 @@ class HttpServer {
         @Override
         public @Nullable Void call() throws InterruptedException {
             InetSocketAddress localAddress = new InetSocketAddress(bindAddress, newPort);
-            HttpServer.this.serverChannel = bootstrap.bind(localAddress).sync().channel();
-            HttpServer.this.port = newPort;
+            serverChannel = bootstrap.bind(localAddress).sync().channel();
+            port = newPort;
             return null;
-        }
-    }
-
-    @SuppressWarnings("serial")
-    static class SocketBindException extends Exception {
-        private SocketBindException(Exception cause) {
-            super(cause);
         }
     }
 

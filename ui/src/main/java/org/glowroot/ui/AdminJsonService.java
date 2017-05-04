@@ -83,6 +83,7 @@ class AdminJsonService {
     private final LiveAggregateRepository liveAggregateRepository;
     private final MailService mailService;
 
+    // null when running in servlet container
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     AdminJsonService(boolean central, File certificateDir, ConfigRepository configRepository,
@@ -305,7 +306,7 @@ class AdminJsonService {
     private CommonResponse onSuccessfulWebUpdate(WebConfig config) throws Exception {
         boolean closeCurrentChannelAfterPortChange = false;
         boolean portChangeFailed = false;
-        if (config.port() != httpServer.getPort()) {
+        if (config.port() != checkNotNull(httpServer.getPort())) {
             try {
                 httpServer.changePort(config.port());
                 closeCurrentChannelAfterPortChange = true;
@@ -339,7 +340,7 @@ class AdminJsonService {
                     .activeBindAddress(config.bindAddress())
                     .activeHttps(config.https());
         } else {
-            builder.activePort(httpServer.getPort())
+            builder.activePort(checkNotNull(httpServer.getPort()))
                     .activeBindAddress(httpServer.getBindAddress())
                     .activeHttps(httpServer.getHttps());
         }
