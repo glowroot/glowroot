@@ -113,6 +113,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
                 // (see instrumentation-list.js)
                 classAnnotation: '',
                 subTypeRestriction: '',
+                superTypeRestriction: '',
                 methodAnnotation: '',
                 nestingGroup: '',
                 order: 0,

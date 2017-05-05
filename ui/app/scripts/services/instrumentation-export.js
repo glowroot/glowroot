@@ -26,6 +26,9 @@ glowroot.factory('instrumentationExport', [
       if (!config.subTypeRestriction) {
         delete config.subTypeRestriction;
       }
+      if (!config.superTypeRestriction) {
+        delete config.superTypeRestriction;
+      }
       if (!config.methodAnnotation) {
         delete config.methodAnnotation;
       }

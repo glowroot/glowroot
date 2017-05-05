@@ -324,6 +324,7 @@ class InstrumentationConfigJsonService {
         abstract String className();
         abstract String classAnnotation();
         abstract String subTypeRestriction();
+        abstract String superTypeRestriction();
         // pointcuts with methodDeclaringClassName are no longer supported in 0.9.16, but
         // included here to help with transitioning of old instrumentation config
         //
@@ -358,6 +359,7 @@ class InstrumentationConfigJsonService {
                     .setClassName(className())
                     .setClassAnnotation(classAnnotation())
                     .setSubTypeRestriction(subTypeRestriction())
+                    .setSuperTypeRestriction(superTypeRestriction())
                     // pointcuts with methodDeclaringClassName are no longer supported in 0.9.16,
                     // but included here to help with transitioning of old instrumentation config
                     //
@@ -402,6 +404,7 @@ class InstrumentationConfigJsonService {
                             .className(config.getClassName())
                             .classAnnotation(config.getClassAnnotation())
                             .subTypeRestriction(config.getSubTypeRestriction())
+                            .superTypeRestriction(config.getSuperTypeRestriction())
                             // pointcuts with methodDeclaringClassName are no longer supported in
                             // 0.9.16, but included here to help with transitioning of old
                             // instrumentation config

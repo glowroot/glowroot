@@ -155,6 +155,7 @@ class AdviceGenerator {
         annotationVisitor.visit("className", config.className());
         annotationVisitor.visit("classAnnotation", config.classAnnotation());
         annotationVisitor.visit("subTypeRestriction", config.subTypeRestriction());
+        annotationVisitor.visit("superTypeRestriction", config.superTypeRestriction());
         annotationVisitor.visit("methodName", config.methodName());
         annotationVisitor.visit("methodAnnotation", config.methodAnnotation());
         AnnotationVisitor arrayAnnotationVisitor =
