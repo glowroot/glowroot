@@ -58,6 +58,12 @@ public abstract class InstrumentationConfig {
         return "";
     }
 
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String superTypeRestriction() {
+        return "";
+    }
+
     // pointcuts with methodDeclaringClassName are no longer supported in 0.9.16, but included here
     // to help with transitioning of old instrumentation config
     @Deprecated
@@ -237,6 +243,7 @@ public abstract class InstrumentationConfig {
                         .setClassName(className())
                         .setClassAnnotation(classAnnotation())
                         .setSubTypeRestriction(subTypeRestriction())
+                        .setSuperTypeRestriction(superTypeRestriction())
                         // pointcuts with methodDeclaringClassName are no longer supported in
                         // 0.9.16, but included here to help with transitioning of old
                         // instrumentation config
@@ -277,6 +284,7 @@ public abstract class InstrumentationConfig {
                 .className(config.getClassName())
                 .classAnnotation(config.getClassAnnotation())
                 .subTypeRestriction(config.getSubTypeRestriction())
+                .superTypeRestriction(config.getSuperTypeRestriction())
                 // pointcuts with methodDeclaringClassName are no longer supported in 0.9.16, but
                 // included here to help with transitioning of old instrumentation config
                 .methodDeclaringClassName(config.getMethodDeclaringClassName())

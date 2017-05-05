@@ -162,6 +162,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
         var base = {
           classAnnotation: '',
           subTypeRestriction: '',
+          superTypeRestriction: '',
           methodAnnotation: '',
           methodReturnType: '',
           nestingGroup: '',
