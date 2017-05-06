@@ -34,12 +34,14 @@ import com.google.common.collect.Sets;
 import org.glowroot.central.repo.ConfigDao.AgentConfigUpdater;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
+import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.FatStorageConfig;
+import org.glowroot.common.config.FatWebConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
+import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableFatStorageConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
-import org.glowroot.common.config.ImmutableWebConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
@@ -93,7 +95,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         secretKey = new LazySecretKey(new File("secret"));
 
-        centralConfigDao.addKeyType(WEB_KEY, ImmutableWebConfig.class);
+        centralConfigDao.addKeyType(WEB_KEY, ImmutableCentralWebConfig.class);
         centralConfigDao.addKeyType(STORAGE_KEY, ImmutableCentralStorageConfig.class);
         centralConfigDao.addKeyType(SMTP_KEY, ImmutableSmtpConfig.class);
         centralConfigDao.addKeyType(LDAP_KEY, ImmutableLdapConfig.class);
@@ -312,13 +314,26 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public WebConfig getWebConfig() throws Exception {
-        WebConfig config = (WebConfig) centralConfigDao.read(WEB_KEY);
+        return getCentralWebConfig();
+    }
+
+    @Override
+    public FatWebConfig getFatWebConfig() throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CentralWebConfig getCentralWebConfig() throws Exception {
+        CentralWebConfig config = (CentralWebConfig) centralConfigDao.read(WEB_KEY);
         if (config == null) {
-            return ImmutableWebConfig.builder()
-                    .bindAddress("0.0.0.0")
-                    .build();
+            return ImmutableCentralWebConfig.builder().build();
         }
         return config;
+    }
+
+    @Override
+    public StorageConfig getStorageConfig() throws Exception {
+        return getCentralStorageConfig();
     }
 
     @Override
@@ -922,7 +937,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateWebConfig(WebConfig config, String priorVersion) throws Exception {
+    public void updateFatWebConfig(FatWebConfig config, String priorVersion) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateCentralWebConfig(CentralWebConfig config, String priorVersion)
+            throws Exception {
         centralConfigDao.write(WEB_KEY, config, priorVersion);
     }
 
@@ -945,11 +966,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception {
         centralConfigDao.write(LDAP_KEY, config, priorVersion);
-    }
-
-    @Override
-    public StorageConfig getStorageConfig() throws Exception {
-        return getCentralStorageConfig();
     }
 
     @Override

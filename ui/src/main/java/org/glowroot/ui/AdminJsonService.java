@@ -40,18 +40,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.config.CentralStorageConfig;
+import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.FatStorageConfig;
+import org.glowroot.common.config.FatWebConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
+import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableFatStorageConfig;
+import org.glowroot.common.config.ImmutableFatWebConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.ImmutableUserConfig;
-import org.glowroot.common.config.ImmutableWebConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.UserConfig;
-import org.glowroot.common.config.WebConfig;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
@@ -124,7 +126,11 @@ class AdminJsonService {
 
     @GET(path = "/backend/admin/web", permission = "admin:view:web")
     String getWebConfig() throws Exception {
-        return getWebConfig(false);
+        if (central) {
+            return getCentralWebConfig();
+        } else {
+            return getFatWebConfig(false);
+        }
     }
 
     @GET(path = "/backend/admin/storage", permission = "admin:view:storage")
@@ -162,46 +168,51 @@ class AdminJsonService {
     }
 
     @POST(path = "/backend/admin/web", permission = "admin:edit:web")
-    Object updateWebConfig(@BindRequest WebConfigDto configDto) throws Exception {
-        WebConfig config = configDto.convert();
-        if (httpServer == null) {
-            // running central inside servlet container
+    Object updateWebConfig(@BindRequest String content) throws Exception {
+        if (central) {
+            CentralWebConfigDto configDto =
+                    mapper.readValue(content, ImmutableCentralWebConfigDto.class);
+            CentralWebConfig config = configDto.convert();
             try {
-                configRepository.updateWebConfig(config, configDto.version());
+                configRepository.updateCentralWebConfig(config, configDto.version());
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
-            return getWebConfig(false);
-        }
-        if (config.https() && !httpServer.getHttps()) {
-            // validate certificate and private key exist and are valid
-            File certificateFile = new File(certificateDir, "certificate.pem");
-            if (!certificateFile.exists()) {
-                return "{\"httpsRequiredFilesDoNotExist\":true}";
-            }
-            File privateKeyFile = new File(certificateDir, "private.pem");
-            if (!privateKeyFile.exists()) {
-                return "{\"httpsRequiredFilesDoNotExist\":true}";
+            return getCentralWebConfig();
+        } else {
+            checkNotNull(httpServer);
+            FatWebConfigDto configDto = mapper.readValue(content, ImmutableFatWebConfigDto.class);
+            FatWebConfig config = configDto.convert();
+            if (config.https() && !httpServer.getHttps()) {
+                // validate certificate and private key exist and are valid
+                File certificateFile = new File(certificateDir, "certificate.pem");
+                if (!certificateFile.exists()) {
+                    return "{\"httpsRequiredFilesDoNotExist\":true}";
+                }
+                File privateKeyFile = new File(certificateDir, "private.pem");
+                if (!privateKeyFile.exists()) {
+                    return "{\"httpsRequiredFilesDoNotExist\":true}";
+                }
+                try {
+                    SslContextBuilder.forServer(certificateFile, privateKeyFile);
+                } catch (Exception e) {
+                    logger.debug(e.getMessage(), e);
+                    StringWriter sw = new StringWriter();
+                    JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+                    jg.writeStartObject();
+                    jg.writeStringField("httpsValidationError", e.getMessage());
+                    jg.writeEndObject();
+                    jg.close();
+                    return sw.toString();
+                }
             }
             try {
-                SslContextBuilder.forServer(certificateFile, privateKeyFile);
-            } catch (Exception e) {
-                logger.debug(e.getMessage(), e);
-                StringWriter sw = new StringWriter();
-                JsonGenerator jg = mapper.getFactory().createGenerator(sw);
-                jg.writeStartObject();
-                jg.writeStringField("httpsValidationError", e.getMessage());
-                jg.writeEndObject();
-                jg.close();
-                return sw.toString();
+                configRepository.updateFatWebConfig(config, configDto.version());
+            } catch (OptimisticLockException e) {
+                throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
+            return onSuccessfulFatWebUpdate(config);
         }
-        try {
-            configRepository.updateWebConfig(config, configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return onSuccessfulWebUpdate(config);
     }
 
     @POST(path = "/backend/admin/storage", permission = "admin:edit:storage")
@@ -303,7 +314,7 @@ class AdminJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private CommonResponse onSuccessfulWebUpdate(WebConfig config) throws Exception {
+    private CommonResponse onSuccessfulFatWebUpdate(FatWebConfig config) throws Exception {
         boolean closeCurrentChannelAfterPortChange = false;
         boolean portChangeFailed = false;
         if (config.port() != checkNotNull(httpServer.getPort())) {
@@ -321,7 +332,7 @@ class AdminJsonService {
             httpServer.changeProtocol(config.https());
             closeCurrentChannelAfterPortChange = true;
         }
-        String responseText = getWebConfig(portChangeFailed);
+        String responseText = getFatWebConfig(portChangeFailed);
         CommonResponse response = new CommonResponse(OK, MediaType.JSON_UTF_8, responseText);
         if (closeCurrentChannelAfterPortChange) {
             response.setCloseConnectionAfterPortChange();
@@ -329,10 +340,10 @@ class AdminJsonService {
         return response;
     }
 
-    private String getWebConfig(boolean portChangeFailed) throws Exception {
-        WebConfig config = configRepository.getWebConfig();
-        ImmutableWebConfigResponse.Builder builder = ImmutableWebConfigResponse.builder()
-                .config(WebConfigDto.create(config))
+    private String getFatWebConfig(boolean portChangeFailed) throws Exception {
+        FatWebConfig config = configRepository.getFatWebConfig();
+        ImmutableFatWebConfigResponse.Builder builder = ImmutableFatWebConfigResponse.builder()
+                .config(FatWebConfigDto.create(config))
                 .certificateDir(certificateDir.getAbsolutePath())
                 .portChangeFailed(portChangeFailed);
         if (httpServer == null) {
@@ -345,6 +356,12 @@ class AdminJsonService {
                     .activeHttps(httpServer.getHttps());
         }
         return mapper.writeValueAsString(builder.build());
+    }
+
+    private String getCentralWebConfig() throws Exception {
+        return mapper.writeValueAsString(ImmutableCentralWebConfigResponse.builder()
+                .config(CentralWebConfigDto.create(configRepository.getCentralWebConfig()))
+                .build());
     }
 
     private static String createErrorResponse(@Nullable String message) throws IOException {
@@ -365,13 +382,18 @@ class AdminJsonService {
     }
 
     @Value.Immutable
-    interface WebConfigResponse {
-        WebConfigDto config();
+    interface FatWebConfigResponse {
+        FatWebConfigDto config();
         int activePort();
         String activeBindAddress();
         boolean activeHttps();
         String certificateDir();
         boolean portChangeFailed();
+    }
+
+    @Value.Immutable
+    interface CentralWebConfigResponse {
+        CentralWebConfigDto config();
     }
 
     @Value.Immutable
@@ -387,7 +409,7 @@ class AdminJsonService {
     }
 
     @Value.Immutable
-    abstract static class WebConfigDto {
+    abstract static class FatWebConfigDto {
 
         abstract int port();
         abstract String bindAddress();
@@ -397,8 +419,8 @@ class AdminJsonService {
         abstract String sessionCookieName();
         abstract String version();
 
-        private WebConfig convert() throws Exception {
-            return ImmutableWebConfig.builder()
+        private FatWebConfig convert() throws Exception {
+            return ImmutableFatWebConfig.builder()
                     .port(port())
                     .bindAddress(bindAddress())
                     .https(https())
@@ -408,12 +430,35 @@ class AdminJsonService {
                     .build();
         }
 
-        private static WebConfigDto create(WebConfig config) {
-            return ImmutableWebConfigDto.builder()
+        private static FatWebConfigDto create(FatWebConfig config) {
+            return ImmutableFatWebConfigDto.builder()
                     .port(config.port())
                     .bindAddress(config.bindAddress())
                     .https(config.https())
                     .contextPath(config.contextPath())
+                    .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
+                    .sessionCookieName(config.sessionCookieName())
+                    .version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class CentralWebConfigDto {
+
+        abstract int sessionTimeoutMinutes();
+        abstract String sessionCookieName();
+        abstract String version();
+
+        private CentralWebConfig convert() throws Exception {
+            return ImmutableCentralWebConfig.builder()
+                    .sessionTimeoutMinutes(sessionTimeoutMinutes())
+                    .sessionCookieName(sessionCookieName())
+                    .build();
+        }
+
+        private static CentralWebConfigDto create(CentralWebConfig config) {
+            return ImmutableCentralWebConfigDto.builder()
                     .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
                     .sessionCookieName(config.sessionCookieName())
                     .version(config.version())

@@ -29,17 +29,17 @@ import org.junit.Test;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.CentralStorageConfig;
+import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
+import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.ImmutableUserConfig;
-import org.glowroot.common.config.ImmutableWebConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.UserConfig;
-import org.glowroot.common.config.WebConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -500,16 +500,15 @@ public class ConfigRepositoryIT {
     @Test
     public void shouldUpdateWebConfig() throws Exception {
         // given
-        WebConfig config = configRepository.getWebConfig();
-        WebConfig updatedConfig = ImmutableWebConfig.builder()
-                .port(4001)
+        CentralWebConfig config = configRepository.getCentralWebConfig();
+        CentralWebConfig updatedConfig = ImmutableCentralWebConfig.builder()
                 .sessionTimeoutMinutes(31)
                 .sessionCookieName("GLOWROOT_SESSION_ID2")
                 .build();
 
         // when
-        configRepository.updateWebConfig(updatedConfig, config.version());
-        config = configRepository.getWebConfig();
+        configRepository.updateCentralWebConfig(updatedConfig, config.version());
+        config = configRepository.getCentralWebConfig();
 
         // then
         assertThat(config).isEqualTo(updatedConfig);

@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -44,8 +45,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.common.repo.ConfigRepository;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -69,8 +68,9 @@ class HttpServer {
     private volatile @MonotonicNonNull Channel serverChannel;
     private volatile @MonotonicNonNull Integer port;
 
-    HttpServer(String bindAddress, int numWorkerThreads, ConfigRepository configRepository,
-            CommonHandler commonHandler, File certificateDir) throws Exception {
+    HttpServer(String bindAddress, boolean https, Supplier<String> contextPathSupplier,
+            int numWorkerThreads, CommonHandler commonHandler, File certificateDir)
+            throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -85,9 +85,9 @@ class HttpServer {
         bossGroup = new NioEventLoopGroup(1, bossThreadFactory);
         workerGroup = new NioEventLoopGroup(numWorkerThreads, workerThreadFactory);
 
-        final HttpServerHandler handler = new HttpServerHandler(configRepository, commonHandler);
+        final HttpServerHandler handler = new HttpServerHandler(contextPathSupplier, commonHandler);
 
-        if (configRepository.getWebConfig().https()) {
+        if (https) {
             sslContext = SslContextBuilder
                     .forServer(new File(certificateDir, "certificate.pem"),
                             new File(certificateDir, "private.pem"))

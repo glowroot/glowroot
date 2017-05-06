@@ -35,67 +35,80 @@ glowroot.controller('AdminWebCtrl', [
       $scope.loaded = true;
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
-      $scope.activePort = data.activePort;
-      $scope.activeBindAddress = data.activeBindAddress;
-      $scope.activeHttps = data.activeHttps;
-      $scope.certificateDir = data.certificateDir;
+      if (!$scope.layout.central) {
+        $scope.activePort = data.activePort;
+        $scope.activeBindAddress = data.activeBindAddress;
+        $scope.activeHttps = data.activeHttps;
+        $scope.certificateDir = data.certificateDir;
+      }
     }
 
     $scope.save = function (deferred) {
       // another copy to modify for the http post data
       var postData = angular.copy($scope.config);
-      var changingPort = $scope.config.port !== $scope.activePort;
-      var previousActivePort = $scope.activePort;
-      var changingHttps = $scope.config.https !== $scope.activeHttps;
-      $http.post('backend/admin/web', postData)
-          .then(function (response) {
-            var data = response.data;
-            if (data.httpsRequiredFilesDoNotExist) {
-              deferred.reject('The SSL certificate and private key to be used must be placed in the glowroot directory'
-                  + ' with filenames certificate.pem and private.pem before enabling HTTPS');
-              return;
-            }
-            if (data.httpsValidationError) {
-              deferred.reject(data.httpsValidationError);
-              return;
-            }
-            if (data.portChangeFailed) {
-              deferred.reject('Save succeeded, but switching over to the new port failed');
-              return;
-            }
-            onNewData(data);
-            if (!changingPort && !changingHttps) {
-              // normal path
+      if ($scope.layout.central) {
+        $http.post('backend/admin/web', postData)
+            .then(function (response) {
+              var data = response.data;
+              onNewData(data);
               deferred.resolve('Saved');
-              return;
-            }
-            var text;
-            if (changingPort && !changingHttps) {
-              text = 'port';
-            } else if (!changingPort && changingHttps) {
-              text = 'protocol';
-            } else {
-              text = 'port and protocol';
-            }
-            if ($location.port() !== previousActivePort) {
-              deferred.reject('The save succeeded, and switching the http listener over to the new port succeeded,'
-                  + ' but you are not being redirected to the new ' + text + ' since it seems you are using an'
-                  + ' intermediary proxy?');
-              return;
-            }
-            deferred.resolve('Saved, redirecting to new ' + text + ' ...');
-            $timeout(function () {
-              var newProtocol = data.activeHttps ? 'https' : 'http';
-              var newUrl = newProtocol + '://' + $location.host();
-              if (data.activePort !== 80) {
-                newUrl += ':' + data.activePort;
+            }, function (response) {
+              httpErrors.handle(response, $scope, deferred);
+            });
+      } else {
+        var changingPort = $scope.config.port !== $scope.activePort;
+        var previousActivePort = $scope.activePort;
+        var changingHttps = $scope.config.https !== $scope.activeHttps;
+        $http.post('backend/admin/web', postData)
+            .then(function (response) {
+              var data = response.data;
+              if (data.httpsRequiredFilesDoNotExist) {
+                deferred.reject('The SSL certificate and private key to be used must be placed in the glowroot directory'
+                    + ' with filenames certificate.pem and private.pem before enabling HTTPS');
+                return;
               }
-              newUrl += $location.path();
-              document.location.href = newUrl;
-            }, 500);
-          }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
-          });
+              if (data.httpsValidationError) {
+                deferred.reject(data.httpsValidationError);
+                return;
+              }
+              if (data.portChangeFailed) {
+                deferred.reject('Save succeeded, but switching over to the new port failed');
+                return;
+              }
+              onNewData(data);
+              if (!changingPort && !changingHttps) {
+                // normal path
+                deferred.resolve('Saved');
+                return;
+              }
+              var text;
+              if (changingPort && !changingHttps) {
+                text = 'port';
+              } else if (!changingPort && changingHttps) {
+                text = 'protocol';
+              } else {
+                text = 'port and protocol';
+              }
+              if ($location.port() !== previousActivePort) {
+                deferred.reject('The save succeeded, and switching the http listener over to the new port succeeded,'
+                    + ' but you are not being redirected to the new ' + text + ' since it seems you are using an'
+                    + ' intermediary proxy?');
+                return;
+              }
+              deferred.resolve('Saved, redirecting to new ' + text + ' ...');
+              $timeout(function () {
+                var newProtocol = data.activeHttps ? 'https' : 'http';
+                var newUrl = newProtocol + '://' + $location.host();
+                if (data.activePort !== 80) {
+                  newUrl += ':' + data.activePort;
+                }
+                newUrl += $location.path();
+                document.location.href = newUrl;
+              }, 500);
+            }, function (response) {
+              httpErrors.handle(response, $scope, deferred);
+            });
+      }
     };
 
     $http.get('backend/admin/web')

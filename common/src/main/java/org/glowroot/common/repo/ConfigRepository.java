@@ -25,7 +25,9 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
+import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.FatStorageConfig;
+import org.glowroot.common.config.FatWebConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
@@ -131,6 +133,12 @@ public interface ConfigRepository {
 
     WebConfig getWebConfig() throws Exception;
 
+    FatWebConfig getFatWebConfig() throws Exception;
+
+    CentralWebConfig getCentralWebConfig() throws Exception;
+
+    StorageConfig getStorageConfig() throws Exception;
+
     FatStorageConfig getFatStorageConfig() throws Exception;
 
     CentralStorageConfig getCentralStorageConfig() throws Exception;
@@ -214,7 +222,9 @@ public interface ConfigRepository {
 
     void deleteRoleConfig(String name) throws Exception;
 
-    void updateWebConfig(WebConfig config, String priorVersion) throws Exception;
+    void updateFatWebConfig(FatWebConfig config, String priorVersion) throws Exception;
+
+    void updateCentralWebConfig(CentralWebConfig config, String priorVersion) throws Exception;
 
     void updateFatStorageConfig(FatStorageConfig config, String priorVersion) throws Exception;
 
@@ -224,8 +234,6 @@ public interface ConfigRepository {
     void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception;
 
     void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception;
-
-    StorageConfig getStorageConfig() throws Exception;
 
     long getGaugeCollectionIntervalMillis();
 

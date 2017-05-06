@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.MediaType;
 import io.netty.buffer.ByteBuf;
@@ -51,7 +52,6 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.ui.CommonHandler.CommonRequest;
 import org.glowroot.ui.CommonHandler.CommonResponse;
 
@@ -69,15 +69,15 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private final ChannelGroup allChannels;
 
-    private final ConfigRepository configRepository;
+    private final Supplier<String> contextPathSupplier;
 
     private final CommonHandler commonHandler;
 
     private final ThreadLocal</*@Nullable*/ Channel> currentChannel =
             new ThreadLocal</*@Nullable*/ Channel>();
 
-    HttpServerHandler(ConfigRepository configRepository, CommonHandler commonHandler) {
-        this.configRepository = configRepository;
+    HttpServerHandler(Supplier<String> contextPathSupplier, CommonHandler commonHandler) {
+        this.contextPathSupplier = contextPathSupplier;
         this.commonHandler = commonHandler;
         allChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     }
@@ -124,7 +124,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         currentChannel.set(channel);
         try {
-            String contextPath = configRepository.getWebConfig().contextPath();
+            String contextPath = contextPathSupplier.get();
             boolean keepAlive = HttpUtil.isKeepAlive(request);
             if (!uri.startsWith(contextPath)) {
                 DefaultFullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, FOUND);

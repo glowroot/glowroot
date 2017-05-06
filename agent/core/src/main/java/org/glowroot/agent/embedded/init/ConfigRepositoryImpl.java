@@ -44,13 +44,15 @@ import org.glowroot.agent.config.UiConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
+import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.FatStorageConfig;
+import org.glowroot.common.config.FatWebConfig;
 import org.glowroot.common.config.ImmutableFatStorageConfig;
+import org.glowroot.common.config.ImmutableFatWebConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.ImmutableUserConfig;
-import org.glowroot.common.config.ImmutableWebConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
@@ -82,7 +84,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     private volatile ImmutableList<UserConfig> userConfigs;
     private volatile ImmutableList<RoleConfig> roleConfigs;
-    private volatile WebConfig webConfig;
+    private volatile FatWebConfig webConfig;
     private volatile FatStorageConfig storageConfig;
     private volatile SmtpConfig smtpConfig;
     private volatile LdapConfig ldapConfig;
@@ -135,9 +137,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
                             "agent:config", "admin")
                     .build());
         }
-        WebConfig webConfig = configService.getAdminConfig(WEB_KEY, ImmutableWebConfig.class);
+        FatWebConfig webConfig = configService.getAdminConfig(WEB_KEY, ImmutableFatWebConfig.class);
         if (webConfig == null) {
-            this.webConfig = ImmutableWebConfig.builder().build();
+            this.webConfig = ImmutableFatWebConfig.builder().build();
         } else {
             this.webConfig = webConfig;
         }
@@ -345,7 +347,22 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public WebConfig getWebConfig() {
+        return getFatWebConfig();
+    }
+
+    @Override
+    public FatWebConfig getFatWebConfig() {
         return webConfig;
+    }
+
+    @Override
+    public CentralWebConfig getCentralWebConfig() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public StorageConfig getStorageConfig() {
+        return getFatStorageConfig();
     }
 
     @Override
@@ -803,12 +820,17 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateWebConfig(WebConfig config, String priorVersion) throws Exception {
+    public void updateFatWebConfig(FatWebConfig config, String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(webConfig.version(), priorVersion);
             configService.updateAdminConfig(WEB_KEY, config);
             webConfig = config;
         }
+    }
+
+    @Override
+    public void updateCentralWebConfig(CentralWebConfig config, String priorVersion) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -842,11 +864,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
             configService.updateAdminConfig(LDAP_KEY, config);
             ldapConfig = config;
         }
-    }
-
-    @Override
-    public StorageConfig getStorageConfig() {
-        return getFatStorageConfig();
     }
 
     @Override
@@ -892,7 +909,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
                 .addPermissions("agent:transaction", "agent:error", "agent:jvm",
                         "agent:config:view", "agent:config:edit", "admin")
                 .build());
-        webConfig = ImmutableWebConfig.builder().build();
+        webConfig = ImmutableFatWebConfig.builder().build();
         storageConfig = ImmutableFatStorageConfig.builder().build();
         smtpConfig = ImmutableSmtpConfig.builder().build();
         ldapConfig = ImmutableLdapConfig.builder().build();

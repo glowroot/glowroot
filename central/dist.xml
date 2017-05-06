@@ -21,9 +21,15 @@
   </dependencySets>
   <fileSets>
     <fileSet>
-      <directory>src/main/webapp/META-INF</directory>
+      <directory>src/main/conf</directory>
       <includes>
         <include>glowroot-central.properties</include>
+      </includes>
+      <outputDirectory></outputDirectory>
+    </fileSet>
+    <fileSet>
+      <directory>src/main/webapp/META-INF</directory>
+      <includes>
         <include>LICENSE</include>
         <include>NOTICE</include>
       </includes>

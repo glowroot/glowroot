@@ -22,11 +22,16 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.immutables.builder.Builder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.FatWebConfig;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveTraceRepository;
@@ -50,6 +55,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class UiModule {
 
+    private static final Logger logger = LoggerFactory.getLogger(UiModule.class);
+
     // non-null when using netty
     private final @Nullable HttpServer httpServer;
 
@@ -61,6 +68,10 @@ public class UiModule {
             boolean central,
             boolean servlet,
             boolean offline,
+            @Nullable String bindAddress, // only used for central
+            @Nullable Integer port, // only used for central
+            @Nullable Boolean https, // only used for central
+            @Nullable String contextPath, // only used for central
             File certificateDir,
             File logDir,
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
@@ -174,12 +185,33 @@ public class UiModule {
         if (servlet) {
             return new UiModule(commonHandler);
         } else {
-            String bindAddress = configRepository.getWebConfig().bindAddress();
-            int port = configRepository.getWebConfig().port();
-            HttpServer httpServer = new HttpServer(bindAddress, numWorkerThreads, configRepository,
-                    commonHandler, certificateDir);
+            HttpServer httpServer;
+            int initialPort;
+            if (central) {
+                httpServer = new HttpServer(checkNotNull(bindAddress), checkNotNull(https),
+                        Suppliers.ofInstance(checkNotNull(contextPath)), numWorkerThreads,
+                        commonHandler, certificateDir);
+                initialPort = checkNotNull(port);
+            } else {
+                final FatWebConfig initialWebConfig = configRepository.getFatWebConfig();
+                Supplier<String> contextPathSupplier = new Supplier<String>() {
+                    @Override
+                    public String get() {
+                        try {
+                            return configRepository.getFatWebConfig().contextPath();
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                            return initialWebConfig.contextPath();
+                        }
+                    }
+                };
+                httpServer = new HttpServer(initialWebConfig.bindAddress(),
+                        initialWebConfig.https(), contextPathSupplier, numWorkerThreads,
+                        commonHandler, certificateDir);
+                initialPort = initialWebConfig.port();
+            }
             adminJsonService.setHttpServer(httpServer);
-            httpServer.bindEventually(port);
+            httpServer.bindEventually(initialPort);
             return new UiModule(httpServer);
         }
     }

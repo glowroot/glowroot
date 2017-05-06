@@ -15,10 +15,30 @@
  */
 package org.glowroot.common.config;
 
-public interface WebConfig {
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.immutables.value.Value;
+
+import org.glowroot.common.util.Versions;
+
+@Value.Immutable
+public abstract class CentralWebConfig implements WebConfig {
 
     // timeout 0 means sessions do not time out (except on jvm restart)
-    int sessionTimeoutMinutes();
+    @Override
+    @Value.Default
+    public int sessionTimeoutMinutes() {
+        return 30;
+    }
 
-    String sessionCookieName();
+    @Override
+    @Value.Default
+    public String sessionCookieName() {
+        return "GLOWROOT_SESSION_ID";
+    }
+
+    @Value.Derived
+    @JsonIgnore
+    public String version() {
+        return Versions.getJsonVersion(this);
+    }
 }

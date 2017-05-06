@@ -35,7 +35,7 @@
            gt-width="7em"
            gt-col-class1="col-lg-4"
            gt-col-class2="col-lg-8"
-           ng-if="!layout.servlet">
+           ng-if="!layout.central">
         <div class="help-block">
           <div class="gt-yellow"
                ng-show="originalConfig.port !== activePort"
@@ -53,7 +53,7 @@
            gt-width="7em"
            gt-col-class1="col-lg-4"
            gt-col-class2="col-lg-8"
-           ng-if="!layout.servlet">
+           ng-if="!layout.central">
         <div class="help-block">
           <div class="gt-yellow"
                ng-show="originalConfig.bindAddress !== activeBindAddress"
@@ -73,7 +73,7 @@
            gt-disabled="!layout.adminEdit"
            gt-col-class1="col-lg-4"
            gt-col-class2="col-lg-8"
-           ng-if="!layout.servlet">
+           ng-if="!layout.central">
         <div class="help-block">
           <div class="gt-yellow"
                ng-show="originalConfig.https !== activeHttps"
@@ -81,7 +81,7 @@
             Active value is <code>{{activeHttps}}</code>.
           </div>
           Serve the user interface over HTTPS. The SSL certificate and private key to be used must be placed in the
-          {{certificateDir}} with filenames <em>certificate.pem</em> and
+          {{certificateDir}} directory with filenames <em>certificate.pem</em> and
           <em>private.pem</em> before enabling HTTPS. The private key should not have a passphrase.
           E.g. a self signed certificate can be generated at the command line using
           <em>openssl req -new -x509 -nodes -days 365 -out certificate.pem -keyout private.pem</em>
@@ -96,7 +96,7 @@
            gt-width="15em"
            gt-col-class1="col-lg-4"
            gt-col-class2="col-lg-8"
-           ng-if="!layout.servlet">
+           ng-if="!layout.central">
         <div class="help-block">
           This only needs to be changed if reverse proxying the user interface behind a non-root context path.
         </div>

@@ -72,8 +72,6 @@ import org.glowroot.central.repo.TriggeredAlertDao;
 import org.glowroot.central.repo.UserDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
-import org.glowroot.common.config.ImmutableWebConfig;
-import org.glowroot.common.config.WebConfig;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.AlertingService;
@@ -155,12 +153,15 @@ class CentralModule {
 
             KeyspaceMetadata keyspace =
                     cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace());
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace, config != null);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating cassandra schema...");
             } else {
                 schemaUpgrade.upgrade();
+            }
+            if (schemaUpgrade.reloadCentralConfiguration()) {
+                centralConfig = getCentralConfiguration(centralDir);
             }
             CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
             AgentDao agentDao = new AgentDao(session, clusterManager);
@@ -174,26 +175,6 @@ class CentralModule {
                 schemaUpgrade.updateToMoreRecentCassandraOptions(
                         configRepository.getCentralStorageConfig());
             }
-
-            if (config == null) {
-                String uiBindAddressOverride = centralConfig.uiBindAddressOverride();
-                Integer uiPortOverride = centralConfig.uiPortOverride();
-                if (uiBindAddressOverride != null || uiPortOverride != null) {
-                    // TODO supplying ui.bindAddress in glowroot-central.properties should make the
-                    // bind address non-editable in admin UI, and supplying ui.port in
-                    // glowroot-central.properties should make the port non-editable in admin UI
-                    WebConfig webConfig = configRepository.getWebConfig();
-                    ImmutableWebConfig updatedWebConfig = ImmutableWebConfig.copyOf(webConfig);
-                    if (uiBindAddressOverride != null) {
-                        updatedWebConfig = updatedWebConfig.withBindAddress(uiBindAddressOverride);
-                    }
-                    if (uiPortOverride != null) {
-                        updatedWebConfig = updatedWebConfig.withPort(uiPortOverride);
-                    }
-                    configRepository.updateWebConfig(updatedWebConfig, webConfig.version());
-                }
-            }
-
             TransactionTypeDao transactionTypeDao =
                     new TransactionTypeDao(session, configRepository, clusterManager);
             FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
@@ -242,6 +223,10 @@ class CentralModule {
                     .central(true)
                     .servlet(config != null)
                     .offline(false)
+                    .bindAddress(centralConfig.uiBindAddress())
+                    .port(centralConfig.uiPort())
+                    .https(centralConfig.uiHttps())
+                    .contextPath(centralConfig.uiContextPath())
                     .certificateDir(centralDir)
                     .logDir(centralDir)
                     .clock(clock)
@@ -415,11 +400,19 @@ class CentralModule {
         }
         String uiBindAddress = props.getProperty("ui.bindAddress");
         if (!Strings.isNullOrEmpty(uiBindAddress)) {
-            builder.uiBindAddressOverride(uiBindAddress);
+            builder.uiBindAddress(uiBindAddress);
         }
         String uiPortText = props.getProperty("ui.port");
         if (!Strings.isNullOrEmpty(uiPortText)) {
-            builder.uiPortOverride(Integer.parseInt(uiPortText));
+            builder.uiPort(Integer.parseInt(uiPortText));
+        }
+        String uiHttpsText = props.getProperty("ui.https");
+        if (!Strings.isNullOrEmpty(uiHttpsText)) {
+            builder.uiHttps(Boolean.parseBoolean(uiHttpsText));
+        }
+        String uiContextPath = props.getProperty("ui.contextPath");
+        if (!Strings.isNullOrEmpty(uiContextPath)) {
+            builder.uiContextPath(uiContextPath);
         }
         for (String propName : props.stringPropertyNames()) {
             if (propName.startsWith("jgroups.")) {
@@ -568,9 +561,25 @@ class CentralModule {
             return 8181;
         }
 
-        abstract @Nullable String uiBindAddressOverride();
+        @Value.Default
+        String uiBindAddress() {
+            return "0.0.0.0";
+        }
 
-        abstract @Nullable Integer uiPortOverride();
+        @Value.Default
+        int uiPort() {
+            return 4000;
+        }
+
+        @Value.Default
+        boolean uiHttps() {
+            return false;
+        }
+
+        @Value.Default
+        String uiContextPath() {
+            return "/";
+        }
 
         abstract Map<String, String> jgroupsProperties();
     }

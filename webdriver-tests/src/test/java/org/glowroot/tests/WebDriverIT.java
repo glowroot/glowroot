@@ -126,11 +126,7 @@ public abstract class WebDriverIT {
         deleteAllInstrumentation();
         resetUsers();
         resetRoles();
-        resetCentralConfigAdmin("web", "{\"port\":" + getUiPort()
-                + ",\"bindAddress\":\"127.0.0.1\","
-                + "\"https\":true,"
-                + "\"contextPath\":\"/\","
-                + "\"sessionTimeoutMinutes\":30,"
+        resetCentralConfigAdmin("web", "{\"sessionTimeoutMinutes\":30,"
                 + "\"sessionCookieName\":\"GLOWROOT_SESSION_ID\","
                 + "\"version\":\"$version\"}");
         resetCentralConfigAdmin("storage", "{\"rollupExpirationHours\":[72,336,2160,17520],"

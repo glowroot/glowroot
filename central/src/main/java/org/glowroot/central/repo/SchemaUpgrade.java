@@ -15,10 +15,14 @@
  */
 package org.glowroot.central.repo;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,6 +37,8 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
@@ -48,7 +54,10 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ConfigDefaults;
+import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.PermissionParser;
+import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
@@ -66,20 +75,26 @@ public class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 20;
+    private static final ObjectMapper mapper = ObjectMappers.create();
+
+    private static final int CURR_SCHEMA_VERSION = 21;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
     private final KeyspaceMetadata keyspace;
+    private final boolean servlet;
 
     private final PreparedStatement insertPS;
     private final @Nullable Integer initialSchemaVersion;
 
-    public SchemaUpgrade(Session session, KeyspaceMetadata keyspace) {
+    private boolean reloadCentralConfiguration;
+
+    public SchemaUpgrade(Session session, KeyspaceMetadata keyspace, boolean servlet) {
         this.session = session;
         this.keyspace = keyspace;
+        this.servlet = servlet;
 
         session.execute("create table if not exists schema_version (one int, schema_version int,"
                 + " primary key (one)) " + WITH_LCS);
@@ -92,7 +107,7 @@ public class SchemaUpgrade {
         return initialSchemaVersion;
     }
 
-    public void upgrade() throws InterruptedException {
+    public void upgrade() throws Exception {
         checkNotNull(initialSchemaVersion);
         if (initialSchemaVersion == CURR_SCHEMA_VERSION) {
             return;
@@ -179,9 +194,17 @@ public class SchemaUpgrade {
             yetAnotherRedoOnTriggeredAlertTable();
             updateSchemaVersion(20);
         }
+        if (initialSchemaVersion < 21) {
+            updateWebConfig();
+            updateSchemaVersion(21);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded cassandra schema to version {}", CURR_SCHEMA_VERSION);
+    }
+
+    public boolean reloadCentralConfiguration() {
+        return reloadCentralConfiguration;
     }
 
     public void updateSchemaVersionToCurent() {
@@ -682,6 +705,40 @@ public class SchemaUpgrade {
                 + WITH_LCS);
     }
 
+    private void updateWebConfig() throws IOException {
+        ResultSet results = session.execute("select value from central_config where key = 'web'");
+        Row row = results.one();
+        JsonNode webConfigNode;
+        if (row == null) {
+            webConfigNode = mapper.createObjectNode();
+        } else {
+            String webConfigText = row.getString(0);
+            if (webConfigText == null) {
+                webConfigNode = mapper.createObjectNode();
+            } else {
+                webConfigNode = mapper.readTree(webConfigText);
+            }
+        }
+        if (!servlet && updateCentralConfigurationPropertiesFile(webConfigNode)) {
+            reloadCentralConfiguration = true;
+        }
+        ImmutableCentralWebConfig.Builder builder = ImmutableCentralWebConfig.builder();
+        JsonNode sessionTimeoutMinutesNode = webConfigNode.get("sessionTimeoutMinutes");
+        if (sessionTimeoutMinutesNode != null) {
+            builder.sessionTimeoutMinutes(sessionTimeoutMinutesNode.intValue());
+        }
+        JsonNode sessionCookieNameNode = webConfigNode.get("sessionCookieName");
+        if (sessionCookieNameNode != null) {
+            builder.sessionCookieName(sessionCookieNameNode.asText());
+        }
+        String updatedWebConfigText = mapper.writeValueAsString(builder.build());
+        PreparedStatement preparedStatement =
+                session.prepare("insert into central_config (key, value) values ('web', ?)");
+        BoundStatement boundStatement = preparedStatement.bind();
+        boundStatement.setString(0, updatedWebConfigText);
+        session.execute(boundStatement);
+    }
+
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType) {
         if (!columnExists(tableName, columnName)) {
             session.execute("alter table " + tableName + " add " + columnName + " " + cqlType);
@@ -796,6 +853,93 @@ public class SchemaUpgrade {
             }
         }
         return permissionsToBeAdded;
+    }
+
+    private static boolean updateCentralConfigurationPropertiesFile(JsonNode webConfigNode)
+            throws IOException {
+        String bindAddressText = "";
+        JsonNode bindAddressNode = webConfigNode.get("bindAddress");
+        if (bindAddressNode != null && !bindAddressNode.asText().equals("0.0.0.0")) {
+            bindAddressText = bindAddressNode.asText();
+        }
+        String portText = "";
+        JsonNode portNode = webConfigNode.get("port");
+        if (portNode != null && portNode.intValue() != 4000) {
+            portText = portNode.asText();
+        }
+        String httpsText = "";
+        JsonNode httpsNode = webConfigNode.get("https");
+        if (httpsNode != null && httpsNode.booleanValue()) {
+            httpsText = "true";
+        }
+        String contextPathText = "";
+        JsonNode contextPathNode = webConfigNode.get("contextPath");
+        if (contextPathNode != null && !contextPathNode.asText().equals("/")) {
+            contextPathText = contextPathNode.asText();
+        }
+        File propFile = new File("glowroot-central.properties");
+        if (!propFile.exists()) {
+            startupLogger.warn("glowroot-central.properties file does not exist, so not"
+                    + " populating ui properties");
+            return false;
+        }
+        Properties props = PropertiesFiles.load(propFile);
+        StringBuilder sb = new StringBuilder();
+        if (!props.containsKey("ui.bindAddress")) {
+            sb.append("\n");
+            sb.append("# default is ui.bindAddress=0.0.0.0\n");
+            sb.append("ui.bindAddress=");
+            sb.append(bindAddressText);
+            sb.append("\n");
+        }
+        if (!props.containsKey("ui.port")) {
+            sb.append("\n");
+            sb.append("# default is ui.port=4000\n");
+            sb.append("ui.port=");
+            sb.append(portText);
+            sb.append("\n");
+        }
+        if (!props.containsKey("ui.https")) {
+            sb.append("\n");
+            sb.append("# default is to serve the UI over http\n");
+            sb.append("# set this to \"true\" to serve the UI over https\n");
+            sb.append("# the SSL certificate and private key to be used must be placed in the same"
+                    + " directory as this\n");
+            sb.append("# properties file, with filenames \"certificate.pem\" and \"private.pem\","
+                    + " and the private key must not\n");
+            sb.append("# have a passphrase.\n");
+            sb.append("# (for example, a self signed certificate can be generated at the command"
+                    + " line using\n");
+            sb.append("# \"openssl req -new -x509 -nodes -days 365 -out certificate.pem -keyout"
+                    + " private.pem\")\n");
+            sb.append("ui.https=");
+            sb.append(httpsText);
+            sb.append("\n");
+        }
+        if (!props.containsKey("ui.contextPath")) {
+            sb.append("\n");
+            sb.append("# default is ui.contextPath=/\n");
+            sb.append("# this only needs to be changed if reverse proxying the UI behind a non-root"
+                    + " context path\n");
+            sb.append("ui.contextPath=");
+            sb.append(contextPathText);
+            sb.append("\n");
+        }
+        if (sb.length() == 0) {
+            // glowroot-central.properties file has been updated
+            return false;
+        }
+        if (props.containsKey("jgroups.configurationFile")) {
+            startupLogger.error("When running in a cluster, you must manually upgrade"
+                    + " the glowroot-central.properties files on each node to add the following"
+                    + " properties:\n\n" + sb + "\n\n");
+            throw new IllegalStateException(
+                    "Glowroot central could not start, see error message above for instructions");
+        }
+        FileWriter out = new FileWriter(propFile, true);
+        out.write(sb.toString());
+        out.close();
+        return true;
     }
 
     private static @Nullable Integer getSchemaVersion(Session session, KeyspaceMetadata keyspace) {
