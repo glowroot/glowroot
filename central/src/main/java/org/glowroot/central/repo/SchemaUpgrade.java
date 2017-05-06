@@ -97,6 +97,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion == CURR_SCHEMA_VERSION) {
             return;
         }
+        if (initialSchemaVersion > CURR_SCHEMA_VERSION) {
+            startupLogger.warn("running an older version of glowroot central on a newer glowroot"
+                    + " central schema, this could be problematic");
+            return;
+        }
         startupLogger.info("upgrading cassandra schema from version {}...", initialSchemaVersion);
         // 0.9.1 to 0.9.2
         if (initialSchemaVersion < 2) {
