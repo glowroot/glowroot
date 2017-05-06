@@ -179,7 +179,8 @@ public class MainEntryPoint {
         File propFile = new File(glowrootDir, "glowroot.properties");
         if (propFile.exists()) {
             // upgrade from 0.9.6 to 0.9.7
-            PropertiesFiles.upgradeIfNeeded(propFile, "agent.rollup=", "agent.rollup.id=");
+            PropertiesFiles.upgradeIfNeeded(propFile,
+                    ImmutableMap.of("agent.rollup=", "agent.rollup.id="));
             // upgrade from 0.9.13 to 0.9.14
             upgradeToCollectorAddressIfNeeded(propFile);
             Properties props = PropertiesFiles.load(propFile);

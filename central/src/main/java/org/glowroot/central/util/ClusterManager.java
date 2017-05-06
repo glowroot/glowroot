@@ -22,10 +22,11 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
@@ -41,22 +42,27 @@ import org.infinispan.util.function.TriConsumer;
 
 import org.glowroot.central.util.Cache.CacheLoader;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class ClusterManager {
 
     public static ClusterManager create() {
-        return create(null, null, ImmutableMap.of());
+        return new NonClusterManager();
     }
 
-    public static ClusterManager create(@Nullable File centralDir,
-            @Nullable String jgroupsConfigurationFile, Map<String, String> jgroupProperties) {
-        if (jgroupsConfigurationFile == null) {
-            return new NonClusterManager();
+    public static ClusterManager create(File centralDir, Map<String, String> jgroupsProperties) {
+        Map<String, String> properties = Maps.newHashMap(jgroupsProperties);
+        String jgroupsConfigurationFile = properties.remove("jgroups.configurationFile");
+        if (jgroupsConfigurationFile != null) {
+            String initialNodes = properties.get("jgroups.initialNodes");
+            if (initialNodes != null) {
+                // transform from "host1:port1,host2:port2,..." to "host1[port1],host2[port2],..."
+                properties.put("jgroups.initialNodes",
+                        Pattern.compile(":([0-9]+)").matcher(initialNodes).replaceAll("[$1]"));
+            }
+            return new ClusterManagerImpl(centralDir, jgroupsConfigurationFile, properties);
         } else {
-            checkNotNull(centralDir);
-            return new ClusterManagerImpl(centralDir, jgroupsConfigurationFile, jgroupProperties);
+            return new NonClusterManager();
         }
     }
 
@@ -76,16 +82,14 @@ public abstract class ClusterManager {
         private final EmbeddedCacheManager cacheManager;
 
         private ClusterManagerImpl(File centralDir, String jgroupsConfigurationFile,
-                Map<String, String> jgroupProperties) {
-            for (Map.Entry<String, String> entry : jgroupProperties.entrySet()) {
-                System.setProperty(entry.getKey(), entry.getValue());
-            }
+                Map<String, String> jgroupsProperties) {
             GlobalConfiguration configuration = new GlobalConfigurationBuilder()
                     .transport().defaultTransport()
                     .addProperty("configurationFile",
                             getConfigurationFilePropertyValue(centralDir, jgroupsConfigurationFile))
                     .build();
-            cacheManager = new DefaultCacheManager(configuration);
+            cacheManager = doWithSystemProperties(jgroupsProperties,
+                    () -> new DefaultCacheManager(configuration));
         }
 
         @Override
@@ -133,14 +137,37 @@ public abstract class ClusterManager {
             if (file.exists()) {
                 return file.getAbsolutePath();
             }
-            if (jgroupsConfigurationFile.equals("default-jgroups-udp.xml")) {
-                return "default-configs/" + jgroupsConfigurationFile;
-            }
-            if (jgroupsConfigurationFile.equals("default-jgroups-tcp.xml")) {
+            if (jgroupsConfigurationFile.equals("jgroups-tcp.xml")
+                    || jgroupsConfigurationFile.equals("jgroups-udp.xml")) {
                 return jgroupsConfigurationFile;
             }
             throw new IllegalStateException(
                     "Could not find jgroups.configurationFile: " + jgroupsConfigurationFile);
+        }
+
+        private static <V> V doWithSystemProperties(Map<String, String> properties,
+                Supplier<V> supplier) {
+            Map<String, String> priorSystemProperties = Maps.newHashMap();
+            for (Map.Entry<String, String> entry : properties.entrySet()) {
+                String key = entry.getKey();
+                String priorValue = System.getProperty(key);
+                if (priorValue != null) {
+                    priorSystemProperties.put(key, priorValue);
+                }
+                System.setProperty(key, entry.getValue());
+            }
+            try {
+                return supplier.get();
+            } finally {
+                for (String key : properties.keySet()) {
+                    String priorValue = priorSystemProperties.get(key);
+                    if (priorValue == null) {
+                        System.clearProperty(key);
+                    } else {
+                        System.setProperty(key, priorValue);
+                    }
+                }
+            }
         }
     }
 

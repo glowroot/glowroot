@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
 
 import com.google.common.base.Charsets;
@@ -39,12 +40,19 @@ public class PropertiesFiles {
         return props;
     }
 
-    public static void upgradeIfNeeded(File propFile, String find, String replace)
+    public static void upgradeIfNeeded(File propFile, Map<String, String> findReplacePairs)
             throws IOException {
         // properties files must be ISO_8859_1
         String content = Files.toString(propFile, Charsets.ISO_8859_1);
-        if (content.contains(find)) {
-            content = content.replace(find, replace);
+        boolean modified = false;
+        for (Map.Entry<String, String> entry : findReplacePairs.entrySet()) {
+            String find = entry.getKey();
+            if (content.contains(find)) {
+                content = content.replace(find, entry.getValue());
+                modified = true;
+            }
+        }
+        if (modified) {
             Files.write(content, propFile, Charsets.ISO_8859_1);
         }
     }

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 import javax.servlet.ServletConfig;
@@ -41,6 +42,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -145,8 +147,7 @@ class CentralModule {
             }
 
             CentralConfiguration centralConfig = getCentralConfiguration(centralDir);
-            clusterManager = ClusterManager.create(centralDir,
-                    centralConfig.jgroupsConfigurationFile(), centralConfig.jgroupProperties());
+            clusterManager = ClusterManager.create(centralDir, centralConfig.jgroupsProperties());
             session = connect(centralConfig);
             cluster = session.getCluster();
             Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
@@ -349,10 +350,44 @@ class CentralModule {
             }
             java.nio.file.Files.copy(oldPropFile.toPath(), propFile.toPath());
         }
-        // upgrade from 0.9.4 to 0.9.5
-        PropertiesFiles.upgradeIfNeeded(propFile, "cassandra.contact.points=",
-                "cassandra.contactPoints=");
         Properties props = PropertiesFiles.load(propFile);
+
+        Map<String, String> upgradePropertyNames = Maps.newHashMap();
+        // upgrade from 0.9.4 to 0.9.5
+        if (props.containsKey("cassandra.contact.points")) {
+            upgradePropertyNames.put("cassandra.contact.points=", "cassandra.contactPoints=");
+        }
+        // upgrade from 0.9.15 and 0.9.16-SNAPSHOT (tcp early release) to 0.9.16
+        String jgroupsConfigurationFile = props.getProperty("jgroups.configurationFile");
+        if (("default-jgroups-udp.xml".equals(jgroupsConfigurationFile)
+                || "default-jgroups-tcp.xml".equals(jgroupsConfigurationFile))
+                && !new File(centralDir, jgroupsConfigurationFile).exists()) {
+            // using one of the included jgroups xml files prior to 0.9.16
+            upgradePropertyNames.put("jgroups.configurationFile=default-jgroups-udp.xml",
+                    "jgroups.configurationFile=jgroups-udp.xml");
+            upgradePropertyNames.put("jgroups.configurationFile=default-jgroups-tcp.xml",
+                    "jgroups.configurationFile=jgroups-tcp.xml");
+            upgradePropertyNames.put("jgroups.udp.mcast_addr=", "jgroups.multicastAddress=");
+            upgradePropertyNames.put("jgroups.udp.mcast_port=", "jgroups.multicastPort=");
+            upgradePropertyNames.put("jgroups.thread_pool.min_threads=", "jgroups.minThreads=");
+            upgradePropertyNames.put("jgroups.thread_pool.max_threads=", "jgroups.maxThreads=");
+            upgradePropertyNames.put("jgroups.ip_ttl=", "jgroups.multicastTTL=");
+            upgradePropertyNames.put("jgroups.join_timeout=", "jgroups.joinTimeout=");
+            upgradePropertyNames.put("jgroups.tcp.address=", "jgroups.localAddress=");
+            upgradePropertyNames.put("jgroups.tcp.port=", "jgroups.localPort=");
+            String initialHosts = props.getProperty("jgroups.tcp.initial_hosts");
+            if (initialHosts != null) {
+                // transform from "host1[port1],host2[port2],..." to "host1:port1,host2:port2,..."
+                String initialNodes =
+                        Pattern.compile("\\[([0-9]+)\\]").matcher(initialHosts).replaceAll(":$1");
+                upgradePropertyNames.put("jgroups.tcp.initial_hosts=" + initialHosts,
+                        "jgroups.initialNodes=" + initialNodes);
+            }
+        }
+        if (!upgradePropertyNames.isEmpty()) {
+            PropertiesFiles.upgradeIfNeeded(propFile, upgradePropertyNames);
+            props = PropertiesFiles.load(propFile);
+        }
         String cassandraContactPoints = props.getProperty("cassandra.contactPoints");
         if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
             builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
@@ -374,18 +409,6 @@ class CentralModule {
         if (!Strings.isNullOrEmpty(grpcBindAddress)) {
             builder.grpcBindAddress(grpcBindAddress);
         }
-        String jgroupsConfigurationFile = props.getProperty("jgroups.configurationFile");
-        if (!Strings.isNullOrEmpty(jgroupsConfigurationFile)) {
-            builder.jgroupsConfigurationFile(jgroupsConfigurationFile);
-        }
-        for (String propName : props.stringPropertyNames()) {
-            if (propName.startsWith("jgroups.")) {
-                String propValue = props.getProperty(propName);
-                if (!Strings.isNullOrEmpty(propValue)) {
-                    builder.putJgroupProperties(propName, propValue);
-                }
-            }
-        }
         String grpcPortText = props.getProperty("grpc.port");
         if (!Strings.isNullOrEmpty(grpcPortText)) {
             builder.grpcPort(Integer.parseInt(grpcPortText));
@@ -397,6 +420,14 @@ class CentralModule {
         String uiPortText = props.getProperty("ui.port");
         if (!Strings.isNullOrEmpty(uiPortText)) {
             builder.uiPortOverride(Integer.parseInt(uiPortText));
+        }
+        for (String propName : props.stringPropertyNames()) {
+            if (propName.startsWith("jgroups.")) {
+                String propValue = props.getProperty(propName);
+                if (!Strings.isNullOrEmpty(propValue)) {
+                    builder.putJgroupsProperties(propName, propValue);
+                }
+            }
         }
         return builder.build();
     }
@@ -536,13 +567,12 @@ class CentralModule {
         int grpcPort() {
             return 8181;
         }
-        abstract @Nullable String jgroupsConfigurationFile();
-
-        abstract Map<String, String> jgroupProperties();
 
         abstract @Nullable String uiBindAddressOverride();
 
         abstract @Nullable Integer uiPortOverride();
+
+        abstract Map<String, String> jgroupsProperties();
     }
 
     private static class NopRepoAdmin implements RepoAdmin {

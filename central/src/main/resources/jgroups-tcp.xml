@@ -1,21 +1,21 @@
 <!-- based on https://github.com/infinispan/infinispan/blob/9.0.0.Final/core/src/main/resources/default-configs/default-jgroups-tcp.xml
-     with TCPPING instead of MPING and removing defaults for TCP bind_addr and bind_port -->
+     with TCPPING instead of MPING and and some property name changes -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups-4.0.xsd">
-   <TCP bind_addr="${jgroups.tcp.address}"
-        bind_port="${jgroups.tcp.port}"
+   <TCP bind_addr="${jgroups.localAddress}"
+        bind_port="${jgroups.localPort}"
         enable_diagnostics="false"
         thread_naming_pattern="pl"
         send_buf_size="640k"
         sock_conn_timeout="300"
         bundler_type="no-bundler"
 
-        thread_pool.min_threads="${jgroups.thread_pool.min_threads:0}"
-        thread_pool.max_threads="${jgroups.thread_pool.max_threads:200}"
+        thread_pool.min_threads="${jgroups.minThreads:0}"
+        thread_pool.max_threads="${jgroups.maxThreads:200}"
         thread_pool.keep_alive_time="60000"
    />
-   <TCPPING initial_hosts="${jgroups.tcp.initial_hosts}"
+   <TCPPING initial_hosts="${jgroups.initialNodes}"
             port_range="0"
    />
    <MERGE3 min_interval="10000"
@@ -46,7 +46,7 @@
    />
    <pbcast.GMS print_local_addr="false"
                install_view_locally_first="true"
-               join_timeout="${jgroups.join_timeout:5000}"
+               join_timeout="${jgroups.joinTimeout:5000}"
    />
    <MFC max_credits="2m"
         min_threshold="0.40"
