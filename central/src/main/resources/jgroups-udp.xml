@@ -46,6 +46,11 @@
                   desired_avg_gossip="5000"
                   max_bytes="1M"
    />
+   <SASL mech="DIGEST-MD5"
+         server_name="glowroot"
+         client_callback_handler_class="org.glowroot.central.SaslCallbackHandler"
+         server_callback_handler_class="org.glowroot.central.SaslCallbackHandler"
+   />
    <pbcast.GMS print_local_addr="false"
                install_view_locally_first="true"
                join_timeout="${jgroups.joinTimeout:5000}"

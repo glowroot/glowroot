@@ -1,5 +1,5 @@
 <!-- based on https://github.com/infinispan/infinispan/blob/9.0.0.Final/core/src/main/resources/default-configs/default-jgroups-tcp.xml
-     with TCPPING instead of MPING and and some property name changes -->
+     with SASL configuration and TCPPING instead of MPING and and some property name changes -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups-4.0.xsd">
@@ -43,6 +43,11 @@
    <pbcast.STABLE stability_delay="500"
                   desired_avg_gossip="5000"
                   max_bytes="1M"
+   />
+   <SASL mech="DIGEST-MD5"
+         server_name="glowroot"
+         client_callback_handler_class="org.glowroot.central.SaslCallbackHandler"
+         server_callback_handler_class="org.glowroot.central.SaslCallbackHandler"
    />
    <pbcast.GMS print_local_addr="false"
                install_view_locally_first="true"
