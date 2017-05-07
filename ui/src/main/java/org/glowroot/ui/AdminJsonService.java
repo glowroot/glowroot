@@ -41,12 +41,12 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
-import org.glowroot.common.config.FatStorageConfig;
-import org.glowroot.common.config.FatWebConfig;
+import org.glowroot.common.config.EmbeddedStorageConfig;
+import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
-import org.glowroot.common.config.ImmutableFatStorageConfig;
-import org.glowroot.common.config.ImmutableFatWebConfig;
+import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
+import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.ImmutableUserConfig;
@@ -129,7 +129,7 @@ class AdminJsonService {
         if (central) {
             return getCentralWebConfig();
         } else {
-            return getFatWebConfig(false);
+            return getEmbeddedWebConfig(false);
         }
     }
 
@@ -139,8 +139,8 @@ class AdminJsonService {
             CentralStorageConfig config = configRepository.getCentralStorageConfig();
             return mapper.writeValueAsString(CentralStorageConfigDto.create(config));
         } else {
-            FatStorageConfig config = configRepository.getFatStorageConfig();
-            return mapper.writeValueAsString(FatStorageConfigDto.create(config));
+            EmbeddedStorageConfig config = configRepository.getEmbeddedStorageConfig();
+            return mapper.writeValueAsString(EmbeddedStorageConfigDto.create(config));
         }
     }
 
@@ -181,8 +181,9 @@ class AdminJsonService {
             return getCentralWebConfig();
         } else {
             checkNotNull(httpServer);
-            FatWebConfigDto configDto = mapper.readValue(content, ImmutableFatWebConfigDto.class);
-            FatWebConfig config = configDto.convert();
+            EmbeddedWebConfigDto configDto =
+                    mapper.readValue(content, ImmutableEmbeddedWebConfigDto.class);
+            EmbeddedWebConfig config = configDto.convert();
             if (config.https() && !httpServer.getHttps()) {
                 // validate certificate and private key exist and are valid
                 File certificateFile = new File(certificateDir, "certificate.pem");
@@ -207,11 +208,11 @@ class AdminJsonService {
                 }
             }
             try {
-                configRepository.updateFatWebConfig(config, configDto.version());
+                configRepository.updateEmbeddedWebConfig(config, configDto.version());
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
-            return onSuccessfulFatWebUpdate(config);
+            return onSuccessfulEmbeddedWebUpdate(config);
         }
     }
 
@@ -227,10 +228,11 @@ class AdminJsonService {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
         } else {
-            FatStorageConfigDto configDto =
-                    mapper.readValue(content, ImmutableFatStorageConfigDto.class);
+            EmbeddedStorageConfigDto configDto =
+                    mapper.readValue(content, ImmutableEmbeddedStorageConfigDto.class);
             try {
-                configRepository.updateFatStorageConfig(configDto.convert(), configDto.version());
+                configRepository.updateEmbeddedStorageConfig(configDto.convert(),
+                        configDto.version());
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
@@ -314,7 +316,8 @@ class AdminJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private CommonResponse onSuccessfulFatWebUpdate(FatWebConfig config) throws Exception {
+    private CommonResponse onSuccessfulEmbeddedWebUpdate(EmbeddedWebConfig config)
+            throws Exception {
         boolean closeCurrentChannelAfterPortChange = false;
         boolean portChangeFailed = false;
         if (config.port() != checkNotNull(httpServer.getPort())) {
@@ -332,7 +335,7 @@ class AdminJsonService {
             httpServer.changeProtocol(config.https());
             closeCurrentChannelAfterPortChange = true;
         }
-        String responseText = getFatWebConfig(portChangeFailed);
+        String responseText = getEmbeddedWebConfig(portChangeFailed);
         CommonResponse response = new CommonResponse(OK, MediaType.JSON_UTF_8, responseText);
         if (closeCurrentChannelAfterPortChange) {
             response.setCloseConnectionAfterPortChange();
@@ -340,12 +343,13 @@ class AdminJsonService {
         return response;
     }
 
-    private String getFatWebConfig(boolean portChangeFailed) throws Exception {
-        FatWebConfig config = configRepository.getFatWebConfig();
-        ImmutableFatWebConfigResponse.Builder builder = ImmutableFatWebConfigResponse.builder()
-                .config(FatWebConfigDto.create(config))
-                .certificateDir(certificateDir.getAbsolutePath())
-                .portChangeFailed(portChangeFailed);
+    private String getEmbeddedWebConfig(boolean portChangeFailed) throws Exception {
+        EmbeddedWebConfig config = configRepository.getEmbeddedWebConfig();
+        ImmutableEmbeddedWebConfigResponse.Builder builder =
+                ImmutableEmbeddedWebConfigResponse.builder()
+                        .config(EmbeddedWebConfigDto.create(config))
+                        .certificateDir(certificateDir.getAbsolutePath())
+                        .portChangeFailed(portChangeFailed);
         if (httpServer == null) {
             builder.activePort(config.port())
                     .activeBindAddress(config.bindAddress())
@@ -382,8 +386,8 @@ class AdminJsonService {
     }
 
     @Value.Immutable
-    interface FatWebConfigResponse {
-        FatWebConfigDto config();
+    interface EmbeddedWebConfigResponse {
+        EmbeddedWebConfigDto config();
         int activePort();
         String activeBindAddress();
         boolean activeHttps();
@@ -409,7 +413,7 @@ class AdminJsonService {
     }
 
     @Value.Immutable
-    abstract static class FatWebConfigDto {
+    abstract static class EmbeddedWebConfigDto {
 
         abstract int port();
         abstract String bindAddress();
@@ -419,8 +423,8 @@ class AdminJsonService {
         abstract String sessionCookieName();
         abstract String version();
 
-        private FatWebConfig convert() throws Exception {
-            return ImmutableFatWebConfig.builder()
+        private EmbeddedWebConfig convert() throws Exception {
+            return ImmutableEmbeddedWebConfig.builder()
                     .port(port())
                     .bindAddress(bindAddress())
                     .https(https())
@@ -430,8 +434,8 @@ class AdminJsonService {
                     .build();
         }
 
-        private static FatWebConfigDto create(FatWebConfig config) {
-            return ImmutableFatWebConfigDto.builder()
+        private static EmbeddedWebConfigDto create(EmbeddedWebConfig config) {
+            return ImmutableEmbeddedWebConfigDto.builder()
                     .port(config.port())
                     .bindAddress(config.bindAddress())
                     .https(config.https())
@@ -467,7 +471,7 @@ class AdminJsonService {
     }
 
     @Value.Immutable
-    abstract static class FatStorageConfigDto {
+    abstract static class EmbeddedStorageConfigDto {
 
         abstract ImmutableList<Integer> rollupExpirationHours();
         abstract int traceExpirationHours();
@@ -476,8 +480,8 @@ class AdminJsonService {
         abstract int traceCappedDatabaseSizeMb();
         abstract String version();
 
-        private FatStorageConfig convert() {
-            return ImmutableFatStorageConfig.builder()
+        private EmbeddedStorageConfig convert() {
+            return ImmutableEmbeddedStorageConfig.builder()
                     .rollupExpirationHours(rollupExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
                     .fullQueryTextExpirationHours(fullQueryTextExpirationHours())
@@ -486,8 +490,8 @@ class AdminJsonService {
                     .build();
         }
 
-        private static FatStorageConfigDto create(FatStorageConfig config) {
-            return ImmutableFatStorageConfigDto.builder()
+        private static EmbeddedStorageConfigDto create(EmbeddedStorageConfig config) {
+            return ImmutableEmbeddedStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
                     .fullQueryTextExpirationHours(config.fullQueryTextExpirationHours())

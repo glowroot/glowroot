@@ -46,9 +46,9 @@ import org.glowroot.agent.embedded.repo.SimpleRepoModule;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.init.AgentDirLocking;
 import org.glowroot.agent.init.AgentModule;
+import org.glowroot.agent.init.CentralGlowrootAgentInit;
 import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.EnvironmentCreator;
-import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.init.JRebelWorkaround;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.config.ImmutableRoleConfig;
@@ -131,7 +131,7 @@ class EmbeddedAgentModule {
 
             // need to delay creation of the scheduled executor until instrumentation is set up
             Supplier<ScheduledExecutorService> backgroundExecutorSupplier =
-                    GlowrootThinAgentInit.createBackgroundExecutorSupplier();
+                    CentralGlowrootAgentInit.createBackgroundExecutorSupplier();
 
             agentModule = new AgentModule(clock, null, pluginCache, configService,
                     backgroundExecutorSupplier, collectorProxy, instrumentation, agentDir);

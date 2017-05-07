@@ -23,7 +23,7 @@ import org.immutables.value.Value;
 import org.glowroot.common.util.Versions;
 
 @Value.Immutable
-public abstract class FatWebConfig implements WebConfig {
+public abstract class EmbeddedWebConfig implements WebConfig {
 
     @Value.Default
     public int port() {

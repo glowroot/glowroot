@@ -35,11 +35,11 @@ import org.glowroot.central.repo.ConfigDao.AgentConfigUpdater;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
-import org.glowroot.common.config.FatStorageConfig;
-import org.glowroot.common.config.FatWebConfig;
+import org.glowroot.common.config.EmbeddedStorageConfig;
+import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
-import org.glowroot.common.config.ImmutableFatStorageConfig;
+import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.LdapConfig;
@@ -318,7 +318,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public FatWebConfig getFatWebConfig() throws Exception {
+    public EmbeddedWebConfig getEmbeddedWebConfig() throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -337,7 +337,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public FatStorageConfig getFatStorageConfig() {
+    public EmbeddedStorageConfig getEmbeddedStorageConfig() {
         throw new UnsupportedOperationException();
     }
 
@@ -937,7 +937,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateFatWebConfig(FatWebConfig config, String priorVersion) throws Exception {
+    public void updateEmbeddedWebConfig(EmbeddedWebConfig config, String priorVersion)
+            throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -948,7 +949,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateFatStorageConfig(FatStorageConfig config, String priorVersion) {
+    public void updateEmbeddedStorageConfig(EmbeddedStorageConfig config, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
@@ -1073,7 +1074,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     private static CentralStorageConfig withCorrectedLists(CentralStorageConfig config) {
-        FatStorageConfig defaultConfig = ImmutableFatStorageConfig.builder().build();
+        EmbeddedStorageConfig defaultConfig = ImmutableEmbeddedStorageConfig.builder().build();
         ImmutableList<Integer> rollupExpirationHours =
                 fix(config.rollupExpirationHours(), defaultConfig.rollupExpirationHours());
         return ImmutableCentralStorageConfig.builder()

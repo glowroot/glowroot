@@ -29,7 +29,7 @@ import com.google.common.collect.Lists;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.embedded.util.H2DatabaseStats;
-import org.glowroot.common.config.FatStorageConfig;
+import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
@@ -70,7 +70,7 @@ public class SimpleRepoModule {
         }
         this.dataSource = dataSource;
         this.configRepository = configRepository;
-        FatStorageConfig storageConfig = configRepository.getFatStorageConfig();
+        EmbeddedStorageConfig storageConfig = configRepository.getEmbeddedStorageConfig();
         List<CappedDatabase> rollupCappedDatabases = Lists.newArrayList();
         for (int i = 0; i < storageConfig.rollupCappedDatabaseSizesMb().size(); i++) {
             File file = new File(dataDir, "rollup-" + i + "-detail.capped.db");

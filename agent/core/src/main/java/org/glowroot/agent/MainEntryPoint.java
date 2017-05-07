@@ -47,10 +47,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
-import org.glowroot.agent.embedded.init.GlowrootFatAgentInit;
+import org.glowroot.agent.embedded.init.EmbeddedGlowrootAgentInit;
 import org.glowroot.agent.init.AgentDirLocking.AgentDirLockedException;
+import org.glowroot.agent.init.CentralGlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInit;
-import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.PropertiesFiles;
@@ -115,8 +115,8 @@ public class MainEntryPoint {
             version = Version.getVersion(MainEntryPoint.class);
             startupLogger.info("Glowroot version: {}", version);
             ImmutableMap<String, String> properties = getGlowrootProperties(glowrootDir);
-            new GlowrootFatAgentInit().init(glowrootDir, agentDir, null, null, properties, null,
-                    version, true);
+            new EmbeddedGlowrootAgentInit().init(glowrootDir, agentDir, null, null, properties,
+                    null, version, true);
         } catch (AgentDirLockedException e) {
             logAgentDirLockedException(agentDir);
             return;
@@ -162,12 +162,12 @@ public class MainEntryPoint {
         String collectorAddress = properties.get("glowroot.collector.address");
         Collector customCollector = loadCustomCollector(glowrootDir);
         if (Strings.isNullOrEmpty(collectorAddress) && customCollector == null) {
-            glowrootAgentInit = new GlowrootFatAgentInit();
+            glowrootAgentInit = new EmbeddedGlowrootAgentInit();
         } else {
             if (customCollector != null) {
                 startupLogger.info("using collector: {}", customCollector.getClass().getName());
             }
-            glowrootAgentInit = new GlowrootThinAgentInit();
+            glowrootAgentInit = new CentralGlowrootAgentInit();
         }
         glowrootAgentInit.init(glowrootDir, agentDir, collectorAddress, customCollector,
                 properties, instrumentation, version, false);

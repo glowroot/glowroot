@@ -36,11 +36,11 @@ import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class GlowrootFatAgentInit implements GlowrootAgentInit {
+public class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlowrootFatAgentInit.class);
+    private static final Logger logger = LoggerFactory.getLogger(EmbeddedGlowrootAgentInit.class);
 
-    private @MonotonicNonNull EmbeddedAgentModule fatAgentModule;
+    private @MonotonicNonNull EmbeddedAgentModule embeddedAgentModule;
 
     @Override
     public void init(File glowrootDir, File agentDir, @Nullable String collectorAddress,
@@ -48,22 +48,22 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
             @Nullable Instrumentation instrumentation, String glowrootVersion, boolean offline)
             throws Exception {
 
-        fatAgentModule = new EmbeddedAgentModule(glowrootDir, agentDir, properties, instrumentation,
-                glowrootVersion, offline);
+        embeddedAgentModule = new EmbeddedAgentModule(glowrootDir, agentDir, properties,
+                instrumentation, glowrootVersion, offline);
         NettyWorkaround.run(instrumentation, new NettyInit() {
             @Override
             public void execute(boolean newThread) throws Exception {
-                checkNotNull(fatAgentModule);
-                if (fatAgentModule.isSimpleRepoModuleReady()) {
+                checkNotNull(embeddedAgentModule);
+                if (embeddedAgentModule.isSimpleRepoModuleReady()) {
                     // prefer to run in same thread
-                    fatAgentModule.initEmbeddedServer();
+                    embeddedAgentModule.initEmbeddedServer();
                     return;
                 }
                 // needs to finish initializing
                 if (newThread) {
                     // prefer to run in same thread
-                    fatAgentModule.waitForSimpleRepoModule();
-                    fatAgentModule.initEmbeddedServer();
+                    embeddedAgentModule.waitForSimpleRepoModule();
+                    embeddedAgentModule.initEmbeddedServer();
                     return;
                 }
                 Executors.newSingleThreadExecutor().execute(new Runnable() {
@@ -71,9 +71,9 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
                     public void run() {
                         try {
                             // TODO report checker framework issue that occurs without checkNotNull
-                            checkNotNull(fatAgentModule);
-                            fatAgentModule.waitForSimpleRepoModule();
-                            fatAgentModule.initEmbeddedServer();
+                            checkNotNull(embeddedAgentModule);
+                            embeddedAgentModule.waitForSimpleRepoModule();
+                            embeddedAgentModule.initEmbeddedServer();
                         } catch (Exception e) {
                             logger.error(e.getMessage(), e);
                         }
@@ -86,18 +86,18 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
     @Override
     @OnlyUsedByTests
     public void setSlowThresholdToZero() throws IOException {
-        EmbeddedAgentModule fatAgentModule = checkNotNull(this.fatAgentModule);
-        AgentModule agentModule = fatAgentModule.getAgentModule();
+        EmbeddedAgentModule embeddedAgentModule = checkNotNull(this.embeddedAgentModule);
+        AgentModule agentModule = embeddedAgentModule.getAgentModule();
         agentModule.getConfigService().setSlowThresholdToZero();
     }
 
     @Override
     @OnlyUsedByTests
     public void resetConfig() throws Exception {
-        EmbeddedAgentModule fatAgentModule = checkNotNull(this.fatAgentModule);
-        AgentModule agentModule = fatAgentModule.getAgentModule();
+        EmbeddedAgentModule embeddedAgentModule = checkNotNull(this.embeddedAgentModule);
+        AgentModule agentModule = embeddedAgentModule.getAgentModule();
         agentModule.getConfigService().resetConfig();
-        ((ConfigRepositoryImpl) fatAgentModule.getSimpleRepoModule().getConfigRepository())
+        ((ConfigRepositoryImpl) embeddedAgentModule.getSimpleRepoModule().getConfigRepository())
                 .resetAdminConfig();
         agentModule.getLiveWeavingService().reweave("");
     }
@@ -105,7 +105,7 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
     @Override
     @OnlyUsedByTests
     public void close() throws Exception {
-        checkNotNull(fatAgentModule).close();
+        checkNotNull(embeddedAgentModule).close();
     }
 
     @Override

@@ -45,10 +45,10 @@ import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
-import org.glowroot.common.config.FatStorageConfig;
-import org.glowroot.common.config.FatWebConfig;
-import org.glowroot.common.config.ImmutableFatStorageConfig;
-import org.glowroot.common.config.ImmutableFatWebConfig;
+import org.glowroot.common.config.EmbeddedStorageConfig;
+import org.glowroot.common.config.EmbeddedWebConfig;
+import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
+import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
@@ -84,8 +84,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     private volatile ImmutableList<UserConfig> userConfigs;
     private volatile ImmutableList<RoleConfig> roleConfigs;
-    private volatile FatWebConfig webConfig;
-    private volatile FatStorageConfig storageConfig;
+    private volatile EmbeddedWebConfig webConfig;
+    private volatile EmbeddedStorageConfig storageConfig;
     private volatile SmtpConfig smtpConfig;
     private volatile LdapConfig ldapConfig;
 
@@ -137,16 +137,17 @@ class ConfigRepositoryImpl implements ConfigRepository {
                             "agent:config", "admin")
                     .build());
         }
-        FatWebConfig webConfig = configService.getAdminConfig(WEB_KEY, ImmutableFatWebConfig.class);
+        EmbeddedWebConfig webConfig =
+                configService.getAdminConfig(WEB_KEY, ImmutableEmbeddedWebConfig.class);
         if (webConfig == null) {
-            this.webConfig = ImmutableFatWebConfig.builder().build();
+            this.webConfig = ImmutableEmbeddedWebConfig.builder().build();
         } else {
             this.webConfig = webConfig;
         }
-        FatStorageConfig storageConfig =
-                configService.getAdminConfig(STORAGE_KEY, ImmutableFatStorageConfig.class);
+        EmbeddedStorageConfig storageConfig =
+                configService.getAdminConfig(STORAGE_KEY, ImmutableEmbeddedStorageConfig.class);
         if (storageConfig == null) {
-            this.storageConfig = ImmutableFatStorageConfig.builder().build();
+            this.storageConfig = ImmutableEmbeddedStorageConfig.builder().build();
         } else if (storageConfig.hasListIssues()) {
             this.storageConfig = withCorrectedLists(storageConfig);
         } else {
@@ -347,11 +348,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public WebConfig getWebConfig() {
-        return getFatWebConfig();
+        return getEmbeddedWebConfig();
     }
 
     @Override
-    public FatWebConfig getFatWebConfig() {
+    public EmbeddedWebConfig getEmbeddedWebConfig() {
         return webConfig;
     }
 
@@ -362,11 +363,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public StorageConfig getStorageConfig() {
-        return getFatStorageConfig();
+        return getEmbeddedStorageConfig();
     }
 
     @Override
-    public FatStorageConfig getFatStorageConfig() {
+    public EmbeddedStorageConfig getEmbeddedStorageConfig() {
         return storageConfig;
     }
 
@@ -820,7 +821,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateFatWebConfig(FatWebConfig config, String priorVersion) throws Exception {
+    public void updateEmbeddedWebConfig(EmbeddedWebConfig config, String priorVersion)
+            throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(webConfig.version(), priorVersion);
             configService.updateAdminConfig(WEB_KEY, config);
@@ -834,7 +836,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateFatStorageConfig(FatStorageConfig config, String priorVersion)
+    public void updateEmbeddedStorageConfig(EmbeddedStorageConfig config, String priorVersion)
             throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(storageConfig.version(), priorVersion);
@@ -909,8 +911,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
                 .addPermissions("agent:transaction", "agent:error", "agent:jvm",
                         "agent:config:view", "agent:config:edit", "admin")
                 .build());
-        webConfig = ImmutableFatWebConfig.builder().build();
-        storageConfig = ImmutableFatStorageConfig.builder().build();
+        webConfig = ImmutableEmbeddedWebConfig.builder().build();
+        storageConfig = ImmutableEmbeddedStorageConfig.builder().build();
         smtpConfig = ImmutableSmtpConfig.builder().build();
         ldapConfig = ImmutableLdapConfig.builder().build();
         writeAll();
@@ -938,13 +940,13 @@ class ConfigRepositoryImpl implements ConfigRepository {
         }
     }
 
-    private static FatStorageConfig withCorrectedLists(FatStorageConfig config) {
-        FatStorageConfig defaultConfig = ImmutableFatStorageConfig.builder().build();
+    private static EmbeddedStorageConfig withCorrectedLists(EmbeddedStorageConfig config) {
+        EmbeddedStorageConfig defaultConfig = ImmutableEmbeddedStorageConfig.builder().build();
         ImmutableList<Integer> rollupExpirationHours =
                 fix(config.rollupExpirationHours(), defaultConfig.rollupExpirationHours());
         ImmutableList<Integer> rollupCappedDatabaseSizesMb = fix(
                 config.rollupCappedDatabaseSizesMb(), defaultConfig.rollupCappedDatabaseSizesMb());
-        return ImmutableFatStorageConfig.builder()
+        return ImmutableEmbeddedStorageConfig.builder()
                 .copyFrom(config)
                 .rollupExpirationHours(rollupExpirationHours)
                 .rollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb)

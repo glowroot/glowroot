@@ -47,7 +47,7 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class GlowrootThinAgentInit implements GlowrootAgentInit {
+public class CentralGlowrootAgentInit implements GlowrootAgentInit {
 
     private @MonotonicNonNull AgentModule agentModule;
     private @MonotonicNonNull CentralCollector centralCollector;

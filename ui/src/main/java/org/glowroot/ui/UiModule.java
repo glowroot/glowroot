@@ -31,7 +31,7 @@ import org.immutables.builder.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.config.FatWebConfig;
+import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveTraceRepository;
@@ -193,12 +193,12 @@ public class UiModule {
                         commonHandler, certificateDir);
                 initialPort = checkNotNull(port);
             } else {
-                final FatWebConfig initialWebConfig = configRepository.getFatWebConfig();
+                final EmbeddedWebConfig initialWebConfig = configRepository.getEmbeddedWebConfig();
                 Supplier<String> contextPathSupplier = new Supplier<String>() {
                     @Override
                     public String get() {
                         try {
-                            return configRepository.getFatWebConfig().contextPath();
+                            return configRepository.getEmbeddedWebConfig().contextPath();
                         } catch (Exception e) {
                             logger.error(e.getMessage(), e);
                             return initialWebConfig.contextPath();

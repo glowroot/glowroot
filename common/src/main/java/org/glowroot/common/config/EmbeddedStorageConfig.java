@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 import org.glowroot.common.util.Versions;
 
 @Value.Immutable
-public abstract class FatStorageConfig implements StorageConfig {
+public abstract class EmbeddedStorageConfig implements StorageConfig {
 
     // 3 days, 2 weeks, 3 months, 3 months
     private static final ImmutableList<Integer> DEFAULT_ROLLUP_EXPIRATION_HOURS =
