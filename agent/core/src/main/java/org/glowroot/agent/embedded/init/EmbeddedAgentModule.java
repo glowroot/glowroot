@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -51,6 +52,7 @@ import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.EnvironmentCreator;
 import org.glowroot.agent.init.JRebelWorkaround;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
+import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.RoleConfig.SimplePermission;
@@ -141,7 +143,9 @@ class EmbeddedAgentModule {
             PreInitializeStorageShutdownClasses.preInitializeClasses();
             final ConfigRepository configRepository = ConfigRepositoryImpl.create(glowrootDir,
                     agentModule.getConfigService(), pluginCache);
-            Executors.newSingleThreadExecutor().execute(new Runnable() {
+            ExecutorService singleUseExecutor =
+                    Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-Init-Repo"));
+            singleUseExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
                     try {

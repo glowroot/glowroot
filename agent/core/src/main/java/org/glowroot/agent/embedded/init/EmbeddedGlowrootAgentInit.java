@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
@@ -32,6 +33,7 @@ import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NettyWorkaround;
 import org.glowroot.agent.init.NettyWorkaround.NettyInit;
+import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -52,7 +54,7 @@ public class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 instrumentation, glowrootVersion, offline);
         NettyWorkaround.run(instrumentation, new NettyInit() {
             @Override
-            public void execute(boolean newThread) throws Exception {
+            public void execute(boolean alreadyInsideNewThread) throws Exception {
                 checkNotNull(embeddedAgentModule);
                 if (embeddedAgentModule.isSimpleRepoModuleReady()) {
                     // prefer to run in same thread
@@ -60,13 +62,15 @@ public class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                     return;
                 }
                 // needs to finish initializing
-                if (newThread) {
-                    // prefer to run in same thread
+                if (alreadyInsideNewThread) {
                     embeddedAgentModule.waitForSimpleRepoModule();
                     embeddedAgentModule.initEmbeddedServer();
                     return;
                 }
-                Executors.newSingleThreadExecutor().execute(new Runnable() {
+                // need to start new thread in order not to block agent startup
+                ExecutorService singleUseExecutor = Executors
+                        .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Init-UI"));
+                singleUseExecutor.execute(new Runnable() {
                     @Override
                     public void run() {
                         try {

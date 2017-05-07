@@ -17,12 +17,15 @@ package org.glowroot.agent.init;
 
 import java.lang.management.ManagementFactory;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.agent.util.ThreadFactories;
 
 // this is needed for JRebel 6.5.0+
 // otherwise get JsonMappingException: "No serializer found for class
@@ -33,19 +36,13 @@ public class JRebelWorkaround {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     public static void performWorkaroundIfNeeded() {
-        boolean jrebel = false;
-        for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
-            if (jvmArg.startsWith("-agentpath:")
-                    && jvmArg.toLowerCase(Locale.ENGLISH).contains("jrebel")) {
-                jrebel = true;
-                break;
-            }
-        }
-        if (!jrebel) {
+        if (!isJrebel()) {
             return;
         }
         try {
-            Future<?> future = Executors.newSingleThreadExecutor().submit(new Runnable() {
+            ExecutorService singleUseExecutor = Executors.newSingleThreadExecutor(
+                    ThreadFactories.create("Glowroot-Init-JRebel-Workaround"));
+            Future<?> future = singleUseExecutor.submit(new Runnable() {
                 @Override
                 public void run() {
                     boolean shouldBeTrue;
@@ -62,8 +59,19 @@ public class JRebelWorkaround {
                 }
             });
             future.get();
+            singleUseExecutor.shutdown();
         } catch (Exception e) {
             startupLogger.error(e.getMessage(), e);
         }
+    }
+
+    private static boolean isJrebel() {
+        for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+            if (jvmArg.startsWith("-agentpath:")
+                    && jvmArg.toLowerCase(Locale.ENGLISH).contains("jrebel")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

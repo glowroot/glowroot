@@ -18,6 +18,7 @@ package org.glowroot.agent.central;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
@@ -31,6 +32,7 @@ import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
+import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
@@ -110,6 +112,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private final SharedQueryTextLimiter sharedQueryTextLimiter;
 
+    private final ScheduledExecutorService scheduledRetryExecutor;
+
     DownstreamServiceObserver(CentralConnection centralConnection,
             AgentConfigUpdater agentConfigUpdater, LiveJvmServiceImpl liveJvmService,
             LiveWeavingServiceImpl liveWeavingService, LiveTraceRepositoryImpl liveTraceRepository,
@@ -125,6 +129,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         this.agentId = agentId;
         this.inConnectionFailure = inConnectionFailure;
         this.sharedQueryTextLimiter = sharedQueryTextLimiter;
+        scheduledRetryExecutor = Executors.newSingleThreadScheduledExecutor(
+                ThreadFactories.create("Glowroot-Downstream-Retry"));
     }
 
     @Override
@@ -166,25 +172,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             });
         }
         currResponseObserver = null;
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // TODO revisit retry/backoff after next grpc version
-                    Thread.sleep(1000);
-                    connectAsync();
-                } catch (final Throwable t) {
-                    // intentionally capturing InterruptedException here as well to ensure reconnect
-                    // is attempted no matter what
-                    centralConnection.suppressLogCollector(new Runnable() {
-                        @Override
-                        public void run() {
-                            logger.error(t.getMessage(), t);
-                        }
-                    });
-                }
-            }
-        });
+        // TODO revisit retry/backoff after next grpc version
+        scheduledRetryExecutor.schedule(new RetryAfterError(), 1, SECONDS);
     }
 
     @Override
@@ -791,5 +780,24 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             Thread.sleep(10);
         }
         checkState(closedByCentralCollector);
+    }
+
+    private class RetryAfterError implements Runnable {
+        @Override
+        public void run() {
+            try {
+                connectAsync();
+            } catch (final Throwable t) {
+                // intentionally capturing InterruptedException here as well to ensure
+                // reconnect
+                // is attempted no matter what
+                centralConnection.suppressLogCollector(new Runnable() {
+                    @Override
+                    public void run() {
+                        logger.error(t.getMessage(), t);
+                    }
+                });
+            }
+        }
     }
 }

@@ -27,6 +27,7 @@ import org.glowroot.ui.CommonHandler.CommonRequest;
 import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 class IndexHtmlHttpService implements HttpService {
@@ -49,8 +50,8 @@ class IndexHtmlHttpService implements HttpService {
     @Override
     public CommonResponse handleRequest(CommonRequest request, Authentication authentication)
             throws Exception {
-        URL url = Resources.getResource("org/glowroot/ui/app-dist/index.html");
-        String indexHtml = Resources.toString(url, Charsets.UTF_8);
+        URL url = IndexHtmlHttpService.class.getResource("/org/glowroot/ui/app-dist/index.html");
+        String indexHtml = Resources.toString(checkNotNull(url), Charsets.UTF_8);
         String layout = layoutService.getLayoutJson(authentication);
         String contextPath = request.getContextPath();
         String baseHref = contextPath.equals("/") ? "/" : contextPath + "/";

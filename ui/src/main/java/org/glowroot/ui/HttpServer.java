@@ -133,7 +133,7 @@ class HttpServer {
                     + " (will keep trying to bind): {}", bindAddress, port, e.getMessage());
             ThreadFactory threadFactory = new ThreadFactoryBuilder()
                     .setDaemon(true)
-                    .setNameFormat("Glowroot-Init")
+                    .setNameFormat("Glowroot-Init-Bind")
                     .build();
             Executors.newSingleThreadExecutor(threadFactory).execute(new BindEventually(port));
         }
