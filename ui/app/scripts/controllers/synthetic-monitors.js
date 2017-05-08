@@ -28,7 +28,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
   function ($scope, $location, $filter, $http, locationChanges, charts, queryStrings, httpErrors) {
 
     // \u00b7 is &middot;
-    document.title = 'Synthetics \u00b7 Glowroot';
+    document.title = 'Synthetic \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'syntheticMonitor';
 
     var chartState = charts.createState();
