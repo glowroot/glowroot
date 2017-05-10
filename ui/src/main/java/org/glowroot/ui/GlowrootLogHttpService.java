@@ -17,11 +17,14 @@ package org.glowroot.ui;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.List;
 
+import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
+import com.google.common.io.LineProcessor;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Longs;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -80,11 +83,16 @@ class GlowrootLogHttpService implements HttpService {
         files = byLastModified.reverse().sortedCopy(files);
         List<String> lines = Lists.newArrayList();
         for (File file : files) {
+            // don't read entire file into memory at once, even though rollover may be 10mb, a flood
+            // of logging can create a much much much larger file before rollover occurs
+            // (see ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy call to isTooSoon())
+
             // logback writes logs in default charset
-            List<String> olderLines = Files.readLines(file, Charset.defaultCharset());
-            olderLines.addAll(lines);
-            lines = olderLines;
-            if (lines.size() >= maxLines) {
+            // "+ 1" is to read extra line to know whether to add "[earlier log entries truncated]"
+            Collection<String> olderLines = Files.readLines(file, Charset.defaultCharset(),
+                    new ReadLastNLines(maxLines + 1 - lines.size()));
+            lines.addAll(0, olderLines);
+            if (lines.size() > maxLines) {
                 break;
             }
         }
@@ -98,5 +106,25 @@ class GlowrootLogHttpService implements HttpService {
             chunkSources.add(ChunkSource.wrap(line + '\n'));
         }
         return new CommonResponse(OK, MediaType.PLAIN_TEXT_UTF_8, ChunkSource.concat(chunkSources));
+    }
+
+    private static class ReadLastNLines implements LineProcessor<Collection<String>> {
+
+        private final Collection<String> queue;
+
+        private ReadLastNLines(int nLines) {
+            queue = EvictingQueue.create(nLines);
+        }
+
+        @Override
+        public boolean processLine(String line) {
+            queue.add(line);
+            return true;
+        }
+
+        @Override
+        public Collection<String> getResult() {
+            return queue;
+        }
     }
 }
