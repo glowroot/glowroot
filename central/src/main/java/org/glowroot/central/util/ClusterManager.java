@@ -39,12 +39,17 @@ import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.remoting.transport.Address;
 import org.infinispan.util.function.SerializableFunction;
 import org.infinispan.util.function.TriConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.Cache.CacheLoader;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class ClusterManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(ClusterManager.class);
 
     public static ClusterManager create() {
         return new NonClusterManager();
@@ -387,13 +392,20 @@ public abstract class ClusterManager {
     }
 
     private static class CollectingConsumer<V extends /*@NonNull*/ Object>
-            implements TriConsumer<Address, Optional<V>, Throwable> {
+            implements TriConsumer<Address, /*@Nullable*/ Optional<V>, /*@Nullable*/ Throwable> {
 
         private final Queue<V> values = Queues.newConcurrentLinkedQueue();
 
         @Override
-        public void accept(Address address, Optional<V> value, Throwable throwable) {
-            if (value.isPresent()) {
+        public void accept(Address address, @Nullable Optional<V> value,
+                @Nullable Throwable throwable) {
+            if (throwable != null) {
+                logger.warn("received error from {}: {}", address, throwable.getMessage(),
+                        throwable);
+                return;
+            }
+            // value is only null when throwable is not null
+            if (checkNotNull(value).isPresent()) {
                 values.add(value.get());
             }
         }
