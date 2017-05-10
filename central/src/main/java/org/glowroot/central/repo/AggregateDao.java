@@ -445,6 +445,17 @@ public class AggregateDao implements AggregateRepository {
                         transactionAggregate.getTransactionName(), captureTime,
                         transactionAggregate.getAggregate(), sharedQueryTexts, adjustedTTL));
             }
+            // wait for success before proceeding in order to ensure cannot end up with
+            // "no overview table records found" during a transactionName rollup, since
+            // transactionName rollups are based on finding transactionName in summary table
+            MoreFutures.waitForAll(futures);
+            futures.clear();
+            for (OldTransactionAggregate transactionAggregate : aggregatesByType
+                    .getTransactionAggregateList()) {
+                futures.addAll(storeTransactionSummary(agentId, transactionType,
+                        transactionAggregate.getTransactionName(), captureTime,
+                        transactionAggregate.getAggregate(), adjustedTTL));
+            }
             futures.addAll(transactionTypeDao.store(agentRollupIds, transactionType));
         }
         futures.add(agentDao.updateLastCaptureTime(agentId, captureTime));
@@ -1615,32 +1626,8 @@ public class AggregateDao implements AggregateRepository {
         final int rollupLevel = 0;
 
         List<ResultSetFuture> futures = Lists.newArrayList();
-        BoundStatement boundStatement = getInsertTransactionPS(summaryTable, rollupLevel).bind();
+        BoundStatement boundStatement = getInsertTransactionPS(overviewTable, rollupLevel).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        boundStatement.setString(i++, transactionName);
-        boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
-        boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setInt(i++, adjustedTTL);
-        futures.add(session.executeAsync(boundStatement));
-
-        if (aggregate.getErrorCount() > 0) {
-            boundStatement = getInsertTransactionPS(errorSummaryTable, rollupLevel).bind();
-            i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, transactionName);
-            boundStatement.setLong(i++, aggregate.getErrorCount());
-            boundStatement.setLong(i++, aggregate.getTransactionCount());
-            boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.executeAsync(boundStatement));
-        }
-
-        boundStatement = getInsertTransactionPS(overviewTable, rollupLevel).bind();
-        i = 0;
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, transactionType);
         boundStatement.setString(i++, transactionName);
@@ -1699,6 +1686,39 @@ public class AggregateDao implements AggregateRepository {
                         agentRollupId, transactionType, transactionName, captureTime, adjustedTTL));
         futures.addAll(insertServiceCalls(aggregate.getServiceCallsByTypeList(), rollupLevel,
                 agentRollupId, transactionType, transactionName, captureTime, adjustedTTL));
+        return futures;
+    }
+
+    private List<ResultSetFuture> storeTransactionSummary(String agentRollupId,
+            String transactionType, String transactionName, long captureTime, Aggregate aggregate,
+            int adjustedTTL) throws IOException {
+
+        final int rollupLevel = 0;
+
+        List<ResultSetFuture> futures = Lists.newArrayList();
+        BoundStatement boundStatement = getInsertTransactionPS(summaryTable, rollupLevel).bind();
+        int i = 0;
+        boundStatement.setString(i++, agentRollupId);
+        boundStatement.setString(i++, transactionType);
+        boundStatement.setTimestamp(i++, new Date(captureTime));
+        boundStatement.setString(i++, transactionName);
+        boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
+        boundStatement.setLong(i++, aggregate.getTransactionCount());
+        boundStatement.setInt(i++, adjustedTTL);
+        futures.add(session.executeAsync(boundStatement));
+
+        if (aggregate.getErrorCount() > 0) {
+            boundStatement = getInsertTransactionPS(errorSummaryTable, rollupLevel).bind();
+            i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setString(i++, transactionType);
+            boundStatement.setTimestamp(i++, new Date(captureTime));
+            boundStatement.setString(i++, transactionName);
+            boundStatement.setLong(i++, aggregate.getErrorCount());
+            boundStatement.setLong(i++, aggregate.getTransactionCount());
+            boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.executeAsync(boundStatement));
+        }
         return futures;
     }
 
