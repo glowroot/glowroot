@@ -35,6 +35,7 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -114,6 +115,7 @@ public class MainEntryPoint {
         try {
             version = Version.getVersion(MainEntryPoint.class);
             startupLogger.info("Glowroot version: {}", version);
+            startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
             ImmutableMap<String, String> properties = getGlowrootProperties(glowrootDir);
             new EmbeddedGlowrootAgentInit().init(glowrootDir, agentDir, null, null, properties,
                     null, version, true);
@@ -159,6 +161,7 @@ public class MainEntryPoint {
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion(MainEntryPoint.class);
         startupLogger.info("Glowroot version: {}", version);
+        startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
         String collectorAddress = properties.get("glowroot.collector.address");
         Collector customCollector = loadCustomCollector(glowrootDir);
         if (Strings.isNullOrEmpty(collectorAddress) && customCollector == null) {

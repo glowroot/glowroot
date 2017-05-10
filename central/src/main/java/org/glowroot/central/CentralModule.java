@@ -41,6 +41,7 @@ import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
@@ -140,6 +141,7 @@ class CentralModule {
             Ticker ticker = Ticker.systemTicker();
             String version = Version.getVersion(Bootstrap.class);
             startupLogger.info("Glowroot version: {}", version);
+            startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
             if (config != null) {
                 String extra = "";
                 if (Strings.isNullOrEmpty(System.getProperty("glowroot.central.dir"))) {
