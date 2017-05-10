@@ -34,6 +34,8 @@ import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.QueryOptions;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
@@ -494,7 +496,19 @@ class CentralModule {
                     // empty password is strange but valid
                     builder.withCredentials(cassandraUsername, centralConfig.cassandraPassword());
                 }
-                return builder.build().connect();
+                Session session = builder.build().connect();
+                ResultSet results = session
+                        .execute("select release_version from system.local where key = 'local'");
+                Row row = checkNotNull(results.one());
+                String cassandraVersion = checkNotNull(row.getString(0));
+                if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")
+                        || cassandraVersion.startsWith("0.")) {
+                    throw new IllegalStateException(
+                            "Glowroot central requires Cassandra 2.1+, but found: "
+                                    + cassandraVersion);
+                }
+                startupLogger.info("Cassandra version: {}", cassandraVersion);
+                return session;
             } catch (NoHostAvailableException e) {
                 startupLogger.debug(e.getMessage(), e);
                 lastException = e;
