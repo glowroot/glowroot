@@ -412,6 +412,11 @@ class CentralModule {
         if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
             builder.cassandraKeyspace(cassandraKeyspace);
         }
+        String cassandraConsistencyLevel = props.getProperty("cassandra.consistencyLevel");
+        if (!Strings.isNullOrEmpty(cassandraConsistencyLevel)) {
+            ConsistencyLevel consistencyLevel = ConsistencyLevel.valueOf(cassandraConsistencyLevel);
+            builder.cassandraConsistencyLevel(consistencyLevel);
+        }
         String cassandraSymmetricEncryptionKey =
                 props.getProperty("cassandra.symmetricEncryptionKey");
         if (!Strings.isNullOrEmpty(cassandraSymmetricEncryptionKey)) {
@@ -480,7 +485,7 @@ class CentralModule {
                         // timeout
                         .withQueryOptions(new QueryOptions()
                                 .setDefaultIdempotence(true)
-                                .setConsistencyLevel(ConsistencyLevel.QUORUM))
+                                .setConsistencyLevel(centralConfig.cassandraConsistencyLevel()))
                         // central runs lots of parallel async queries and is very spiky since all
                         // aggregates come in right after each minute marker
                         .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096));
@@ -588,6 +593,11 @@ class CentralModule {
         @Value.Default
         String cassandraKeyspace() {
             return "glowroot";
+        }
+
+        @Value.Default
+        ConsistencyLevel cassandraConsistencyLevel() {
+            return ConsistencyLevel.LOCAL_ONE;
         }
 
         @Value.Default
