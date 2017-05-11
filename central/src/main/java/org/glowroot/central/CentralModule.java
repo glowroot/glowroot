@@ -106,6 +106,7 @@ class CentralModule {
     private final RollupService rollupService;
     private final SyntheticMonitorService syntheticMonitorService;
     private final GrpcServer grpcServer;
+    private final UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService;
     private final UiModule uiModule;
 
     CentralModule() throws Exception {
@@ -119,6 +120,7 @@ class CentralModule {
         RollupService rollupService = null;
         SyntheticMonitorService syntheticMonitorService = null;
         GrpcServer grpcServer = null;
+        UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService = null;
         UiModule uiModule = null;
         try {
             File centralDir = config == null ? new File(".") : getCentralDir();
@@ -213,16 +215,20 @@ class CentralModule {
                     agentDao, configDao, aggregateDao, gaugeValueDao, environmentDao, heartbeatDao,
                     traceDao, configRepository, alertingService, clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
+            updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(agentDao,
+                    configDao, downstreamService, clock);
+            UpdateAgentConfigIfNeededService updateAgentConfigIfNeededServiceEffectivelyFinal =
+                    updateAgentConfigIfNeededService;
             configRepository.addAgentConfigListener(new AgentConfigListener() {
                 @Override
                 public void onChange(String agentId) throws Exception {
                     // TODO report checker framework issue that occurs without checkNotNull
-                    checkNotNull(downstreamService).updateAgentConfigIfConnectedAndNeeded(agentId);
+                    checkNotNull(updateAgentConfigIfNeededServiceEffectivelyFinal)
+                            .updateAgentConfigIfNeededAndConnected(agentId);
                 }
             });
             rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
-                    syntheticResultDao, heartbeatDao, configRepository, alertingService,
-                    downstreamService, clock);
+                    syntheticResultDao, heartbeatDao, configRepository, alertingService, clock);
             syntheticMonitorService = new SyntheticMonitorService(agentDao, configRepository,
                     triggeredAlertDao, alertingService, syntheticResultDao, ticker, clock);
 
@@ -274,14 +280,17 @@ class CentralModule {
             if (uiModule != null) {
                 uiModule.close(false);
             }
+            if (updateAgentConfigIfNeededService != null) {
+                updateAgentConfigIfNeededService.close();
+            }
             if (grpcServer != null) {
                 grpcServer.close();
             }
-            if (rollupService != null) {
-                rollupService.close();
-            }
             if (syntheticMonitorService != null) {
                 syntheticMonitorService.close();
+            }
+            if (rollupService != null) {
+                rollupService.close();
             }
             if (session != null) {
                 session.close();
@@ -300,6 +309,7 @@ class CentralModule {
         this.rollupService = rollupService;
         this.syntheticMonitorService = syntheticMonitorService;
         this.grpcServer = grpcServer;
+        this.updateAgentConfigIfNeededService = updateAgentConfigIfNeededService;
         this.uiModule = uiModule;
     }
 
@@ -312,10 +322,14 @@ class CentralModule {
             startupLogger.info("shutting down...");
         }
         try {
+            // close down external inputs first (ui and grpc)
             uiModule.close(false);
+            // updateAgentConfigIfNeededService depends on grpc downstream, so must be shutdown
+            // before grpc
+            updateAgentConfigIfNeededService.close();
             grpcServer.close();
-            rollupService.close();
             syntheticMonitorService.close();
+            rollupService.close();
             session.close();
             cluster.close();
             clusterManager.close();

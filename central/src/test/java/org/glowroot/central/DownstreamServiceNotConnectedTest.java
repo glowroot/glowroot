@@ -23,9 +23,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.glowroot.central.repo.AgentDao;
-import org.glowroot.central.repo.ConfigDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 
 import static org.mockito.Mockito.mock;
@@ -34,8 +34,8 @@ public class DownstreamServiceNotConnectedTest {
 
     private static ClusterManager clusterManager;
 
-    private DownstreamServiceImpl downstreamService = new DownstreamServiceImpl(
-            mock(AgentDao.class), mock(ConfigDao.class), clusterManager);
+    private DownstreamServiceImpl downstreamService =
+            new DownstreamServiceImpl(mock(AgentDao.class), clusterManager);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -52,7 +52,7 @@ public class DownstreamServiceNotConnectedTest {
 
     @Test
     public void shouldNotThrowAgentNotConnectExceptionOnUpdateAgentConfig() throws Exception {
-        downstreamService.updateAgentConfigIfConnectedAndNeeded("a");
+        downstreamService.updateAgentConfig("a", AgentConfig.getDefaultInstance());
     }
 
     @Test

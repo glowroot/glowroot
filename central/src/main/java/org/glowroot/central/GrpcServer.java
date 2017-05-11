@@ -124,7 +124,7 @@ class GrpcServer {
         this.clock = clock;
         this.version = version;
 
-        downstreamService = new DownstreamServiceImpl(agentDao, configDao, clusterManager);
+        downstreamService = new DownstreamServiceImpl(agentDao, clusterManager);
 
         server = NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port))
                 .addService(new CollectorServiceImpl().bindService())
@@ -145,6 +145,9 @@ class GrpcServer {
     }
 
     void close() {
+        // need to shutdown intra-node communication before shutting down the grpc server since
+        // intra-node messages can result in downstream agent grpc calls
+        downstreamService.stopDistributedExecutionMap();
         // shutdown server first to complete existing requests and prevent new requests
         server.shutdown();
         // then shutdown alert checking executor

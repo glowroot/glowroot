@@ -35,8 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.repo.AgentDao;
-import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
-import org.glowroot.central.repo.ConfigDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.DistributedExecutionMap;
 import org.glowroot.common.live.ImmutableEntries;
@@ -46,6 +44,7 @@ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
@@ -94,7 +93,6 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRequest
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -107,12 +105,14 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private final DistributedExecutionMap<String, ConnectedAgent> connectedAgents;
     private final AgentDao agentDao;
-    private final ConfigDao configDao;
 
-    DownstreamServiceImpl(AgentDao agentDao, ConfigDao configDao, ClusterManager clusterManager) {
+    DownstreamServiceImpl(AgentDao agentDao, ClusterManager clusterManager) {
         this.agentDao = agentDao;
-        this.configDao = configDao;
         connectedAgents = clusterManager.createDistributedExecutionMap("connectedAgents");
+    }
+
+    void stopDistributedExecutionMap() {
+        connectedAgents.stop();
     }
 
     @Override
@@ -120,8 +120,13 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         return new ConnectedAgent(requestObserver);
     }
 
-    void updateAgentConfigIfConnectedAndNeeded(String agentId) throws Exception {
-        connectedAgents.execute(agentId, new UpdateAgentConfigIfConnectedAndNeededFunction());
+    boolean updateAgentConfig(String agentId, AgentConfig agentConfig) throws Exception {
+        return connectedAgents.execute(agentId, new CentralRequestFunction(
+                CentralRequest.newBuilder()
+                        .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
+                                .setAgentConfig(agentConfig))
+                        .build()))
+                .isPresent();
     }
 
     boolean isAvailable(String agentId) throws Exception {
@@ -460,33 +465,6 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             }
         }
 
-        // dummy return value, just needs to be serializable
-        private boolean updateAgentConfigIfConnectedAndNeeded() {
-            checkNotNull(agentId);
-            AgentConfigUpdate agentConfigUpdate;
-            try {
-                agentConfigUpdate = configDao.readForUpdate(agentId);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                return false;
-            }
-            if (agentConfigUpdate == null) {
-                return false;
-            }
-            sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
-                            .setAgentConfig(agentConfigUpdate.config()))
-                    .build());
-            try {
-                configDao.markUpdated(agentId, agentConfigUpdate.configUpdateToken());
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                return false;
-            }
-            return false;
-        }
-
         private boolean isAvailable() {
             return true;
         }
@@ -547,47 +525,12 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         }
     }
 
-    @Value.Immutable
-    @Serial.Structural
-    interface UpdateAgentConfigResult extends Serializable {
-
-        @Value.Default
-        default boolean timeout() {
-            return false;
-        }
-
-        @Value.Default
-        default boolean interrupted() {
-            return false;
-        }
-
-        // exception occurred on central side (e.g. Cassandra exception)
-        @Value.Default
-        default boolean exception() {
-            return false;
-        }
-    }
-
     private static class ResponseHolder {
         private final Exchanger<AgentResponse> response = new Exchanger<>();
     }
 
     @SuppressWarnings("serial")
     private static class AgentException extends Exception {}
-
-    // using named class instead of lambda to avoid "Invalid lambda deserialization" when one node
-    // is running with this class compiled by eclipse and one node is running with this class
-    // compiled by javac, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=516620
-    private static class UpdateAgentConfigIfConnectedAndNeededFunction
-            implements SerializableFunction<ConnectedAgent, Boolean> {
-
-        private static final long serialVersionUID = 0L;
-
-        @Override
-        public Boolean apply(ConnectedAgent connectedAgent) {
-            return connectedAgent.updateAgentConfigIfConnectedAndNeeded();
-        }
-    }
 
     // using named class instead of lambda to avoid "Invalid lambda deserialization" when one node
     // is running with this class compiled by eclipse and one node is running with this class

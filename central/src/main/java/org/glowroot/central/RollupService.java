@@ -54,7 +54,6 @@ class RollupService implements Runnable {
     private final HeartbeatDao heartbeatDao;
     private final ConfigRepositoryImpl configRepository;
     private final AlertingService alertingService;
-    private final DownstreamServiceImpl downstreamService;
     private final Clock clock;
 
     private final ExecutorService executor;
@@ -65,8 +64,7 @@ class RollupService implements Runnable {
 
     RollupService(AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
             SyntheticResultDao syntheticResultDao, HeartbeatDao heartbeatDao,
-            ConfigRepositoryImpl configRepository, AlertingService alertingService,
-            DownstreamServiceImpl downstreamService, Clock clock) {
+            ConfigRepositoryImpl configRepository, AlertingService alertingService, Clock clock) {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
@@ -74,7 +72,6 @@ class RollupService implements Runnable {
         this.heartbeatDao = heartbeatDao;
         this.configRepository = configRepository;
         this.alertingService = alertingService;
-        this.downstreamService = downstreamService;
         this.clock = clock;
         executor = Executors.newSingleThreadExecutor();
         executor.execute(castInitialized(this));
@@ -130,8 +127,6 @@ class RollupService implements Runnable {
                 // but better to give a bit extra (4 minutes above) to avoid false heartbeat alert
                 consumeAgentRollups(agentRollup, this::checkHeartbeatAlerts);
             }
-            // updating agent configs doesn't depend on rollups, just here for convenience
-            consumeAgentRollups(agentRollup, this::updateAgentConfigIfConnectedAndNeeded);
         }
     }
 
@@ -224,26 +219,14 @@ class RollupService implements Runnable {
                         clock.currentTimeMillis()));
     }
 
-    private void updateAgentConfigIfConnectedAndNeeded(AgentRollup agentRollup)
-            throws InterruptedException {
-        if (!agentRollup.children().isEmpty()) {
-            return;
-        }
-        try {
-            downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.id());
-        } catch (InterruptedException e) {
-            // shutdown requested
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-        }
-    }
-
     private void checkAlerts(AgentRollup agentRollup, AlertKind alertKind,
             AlertConfigConsumer check) throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
             alertConfigs = configRepository.getAlertConfigs(agentRollup.id(), alertKind);
+        } catch (InterruptedException e) {
+            // shutdown requested
+            throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
             return;

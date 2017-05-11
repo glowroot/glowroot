@@ -306,6 +306,11 @@ public abstract class ClusterManager {
                 return Optional.of(consumer.values.remove());
             }
         }
+
+        @Override
+        public void stop() {
+            cache.stop();
+        }
     }
 
     private static class NonClusterDistributedExecutionMapImpl<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object>
@@ -341,6 +346,9 @@ public abstract class ClusterManager {
             }
             return Optional.of(task.apply(value));
         }
+
+        @Override
+        public void stop() {}
     }
 
     @SuppressWarnings("serial")
