@@ -32,7 +32,7 @@
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'queries'}">
-    <a ng-href="transaction/queries{{tabQueryString()}}"
+    <a ng-href="transaction/queries{{tabQueryString()}}&sort-attribute=time-per-execution"
        ng-click="clickTab('queries', $event)"
        ng-keydown="keydownTab('tab_traces', 'tab_services', $event)"
        ng-if="agentPermissions.transaction.queries"
