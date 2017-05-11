@@ -15,7 +15,7 @@
     "flot": "trask/flot#glowroot-0.9.9",
     "flot.tooltip": "trask/flot.tooltip#glowroot-0.9.3",
     "fontawesome": "4.7.0",
-    "handlebars": "4.0.5",
+    "handlebars": "4.0.8",
     "jquery": "3.2.1",
     "moment": "2.18.1",
     "moment-timezone": "0.5.13",

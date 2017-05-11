@@ -74,15 +74,15 @@
 
   <properties>
     <grpc.version>1.0.3</grpc.version>
-    <protobuf.version>3.2.0</protobuf.version>
+    <protobuf.version>3.3.0</protobuf.version>
     <!-- need to stick to netty version that is used by grpc version above -->
     <netty.version>4.1.6.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <immutables.version>2.4.6</immutables.version>
-    <jmh.version>1.18</jmh.version>
+    <immutables.version>2.5.0</immutables.version>
+    <jmh.version>1.19</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
