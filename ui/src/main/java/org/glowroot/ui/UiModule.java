@@ -159,6 +159,7 @@ public class UiModule {
         httpServices.put(Pattern.compile("^/transaction/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/alerts$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/profile/.*$"), indexHtmlHttpService);
@@ -175,7 +176,6 @@ public class UiModule {
 
         if (central) {
             httpServices.put(Pattern.compile("^/synthetic-monitors$"), indexHtmlHttpService);
-            httpServices.put(Pattern.compile("^/alerts$"), indexHtmlHttpService);
             httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
         }
 
