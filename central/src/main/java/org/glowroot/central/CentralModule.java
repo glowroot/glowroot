@@ -104,8 +104,8 @@ class CentralModule {
     private final Cluster cluster;
     private final Session session;
     private final RollupService rollupService;
-    private final SyntheticMonitorService pingAndSyntheticAlertService;
-    private final GrpcServer server;
+    private final SyntheticMonitorService syntheticMonitorService;
+    private final GrpcServer grpcServer;
     private final UiModule uiModule;
 
     CentralModule() throws Exception {
@@ -117,8 +117,8 @@ class CentralModule {
         Cluster cluster = null;
         Session session = null;
         RollupService rollupService = null;
-        SyntheticMonitorService pingAndSyntheticAlertService = null;
-        GrpcServer server = null;
+        SyntheticMonitorService syntheticMonitorService = null;
+        GrpcServer grpcServer = null;
         UiModule uiModule = null;
         try {
             File centralDir = config == null ? new File(".") : getCentralDir();
@@ -209,10 +209,10 @@ class CentralModule {
                 startupLogger.info("cassandra schema created");
             }
 
-            server = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
+            grpcServer = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
                     agentDao, configDao, aggregateDao, gaugeValueDao, environmentDao, heartbeatDao,
                     traceDao, configRepository, alertingService, clusterManager, clock, version);
-            DownstreamServiceImpl downstreamService = server.getDownstreamService();
+            DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             configRepository.addAgentConfigListener(new AgentConfigListener() {
                 @Override
                 public void onChange(String agentId) throws Exception {
@@ -223,7 +223,7 @@ class CentralModule {
             rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
                     syntheticResultDao, heartbeatDao, configRepository, alertingService,
                     downstreamService, clock);
-            pingAndSyntheticAlertService = new SyntheticMonitorService(agentDao, configRepository,
+            syntheticMonitorService = new SyntheticMonitorService(agentDao, configRepository,
                     triggeredAlertDao, alertingService, syntheticResultDao, ticker, clock);
 
             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
@@ -274,14 +274,14 @@ class CentralModule {
             if (uiModule != null) {
                 uiModule.close(false);
             }
-            if (server != null) {
-                server.close();
+            if (grpcServer != null) {
+                grpcServer.close();
             }
             if (rollupService != null) {
                 rollupService.close();
             }
-            if (pingAndSyntheticAlertService != null) {
-                pingAndSyntheticAlertService.close();
+            if (syntheticMonitorService != null) {
+                syntheticMonitorService.close();
             }
             if (session != null) {
                 session.close();
@@ -298,8 +298,8 @@ class CentralModule {
         this.cluster = cluster;
         this.session = session;
         this.rollupService = rollupService;
-        this.pingAndSyntheticAlertService = pingAndSyntheticAlertService;
-        this.server = server;
+        this.syntheticMonitorService = syntheticMonitorService;
+        this.grpcServer = grpcServer;
         this.uiModule = uiModule;
     }
 
@@ -313,9 +313,9 @@ class CentralModule {
         }
         try {
             uiModule.close(false);
-            server.close();
+            grpcServer.close();
             rollupService.close();
-            pingAndSyntheticAlertService.close();
+            syntheticMonitorService.close();
             session.close();
             cluster.close();
             clusterManager.close();
