@@ -40,10 +40,14 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
 class LayoutService {
+
+    private static final Logger logger = LoggerFactory.getLogger(LayoutService.class);
 
     private static final String AGENT_ID = "";
 
@@ -141,7 +145,12 @@ class LayoutService {
                 filter(agentRepository.readAgentRollups(), authentication);
         CentralLayoutBuilder centralLayoutBuilder = new CentralLayoutBuilder(authentication);
         for (FilteredAgentRollup agentRollup : agentRollups) {
-            centralLayoutBuilder.process(agentRollup, 0);
+            try {
+                centralLayoutBuilder.process(agentRollup, 0);
+            } catch (Exception e) {
+                // log and move on to next
+                logger.warn("Failed to process layout for agent rollup [" + agentRollup.id() + ", " + agentRollup.display() + "]", e);
+            }
         }
         return centralLayoutBuilder.build(authentication);
     }
@@ -383,7 +392,12 @@ class LayoutService {
                             .defaultDisplayedPercentiles(defaultDisplayedPercentiles)
                             .build());
             for (FilteredAgentRollup childAgentRollup : agentRollup.children()) {
-                process(childAgentRollup, depth + 1);
+                try {
+                    process(childAgentRollup, depth + 1);
+                } catch (Exception e) {
+                    // log and move on to next
+                    logger.warn("Failed to process layout for agent rollup [" + childAgentRollup.id() + ", " + childAgentRollup.display() + "]", e);
+                }
             }
         }
 
