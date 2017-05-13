@@ -69,7 +69,6 @@ public class AgentDao implements AgentRepository {
     private final PreparedStatement isAgentPS;
 
     private final PreparedStatement readDisplayPS;
-    private final PreparedStatement insertDisplayIfNotExistsPS;
     private final PreparedStatement updateDisplayPS;
 
     private final PreparedStatement deletePS;
@@ -98,8 +97,6 @@ public class AgentDao implements AgentRepository {
 
         readDisplayPS = session
                 .prepare("select display from agent_rollup where one = 1 and agent_rollup_id = ?");
-        insertDisplayIfNotExistsPS = session.prepare("insert into agent_rollup (one,"
-                + " agent_rollup_id, display) values (1, ?, ?) if not exists");
         updateDisplayPS = session.prepare("update agent_rollup set display = ? where"
                 + " one = 1 and agent_rollup_id = ? if display = ?");
 
@@ -234,8 +231,8 @@ public class AgentDao implements AgentRepository {
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
-            insertIfNotExists(agentRollupConfig);
-            return;
+            // agent rollup was just deleted
+            throw new OptimisticLockException();
         }
         String currDisplay = row.getString(0);
         AgentRollupConfig priorAgentRollupConfig =
@@ -279,22 +276,6 @@ public class AgentDao implements AgentRepository {
             builder.addChildren(createAgentRollup(childAgentRollupRecord, parentChildMap));
         }
         return builder.build();
-    }
-
-    private void insertIfNotExists(AgentRollupConfig agentRollupConfig)
-            throws OptimisticLockException {
-        BoundStatement boundStatement = insertDisplayIfNotExistsPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentRollupConfig.id());
-        boundStatement.setString(i++, agentRollupConfig.display());
-        ResultSet results = session.execute(boundStatement);
-        Row row = checkNotNull(results.one());
-        boolean applied = row.getBool("[applied]");
-        if (applied) {
-            agentRollupConfigCache.invalidate(agentRollupConfig.id());
-        } else {
-            throw new OptimisticLockException();
-        }
     }
 
     static List<String> getAgentRollupIds(String agentRollupId) {
