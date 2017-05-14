@@ -64,7 +64,7 @@ public class AgentDao implements AgentRepository {
     private final PreparedStatement readPS;
     private final PreparedStatement readParentIdPS;
     private final PreparedStatement insertPS;
-    private final PreparedStatement insertLastCaptureTimePS;
+    private final PreparedStatement updateLastCaptureTimePS;
 
     private final PreparedStatement isAgentPS;
 
@@ -89,8 +89,8 @@ public class AgentDao implements AgentRepository {
                 + " one = 1 and agent_rollup_id = ?");
         insertPS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
                 + " parent_agent_rollup_id, agent) values (1, ?, ?, ?)");
-        insertLastCaptureTimePS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
-                + " last_capture_time) values (1, ?, ?)");
+        updateLastCaptureTimePS = session.prepare("update agent_rollup set last_capture_time = ?"
+                + " where one = 1 and agent_rollup_id = ? if exists");
 
         isAgentPS = session
                 .prepare("select agent from agent_rollup where one = 1 and agent_rollup_id = ?");
@@ -212,10 +212,10 @@ public class AgentDao implements AgentRepository {
     }
 
     ResultSetFuture updateLastCaptureTime(String agentId, long captureTime) {
-        BoundStatement boundStatement = insertLastCaptureTimePS.bind();
+        BoundStatement boundStatement = updateLastCaptureTimePS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentId);
         boundStatement.setTimestamp(i++, new Date(captureTime));
+        boundStatement.setString(i++, agentId);
         return session.executeAsync(boundStatement);
     }
 

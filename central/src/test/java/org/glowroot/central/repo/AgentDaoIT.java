@@ -106,6 +106,14 @@ public class AgentDaoIT {
     }
 
     @Test
+    public void shouldNotInsertInvalidRow() throws Exception {
+        // when
+        agentDao.updateLastCaptureTime("a", 5).get();
+        // then
+        assertThat(agentDao.readAgentRollups()).isEmpty();
+    }
+
+    @Test
     public void shouldCalculateRollupIds() {
         assertThat(AgentDao.getAgentRollupIds("a")).containsExactly("a");
         assertThat(AgentDao.getAgentRollupIds("a/b")).containsExactly("a", "a/b");

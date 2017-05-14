@@ -77,7 +77,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 21;
+    private static final int CURR_SCHEMA_VERSION = 22;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -197,6 +197,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 21) {
             updateWebConfig();
             updateSchemaVersion(21);
+        }
+        // 0.9.16 to 0.9.17
+        if (initialSchemaVersion < 22) {
+            removeInvalidAgentRollupRows();
+            updateSchemaVersion(22);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -737,6 +742,19 @@ public class SchemaUpgrade {
         BoundStatement boundStatement = preparedStatement.bind();
         boundStatement.setString(0, updatedWebConfigText);
         session.execute(boundStatement);
+    }
+
+    private void removeInvalidAgentRollupRows() {
+        ResultSet results = session.execute("select agent_rollup_id, agent from agent_rollup");
+        PreparedStatement deletePS =
+                session.prepare("delete from agent_rollup where one = 1 and agent_rollup_id = ?");
+        for (Row row : results) {
+            if (row.isNull(1)) {
+                BoundStatement boundStatement = deletePS.bind();
+                boundStatement.setString(0, checkNotNull(row.getString(0)));
+                session.execute(boundStatement);
+            }
+        }
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType) {

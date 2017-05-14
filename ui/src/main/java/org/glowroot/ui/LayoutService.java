@@ -29,10 +29,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
@@ -44,6 +47,8 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 class LayoutService {
+
+    private static final Logger logger = LoggerFactory.getLogger(LayoutService.class);
 
     private static final String AGENT_ID = "";
 
@@ -343,6 +348,14 @@ class LayoutService {
         }
 
         private void process(FilteredAgentRollup agentRollup, int depth) throws Exception {
+            UiConfig uiConfig;
+            try {
+                uiConfig = configRepository.getUiConfig(agentRollup.id());
+            } catch (AgentConfigNotFoundException e) {
+                // this shouldn't happen anymore, but just in case, don't want to kill entire ui
+                logger.error(e.getMessage(), e);
+                return;
+            }
             Permissions permissions = agentRollup.permissions();
             hasSomeAccess = true;
             showNavbarTransaction =
@@ -357,7 +370,6 @@ class LayoutService {
             showNavbarReport = showNavbarReport || (permissions.transaction().overview()
                     && permissions.jvm().gauges());
             showNavbarConfig = showNavbarConfig || permissions.config().view();
-            UiConfig uiConfig = configRepository.getUiConfig(agentRollup.id());
             String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
             List<Double> defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
             Set<String> transactionTypes = Sets.newTreeSet();
