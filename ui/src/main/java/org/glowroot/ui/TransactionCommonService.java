@@ -544,7 +544,7 @@ class TransactionCommonService {
 
     private int getMaxAggregateQueriesPerType(String agentRollupId) throws Exception {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
-        if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerType()) {
+        if (advancedConfig.hasMaxAggregateQueriesPerType()) {
             return advancedConfig.getMaxAggregateQueriesPerType().getValue();
         } else {
             return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE;
@@ -553,7 +553,7 @@ class TransactionCommonService {
 
     private int getMaxAggregateServiceCallsPerType(String agentRollupId) throws Exception {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
-        if (advancedConfig != null && advancedConfig.hasMaxAggregateServiceCallsPerType()) {
+        if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
             return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
         } else {
             return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;

@@ -1994,13 +1994,13 @@ public class AggregateDao implements AggregateRepository {
                 .rollupLevel(rollupLevel)
                 .adjustedTTL(adjustedTTL);
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
-        if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerType()) {
+        if (advancedConfig.hasMaxAggregateQueriesPerType()) {
             rollupInfo.maxAggregateQueriesPerType(
                     advancedConfig.getMaxAggregateQueriesPerType().getValue());
         } else {
             rollupInfo.maxAggregateQueriesPerType(ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE);
         }
-        if (advancedConfig != null && advancedConfig.hasMaxAggregateServiceCallsPerType()) {
+        if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
             rollupInfo.maxAggregateServiceCallsPerType(
                     advancedConfig.getMaxAggregateServiceCallsPerType().getValue());
         } else {

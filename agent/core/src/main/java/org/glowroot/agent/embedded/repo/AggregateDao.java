@@ -542,7 +542,7 @@ public class AggregateDao implements AggregateRepository {
 
     private int getMaxAggregateQueriesPerType() throws Exception {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID);
-        if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerType()) {
+        if (advancedConfig.hasMaxAggregateQueriesPerType()) {
             return advancedConfig.getMaxAggregateQueriesPerType().getValue();
         } else {
             return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE;
@@ -551,7 +551,7 @@ public class AggregateDao implements AggregateRepository {
 
     private int getMaxAggregateServiceCallsPerType() throws Exception {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID);
-        if (advancedConfig != null && advancedConfig.hasMaxAggregateServiceCallsPerType()) {
+        if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
             return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
         } else {
             return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
