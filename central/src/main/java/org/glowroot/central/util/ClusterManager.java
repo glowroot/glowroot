@@ -296,6 +296,10 @@ public abstract class ClusterManager {
             // TODO short-circuit after receiving one (non-empty) response, instead of waiting for
             // all responses
             future.get(60, SECONDS);
+            if (consumer.logStackTrace) {
+                logger.warn("context for remote error(s) logged above",
+                        new Exception("location stack trace"));
+            }
             if (consumer.values.isEmpty()) {
                 return Optional.empty();
             } else {
@@ -371,6 +375,7 @@ public abstract class ClusterManager {
             implements TriConsumer<Address, /*@Nullable*/ Optional<V>, /*@Nullable*/ Throwable> {
 
         private final Queue<V> values = Queues.newConcurrentLinkedQueue();
+        private volatile boolean logStackTrace;
 
         @Override
         public void accept(Address address, @Nullable Optional<V> value,
@@ -378,6 +383,7 @@ public abstract class ClusterManager {
             if (throwable != null) {
                 logger.warn("received error from {}: {}", address, throwable.getMessage(),
                         throwable);
+                logStackTrace = true;
                 return;
             }
             // value is only null when throwable is not null
