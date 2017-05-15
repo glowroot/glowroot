@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import org.infinispan.configuration.cache.CacheMode;
@@ -303,18 +302,6 @@ public abstract class ClusterManager {
                 return Optional.of(consumer.values.remove());
             }
         }
-
-        @Override
-        public <R extends Serializable> boolean executeVoid(String key,
-                SerializableFunction<V, Optional<Boolean>> task) throws Exception {
-            return cache.values().parallelStream()
-                    .filterKeys(ImmutableSet.of(key))
-                    .map(task)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .findAny()
-                    .isPresent();
-        }
     }
 
     private static class NonClusterDistributedExecutionMapImpl<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object>
@@ -349,17 +336,6 @@ public abstract class ClusterManager {
                 return Optional.empty();
             }
             return Optional.of(task.apply(value));
-        }
-
-        @Override
-        public <R extends Serializable> boolean executeVoid(String key,
-                SerializableFunction<V, Optional<Boolean>> task) throws Exception {
-            V value = cache.get(key);
-            if (value == null) {
-                return false;
-            }
-            task.apply(value);
-            return true;
         }
     }
 
