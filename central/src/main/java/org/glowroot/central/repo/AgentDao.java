@@ -40,6 +40,8 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
@@ -56,6 +58,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class AgentDao implements AgentRepository {
 
+    private static final Logger logger = LoggerFactory.getLogger(AgentDao.class);
+
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
@@ -64,7 +68,7 @@ public class AgentDao implements AgentRepository {
     private final PreparedStatement readPS;
     private final PreparedStatement readParentIdPS;
     private final PreparedStatement insertPS;
-    private final PreparedStatement updateLastCaptureTimePS;
+    private final PreparedStatement insertLastCaptureTimePS;
 
     private final PreparedStatement isAgentPS;
 
@@ -83,14 +87,24 @@ public class AgentDao implements AgentRepository {
                 + " parent_agent_rollup_id varchar, display varchar, agent boolean,"
                 + " last_capture_time timestamp, primary key (one, agent_rollup_id)) " + WITH_LCS);
 
+        try {
+            cleanUpAgentRollupTable(session);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+
         readPS = session.prepare("select agent_rollup_id, parent_agent_rollup_id,"
                 + " display, agent, last_capture_time from agent_rollup where one = 1");
         readParentIdPS = session.prepare("select parent_agent_rollup_id from agent_rollup where"
                 + " one = 1 and agent_rollup_id = ?");
         insertPS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
                 + " parent_agent_rollup_id, agent) values (1, ?, ?, ?)");
-        updateLastCaptureTimePS = session.prepare("update agent_rollup set last_capture_time = ?"
-                + " where one = 1 and agent_rollup_id = ? if exists");
+        // it would be nice to use "update ... if not exists" here, which would eliminate the need
+        // to filter incomplete records in readAgentRollups() and eliminate the need to clean up
+        // table occassionally in cleanUpAgentRollupTable(), but "if not exists" easily leads to
+        // lots of timeout errors "Cassandra timeout during write query at consistency SERIAL"
+        insertLastCaptureTimePS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
+                + " last_capture_time) values (1, ?, ?)");
 
         isAgentPS = session
                 .prepare("select agent from agent_rollup where one = 1 and agent_rollup_id = ?");
@@ -150,6 +164,12 @@ public class AgentDao implements AgentRepository {
             String id = checkNotNull(row.getString(i++));
             String parentId = row.getString(i++);
             String display = MoreObjects.firstNonNull(row.getString(i++), id);
+            if (row.isNull(i)) {
+                // this row was created by insertLastCaptureTimePS, but there has not been a
+                // collectInit() for it yet, so exclude it from layout service (to avoid
+                // AgentConfigNotFoundException)
+                continue;
+            }
             boolean agent = row.getBool(i++);
             Date lastCaptureTime = row.getTimestamp(i++);
             AgentRollupRecord agentRollupRecord = ImmutableAgentRollupRecord.builder()
@@ -212,10 +232,10 @@ public class AgentDao implements AgentRepository {
     }
 
     ResultSetFuture updateLastCaptureTime(String agentId, long captureTime) {
-        BoundStatement boundStatement = updateLastCaptureTimePS.bind();
+        BoundStatement boundStatement = insertLastCaptureTimePS.bind();
         int i = 0;
-        boundStatement.setTimestamp(i++, new Date(captureTime));
         boundStatement.setString(i++, agentId);
+        boundStatement.setTimestamp(i++, new Date(captureTime));
         return session.executeAsync(boundStatement);
     }
 
@@ -296,6 +316,22 @@ public class AgentDao implements AgentRepository {
                 .id(id)
                 .display(Strings.nullToEmpty(display))
                 .build();
+    }
+
+    private static void cleanUpAgentRollupTable(Session session) {
+        ResultSet results = session.execute("select agent_rollup_id, agent from agent_rollup");
+        PreparedStatement deletePS = session.prepare(
+                "delete from agent_rollup where one = 1 and agent_rollup_id = ? if agent = null");
+        for (Row row : results) {
+            if (row.isNull(1)) {
+                // this row was created by insertLastCaptureTimePS, but there has not been a
+                // collectInit() for it yet, so exclude it from layout service (to avoid
+                // AgentConfigNotFoundException)
+                BoundStatement boundStatement = deletePS.bind();
+                boundStatement.setString(0, checkNotNull(row.getString(0)));
+                session.execute(boundStatement);
+            }
+        }
     }
 
     @Value.Immutable
