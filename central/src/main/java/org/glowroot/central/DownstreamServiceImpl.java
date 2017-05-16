@@ -121,22 +121,26 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     void updateAgentConfigIfConnectedAndNeeded(String agentId) throws Exception {
-        connectedAgents.execute(agentId, ConnectedAgent::updateAgentConfigIfConnectedAndNeeded);
+        connectedAgents.execute(agentId, new UpdateAgentConfigIfConnectedAndNeededFunction());
     }
 
     boolean isAvailable(String agentId) throws Exception {
         java.util.Optional<Boolean> optional =
-                connectedAgents.execute(agentId, ConnectedAgent::isAvailable);
+                connectedAgents.execute(agentId, new IsAvailableFunction());
         return optional.isPresent();
     }
 
     ThreadDump threadDump(String agentId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::threadDump);
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setThreadDumpRequest(ThreadDumpRequest.getDefaultInstance())
+                .build());
         return responseWrapper.getThreadDumpResponse().getThreadDump();
     }
 
     String jstack(String agentId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::jstack);
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setJstackRequest(JstackRequest.getDefaultInstance())
+                .build());
         JstackResponse response = responseWrapper.getJstackResponse();
         if (response.getUnavailableDueToRunningInJre()) {
             throw new UnavailableDueToRunningInJreException();
@@ -148,8 +152,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     long availableDiskSpaceBytes(String agentId, String directory) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId,
-                connectedAgent -> connectedAgent.availableDiskSpaceBytes(directory));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setAvailableDiskSpaceRequest(AvailableDiskSpaceRequest.newBuilder()
+                        .setDirectory(directory))
+                .build());
         AvailableDiskSpaceResponse response = responseWrapper.getAvailableDiskSpaceResponse();
         if (response.getDirectoryDoesNotExist()) {
             throw new DirectoryDoesNotExistException();
@@ -158,8 +164,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception {
-        AgentResponse responseWrapper =
-                runOnCluster(agentId, connectedAgent -> connectedAgent.heapDump(directory));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setHeapDumpRequest(HeapDumpRequest.newBuilder()
+                        .setDirectory(directory))
+                .build());
         HeapDumpResponse response = responseWrapper.getHeapDumpResponse();
         if (response.getDirectoryDoesNotExist()) {
             throw new DirectoryDoesNotExistException();
@@ -168,7 +176,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     HeapHistogram heapHistogram(String agentId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::heapHistogram);
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setHeapHistogramRequest(HeapHistogramRequest.newBuilder())
+                .build());
         HeapHistogramResponse response = responseWrapper.getHeapHistogramResponse();
         if (response.getUnavailableDueToRunningInJre()) {
             throw new UnavailableDueToRunningInJreException();
@@ -180,85 +190,120 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     void gc(String agentId) throws Exception {
-        runOnCluster(agentId, ConnectedAgent::gc);
+        runOnCluster(agentId, CentralRequest.newBuilder()
+                .setGcRequest(GcRequest.getDefaultInstance())
+                .build());
     }
 
     MBeanDump mbeanDump(String agentId, MBeanDumpKind mbeanDumpKind, List<String> objectNames)
             throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId,
-                connectedAgent -> connectedAgent.mbeanDump(mbeanDumpKind, objectNames));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setMbeanDumpRequest(MBeanDumpRequest.newBuilder()
+                        .setKind(mbeanDumpKind)
+                        .addAllObjectName(objectNames))
+                .build());
         return responseWrapper.getMbeanDumpResponse().getMbeanDump();
     }
 
     List<String> matchingMBeanObjectNames(String agentId, String partialObjectName, int limit)
             throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, connectedAgent -> connectedAgent
-                .matchingMBeanObjectNames(partialObjectName, limit));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setMatchingMbeanObjectNamesRequest(MatchingMBeanObjectNamesRequest.newBuilder()
+                        .setPartialObjectName(partialObjectName)
+                        .setLimit(limit))
+                .build());
         return responseWrapper.getMatchingMbeanObjectNamesResponse().getObjectNameList();
     }
 
     MBeanMeta mbeanMeta(String agentId, String objectName) throws Exception {
-        AgentResponse responseWrapper =
-                runOnCluster(agentId, connectedAgent -> connectedAgent.mbeanMeta(objectName));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setMbeanMetaRequest(MBeanMetaRequest.newBuilder()
+                        .setObjectName(objectName))
+                .build());
         return responseWrapper.getMbeanMetaResponse().getMbeanMeta();
     }
 
     Map<String, String> systemProperties(String agentId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::systemProperties);
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setSystemPropertiesRequest(SystemPropertiesRequest.getDefaultInstance())
+                .build());
         return responseWrapper.getSystemPropertiesResponse().getSystemPropertiesMap();
     }
 
     Capabilities capabilities(String agentId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::capabilities);
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setCapabilitiesRequest(CapabilitiesRequest.getDefaultInstance())
+                .build());
         return responseWrapper.getCapabilitiesResponse().getCapabilities();
     }
 
     GlobalMeta globalMeta(String agentId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::globalMeta);
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setGlobalMetaRequest(GlobalMetaRequest.getDefaultInstance())
+                .build());
         return responseWrapper.getGlobalMetaResponse().getGlobalMeta();
     }
 
     void preloadClasspathCache(String agentId) throws Exception {
-        runOnCluster(agentId, ConnectedAgent::preloadClasspathCache);
+        runOnCluster(agentId, CentralRequest.newBuilder()
+                .setPreloadClasspathCacheRequest(
+                        PreloadClasspathCacheRequest.getDefaultInstance())
+                .build());
     }
 
     List<String> matchingClassNames(String agentId, String partialClassName, int limit)
             throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId,
-                connectedAgent -> connectedAgent.matchingClassNames(partialClassName, limit));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setMatchingClassNamesRequest(MatchingClassNamesRequest.newBuilder()
+                        .setPartialClassName(partialClassName)
+                        .setLimit(limit))
+                .build());
         return responseWrapper.getMatchingClassNamesResponse().getClassNameList();
     }
 
     List<String> matchingMethodNames(String agentId, String className, String partialMethodName,
             int limit) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, connectedAgent -> connectedAgent
-                .matchingMethodNames(className, partialMethodName, limit));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setMatchingMethodNamesRequest(MatchingMethodNamesRequest.newBuilder()
+                        .setClassName(className)
+                        .setPartialMethodName(partialMethodName)
+                        .setLimit(limit))
+                .build());
         return responseWrapper.getMatchingMethodNamesResponse().getMethodNameList();
     }
 
     List<MethodSignature> methodSignatures(String agentId, String className, String methodName)
             throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId,
-                connectedAgent -> connectedAgent.methodSignatures(className, methodName));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setMethodSignaturesRequest(MethodSignaturesRequest.newBuilder()
+                        .setClassName(className)
+                        .setMethodName(methodName))
+                .build());
         return responseWrapper.getMethodSignaturesResponse().getMethodSignatureList();
     }
 
     int reweave(String agentId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, ConnectedAgent::reweave);
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setReweaveRequest(ReweaveRequest.getDefaultInstance())
+                .build());
         return responseWrapper.getReweaveResponse().getClassUpdateCount();
     }
 
     @Nullable
     Trace.Header getHeader(String agentId, String traceId) throws Exception {
-        AgentResponse responseWrapper =
-                runOnCluster(agentId, connectedAgent -> connectedAgent.getHeader(traceId));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setHeaderRequest(HeaderRequest.newBuilder()
+                        .setTraceId(traceId))
+                .build());
         return responseWrapper.getHeaderResponse().getHeader();
     }
 
     @Nullable
     Entries getEntries(String agentId, String traceId) throws Exception {
-        AgentResponse responseWrapper =
-                runOnCluster(agentId, connectedAgent -> connectedAgent.getEntries(traceId));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setEntriesRequest(EntriesRequest.newBuilder()
+                        .setTraceId(traceId))
+                .build());
         EntriesResponse response = responseWrapper.getEntriesResponse();
         List<Trace.Entry> entries = response.getEntryList();
         if (entries.isEmpty()) {
@@ -273,8 +318,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     @Nullable
     Profile getMainThreadProfile(String agentId, String traceId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId,
-                connectedAgent -> connectedAgent.getMainThreadProfile(traceId));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setMainThreadProfileRequest(MainThreadProfileRequest.newBuilder()
+                        .setTraceId(traceId))
+                .build());
         MainThreadProfileResponse response = responseWrapper.getMainThreadProfileResponse();
         if (response.hasProfile()) {
             return response.getProfile();
@@ -285,8 +332,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     @Nullable
     Profile getAuxThreadProfile(String agentId, String traceId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId,
-                connectedAgent -> connectedAgent.getAuxThreadProfile(traceId));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setAuxThreadProfileRequest(AuxThreadProfileRequest.newBuilder()
+                        .setTraceId(traceId))
+                .build());
         AuxThreadProfileResponse response = responseWrapper.getAuxThreadProfileResponse();
         if (response.hasProfile()) {
             return response.getProfile();
@@ -297,8 +346,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     @Nullable
     Trace getFullTrace(String agentId, String traceId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId,
-                connectedAgent -> connectedAgent.getFullTrace(traceId));
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setFullTraceRequest(FullTraceRequest.newBuilder()
+                        .setTraceId(traceId))
+                .build());
         FullTraceResponse response = responseWrapper.getFullTraceResponse();
         if (response.hasTrace()) {
             return response.getTrace();
@@ -307,9 +358,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         }
     }
 
-    private AgentResponse runOnCluster(String agentId,
-            SerializableFunction<ConnectedAgent, AgentResult> task) throws Exception {
-        java.util.Optional<AgentResult> result = connectedAgents.execute(agentId, task);
+    private AgentResponse runOnCluster(String agentId, CentralRequest centralRequest)
+            throws Exception {
+        java.util.Optional<AgentResult> result =
+                connectedAgents.execute(agentId, new CentralRequestFunction(centralRequest));
         if (result.isPresent()) {
             return getResponseWrapper(result.get());
         } else {
@@ -439,182 +491,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             return true;
         }
 
-        private AgentResult threadDump() {
-            return sendRequest(CentralRequest.newBuilder()
+        private AgentResult sendRequest(CentralRequest requestWithoutRequestId) {
+            CentralRequest request = CentralRequest.newBuilder(requestWithoutRequestId)
                     .setRequestId(nextRequestId.getAndIncrement())
-                    .setThreadDumpRequest(ThreadDumpRequest.getDefaultInstance())
-                    .build());
-        }
-
-        private AgentResult jstack() {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setJstackRequest(JstackRequest.getDefaultInstance())
-                    .build());
-        }
-
-        private AgentResult availableDiskSpaceBytes(String directory) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setAvailableDiskSpaceRequest(AvailableDiskSpaceRequest.newBuilder()
-                            .setDirectory(directory))
-                    .build());
-        }
-
-        private AgentResult heapDump(String directory) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setHeapDumpRequest(HeapDumpRequest.newBuilder()
-                            .setDirectory(directory))
-                    .build());
-        }
-
-        private AgentResult heapHistogram() {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setHeapHistogramRequest(HeapHistogramRequest.newBuilder())
-                    .build());
-        }
-
-        private AgentResult gc() {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setGcRequest(GcRequest.getDefaultInstance())
-                    .build());
-        }
-
-        private AgentResult mbeanDump(MBeanDumpKind mbeanDumpKind, List<String> objectNames) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setMbeanDumpRequest(MBeanDumpRequest.newBuilder()
-                            .setKind(mbeanDumpKind)
-                            .addAllObjectName(objectNames))
-                    .build());
-        }
-
-        private AgentResult matchingMBeanObjectNames(String partialObjectName, int limit) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setMatchingMbeanObjectNamesRequest(MatchingMBeanObjectNamesRequest.newBuilder()
-                            .setPartialObjectName(partialObjectName)
-                            .setLimit(limit))
-                    .build());
-        }
-
-        private AgentResult mbeanMeta(String objectName) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setMbeanMetaRequest(MBeanMetaRequest.newBuilder()
-                            .setObjectName(objectName))
-                    .build());
-        }
-
-        private AgentResult systemProperties() {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setSystemPropertiesRequest(SystemPropertiesRequest.getDefaultInstance())
-                    .build());
-        }
-
-        private AgentResult capabilities() {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setCapabilitiesRequest(CapabilitiesRequest.getDefaultInstance())
-                    .build());
-        }
-
-        private AgentResult globalMeta() {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setGlobalMetaRequest(GlobalMetaRequest.getDefaultInstance())
-                    .build());
-        }
-
-        private AgentResult preloadClasspathCache() {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setPreloadClasspathCacheRequest(
-                            PreloadClasspathCacheRequest.getDefaultInstance())
-                    .build());
-        }
-
-        private AgentResult matchingClassNames(String partialClassName, int limit) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setMatchingClassNamesRequest(MatchingClassNamesRequest.newBuilder()
-                            .setPartialClassName(partialClassName)
-                            .setLimit(limit))
-                    .build());
-        }
-
-        private AgentResult matchingMethodNames(String className, String partialMethodName,
-                int limit) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setMatchingMethodNamesRequest(MatchingMethodNamesRequest.newBuilder()
-                            .setClassName(className)
-                            .setPartialMethodName(partialMethodName)
-                            .setLimit(limit))
-                    .build());
-        }
-
-        private AgentResult methodSignatures(String className, String methodName) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setMethodSignaturesRequest(MethodSignaturesRequest.newBuilder()
-                            .setClassName(className)
-                            .setMethodName(methodName))
-                    .build());
-        }
-
-        private AgentResult reweave() {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setReweaveRequest(ReweaveRequest.getDefaultInstance())
-                    .build());
-        }
-
-        private AgentResult getHeader(String traceId) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setHeaderRequest(HeaderRequest.newBuilder()
-                            .setTraceId(traceId))
-                    .build());
-        }
-
-        private AgentResult getEntries(String traceId) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setEntriesRequest(EntriesRequest.newBuilder()
-                            .setTraceId(traceId))
-                    .build());
-        }
-
-        private AgentResult getMainThreadProfile(String traceId) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setMainThreadProfileRequest(MainThreadProfileRequest.newBuilder()
-                            .setTraceId(traceId))
-                    .build());
-        }
-
-        private AgentResult getAuxThreadProfile(String traceId) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setAuxThreadProfileRequest(AuxThreadProfileRequest.newBuilder()
-                            .setTraceId(traceId))
-                    .build());
-        }
-
-        private AgentResult getFullTrace(String traceId) {
-            return sendRequest(CentralRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setFullTraceRequest(FullTraceRequest.newBuilder()
-                            .setTraceId(traceId))
-                    .build());
-        }
-
-        private AgentResult sendRequest(CentralRequest request) {
+                    .build();
             ResponseHolder responseHolder = new ResponseHolder();
             responseHolders.put(request.getRequestId(), responseHolder);
             // synchronization required since individual StreamObservers are not thread-safe
@@ -694,4 +574,52 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     @SuppressWarnings("serial")
     private static class AgentException extends Exception {}
+
+    // using named class instead of lambda to avoid "Invalid lambda deserialization" when one node
+    // is running with this class compiled by eclipse and one node is running with this class
+    // compiled by javac, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=516620
+    private static class UpdateAgentConfigIfConnectedAndNeededFunction
+            implements SerializableFunction<ConnectedAgent, Boolean> {
+
+        private static final long serialVersionUID = 0L;
+
+        @Override
+        public Boolean apply(ConnectedAgent connectedAgent) {
+            return connectedAgent.updateAgentConfigIfConnectedAndNeeded();
+        }
+    }
+
+    // using named class instead of lambda to avoid "Invalid lambda deserialization" when one node
+    // is running with this class compiled by eclipse and one node is running with this class
+    // compiled by javac, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=516620
+    private static class IsAvailableFunction
+            implements SerializableFunction<ConnectedAgent, Boolean> {
+
+        private static final long serialVersionUID = 0L;
+
+        @Override
+        public Boolean apply(ConnectedAgent connectedAgent) {
+            return connectedAgent.isAvailable();
+        }
+    }
+
+    // using named class instead of lambda to avoid "Invalid lambda deserialization" when one node
+    // is running with this class compiled by eclipse and one node is running with this class
+    // compiled by javac, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=516620
+    private static class CentralRequestFunction
+            implements SerializableFunction<ConnectedAgent, AgentResult> {
+
+        private static final long serialVersionUID = 0L;
+
+        private final CentralRequest centralRequest;
+
+        private CentralRequestFunction(CentralRequest centralRequest) {
+            this.centralRequest = centralRequest;
+        }
+
+        @Override
+        public AgentResult apply(ConnectedAgent connectedAgent) {
+            return connectedAgent.sendRequest(centralRequest);
+        }
+    }
 }
