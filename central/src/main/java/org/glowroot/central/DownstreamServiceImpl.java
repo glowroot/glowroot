@@ -48,7 +48,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceRequest;
@@ -95,6 +94,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
@@ -382,10 +382,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             throw new TimeoutException();
         }
         AgentResponse response = result.value().get();
-        if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
+        if (response.getMessageCase() == AgentResponse.MessageCase.UNKNOWN_REQUEST_RESPONSE) {
             throw new AgentUnsupportedOperationException();
         }
-        if (response.getMessageCase() == MessageCase.EXCEPTION_RESPONSE) {
+        if (response.getMessageCase() == AgentResponse.MessageCase.EXCEPTION_RESPONSE) {
             throw new AgentException();
         }
         return response;
@@ -411,7 +411,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
         @Override
         public void onNext(AgentResponse value) {
-            if (value.getMessageCase() == MessageCase.HELLO) {
+            if (value.getMessageCase() == AgentResponse.MessageCase.HELLO) {
                 agentId = value.getHello().getAgentId();
                 connectedAgents.put(agentId, ConnectedAgent.this);
                 synchronized (requestObserver) {
@@ -479,11 +479,15 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             synchronized (requestObserver) {
                 requestObserver.onNext(request);
             }
+            int timeoutSeconds = 60;
+            if (request.getMessageCase() == CentralRequest.MessageCase.HEAP_DUMP_REQUEST) {
+                timeoutSeconds = 180;
+            }
             // timeout is in case agent never responds
             // passing AgentResponse.getDefaultInstance() is just dummy (non-null) value
             try {
                 AgentResponse response = responseHolder.response
-                        .exchange(AgentResponse.getDefaultInstance(), 1, MINUTES);
+                        .exchange(AgentResponse.getDefaultInstance(), timeoutSeconds, SECONDS);
                 return ImmutableAgentResult.builder()
                         .value(response)
                         .build();
