@@ -166,7 +166,7 @@ class CentralModule {
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace, config != null);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
-                startupLogger.info("creating cassandra schema...");
+                startupLogger.info("creating Cassandra schema...");
             } else {
                 schemaUpgrade.upgrade();
             }
@@ -208,7 +208,7 @@ class CentralModule {
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
-                startupLogger.info("cassandra schema created");
+                startupLogger.info("Cassandra schema created");
             }
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
@@ -490,56 +490,91 @@ class CentralModule {
 
     @RequiresNonNull("startupLogger")
     private static Session connect(CentralConfiguration centralConfig) throws InterruptedException {
+        Session session = null;
+
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean waitingForCassandraLogged = false;
+        boolean waitingForCassandraConsistencyLogged = false;
         NoHostAvailableException lastException = null;
-        while (stopwatch.elapsed(MINUTES) < 10) {
+        while (stopwatch.elapsed(MINUTES) < 30) {
             try {
-                Cluster.Builder builder = Cluster.builder()
-                        .addContactPoints(
-                                centralConfig.cassandraContactPoint().toArray(new String[0]))
-                        // aggressive reconnect policy seems ok since not many clients
-                        .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
-                        // let driver know that only idempotent queries are used so it will retry on
-                        // timeout
-                        .withQueryOptions(new QueryOptions()
-                                .setDefaultIdempotence(true)
-                                .setConsistencyLevel(centralConfig.cassandraConsistencyLevel()))
-                        // central runs lots of parallel async queries and is very spiky since all
-                        // aggregates come in right after each minute marker
-                        .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096));
-                String cassandraUsername = centralConfig.cassandraUsername();
-                if (!cassandraUsername.isEmpty()) {
-                    // empty password is strange but valid
-                    builder.withCredentials(cassandraUsername, centralConfig.cassandraPassword());
+                if (session == null) {
+                    session = createCluster(centralConfig).connect();
                 }
-                Session session = builder.build().connect();
-                ResultSet results = session
-                        .execute("select release_version from system.local where key = 'local'");
-                Row row = checkNotNull(results.one());
-                String cassandraVersion = checkNotNull(row.getString(0));
-                if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")
-                        || cassandraVersion.startsWith("0.")) {
-                    throw new IllegalStateException(
-                            "Glowroot central requires Cassandra 2.1+, but found: "
-                                    + cassandraVersion);
-                }
+                String cassandraVersion = verifyCassandraVersion(session);
+                executeTestQueryAtConfiguredConsistencyLevel(session, centralConfig);
                 startupLogger.info("Connected to Cassandra {}, using consistency level {}",
                         cassandraVersion, centralConfig.cassandraConsistencyLevel());
                 return session;
             } catch (NoHostAvailableException e) {
                 startupLogger.debug(e.getMessage(), e);
                 lastException = e;
-                if (!waitingForCassandraLogged) {
-                    startupLogger.info("waiting for cassandra ({}) ...",
+                if (session == null && !waitingForCassandraLogged) {
+                    startupLogger.info("waiting for Cassandra ({}) ...",
                             Joiner.on(",").join(centralConfig.cassandraContactPoint()));
+                    waitingForCassandraLogged = true;
                 }
-                waitingForCassandraLogged = true;
+                if (session != null && !waitingForCassandraConsistencyLogged) {
+                    startupLogger.info("waiting for enough Cassandra replicas to run queries at"
+                            + " consistency level {} ({}) ...",
+                            centralConfig.cassandraConsistencyLevel(),
+                            Joiner.on(",").join(centralConfig.cassandraContactPoint()));
+                    waitingForCassandraConsistencyLogged = true;
+                }
                 Thread.sleep(1000);
             }
         }
         checkNotNull(lastException);
         throw lastException;
+    }
+
+    private static Cluster createCluster(CentralConfiguration centralConfig) {
+        Cluster.Builder builder = Cluster.builder()
+                .addContactPoints(
+                        centralConfig.cassandraContactPoint().toArray(new String[0]))
+                // aggressive reconnect policy seems ok since not many clients
+                .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
+                // let driver know that only idempotent queries are used so it will retry on
+                // timeout
+                .withQueryOptions(new QueryOptions()
+                        .setDefaultIdempotence(true)
+                        .setConsistencyLevel(centralConfig.cassandraConsistencyLevel()))
+                // central runs lots of parallel async queries and is very spiky since all
+                // aggregates come in right after each minute marker
+                .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096));
+        String cassandraUsername = centralConfig.cassandraUsername();
+        if (!cassandraUsername.isEmpty()) {
+            // empty password is strange but valid
+            builder.withCredentials(cassandraUsername, centralConfig.cassandraPassword());
+        }
+        return builder.build();
+    }
+
+    private static String verifyCassandraVersion(Session session) {
+        ResultSet results = session
+                .execute("select release_version from system.local where key = 'local'");
+        Row row = checkNotNull(results.one());
+        String cassandraVersion = checkNotNull(row.getString(0));
+        if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")
+                || cassandraVersion.startsWith("0.")) {
+            throw new IllegalStateException(
+                    "Glowroot central requires Cassandra 2.1+, but found: "
+                            + cassandraVersion);
+        }
+        return cassandraVersion;
+    }
+
+    private static void executeTestQueryAtConfiguredConsistencyLevel(Session session,
+            CentralConfiguration centralConfig) {
+        String keyspace = centralConfig.cassandraKeyspace();
+        KeyspaceMetadata keyspaceMetadata =
+                session.getCluster().getMetadata().getKeyspace(keyspace);
+        if (keyspaceMetadata != null
+                && keyspaceMetadata.getTable("schema_version") != null) {
+            // test that enough nodes are up (consistency level is achievable)
+            session.execute(
+                    "select schema_version from " + keyspace + ".schema_version where one = 1");
+        }
     }
 
     private static File getCentralDir() throws IOException {
