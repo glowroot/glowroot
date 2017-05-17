@@ -27,19 +27,28 @@ public class RateLimitedLogger {
 
     private final Logger logger;
 
+    private final boolean willKeepTrying;
+
     private final RateLimiter warningRateLimiter = RateLimiter.create(1.0 / 60);
 
     @GuardedBy("warningRateLimiter")
     private int countSinceLastWarning;
 
     public RateLimitedLogger(Class<?> clazz) {
+        this(clazz, false);
+    }
+
+    public RateLimitedLogger(Class<?> clazz, boolean willKeepTrying) {
         logger = LoggerFactory.getLogger(clazz);
+        this.willKeepTrying = willKeepTrying;
     }
 
     public void warn(String format, /*@Nullable*/ Object... args) {
         synchronized (warningRateLimiter) {
             if (warningRateLimiter.tryAcquire()) {
-                if (countSinceLastWarning == 0) {
+                if (willKeepTrying) {
+                    logger.warn(format, args);
+                } else if (countSinceLastWarning == 0) {
                     logger.warn(format + " (this warning will be logged at most once a minute)",
                             args);
                 } else {

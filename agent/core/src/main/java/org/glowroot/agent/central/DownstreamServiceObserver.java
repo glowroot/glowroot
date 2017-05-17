@@ -32,6 +32,7 @@ import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
+import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
@@ -93,9 +94,6 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceObserver.class);
 
-    // log startup messages using logger name "org.glowroot"
-    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
-
     private final CentralConnection centralConnection;
     private final DownstreamServiceStub downstreamServiceStub;
     private final AgentConfigUpdater agentConfigUpdater;
@@ -113,6 +111,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     private final SharedQueryTextLimiter sharedQueryTextLimiter;
 
     private final ScheduledExecutorService scheduledRetryExecutor;
+
+    private final RateLimitedLogger lostConnectionLogger =
+            new RateLimitedLogger(DownstreamServiceObserver.class, true);
 
     DownstreamServiceObserver(CentralConnection centralConnection,
             AgentConfigUpdater agentConfigUpdater, LiveJvmServiceImpl liveJvmService,
@@ -138,9 +139,12 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         inMaybeConnectionFailure.set(false);
         boolean errorFixed = inConnectionFailure.getAndSet(false);
         if (errorFixed) {
-            // don't need to suppress sending this log message to the central collector because
-            // startup logger info messages are never sent to the central collector
-            startupLogger.info("re-established connection to the central collector");
+            centralConnection.suppressLogCollector(new Runnable() {
+                @Override
+                public void run() {
+                    logger.info("re-established connection to the central collector");
+                }
+            });
         }
         if (request.getMessageCase() == MessageCase.HELLO_ACK) {
             return;
@@ -165,8 +169,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             centralConnection.suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {
-                    startupLogger.warn("lost connection to the central collector (will keep trying"
-                            + " to re-establish): {}", t.getMessage());
+                    lostConnectionLogger.warn("lost connection to the central collector (will keep"
+                            + " trying to re-establish...): {}", getRootCauseMessage(t));
                     logger.debug(t.getMessage(), t);
                 }
             });
@@ -782,14 +786,22 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         checkState(closedByCentralCollector);
     }
 
+    private static @Nullable String getRootCauseMessage(Throwable t) {
+        Throwable cause = t.getCause();
+        if (cause == null) {
+            return t.getMessage();
+        } else {
+            return getRootCauseMessage(cause);
+        }
+    }
+
     private class RetryAfterError implements Runnable {
         @Override
         public void run() {
             try {
                 connectAsync();
             } catch (final Throwable t) {
-                // intentionally capturing InterruptedException here as well to ensure
-                // reconnect
+                // intentionally capturing InterruptedException here as well to ensure reconnect
                 // is attempted no matter what
                 centralConnection.suppressLogCollector(new Runnable() {
                     @Override

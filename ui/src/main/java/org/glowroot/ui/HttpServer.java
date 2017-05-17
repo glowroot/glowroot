@@ -129,8 +129,8 @@ class HttpServer {
         } catch (Exception e) {
             // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
             logger.debug(e.getMessage(), e);
-            startupLogger.error("Error binding to {}:{}, the UI will not be available"
-                    + " (will keep trying to bind): {}", bindAddress, port, e.getMessage());
+            startupLogger.error("Error binding to {}:{}, the UI is not available (will keep trying"
+                    + " to bind...): {}", bindAddress, port, e.getMessage());
             ThreadFactory threadFactory = new ThreadFactoryBuilder()
                     .setDaemon(true)
                     .setNameFormat("Glowroot-Init-Bind")
@@ -227,23 +227,25 @@ class HttpServer {
 
         @Override
         public void run() {
-            long backoffMillis = 100;
+            long backoffMillis = 1000;
             while (true) {
+                try {
+                    Thread.sleep(backoffMillis);
+                } catch (InterruptedException f) {
+                    Thread.interrupted();
+                    return;
+                }
+                backoffMillis = Math.min(backoffMillis * 2, 60000);
                 try {
                     serverChannel = bootstrap.bind(new InetSocketAddress(bindAddress, port)).sync()
                             .channel();
                     onBindSuccess();
                     return;
                 } catch (Exception e) {
+                    startupLogger.error("Error binding to {}:{}, the UI is not available (will keep"
+                            + " trying to bind...): {}", bindAddress, port, e.getMessage());
                     // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
                     logger.debug(e.getMessage(), e);
-                    try {
-                        Thread.sleep(backoffMillis);
-                    } catch (InterruptedException f) {
-                        Thread.interrupted();
-                        return;
-                    }
-                    backoffMillis = Math.min(backoffMillis * 2, 10000);
                 }
             }
         }

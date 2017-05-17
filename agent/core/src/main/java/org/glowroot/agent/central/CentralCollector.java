@@ -18,13 +18,10 @@ package org.glowroot.agent.central;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -99,27 +96,8 @@ public class CentralCollector implements Collector {
             startupLogger.info("agent id: {}, rollup id: {}", agentId, agentRollupId);
         }
 
-        List<SocketAddress> collectorAddresses = Lists.newArrayList();
-        for (String addr : Splitter.on(',').trimResults().omitEmptyStrings()
-                .split(collectorAddress)) {
-            int index = addr.indexOf(':');
-            if (index == -1) {
-                throw new IllegalStateException(
-                        "Invalid collector.address (missing port): " + addr);
-            }
-            String host = addr.substring(0, index);
-            int port;
-            try {
-                port = Integer.parseInt(addr.substring(index + 1));
-            } catch (NumberFormatException e) {
-                logger.debug(e.getMessage(), e);
-                throw new IllegalStateException(
-                        "Invalid collector.address (invalid port): " + addr);
-            }
-            collectorAddresses.add(new InetSocketAddress(host, port));
-        }
         AtomicBoolean inConnectionFailure = new AtomicBoolean();
-        centralConnection = new CentralConnection(collectorAddresses, inConnectionFailure);
+        centralConnection = new CentralConnection(collectorAddress, inConnectionFailure);
         collectorServiceStub = CollectorServiceGrpc.newStub(centralConnection.getChannel())
                 .withCompression("gzip");
         downstreamServiceObserver = new DownstreamServiceObserver(centralConnection,

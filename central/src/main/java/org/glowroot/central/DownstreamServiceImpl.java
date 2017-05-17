@@ -100,9 +100,6 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceImpl.class);
 
-    // log startup messages using logger name "org.glowroot"
-    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
-
     private final DistributedExecutionMap<String, ConnectedAgent> connectedAgents;
     private final AgentDao agentDao;
 
@@ -419,7 +416,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                             .setHelloAck(HelloAck.getDefaultInstance())
                             .build());
                 }
-                startupLogger.info("downstream connection (re-)established with agent: {}",
+                logger.info("downstream connection (re-)established with agent: {}",
                         getDisplayForLogging(agentId));
                 return;
             }
@@ -449,7 +446,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         public void onError(Throwable t) {
             logger.debug("{} - {}", t.getMessage(), t);
             if (agentId != null) {
-                startupLogger.info("downstream connection lost with agent: {}",
+                logger.info("downstream connection lost with agent: {}",
                         getDisplayForLogging(agentId));
                 connectedAgents.remove(agentId, ConnectedAgent.this);
             }

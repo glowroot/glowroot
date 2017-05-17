@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.central;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.util.Collections;
@@ -25,8 +26,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import io.grpc.Attributes;
@@ -52,9 +55,6 @@ class CentralConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralConnection.class);
 
-    // log startup messages using logger name "org.glowroot"
-    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
-
     // back pressure on connection to the central collector
     private static final int PENDING_LIMIT = 100;
 
@@ -76,20 +76,26 @@ class CentralConnection {
 
     private final Random random = new Random();
 
-    private final RateLimitedLogger backPressureLogger =
+    private final RateLimitedLogger discardingDataLogger =
             new RateLimitedLogger(CentralConnection.class);
 
     // count does not include init call
     @GuardedBy("backPressureLogger")
     private int pendingRequestCount;
 
+    private final RateLimitedLogger initConnectionErrorLogger =
+            new RateLimitedLogger(CentralConnection.class, true);
+
     private final RateLimitedLogger connectionErrorLogger =
             new RateLimitedLogger(CentralConnection.class);
+
+    private final String collectorAddress;
 
     private volatile boolean initCallSucceeded;
     private volatile boolean closed;
 
-    CentralConnection(List<SocketAddress> collectorAddresses, AtomicBoolean inConnectionFailure) {
+    CentralConnection(String collectorAddress, AtomicBoolean inConnectionFailure) {
+        List<SocketAddress> collectorAddresses = toSocketAddresses(collectorAddress);
         eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         channelExecutor =
                 Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-GRPC-Executor"));
@@ -104,6 +110,7 @@ class CentralConnection {
         retryExecutor = Executors.newSingleThreadScheduledExecutor(
                 ThreadFactories.create("Glowroot-Collector-Retry"));
         this.inConnectionFailure = inConnectionFailure;
+        this.collectorAddress = collectorAddress;
     }
 
     boolean suppressLogCollector() {
@@ -138,10 +145,15 @@ class CentralConnection {
         if (inConnectionFailure.get()) {
             return;
         }
-        synchronized (backPressureLogger) {
+        synchronized (discardingDataLogger) {
             if (pendingRequestCount >= PENDING_LIMIT) {
-                backPressureLogger.warn("not sending data to the central collector because of an"
-                        + " excessive backlog of {} requests in progress", PENDING_LIMIT);
+                suppressLogCollector(new Runnable() {
+                    @Override
+                    public void run() {
+                        discardingDataLogger.warn("not sending data to the central collector"
+                                + " because pending request limit ({}) exceeded", PENDING_LIMIT);
+                    }
+                });
                 return;
             }
             pendingRequestCount++;
@@ -215,6 +227,38 @@ class CentralConnection {
         }
     }
 
+    private static List<SocketAddress> toSocketAddresses(String collectorAddress) {
+        List<SocketAddress> collectorAddresses = Lists.newArrayList();
+        for (String addr : Splitter.on(',').trimResults().omitEmptyStrings()
+                .split(collectorAddress)) {
+            int index = addr.indexOf(':');
+            if (index == -1) {
+                throw new IllegalStateException(
+                        "Invalid collector.address (missing port): " + addr);
+            }
+            String host = addr.substring(0, index);
+            int port;
+            try {
+                port = Integer.parseInt(addr.substring(index + 1));
+            } catch (NumberFormatException e) {
+                logger.debug(e.getMessage(), e);
+                throw new IllegalStateException(
+                        "Invalid collector.address (invalid port): " + addr);
+            }
+            collectorAddresses.add(new InetSocketAddress(host, port));
+        }
+        return collectorAddresses;
+    }
+
+    private static @Nullable String getRootCauseMessage(Throwable t) {
+        Throwable cause = t.getCause();
+        if (cause == null) {
+            return t.getMessage();
+        } else {
+            return getRootCauseMessage(cause);
+        }
+    }
+
     static abstract class GrpcCall<T extends /*@NonNull*/ Object> {
         abstract void call(StreamObserver<T> responseObserver);
         void doWithResponse(@SuppressWarnings("unused") T response) {}
@@ -229,7 +273,6 @@ class CentralConnection {
         private final boolean init;
         private final Stopwatch stopwatch = Stopwatch.createStarted();
 
-        private volatile boolean initErrorLogged;
         private volatile long nextDelayInSeconds = 4;
 
         private RetryingStreamObserver(GrpcCall<T> grpcCall, int maxSingleDelayInSeconds,
@@ -251,11 +294,16 @@ class CentralConnection {
                 decrementPendingRequestCount();
                 return;
             }
-            if (init && !initErrorLogged) {
-                startupLogger.warn("unable to establish connection with the central collector"
-                        + " (will keep trying): {}", t.getMessage());
-                logger.debug(t.getMessage(), t);
-                initErrorLogged = true;
+            if (init) {
+                suppressLogCollector(new Runnable() {
+                    @Override
+                    public void run() {
+                        initConnectionErrorLogger.warn("unable to establish connection with the"
+                                + " central collector {} (will keep trying...): {}",
+                                collectorAddress, getRootCauseMessage(t));
+                        logger.debug(t.getMessage(), t);
+                    }
+                });
             }
             if (inConnectionFailure.get()) {
                 decrementPendingRequestCount();
@@ -269,8 +317,15 @@ class CentralConnection {
             });
             if (!init && stopwatch.elapsed(SECONDS) > maxTotalInSeconds) {
                 if (initCallSucceeded) {
-                    connectionErrorLogger.warn("error sending data to the central collector: {}",
-                            t.getMessage(), t);
+                    suppressLogCollector(new Runnable() {
+                        @Override
+                        public void run() {
+                            connectionErrorLogger.warn(
+                                    "unable to send data to the central collector: {}",
+                                    getRootCauseMessage(t));
+                            logger.debug(t.getMessage(), t);
+                        }
+                    });
                 }
                 decrementPendingRequestCount();
                 return;
@@ -311,7 +366,7 @@ class CentralConnection {
 
         private void decrementPendingRequestCount() {
             if (!init) {
-                synchronized (backPressureLogger) {
+                synchronized (discardingDataLogger) {
                     pendingRequestCount--;
                 }
             }
