@@ -269,6 +269,7 @@ class CentralModule {
                     .numWorkerThreads(50)
                     .version(version)
                     .build();
+            startupLogger.info("startup complete");
         } catch (Throwable t) {
             if (startupLogger == null) {
                 t.printStackTrace();
@@ -523,7 +524,8 @@ class CentralModule {
                             "Glowroot central requires Cassandra 2.1+, but found: "
                                     + cassandraVersion);
                 }
-                startupLogger.info("Cassandra version: {}", cassandraVersion);
+                startupLogger.info("Connected to Cassandra {}, using consistency level {}",
+                        cassandraVersion, centralConfig.cassandraConsistencyLevel());
                 return session;
             } catch (NoHostAvailableException e) {
                 startupLogger.debug(e.getMessage(), e);
