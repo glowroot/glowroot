@@ -318,7 +318,7 @@ class InstrumentationConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonInclude(value = Include.ALWAYS)
+    @JsonInclude(Include.ALWAYS)
     abstract static class InstrumentationConfigDto {
 
         abstract String className();
@@ -446,7 +446,7 @@ class InstrumentationConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonInclude(value = Include.ALWAYS)
+    @JsonInclude(Include.ALWAYS)
     abstract static class MethodSignatureDto {
 
         abstract String name();

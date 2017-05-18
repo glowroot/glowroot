@@ -223,7 +223,7 @@ public class AsyncControllerIT {
     @Controller
     public static class CallableAsyncController {
 
-        @RequestMapping(value = "async")
+        @RequestMapping("async")
         public @ResponseBody Callable<String> test() throws InterruptedException {
             new CreateTraceEntry().traceEntryMarker();
             return new Callable<String>() {
@@ -239,7 +239,7 @@ public class AsyncControllerIT {
     @Controller
     public static class DeferredResultAsyncController {
 
-        @RequestMapping(value = "async2")
+        @RequestMapping("async2")
         public @ResponseBody DeferredResult<String> test() throws InterruptedException {
             new CreateTraceEntry().traceEntryMarker();
             final DeferredResult<String> result = new DeferredResult<String>();

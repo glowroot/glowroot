@@ -438,7 +438,7 @@ public class AsyncServletIT {
         }
     }
 
-    @WebServlet(value = "/async-forward")
+    @WebServlet("/async-forward")
     @SuppressWarnings("serial")
     public static class SimpleServlet extends HttpServlet {
 

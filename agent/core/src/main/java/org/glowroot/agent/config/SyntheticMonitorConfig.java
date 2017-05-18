@@ -33,7 +33,7 @@ public abstract class SyntheticMonitorConfig {
     // === ping synthetic monitors ===
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String pingUrl() {
         return "";
     }
@@ -41,7 +41,7 @@ public abstract class SyntheticMonitorConfig {
     // === java synthetic monitors ===
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String javaSource() {
         return "";
     }

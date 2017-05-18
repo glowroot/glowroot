@@ -41,25 +41,25 @@ public abstract class InstrumentationConfig {
     private static final Logger logger = LoggerFactory.getLogger(InstrumentationConfig.class);
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String className() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String classAnnotation() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String subTypeRestriction() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String superTypeRestriction() {
         return "";
     }
@@ -68,19 +68,19 @@ public abstract class InstrumentationConfig {
     // to help with transitioning of old instrumentation config
     @Deprecated
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String methodDeclaringClassName() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String methodName() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String methodAnnotation() {
         return "";
     }
@@ -89,23 +89,23 @@ public abstract class InstrumentationConfig {
     public abstract ImmutableList<String> methodParameterTypes();
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String methodReturnType() {
         return "";
     }
 
     // currently unused, but will have a purpose someday, e.g. to capture all public methods
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public abstract ImmutableList<MethodModifier> methodModifiers();
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String nestingGroup() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public int order() {
         return 0;
     }
@@ -113,68 +113,68 @@ public abstract class InstrumentationConfig {
     public abstract CaptureKind captureKind();
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String transactionType() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String transactionNameTemplate() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String transactionUserTemplate() {
         return "";
     }
 
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public abstract Map<String, String> transactionAttributeTemplates();
 
     // need to write zero since it is treated different from null
-    @JsonInclude(value = Include.NON_NULL)
+    @JsonInclude(Include.NON_NULL)
     public abstract @Nullable Integer transactionSlowThresholdMillis();
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public boolean transactionOuter() {
         return false;
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String traceEntryMessageTemplate() {
         return "";
     }
 
     // need to write zero since it is treated different from null
-    @JsonInclude(value = Include.NON_NULL)
+    @JsonInclude(Include.NON_NULL)
     public abstract @Nullable Integer traceEntryStackThresholdMillis();
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public boolean traceEntryCaptureSelfNested() {
         return false;
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String timerName() {
         return "";
     }
 
     // this is only for plugin authors (to be used in glowroot.plugin.json)
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String enabledProperty() {
         return "";
     }
 
     // this is only for plugin authors (to be used in glowroot.plugin.json)
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String traceEntryEnabledProperty() {
         return "";
     }

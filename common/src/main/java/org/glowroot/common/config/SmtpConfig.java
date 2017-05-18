@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,45 +30,45 @@ import org.glowroot.common.util.Versions;
 public abstract class SmtpConfig {
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String host() {
         return "";
     }
 
     // need to write zero since it is treated different from null
     // (although in this case zero is not a valid value)
-    @JsonInclude(value = Include.NON_NULL)
+    @JsonInclude(Include.NON_NULL)
     public abstract @Nullable Integer port();
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public boolean ssl() {
         return false;
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String username() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String password() {
         return "";
     }
 
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public abstract Map<String, String> additionalProperties();
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String fromEmailAddress() {
         return "";
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String fromDisplayName() {
         return "";
     }

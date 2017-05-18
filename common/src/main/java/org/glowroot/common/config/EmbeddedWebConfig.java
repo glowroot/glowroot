@@ -36,7 +36,7 @@ public abstract class EmbeddedWebConfig implements WebConfig {
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public boolean https() {
         return false;
     }

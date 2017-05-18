@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,10 @@ import org.glowroot.wire.api.model.Proto.OptionalInt32;
 @Value.Immutable
 public abstract class UserRecordingConfig {
 
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public abstract ImmutableList<String> users();
 
-    @JsonInclude(value = Include.NON_NULL)
+    @JsonInclude(Include.NON_NULL)
     public abstract @Nullable Integer profilingIntervalMillis();
 
     public AgentConfig.UserRecordingConfig toProto() {

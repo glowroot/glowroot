@@ -35,7 +35,7 @@ public abstract class AlertConfig {
     // === transaction alerts ===
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String transactionType() {
         return "";
     }
@@ -47,7 +47,7 @@ public abstract class AlertConfig {
     // === gauge alerts ===
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String gaugeName() {
         return "";
     }
@@ -57,7 +57,7 @@ public abstract class AlertConfig {
     // === synthetic monitor alerts ===
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    @JsonInclude(Include.NON_EMPTY)
     public String syntheticMonitorId() {
         return "";
     }
