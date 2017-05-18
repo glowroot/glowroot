@@ -17,6 +17,8 @@ package org.glowroot.central;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -538,12 +540,14 @@ class GrpcServer {
                 LogEvent logEvent = request.getLogEvent();
                 Level level = logEvent.getLevel();
                 String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+                String formattedTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
+                        .format(new Date(logEvent.getTimestamp()));
                 if (logEvent.hasThrowable()) {
-                    log(level, "{} -- {} -- {} -- {}\n{}", agentDisplay, level,
-                            logEvent.getLoggerName(), logEvent.getMessage(),
+                    log(level, "{} - {} {} {} - {}\n{}", agentDisplay, formattedTimestamp,
+                            level, logEvent.getLoggerName(), logEvent.getMessage(),
                             toString(logEvent.getThrowable()));
                 } else {
-                    log(level, "{} -- {} -- {} -- {}", agentDisplay, level,
+                    log(level, "{} - {} {} {} - {}", agentDisplay, formattedTimestamp, level,
                             logEvent.getLoggerName(), logEvent.getMessage());
                 }
             } catch (Throwable t) {
