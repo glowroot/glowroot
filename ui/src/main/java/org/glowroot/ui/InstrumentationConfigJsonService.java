@@ -331,6 +331,7 @@ class InstrumentationConfigJsonService {
         // also included here to support glowroot central 0.9.16 or newer running agent 0.9.15 or
         // older
         @Deprecated
+        @JsonInclude(Include.NON_NULL)
         abstract @Nullable String methodDeclaringClassName();
         abstract String methodName();
         abstract String methodAnnotation();
