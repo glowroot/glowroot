@@ -522,7 +522,17 @@ class CentralModule {
                     waitingForCassandraConsistencyLogged = true;
                 }
                 Thread.sleep(1000);
+            } catch (RuntimeException e) {
+                // clean up
+                if (session != null) {
+                    session.close();
+                }
+                throw e;
             }
+        }
+        // clean up
+        if (session != null) {
+            session.close();
         }
         checkNotNull(lastException);
         throw lastException;
