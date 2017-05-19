@@ -79,7 +79,7 @@ public abstract class ClusterManager {
     public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> DistributedExecutionMap<K, V> createDistributedExecutionMap(
             String cacheName);
 
-    public abstract void close();
+    public abstract void close() throws InterruptedException;
 
     private static class ClusterManagerImpl extends ClusterManager {
 
@@ -127,8 +127,11 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public void close() {
+        public void close() throws InterruptedException {
             cacheManager.stop();
+            // org.infinispan.factories.NamedExecutorsFactory.stop() calls shutdownNow() on all
+            // executors, but does not awaitTermination(), so sleep a bit to allow time
+            Thread.sleep(1000);
         }
 
         private static String getConfigurationFilePropertyValue(File centralDir,
