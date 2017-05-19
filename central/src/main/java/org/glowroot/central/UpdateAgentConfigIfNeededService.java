@@ -73,10 +73,11 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     void close() throws InterruptedException {
         closed = true;
-        // shutdownNow() is needed here to send interrupt to RollupService thread
+        // shutdownNow() is needed here to send interrupt to UpdateAgentConfigIfNeededService thread
         executor.shutdownNow();
         if (!executor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate executor");
+            throw new IllegalStateException(
+                    "Timed out waiting for update agent config thread to terminate");
         }
     }
 

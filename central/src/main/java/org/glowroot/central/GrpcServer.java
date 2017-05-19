@@ -80,6 +80,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 class GrpcServer {
 
@@ -146,12 +147,16 @@ class GrpcServer {
         return downstreamService;
     }
 
-    void close() {
+    void close() throws InterruptedException {
         // need to shutdown intra-node communication before shutting down the grpc server since
         // intra-node messages can result in downstream agent grpc calls
         downstreamService.stopDistributedExecutionMap();
-        // shutdown server first to complete existing requests and prevent new requests
+        // shutdown to prevent new requests
         server.shutdown();
+        // wait for existing requests to complete
+        if (!server.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Timed out waiting for grpc server to terminate");
+        }
         // then shutdown alert checking executor
         alertCheckingExecutor.shutdown();
     }

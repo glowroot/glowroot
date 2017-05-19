@@ -96,7 +96,7 @@ class RollupService implements Runnable {
         // shutdownNow() is needed here to send interrupt to RollupService thread
         executor.shutdownNow();
         if (!executor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate executor");
+            throw new IllegalStateException("Timed out waiting for rollup thread to terminate");
         }
     }
 

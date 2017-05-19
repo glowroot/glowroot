@@ -176,7 +176,8 @@ class SyntheticMonitorService implements Runnable {
         // shutdownNow() is needed here to send interrupt to SyntheticMonitorService thread
         mainLoopExecutor.shutdownNow();
         if (!mainLoopExecutor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate executor");
+            throw new IllegalStateException(
+                    "Timed out waiting for synthetic monitor thread to terminate");
         }
     }
 
