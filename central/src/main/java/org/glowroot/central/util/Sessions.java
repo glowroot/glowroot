@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,14 @@
  */
 package org.glowroot.central.util;
 
+import java.util.concurrent.ExecutionException;
+
 import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
@@ -32,13 +37,36 @@ public class Sessions {
 
     private Sessions() {}
 
-    public static void createKeyspaceIfNotExists(Session session, String keyspace) {
-        session.execute("create keyspace if not exists " + keyspace + " with replication"
+    // do not use session.execute() because that calls getUninterruptibly() which can cause central
+    // shutdown to timeout while waiting for executor service to shutdown
+    public static ResultSet execute(Session session, Statement statement) throws Exception {
+        try {
+            return session.executeAsync(statement).get();
+        } catch (ExecutionException e) {
+            propagateCauseIfPossible(e);
+            throw e; // unusual case (cause is null or cause is not Exception or Error)
+        }
+    }
+
+    // do not use session.execute() because that calls getUninterruptibly() which can cause central
+    // shutdown to timeout while waiting for executor service to shutdown
+    public static ResultSet execute(Session session, String query) throws Exception {
+        try {
+            return session.executeAsync(query).get();
+        } catch (ExecutionException e) {
+            propagateCauseIfPossible(e);
+            throw e; // unusual case (cause is null or cause is not Exception or Error)
+        }
+    }
+
+    public static void createKeyspaceIfNotExists(Session session, String keyspace)
+            throws Exception {
+        execute(session, "create keyspace if not exists " + keyspace + " with replication"
                 + " = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
     }
 
     public static void createTableWithTWCS(Session session, String createTableQuery,
-            int expirationHours) {
+            int expirationHours) throws Exception {
         // "Ideally, operators should select a compaction_window_unit and compaction_window_size
         // pair that produces approximately 20-30 windows"
         // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
@@ -53,13 +81,13 @@ public class Sessions {
         // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
         long gcGraceSeconds = DAYS.toSeconds(1);
         try {
-            session.execute(createTableQuery + " with compaction = { 'class' :"
+            execute(session, createTableQuery + " with compaction = { 'class' :"
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
                     + " 'compaction_window_size' : '" + windowSizeHours + "' }"
                     + " and gc_grace_seconds = " + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
-            session.execute(createTableQuery
+            execute(session, createTableQuery
                     + " with compaction = { 'class' : 'DateTieredCompactionStrategy' }"
                     + " and gc_grace_seconds = " + gcGraceSeconds);
         }
@@ -81,5 +109,17 @@ public class Sessions {
             }
         }, MoreExecutors.directExecutor());
         return future;
+    }
+
+    private static void propagateCauseIfPossible(ExecutionException e) throws Exception {
+        Throwable cause = e.getCause();
+        if (cause instanceof DriverException) {
+            // see com.datastax.driver.core.DriverThrowables.propagateCause()
+            throw ((DriverException) cause).copy();
+        } else if (cause instanceof Exception) {
+            throw (Exception) cause;
+        } else if (cause instanceof Error) {
+            throw (Error) cause;
+        }
     }
 }

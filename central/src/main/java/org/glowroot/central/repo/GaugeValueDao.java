@@ -139,7 +139,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i <= count; i++) {
-            session.execute("create table if not exists gauge_needs_rollup_" + i
+            Sessions.execute(session, "create table if not exists gauge_needs_rollup_" + i
                     + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " gauge_names set<varchar>, primary key (agent_rollup, capture_time,"
                     + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and "
@@ -156,7 +156,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         this.readNeedsRollup = readNeedsRollup;
         this.deleteNeedsRollup = deleteNeedsRollup;
 
-        session.execute("create table if not exists gauge_needs_rollup_from_child"
+        Sessions.execute(session, "create table if not exists gauge_needs_rollup_from_child"
                 + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                 + " child_agent_rollup varchar, gauge_names set<varchar>,"
                 + " primary key (agent_rollup, capture_time, uniqueness))"
@@ -233,14 +233,14 @@ public class GaugeValueDao implements GaugeValueRepository {
     // from is INCLUSIVE
     @Override
     public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
-            long to, int rollupLevel) {
+            long to, int rollupLevel) throws Exception {
         BoundStatement boundStatement = readValuePS.get(rollupLevel).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         List<GaugeValue> gaugeValues = Lists.newArrayList();
         for (Row row : results) {
             i = 0;
@@ -324,7 +324,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                 boundStatement.setString(i++, agentRollupId);
                 boundStatement.setSet(i++, needsRollupFromChildren.getKeys().keySet());
                 boundStatement.setInt(i++, needsRollupAdjustedTTL);
-                session.execute(boundStatement);
+                Sessions.execute(session, boundStatement);
             }
             AggregateDao.postRollup(agentRollupId, needsRollupFromChildren.getCaptureTime(),
                     needsRollupFromChildren.getKeys().keySet(),
@@ -380,7 +380,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                 boundStatement.setString(i++, agentRollupId);
                 boundStatement.setSet(i++, gaugeNames);
                 boundStatement.setInt(i++, needsRollupAdjustedTTL);
-                session.execute(boundStatement);
+                Sessions.execute(session, boundStatement);
             }
             PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
                     : this.insertNeedsRollup.get(rollupLevel);
@@ -499,15 +499,15 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @OnlyUsedByTests
-    void truncateAll() {
+    void truncateAll() throws Exception {
         for (int i = 0; i <= configRepository.getRollupConfigs().size(); i++) {
-            session.execute("truncate gauge_value_rollup_" + i);
+            Sessions.execute(session, "truncate gauge_value_rollup_" + i);
         }
         for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
-            session.execute("truncate gauge_needs_rollup_" + i);
+            Sessions.execute(session, "truncate gauge_needs_rollup_" + i);
         }
-        session.execute("truncate gauge_name");
-        session.execute("truncate gauge_needs_rollup_from_child");
+        Sessions.execute(session, "truncate gauge_name");
+        Sessions.execute(session, "truncate gauge_needs_rollup_from_child");
     }
 
     private static List<Integer> getRollupExpirationHours(ConfigRepository configRepository)

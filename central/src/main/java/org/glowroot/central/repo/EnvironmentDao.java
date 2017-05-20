@@ -24,8 +24,8 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
@@ -42,29 +42,29 @@ public class EnvironmentDao implements EnvironmentRepository {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    public EnvironmentDao(Session session) {
+    public EnvironmentDao(Session session) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists environment (agent_id varchar,"
+        Sessions.execute(session, "create table if not exists environment (agent_id varchar,"
                 + " environment blob, primary key (agent_id)) " + WITH_LCS);
 
         insertPS = session.prepare("insert into environment (agent_id, environment) values (?, ?)");
         readPS = session.prepare("select environment from environment where agent_id = ?");
     }
 
-    public void insert(String agentId, Environment environment) {
+    public void insert(String agentId, Environment environment) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(environment.toByteArray()));
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
     }
 
     @Override
-    public @Nullable Environment read(String agentId) throws InvalidProtocolBufferException {
+    public @Nullable Environment read(String agentId) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
-        Row row = session.execute(boundStatement).one();
+        Row row = Sessions.execute(session, boundStatement).one();
         if (row == null) {
             return null;
         }

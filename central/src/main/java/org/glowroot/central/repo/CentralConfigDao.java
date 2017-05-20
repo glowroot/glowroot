@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
@@ -59,11 +60,11 @@ public class CentralConfigDao {
 
     private final Map<String, Class<?>> keyTypes = Maps.newConcurrentMap();
 
-    public CentralConfigDao(Session session, ClusterManager clusterManager) {
+    public CentralConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists central_config (key varchar, value varchar,"
-                + " primary key (key)) " + WITH_LCS);
+        Sessions.execute(session, "create table if not exists central_config (key varchar,"
+                + " value varchar, primary key (key)) " + WITH_LCS);
 
         insertIfNotExistsPS = session
                 .prepare("insert into central_config (key, value) values (?, ?) if not exists");
@@ -82,7 +83,7 @@ public class CentralConfigDao {
     void write(String key, Object config, String priorVersion) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.bind(key);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         Row row = results.one();
         if (row == null) {
             writeIfNotExists(key, config);
@@ -99,7 +100,7 @@ public class CentralConfigDao {
         boundStatement.setString(i++, newValue);
         boundStatement.setString(i++, key);
         boundStatement.setString(i++, currValue);
-        results = session.execute(boundStatement);
+        results = Sessions.execute(session, boundStatement);
         row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -120,7 +121,7 @@ public class CentralConfigDao {
         int i = 0;
         boundStatement.setString(i++, key);
         boundStatement.setString(i++, initialValue);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -138,10 +139,10 @@ public class CentralConfigDao {
 
     private class CentralConfigCacheLoader implements CacheLoader<String, Optional<Object>> {
         @Override
-        public Optional<Object> load(String key) {
+        public Optional<Object> load(String key) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.bind(key);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = Sessions.execute(session, boundStatement);
             Row row = results.one();
             if (row == null) {
                 return Optional.absent();

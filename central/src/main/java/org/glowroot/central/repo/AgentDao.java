@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.ImmutableAgentRollupConfig;
 import org.glowroot.common.repo.AgentRepository;
@@ -80,12 +81,13 @@ public class AgentDao implements AgentRepository {
     private final Cache<String, Optional<String>> agentRollupIdCache;
     private final Cache<String, Optional<AgentRollupConfig>> agentRollupConfigCache;
 
-    public AgentDao(Session session, ClusterManager clusterManager) {
+    public AgentDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists agent_rollup (one int, agent_rollup_id varchar,"
-                + " parent_agent_rollup_id varchar, display varchar, agent boolean,"
-                + " last_capture_time timestamp, primary key (one, agent_rollup_id)) " + WITH_LCS);
+        Sessions.execute(session, "create table if not exists agent_rollup (one int,"
+                + " agent_rollup_id varchar, parent_agent_rollup_id varchar, display varchar,"
+                + " agent boolean, last_capture_time timestamp, primary key (one,"
+                + " agent_rollup_id)) " + WITH_LCS);
 
         try {
             cleanUpAgentRollupTable(session);
@@ -132,7 +134,7 @@ public class AgentDao implements AgentRepository {
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setBool(i++, true);
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
         if (agentRollupId != null) {
             List<String> agentRollupIds = getAgentRollupIds(agentRollupId);
             for (int j = agentRollupIds.size() - 1; j >= 0; j--) {
@@ -143,7 +145,7 @@ public class AgentDao implements AgentRepository {
                 boundStatement.setString(i++, loopAgentRollupId);
                 boundStatement.setString(i++, loopParentAgentRollupId);
                 boundStatement.setBool(i++, false);
-                session.execute(boundStatement);
+                Sessions.execute(session, boundStatement);
             }
         }
 
@@ -155,8 +157,8 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
-    public List<AgentRollup> readAgentRollups() {
-        ResultSet results = session.execute(readPS.bind());
+    public List<AgentRollup> readAgentRollups() throws Exception {
+        ResultSet results = Sessions.execute(session, readPS.bind());
         Set<AgentRollupRecord> topLevel = Sets.newHashSet();
         Multimap<String, AgentRollupRecord> childMultimap = ArrayListMultimap.create();
         for (Row row : results) {
@@ -205,10 +207,10 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
-    public boolean isAgent(String agentRollupId) {
+    public boolean isAgent(String agentRollupId) throws Exception {
         BoundStatement boundStatement = isAgentPS.bind();
         boundStatement.setString(0, agentRollupId);
-        Row row = session.execute(boundStatement).one();
+        Row row = Sessions.execute(session, boundStatement).one();
         if (row == null) {
             return false;
         }
@@ -244,11 +246,10 @@ public class AgentDao implements AgentRepository {
         return agentRollupConfigCache.get(agentRollupId).orNull();
     }
 
-    void update(AgentRollupConfig agentRollupConfig, String priorVersion)
-            throws OptimisticLockException {
+    void update(AgentRollupConfig agentRollupConfig, String priorVersion) throws Exception {
         BoundStatement boundStatement = readDisplayPS.bind();
         boundStatement.setString(0, agentRollupConfig.id());
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         Row row = results.one();
         if (row == null) {
             // agent rollup was just deleted
@@ -265,8 +266,8 @@ public class AgentDao implements AgentRepository {
         boundStatement.setString(i++, agentRollupConfig.id());
         boundStatement.setString(i++, Strings.emptyToNull(agentRollupConfig.display()));
         boundStatement.setString(i++, currDisplay);
-        session.execute(boundStatement);
-        results = session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
+        results = Sessions.execute(session, boundStatement);
         row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -276,10 +277,10 @@ public class AgentDao implements AgentRepository {
         }
     }
 
-    void delete(String agentRollupId) {
+    void delete(String agentRollupId) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, agentRollupId);
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
     }
 
     private AgentRollup createAgentRollup(AgentRollupRecord agentRollupRecord,
@@ -318,8 +319,9 @@ public class AgentDao implements AgentRepository {
                 .build();
     }
 
-    private static void cleanUpAgentRollupTable(Session session) {
-        ResultSet results = session.execute("select agent_rollup_id, agent from agent_rollup");
+    private static void cleanUpAgentRollupTable(Session session) throws Exception {
+        ResultSet results =
+                Sessions.execute(session, "select agent_rollup_id, agent from agent_rollup");
         PreparedStatement deletePS = session.prepare(
                 "delete from agent_rollup where one = 1 and agent_rollup_id = ? if agent = null");
         for (Row row : results) {
@@ -329,7 +331,7 @@ public class AgentDao implements AgentRepository {
                 // AgentConfigNotFoundException)
                 BoundStatement boundStatement = deletePS.bind();
                 boundStatement.setString(0, checkNotNull(row.getString(0)));
-                session.execute(boundStatement);
+                Sessions.execute(session, boundStatement);
             }
         }
     }
@@ -358,10 +360,10 @@ public class AgentDao implements AgentRepository {
 
     private class AgentRollupIdCacheLoader implements CacheLoader<String, Optional<String>> {
         @Override
-        public Optional<String> load(String agentId) {
+        public Optional<String> load(String agentId) throws Exception {
             BoundStatement boundStatement = readParentIdPS.bind();
             boundStatement.setString(0, agentId);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = Sessions.execute(session, boundStatement);
             Row row = results.one();
             if (row == null) {
                 return Optional.absent();
@@ -373,10 +375,10 @@ public class AgentDao implements AgentRepository {
     private class AgentRollupConfigCacheLoader
             implements CacheLoader<String, Optional<AgentRollupConfig>> {
         @Override
-        public Optional<AgentRollupConfig> load(String agentRollupId) {
+        public Optional<AgentRollupConfig> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readDisplayPS.bind();
             boundStatement.setString(0, agentRollupId);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = Sessions.execute(session, boundStatement);
             Row row = results.one();
             if (row == null) {
                 return Optional.absent();

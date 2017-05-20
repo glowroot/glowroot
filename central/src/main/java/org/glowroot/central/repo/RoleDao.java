@@ -32,6 +32,7 @@ import com.google.common.collect.Lists;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.repo.ConfigRepository.DuplicateRoleNameException;
@@ -58,13 +59,13 @@ public class RoleDao {
     private final Cache<String, List<RoleConfig>> allRoleConfigsCache;
 
     public RoleDao(Session session, KeyspaceMetadata keyspaceMetadata,
-            ClusterManager clusterManager) {
+            ClusterManager clusterManager) throws Exception {
         this.session = session;
 
         boolean createAnonymousRole = keyspaceMetadata.getTable("role") == null;
 
-        session.execute("create table if not exists role (name varchar, permissions set<varchar>,"
-                + " primary key (name)) " + WITH_LCS);
+        Sessions.execute(session, "create table if not exists role (name varchar,"
+                + " permissions set<varchar>, primary key (name)) " + WITH_LCS);
 
         readPS = session.prepare("select name, permissions from role");
         insertIfNotExistsPS =
@@ -82,7 +83,7 @@ public class RoleDao {
                     ImmutableSet.of("agent:*:transaction", "agent:*:error", "agent:*:jvm",
                             "agent:*:syntheticMonitor", "agent:*:alert", "agent:*:config",
                             "admin"));
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
 
         roleConfigCache =
@@ -103,7 +104,7 @@ public class RoleDao {
     void delete(String name) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, name);
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
         roleConfigCache.invalidate(name);
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
     }
@@ -111,7 +112,7 @@ public class RoleDao {
     void insert(RoleConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         bindInsert(boundStatement, userConfig);
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
         roleConfigCache.invalidate(userConfig.name());
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
 
@@ -120,7 +121,7 @@ public class RoleDao {
     void insertIfNotExists(RoleConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         bindInsert(boundStatement, userConfig);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -148,10 +149,10 @@ public class RoleDao {
 
     private class RoleConfigCacheLoader implements CacheLoader<String, Optional<RoleConfig>> {
         @Override
-        public Optional<RoleConfig> load(String name) {
+        public Optional<RoleConfig> load(String name) throws Exception {
             BoundStatement boundStatement = readOnePS.bind();
             boundStatement.setString(0, name);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = Sessions.execute(session, boundStatement);
             if (results.isExhausted()) {
                 return Optional.absent();
             }
@@ -165,8 +166,8 @@ public class RoleDao {
 
     private class AllRolesCacheLoader implements CacheLoader<String, List<RoleConfig>> {
         @Override
-        public List<RoleConfig> load(String dummy) {
-            ResultSet results = session.execute(readPS.bind());
+        public List<RoleConfig> load(String dummy) throws Exception {
+            ResultSet results = Sessions.execute(session, readPS.bind());
             List<RoleConfig> users = Lists.newArrayList();
             for (Row row : results) {
                 users.add(buildRole(row));

@@ -62,13 +62,14 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
     private final Cache<String, Map<String, Map<String, List<String>>>> traceAttributeNamesCache;
 
     public TraceAttributeNameDao(Session session, ConfigRepository configRepository,
-            ClusterManager clusterManager) {
+            ClusterManager clusterManager) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
 
-        session.execute("create table if not exists trace_attribute_name (agent_rollup varchar,"
-                + " transaction_type varchar, trace_attribute_name varchar, primary key"
-                + " ((agent_rollup, transaction_type), trace_attribute_name)) " + WITH_LCS);
+        Sessions.execute(session, "create table if not exists trace_attribute_name"
+                + " (agent_rollup varchar, transaction_type varchar, trace_attribute_name varchar,"
+                + " primary key ((agent_rollup, transaction_type), trace_attribute_name)) "
+                + WITH_LCS);
 
         insertPS = session.prepare("insert into trace_attribute_name (agent_rollup,"
                 + " transaction_type, trace_attribute_name) values (?, ?, ?) using ttl ?");
@@ -129,9 +130,9 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
     private class TraceAttributeNameCacheLoader
             implements CacheLoader<String, Map<String, Map<String, List<String>>>> {
         @Override
-        public Map<String, Map<String, List<String>>> load(String key) {
+        public Map<String, Map<String, List<String>>> load(String key) throws Exception {
             BoundStatement boundStatement = readPS.bind();
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = Sessions.execute(session, boundStatement);
             Map<String, Map<String, List<String>>> traceAttributeNames = Maps.newHashMap();
             for (Row row : results) {
                 int i = 0;

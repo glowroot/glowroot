@@ -26,6 +26,7 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ImmutableTriggeredAlert;
 import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.util.AlertingService;
@@ -47,11 +48,11 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
 
     private final PreparedStatement readAllPS;
 
-    public TriggeredAlertDao(Session session) {
+    public TriggeredAlertDao(Session session) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
-                + " alert_condition blob, primary key (agent_rollup_id, alert_condition)) "
+        Sessions.execute(session, "create table if not exists triggered_alert (agent_rollup_id"
+                + " varchar, alert_condition blob, primary key (agent_rollup_id, alert_condition)) "
                 + WITH_LCS);
 
         insertPS = session.prepare("insert into triggered_alert (agent_rollup_id, alert_condition)"
@@ -75,7 +76,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         BoundStatement boundStatement = existsPS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setBytes(1, ByteBuffer.wrap(alertCondition.toByteArray()));
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         return !results.isExhausted();
     }
 
@@ -85,7 +86,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setBytes(1, ByteBuffer.wrap(alertCondition.toByteArray()));
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
     }
 
     @Override
@@ -94,14 +95,14 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setBytes(1, ByteBuffer.wrap(alertCondition.toByteArray()));
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
     }
 
     @Override
     public List<AlertConfig> readAlertConditions(String agentRollupId) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentRollupId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         List<AlertConfig> alertConfigs = Lists.newArrayList();
         for (Row row : results) {
             ByteBuffer bytes = checkNotNull(row.getBytes(0));
@@ -113,7 +114,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
     @Override
     public List<TriggeredAlert> readAll() throws Exception {
         BoundStatement boundStatement = readAllPS.bind();
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         List<TriggeredAlert> triggeredAlerts = Lists.newArrayList();
         for (Row row : results) {
             String agentRollupId = checkNotNull(row.getString(0));

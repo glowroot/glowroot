@@ -23,7 +23,7 @@ public interface SyntheticResultRepository {
 
     // from is INCLUSIVE
     public List<SyntheticResult> readSyntheticResults(String agentRollupId,
-            String syntheticMonitorId, long from, long to, int rollupLevel);
+            String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception;
 
     @Value.Immutable
     public interface SyntheticResult {

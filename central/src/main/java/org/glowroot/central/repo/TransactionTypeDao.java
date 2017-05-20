@@ -61,11 +61,11 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     private final Cache<String, Map<String, List<String>>> transactionTypesCache;
 
     public TransactionTypeDao(Session session, ConfigRepository configRepository,
-            ClusterManager clusterManager) {
+            ClusterManager clusterManager) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
 
-        session.execute("create table if not exists transaction_type (one int,"
+        Sessions.execute(session, "create table if not exists transaction_type (one int,"
                 + " agent_rollup varchar, transaction_type varchar, primary key"
                 + " (one, agent_rollup, transaction_type)) " + WITH_LCS);
 
@@ -129,8 +129,8 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     private class TransactionTypeCacheLoader
             implements CacheLoader<String, Map<String, List<String>>> {
         @Override
-        public Map<String, List<String>> load(String key) {
-            ResultSet results = session.execute(readPS.bind());
+        public Map<String, List<String>> load(String key) throws Exception {
+            ResultSet results = Sessions.execute(session, readPS.bind());
 
             ImmutableMap.Builder<String, List<String>> builder = ImmutableMap.builder();
             String currAgentRollup = null;

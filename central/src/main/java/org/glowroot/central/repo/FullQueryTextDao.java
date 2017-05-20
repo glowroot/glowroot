@@ -58,16 +58,17 @@ public class FullQueryTextDao {
 
     private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(10000);
 
-    public FullQueryTextDao(Session session, ConfigRepository configRepository) {
+    public FullQueryTextDao(Session session, ConfigRepository configRepository) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
 
         // intentionally using default size-tiered compaction strategy
-        session.execute("create table if not exists full_query_text_check (agent_rollup varchar,"
-                + " full_query_text_sha1 varchar, primary key (agent_rollup,"
+        Sessions.execute(session, "create table if not exists full_query_text_check"
+                + " (agent_rollup varchar, full_query_text_sha1 varchar, primary key (agent_rollup,"
                 + " full_query_text_sha1))");
-        session.execute("create table if not exists full_query_text (full_query_text_sha1 varchar,"
-                + " full_query_text varchar, primary key (full_query_text_sha1))");
+        Sessions.execute(session, "create table if not exists full_query_text"
+                + " (full_query_text_sha1 varchar, full_query_text varchar, primary key"
+                + " (full_query_text_sha1))");
 
         insertCheckPS = session.prepare("insert into full_query_text_check (agent_rollup,"
                 + " full_query_text_sha1) values (?, ?) using ttl ?");
@@ -81,17 +82,17 @@ public class FullQueryTextDao {
     }
 
     @Nullable
-    String getFullText(String agentRollupId, String fullTextSha1) {
+    String getFullText(String agentRollupId, String fullTextSha1) throws Exception {
         BoundStatement boundStatement = readCheckPS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setString(1, fullTextSha1);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         if (results.isExhausted()) {
             return null;
         }
         boundStatement = readPS.bind();
         boundStatement.setString(0, fullTextSha1);
-        results = session.execute(boundStatement);
+        results = Sessions.execute(session, boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -115,7 +116,7 @@ public class FullQueryTextDao {
         }
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, fullTextSha1);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         Row row = results.one();
         if (row == null) {
             // this shouldn't happen any more now that full query text insert futures are waited on

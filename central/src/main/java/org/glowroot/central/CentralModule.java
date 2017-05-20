@@ -159,7 +159,7 @@ class CentralModule {
             session = connect(centralConfig);
             cluster = session.getCluster();
             Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
-            session.execute("use " + centralConfig.cassandraKeyspace());
+            Sessions.execute(session, "use " + centralConfig.cassandraKeyspace());
 
             KeyspaceMetadata keyspace =
                     cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace());
@@ -489,7 +489,7 @@ class CentralModule {
     }
 
     @RequiresNonNull("startupLogger")
-    private static Session connect(CentralConfiguration centralConfig) throws InterruptedException {
+    private static Session connect(CentralConfiguration centralConfig) throws Exception {
         Session session = null;
 
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -575,14 +575,14 @@ class CentralModule {
     }
 
     private static void executeTestQueryAtConfiguredConsistencyLevel(Session session,
-            CentralConfiguration centralConfig) {
+            CentralConfiguration centralConfig) throws Exception {
         String keyspace = centralConfig.cassandraKeyspace();
         KeyspaceMetadata keyspaceMetadata =
                 session.getCluster().getMetadata().getKeyspace(keyspace);
         if (keyspaceMetadata != null
                 && keyspaceMetadata.getTable("schema_version") != null) {
             // test that enough nodes are up (consistency level is achievable)
-            session.execute(
+            Sessions.execute(session,
                     "select schema_version from " + keyspace + ".schema_version where one = 1");
         }
     }

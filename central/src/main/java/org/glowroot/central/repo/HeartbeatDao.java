@@ -40,7 +40,7 @@ public class HeartbeatDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement existsPS;
 
-    public HeartbeatDao(Session session, AgentDao agentDao, Clock clock) {
+    public HeartbeatDao(Session session, AgentDao agentDao, Clock clock) throws Exception {
         this.session = session;
         this.agentDao = agentDao;
         this.clock = clock;
@@ -62,16 +62,17 @@ public class HeartbeatDao {
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setTimestamp(i++, new Date(clock.currentTimeMillis()));
             boundStatement.setInt(i++, TTL);
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
     }
 
-    public boolean exists(String agentRollupId, long centralCaptureFrom, long centralCaptureTo) {
+    public boolean exists(String agentRollupId, long centralCaptureFrom, long centralCaptureTo)
+            throws Exception {
         BoundStatement boundStatement = existsPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setTimestamp(i++, new Date(centralCaptureFrom));
         boundStatement.setTimestamp(i++, new Date(centralCaptureTo));
-        return !session.execute(boundStatement).isExhausted();
+        return !Sessions.execute(session, boundStatement).isExhausted();
     }
 }

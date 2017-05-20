@@ -56,11 +56,11 @@ class GaugeNameDao {
     private final Cache<String, List<String>> gaugeNamesCache;
 
     GaugeNameDao(Session session, ConfigRepository configRepository,
-            ClusterManager clusterManager) {
+            ClusterManager clusterManager) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
 
-        session.execute("create table if not exists gauge_name (agent_rollup varchar,"
+        Sessions.execute(session, "create table if not exists gauge_name (agent_rollup varchar,"
                 + " gauge_name varchar, primary key (agent_rollup, gauge_name)) " + WITH_LCS);
 
         insertPS = session.prepare("insert into gauge_name (agent_rollup, gauge_name)"
@@ -113,10 +113,10 @@ class GaugeNameDao {
 
     private class GaugeNameCacheLoader implements CacheLoader<String, List<String>> {
         @Override
-        public List<String> load(String agentRollupId) {
+        public List<String> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = Sessions.execute(session, boundStatement);
             List<String> gaugeNames = Lists.newArrayList();
             for (Row row : results) {
                 gaugeNames.add(checkNotNull(row.getString(0)));

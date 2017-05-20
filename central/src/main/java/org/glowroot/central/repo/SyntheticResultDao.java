@@ -120,7 +120,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i < count; i++) {
-            session.execute("create table if not exists synthetic_needs_rollup_" + i
+            Sessions.execute(session, "create table if not exists synthetic_needs_rollup_" + i
                     + " (agent_rollup_id varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " synthetic_config_ids set<varchar>, primary key (agent_rollup_id,"
                     + " capture_time, uniqueness)) with gc_grace_seconds = "
@@ -155,7 +155,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         boundStatement.setLong(i++, error ? 1 : 0);
         boundStatement.setInt(i++, adjustedTTL);
         // wait for success before inserting "needs rollup" records
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
 
         // insert into synthetic_needs_rollup_1
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -170,20 +170,20 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         boundStatement.setUUID(i++, UUIDs.timeBased());
         boundStatement.setSet(i++, ImmutableSet.of(syntheticMonitorId));
         boundStatement.setInt(i++, needsRollupAdjustedTTL);
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
     }
 
     // from is INCLUSIVE
     @Override
     public List<SyntheticResult> readSyntheticResults(String agentRollupId,
-            String syntheticMonitorId, long from, long to, int rollupLevel) {
+            String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception {
         BoundStatement boundStatement = readResultPS.get(rollupLevel).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, syntheticMonitorId);
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         List<SyntheticResult> syntheticResults = Lists.newArrayList();
         for (Row row : results) {
             i = 0;
@@ -319,12 +319,12 @@ public class SyntheticResultDao implements SyntheticResultRepository {
     }
 
     @OnlyUsedByTests
-    void truncateAll() {
+    void truncateAll() throws Exception {
         for (int i = 0; i < configRepository.getRollupConfigs().size(); i++) {
-            session.execute("truncate synthetic_result_rollup_" + i);
+            Sessions.execute(session, "truncate synthetic_result_rollup_" + i);
         }
         for (int i = 1; i < configRepository.getRollupConfigs().size(); i++) {
-            session.execute("truncate synthetic_needs_rollup_" + i);
+            Sessions.execute(session, "truncate synthetic_needs_rollup_" + i);
         }
     }
 }

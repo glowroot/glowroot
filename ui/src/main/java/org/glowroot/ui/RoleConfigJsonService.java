@@ -139,7 +139,7 @@ class RoleConfigJsonService {
         return mapper.writeValueAsString(response.build());
     }
 
-    private List<FlattenedAgentRollup> getFlattenedAgentRollups() {
+    private List<FlattenedAgentRollup> getFlattenedAgentRollups() throws Exception {
         List<AgentRollup> agentRollups = agentRepository.readAgentRollups();
         List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {

@@ -26,11 +26,11 @@ import org.glowroot.common.util.Styles;
 
 public interface AgentRepository {
 
-    List<AgentRollup> readAgentRollups();
+    List<AgentRollup> readAgentRollups() throws Exception;
 
     String readAgentRollupDisplay(String agentRollupId) throws Exception;
 
-    boolean isAgent(String agentRollupId);
+    boolean isAgent(String agentRollupId) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

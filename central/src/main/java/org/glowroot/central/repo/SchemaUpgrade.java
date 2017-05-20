@@ -52,6 +52,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
@@ -91,13 +92,14 @@ public class SchemaUpgrade {
 
     private boolean reloadCentralConfiguration;
 
-    public SchemaUpgrade(Session session, KeyspaceMetadata keyspace, boolean servlet) {
+    public SchemaUpgrade(Session session, KeyspaceMetadata keyspace, boolean servlet)
+            throws Exception {
         this.session = session;
         this.keyspace = keyspace;
         this.servlet = servlet;
 
-        session.execute("create table if not exists schema_version (one int, schema_version int,"
-                + " primary key (one)) " + WITH_LCS);
+        Sessions.execute(session, "create table if not exists schema_version (one int,"
+                + " schema_version int, primary key (one)) " + WITH_LCS);
         insertPS =
                 session.prepare("insert into schema_version (one, schema_version) values (?, ?)");
         initialSchemaVersion = getSchemaVersion(session, keyspace);
@@ -213,11 +215,12 @@ public class SchemaUpgrade {
         return reloadCentralConfiguration;
     }
 
-    public void updateSchemaVersionToCurent() {
+    public void updateSchemaVersionToCurent() throws Exception {
         updateSchemaVersion(CURR_SCHEMA_VERSION);
     }
 
-    public void updateToMoreRecentCassandraOptions(CentralStorageConfig storageConfig) {
+    public void updateToMoreRecentCassandraOptions(CentralStorageConfig storageConfig)
+            throws Exception {
         List<String> snappyTableNames = Lists.newArrayList();
         List<String> dtcsTableNames = Lists.newArrayList();
         List<String> twcsTableNames = Lists.newArrayList();
@@ -255,7 +258,7 @@ public class SchemaUpgrade {
 
         int snappyUpdatedCount = 0;
         for (String tableName : snappyTableNames) {
-            session.execute("alter table " + tableName
+            Sessions.execute(session, "alter table " + tableName
                     + " with compression = { 'class' : 'LZ4Compressor' }");
             if (snappyUpdatedCount++ == 0) {
                 startupLogger.info("upgrading from Snappy to LZ4 compression...");
@@ -278,9 +281,9 @@ public class SchemaUpgrade {
                 // compaction_window_size pair that produces approximately 20-30 windows"
                 // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
                 int windowSizeHours = expirationHours / 24;
-                session.execute("alter table " + tableName + " with compaction = { 'class' :"
-                        + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                        + " 'compaction_window_size' : '" + windowSizeHours + "' }");
+                Sessions.execute(session, "alter table " + tableName + " with compaction"
+                        + " = { 'class' : 'TimeWindowCompactionStrategy', 'compaction_window_unit'"
+                        + " : 'HOURS', 'compaction_window_size' : '" + windowSizeHours + "' }");
                 if (dtcsUpdatedCount++ == 0) {
                     startupLogger.info("upgrading from DateTieredCompactionStrategy to"
                             + " TimeWindowCompactionStrategy compression...");
@@ -302,7 +305,7 @@ public class SchemaUpgrade {
             // compaction_window_size pair that produces approximately 20-30 windows"
             // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
             int windowSizeHours = expirationHours / 24;
-            session.execute("alter table " + tableName + " with compaction = { 'class' :"
+            Sessions.execute(session, "alter table " + tableName + " with compaction = { 'class' :"
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
                     + " 'compaction_window_size' : '" + windowSizeHours + "' }");
             if (twcsUpdatedCount++ == 0) {
@@ -320,35 +323,35 @@ public class SchemaUpgrade {
         }
     }
 
-    private void updateSchemaVersion(int schemaVersion) {
+    private void updateSchemaVersion(int schemaVersion) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement.setInt(0, 1);
         boundStatement.setInt(1, schemaVersion);
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
     }
 
-    private void renameAgentColumnFromSystemInfoToEnvironment() {
+    private void renameAgentColumnFromSystemInfoToEnvironment() throws Exception {
         if (!columnExists("agent", "system_info")) {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
         addColumnIfNotExists("agent", "environment", "blob");
-        ResultSet results = session.execute("select agent_id, system_info from agent");
+        ResultSet results = Sessions.execute(session, "select agent_id, system_info from agent");
         PreparedStatement preparedStatement =
                 session.prepare("insert into agent (agent_id, environment) values (?, ?)");
         for (Row row : results) {
             BoundStatement boundStatement = preparedStatement.bind();
             boundStatement.setString(0, row.getString(0));
             boundStatement.setBytes(1, row.getBytes(1));
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
-        session.execute("alter table agent drop system_info");
+        Sessions.execute(session, "alter table agent drop system_info");
     }
 
-    private void updateRoles() {
+    private void updateRoles() throws Exception {
         PreparedStatement insertPS =
                 session.prepare("insert into role (name, permissions) values (?, ?)");
-        ResultSet results = session.execute("select name, permissions from role");
+        ResultSet results = Sessions.execute(session, "select name, permissions from role");
         for (Row row : results) {
             String name = row.getString(0);
             Set<String> permissions = row.getSet(1, String.class);
@@ -359,79 +362,79 @@ public class SchemaUpgrade {
             BoundStatement boundStatement = insertPS.bind();
             boundStatement.setString(0, name);
             boundStatement.setSet(1, upgradedPermissions, String.class);
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
     }
 
-    private void addConfigUpdateColumns() {
+    private void addConfigUpdateColumns() throws Exception {
         addColumnIfNotExists("agent", "config_update", "boolean");
         addColumnIfNotExists("agent", "config_update_token", "uuid");
     }
 
-    private void revertCompressionChunkLength() {
+    private void revertCompressionChunkLength() throws Exception {
         try {
             // try with compression options for Cassandra 3.x
             // see https://docs.datastax.com/en/cql/3.3/cql/cql_reference/compressSubprop.html
-            session.execute("alter table trace_entry with compression = {'class':"
+            Sessions.execute(session, "alter table trace_entry with compression = {'class':"
                     + " 'org.apache.cassandra.io.compress.LZ4Compressor', 'chunk_length_kb' :"
                     + " 64};");
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
             // try with compression options for Cassandra 2.x
             // see https://docs.datastax.com/en/cql/3.1/cql/cql_reference/compressSubprop.html
-            session.execute("alter table trace_entry with compression = {'sstable_compression':"
-                    + " 'SnappyCompressor', 'chunk_length_kb' : 64};");
+            Sessions.execute(session, "alter table trace_entry with compression"
+                    + " = {'sstable_compression': 'SnappyCompressor', 'chunk_length_kb' : 64};");
         }
     }
 
-    private void addTraceEntryColumns() {
+    private void addTraceEntryColumns() throws Exception {
         addColumnIfNotExists("trace_entry", "shared_query_text_index", "int");
         addColumnIfNotExists("trace_entry", "query_message_prefix", "varchar");
         addColumnIfNotExists("trace_entry", "query_message_suffix", "varchar");
     }
 
-    private void renameServerConfigTable() throws InterruptedException {
+    private void renameServerConfigTable() throws Exception {
         if (!tableExists("server_config")) {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        session.execute("create table if not exists central_config (key varchar, value varchar,"
-                + " primary key (key)) " + WITH_LCS);
-        ResultSet results = session.execute("select key, value from server_config");
+        Sessions.execute(session, "create table if not exists central_config (key varchar,"
+                + " value varchar, primary key (key)) " + WITH_LCS);
+        ResultSet results = Sessions.execute(session, "select key, value from server_config");
         PreparedStatement insertPS =
                 session.prepare("insert into central_config (key, value) values (?, ?)");
         for (Row row : results) {
             BoundStatement boundStatement = insertPS.bind();
             boundStatement.setString(0, row.getString(0));
             boundStatement.setString(1, row.getString(1));
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
         dropTable("server_config");
     }
 
-    private void addAgentOneTable() throws InterruptedException {
+    private void addAgentOneTable() throws Exception {
         if (!tableExists("agent_rollup")) {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        session.execute("create table if not exists agent_one (one int, agent_id varchar,"
+        Sessions.execute(session, "create table if not exists agent_one (one int, agent_id varchar,"
                 + " agent_rollup varchar, primary key (one, agent_id)) " + WITH_LCS);
-        ResultSet results = session.execute("select agent_rollup from agent_rollup");
+        ResultSet results = Sessions.execute(session, "select agent_rollup from agent_rollup");
         PreparedStatement insertPS =
                 session.prepare("insert into agent_one (one, agent_id) values (1, ?)");
         for (Row row : results) {
             BoundStatement boundStatement = insertPS.bind();
             boundStatement.setString(0, row.getString(0));
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
         dropTable("agent_rollup");
     }
 
-    private void addAgentRollupColumn() {
+    private void addAgentRollupColumn() throws Exception {
         addColumnIfNotExists("agent", "agent_rollup", "varchar");
     }
 
-    private void updateDtcsTwcsGcSeconds() {
+    private void updateDtcsTwcsGcSeconds() throws Exception {
         for (TableMetadata table : keyspace.getTables()) {
             String compaction = table.getOptions().getCompaction().get("class");
             if (compaction == null) {
@@ -442,13 +445,14 @@ public class SchemaUpgrade {
                             "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
                 // see gc_grace_seconds related comments in Sessions.createTableWithTWCS()
                 // for reasoning behind the value of 1 day
-                session.execute("alter table " + table.getName() + " with gc_grace_seconds = "
-                        + DAYS.toSeconds(1));
+                Sessions.execute(session,
+                        "alter table " + table.getName() + " with gc_grace_seconds = "
+                                + DAYS.toSeconds(1));
             }
         }
     }
 
-    private void updateGcSeconds() {
+    private void updateGcSeconds() throws Exception {
         // reduce from default 10 days to 3 hours
         //
         // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
@@ -460,38 +464,42 @@ public class SchemaUpgrade {
         long gcGraceSeconds = HOURS.toSeconds(3);
 
         if (tableExists("aggregate_needs_rollup_from_child")) {
-            session.execute("alter table aggregate_needs_rollup_from_child with gc_grace_seconds = "
-                    + gcGraceSeconds);
+            Sessions.execute(session,
+                    "alter table aggregate_needs_rollup_from_child with gc_grace_seconds = "
+                            + gcGraceSeconds);
         }
-        session.execute(
+        Sessions.execute(session,
                 "alter table aggregate_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
-        session.execute(
+        Sessions.execute(session,
                 "alter table aggregate_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
-        session.execute(
+        Sessions.execute(session,
                 "alter table aggregate_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
         if (tableExists("gauge_needs_rollup_from_child")) {
-            session.execute("alter table gauge_needs_rollup_from_child with gc_grace_seconds = "
-                    + gcGraceSeconds);
+            Sessions.execute(session,
+                    "alter table gauge_needs_rollup_from_child with gc_grace_seconds = "
+                            + gcGraceSeconds);
         }
-        session.execute(
+        Sessions.execute(session,
                 "alter table gauge_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
-        session.execute(
+        Sessions.execute(session,
                 "alter table gauge_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
-        session.execute(
+        Sessions.execute(session,
                 "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
-        session.execute(
+        Sessions.execute(session,
                 "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + gcGraceSeconds);
     }
 
-    private void updateAgentRollup() throws InterruptedException {
+    private void updateAgentRollup() throws Exception {
         if (!tableExists("agent_one")) {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        session.execute("create table if not exists agent_rollup (one int, agent_rollup_id varchar,"
-                + " parent_agent_rollup_id varchar, agent boolean, display varchar,"
-                + " last_capture_time timestamp, primary key (one, agent_rollup_id)) " + WITH_LCS);
-        ResultSet results = session.execute("select agent_id, agent_rollup from agent_one");
+        Sessions.execute(session, "create table if not exists agent_rollup (one int,"
+                + " agent_rollup_id varchar, parent_agent_rollup_id varchar, agent boolean,"
+                + " display varchar, last_capture_time timestamp, primary key (one,"
+                + " agent_rollup_id)) " + WITH_LCS);
+        ResultSet results =
+                Sessions.execute(session, "select agent_id, agent_rollup from agent_one");
         PreparedStatement insertPS = session.prepare("insert into agent_rollup (one,"
                 + " agent_rollup_id, parent_agent_rollup_id, agent) values (1, ?, ?, ?)");
         Set<String> parentAgentRollupIds = Sets.newHashSet();
@@ -503,7 +511,7 @@ public class SchemaUpgrade {
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, parentAgentRollupId);
             boundStatement.setBool(i++, true);
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
             if (parentAgentRollupId != null) {
                 parentAgentRollupIds.addAll(AgentDao.getAgentRollupIds(parentAgentRollupId));
             }
@@ -517,28 +525,28 @@ public class SchemaUpgrade {
             boundStatement.setString(i++, parentAgentRollupId);
             boundStatement.setString(i++, parentOfParentAgentRollupId);
             boundStatement.setBool(i++, false);
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
-        session.execute("alter table agent drop agent_rollup");
+        Sessions.execute(session, "alter table agent drop agent_rollup");
         dropTable("agent_one");
     }
 
-    private void addTracePointPartialColumn() {
+    private void addTracePointPartialColumn() throws Exception {
         addColumnIfNotExists("trace_tt_slow_point", "partial", "boolean");
         addColumnIfNotExists("trace_tn_slow_point", "partial", "boolean");
         addColumnIfNotExists("trace_tt_error_point", "partial", "boolean");
         addColumnIfNotExists("trace_tn_error_point", "partial", "boolean");
     }
 
-    private void splitUpAgentTable() throws InterruptedException {
-        session.execute("create table if not exists config (agent_rollup_id varchar, config blob,"
-                + " config_update boolean, config_update_token uuid, primary key"
+    private void splitUpAgentTable() throws Exception {
+        Sessions.execute(session, "create table if not exists config (agent_rollup_id varchar,"
+                + " config blob, config_update boolean, config_update_token uuid, primary key"
                 + " (agent_rollup_id)) " + WITH_LCS);
-        session.execute("create table if not exists environment (agent_id varchar,"
+        Sessions.execute(session, "create table if not exists environment (agent_id varchar,"
                 + " environment blob, primary key (agent_id)) " + WITH_LCS);
 
-        ResultSet results =
-                session.execute("select agent_rollup_id, agent from agent_rollup where one = 1");
+        ResultSet results = Sessions.execute(session,
+                "select agent_rollup_id, agent from agent_rollup where one = 1");
         List<String> agentIds = Lists.newArrayList();
         for (Row row : results) {
             if (row.getBool(1)) {
@@ -554,7 +562,7 @@ public class SchemaUpgrade {
         for (String agentId : agentIds) {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentId);
-            results = session.execute(boundStatement);
+            results = Sessions.execute(session, boundStatement);
             Row row = results.one();
             if (row == null) {
                 logger.warn("agent record not found for agent id: {}", agentId);
@@ -569,7 +577,7 @@ public class SchemaUpgrade {
             boundStatement = insertEnvironmentPS.bind();
             boundStatement.setString(0, agentId);
             boundStatement.setBytes(1, environmentBytes);
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
 
             boundStatement = insertConfigPS.bind();
             i = 0;
@@ -577,14 +585,14 @@ public class SchemaUpgrade {
             boundStatement.setBytes(i++, configBytes);
             boundStatement.setBool(i++, configUpdate);
             boundStatement.setUUID(i++, configUpdateToken);
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
         dropTable("agent");
     }
 
-    private void initialPopulationOfConfigForRollups() {
-        ResultSet results = session.execute("select agent_rollup_id, parent_agent_rollup_id, agent"
-                + " from agent_rollup where one = 1");
+    private void initialPopulationOfConfigForRollups() throws Exception {
+        ResultSet results = Sessions.execute(session, "select agent_rollup_id,"
+                + " parent_agent_rollup_id, agent from agent_rollup where one = 1");
         List<String> agentRollupIds = Lists.newArrayList();
         Multimap<String, String> childAgentIds = ArrayListMultimap.create();
         for (Row row : results) {
@@ -628,13 +636,13 @@ public class SchemaUpgrade {
                 BoundStatement boundStatement = insertPS.bind();
                 boundStatement.setString(0, agentRollupId);
                 boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
-                session.execute(boundStatement);
+                Sessions.execute(session, boundStatement);
                 continue;
             }
             String childAgentId = iterator.next();
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, childAgentId);
-            Row row = session.execute(boundStatement).one();
+            Row row = Sessions.execute(session, boundStatement).one();
 
             boundStatement = insertPS.bind();
             boundStatement.setString(0, agentRollupId);
@@ -660,25 +668,25 @@ public class SchemaUpgrade {
                     boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
                 }
             }
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
     }
 
-    private void redoOnTriggeredAlertTable() throws InterruptedException {
+    private void redoOnTriggeredAlertTable() throws Exception {
         if (columnExists("triggered_alert", "alert_config_id")) {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
         dropTable("triggered_alert");
-        session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
-                + " alert_config_id varchar, primary key (agent_rollup_id, alert_config_id)) "
-                + WITH_LCS);
+        Sessions.execute(session, "create table if not exists triggered_alert"
+                + " (agent_rollup_id varchar, alert_config_id varchar, primary key"
+                + " (agent_rollup_id, alert_config_id)) " + WITH_LCS);
     }
 
-    private void addSyntheticMonitorAndAlertPermissions() {
+    private void addSyntheticMonitorAndAlertPermissions() throws Exception {
         PreparedStatement insertPS =
                 session.prepare("insert into role (name, permissions) values (?, ?)");
-        ResultSet results = session.execute("select name, permissions from role");
+        ResultSet results = Sessions.execute(session, "select name, permissions from role");
         for (Row row : results) {
             String name = row.getString(0);
             Set<String> permissions = row.getSet(1, String.class);
@@ -690,29 +698,31 @@ public class SchemaUpgrade {
             BoundStatement boundStatement = insertPS.bind();
             boundStatement.setString(0, name);
             boundStatement.setSet(1, permissions, String.class);
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
     }
 
-    private void anotherRedoOnTriggeredAlertTable() throws InterruptedException {
+    private void anotherRedoOnTriggeredAlertTable() throws Exception {
         if (columnExists("triggered_alert", "alert_id")) {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
         dropTable("triggered_alert");
-        session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
-                + " alert_id varchar, primary key (agent_rollup_id, alert_id)) " + WITH_LCS);
-    }
-
-    private void yetAnotherRedoOnTriggeredAlertTable() throws InterruptedException {
-        dropTable("triggered_alert");
-        session.execute("create table if not exists triggered_alert (agent_rollup_id varchar,"
-                + " alert_condition blob, primary key (agent_rollup_id, alert_condition)) "
+        Sessions.execute(session, "create table if not exists triggered_alert (agent_rollup_id"
+                + " varchar, alert_id varchar, primary key (agent_rollup_id, alert_id)) "
                 + WITH_LCS);
     }
 
-    private void updateWebConfig() throws IOException {
-        ResultSet results = session.execute("select value from central_config where key = 'web'");
+    private void yetAnotherRedoOnTriggeredAlertTable() throws Exception {
+        dropTable("triggered_alert");
+        Sessions.execute(session, "create table if not exists triggered_alert (agent_rollup_id"
+                + " varchar, alert_condition blob, primary key (agent_rollup_id, alert_condition)) "
+                + WITH_LCS);
+    }
+
+    private void updateWebConfig() throws Exception {
+        ResultSet results =
+                Sessions.execute(session, "select value from central_config where key = 'web'");
         Row row = results.one();
         JsonNode webConfigNode;
         if (row == null) {
@@ -742,25 +752,28 @@ public class SchemaUpgrade {
                 session.prepare("insert into central_config (key, value) values ('web', ?)");
         BoundStatement boundStatement = preparedStatement.bind();
         boundStatement.setString(0, updatedWebConfigText);
-        session.execute(boundStatement);
+        Sessions.execute(session, boundStatement);
     }
 
-    private void removeInvalidAgentRollupRows() {
-        ResultSet results = session.execute("select agent_rollup_id, agent from agent_rollup");
+    private void removeInvalidAgentRollupRows() throws Exception {
+        ResultSet results =
+                Sessions.execute(session, "select agent_rollup_id, agent from agent_rollup");
         PreparedStatement deletePS =
                 session.prepare("delete from agent_rollup where one = 1 and agent_rollup_id = ?");
         for (Row row : results) {
             if (row.isNull(1)) {
                 BoundStatement boundStatement = deletePS.bind();
                 boundStatement.setString(0, checkNotNull(row.getString(0)));
-                session.execute(boundStatement);
+                Sessions.execute(session, boundStatement);
             }
         }
     }
 
-    private void addColumnIfNotExists(String tableName, String columnName, String cqlType) {
+    private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
+            throws Exception {
         if (!columnExists(tableName, columnName)) {
-            session.execute("alter table " + tableName + " add " + columnName + " " + cqlType);
+            Sessions.execute(session,
+                    "alter table " + tableName + " add " + columnName + " " + cqlType);
         }
     }
 
@@ -774,11 +787,11 @@ public class SchemaUpgrade {
 
     // drop table can timeout, throwing NoHostAvailableException
     // (see https://github.com/glowroot/glowroot/issues/125)
-    private void dropTable(String tableName) throws InterruptedException {
+    private void dropTable(String tableName) throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 30) {
             try {
-                session.execute("drop table if exists " + tableName);
+                Sessions.execute(session, "drop table if exists " + tableName);
                 return;
             } catch (NoHostAvailableException e) {
                 logger.debug(e.getMessage(), e);
@@ -786,7 +799,7 @@ public class SchemaUpgrade {
             Thread.sleep(1000);
         }
         // try one last time and let exception bubble up
-        session.execute("drop table if exists " + tableName);
+        Sessions.execute(session, "drop table if exists " + tableName);
     }
 
     private static int getExpirationHoursForTable(String tableName,
@@ -961,9 +974,11 @@ public class SchemaUpgrade {
         return true;
     }
 
-    private static @Nullable Integer getSchemaVersion(Session session, KeyspaceMetadata keyspace) {
+    private static @Nullable Integer getSchemaVersion(Session session, KeyspaceMetadata keyspace)
+            throws Exception {
         ResultSet results =
-                session.execute("select schema_version from schema_version where one = 1");
+                Sessions.execute(session,
+                        "select schema_version from schema_version where one = 1");
         Row row = results.one();
         if (row != null) {
             return row.getInt(0);
