@@ -32,6 +32,7 @@
   <logger name="io.grpc.netty.NettyServerTransport" level="off" />
   <!-- suppress voluminous jgroups INFO logging -->
   <logger name="org.jgroups" level="warn" />
+  <logger name="org.jgroups.protocols.pbcast.GMS" level="info" />
   <!-- suppress voluminous infinispan INFO logging -->
   <logger name="org.infinispan.CLUSTER" level="warn" />
   <root level="info">
