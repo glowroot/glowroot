@@ -684,7 +684,7 @@ class CentralModule {
 
         @Value.Default
         ConsistencyLevel cassandraConsistencyLevel() {
-            return ConsistencyLevel.LOCAL_ONE;
+            return ConsistencyLevel.QUORUM;
         }
 
         @Value.Default
