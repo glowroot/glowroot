@@ -37,8 +37,10 @@ import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.TimestampGenerator;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
+import com.datastax.driver.core.policies.Policies;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
@@ -51,6 +53,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
+import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -491,15 +494,23 @@ class CentralModule {
     @RequiresNonNull("startupLogger")
     private static Session connect(CentralConfiguration centralConfig) throws Exception {
         Session session = null;
+        // instantiate the default timestamp generator (AtomicMonotonicTimestampGenerator) only once
+        // since it calls com.datastax.driver.core.ClockFactory.newInstance() via super class
+        // (AbstractMonotonicTimestampGenerator) which logs whether using native clock or not,
+        // which is useful, but annoying when waiting for cassandra to start up and the message gets
+        // logged over and over and over
+        TimestampGenerator defaultTimestampGenerator = Policies.defaultTimestampGenerator();
+
+        RateLimitedLogger waitingForCassandraLogger = new RateLimitedLogger(CentralModule.class);
+        RateLimitedLogger waitingForCassandraReplicasLogger =
+                new RateLimitedLogger(CentralModule.class);
 
         Stopwatch stopwatch = Stopwatch.createStarted();
-        boolean waitingForCassandraLogged = false;
-        boolean waitingForCassandraConsistencyLogged = false;
         NoHostAvailableException lastException = null;
         while (stopwatch.elapsed(MINUTES) < 30) {
             try {
                 if (session == null) {
-                    session = createCluster(centralConfig).connect();
+                    session = createCluster(centralConfig, defaultTimestampGenerator).connect();
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
                 executeTestQueryAtConfiguredConsistencyLevel(session, centralConfig);
@@ -509,17 +520,14 @@ class CentralModule {
             } catch (NoHostAvailableException e) {
                 startupLogger.debug(e.getMessage(), e);
                 lastException = e;
-                if (session == null && !waitingForCassandraLogged) {
-                    startupLogger.info("waiting for Cassandra ({}) ...",
+                if (session == null) {
+                    waitingForCassandraLogger.info("waiting for Cassandra ({}) ...",
                             Joiner.on(",").join(centralConfig.cassandraContactPoint()));
-                    waitingForCassandraLogged = true;
-                }
-                if (session != null && !waitingForCassandraConsistencyLogged) {
-                    startupLogger.info("waiting for enough Cassandra replicas to run queries at"
-                            + " consistency level {} ({}) ...",
+                } else {
+                    waitingForCassandraReplicasLogger.info("waiting for enough Cassandra replicas"
+                            + " to run queries at consistency level {} ({}) ...",
                             centralConfig.cassandraConsistencyLevel(),
                             Joiner.on(",").join(centralConfig.cassandraContactPoint()));
-                    waitingForCassandraConsistencyLogged = true;
                 }
                 Thread.sleep(1000);
             } catch (RuntimeException e) {
@@ -538,7 +546,8 @@ class CentralModule {
         throw lastException;
     }
 
-    private static Cluster createCluster(CentralConfiguration centralConfig) {
+    private static Cluster createCluster(CentralConfiguration centralConfig,
+            TimestampGenerator defaultTimestampGenerator) {
         Cluster.Builder builder = Cluster.builder()
                 .addContactPoints(
                         centralConfig.cassandraContactPoint().toArray(new String[0]))
@@ -551,7 +560,8 @@ class CentralModule {
                         .setConsistencyLevel(centralConfig.cassandraConsistencyLevel()))
                 // central runs lots of parallel async queries and is very spiky since all
                 // aggregates come in right after each minute marker
-                .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096));
+                .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096))
+                .withTimestampGenerator(defaultTimestampGenerator);
         String cassandraUsername = centralConfig.cassandraUsername();
         if (!cassandraUsername.isEmpty()) {
             // empty password is strange but valid
@@ -722,5 +732,24 @@ class CentralModule {
         public void defrag() throws Exception {}
         @Override
         public void resizeIfNeeded() throws Exception {}
+    }
+
+    private static class RateLimitedLogger {
+
+        private final Logger logger;
+
+        private final RateLimiter warningRateLimiter = RateLimiter.create(1.0 / 60);
+
+        private RateLimitedLogger(Class<?> clazz) {
+            logger = LoggerFactory.getLogger(clazz);
+        }
+
+        public void info(String format, /*@Nullable*/ Object... args) {
+            synchronized (warningRateLimiter) {
+                if (warningRateLimiter.tryAcquire()) {
+                    logger.warn(format, args);
+                }
+            }
+        }
     }
 }
