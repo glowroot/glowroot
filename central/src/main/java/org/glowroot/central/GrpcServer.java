@@ -148,17 +148,27 @@ class GrpcServer {
     }
 
     void close() throws InterruptedException {
-        // need to shutdown intra-node communication before shutting down the grpc server since
-        // intra-node messages can result in downstream agent grpc calls
-        downstreamService.stopDistributedExecutionMap();
-        // shutdown to prevent new requests
+        // immediately start sending "shutting-down" responses for new downstream requests
+        // and wait for existing downstream requests to complete before proceeding
+        downstreamService.stopSendingDownstreamRequests();
+
+        // "shutting-down" responses will continue to be sent for new downstream requests until
+        // ClusterManager is closed at the very end of CentralModule.shutdown(), which will give
+        // time for agents to reconnect to a new central cluster node, and for the UI to retry
+        // for a few seconds if it receives a "shutting-down" response
+
+        // shutdown to prevent new grpc requests
         server.shutdown();
-        // wait for existing requests to complete
+        // wait for existing grpc requests to complete
         if (!server.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Timed out waiting for grpc server to terminate");
         }
         // then shutdown alert checking executor
         alertCheckingExecutor.shutdown();
+        if (!server.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException(
+                    "Timed out waiting for grpc server's alert checking executor to terminate");
+        }
     }
 
     @VisibleForTesting

@@ -117,8 +117,8 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             return;
         }
         try {
-            boolean updated =
-                    downstreamService.updateAgentConfig(agentId, agentConfigUpdate.config());
+            boolean updated = downstreamService.updateAgentConfigIfConnected(agentId,
+                    agentConfigUpdate.config());
             if (updated) {
                 configDao.markUpdated(agentId, agentConfigUpdate.configUpdateToken());
             }

@@ -47,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 class HttpServer {
 
@@ -165,7 +164,7 @@ class HttpServer {
         return sslContext != null;
     }
 
-    void changePort(int newPort) throws PortChangeFailedException {
+    void changePort(int newPort) throws Exception {
         checkNotNull(serverChannel);
         // need to call from separate thread, since netty throws exception if I/O thread (serving
         // http request) calls awaitUninterruptibly(), which is called by bind() below
@@ -202,18 +201,10 @@ class HttpServer {
     }
 
     // used by tests and by central ui
-    void close(boolean waitForChannelClose) {
+    void close() {
         logger.debug("close(): stopping http server");
-        if (serverChannel != null) {
-            if (waitForChannelClose) {
-                serverChannel.close().awaitUninterruptibly();
-            } else {
-                serverChannel.close().awaitUninterruptibly(1, SECONDS);
-            }
-        }
-        bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
-        handler.close(waitForChannelClose);
+        bossGroup.shutdownGracefully();
         logger.debug("close(): http server stopped");
     }
 

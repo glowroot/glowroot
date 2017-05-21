@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.URL;
 import java.security.SecureRandom;
@@ -53,6 +52,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.agent.it.harness.impl.LocalContainer;
+import org.glowroot.central.CentralModule;
 
 public class WebDriverSetup {
 
@@ -83,6 +83,7 @@ public class WebDriverSetup {
         return sharedSetup;
     }
 
+    private final CentralModule centralModule;
     private final Container container;
     private final int uiPort;
     private final boolean shared;
@@ -90,8 +91,9 @@ public class WebDriverSetup {
 
     private String remoteWebDriverSessionId;
 
-    private WebDriverSetup(Container container, int uiPort, boolean shared, WebDriver driver)
-            throws Exception {
+    private WebDriverSetup(CentralModule centralModule, Container container, int uiPort,
+            boolean shared, WebDriver driver) throws Exception {
+        this.centralModule = centralModule;
         this.container = container;
         this.uiPort = uiPort;
         this.shared = shared;
@@ -112,9 +114,7 @@ public class WebDriverSetup {
         }
         container.close();
         if (useCentral) {
-            Class<?> bootstrapClass = Class.forName("org.glowroot.central.Bootstrap");
-            Method mainMethod = bootstrapClass.getMethod("main", String[].class);
-            mainMethod.invoke(null, (Object) new String[] {"stop"});
+            centralModule.shutdown();
             CassandraWrapper.stop();
         }
     }
@@ -172,6 +172,7 @@ public class WebDriverSetup {
     private static WebDriverSetup createSetup(boolean shared) throws Exception {
         int uiPort = getAvailablePort();
         File testDir = Files.createTempDir();
+        CentralModule centralModule;
         Container container;
         if (useCentral) {
             CassandraWrapper.start();
@@ -188,12 +189,15 @@ public class WebDriverSetup {
             session.execute("drop table if exists config");
             session.close();
             cluster.close();
-            container = createCentralAndContainer(uiPort, testDir);
+            int grpcPort = getAvailablePort();
+            centralModule = createCentralModule(uiPort, grpcPort);
+            container = createContainerReportingToCentral(grpcPort, testDir);
         } else {
+            centralModule = null;
             container = createContainer(uiPort, testDir);
         }
         if (SauceLabs.useSauceLabs()) {
-            return new WebDriverSetup(container, uiPort, shared, null);
+            return new WebDriverSetup(centralModule, container, uiPort, shared, null);
         } else {
             // single webdriver instance for much better performance
             WebDriver driver;
@@ -209,7 +213,7 @@ public class WebDriverSetup {
             // 992 is bootstrap media query breakpoint for screen-md-min
             // 1200 is bootstrap media query breakpoint for screen-lg-min
             driver.manage().window().setSize(new Dimension(1200, 800));
-            return new WebDriverSetup(container, uiPort, shared, driver);
+            return new WebDriverSetup(centralModule, container, uiPort, shared, driver);
         }
     }
 
@@ -223,8 +227,7 @@ public class WebDriverSetup {
         }
     }
 
-    private static Container createCentralAndContainer(int uiPort, File testDir) throws Exception {
-        int grpcPort = getAvailablePort();
+    private static CentralModule createCentralModule(int uiPort, int grpcPort) throws Exception {
         PrintWriter props = new PrintWriter("glowroot-central.properties");
         props.println("cassandra.keyspace=glowroot_unit_tests");
         byte[] bytes = new byte[16];
@@ -234,9 +237,11 @@ public class WebDriverSetup {
         props.println("grpc.port=" + grpcPort);
         props.println("ui.port=" + uiPort);
         props.close();
-        Class<?> bootstrapClass = Class.forName("org.glowroot.central.Bootstrap");
-        Method mainMethod = bootstrapClass.getMethod("main", String[].class);
-        mainMethod.invoke(null, (Object) new String[] {"start"});
+        return new CentralModule();
+    }
+
+    private static Container createContainerReportingToCentral(int grpcPort, File testDir)
+            throws Exception {
         if (Containers.useJavaagent()) {
             // -Xmx is to limit memory usage on travis-ci builds
             return new JavaagentContainer(testDir, false, ImmutableList

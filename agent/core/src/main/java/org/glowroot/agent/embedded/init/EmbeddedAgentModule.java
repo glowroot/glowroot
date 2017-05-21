@@ -309,7 +309,7 @@ class EmbeddedAgentModule {
     @OnlyUsedByTests
     public void close() throws Exception {
         if (uiModule != null) {
-            uiModule.close(true);
+            uiModule.close();
         }
         if (agentModule != null) {
             agentModule.close();

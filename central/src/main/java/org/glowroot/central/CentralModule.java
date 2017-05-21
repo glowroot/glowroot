@@ -98,7 +98,7 @@ import org.glowroot.ui.UiModule;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-class CentralModule {
+public class CentralModule {
 
     // need to wait to init logger until after establishing centralDir
     private static volatile @MonotonicNonNull Logger startupLogger;
@@ -112,7 +112,7 @@ class CentralModule {
     private final UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService;
     private final UiModule uiModule;
 
-    CentralModule() throws Exception {
+    public CentralModule() throws Exception {
         this(null);
     }
 
@@ -144,7 +144,7 @@ class CentralModule {
 
             Clock clock = Clock.systemClock();
             Ticker ticker = Ticker.systemTicker();
-            String version = Version.getVersion(Bootstrap.class);
+            String version = Version.getVersion(CentralModule.class);
             startupLogger.info("Glowroot version: {}", version);
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
             if (config != null) {
@@ -279,10 +279,10 @@ class CentralModule {
             } else {
                 startupLogger.error(t.getMessage(), t);
             }
-            // try to shut down cleanly, otherwise apache commons daemon (via Bootstrap) doesn't
+            // try to shut down cleanly, otherwise apache commons daemon (via Procrun) doesn't
             // know service failed to start up
             if (uiModule != null) {
-                uiModule.close(false);
+                uiModule.close();
             }
             if (updateAgentConfigIfNeededService != null) {
                 updateAgentConfigIfNeededService.close();
@@ -321,13 +321,13 @@ class CentralModule {
         return uiModule.getCommonHandler();
     }
 
-    void shutdown() {
+    public void shutdown() {
         if (startupLogger != null) {
             startupLogger.info("shutting down...");
         }
         try {
             // close down external inputs first (ui and grpc)
-            uiModule.close(false);
+            uiModule.close();
             // updateAgentConfigIfNeededService depends on grpc downstream, so must be shutdown
             // before grpc
             updateAgentConfigIfNeededService.close();

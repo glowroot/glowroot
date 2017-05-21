@@ -52,7 +52,7 @@ public class DownstreamServiceNotConnectedTest {
 
     @Test
     public void shouldNotThrowAgentNotConnectExceptionOnUpdateAgentConfig() throws Exception {
-        downstreamService.updateAgentConfig("a", AgentConfig.getDefaultInstance());
+        downstreamService.updateAgentConfigIfConnected("a", AgentConfig.getDefaultInstance());
     }
 
     @Test

@@ -60,7 +60,6 @@ import static io.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Sharable
 class HttpServerHandler extends ChannelInboundHandlerAdapter {
@@ -88,19 +87,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         super.channelActive(ctx);
     }
 
-    void close(boolean waitForChannelClose) {
-        if (waitForChannelClose) {
-            allChannels.close().awaitUninterruptibly();
-        } else {
-            allChannels.close().awaitUninterruptibly(1, SECONDS);
-        }
-    }
-
-    void closeAllButCurrent() {
+    void closeAllButCurrent() throws InterruptedException {
         Channel current = currentChannel.get();
         for (Channel channel : allChannels) {
             if (channel != current) {
-                channel.close().awaitUninterruptibly();
+                channel.close().await();
             }
         }
     }

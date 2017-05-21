@@ -21,10 +21,14 @@ import java.util.Map;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -44,6 +48,7 @@ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
@@ -92,6 +97,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRequest
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -100,16 +106,19 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceImpl.class);
 
-    private final DistributedExecutionMap<String, ConnectedAgent> connectedAgents;
     private final AgentDao agentDao;
+
+    private final DistributedExecutionMap<String, ConnectedAgent> connectedAgents;
+
+    private final ReadWriteLock shuttingDownLock = new ReentrantReadWriteLock(true);
 
     DownstreamServiceImpl(AgentDao agentDao, ClusterManager clusterManager) {
         this.agentDao = agentDao;
         connectedAgents = clusterManager.createDistributedExecutionMap("connectedAgents");
     }
 
-    void stopDistributedExecutionMap() {
-        connectedAgents.stop();
+    void stopSendingDownstreamRequests() throws InterruptedException {
+        shuttingDownLock.writeLock().lock();
     }
 
     @Override
@@ -117,8 +126,10 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         return new ConnectedAgent(requestObserver);
     }
 
-    boolean updateAgentConfig(String agentId, AgentConfig agentConfig) throws Exception {
-        return connectedAgents.execute(agentId, new CentralRequestFunction(
+    // returns true if agent was updated
+    boolean updateAgentConfigIfConnected(String agentId, AgentConfig agentConfig) throws Exception {
+        // no need to retry on shutting-down response
+        return connectedAgents.execute(agentId, new SendDownstreamFunction(
                 CentralRequest.newBuilder()
                         .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
                                 .setAgentConfig(agentConfig))
@@ -127,9 +138,23 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     boolean isAvailable(String agentId) throws Exception {
-        java.util.Optional<Boolean> optional =
-                connectedAgents.execute(agentId, new IsAvailableFunction());
-        return optional.isPresent();
+        // retry up to 5 seconds on shutting-down response to give agent time to reconnect to
+        // another cluster node
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 5) {
+            java.util.Optional<AgentResult> optional =
+                    connectedAgents.execute(agentId, new IsAvailableFunction());
+            if (!optional.isPresent()) {
+                return false;
+            }
+            AgentResult result = optional.get();
+            if (!result.shuttingDown()) {
+                return true;
+            }
+            Thread.sleep(100);
+        }
+        // received shutting-down response for 5+ seconds
+        return false;
     }
 
     ThreadDump threadDump(String agentId) throws Exception {
@@ -362,30 +387,40 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private AgentResponse runOnCluster(String agentId, CentralRequest centralRequest)
             throws Exception {
-        java.util.Optional<AgentResult> result =
-                connectedAgents.execute(agentId, new CentralRequestFunction(centralRequest));
-        if (result.isPresent()) {
-            return getResponseWrapper(result.get());
-        } else {
-            throw new AgentNotConnectedException();
+        // retry up to 5 seconds on shutting-down response to give agent time to reconnect to
+        // another cluster node
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 5) {
+            java.util.Optional<AgentResult> optional =
+                    connectedAgents.execute(agentId, new SendDownstreamFunction(centralRequest));
+            if (!optional.isPresent()) {
+                throw new AgentNotConnectedException();
+            }
+            AgentResult result = optional.get();
+            Optional<AgentResponse> value = result.value();
+            if (value.isPresent()) {
+                AgentResponse response = value.get();
+                if (response
+                        .getMessageCase() == AgentResponse.MessageCase.UNKNOWN_REQUEST_RESPONSE) {
+                    throw new AgentUnsupportedOperationException();
+                }
+                if (response.getMessageCase() == AgentResponse.MessageCase.EXCEPTION_RESPONSE) {
+                    throw new AgentException();
+                }
+                return response;
+            } else if (result.timeout()) {
+                throw new TimeoutException();
+            } else if (result.interrupted()) {
+                // this should not happen
+                throw new RuntimeException(
+                        "Glowroot central thread was interrupted while waiting for agent response");
+            }
+            // only other case is shutting-down response
+            checkState(result.shuttingDown());
+            Thread.sleep(100);
         }
-    }
-
-    private static AgentResponse getResponseWrapper(AgentResult result) throws Exception {
-        if (result.interrupted()) {
-            throw new InterruptedException();
-        }
-        if (result.timeout()) {
-            throw new TimeoutException();
-        }
-        AgentResponse response = result.value().get();
-        if (response.getMessageCase() == AgentResponse.MessageCase.UNKNOWN_REQUEST_RESPONSE) {
-            throw new AgentUnsupportedOperationException();
-        }
-        if (response.getMessageCase() == AgentResponse.MessageCase.EXCEPTION_RESPONSE) {
-            throw new AgentException();
-        }
-        return response;
+        // received shutting-down response for 5+ seconds
+        throw new AgentNotConnectedException();
     }
 
     private class ConnectedAgent implements StreamObserver<AgentResponse> {
@@ -453,6 +488,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         }
 
         @Override
+        @OnlyUsedByTests
         public void onCompleted() {
             synchronized (requestObserver) {
                 requestObserver.onCompleted();
@@ -462,33 +498,51 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             }
         }
 
-        private boolean isAvailable() {
-            return true;
+        private AgentResult isAvailable() {
+            Lock readLock = shuttingDownLock.readLock();
+            if (!readLock.tryLock()) {
+                return ImmutableAgentResult.builder()
+                        .shuttingDown(true)
+                        .build();
+            }
+            try {
+                return ImmutableAgentResult.builder()
+                        .build();
+            } finally {
+                readLock.unlock();
+            }
         }
 
-        private AgentResult sendRequest(CentralRequest requestWithoutRequestId) {
-            CentralRequest request = CentralRequest.newBuilder(requestWithoutRequestId)
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .build();
-            ResponseHolder responseHolder = new ResponseHolder();
-            responseHolders.put(request.getRequestId(), responseHolder);
-            // synchronization required since individual StreamObservers are not thread-safe
-            synchronized (requestObserver) {
-                requestObserver.onNext(request);
+        private AgentResult sendDownstream(CentralRequest requestWithoutRequestId) {
+            Lock readLock = shuttingDownLock.readLock();
+            if (!readLock.tryLock()) {
+                return ImmutableAgentResult.builder()
+                        .shuttingDown(true)
+                        .build();
             }
-            int timeoutSeconds = 60;
-            if (request.getMessageCase() == CentralRequest.MessageCase.HEAP_DUMP_REQUEST) {
-                timeoutSeconds = 180;
-            }
-            // timeout is in case agent never responds
-            // passing AgentResponse.getDefaultInstance() is just dummy (non-null) value
             try {
+                CentralRequest request = CentralRequest.newBuilder(requestWithoutRequestId)
+                        .setRequestId(nextRequestId.getAndIncrement())
+                        .build();
+                ResponseHolder responseHolder = new ResponseHolder();
+                responseHolders.put(request.getRequestId(), responseHolder);
+                // synchronization required since individual StreamObservers are not thread-safe
+                synchronized (requestObserver) {
+                    requestObserver.onNext(request);
+                }
+                int timeoutSeconds = 60;
+                if (request.getMessageCase() == CentralRequest.MessageCase.HEAP_DUMP_REQUEST) {
+                    timeoutSeconds = 180;
+                }
+                // timeout is in case agent never responds
+                // passing AgentResponse.getDefaultInstance() is just dummy (non-null) value
                 AgentResponse response = responseHolder.response
                         .exchange(AgentResponse.getDefaultInstance(), timeoutSeconds, SECONDS);
                 return ImmutableAgentResult.builder()
                         .value(response)
                         .build();
             } catch (InterruptedException e) {
+                // this should not happen
                 return ImmutableAgentResult.builder()
                         .interrupted(true)
                         .build();
@@ -496,6 +550,8 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 return ImmutableAgentResult.builder()
                         .timeout(true)
                         .build();
+            } finally {
+                readLock.unlock();
             }
         }
 
@@ -524,6 +580,11 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         default boolean interrupted() {
             return false;
         }
+
+        @Value.Default
+        default boolean shuttingDown() {
+            return false;
+        }
     }
 
     private static class ResponseHolder {
@@ -537,12 +598,12 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     // is running with this class compiled by eclipse and one node is running with this class
     // compiled by javac, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=516620
     private static class IsAvailableFunction
-            implements SerializableFunction<ConnectedAgent, Boolean> {
+            implements SerializableFunction<ConnectedAgent, AgentResult> {
 
         private static final long serialVersionUID = 0L;
 
         @Override
-        public Boolean apply(ConnectedAgent connectedAgent) {
+        public AgentResult apply(ConnectedAgent connectedAgent) {
             return connectedAgent.isAvailable();
         }
     }
@@ -550,20 +611,20 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     // using named class instead of lambda to avoid "Invalid lambda deserialization" when one node
     // is running with this class compiled by eclipse and one node is running with this class
     // compiled by javac, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=516620
-    private static class CentralRequestFunction
+    private static class SendDownstreamFunction
             implements SerializableFunction<ConnectedAgent, AgentResult> {
 
         private static final long serialVersionUID = 0L;
 
         private final CentralRequest centralRequest;
 
-        private CentralRequestFunction(CentralRequest centralRequest) {
+        private SendDownstreamFunction(CentralRequest centralRequest) {
             this.centralRequest = centralRequest;
         }
 
         @Override
         public AgentResult apply(ConnectedAgent connectedAgent) {
-            return connectedAgent.sendRequest(centralRequest);
+            return connectedAgent.sendDownstream(centralRequest);
         }
     }
 }

@@ -103,6 +103,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     private final String agentId;
 
     private volatile @Nullable StreamObserver<AgentResponse> currResponseObserver;
+
+    // only used by tests
     private volatile boolean closedByCentralCollector;
 
     private final AtomicBoolean inMaybeConnectionFailure = new AtomicBoolean();
@@ -181,6 +183,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     }
 
     @Override
+    @OnlyUsedByTests
     public void onCompleted() {
         closedByCentralCollector = true;
     }

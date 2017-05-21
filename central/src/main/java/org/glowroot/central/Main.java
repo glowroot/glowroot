@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,21 @@
  */
 package org.glowroot.central;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-// this class is designed to be used with apache commons daemon
-// http://commons.apache.org/proper/commons-daemon/procrun.html
-public class Bootstrap {
+public class Main {
 
-    private static volatile @Nullable CentralModule centralModule;
-
-    private Bootstrap() {}
+    private static volatile @MonotonicNonNull CentralModule centralModule;
 
     public static void main(String[] args) throws Exception {
-        if (args.length == 0 || args[0].equals("start")) {
-            centralModule = new CentralModule();
-        } else if (args[0].equals("stop")) {
-            if (centralModule != null) {
-                centralModule.shutdown();
+        centralModule = new CentralModule();
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                if (centralModule != null) {
+                    centralModule.shutdown();
+                }
             }
-        } else {
-            throw new IllegalStateException("Unexpected arg: " + args[0]);
-        }
+        });
     }
 }

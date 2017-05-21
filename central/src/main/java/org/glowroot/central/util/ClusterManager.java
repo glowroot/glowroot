@@ -296,8 +296,8 @@ public abstract class ClusterManager {
             CollectingConsumer<R> consumer = new CollectingConsumer<R>();
             CompletableFuture<Void> future = cache.getCacheManager().executor().submitConsumer(
                     new AdapterFunction<K, V, R>(cache.getName(), key, task), consumer);
-            // TODO short-circuit after receiving one (non-empty) response, instead of waiting for
-            // all responses
+            // TODO short-circuit after receiving one (non-empty and non-shutting-down) response,
+            // instead of waiting for all responses
             future.get(60, SECONDS);
             if (consumer.logStackTrace) {
                 logger.warn("context for remote error(s) logged above",
@@ -306,13 +306,9 @@ public abstract class ClusterManager {
             if (consumer.values.isEmpty()) {
                 return Optional.empty();
             } else {
+                // TODO first non-shutting-down response
                 return Optional.of(consumer.values.remove());
             }
-        }
-
-        @Override
-        public void stop() {
-            cache.stop();
         }
     }
 
@@ -349,9 +345,6 @@ public abstract class ClusterManager {
             }
             return Optional.of(task.apply(value));
         }
-
-        @Override
-        public void stop() {}
     }
 
     @SuppressWarnings("serial")

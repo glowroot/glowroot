@@ -232,9 +232,9 @@ public class UiModule {
     }
 
     // used by tests and by central ui
-    public void close(boolean waitForChannelClose) throws InterruptedException {
+    public void close() {
         if (httpServer != null) {
-            httpServer.close(waitForChannelClose);
+            httpServer.close();
         }
     }
 }

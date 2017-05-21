@@ -33,6 +33,4 @@ public interface DistributedExecutionMap<K extends /*@NonNull*/ Serializable, V 
 
     <R extends Serializable> Optional<R> execute(String key, SerializableFunction<V, R> task)
             throws Exception;
-
-    void stop();
 }

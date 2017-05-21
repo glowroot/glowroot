@@ -236,7 +236,7 @@
                 </manifest>
                 <manifestEntries>
                   <Build-Time>${maven.build.timestamp}</Build-Time>
-                  <Main-Class>org.glowroot.central.Bootstrap</Main-Class>
+                  <Main-Class>org.glowroot.central.Main</Main-Class>
                 </manifestEntries>
               </archive>
             </configuration>
