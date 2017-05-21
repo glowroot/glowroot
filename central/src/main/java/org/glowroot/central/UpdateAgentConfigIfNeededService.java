@@ -106,6 +106,9 @@ class UpdateAgentConfigIfNeededService implements Runnable {
         AgentConfigUpdate agentConfigUpdate;
         try {
             agentConfigUpdate = configDao.readForUpdate(agentId);
+        } catch (InterruptedException e) {
+            // shutdown requested
+            throw e;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return;
@@ -127,9 +130,12 @@ class UpdateAgentConfigIfNeededService implements Runnable {
         }
     }
 
-    private String getDisplayForLogging(String agentRollupId) {
+    private String getDisplayForLogging(String agentRollupId) throws InterruptedException {
         try {
             return agentDao.readAgentRollupDisplay(agentRollupId);
+        } catch (InterruptedException e) {
+            // shutdown requested
+            throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollupId, e.getMessage(), e);
             return "id:" + agentRollupId;

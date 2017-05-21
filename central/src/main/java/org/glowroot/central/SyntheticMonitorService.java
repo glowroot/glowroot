@@ -130,8 +130,8 @@ class SyntheticMonitorService implements Runnable {
     private final Ticker ticker;
     private final Clock clock;
 
-    private final ExecutorService mainLoopExecutor;
     private final ExecutorService checkExecutor;
+    private final ExecutorService mainLoopExecutor;
 
     private final Set<SyntheticMonitorUniqueKey> activeSyntheticMonitors =
             Sets.newConcurrentHashSet();
@@ -151,8 +151,8 @@ class SyntheticMonitorService implements Runnable {
         this.syntheticResponseDao = syntheticResponseDao;
         this.ticker = ticker;
         this.clock = clock;
-        mainLoopExecutor = Executors.newSingleThreadExecutor();
         checkExecutor = Executors.newCachedThreadPool();
+        mainLoopExecutor = Executors.newSingleThreadExecutor();
         mainLoopExecutor.execute(castInitialized(this));
     }
 
@@ -173,11 +173,17 @@ class SyntheticMonitorService implements Runnable {
 
     void close() throws InterruptedException {
         closed = true;
-        // shutdownNow() is needed here to send interrupt to SyntheticMonitorService thread
+        // shutdownNow() is needed here to send interrupt to SyntheticMonitorService check threads
+        checkExecutor.shutdownNow();
+        if (!checkExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException(
+                    "Timed out waiting for synthetic monitor check threads to terminate");
+        }
+        // shutdownNow() is needed here to send interrupt to SyntheticMonitorService main thread
         mainLoopExecutor.shutdownNow();
         if (!mainLoopExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException(
-                    "Timed out waiting for synthetic monitor thread to terminate");
+                    "Timed out waiting for synthetic monitor loop thread to terminate");
         }
     }
 
@@ -204,6 +210,8 @@ class SyntheticMonitorService implements Runnable {
         List<SyntheticMonitorConfig> syntheticMonitorConfigs;
         try {
             syntheticMonitorConfigs = configRepository.getSyntheticMonitorConfigs(agentRollup.id());
+        } catch (InterruptedException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
             return;
@@ -216,6 +224,8 @@ class SyntheticMonitorService implements Runnable {
             try {
                 alertConfigs = configRepository.getAlertConfigsForSyntheticMonitorId(
                         agentRollup.id(), syntheticMonitorConfig.getId());
+            } catch (InterruptedException e) {
+                throw e;
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
                 continue;
@@ -232,10 +242,13 @@ class SyntheticMonitorService implements Runnable {
                                 runJava(agentRollup, syntheticMonitorConfig, alertConfigs);
                                 break;
                             default:
-                                throw new IllegalStateException(
-                                        "Unexpected synthetic kind: "
-                                                + syntheticMonitorConfig.getKind());
+                                throw new IllegalStateException("Unexpected synthetic kind: "
+                                        + syntheticMonitorConfig.getKind());
                         }
+                    } catch (InterruptedException e) {
+                        // probably shutdown requested
+                        logger.debug(e.getMessage(), e);
+                        return;
                     } catch (Exception e) {
                         logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
                     }
@@ -295,6 +308,9 @@ class SyntheticMonitorService implements Runnable {
         final ListenableFuture<?> future;
         try {
             future = callable.call();
+        } catch (InterruptedException e) {
+            activeSyntheticMonitors.remove(uniqueKey);
+            throw e;
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
             activeSyntheticMonitors.remove(uniqueKey);
@@ -318,12 +334,20 @@ class SyntheticMonitorService implements Runnable {
                 boolean error = false;
                 try {
                     future.get();
-                } catch (InterruptedException | ExecutionException e) {
+                } catch (InterruptedException e) {
+                    // probably shutdown requested
+                    logger.debug(e.getMessage(), e);
+                    return;
+                } catch (ExecutionException e) {
                     error = true;
                 }
                 try {
                     syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
                             captureTime, durationNanos, error);
+                } catch (InterruptedException e) {
+                    // probably shutdown requested
+                    logger.debug(e.getMessage(), e);
+                    return;
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
