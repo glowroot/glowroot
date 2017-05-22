@@ -17,8 +17,6 @@ package org.glowroot.ui;
 
 import java.io.File;
 import java.net.InetSocketAddress;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
@@ -166,24 +164,15 @@ class HttpServer {
 
     void changePort(int newPort) throws Exception {
         checkNotNull(serverChannel);
-        // need to call from separate thread, since netty throws exception if I/O thread (serving
-        // http request) calls awaitUninterruptibly(), which is called by bind() below
         Channel previousServerChannel = serverChannel;
-        ChangePort changePort = new ChangePort(newPort);
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("Glowroot-Temporary-Thread")
-                .build();
-        ExecutorService executor = Executors.newSingleThreadExecutor(threadFactory);
+        InetSocketAddress localAddress = new InetSocketAddress(bindAddress, newPort);
         try {
-            // calling get() will wait until ChangePort is complete and will re-throw any exceptions
-            // thrown by ChangePort
-            executor.submit(changePort).get();
+            serverChannel = bootstrap.bind(localAddress).sync().channel();
         } catch (Exception e) {
+            // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
             throw new PortChangeFailedException(e);
-        } finally {
-            executor.shutdown();
         }
+        port = newPort;
         previousServerChannel.close();
         handler.closeAllButCurrent();
     }
@@ -239,23 +228,6 @@ class HttpServer {
                     logger.debug(e.getMessage(), e);
                 }
             }
-        }
-    }
-
-    private class ChangePort implements Callable</*@Nullable*/ Void> {
-
-        private final int newPort;
-
-        ChangePort(int newPort) {
-            this.newPort = newPort;
-        }
-
-        @Override
-        public @Nullable Void call() throws InterruptedException {
-            InetSocketAddress localAddress = new InetSocketAddress(bindAddress, newPort);
-            serverChannel = bootstrap.bind(localAddress).sync().channel();
-            port = newPort;
-            return null;
         }
     }
 
