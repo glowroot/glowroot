@@ -62,24 +62,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
-import org.glowroot.central.repo.AgentDao;
-import org.glowroot.central.repo.AggregateDao;
-import org.glowroot.central.repo.CentralConfigDao;
-import org.glowroot.central.repo.ConfigDao;
-import org.glowroot.central.repo.ConfigRepositoryImpl;
+import org.glowroot.central.repo.CentralRepoModule;
 import org.glowroot.central.repo.ConfigRepositoryImpl.AgentConfigListener;
-import org.glowroot.central.repo.EnvironmentDao;
-import org.glowroot.central.repo.FullQueryTextDao;
-import org.glowroot.central.repo.GaugeValueDao;
-import org.glowroot.central.repo.HeartbeatDao;
-import org.glowroot.central.repo.RoleDao;
 import org.glowroot.central.repo.SchemaUpgrade;
-import org.glowroot.central.repo.SyntheticResultDao;
-import org.glowroot.central.repo.TraceAttributeNameDao;
-import org.glowroot.central.repo.TraceDao;
-import org.glowroot.central.repo.TransactionTypeDao;
-import org.glowroot.central.repo.TriggeredAlertDao;
-import org.glowroot.central.repo.UserDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
@@ -176,53 +161,35 @@ public class CentralModule {
             if (schemaUpgrade.reloadCentralConfiguration()) {
                 centralConfig = getCentralConfiguration(centralDir);
             }
-            CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-            AgentDao agentDao = new AgentDao(session, clusterManager);
-            ConfigDao configDao = new ConfigDao(session, clusterManager);
-            UserDao userDao = new UserDao(session, keyspace, clusterManager);
-            RoleDao roleDao = new RoleDao(session, keyspace, clusterManager);
-            ConfigRepositoryImpl configRepository =
-                    new ConfigRepositoryImpl(agentDao, configDao, centralConfigDao, userDao,
-                            roleDao, centralConfig.cassandraSymmetricEncryptionKey());
-            if (initialSchemaVersion != null) {
-                schemaUpgrade.updateToMoreRecentCassandraOptions(
-                        configRepository.getCentralStorageConfig());
-            }
-            TransactionTypeDao transactionTypeDao =
-                    new TransactionTypeDao(session, configRepository, clusterManager);
-            FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
-            AggregateDao aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao,
-                    fullQueryTextDao, configRepository, clock);
-            TraceAttributeNameDao traceAttributeNameDao =
-                    new TraceAttributeNameDao(session, configRepository, clusterManager);
-            TraceDao traceDao = new TraceDao(session, agentDao, transactionTypeDao,
-                    fullQueryTextDao, traceAttributeNameDao, configRepository, clock);
-            GaugeValueDao gaugeValueDao =
-                    new GaugeValueDao(session, agentDao, configRepository, clusterManager, clock);
-            SyntheticResultDao syntheticResultDao =
-                    new SyntheticResultDao(session, configRepository, clock);
-            EnvironmentDao environmentDao = new EnvironmentDao(session);
-            HeartbeatDao heartbeatDao = new HeartbeatDao(session, agentDao, clock);
-            TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session);
-            RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
-            AlertingService alertingService = new AlertingService(configRepository,
-                    triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
-                    new MailService());
+
+            CentralRepoModule repos = new CentralRepoModule(clusterManager, session,
+                    keyspace, centralConfig.cassandraSymmetricEncryptionKey(), clock);
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
                 startupLogger.info("Cassandra schema created");
+            } else {
+                schemaUpgrade.updateToMoreRecentCassandraOptions(
+                        repos.getConfigRepository().getCentralStorageConfig());
             }
 
+            RollupLevelService rollupLevelService =
+                    new RollupLevelService(repos.getConfigRepository(), clock);
+            AlertingService alertingService = new AlertingService(repos.getConfigRepository(),
+                    repos.getTriggeredAlertDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
+                    rollupLevelService, new MailService());
+
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
-                    agentDao, configDao, aggregateDao, gaugeValueDao, environmentDao, heartbeatDao,
-                    traceDao, configRepository, alertingService, clusterManager, clock, version);
+                    repos.getAgentDao(), repos.getConfigDao(), repos.getAggregateDao(),
+                    repos.getGaugeValueDao(), repos.getEnvironmentDao(), repos.getHeartbeatDao(),
+                    repos.getTraceDao(), repos.getConfigRepository(), alertingService,
+                    clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
-            updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(agentDao,
-                    configDao, downstreamService, clock);
+            updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
+                    repos.getAgentDao(), repos.getConfigDao(), downstreamService, clock);
             UpdateAgentConfigIfNeededService updateAgentConfigIfNeededServiceEffectivelyFinal =
                     updateAgentConfigIfNeededService;
-            configRepository.addAgentConfigListener(new AgentConfigListener() {
+            repos.getConfigRepository().addAgentConfigListener(new AgentConfigListener() {
                 @Override
                 public void onChange(String agentId) throws Exception {
                     // TODO report checker framework issue that occurs without checkNotNull
@@ -230,10 +197,12 @@ public class CentralModule {
                             .updateAgentConfigIfNeededAndConnected(agentId);
                 }
             });
-            rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
-                    syntheticResultDao, heartbeatDao, configRepository, alertingService, clock);
-            syntheticMonitorService = new SyntheticMonitorService(agentDao, configRepository,
-                    triggeredAlertDao, alertingService, syntheticResultDao, ticker, clock);
+            rollupService = new RollupService(repos.getAgentDao(), repos.getAggregateDao(),
+                    repos.getGaugeValueDao(), repos.getSyntheticResultDao(),
+                    repos.getHeartbeatDao(), repos.getConfigRepository(), alertingService, clock);
+            syntheticMonitorService = new SyntheticMonitorService(repos.getAgentDao(),
+                    repos.getConfigRepository(), repos.getTriggeredAlertDao(), alertingService,
+                    repos.getSyntheticResultDao(), ticker, clock);
 
             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
             uiModule = new CreateUiModuleBuilder()
@@ -249,19 +218,20 @@ public class CentralModule {
                     .logFileNamePattern(Pattern.compile("glowroot-central.*\\.log"))
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
-                    .configRepository(configRepository)
-                    .agentRepository(agentDao)
-                    .environmentRepository(environmentDao)
-                    .transactionTypeRepository(transactionTypeDao)
-                    .traceAttributeNameRepository(traceAttributeNameDao)
-                    .traceRepository(traceDao)
-                    .aggregateRepository(aggregateDao)
-                    .gaugeValueRepository(gaugeValueDao)
-                    .syntheticResultRepository(syntheticResultDao)
-                    .triggeredAlertRepository(triggeredAlertDao)
+                    .configRepository(repos.getConfigRepository())
+                    .agentRepository(repos.getAgentDao())
+                    .environmentRepository(repos.getEnvironmentDao())
+                    .transactionTypeRepository(repos.getTransactionTypeDao())
+                    .traceAttributeNameRepository(repos.getTraceAttributeNameDao())
+                    .traceRepository(repos.getTraceDao())
+                    .aggregateRepository(repos.getAggregateDao())
+                    .gaugeValueRepository(repos.getGaugeValueDao())
+                    .syntheticResultRepository(repos.getSyntheticResultDao())
+                    .triggeredAlertRepository(repos.getTriggeredAlertDao())
                     .repoAdmin(new NopRepoAdmin())
                     .rollupLevelService(rollupLevelService)
-                    .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService, agentDao))
+                    .liveTraceRepository(
+                            new LiveTraceRepositoryImpl(downstreamService, repos.getAgentDao()))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(new LiveWeavingServiceImpl(downstreamService))
                     .sessionMapFactory(new SessionMapFactory() {
@@ -350,15 +320,56 @@ public class CentralModule {
         }
     }
 
+    static void createSchema() throws Exception {
+        File centralDir = new File(".");
+        initLogging(centralDir);
+        String version = Version.getVersion(CentralModule.class);
+        startupLogger.info("running create-schema command");
+        startupLogger.info("Glowroot version: {}", version);
+        startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
+
+        File propFile = new File(centralDir, "glowroot-central.properties");
+        Properties props = PropertiesFiles.load(propFile);
+        CentralConfiguration centralConfig = getCentralConfiguration(props);
+
+        Session session = null;
+        Cluster cluster = null;
+        try {
+            session = connect(centralConfig);
+            cluster = session.getCluster();
+            Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
+            Sessions.execute(session, "use " + centralConfig.cassandraKeyspace());
+
+            KeyspaceMetadata keyspace =
+                    cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace());
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace, false);
+            if (schemaUpgrade.getInitialSchemaVersion() != null) {
+                startupLogger.error("Cassandra schema has already been created, exiting");
+                return;
+            }
+            startupLogger.info("creating Cassandra schema...");
+            new CentralRepoModule(ClusterManager.create(), session, keyspace,
+                    centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
+            schemaUpgrade.updateSchemaVersionToCurent();
+            startupLogger.info("Cassandra schema created");
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+            if (cluster != null) {
+                cluster.close();
+            }
+        }
+    }
+
     private static CentralConfiguration getCentralConfiguration(File centralDir)
             throws IOException {
-        ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
         File propFile = new File(centralDir, "glowroot-central.properties");
         if (!propFile.exists()) {
             // upgrade from 0.9.5 to 0.9.6
             File oldPropFile = new File(centralDir, "glowroot-server.properties");
             if (!oldPropFile.exists()) {
-                return builder.build();
+                return ImmutableCentralConfiguration.builder().build();
             }
             java.nio.file.Files.copy(oldPropFile.toPath(), propFile.toPath());
         }
@@ -426,6 +437,11 @@ public class CentralModule {
                 }
             }
         }
+        return getCentralConfiguration(props);
+    }
+
+    private static CentralConfiguration getCentralConfiguration(Properties props) {
+        ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
         String cassandraContactPoints = props.getProperty("cassandra.contactPoints");
         if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
             builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()

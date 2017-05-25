@@ -911,8 +911,8 @@ public class SchemaUpgrade {
         }
         File propFile = new File("glowroot-central.properties");
         if (!propFile.exists()) {
-            startupLogger.warn("glowroot-central.properties file does not exist, so not"
-                    + " populating ui properties");
+            startupLogger.warn("glowroot-central.properties file does not exist, so not populating"
+                    + " ui properties");
             return false;
         }
         Properties props = PropertiesFiles.load(propFile);

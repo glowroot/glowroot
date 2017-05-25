@@ -22,6 +22,22 @@ public class Main {
     private static volatile @MonotonicNonNull CentralModule centralModule;
 
     public static void main(String[] args) throws Exception {
+        if (args.length == 0) {
+            start();
+            return;
+        }
+        String command = args[0];
+        if (command.equals("create-schema")) {
+            if (args.length > 1) {
+                System.err.println("unexpected args, exiting");
+            }
+            CentralModule.createSchema();
+            return;
+        }
+        System.err.println("unexpected args, exiting");
+    }
+
+    private static void start() throws Exception {
         centralModule = new CentralModule();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
