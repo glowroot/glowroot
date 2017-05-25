@@ -34,7 +34,7 @@ public class TraceDaoPerformanceMain {
 
     private TraceDaoPerformanceMain() {}
 
-    public static void main(String... args) throws Exception {
+    public static void main(String[] args) throws Exception {
         DataSource dataSource = new DataSource();
         CappedDatabase cappedDatabase =
                 new CappedDatabase(new File("glowroot.capped.db"), 1000000, Ticker.systemTicker());

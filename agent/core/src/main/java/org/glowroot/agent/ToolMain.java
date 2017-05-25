@@ -39,7 +39,7 @@ public class ToolMain {
 
     private ToolMain() {}
 
-    public static void main(String... args) throws Exception {
+    public static void main(String[] args) throws Exception {
         CodeSource codeSource = ToolMain.class.getProtectionDomain().getCodeSource();
         File glowrootJarFile = getGlowrootJarFile(codeSource);
         File glowrootDir = GlowrootDir.getGlowrootDir(glowrootJarFile);
@@ -48,19 +48,27 @@ public class ToolMain {
         MainEntryPoint.initLogging(agentDir, logDir);
         startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-        if (args.length == 1 && args[0].equals("h2")) {
+        if (args.length == 0) {
+            MainEntryPoint.runViewer(glowrootDir, agentDir);
+            return;
+        }
+        String command = args[0];
+        if (command.equals("h2") && args.length == 1) {
             h2(agentDir);
             return;
         }
-        if (args.length == 1 && args[0].equals("recover")) {
+        if (command.equals("recover") && args.length == 1) {
             recover(agentDir);
             return;
         }
-        if (args.length == 1 && args[0].equals("mask-central-data")) {
+        if (command.equals("mask-central-data") && args.length == 1) {
+            // this is for monitoring glowroot central with glowroot agent, and then masking the
+            // data captured from glowroot central so that it can be shared for debugging issues
+            // within glowroot central
             maskCentralData(agentDir);
             return;
         }
-        MainEntryPoint.runViewer(glowrootDir, agentDir);
+        System.err.println("unexpected args, exiting");
     }
 
     @VisibleForTesting

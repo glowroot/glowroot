@@ -39,7 +39,7 @@ public class UiSandboxMain {
 
     private UiSandboxMain() {}
 
-    public static void main(String... args) throws Exception {
+    public static void main(String[] args) throws Exception {
         Container container;
         File testDir = new File("target");
         File configFile = new File(testDir, "config.json");
