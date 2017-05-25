@@ -13,3 +13,7 @@ public class Row {
     public @Nullable ByteBuffer getBytes(int i);
     public @Nullable String getString(int i);
 }
+
+public class Metadata {
+    public @Nullable KeyspaceMetadata getKeyspace(String keyspace);
+}

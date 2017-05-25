@@ -133,8 +133,8 @@ public class CentralModule {
             Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
             Sessions.execute(session, "use " + centralConfig.cassandraKeyspace());
 
-            KeyspaceMetadata keyspace =
-                    cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace());
+            KeyspaceMetadata keyspace = checkNotNull(
+                    cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace()));
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
@@ -324,8 +324,8 @@ public class CentralModule {
             Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
             Sessions.execute(session, "use " + centralConfig.cassandraKeyspace());
 
-            KeyspaceMetadata keyspace =
-                    cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace());
+            KeyspaceMetadata keyspace = checkNotNull(
+                    cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace()));
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace, false);
             if (schemaUpgrade.getInitialSchemaVersion() != null) {
                 startupLogger.error("Cassandra schema has already been created, exiting");
