@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import javax.crypto.spec.PBEKeySpec;
 
 import com.google.common.io.BaseEncoding;
 
-class PasswordHash {
+public class PasswordHash {
 
     private static final int ITERATION_COUNT = 500000;
 
@@ -33,7 +33,7 @@ class PasswordHash {
 
     private PasswordHash() {}
 
-    static String createHash(String password) throws GeneralSecurityException {
+    public static String createHash(String password) throws GeneralSecurityException {
         // 128-bit salt
         byte[] salt = new byte[16];
         secureRandom.nextBytes(salt);

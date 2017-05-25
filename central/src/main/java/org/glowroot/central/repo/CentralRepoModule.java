@@ -15,13 +15,21 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.List;
+
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.util.Clock;
+import org.glowroot.ui.PasswordHash;
 
 public class CentralRepoModule {
+
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private final CentralConfigDao centralConfigDao;
     private final AgentDao agentDao;
@@ -64,6 +72,24 @@ public class CentralRepoModule {
         environmentDao = new EnvironmentDao(session);
         heartbeatDao = new HeartbeatDao(session, agentDao, clock);
         triggeredAlertDao = new TriggeredAlertDao(session);
+    }
+
+    public boolean setupAdminUser(List<String> args) throws Exception {
+        String username = args.get(0);
+        String password = args.get(1);
+        if (roleDao.read("Administrator") == null) {
+            startupLogger.error("Administrator role does not exist, exiting");
+            return false;
+        }
+        // not using insertIfNotExists in case this command fails on the next line for some reason
+        // (while deleting anonymous user) and the command needs to be re-run
+        userDao.insert(ImmutableUserConfig.builder()
+                .username(username)
+                .passwordHash(PasswordHash.createHash(password))
+                .addRoles("Administrator")
+                .build());
+        userDao.delete("anonymous");
+        return true;
     }
 
     public CentralConfigDao getCentralConfigDao() {

@@ -115,12 +115,14 @@ public class SchemaUpgrade {
             return;
         }
         if (initialSchemaVersion > CURR_SCHEMA_VERSION) {
-            startupLogger.warn("running an older version of glowroot central (expecting schema"
-                    + " version <= {}) on a newer glowroot central schema (version {}), this could"
-                    + " be problematic", CURR_SCHEMA_VERSION, initialSchemaVersion);
+            startupLogger.warn("running an older version of glowroot central on a newer glowroot"
+                    + " central schema (expecting glowroot central schema version <= {} but found"
+                    + " version {}), this could be problematic", CURR_SCHEMA_VERSION,
+                    initialSchemaVersion);
             return;
         }
-        startupLogger.info("upgrading Cassandra schema from version {}...", initialSchemaVersion);
+        startupLogger.info("upgrading glowroot central schema from version {} to version {} ...",
+                initialSchemaVersion, CURR_SCHEMA_VERSION);
         // 0.9.1 to 0.9.2
         if (initialSchemaVersion < 2) {
             renameAgentColumnFromSystemInfoToEnvironment();
@@ -208,7 +210,8 @@ public class SchemaUpgrade {
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
-        startupLogger.info("upgraded Cassandra schema to version {}", CURR_SCHEMA_VERSION);
+        startupLogger.info("upgraded glowroot central schema from version {} to version {}",
+                initialSchemaVersion, CURR_SCHEMA_VERSION);
     }
 
     public boolean reloadCentralConfiguration() {
@@ -217,6 +220,10 @@ public class SchemaUpgrade {
 
     public void updateSchemaVersionToCurent() throws Exception {
         updateSchemaVersion(CURR_SCHEMA_VERSION);
+    }
+
+    public int getCurrentSchemaVersion() {
+        return CURR_SCHEMA_VERSION;
     }
 
     public void updateToMoreRecentCassandraOptions(CentralStorageConfig storageConfig)
@@ -261,7 +268,7 @@ public class SchemaUpgrade {
             Sessions.execute(session, "alter table " + tableName
                     + " with compression = { 'class' : 'LZ4Compressor' }");
             if (snappyUpdatedCount++ == 0) {
-                startupLogger.info("upgrading from Snappy to LZ4 compression...");
+                startupLogger.info("upgrading from Snappy to LZ4 compression ...");
             }
         }
         if (snappyUpdatedCount > 0) {
@@ -286,7 +293,7 @@ public class SchemaUpgrade {
                         + " : 'HOURS', 'compaction_window_size' : '" + windowSizeHours + "' }");
                 if (dtcsUpdatedCount++ == 0) {
                     startupLogger.info("upgrading from DateTieredCompactionStrategy to"
-                            + " TimeWindowCompactionStrategy compression...");
+                            + " TimeWindowCompactionStrategy compression ...");
                 }
             } catch (InvalidConfigurationInQueryException e) {
                 logger.debug(e.getMessage(), e);
@@ -309,7 +316,7 @@ public class SchemaUpgrade {
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
                     + " 'compaction_window_size' : '" + windowSizeHours + "' }");
             if (twcsUpdatedCount++ == 0) {
-                startupLogger.info("updating TimeWindowCompactionStrategy compaction windows...");
+                startupLogger.info("updating TimeWindowCompactionStrategy compaction windows ...");
             }
         }
         if (dtcsUpdatedCount > 0) {

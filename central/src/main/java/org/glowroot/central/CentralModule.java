@@ -130,15 +130,14 @@ public class CentralModule {
             clusterManager = ClusterManager.create(centralDir, centralConfig.jgroupsProperties());
             session = connect(centralConfig);
             cluster = session.getCluster();
-            Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
-            Sessions.execute(session, "use " + centralConfig.cassandraKeyspace());
+            String keyspace = centralConfig.cassandraKeyspace();
 
-            KeyspaceMetadata keyspaceMetadata = checkNotNull(
-                    cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace()));
+            KeyspaceMetadata keyspaceMetadata =
+                    checkNotNull(cluster.getMetadata().getKeyspace(keyspace));
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspaceMetadata, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
-                startupLogger.info("creating Cassandra schema...");
+                startupLogger.info("creating glowroot central schema ...");
             } else {
                 schemaUpgrade.upgrade();
             }
@@ -151,7 +150,7 @@ public class CentralModule {
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
-                startupLogger.info("Cassandra schema created");
+                startupLogger.info("glowroot central schema created");
             } else {
                 schemaUpgrade.updateToMoreRecentCassandraOptions(
                         repos.getConfigRepository().getCentralStorageConfig());
@@ -278,7 +277,7 @@ public class CentralModule {
 
     public void shutdown() {
         if (startupLogger != null) {
-            startupLogger.info("shutting down...");
+            startupLogger.info("shutting down ...");
         }
         try {
             // close down external inputs first (ui and grpc)
@@ -318,24 +317,23 @@ public class CentralModule {
 
         Session session = null;
         Cluster cluster = null;
+        String keyspace;
         try {
             session = connect(centralConfig);
             cluster = session.getCluster();
-            Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
-            Sessions.execute(session, "use " + centralConfig.cassandraKeyspace());
+            keyspace = centralConfig.cassandraKeyspace();
 
-            KeyspaceMetadata keyspaceMetadata = checkNotNull(
-                    cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace()));
+            KeyspaceMetadata keyspaceMetadata =
+                    checkNotNull(cluster.getMetadata().getKeyspace(keyspace));
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspaceMetadata, false);
             if (schemaUpgrade.getInitialSchemaVersion() != null) {
-                startupLogger.error("Cassandra schema has already been created, exiting");
+                startupLogger.error("glowroot central schema already exists, exiting");
                 return;
             }
-            startupLogger.info("creating Cassandra schema...");
+            startupLogger.info("creating glowroot central schema ...");
             new CentralRepoModule(ClusterManager.create(), session, keyspaceMetadata,
                     centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
-            startupLogger.info("Cassandra schema created");
         } finally {
             if (session != null) {
                 session.close();
@@ -343,6 +341,75 @@ public class CentralModule {
             if (cluster != null) {
                 cluster.close();
             }
+        }
+        startupLogger.info("glowroot central schema created");
+    }
+
+    static void runCommand(String commandName, List<String> args) throws Exception {
+        File centralDir = new File(".");
+        initLogging(centralDir);
+        Command command;
+        if (commandName.equals("setup-admin-user")) {
+            if (args.size() != 2) {
+                startupLogger.error(
+                        "setup-admin-user requires two args (username and password), exiting");
+                return;
+            }
+            command = CentralRepoModule::setupAdminUser;
+        } else {
+            startupLogger.error("unexpected command '{}', exiting", commandName);
+            return;
+        }
+        startupLogger.info("running {}", commandName);
+
+        String version = Version.getVersion(CentralModule.class);
+        startupLogger.info("Glowroot version: {}", version);
+        startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
+
+        File propFile = new File(centralDir, "glowroot-central.properties");
+        Properties props = PropertiesFiles.load(propFile);
+        CentralConfiguration centralConfig = getCentralConfiguration(props);
+
+        Session session = null;
+        Cluster cluster = null;
+        boolean success;
+        try {
+            session = connect(centralConfig);
+            cluster = session.getCluster();
+            String keyspace = centralConfig.cassandraKeyspace();
+
+            KeyspaceMetadata keyspaceMetadata =
+                    checkNotNull(cluster.getMetadata().getKeyspace(keyspace));
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspaceMetadata, false);
+            Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
+            if (initialSchemaVersion == null) {
+                startupLogger.info("creating glowroot central schema ...",
+                        keyspace);
+            } else if (initialSchemaVersion != schemaUpgrade.getCurrentSchemaVersion()) {
+                startupLogger.warn("running a version of glowroot central that does not match the"
+                        + " glowroot central schema version (expecting glowroot central schema"
+                        + " version {} but found version {}), exiting",
+                        schemaUpgrade.getCurrentSchemaVersion(), initialSchemaVersion);
+                return;
+            }
+            CentralRepoModule repos =
+                    new CentralRepoModule(ClusterManager.create(), session, keyspaceMetadata,
+                            centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
+            if (initialSchemaVersion == null) {
+                schemaUpgrade.updateSchemaVersionToCurent();
+                startupLogger.info("glowroot central schema created");
+            }
+            success = command.run(repos, args);
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+            if (cluster != null) {
+                cluster.close();
+            }
+        }
+        if (success) {
+            startupLogger.info("{} completed successfully", commandName);
         }
     }
 
@@ -514,9 +581,19 @@ public class CentralModule {
                     session = createCluster(centralConfig, defaultTimestampGenerator).connect();
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
-                executeTestQueryAtConfiguredConsistencyLevel(session, centralConfig);
-                startupLogger.info("Connected to Cassandra {}, using consistency level {}",
-                        cassandraVersion, centralConfig.cassandraConsistencyLevel());
+                String keyspace = centralConfig.cassandraKeyspace();
+                Sessions.createKeyspaceIfNotExists(session, keyspace);
+                Sessions.execute(session, "use " + keyspace);
+                KeyspaceMetadata keyspaceMetadata =
+                        checkNotNull(session.getCluster().getMetadata().getKeyspace(keyspace));
+                String replicationFactor =
+                        keyspaceMetadata.getReplication().get("replication_factor");
+                if (replicationFactor == null) {
+                    replicationFactor = "unknown";
+                }
+                startupLogger.info("connected to Cassandra (version {}), using keyspace '{}'"
+                        + " (replication factor {}) and consistency level {}", cassandraVersion,
+                        keyspace, replicationFactor, centralConfig.cassandraConsistencyLevel());
                 return session;
             } catch (NoHostAvailableException e) {
                 startupLogger.debug(e.getMessage(), e);
@@ -583,19 +660,6 @@ public class CentralModule {
                             + cassandraVersion);
         }
         return cassandraVersion;
-    }
-
-    private static void executeTestQueryAtConfiguredConsistencyLevel(Session session,
-            CentralConfiguration centralConfig) throws Exception {
-        String keyspace = centralConfig.cassandraKeyspace();
-        KeyspaceMetadata keyspaceMetadata =
-                session.getCluster().getMetadata().getKeyspace(keyspace);
-        if (keyspaceMetadata != null
-                && keyspaceMetadata.getTable("schema_version") != null) {
-            // test that enough nodes are up (consistency level is achievable)
-            Sessions.execute(session,
-                    "select schema_version from " + keyspace + ".schema_version where one = 1");
-        }
     }
 
     // TODO report checker framework issue that occurs without this suppression
@@ -722,5 +786,9 @@ public class CentralModule {
                 }
             }
         }
+    }
+
+    private interface Command {
+        boolean run(CentralRepoModule repos, List<String> args) throws Exception;
     }
 }

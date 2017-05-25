@@ -15,6 +15,8 @@
  */
 package org.glowroot.central;
 
+import java.util.Arrays;
+
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 public class Main {
@@ -29,12 +31,13 @@ public class Main {
         String command = args[0];
         if (command.equals("create-schema")) {
             if (args.length > 1) {
-                System.err.println("unexpected args, exiting");
+                System.err.println("unexpected args for create-schema, exiting");
+                return;
             }
             CentralModule.createSchema();
-            return;
+        } else {
+            CentralModule.runCommand(command, Arrays.asList(args).subList(1, args.length));
         }
-        System.err.println("unexpected args, exiting");
     }
 
     private static void start() throws Exception {
