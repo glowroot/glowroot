@@ -74,6 +74,7 @@ public class UiModule {
             @Nullable String contextPath, // only used for central
             File certificateDir,
             File logDir,
+            Pattern logFileNamePattern,
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
             Clock clock,
             @Nullable LiveJvmService liveJvmService,
@@ -151,7 +152,8 @@ public class UiModule {
                 new TraceDetailHttpService(traceCommonService);
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService, version);
-        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(logDir);
+        GlowrootLogHttpService glowrootLogHttpService =
+                new GlowrootLogHttpService(logDir, logFileNamePattern);
 
         Map<Pattern, HttpService> httpServices = Maps.newHashMap();
         // http services

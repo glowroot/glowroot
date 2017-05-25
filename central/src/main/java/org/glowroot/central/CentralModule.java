@@ -246,6 +246,7 @@ public class CentralModule {
                     .contextPath(centralConfig.uiContextPath())
                     .certificateDir(centralDir)
                     .logDir(centralDir)
+                    .logFileNamePattern(Pattern.compile("glowroot-central.*\\.log"))
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(configRepository)

@@ -19,6 +19,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
@@ -48,9 +49,11 @@ class GlowrootLogHttpService implements HttpService {
     };
 
     private final File logDir;
+    private final Pattern logFileNamePattern;
 
-    GlowrootLogHttpService(File logDir) {
+    GlowrootLogHttpService(File logDir, Pattern logFileNamePattern) {
         this.logDir = logDir;
+        this.logFileNamePattern = logFileNamePattern;
     }
 
     @Override
@@ -76,7 +79,7 @@ class GlowrootLogHttpService implements HttpService {
         }
         List<File> files = Lists.newArrayList();
         for (File file : list) {
-            if (file.isFile() && file.getName().matches("glowroot.*\\.log")) {
+            if (file.isFile() && logFileNamePattern.matcher(file.getName()).matches()) {
                 files.add(file);
             }
         }

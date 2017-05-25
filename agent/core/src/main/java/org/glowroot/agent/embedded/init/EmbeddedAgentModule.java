@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -207,6 +208,7 @@ class EmbeddedAgentModule {
                     .offline(false)
                     .certificateDir(glowrootDir)
                     .logDir(agentDir)
+                    .logFileNamePattern(Pattern.compile("glowroot.*\\.log"))
                     .ticker(ticker)
                     .clock(clock)
                     .liveJvmService(agentModule.getLiveJvmService())
@@ -243,6 +245,7 @@ class EmbeddedAgentModule {
                     .offline(true)
                     .certificateDir(glowrootDir)
                     .logDir(agentDir)
+                    .logFileNamePattern(Pattern.compile("glowroot.*\\.log"))
                     .ticker(ticker)
                     .clock(clock)
                     .liveJvmService(null)
