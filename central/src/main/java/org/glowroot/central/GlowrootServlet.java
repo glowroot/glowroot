@@ -60,7 +60,6 @@ public class GlowrootServlet extends HttpServlet {
 
     @Override
     public void init(ServletConfig config) throws ServletException {
-        // FIXME pass context path, and disable settings in Web Config
         try {
             centralModule = new CentralModule(config);
             commonHandler = centralModule.getCommonHandler();
