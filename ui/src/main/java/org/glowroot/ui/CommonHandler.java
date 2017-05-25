@@ -109,14 +109,17 @@ public class CommonHandler {
         }
     }
 
+    private final boolean central;
     private final LayoutService layoutService;
     private final ImmutableMap<Pattern, HttpService> httpServices;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
     private final HttpSessionManager httpSessionManager;
     private final Clock clock;
 
-    public CommonHandler(LayoutService layoutService, Map<Pattern, HttpService> httpServices,
-            HttpSessionManager httpSessionManager, List<Object> jsonServices, Clock clock) {
+    public CommonHandler(boolean central, LayoutService layoutService,
+            Map<Pattern, HttpService> httpServices, HttpSessionManager httpSessionManager,
+            List<Object> jsonServices, Clock clock) {
+        this.central = central;
         this.layoutService = layoutService;
         this.httpServices = ImmutableMap.copyOf(httpServices);
         this.httpSessionManager = httpSessionManager;
@@ -256,6 +259,9 @@ public class CommonHandler {
                 throw new JsonServiceException(BAD_REQUEST, "missing agent-id query parameter");
             }
             String agentId = values.get(0);
+            if (central && agentId.isEmpty()) {
+                throw new JsonServiceException(BAD_REQUEST, "agent-id query parameter is empty");
+            }
             parameterTypes.add(String.class);
             parameters.add(agentId);
             queryParameters.remove("agent-id");

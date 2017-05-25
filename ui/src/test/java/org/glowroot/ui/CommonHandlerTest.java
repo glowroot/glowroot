@@ -43,7 +43,7 @@ public class CommonHandlerTest {
     private static final int H2_STATEMENT_WAS_CANCELED = 57014;
 
     private static final CommonHandler HTTP_SERVER_HANDLER =
-            new CommonHandler(mock(LayoutService.class), new HashMap<Pattern, HttpService>(),
+            new CommonHandler(false, mock(LayoutService.class), new HashMap<Pattern, HttpService>(),
                     mock(HttpSessionManager.class), new ArrayList<Object>(), mock(Clock.class));
 
     @Test

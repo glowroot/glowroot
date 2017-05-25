@@ -181,7 +181,7 @@ public class UiModule {
             httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
         }
 
-        CommonHandler commonHandler = new CommonHandler(layoutService, httpServices,
+        CommonHandler commonHandler = new CommonHandler(central, layoutService, httpServices,
                 httpSessionManager, jsonServices, clock);
 
         if (servlet) {
