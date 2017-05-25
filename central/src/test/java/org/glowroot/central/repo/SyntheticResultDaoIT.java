@@ -50,14 +50,15 @@ public class SyntheticResultDaoIT {
         session = cluster.newSession();
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+        KeyspaceMetadata keyspaceMetadata =
+                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
         clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentDao = new AgentDao(session, clusterManager);
         ConfigDao configDao = new ConfigDao(session, clusterManager);
-        UserDao userDao = new UserDao(session, keyspace, clusterManager);
-        RoleDao roleDao = new RoleDao(session, keyspace, clusterManager);
+        UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
+        RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
         ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentDao, configDao,
                 centralConfigDao, userDao, roleDao, "");
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();

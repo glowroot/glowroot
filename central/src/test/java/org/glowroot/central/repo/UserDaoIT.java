@@ -43,10 +43,11 @@ public class UserDaoIT {
         session = cluster.newSession();
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+        KeyspaceMetadata keyspaceMetadata =
+                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
         clusterManager = ClusterManager.create();
-        userDao = new UserDao(session, keyspace, clusterManager);
+        userDao = new UserDao(session, keyspaceMetadata, clusterManager);
     }
 
     @AfterClass

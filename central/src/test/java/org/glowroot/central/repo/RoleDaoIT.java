@@ -43,10 +43,11 @@ public class RoleDaoIT {
         session = cluster.newSession();
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+        KeyspaceMetadata keyspaceMetadata =
+                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
         clusterManager = ClusterManager.create();
 
-        roleDao = new RoleDao(session, keyspace, clusterManager);
+        roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
     }
 
     @AfterClass

@@ -48,9 +48,10 @@ public class SchemaUpgradeIT {
     @Test
     public void shouldRead() throws Exception {
         // given
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+        KeyspaceMetadata keyspaceMetadata =
+                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
         // when
-        new SchemaUpgrade(session, keyspace, false);
+        new SchemaUpgrade(session, keyspaceMetadata, false);
         // then don't throw exception
     }
 }

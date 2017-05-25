@@ -41,13 +41,13 @@ public class CentralRepoModule {
     private final TriggeredAlertDao triggeredAlertDao;
 
     public CentralRepoModule(ClusterManager clusterManager, Session session,
-            KeyspaceMetadata keyspace, String cassandraSymmetricEncryptionKey, Clock clock)
+            KeyspaceMetadata keyspaceMetadata, String cassandraSymmetricEncryptionKey, Clock clock)
             throws Exception {
         centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentDao = new AgentDao(session, clusterManager);
         configDao = new ConfigDao(session, clusterManager);
-        userDao = new UserDao(session, keyspace, clusterManager);
-        roleDao = new RoleDao(session, keyspace, clusterManager);
+        userDao = new UserDao(session, keyspaceMetadata, clusterManager);
+        roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
         configRepository = new ConfigRepositoryImpl(agentDao, configDao, centralConfigDao, userDao,
                 roleDao, cassandraSymmetricEncryptionKey);
         transactionTypeDao = new TransactionTypeDao(session, configRepository, clusterManager);

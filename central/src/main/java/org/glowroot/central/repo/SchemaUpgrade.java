@@ -84,7 +84,7 @@ public class SchemaUpgrade {
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
-    private final KeyspaceMetadata keyspace;
+    private final KeyspaceMetadata keyspaceMetadata;
     private final boolean servlet;
 
     private final PreparedStatement insertPS;
@@ -92,17 +92,17 @@ public class SchemaUpgrade {
 
     private boolean reloadCentralConfiguration;
 
-    public SchemaUpgrade(Session session, KeyspaceMetadata keyspace, boolean servlet)
+    public SchemaUpgrade(Session session, KeyspaceMetadata keyspaceMetadata, boolean servlet)
             throws Exception {
         this.session = session;
-        this.keyspace = keyspace;
+        this.keyspaceMetadata = keyspaceMetadata;
         this.servlet = servlet;
 
         Sessions.execute(session, "create table if not exists schema_version (one int,"
                 + " schema_version int, primary key (one)) " + WITH_LCS);
         insertPS =
                 session.prepare("insert into schema_version (one, schema_version) values (?, ?)");
-        initialSchemaVersion = getSchemaVersion(session, keyspace);
+        initialSchemaVersion = getSchemaVersion(session, keyspaceMetadata);
     }
 
     public @Nullable Integer getInitialSchemaVersion() {
@@ -224,7 +224,7 @@ public class SchemaUpgrade {
         List<String> snappyTableNames = Lists.newArrayList();
         List<String> dtcsTableNames = Lists.newArrayList();
         List<String> twcsTableNames = Lists.newArrayList();
-        for (TableMetadata table : keyspace.getTables()) {
+        for (TableMetadata table : keyspaceMetadata.getTables()) {
             String compression = table.getOptions().getCompression().get("class");
             if (compression != null
                     && compression.equals("org.apache.cassandra.io.compress.SnappyCompressor")) {
@@ -435,7 +435,7 @@ public class SchemaUpgrade {
     }
 
     private void updateDtcsTwcsGcSeconds() throws Exception {
-        for (TableMetadata table : keyspace.getTables()) {
+        for (TableMetadata table : keyspaceMetadata.getTables()) {
             String compaction = table.getOptions().getCompaction().get("class");
             if (compaction == null) {
                 continue;
@@ -778,11 +778,11 @@ public class SchemaUpgrade {
     }
 
     private boolean tableExists(String tableName) {
-        return keyspace.getTable(tableName) != null;
+        return keyspaceMetadata.getTable(tableName) != null;
     }
 
     private boolean columnExists(String tableName, String columnName) {
-        return keyspace.getTable(tableName).getColumn(columnName) != null;
+        return keyspaceMetadata.getTable(tableName).getColumn(columnName) != null;
     }
 
     // drop table can timeout, throwing NoHostAvailableException

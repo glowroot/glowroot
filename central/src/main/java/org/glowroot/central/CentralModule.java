@@ -133,9 +133,9 @@ public class CentralModule {
             Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
             Sessions.execute(session, "use " + centralConfig.cassandraKeyspace());
 
-            KeyspaceMetadata keyspace = checkNotNull(
+            KeyspaceMetadata keyspaceMetadata = checkNotNull(
                     cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace()));
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace, servlet);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspaceMetadata, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating Cassandra schema...");
@@ -147,7 +147,7 @@ public class CentralModule {
             }
 
             CentralRepoModule repos = new CentralRepoModule(clusterManager, session,
-                    keyspace, centralConfig.cassandraSymmetricEncryptionKey(), clock);
+                    keyspaceMetadata, centralConfig.cassandraSymmetricEncryptionKey(), clock);
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
@@ -324,15 +324,15 @@ public class CentralModule {
             Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
             Sessions.execute(session, "use " + centralConfig.cassandraKeyspace());
 
-            KeyspaceMetadata keyspace = checkNotNull(
+            KeyspaceMetadata keyspaceMetadata = checkNotNull(
                     cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace()));
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace, false);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspaceMetadata, false);
             if (schemaUpgrade.getInitialSchemaVersion() != null) {
                 startupLogger.error("Cassandra schema has already been created, exiting");
                 return;
             }
             startupLogger.info("creating Cassandra schema...");
-            new CentralRepoModule(ClusterManager.create(), session, keyspace,
+            new CentralRepoModule(ClusterManager.create(), session, keyspaceMetadata,
                     centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
             startupLogger.info("Cassandra schema created");
