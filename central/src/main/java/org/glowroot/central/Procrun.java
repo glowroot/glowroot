@@ -27,7 +27,7 @@ public class Procrun {
 
     public static void main(String[] args) throws Exception {
         if (args[0].equals("start")) {
-            centralModule = new CentralModule();
+            centralModule = CentralModule.create();
         } else if (args[0].equals("stop")) {
             if (centralModule != null) {
                 centralModule.shutdown();

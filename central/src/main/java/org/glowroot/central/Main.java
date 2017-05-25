@@ -38,7 +38,7 @@ public class Main {
     }
 
     private static void start() throws Exception {
-        centralModule = new CentralModule();
+        centralModule = CentralModule.create();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {

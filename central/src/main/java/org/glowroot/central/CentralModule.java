@@ -16,7 +16,6 @@
 package org.glowroot.central;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
@@ -25,9 +24,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
-
-import javax.annotation.Nullable;
-import javax.servlet.ServletConfig;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
@@ -51,7 +47,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
@@ -60,7 +55,6 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.glowroot.central.repo.CentralRepoModule;
 import org.glowroot.central.repo.ConfigRepositoryImpl.AgentConfigListener;
@@ -97,11 +91,15 @@ public class CentralModule {
     private final UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService;
     private final UiModule uiModule;
 
-    public CentralModule() throws Exception {
-        this(null);
+    public static CentralModule create() throws Exception {
+        return new CentralModule(new File("."), false);
     }
 
-    CentralModule(@Nullable ServletConfig config) throws Exception {
+    public static CentralModule createForServletContainer(File centralDir) throws Exception {
+        return new CentralModule(centralDir, true);
+    }
+
+    private CentralModule(File centralDir, boolean servlet) throws Exception {
         ClusterManager clusterManager = null;
         Cluster cluster = null;
         Session session = null;
@@ -111,28 +109,14 @@ public class CentralModule {
         UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService = null;
         UiModule uiModule = null;
         try {
-            File centralDir = config == null ? new File(".") : getCentralDir();
             // init logger as early as possible
             initLogging(centralDir);
-            if (config != null) {
-                File propFile = new File(centralDir, "glowroot-central.properties");
-                if (!propFile.exists()) {
-                    try (FileOutputStream out = new FileOutputStream(propFile)) {
-                        ByteStreams.copy(config.getServletContext()
-                                .getResourceAsStream("/META-INF/glowroot-central.properties"), out);
-                    }
-                }
-            }
-            // install jul-to-slf4j bridge for protobuf which logs to jul
-            SLF4JBridgeHandler.removeHandlersForRootLogger();
-            SLF4JBridgeHandler.install();
-
             Clock clock = Clock.systemClock();
             Ticker ticker = Ticker.systemTicker();
             String version = Version.getVersion(CentralModule.class);
             startupLogger.info("Glowroot version: {}", version);
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
-            if (config != null) {
+            if (servlet) {
                 String extra = "";
                 if (Strings.isNullOrEmpty(System.getProperty("glowroot.central.dir"))) {
                     extra = ", this can be changed by adding the JVM arg -Dglowroot.central.dir=..."
@@ -151,7 +135,7 @@ public class CentralModule {
 
             KeyspaceMetadata keyspace =
                     cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace());
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace, config != null);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating Cassandra schema...");
@@ -207,7 +191,7 @@ public class CentralModule {
             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
             uiModule = new CreateUiModuleBuilder()
                     .central(true)
-                    .servlet(config != null)
+                    .servlet(servlet)
                     .offline(false)
                     .bindAddress(centralConfig.uiBindAddress())
                     .port(centralConfig.uiPort())
@@ -612,36 +596,6 @@ public class CentralModule {
             Sessions.execute(session,
                     "select schema_version from " + keyspace + ".schema_version where one = 1");
         }
-    }
-
-    private static File getCentralDir() throws IOException {
-        String centralDirPath = System.getProperty("glowroot.central.dir");
-        if (Strings.isNullOrEmpty(centralDirPath)) {
-            return getDefaultCentralDir();
-        }
-        File centralDir = new File(centralDirPath);
-        centralDir.mkdirs();
-        if (!centralDir.isDirectory()) {
-            // not using logger since the home dir is needed to set up the logger
-            return getDefaultCentralDir();
-        }
-        return centralDir;
-    }
-
-    private static File getDefaultCentralDir() throws IOException {
-        File centralDir = new File("glowroot-central");
-        if (!centralDir.exists()) {
-            // upgrade from 0.9.11 to 0.9.12 if needed
-            File oldCentralDir = new File("glowroot");
-            if (oldCentralDir.exists()) {
-                oldCentralDir.renameTo(centralDir);
-            }
-        }
-        centralDir.mkdirs();
-        if (!centralDir.isDirectory()) {
-            throw new IOException("Could not create directory: " + centralDir.getAbsolutePath());
-        }
-        return centralDir;
     }
 
     // TODO report checker framework issue that occurs without this suppression

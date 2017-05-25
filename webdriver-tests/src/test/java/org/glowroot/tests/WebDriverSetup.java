@@ -237,7 +237,7 @@ public class WebDriverSetup {
         props.println("grpc.port=" + grpcPort);
         props.println("ui.port=" + uiPort);
         props.close();
-        return new CentralModule();
+        return CentralModule.create();
     }
 
     private static Container createContainerReportingToCentral(int grpcPort, File testDir)

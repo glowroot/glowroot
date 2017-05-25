@@ -15,9 +15,11 @@
  */
 package org.glowroot.central;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
@@ -61,7 +64,13 @@ public class GlowrootServlet extends HttpServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         try {
-            centralModule = new CentralModule(config);
+            File centralDir = getCentralDir();
+            File propFile = new File(centralDir, "glowroot-central.properties");
+            if (!propFile.exists()) {
+                Files.copy(config.getServletContext().getResourceAsStream(
+                        "/META-INF/glowroot-central.properties"), propFile.toPath());
+            }
+            centralModule = CentralModule.createForServletContainer(centralDir);
             commonHandler = centralModule.getCommonHandler();
         } catch (Exception e) {
             throw new ServletException(e);
@@ -120,6 +129,36 @@ public class GlowrootServlet extends HttpServlet {
         } else {
             throw new IllegalStateException("Unexpected content: " + content.getClass().getName());
         }
+    }
+
+    private static File getCentralDir() throws IOException {
+        String centralDirPath = System.getProperty("glowroot.central.dir");
+        if (Strings.isNullOrEmpty(centralDirPath)) {
+            return getDefaultCentralDir();
+        }
+        File centralDir = new File(centralDirPath);
+        centralDir.mkdirs();
+        if (!centralDir.isDirectory()) {
+            // not using logger since the central dir is needed to set up the logger
+            return getDefaultCentralDir();
+        }
+        return centralDir;
+    }
+
+    private static File getDefaultCentralDir() throws IOException {
+        File centralDir = new File("glowroot-central");
+        if (!centralDir.exists()) {
+            // upgrade from 0.9.11 to 0.9.12 if needed
+            File oldCentralDir = new File("glowroot");
+            if (oldCentralDir.exists()) {
+                oldCentralDir.renameTo(centralDir);
+            }
+        }
+        centralDir.mkdirs();
+        if (!centralDir.isDirectory()) {
+            throw new IOException("Could not create directory: " + centralDir.getAbsolutePath());
+        }
+        return centralDir;
     }
 
     private static class ServletReq implements CommonRequest {
