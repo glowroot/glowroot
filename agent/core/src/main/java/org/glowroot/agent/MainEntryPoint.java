@@ -49,9 +49,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.embedded.init.EmbeddedGlowrootAgentInit;
-import org.glowroot.agent.init.AgentDirLocking.AgentDirLockedException;
-import org.glowroot.agent.init.CentralGlowrootAgentInit;
+import org.glowroot.agent.init.AgentDirsLocking.AgentDirsLockedException;
 import org.glowroot.agent.init.GlowrootAgentInit;
+import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.PropertiesFiles;
@@ -61,7 +61,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MainEntryPoint {
 
-    // need to wait to init logger until after establishing agentDir
+    // need to wait to init logger until after establishing logDir
     private static volatile @MonotonicNonNull Logger startupLogger;
 
     @OnlyUsedByTests
@@ -82,14 +82,12 @@ public class MainEntryPoint {
             }
             System.setProperty("jboss.modules.system.pkgs", jbossModulesSystemPkgs);
         }
-        File glowrootDir;
-        File agentDir;
+        Directories directories;
         try {
-            glowrootDir = GlowrootDir.getGlowrootDir(glowrootJarFile);
-            agentDir = GlowrootDir.getAgentDir(glowrootDir);
+            directories = new Directories(glowrootJarFile);
             // init logger as early as possible
-            File logDir = GlowrootDir.getLogDir(agentDir);
-            initLogging(agentDir, logDir);
+            initLogging(directories.getConfDir(), directories.getSharedConfDir(),
+                    directories.getLogDir());
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             // also, don't use logger since not initialized yet
@@ -98,17 +96,18 @@ public class MainEntryPoint {
             return;
         }
         try {
-            ImmutableMap<String, String> properties = getGlowrootProperties(glowrootDir);
-            start(glowrootDir, agentDir, properties, instrumentation);
-        } catch (AgentDirLockedException e) {
-            logAgentDirLockedException(agentDir);
+            ImmutableMap<String, String> properties =
+                    getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
+            start(directories, properties, instrumentation);
+        } catch (AgentDirsLockedException e) {
+            logAgentDirsLockedException(directories.getConfDir(), e.getLockFile());
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
         }
     }
 
-    static void runViewer(File glowrootDir, File agentDir) throws InterruptedException {
+    static void runViewer(Directories directories) throws InterruptedException {
         // initLogging() already called by OfflineViewer.main()
         checkNotNull(startupLogger);
         String version;
@@ -116,11 +115,14 @@ public class MainEntryPoint {
             version = Version.getVersion(MainEntryPoint.class);
             startupLogger.info("Glowroot version: {}", version);
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
-            ImmutableMap<String, String> properties = getGlowrootProperties(glowrootDir);
-            new EmbeddedGlowrootAgentInit().init(glowrootDir, agentDir, null, null, properties,
-                    null, version, true);
-        } catch (AgentDirLockedException e) {
-            logAgentDirLockedException(agentDir);
+            ImmutableMap<String, String> properties =
+                    getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
+            new EmbeddedGlowrootAgentInit(directories.getDataDir(), true)
+                    .init(directories.getPluginsDir(), directories.getConfDir(),
+                            directories.getSharedConfDir(), directories.getLogDir(),
+                            directories.getTmpDir(), properties, null, version);
+        } catch (AgentDirsLockedException e) {
+            logAgentDirsLockedException(directories.getConfDir(), e.getLockFile());
             return;
         } catch (Throwable t) {
             startupLogger.error("Glowroot cannot start: {}", t.getMessage(), t);
@@ -132,11 +134,17 @@ public class MainEntryPoint {
     }
 
     @EnsuresNonNull("startupLogger")
-    static void initLogging(File agentDir, File logDir) {
-        File logbackXmlOverride = new File(agentDir, "glowroot.logback.xml");
+    static void initLogging(File confDir, @Nullable File sharedConfDir, File logDir) {
+        File logbackXmlOverride = new File(confDir, "glowroot.logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("glowroot.logback.configurationFile",
                     logbackXmlOverride.getAbsolutePath());
+        } else if (sharedConfDir != null) {
+            logbackXmlOverride = new File(sharedConfDir, "glowroot.logback.xml");
+            if (logbackXmlOverride.exists()) {
+                System.setProperty("glowroot.logback.configurationFile",
+                        logbackXmlOverride.getAbsolutePath());
+            }
         }
         String prior = System.getProperty("glowroot.log.dir");
         System.setProperty("glowroot.log.dir", logDir.getPath());
@@ -155,7 +163,7 @@ public class MainEntryPoint {
     }
 
     @RequiresNonNull("startupLogger")
-    private static void start(File glowrootDir, File agentDir, Map<String, String> properties,
+    private static void start(Directories directories, Map<String, String> properties,
             @Nullable Instrumentation instrumentation) throws Exception {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
@@ -163,37 +171,27 @@ public class MainEntryPoint {
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
         String collectorAddress = properties.get("glowroot.collector.address");
-        Collector customCollector = loadCustomCollector(glowrootDir);
+        Collector customCollector = loadCustomCollector(directories.getGlowrootDir());
         if (Strings.isNullOrEmpty(collectorAddress) && customCollector == null) {
-            glowrootAgentInit = new EmbeddedGlowrootAgentInit();
+            glowrootAgentInit = new EmbeddedGlowrootAgentInit(directories.getDataDir(), false);
         } else {
             if (customCollector != null) {
                 startupLogger.info("using collector: {}", customCollector.getClass().getName());
             }
-            glowrootAgentInit = new CentralGlowrootAgentInit();
+            glowrootAgentInit = new NonEmbeddedGlowrootAgentInit(collectorAddress, customCollector);
         }
-        glowrootAgentInit.init(glowrootDir, agentDir, collectorAddress, customCollector,
-                properties, instrumentation, version, false);
+        glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDir(),
+                directories.getSharedConfDir(), directories.getLogDir(), directories.getTmpDir(),
+                properties, instrumentation, version);
     }
 
-    private static ImmutableMap<String, String> getGlowrootProperties(File glowrootDir)
-            throws IOException {
+    private static ImmutableMap<String, String> getGlowrootProperties(File confDir,
+            @Nullable File sharedConfDir) throws IOException {
         Map<String, String> properties = Maps.newHashMap();
-        File propFile = new File(glowrootDir, "glowroot.properties");
-        if (propFile.exists()) {
-            // upgrade from 0.9.6 to 0.9.7
-            PropertiesFiles.upgradeIfNeeded(propFile,
-                    ImmutableMap.of("agent.rollup=", "agent.rollup.id="));
-            // upgrade from 0.9.13 to 0.9.14
-            upgradeToCollectorAddressIfNeeded(propFile);
-            Properties props = PropertiesFiles.load(propFile);
-            for (String key : props.stringPropertyNames()) {
-                String value = props.getProperty(key);
-                if (value != null) {
-                    properties.put("glowroot." + key, value);
-                }
-            }
+        if (sharedConfDir != null) {
+            addProperties(sharedConfDir, properties);
         }
+        addProperties(confDir, properties);
         for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
             if (entry.getKey() instanceof String && entry.getValue() instanceof String
                     && ((String) entry.getKey()).startsWith("glowroot.")) {
@@ -204,8 +202,28 @@ public class MainEntryPoint {
         return ImmutableMap.copyOf(properties);
     }
 
+    private static void addProperties(File dir, Map<String, String> properties)
+            throws IOException {
+        File propFile = new File(dir, "glowroot.properties");
+        if (!propFile.exists()) {
+            return;
+        }
+        // upgrade from 0.9.6 to 0.9.7
+        PropertiesFiles.upgradeIfNeeded(propFile,
+                ImmutableMap.of("agent.rollup=", "agent.rollup.id="));
+        // upgrade from 0.9.13 to 0.9.14
+        upgradeToCollectorAddressIfNeeded(propFile);
+        Properties props = PropertiesFiles.load(propFile);
+        for (String key : props.stringPropertyNames()) {
+            String value = props.getProperty(key);
+            if (value != null) {
+                properties.put("glowroot." + key, value);
+            }
+        }
+    }
+
     @RequiresNonNull("startupLogger")
-    private static void logAgentDirLockedException(File agentDir) {
+    private static void logAgentDirsLockedException(File confDir, File lockFile) {
         // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
         // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
         // have been used to specify '-javaagent:glowroot.jar', in which case Glowroot tries
@@ -218,8 +236,9 @@ public class MainEntryPoint {
         //
         // no need for logging in the special (but common) case described above
         if (!isTomcatStop()) {
-            startupLogger.error("Glowroot not started, directory in use by another jvm process: {}",
-                    agentDir.getAbsolutePath());
+            startupLogger.error("Glowroot not started, directory in use by another jvm process: {}"
+                    + " (unable to obtain lock on {})", confDir.getAbsolutePath(),
+                    lockFile.getAbsolutePath());
         }
     }
 
@@ -330,8 +349,9 @@ public class MainEntryPoint {
         checkNotNull(testDirPath);
         File testDir = new File(testDirPath);
         // init logger as early as possible
-        initLogging(testDir, testDir);
-        start(testDir, testDir, properties, null);
+        initLogging(testDir, null, testDir);
+        Directories directories = new Directories(testDir, false);
+        start(directories, properties, null);
     }
 
     @OnlyUsedByTests

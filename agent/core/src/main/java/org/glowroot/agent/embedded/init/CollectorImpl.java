@@ -18,6 +18,8 @@ package org.glowroot.agent.embedded.init;
 import java.io.File;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +63,7 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void init(File glowrootDir, File agentDir, Environment environment,
+    public void init(File confDir, @Nullable File sharedConfDir, Environment environment,
             AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) throws Exception {
         environmentDao.store(environment);
     }

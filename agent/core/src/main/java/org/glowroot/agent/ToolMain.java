@@ -42,30 +42,29 @@ public class ToolMain {
     public static void main(String[] args) throws Exception {
         CodeSource codeSource = ToolMain.class.getProtectionDomain().getCodeSource();
         File glowrootJarFile = getGlowrootJarFile(codeSource);
-        File glowrootDir = GlowrootDir.getGlowrootDir(glowrootJarFile);
-        File agentDir = GlowrootDir.getAgentDir(glowrootDir);
-        File logDir = GlowrootDir.getLogDir(agentDir);
-        MainEntryPoint.initLogging(agentDir, logDir);
+        Directories directories = new Directories(glowrootJarFile);
+        MainEntryPoint.initLogging(directories.getConfDir(), directories.getSharedConfDir(),
+                directories.getLogDir());
         startupLogger = LoggerFactory.getLogger("org.glowroot");
 
         if (args.length == 0) {
-            MainEntryPoint.runViewer(glowrootDir, agentDir);
+            MainEntryPoint.runViewer(directories);
             return;
         }
         String command = args[0];
         if (command.equals("h2") && args.length == 1) {
-            h2(agentDir);
+            h2(directories.getDataDir());
             return;
         }
         if (command.equals("recover") && args.length == 1) {
-            recover(agentDir);
+            recover(directories.getDataDir());
             return;
         }
         if (command.equals("mask-central-data") && args.length == 1) {
             // this is for monitoring glowroot central with glowroot agent, and then masking the
             // data captured from glowroot central so that it can be shared for debugging issues
             // within glowroot central
-            maskCentralData(agentDir);
+            maskCentralData(directories.getDataDir());
             return;
         }
         System.err.println("unexpected args, exiting");
@@ -84,15 +83,13 @@ public class ToolMain {
         return null;
     }
 
-    private static void h2(File agentDir) throws Exception {
-        File dataDir = new File(agentDir, "data");
+    private static void h2(File dataDir) throws Exception {
         Console.main(new String[] {"-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data",
                 "-user", "sa"});
     }
 
     @RequiresNonNull("startupLogger")
-    private static void recover(File agentDir) throws Exception {
-        File dataDir = new File(agentDir, "data");
+    private static void recover(File dataDir) throws Exception {
         File recoverFile = new File(dataDir, "data.h2.sql");
         if (recoverFile.exists() && !recoverFile.delete()) {
             startupLogger.warn("recover failed: cannot delete existing data.h2.sql");
@@ -124,8 +121,7 @@ public class ToolMain {
     }
 
     @RequiresNonNull("startupLogger")
-    private static void maskCentralData(File agentDir) throws Exception {
-        File dataDir = new File(agentDir, "data");
+    private static void maskCentralData(File dataDir) throws Exception {
         File maskScriptFile = File.createTempFile("mask-central-data", ".sql");
         PrintWriter out = new PrintWriter(new FileWriter(maskScriptFile));
         try {
@@ -149,7 +145,7 @@ public class ToolMain {
         // just a temp file, no need to log if delete fails
         maskScriptFile.delete();
         // re-create data file to eliminate any trace of previous values
-        recover(agentDir);
+        recover(dataDir);
     }
 
     private static String applyHash(String sql) {

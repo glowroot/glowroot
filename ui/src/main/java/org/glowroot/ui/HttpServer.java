@@ -16,6 +16,7 @@
 package org.glowroot.ui;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -59,15 +60,16 @@ class HttpServer {
     private final EventLoopGroup workerGroup;
 
     private final String bindAddress;
-    private final File certificateDir;
+    private final File confDir;
+    private final @Nullable File sharedConfDir;
 
     private volatile @Nullable SslContext sslContext;
     private volatile @MonotonicNonNull Channel serverChannel;
     private volatile @MonotonicNonNull Integer port;
 
     HttpServer(String bindAddress, boolean https, Supplier<String> contextPathSupplier,
-            int numWorkerThreads, CommonHandler commonHandler, File certificateDir)
-            throws Exception {
+            int numWorkerThreads, CommonHandler commonHandler, File confDir,
+            @Nullable File sharedConfDir) throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -86,11 +88,12 @@ class HttpServer {
 
         if (https) {
             sslContext = SslContextBuilder
-                    .forServer(new File(certificateDir, "certificate.pem"),
-                            new File(certificateDir, "private.pem"))
+                    .forServer(getHttpsConfFile(confDir, sharedConfDir, "certificate.pem"),
+                            getHttpsConfFile(confDir, sharedConfDir, "private.pem"))
                     .build();
         }
-        this.certificateDir = certificateDir;
+        this.confDir = confDir;
+        this.sharedConfDir = sharedConfDir;
 
         bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
@@ -177,11 +180,11 @@ class HttpServer {
         handler.closeAllButCurrent();
     }
 
-    void changeProtocol(boolean ssl) throws Exception {
-        if (ssl) {
+    void changeProtocol(boolean https) throws Exception {
+        if (https) {
             sslContext = SslContextBuilder
-                    .forServer(new File(certificateDir, "certificate.pem"),
-                            new File(certificateDir, "private.pem"))
+                    .forServer(getHttpsConfFile(confDir, sharedConfDir, "certificate.pem"),
+                            getHttpsConfFile(confDir, sharedConfDir, "private.pem"))
                     .build();
         } else {
             sslContext = null;
@@ -195,6 +198,26 @@ class HttpServer {
         workerGroup.shutdownGracefully();
         bossGroup.shutdownGracefully();
         logger.debug("close(): http server stopped");
+    }
+
+    private static File getHttpsConfFile(File confDir, @Nullable File sharedConfDir,
+            String fileName) throws FileNotFoundException {
+        File confFile = new File(confDir, fileName);
+        if (confFile.exists()) {
+            return confFile;
+        }
+        if (sharedConfDir == null) {
+            throw new FileNotFoundException("https is enabled, but " + fileName
+                    + " was not found under '" + confDir.getAbsolutePath() + "'");
+        } else {
+            File sharedConfFile = new File(sharedConfDir, fileName);
+            if (sharedConfFile.exists()) {
+                return sharedConfFile;
+            }
+            throw new FileNotFoundException("https is enabled, but " + fileName
+                    + " was not found under either '" + confDir.getAbsolutePath() + "' or '"
+                    + sharedConfFile.getAbsolutePath() + "'");
+        }
     }
 
     private class BindEventually implements Runnable {

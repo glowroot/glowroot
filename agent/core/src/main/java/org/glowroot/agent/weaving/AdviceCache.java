@@ -60,7 +60,7 @@ public class AdviceCache {
     private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
     private final @Nullable Instrumentation instrumentation;
-    private final File agentDir;
+    private final File tmpDir;
 
     private volatile ImmutableList<Advice> reweavableAdvisors;
     private volatile ImmutableSet<String> reweavableConfigVersions;
@@ -69,7 +69,7 @@ public class AdviceCache {
 
     public AdviceCache(List<PluginDescriptor> pluginDescriptors, List<File> pluginJars,
             List<InstrumentationConfig> reweavableConfigs,
-            @Nullable Instrumentation instrumentation, File agentDir) throws Exception {
+            @Nullable Instrumentation instrumentation, File tmpDir) throws Exception {
 
         List<Advice> pluginAdvisors = Lists.newArrayList();
         List<ShimType> shimTypes = Lists.newArrayList();
@@ -110,11 +110,10 @@ public class AdviceCache {
             checkNotNull(loader);
             ClassLoaders.defineClassesInClassLoader(lazyAdvisors.values(), loader);
         } else {
-            File generatedJarDir = new File(agentDir, "tmp");
-            ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
+            ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(tmpDir,
                     "plugin-pointcuts.jar");
             if (!lazyAdvisors.isEmpty()) {
-                File jarFile = new File(generatedJarDir, "plugin-pointcuts.jar");
+                File jarFile = new File(tmpDir, "plugin-pointcuts.jar");
                 ClassLoaders.defineClassesInBootstrapClassLoader(lazyAdvisors.values(),
                         instrumentation, jarFile);
             }
@@ -123,9 +122,9 @@ public class AdviceCache {
         this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.instrumentation = instrumentation;
-        this.agentDir = agentDir;
+        this.tmpDir = tmpDir;
         reweavableAdvisors =
-                createReweavableAdvisors(reweavableConfigs, instrumentation, agentDir, true);
+                createReweavableAdvisors(reweavableConfigs, instrumentation, tmpDir, true);
         reweavableConfigVersions = createReweavableConfigVersions(reweavableConfigs);
         allAdvisors = ImmutableList.copyOf(Iterables.concat(pluginAdvisors, reweavableAdvisors));
     }
@@ -151,7 +150,7 @@ public class AdviceCache {
 
     public void updateAdvisors(List<InstrumentationConfig> reweavableConfigs) throws Exception {
         reweavableAdvisors =
-                createReweavableAdvisors(reweavableConfigs, instrumentation, agentDir, false);
+                createReweavableAdvisors(reweavableConfigs, instrumentation, tmpDir, false);
         reweavableConfigVersions = createReweavableConfigVersions(reweavableConfigs);
         allAdvisors = ImmutableList.copyOf(Iterables.concat(pluginAdvisors, reweavableAdvisors));
     }
@@ -202,7 +201,7 @@ public class AdviceCache {
 
     private static ImmutableList<Advice> createReweavableAdvisors(
             List<InstrumentationConfig> reweavableConfigs,
-            @Nullable Instrumentation instrumentation, File agentDir, boolean cleanTmpDir)
+            @Nullable Instrumentation instrumentation, File tmpDir, boolean cleanTmpDir)
             throws Exception {
         ImmutableMap<Advice, LazyDefinedClass> advisors =
                 AdviceGenerator.createAdvisors(reweavableConfigs, null, true);
@@ -212,9 +211,8 @@ public class AdviceCache {
             checkNotNull(loader);
             ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
         } else {
-            File generatedJarDir = new File(agentDir, "tmp");
             if (cleanTmpDir) {
-                ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
+                ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(tmpDir,
                         "config-pointcuts");
             }
             if (!advisors.isEmpty()) {
@@ -223,7 +221,7 @@ public class AdviceCache {
                 if (count > 1) {
                     suffix = "-" + count;
                 }
-                File jarFile = new File(generatedJarDir, "config-pointcuts" + suffix + ".jar");
+                File jarFile = new File(tmpDir, "config-pointcuts" + suffix + ".jar");
                 ClassLoaders.defineClassesInBootstrapClassLoader(advisors.values(), instrumentation,
                         jarFile);
             }

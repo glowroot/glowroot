@@ -88,10 +88,10 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile SmtpConfig smtpConfig;
     private volatile LdapConfig ldapConfig;
 
-    static ConfigRepository create(File glowrootDir, ConfigService configService,
+    static ConfigRepository create(File confDir, ConfigService configService,
             PluginCache pluginCache) {
         ConfigRepositoryImpl configRepository =
-                new ConfigRepositoryImpl(glowrootDir, configService, pluginCache);
+                new ConfigRepositoryImpl(confDir, configService, pluginCache);
         // it's nice to update admin.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
         try {
@@ -102,12 +102,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
         return configRepository;
     }
 
-    private ConfigRepositoryImpl(File glowrootDir, ConfigService configService,
+    private ConfigRepositoryImpl(File confDir, ConfigService configService,
             PluginCache pluginCache) {
         this.configService = configService;
         this.pluginCache = pluginCache;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
-        lazySecretKey = new LazySecretKeyImpl(new File(glowrootDir, "secret"));
+        lazySecretKey = new LazySecretKeyImpl(new File(confDir, "secret"));
 
         List<ImmutableUserConfig> userConfigs = configService.getAdminConfig(USERS_KEY,
                 new TypeReference<List<ImmutableUserConfig>>() {});

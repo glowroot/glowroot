@@ -21,15 +21,13 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.agent.collector.Collector;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 public interface GlowrootAgentInit {
 
-    void init(File glowrootDir, File agentDir, @Nullable String collectorAddress,
-            @Nullable Collector customCollector, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String glowrootVersion, boolean offline)
-            throws Exception;
+    void init(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir, File logDir,
+            File tmpDir, Map<String, String> properties, @Nullable Instrumentation instrumentation,
+            String glowrootVersion) throws Exception;
 
     @OnlyUsedByTests
     void setSlowThresholdToZero() throws Exception;

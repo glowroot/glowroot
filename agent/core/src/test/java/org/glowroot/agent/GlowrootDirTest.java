@@ -25,8 +25,8 @@ public class GlowrootDirTest {
 
     @Test
     public void testMakeSafeDirName() throws URISyntaxException {
-        assertThat(GlowrootDir.makeSafeDirName("ab>c d<ef|")).isEqualTo("abc def");
-        assertThat(GlowrootDir.makeSafeDirName("ab.c d.ef.")).isEqualTo("ab.c d.ef");
-        assertThat(GlowrootDir.makeSafeDirName("ab.c d.ef....")).isEqualTo("ab.c d.ef");
+        assertThat(Directories.makeSafeDirName("ab>c d<ef|")).isEqualTo("abc def");
+        assertThat(Directories.makeSafeDirName("ab.c d.ef.")).isEqualTo("ab.c d.ef");
+        assertThat(Directories.makeSafeDirName("ab.c d.ef....")).isEqualTo("ab.c d.ef");
     }
 }

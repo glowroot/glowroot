@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -106,7 +108,7 @@ public class CentralCollector implements Collector {
     }
 
     @Override
-    public void init(File glowrootDir, File agentDir, Environment environment,
+    public void init(File confDir, @Nullable File sharedConfDir, Environment environment,
             AgentConfig agentConfig, final AgentConfigUpdater agentConfigUpdater) {
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setAgentId(agentId)

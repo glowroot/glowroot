@@ -47,30 +47,39 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class CentralGlowrootAgentInit implements GlowrootAgentInit {
+public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
+
+    private final @Nullable String collectorAddress;
+    private final @Nullable Collector customCollector;
 
     private @MonotonicNonNull AgentModule agentModule;
     private @MonotonicNonNull CentralCollector centralCollector;
 
     private @MonotonicNonNull ScheduledExecutorService backgroundExecutor;
 
-    private @MonotonicNonNull Closeable agentDirLockingCloseable;
+    private @MonotonicNonNull Closeable agentDirsLockingCloseable;
+
+    public NonEmbeddedGlowrootAgentInit(@Nullable String collectorAddress,
+            @Nullable Collector customCollector) {
+        this.collectorAddress = collectorAddress;
+        this.customCollector = customCollector;
+    }
 
     @Override
-    public void init(final File glowrootDir, final File agentDir,
-            final @Nullable String collectorAddress, final @Nullable Collector customCollector,
+    public void init(@Nullable File pluginsDir, final File confDir,
+            final @Nullable File sharedConfDir, File logDir, File tmpDir,
             final Map<String, String> properties, final @Nullable Instrumentation instrumentation,
-            final String glowrootVersion, boolean offline) throws Exception {
+            final String glowrootVersion) throws Exception {
 
-        agentDirLockingCloseable = AgentDirLocking.lockAgentDir(agentDir);
+        agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
         Ticker ticker = Tickers.getTicker();
         Clock clock = Clock.systemClock();
 
         // need to perform jrebel workaround prior to loading any jackson classes
         JRebelWorkaround.performWorkaroundIfNeeded();
-        final PluginCache pluginCache = PluginCache.create(glowrootDir, false);
+        final PluginCache pluginCache = PluginCache.create(pluginsDir, false);
         final ConfigService configService =
-                ConfigService.create(agentDir, pluginCache.pluginDescriptors());
+                ConfigService.create(confDir, pluginCache.pluginDescriptors());
 
         final CollectorProxy collectorProxy = new CollectorProxy();
 
@@ -86,7 +95,7 @@ public class CentralGlowrootAgentInit implements GlowrootAgentInit {
                 createBackgroundExecutorSupplier();
 
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
-                backgroundExecutorSupplier, collectorProxy, instrumentation, agentDir);
+                backgroundExecutorSupplier, collectorProxy, instrumentation, tmpDir);
 
         final ScheduledExecutorService backgroundExecutor = backgroundExecutorSupplier.get();
 
@@ -107,7 +116,7 @@ public class CentralGlowrootAgentInit implements GlowrootAgentInit {
                     collector = customCollector;
                 }
                 collectorProxy.setInstance(collector);
-                collector.init(glowrootDir, agentDir, EnvironmentCreator.create(glowrootVersion),
+                collector.init(confDir, sharedConfDir, EnvironmentCreator.create(glowrootVersion),
                         configService.getAgentConfig(), agentConfigUpdater);
             }
         });
@@ -143,8 +152,8 @@ public class CentralGlowrootAgentInit implements GlowrootAgentInit {
             throw new IllegalStateException("Could not terminate executor");
         }
         // and unlock the agent directory
-        if (agentDirLockingCloseable != null) {
-            agentDirLockingCloseable.close();
+        if (agentDirsLockingCloseable != null) {
+            agentDirsLockingCloseable.close();
         }
     }
 

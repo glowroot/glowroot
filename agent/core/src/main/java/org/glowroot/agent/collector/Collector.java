@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
@@ -29,8 +31,8 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Collector {
 
-    void init(File glowrootDir, File agentDir, Environment environment, AgentConfig agentConfig,
-            AgentConfigUpdater agentConfigUpdater) throws Exception;
+    void init(File confDir, @Nullable File sharedConfDir, Environment environment,
+            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) throws Exception;
 
     void collectAggregates(AggregateReader aggregateReader) throws Exception;
 

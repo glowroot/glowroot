@@ -72,7 +72,8 @@ public class UiModule {
             @Nullable Integer port, // only used for central
             @Nullable Boolean https, // only used for central
             @Nullable String contextPath, // only used for central
-            File certificateDir,
+            File confDir,
+            @Nullable File sharedConfDir,
             File logDir,
             Pattern logFileNamePattern,
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
@@ -105,7 +106,7 @@ public class UiModule {
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         MailService mailService = new MailService();
 
-        AdminJsonService adminJsonService = new AdminJsonService(central, certificateDir,
+        AdminJsonService adminJsonService = new AdminJsonService(central, confDir, sharedConfDir,
                 configRepository, repoAdmin, liveAggregateRepository, mailService);
 
         List<Object> jsonServices = Lists.newArrayList();
@@ -192,7 +193,7 @@ public class UiModule {
             if (central) {
                 httpServer = new HttpServer(checkNotNull(bindAddress), checkNotNull(https),
                         Suppliers.ofInstance(checkNotNull(contextPath)), numWorkerThreads,
-                        commonHandler, certificateDir);
+                        commonHandler, confDir, sharedConfDir);
                 initialPort = checkNotNull(port);
             } else {
                 final EmbeddedWebConfig initialWebConfig = configRepository.getEmbeddedWebConfig();
@@ -209,7 +210,7 @@ public class UiModule {
                 };
                 httpServer = new HttpServer(initialWebConfig.bindAddress(),
                         initialWebConfig.https(), contextPathSupplier, numWorkerThreads,
-                        commonHandler, certificateDir);
+                        commonHandler, confDir, sharedConfDir);
                 initialPort = initialWebConfig.port();
             }
             adminJsonService.setHttpServer(httpServer);

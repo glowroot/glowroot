@@ -61,16 +61,16 @@ public abstract class PluginCache {
     public abstract ImmutableList<File> pluginJars();
     public abstract ImmutableList<PluginDescriptor> pluginDescriptors();
 
-    public static PluginCache create(File glowrootDir, boolean offline) throws Exception {
+    public static PluginCache create(@Nullable File pluginsDir, boolean offline) throws Exception {
         ImmutablePluginCache.Builder builder = ImmutablePluginCache.builder();
         List<URL> descriptorURLs = Lists.newArrayList();
-        List<File> pluginJars = getPluginJars(glowrootDir);
+        List<File> pluginJars = getPluginJars(pluginsDir);
         builder.addAllPluginJars(pluginJars);
         for (File pluginJar : pluginJars) {
             descriptorURLs
                     .add(new URL("jar:" + pluginJar.toURI() + "!/META-INF/glowroot.plugin.json"));
         }
-        for (File file : getStandaloneDescriptors(glowrootDir)) {
+        for (File file : getStandaloneDescriptors(pluginsDir)) {
             descriptorURLs.add(file.toURI().toURL());
         }
         // also add descriptors on the class path (this is primarily for integration tests)
@@ -91,9 +91,7 @@ public abstract class PluginCache {
         return builder.build();
     }
 
-    private static ImmutableList<File> getPluginJars(File glowrootDir)
-            throws URISyntaxException, IOException {
-        File pluginsDir = getPluginsDir(glowrootDir);
+    private static ImmutableList<File> getPluginJars(@Nullable File pluginsDir) throws IOException {
         if (pluginsDir == null) {
             return ImmutableList.of();
         }
@@ -110,9 +108,8 @@ public abstract class PluginCache {
         return ImmutableList.copyOf(pluginJars);
     }
 
-    private static ImmutableList<File> getStandaloneDescriptors(File glowrootDir)
-            throws IOException, URISyntaxException {
-        File pluginsDir = getPluginsDir(glowrootDir);
+    private static ImmutableList<File> getStandaloneDescriptors(@Nullable File pluginsDir)
+            throws IOException {
         if (pluginsDir == null) {
             return ImmutableList.of();
         }
@@ -127,15 +124,6 @@ public abstract class PluginCache {
             return ImmutableList.of();
         }
         return ImmutableList.copyOf(pluginDescriptorFiles);
-    }
-
-    private static @Nullable File getPluginsDir(File glowrootDir) throws IOException {
-        File pluginsDir = new File(glowrootDir, "plugins");
-        if (!pluginsDir.exists()) {
-            // it is ok to run without any plugins
-            return null;
-        }
-        return pluginsDir;
     }
 
     private static ImmutableList<URL> getResources(String resourceName) throws IOException {

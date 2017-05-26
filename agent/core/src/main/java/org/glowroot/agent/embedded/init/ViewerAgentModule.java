@@ -17,6 +17,8 @@ package org.glowroot.agent.embedded.init;
 
 import java.io.File;
 
+import javax.annotation.Nullable;
+
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 
@@ -25,9 +27,9 @@ class ViewerAgentModule {
     private final PluginCache pluginCache;
     private final ConfigService configService;
 
-    ViewerAgentModule(File glowrootDir, File agentDir) throws Exception {
-        pluginCache = PluginCache.create(glowrootDir, true);
-        configService = ConfigService.create(agentDir, pluginCache.pluginDescriptors());
+    ViewerAgentModule(@Nullable File pluginsDir, File confDir) throws Exception {
+        pluginCache = PluginCache.create(pluginsDir, true);
+        configService = ConfigService.create(confDir, pluginCache.pluginDescriptors());
     }
 
     ConfigService getConfigService() {

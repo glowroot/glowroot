@@ -80,7 +80,8 @@ class AdminJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final boolean central;
-    private final File certificateDir;
+    private final File confDir;
+    private final @Nullable File sharedConfDir;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final LiveAggregateRepository liveAggregateRepository;
@@ -89,11 +90,12 @@ class AdminJsonService {
     // null when running in servlet container
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    AdminJsonService(boolean central, File certificateDir, ConfigRepository configRepository,
-            RepoAdmin repoAdmin, LiveAggregateRepository liveAggregateRepository,
-            MailService mailService) {
+    AdminJsonService(boolean central, File confDir, @Nullable File sharedConfDir,
+            ConfigRepository configRepository, RepoAdmin repoAdmin,
+            LiveAggregateRepository liveAggregateRepository, MailService mailService) {
         this.central = central;
-        this.certificateDir = certificateDir;
+        this.confDir = confDir;
+        this.sharedConfDir = sharedConfDir;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.liveAggregateRepository = liveAggregateRepository;
@@ -187,12 +189,12 @@ class AdminJsonService {
             EmbeddedWebConfig config = configDto.convert();
             if (config.https() && !httpServer.getHttps()) {
                 // validate certificate and private key exist and are valid
-                File certificateFile = new File(certificateDir, "certificate.pem");
-                if (!certificateFile.exists()) {
+                File certificateFile = getConfFile("certificate.pem");
+                if (certificateFile == null) {
                     return "{\"httpsRequiredFilesDoNotExist\":true}";
                 }
-                File privateKeyFile = new File(certificateDir, "private.pem");
-                if (!privateKeyFile.exists()) {
+                File privateKeyFile = getConfFile("private.pem");
+                if (privateKeyFile == null) {
                     return "{\"httpsRequiredFilesDoNotExist\":true}";
                 }
                 try {
@@ -353,6 +355,20 @@ class AdminJsonService {
         repoAdmin.defrag();
     }
 
+    private @Nullable File getConfFile(String fileName) {
+        File confFile = new File(confDir, fileName);
+        if (confFile.exists()) {
+            return confFile;
+        }
+        if (sharedConfDir != null) {
+            File sharedConfFile = new File(sharedConfDir, fileName);
+            if (sharedConfFile.exists()) {
+                return sharedConfFile;
+            }
+        }
+        return null;
+    }
+
     @RequiresNonNull("httpServer")
     private CommonResponse onSuccessfulEmbeddedWebUpdate(EmbeddedWebConfig config)
             throws Exception {
@@ -386,8 +402,11 @@ class AdminJsonService {
         ImmutableEmbeddedWebConfigResponse.Builder builder =
                 ImmutableEmbeddedWebConfigResponse.builder()
                         .config(EmbeddedWebConfigDto.create(config))
-                        .certificateDir(certificateDir.getAbsolutePath())
+                        .confDir(confDir.getAbsolutePath())
                         .portChangeFailed(portChangeFailed);
+        if (sharedConfDir != null) {
+            builder.sharedConfDir(sharedConfDir.getAbsolutePath());
+        }
         if (httpServer == null) {
             builder.activePort(config.port())
                     .activeBindAddress(config.bindAddress())
@@ -429,7 +448,8 @@ class AdminJsonService {
         int activePort();
         String activeBindAddress();
         boolean activeHttps();
-        String certificateDir();
+        String sharedConfDir();
+        String confDir();
         boolean portChangeFailed();
     }
 

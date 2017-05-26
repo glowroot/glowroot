@@ -40,8 +40,9 @@ public class AdminJsonServiceTest {
     @Before
     public void beforeEachTest() {
         mailService = new MockMailService();
-        adminJsonService = new AdminJsonService(false, new File("."), mock(ConfigRepository.class),
-                mock(RepoAdmin.class), mock(LiveAggregateRepository.class), mailService);
+        adminJsonService =
+                new AdminJsonService(false, new File("."), null, mock(ConfigRepository.class),
+                        mock(RepoAdmin.class), mock(LiveAggregateRepository.class), mailService);
     }
 
     @Test

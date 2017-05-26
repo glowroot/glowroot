@@ -28,7 +28,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NettyWorkaround;
@@ -42,16 +41,23 @@ public class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedGlowrootAgentInit.class);
 
+    private final File dataDir;
+    private final boolean offline;
+
+    public EmbeddedGlowrootAgentInit(File dataDir, boolean offline) {
+        this.dataDir = dataDir;
+        this.offline = offline;
+    }
+
     private @MonotonicNonNull EmbeddedAgentModule embeddedAgentModule;
 
     @Override
-    public void init(File glowrootDir, File agentDir, @Nullable String collectorAddress,
-            @Nullable Collector customCollector, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String glowrootVersion, boolean offline)
-            throws Exception {
+    public void init(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir,
+            File logDir, File tmpDir, Map<String, String> properties,
+            @Nullable Instrumentation instrumentation, String glowrootVersion) throws Exception {
 
-        embeddedAgentModule = new EmbeddedAgentModule(glowrootDir, agentDir, properties,
-                instrumentation, glowrootVersion, offline);
+        embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDir, sharedConfDir, logDir,
+                dataDir, tmpDir, properties, instrumentation, glowrootVersion, offline);
         NettyWorkaround.run(instrumentation, new NettyInit() {
             @Override
             public void execute(boolean alreadyInsideNewThread) throws Exception {

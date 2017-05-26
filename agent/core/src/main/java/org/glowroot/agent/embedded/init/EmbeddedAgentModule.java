@@ -46,12 +46,12 @@ import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.embedded.repo.PlatformMBeanServerLifecycle;
 import org.glowroot.agent.embedded.repo.SimpleRepoModule;
 import org.glowroot.agent.embedded.util.DataSource;
-import org.glowroot.agent.init.AgentDirLocking;
+import org.glowroot.agent.init.AgentDirsLocking;
 import org.glowroot.agent.init.AgentModule;
-import org.glowroot.agent.init.CentralGlowrootAgentInit;
 import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.EnvironmentCreator;
 import org.glowroot.agent.init.JRebelWorkaround;
+import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.config.ImmutableRoleConfig;
@@ -78,8 +78,9 @@ class EmbeddedAgentModule {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private final File agentDir;
-    private final File glowrootDir;
+    private final File logDir;
+    private final File confDir;
+    private final @Nullable File sharedConfDir;
     private final Ticker ticker;
     private final Clock clock;
     // only null in viewer mode
@@ -88,7 +89,7 @@ class EmbeddedAgentModule {
     private final @Nullable AgentModule agentModule;
     private final @Nullable ViewerAgentModule viewerAgentModule;
 
-    private final Closeable agentDirLockingCloseable;
+    private final Closeable agentDirsLockingCloseable;
 
     private final String version;
 
@@ -96,27 +97,27 @@ class EmbeddedAgentModule {
 
     private final CountDownLatch simpleRepoModuleInit = new CountDownLatch(1);
 
-    EmbeddedAgentModule(final File glowrootDir, final File agentDir, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, final String glowrootVersion,
-            boolean offline) throws Exception {
+    EmbeddedAgentModule(@Nullable File pluginsDir, final File confDir,
+            final @Nullable File sharedConfDir, File logDir, final File dataDir, File tmpDir,
+            Map<String, String> properties, @Nullable Instrumentation instrumentation,
+            final String glowrootVersion, boolean offline) throws Exception {
 
-        agentDirLockingCloseable = AgentDirLocking.lockAgentDir(agentDir);
+        agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
 
         ticker = Ticker.systemTicker();
         clock = Clock.systemClock();
 
         // mem db is only used for testing (by glowroot-agent-it-harness)
         final boolean h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
-        final File dataDir = new File(agentDir, "data");
 
         // need to perform jrebel workaround prior to loading any jackson classes
         JRebelWorkaround.performWorkaroundIfNeeded();
-        PluginCache pluginCache = PluginCache.create(glowrootDir, false);
+        PluginCache pluginCache = PluginCache.create(pluginsDir, false);
         if (offline) {
-            viewerAgentModule = new ViewerAgentModule(glowrootDir, agentDir);
+            viewerAgentModule = new ViewerAgentModule(pluginsDir, confDir);
             backgroundExecutor = null;
             agentModule = null;
-            ConfigRepository configRepository = ConfigRepositoryImpl.create(glowrootDir,
+            ConfigRepository configRepository = ConfigRepositoryImpl.create(confDir,
                     viewerAgentModule.getConfigService(), pluginCache);
             DataSource dataSource = createDataSource(h2MemDb, dataDir);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
@@ -130,19 +131,19 @@ class EmbeddedAgentModule {
             // services/java.sql.Driver, and those drivers need to be woven
             final CollectorProxy collectorProxy = new CollectorProxy();
             ConfigService configService =
-                    ConfigService.create(agentDir, pluginCache.pluginDescriptors());
+                    ConfigService.create(confDir, pluginCache.pluginDescriptors());
 
             // need to delay creation of the scheduled executor until instrumentation is set up
             Supplier<ScheduledExecutorService> backgroundExecutorSupplier =
-                    CentralGlowrootAgentInit.createBackgroundExecutorSupplier();
+                    NonEmbeddedGlowrootAgentInit.createBackgroundExecutorSupplier();
 
             agentModule = new AgentModule(clock, null, pluginCache, configService,
-                    backgroundExecutorSupplier, collectorProxy, instrumentation, agentDir);
+                    backgroundExecutorSupplier, collectorProxy, instrumentation, tmpDir);
 
             backgroundExecutor = backgroundExecutorSupplier.get();
 
             PreInitializeStorageShutdownClasses.preInitializeClasses();
-            final ConfigRepository configRepository = ConfigRepositoryImpl.create(glowrootDir,
+            final ConfigRepository configRepository = ConfigRepositoryImpl.create(confDir,
                     agentModule.getConfigService(), pluginCache);
             ExecutorService singleUseExecutor =
                     Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-Init-Repo"));
@@ -170,7 +171,7 @@ class EmbeddedAgentModule {
                                 simpleRepoModule.getAlertingService());
                         collectorProxy.setInstance(collectorImpl);
                         // embedded CollectorImpl does nothing with agent config parameter
-                        collectorImpl.init(glowrootDir, agentDir,
+                        collectorImpl.init(confDir, sharedConfDir,
                                 EnvironmentCreator.create(glowrootVersion),
                                 AgentConfig.getDefaultInstance(), new AgentConfigUpdater() {
                                     @Override
@@ -191,8 +192,9 @@ class EmbeddedAgentModule {
             simpleRepoModuleInit.await(5, SECONDS);
             viewerAgentModule = null;
         }
-        this.glowrootDir = glowrootDir;
-        this.agentDir = agentDir;
+        this.confDir = confDir;
+        this.sharedConfDir = sharedConfDir;
+        this.logDir = logDir;
         this.version = glowrootVersion;
     }
 
@@ -206,8 +208,9 @@ class EmbeddedAgentModule {
                     .central(false)
                     .servlet(false)
                     .offline(false)
-                    .certificateDir(glowrootDir)
-                    .logDir(agentDir)
+                    .confDir(confDir)
+                    .sharedConfDir(sharedConfDir)
+                    .logDir(logDir)
                     .logFileNamePattern(Pattern.compile("glowroot.*\\.log"))
                     .ticker(ticker)
                     .clock(clock)
@@ -243,8 +246,9 @@ class EmbeddedAgentModule {
                     .central(false)
                     .servlet(false)
                     .offline(true)
-                    .certificateDir(glowrootDir)
-                    .logDir(agentDir)
+                    .confDir(confDir)
+                    .sharedConfDir(sharedConfDir)
+                    .logDir(logDir)
                     .logFileNamePattern(Pattern.compile("glowroot.*\\.log"))
                     .ticker(ticker)
                     .clock(clock)
@@ -327,7 +331,7 @@ class EmbeddedAgentModule {
             }
         }
         // and unlock the agent directory
-        agentDirLockingCloseable.close();
+        agentDirsLockingCloseable.close();
     }
 
     private static DataSource createDataSource(boolean h2MemDb, File dataDir) throws SQLException {

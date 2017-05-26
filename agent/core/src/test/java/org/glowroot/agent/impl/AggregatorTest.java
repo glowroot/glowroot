@@ -18,6 +18,8 @@ package org.glowroot.agent.impl;
 import java.io.File;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.junit.Test;
 
 import org.glowroot.agent.collector.Collector;
@@ -95,7 +97,7 @@ public class AggregatorTest {
         }
 
         @Override
-        public void init(File glowrootDir, File agentDir, Environment environment,
+        public void init(File confDir, @Nullable File sharedConfDir, Environment environment,
                 AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) {}
 
         @Override

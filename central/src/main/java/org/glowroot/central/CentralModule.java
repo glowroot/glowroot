@@ -196,7 +196,7 @@ public class CentralModule {
                     .port(centralConfig.uiPort())
                     .https(centralConfig.uiHttps())
                     .contextPath(centralConfig.uiContextPath())
-                    .certificateDir(centralDir)
+                    .confDir(centralDir)
                     .logDir(centralDir)
                     .logFileNamePattern(Pattern.compile("glowroot-central.*\\.log"))
                     .clock(clock)
