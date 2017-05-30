@@ -27,8 +27,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.AlertConfig;
@@ -70,8 +68,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 class ConfigRepositoryImpl implements ConfigRepository {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigRepositoryImpl.class);
-
     private final ConfigService configService;
     private final PluginCache pluginCache;
 
@@ -89,16 +85,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile LdapConfig ldapConfig;
 
     static ConfigRepository create(File confDir, ConfigService configService,
-            PluginCache pluginCache) {
+            PluginCache pluginCache) throws IOException {
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(confDir, configService, pluginCache);
         // it's nice to update admin.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
-        try {
-            configRepository.writeAll();
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }
+        configRepository.writeAll();
         return configRepository;
     }
 
