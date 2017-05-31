@@ -35,6 +35,18 @@
       "description": "Comma-separated list of request headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
     },
     {
+      "name": "captureRequestRemoteAddr",
+      "type": "boolean",
+      "label": "Capture request remote address",
+      "description": "Capture request remote address using ServletRequest.getRemoteAddr()."
+    },
+    {
+      "name": "captureRequestRemoteHost",
+      "type": "boolean",
+      "label": "Capture request remote host",
+      "description": "Capture request remote host using ServletRequest.getRemoteHost()."
+    },
+    {
       "name": "captureResponseHeaders",
       "type": "string",
       "label": "Capture response headers",

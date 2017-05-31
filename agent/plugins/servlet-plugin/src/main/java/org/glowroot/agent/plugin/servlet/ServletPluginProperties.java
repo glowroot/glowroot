@@ -35,6 +35,10 @@ class ServletPluginProperties {
     private static final String CAPTURE_REQUEST_PARAMS_PROPERTY_NAME = "captureRequestParameters";
     private static final String MASK_REQUEST_PARAMS_PROPERTY_NAME = "maskRequestParameters";
     private static final String CAPTURE_REQUEST_HEADER_PROPERTY_NAME = "captureRequestHeaders";
+    private static final String CAPTURE_REQUEST_REMOTE_ADDR_PROPERTY_NAME =
+            "captureRequestRemoteAddr";
+    private static final String CAPTURE_REQUEST_REMOTE_HOST_PROPERTY_NAME =
+            "captureRequestRemoteHost";
     private static final String CAPTURE_RESPONSE_HEADER_PROPERTY_NAME = "captureResponseHeaders";
     private static final String SESSION_USER_ATTRIBUTE_PROPERTY_NAME = "sessionUserAttribute";
     private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
@@ -47,8 +51,11 @@ class ServletPluginProperties {
     private static ImmutableList<Pattern> captureRequestParameters = ImmutableList.of();
     private static ImmutableList<Pattern> maskRequestParameters = ImmutableList.of();
     private static ImmutableList<Pattern> captureRequestHeaders = ImmutableList.of();
-    private static ImmutableList<Pattern> captureResponseHeaders = ImmutableList.of();
 
+    private static boolean captureRequestRemoteAddr;
+    private static boolean captureRequestRemoteHost;
+
+    private static ImmutableList<Pattern> captureResponseHeaders = ImmutableList.of();
     private static boolean captureResponseHeadersNonEmpty;
 
     private static String sessionUserAttributePath = "";
@@ -74,6 +81,14 @@ class ServletPluginProperties {
 
     static ImmutableList<Pattern> captureRequestHeaders() {
         return captureRequestHeaders;
+    }
+
+    static boolean captureRequestRemoteAddr() {
+        return captureRequestRemoteAddr;
+    }
+
+    static boolean captureRequestRemoteHost() {
+        return captureRequestRemoteHost;
     }
 
     static ImmutableList<Pattern> captureResponseHeaders() {
@@ -117,6 +132,10 @@ class ServletPluginProperties {
             captureRequestParameters = buildPatternList(CAPTURE_REQUEST_PARAMS_PROPERTY_NAME);
             maskRequestParameters = buildPatternList(MASK_REQUEST_PARAMS_PROPERTY_NAME);
             captureRequestHeaders = buildPatternList(CAPTURE_REQUEST_HEADER_PROPERTY_NAME);
+            captureRequestRemoteAddr = configService
+                    .getBooleanProperty(CAPTURE_REQUEST_REMOTE_ADDR_PROPERTY_NAME).value();
+            captureRequestRemoteHost = configService
+                    .getBooleanProperty(CAPTURE_REQUEST_REMOTE_HOST_PROPERTY_NAME).value();
             captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
             captureResponseHeadersNonEmpty = !captureResponseHeaders.isEmpty();
             sessionUserAttributePath = configService

@@ -95,9 +95,11 @@ public class ServletAspect {
 
         void removeAttribute(String name);
 
-        // not currently used by servlet plugin, but here to be available for other plugins
         @Nullable
         String getRemoteAddr();
+
+        @Nullable
+        String getRemoteHost();
     }
 
     @Shim("javax.servlet.http.HttpSession")
@@ -149,14 +151,18 @@ public class ServletAspect {
             String requestMethod = Strings.nullToEmpty(request.getMethod());
             ImmutableMap<String, Object> requestHeaders =
                     DetailCapture.captureRequestHeaders(request);
+            String requestRemoteAddr = DetailCapture.captureRequestRemoteAddr(request);
+            String requestRemoteHost = DetailCapture.captureRequestRemoteHost(request);
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        requestQueryString, requestHeaders, ImmutableMap.<String, String>of());
+                        requestQueryString, requestHeaders, requestRemoteAddr, requestRemoteHost,
+                        ImmutableMap.<String, String>of());
             } else {
                 ImmutableMap<String, String> sessionAttributes =
                         HttpSessions.getSessionAttributes(session);
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        requestQueryString, requestHeaders, sessionAttributes);
+                        requestQueryString, requestHeaders, requestRemoteAddr, requestRemoteHost,
+                        sessionAttributes);
             }
             String user = null;
             if (session != null) {

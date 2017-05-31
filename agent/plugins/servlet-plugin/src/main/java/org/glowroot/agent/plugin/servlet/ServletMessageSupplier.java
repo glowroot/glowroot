@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,9 @@ class ServletMessageSupplier extends MessageSupplier {
 
     private final ImmutableMap<String, Object> requestHeaders;
 
+    private final @Nullable String requestRemoteAddr;
+    private final @Nullable String requestRemoteHost;
+
     private final ResponseHeaderComponent responseHeaderComponent = new ResponseHeaderComponent();
 
     // session attributes may not be thread safe, so they must be converted to Strings
@@ -56,11 +59,14 @@ class ServletMessageSupplier extends MessageSupplier {
 
     ServletMessageSupplier(String requestMethod, String requestUri,
             @Nullable String requestQueryString, ImmutableMap<String, Object> requestHeaders,
+            @Nullable String requestRemoteAddr, @Nullable String requestRemoteHost,
             ImmutableMap<String, String> sessionAttributeMap) {
         this.requestMethod = requestMethod;
         this.requestUri = requestUri;
         this.requestQueryString = requestQueryString;
         this.requestHeaders = requestHeaders;
+        this.requestRemoteAddr = requestRemoteAddr;
+        this.requestRemoteHost = requestRemoteHost;
         this.sessionAttributeInitialValueMap = sessionAttributeMap;
     }
 
@@ -77,6 +83,12 @@ class ServletMessageSupplier extends MessageSupplier {
         }
         if (!requestHeaders.isEmpty()) {
             detail.put("Request headers", requestHeaders);
+        }
+        if (requestRemoteAddr != null) {
+            detail.put("Request remote address", requestRemoteAddr);
+        }
+        if (requestRemoteHost != null) {
+            detail.put("Request remote host", requestRemoteHost);
         }
         Map<String, Object> responseHeaderStrings = responseHeaderComponent.getMapOfStrings();
         if (!responseHeaderStrings.isEmpty()) {
