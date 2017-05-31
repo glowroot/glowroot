@@ -53,9 +53,9 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // TODO agent config records never expire for abandoned agent rollup ids
-public class ConfigDao {
+public class AgentConfigDao {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(AgentConfigDao.class);
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -72,25 +72,25 @@ public class ConfigDao {
 
     private final Cache<String, Optional<AgentConfig>> agentConfigCache;
 
-    public ConfigDao(Session session, ClusterManager clusterManager) throws Exception {
+    public AgentConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        Sessions.execute(session, "create table if not exists config (agent_rollup_id varchar,"
-                + " config blob, config_update boolean, config_update_token uuid, primary key"
-                + " (agent_rollup_id)) " + WITH_LCS);
+        Sessions.execute(session, "create table if not exists agent_config (agent_rollup_id"
+                + " varchar, config blob, config_update boolean, config_update_token uuid,"
+                + " primary key (agent_rollup_id)) " + WITH_LCS);
         // secondary index is needed for Cassandra 2.x (to avoid error on readUpdatePS)
         Sessions.execute(session,
-                "create index if not exists config_update_idx on config (config_update)");
+                "create index if not exists config_update_idx on agent_config (config_update)");
 
-        insertPS = session.prepare("insert into config (agent_rollup_id, config, config_update,"
-                + " config_update_token) values (?, ?, ?, ?)");
-        updatePS = session.prepare("update config set config = ?, config_update = ?,"
+        insertPS = session.prepare("insert into agent_config (agent_rollup_id, config,"
+                + " config_update, config_update_token) values (?, ?, ?, ?)");
+        updatePS = session.prepare("update agent_config set config = ?, config_update = ?,"
                 + " config_update_token = ? where agent_rollup_id = ? if config = ?");
-        readPS = session.prepare("select config from config where agent_rollup_id = ?");
+        readPS = session.prepare("select config from agent_config where agent_rollup_id = ?");
 
-        readForUpdatePS = session.prepare("select config, config_update_token from config"
+        readForUpdatePS = session.prepare("select config, config_update_token from agent_config"
                 + " where agent_rollup_id = ? and config_update = true allow filtering");
-        markUpdatedPS = session.prepare("update config set config_update = false,"
+        markUpdatedPS = session.prepare("update agent_config set config_update = false,"
                 + " config_update_token = null where agent_rollup_id = ?"
                 + " if config_update_token = ?");
 

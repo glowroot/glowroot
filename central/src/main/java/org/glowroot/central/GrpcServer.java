@@ -38,9 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
+import org.glowroot.central.repo.AgentConfigDao;
 import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.repo.AggregateDao;
-import org.glowroot.central.repo.ConfigDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
@@ -90,7 +90,7 @@ class GrpcServer {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private final AgentRollupDao agentRollupDao;
-    private final ConfigDao configDao;
+    private final AgentConfigDao agentConfigDao;
     private final EnvironmentDao environmentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
@@ -110,13 +110,13 @@ class GrpcServer {
     private volatile long currentMinute;
     private final AtomicInteger nextDelay = new AtomicInteger();
 
-    GrpcServer(String bindAddress, int port, AgentRollupDao agentRollupDao, ConfigDao configDao,
-            AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, EnvironmentDao environmentDao,
-            HeartbeatDao heartbeatDao, TraceDao traceDao, ConfigRepositoryImpl configRepository,
-            AlertingService alertingService, ClusterManager clusterManager, Clock clock,
-            String version) throws IOException {
+    GrpcServer(String bindAddress, int port, AgentRollupDao agentRollupDao,
+            AgentConfigDao agentConfigDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
+            EnvironmentDao environmentDao, HeartbeatDao heartbeatDao, TraceDao traceDao,
+            ConfigRepositoryImpl configRepository, AlertingService alertingService,
+            ClusterManager clusterManager, Clock clock, String version) throws IOException {
         this.agentRollupDao = agentRollupDao;
-        this.configDao = configDao;
+        this.agentConfigDao = agentConfigDao;
         this.environmentDao = environmentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
@@ -194,8 +194,8 @@ class GrpcServer {
                 String agentRollupId = request.getAgentRollupId();
                 // trim spaces around rollup separator "/"
                 agentRollupId = trimSpacesAroundAgentRollupIdSeparator(agentRollupId);
-                updatedAgentConfig = configDao.store(agentId, Strings.emptyToNull(agentRollupId),
-                        request.getAgentConfig());
+                updatedAgentConfig = agentConfigDao.store(agentId,
+                        Strings.emptyToNull(agentRollupId), request.getAgentConfig());
                 environmentDao.insert(agentId, request.getEnvironment());
                 // insert into agent_rollup last so environment and agent config will return
                 // non-null if the agent is visible in the UI dropdown

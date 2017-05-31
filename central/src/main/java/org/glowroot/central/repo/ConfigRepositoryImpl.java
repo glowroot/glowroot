@@ -33,7 +33,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
 
-import org.glowroot.central.repo.ConfigDao.AgentConfigUpdater;
+import org.glowroot.central.repo.AgentConfigDao.AgentConfigUpdater;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
@@ -76,7 +76,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
     private final AgentRollupDao agentRollupDao;
-    private final ConfigDao configDao;
+    private final AgentConfigDao agentConfigDao;
     private final CentralConfigDao centralConfigDao;
     private final UserDao userDao;
     private final RoleDao roleDao;
@@ -87,11 +87,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Set<AgentConfigListener> agentConfigListeners = Sets.newCopyOnWriteArraySet();
 
-    public ConfigRepositoryImpl(AgentRollupDao agentRollupDao, ConfigDao configDao,
+    public ConfigRepositoryImpl(AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao,
             CentralConfigDao centralConfigDao, UserDao userDao, RoleDao roleDao,
             String symmetricEncryptionKey) {
         this.agentRollupDao = agentRollupDao;
-        this.configDao = configDao;
+        this.agentConfigDao = agentConfigDao;
         this.centralConfigDao = centralConfigDao;
         this.userDao = userDao;
         this.roleDao = roleDao;
@@ -106,7 +106,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public TransactionConfig getTransactionConfig(String agentId) throws Exception {
-        AgentConfig agentConfig = configDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
             // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentId);
@@ -117,7 +117,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // central supports ui config on rollups
     @Override
     public UiConfig getUiConfig(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = configDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
             // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentRollupId);
@@ -127,7 +127,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public UserRecordingConfig getUserRecordingConfig(String agentId) throws Exception {
-        AgentConfig agentConfig = configDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
             // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentId);
@@ -139,7 +139,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
     @Override
     public AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = configDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
             // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentRollupId);
@@ -149,7 +149,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public List<GaugeConfig> getGaugeConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = configDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
             return ImmutableList.of();
         }
@@ -170,7 +170,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public List<SyntheticMonitorConfig> getSyntheticMonitorConfigs(String agentRollupId)
             throws Exception {
-        AgentConfig agentConfig = configDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
             return ImmutableList.of();
         }
@@ -192,7 +192,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // central supports alert configs on rollups
     @Override
     public List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = configDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
             return ImmutableList.of();
         }
@@ -239,7 +239,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public List<PluginConfig> getPluginConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = configDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
             return ImmutableList.of();
         }
@@ -258,7 +258,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public List<InstrumentationConfig> getInstrumentationConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = configDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
             return ImmutableList.of();
         }
@@ -377,7 +377,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateTransactionConfig(String agentId, TransactionConfig config,
             String priorVersion) throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 String existingVersion = Versions.getVersion(agentConfig.getTransactionConfig());
@@ -394,7 +394,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void insertGaugeConfig(String agentId, GaugeConfig config) throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 // check for duplicate mbeanObjectName
@@ -415,7 +415,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion)
             throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 List<GaugeConfig> existingConfigs =
@@ -449,7 +449,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void deleteGaugeConfig(String agentId, String version) throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 List<GaugeConfig> existingConfigs =
@@ -481,9 +481,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             SyntheticMonitorConfig configWithoutId) throws Exception {
         checkState(configWithoutId.getId().isEmpty());
         SyntheticMonitorConfig config = configWithoutId.toBuilder()
-                .setId(ConfigDao.generateNewId())
+                .setId(AgentConfigDao.generateNewId())
                 .build();
-        configDao.update(agentRollupId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 // check for duplicate name
@@ -507,7 +507,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,
             String priorVersion) throws Exception {
-        configDao.update(agentRollupId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 List<SyntheticMonitorConfig> existingConfigs =
@@ -542,7 +542,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId)
             throws Exception {
-        configDao.update(agentRollupId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 if (!getAlertConfigsForSyntheticMonitorId(agentRollupId, syntheticMonitorId)
@@ -576,7 +576,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // central supports alert configs on rollups
     @Override
     public void insertAlertConfig(String agentRollupId, AlertConfig config) throws Exception {
-        configDao.update(agentRollupId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 checkAlertConditionDoesNotExist(config, agentConfig.getAlertConfigList());
@@ -593,7 +593,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion)
             throws Exception {
         AlertConfig configWithoutDestination = getAlertConfigWithoutDestination(config);
-        configDao.update(agentRollupId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 List<AlertConfig> existingConfigs =
@@ -626,7 +626,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // central supports alert configs on rollups
     @Override
     public void deleteAlertConfig(String agentRollupId, String version) throws Exception {
-        configDao.update(agentRollupId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 List<AlertConfig> existingConfigs =
@@ -656,7 +656,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateUiConfig(String agentRollupId, UiConfig config, String priorVersion)
             throws Exception {
-        configDao.update(agentRollupId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 String existingVersion = Versions.getVersion(agentConfig.getUiConfig());
@@ -674,7 +674,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updatePluginConfig(String agentId, String pluginId,
             List<PluginProperty> properties, String priorVersion) throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 List<PluginConfig> pluginConfigs =
@@ -708,7 +708,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void insertInstrumentationConfig(String agentId, InstrumentationConfig config)
             throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 checkInstrumentationDoesNotExist(config,
@@ -724,7 +724,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateInstrumentationConfig(String agentId, InstrumentationConfig config,
             String priorVersion) throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 String newVersion = Versions.getVersion(config);
@@ -757,7 +757,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void deleteInstrumentationConfigs(String agentId, List<String> versions)
             throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 List<InstrumentationConfig> existingConfigs =
@@ -787,7 +787,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs)
             throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 AgentConfig.Builder builder = agentConfig.toBuilder();
@@ -808,7 +808,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateUserRecordingConfig(String agentId, UserRecordingConfig config,
             String priorVersion) throws Exception {
-        configDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 String existingVersion = Versions.getVersion(agentConfig.getUserRecordingConfig());
@@ -826,7 +826,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateAdvancedConfig(String agentRollupId, AdvancedConfig config,
             String priorVersion) throws Exception {
-        configDao.update(agentRollupId, new AgentConfigUpdater() {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig)
                     throws OptimisticLockException {

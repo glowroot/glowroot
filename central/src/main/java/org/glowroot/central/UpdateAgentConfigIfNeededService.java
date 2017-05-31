@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
+import org.glowroot.central.repo.AgentConfigDao;
 import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.repo.AgentRollupDao.AgentConfigUpdate;
-import org.glowroot.central.repo.ConfigDao;
 import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -39,7 +39,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             LoggerFactory.getLogger(UpdateAgentConfigIfNeededService.class);
 
     private final AgentRollupDao agentRollupDao;
-    private final ConfigDao configDao;
+    private final AgentConfigDao agentConfigDao;
     private final DownstreamServiceImpl downstreamService;
     private final Clock clock;
 
@@ -47,10 +47,10 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     private volatile boolean closed;
 
-    UpdateAgentConfigIfNeededService(AgentRollupDao agentRollupDao, ConfigDao configDao,
+    UpdateAgentConfigIfNeededService(AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao,
             DownstreamServiceImpl downstreamService, Clock clock) {
         this.agentRollupDao = agentRollupDao;
-        this.configDao = configDao;
+        this.agentConfigDao = agentConfigDao;
         this.downstreamService = downstreamService;
         this.clock = clock;
         executor = Executors.newSingleThreadExecutor();
@@ -105,7 +105,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     void updateAgentConfigIfNeededAndConnected(String agentId) throws InterruptedException {
         AgentConfigUpdate agentConfigUpdate;
         try {
-            agentConfigUpdate = configDao.readForUpdate(agentId);
+            agentConfigUpdate = agentConfigDao.readForUpdate(agentId);
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;
@@ -120,7 +120,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             boolean updated = downstreamService.updateAgentConfigIfConnected(agentId,
                     agentConfigUpdate.config());
             if (updated) {
-                configDao.markUpdated(agentId, agentConfigUpdate.configUpdateToken());
+                agentConfigDao.markUpdated(agentId, agentConfigUpdate.configUpdateToken());
             }
         } catch (InterruptedException e) {
             // shutdown requested

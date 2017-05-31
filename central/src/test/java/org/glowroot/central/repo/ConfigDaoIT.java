@@ -36,7 +36,7 @@ public class ConfigDaoIT {
     private static Cluster cluster;
     private static Session session;
     private static ClusterManager clusterManager;
-    private static ConfigDao configDao;
+    private static AgentConfigDao agentConfigDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -47,7 +47,7 @@ public class ConfigDaoIT {
         session.execute("use glowroot_unit_tests");
         clusterManager = ClusterManager.create();
 
-        configDao = new ConfigDao(session, clusterManager);
+        agentConfigDao = new AgentConfigDao(session, clusterManager);
     }
 
     @AfterClass
@@ -60,7 +60,7 @@ public class ConfigDaoIT {
 
     @Before
     public void before() {
-        session.execute("truncate config");
+        session.execute("truncate agent_config");
     }
 
     @Test
@@ -69,9 +69,9 @@ public class ConfigDaoIT {
         AgentConfig agentConfig = AgentConfig.newBuilder()
                 .setAgentVersion("123")
                 .build();
-        configDao.store("a", null, agentConfig);
+        agentConfigDao.store("a", null, agentConfig);
         // when
-        AgentConfig readAgentConfig = configDao.read("a");
+        AgentConfig readAgentConfig = agentConfigDao.read("a");
         // then
         assertThat(readAgentConfig).isEqualTo(agentConfig);
     }
@@ -82,12 +82,12 @@ public class ConfigDaoIT {
         AgentConfig agentConfig = AgentConfig.newBuilder()
                 .setAgentVersion("123")
                 .build();
-        configDao.store("a", null, agentConfig);
-        configDao.store("a", null, AgentConfig.newBuilder()
+        agentConfigDao.store("a", null, agentConfig);
+        agentConfigDao.store("a", null, AgentConfig.newBuilder()
                 .setAgentVersion("456")
                 .build());
         // when
-        AgentConfig readAgentConfig = configDao.read("a");
+        AgentConfig readAgentConfig = agentConfigDao.read("a");
         // then
         assertThat(readAgentConfig).isEqualTo(agentConfig);
     }
@@ -105,7 +105,7 @@ public class ConfigDaoIT {
                         .setSyntheticMonitorId("11"))
                 .build();
         // when
-        AgentConfig updatedAgentConfig = ConfigDao.generateNewIds(agentConfig);
+        AgentConfig updatedAgentConfig = AgentConfigDao.generateNewIds(agentConfig);
         // then
         assertThat(updatedAgentConfig.getSyntheticMonitorConfigList()).hasSize(2);
         String syntheticMonitorId = updatedAgentConfig.getSyntheticMonitorConfig(0).getId();

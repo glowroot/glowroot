@@ -78,7 +78,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 22;
+    private static final int CURR_SCHEMA_VERSION = 23;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -207,6 +207,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 22) {
             removeInvalidAgentRollupRows();
             updateSchemaVersion(22);
+        }
+        // 0.9.17 to 0.9.18
+        if (initialSchemaVersion < 23) {
+            renameConfigTable();
+            updateSchemaVersion(23);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -774,6 +779,30 @@ public class SchemaUpgrade {
                 Sessions.execute(session, boundStatement);
             }
         }
+    }
+
+    private void renameConfigTable() throws Exception {
+        if (!tableExists("config")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        Sessions.execute(session, "create table if not exists agent_config (agent_rollup_id"
+                + " varchar, config blob, config_update boolean, config_update_token uuid,"
+                + " primary key (agent_rollup_id)) " + WITH_LCS);
+        ResultSet results = Sessions.execute(session, "select agent_rollup_id, config,"
+                + " config_update, config_update_token from agent_config");
+        PreparedStatement insertPS =
+                session.prepare("insert into agent_config (agent_rollup_id, config, config_update,"
+                        + " config_update_token) values (?, ?, ?, ?)");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setBytes(1, row.getBytes(1));
+            boundStatement.setBool(2, row.getBool(2));
+            boundStatement.setUUID(3, row.getUUID(3));
+            Sessions.execute(session, boundStatement);
+        }
+        dropTable("config");
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

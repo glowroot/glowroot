@@ -33,7 +33,7 @@ public class CentralRepoModule {
 
     private final CentralConfigDao centralConfigDao;
     private final AgentRollupDao agentRollupDao;
-    private final ConfigDao configDao;
+    private final AgentConfigDao agentConfigDao;
     private final UserDao userDao;
     private final RoleDao roleDao;
     private final ConfigRepositoryImpl configRepository;
@@ -53,11 +53,11 @@ public class CentralRepoModule {
             throws Exception {
         centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentRollupDao = new AgentRollupDao(session, clusterManager);
-        configDao = new ConfigDao(session, clusterManager);
+        agentConfigDao = new AgentConfigDao(session, clusterManager);
         userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        configRepository = new ConfigRepositoryImpl(agentRollupDao, configDao, centralConfigDao,
-                userDao, roleDao, cassandraSymmetricEncryptionKey);
+        configRepository = new ConfigRepositoryImpl(agentRollupDao, agentConfigDao,
+                centralConfigDao, userDao, roleDao, cassandraSymmetricEncryptionKey);
         transactionTypeDao = new TransactionTypeDao(session, configRepository, clusterManager);
         fullQueryTextDao = new FullQueryTextDao(session, configRepository);
         aggregateDao = new AggregateDao(session, agentRollupDao, transactionTypeDao,
@@ -100,8 +100,8 @@ public class CentralRepoModule {
         return agentRollupDao;
     }
 
-    public ConfigDao getConfigDao() {
-        return configDao;
+    public AgentConfigDao getConfigDao() {
+        return agentConfigDao;
     }
 
     public UserDao getUserDao() {
