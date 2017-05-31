@@ -177,7 +177,6 @@ public class AsyncServletIT {
 
         // when
         Trace trace = container.execute(appUnderTestClass);
-        Thread.sleep(1000);
 
         // then
         Trace.Header header = trace.getHeader();
@@ -319,15 +318,7 @@ public class AsyncServletIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            // send initial to trigger servlet init methods so they don't end up in trace
             int statusCode =
-                    asyncHttpClient.prepareGet("http://localhost:" + port + contextPath + "/async3")
-                            .execute().get().getStatusCode();
-            if (statusCode != 200) {
-                asyncHttpClient.close();
-                throw new IllegalStateException("Unexpected status code: " + statusCode);
-            }
-            statusCode =
                     asyncHttpClient.prepareGet("http://localhost:" + port + contextPath + "/async3")
                             .execute().get().getStatusCode();
             asyncHttpClient.close();
@@ -337,7 +328,7 @@ public class AsyncServletIT {
         }
     }
 
-    @WebServlet(value = "/async", asyncSupported = true)
+    @WebServlet(value = "/async", asyncSupported = true, loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class AsyncServlet extends HttpServlet {
 
@@ -371,7 +362,7 @@ public class AsyncServletIT {
         }
     }
 
-    @WebServlet(value = "/async2", asyncSupported = true)
+    @WebServlet(value = "/async2", asyncSupported = true, loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class AsyncServlet2 extends HttpServlet {
 
@@ -405,7 +396,7 @@ public class AsyncServletIT {
         }
     }
 
-    @WebServlet(value = "/async3", asyncSupported = true)
+    @WebServlet(value = "/async3", asyncSupported = true, loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class AsyncServletWithDispatch extends HttpServlet {
 
@@ -438,7 +429,7 @@ public class AsyncServletIT {
         }
     }
 
-    @WebServlet("/async-forward")
+    @WebServlet(value = "/async-forward", loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class SimpleServlet extends HttpServlet {
 

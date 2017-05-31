@@ -6,6 +6,7 @@
   <servlet>
     <servlet-name>struts</servlet-name>
     <servlet-class>org.apache.struts.action.ActionServlet</servlet-class>
+    <load-on-startup>0</load-on-startup>
   </servlet>
   <servlet-mapping>
     <servlet-name>struts</servlet-name>

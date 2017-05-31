@@ -6,6 +6,7 @@
   <servlet>
     <servlet-name>jsf_servlet</servlet-name>
     <servlet-class>javax.faces.webapp.FacesServlet</servlet-class>
+    <load-on-startup>0</load-on-startup>
   </servlet>
 
   <servlet-mapping>

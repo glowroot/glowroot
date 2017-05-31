@@ -10,6 +10,7 @@
       <param-name>jersey.config.server.provider.packages</param-name>
       <param-value>org.glowroot.agent.plugin.jaxrs</param-value>
     </init-param>
+    <load-on-startup>0</load-on-startup>
     <async-supported>true</async-supported>
   </servlet>
   <servlet-mapping>

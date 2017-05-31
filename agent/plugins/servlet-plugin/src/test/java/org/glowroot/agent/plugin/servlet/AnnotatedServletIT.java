@@ -120,7 +120,7 @@ public class AnnotatedServletIT {
         }
     }
 
-    @WebServlet("/hello/*")
+    @WebServlet(value = "/hello/*", loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class AnnotatedServlet extends HttpServlet {
         @Override

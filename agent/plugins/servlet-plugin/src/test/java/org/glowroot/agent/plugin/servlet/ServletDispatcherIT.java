@@ -24,7 +24,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.google.common.base.Stopwatch;
 import com.ning.http.client.AsyncHttpClient;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -36,7 +35,6 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ServletDispatcherIT {
@@ -103,13 +101,6 @@ public class ServletDispatcherIT {
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
         Trace trace = container.execute(appUnderTestClass);
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.execute(appUnderTestClass);
-        }
-        if (hasServletInit(trace)) {
-            throw new AssertionError("Timed out waiting for the real trace");
-        }
 
         // then
         Trace.Header header = trace.getHeader();
@@ -129,13 +120,6 @@ public class ServletDispatcherIT {
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
         Trace trace = container.execute(appUnderTestClass);
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.execute(appUnderTestClass);
-        }
-        if (hasServletInit(trace)) {
-            throw new AssertionError("Timed out waiting for the real trace");
-        }
 
         // then
         Trace.Header header = trace.getHeader();
@@ -156,13 +140,6 @@ public class ServletDispatcherIT {
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
         Trace trace = container.execute(appUnderTestClass);
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.execute(appUnderTestClass);
-        }
-        if (hasServletInit(trace)) {
-            throw new AssertionError("Timed out waiting for the real trace");
-        }
 
         // then
         Trace.Header header = trace.getHeader();
@@ -183,13 +160,6 @@ public class ServletDispatcherIT {
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
         Trace trace = container.execute(appUnderTestClass);
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.execute(appUnderTestClass);
-        }
-        if (hasServletInit(trace)) {
-            throw new AssertionError("Timed out waiting for the real trace");
-        }
 
         // then
         Trace.Header header = trace.getHeader();
@@ -203,11 +173,6 @@ public class ServletDispatcherIT {
         assertThat(entry.getMessage()).isEqualTo("servlet dispatch: /second");
 
         assertThat(i.hasNext()).isFalse();
-    }
-
-    private static boolean hasServletInit(Trace trace) {
-        Trace.Entry lastEntry = trace.getEntry(trace.getEntryCount() - 1);
-        return lastEntry.getMessage().startsWith("servlet init: ");
     }
 
     public static class InvokeForwardServlet extends InvokeForwardServletBase {
@@ -231,15 +196,7 @@ public class ServletDispatcherIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            // send initial to trigger servlet init methods so they don't end up in trace
             int statusCode = asyncHttpClient
-                    .prepareGet("http://localhost:" + port + contextPath + "/first-forward")
-                    .execute().get().getStatusCode();
-            if (statusCode != 200) {
-                asyncHttpClient.close();
-                throw new IllegalStateException("Unexpected status code: " + statusCode);
-            }
-            statusCode = asyncHttpClient
                     .prepareGet("http://localhost:" + port + contextPath + "/first-forward")
                     .execute().get().getStatusCode();
             asyncHttpClient.close();
@@ -272,16 +229,7 @@ public class ServletDispatcherIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            // send initial to trigger servlet init methods so they don't end up in trace
             int statusCode = asyncHttpClient
-                    .prepareGet("http://localhost:" + port + contextPath
-                            + "/first-forward-using-context")
-                    .execute().get().getStatusCode();
-            if (statusCode != 200) {
-                asyncHttpClient.close();
-                throw new IllegalStateException("Unexpected status code: " + statusCode);
-            }
-            statusCode = asyncHttpClient
                     .prepareGet("http://localhost:" + port + contextPath
                             + "/first-forward-using-context")
                     .execute().get().getStatusCode();
@@ -314,16 +262,7 @@ public class ServletDispatcherIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            // send initial to trigger servlet init methods so they don't end up in trace
             int statusCode = asyncHttpClient
-                    .prepareGet(
-                            "http://localhost:" + port + contextPath + "/first-forward-using-named")
-                    .execute().get().getStatusCode();
-            if (statusCode != 200) {
-                asyncHttpClient.close();
-                throw new IllegalStateException("Unexpected status code: " + statusCode);
-            }
-            statusCode = asyncHttpClient
                     .prepareGet(
                             "http://localhost:" + port + contextPath + "/first-forward-using-named")
                     .execute().get().getStatusCode();
@@ -355,15 +294,7 @@ public class ServletDispatcherIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            // send initial to trigger servlet init methods so they don't end up in trace
             int statusCode = asyncHttpClient
-                    .prepareGet("http://localhost:" + port + contextPath + "/first-include")
-                    .execute().get().getStatusCode();
-            if (statusCode != 200) {
-                asyncHttpClient.close();
-                throw new IllegalStateException("Unexpected status code: " + statusCode);
-            }
-            statusCode = asyncHttpClient
                     .prepareGet("http://localhost:" + port + contextPath + "/first-include")
                     .execute().get().getStatusCode();
             asyncHttpClient.close();
@@ -373,7 +304,7 @@ public class ServletDispatcherIT {
         }
     }
 
-    @WebServlet("/first-forward")
+    @WebServlet(value = "/first-forward", loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class FirstForwardServlet extends HttpServlet {
         @Override
@@ -383,7 +314,7 @@ public class ServletDispatcherIT {
         }
     }
 
-    @WebServlet("/first-forward-using-context")
+    @WebServlet(value = "/first-forward-using-context", loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class FirstForwardUsingContextServlet extends HttpServlet {
         @Override
@@ -393,7 +324,7 @@ public class ServletDispatcherIT {
         }
     }
 
-    @WebServlet("/first-forward-using-named")
+    @WebServlet(value = "/first-forward-using-named", loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class FirstForwardUsingNamedServlet extends HttpServlet {
         @Override
@@ -403,7 +334,7 @@ public class ServletDispatcherIT {
         }
     }
 
-    @WebServlet("/first-include")
+    @WebServlet(value = "/first-include", loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class FirstIncludeServlet extends HttpServlet {
         @Override
@@ -413,7 +344,7 @@ public class ServletDispatcherIT {
         }
     }
 
-    @WebServlet(urlPatterns = "/second", name = "yyy")
+    @WebServlet(urlPatterns = "/second", name = "yyy", loadOnStartup = 0)
     @SuppressWarnings("serial")
     public static class SecondServlet extends HttpServlet {
         @Override
