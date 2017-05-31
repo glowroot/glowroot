@@ -85,12 +85,12 @@ public class ConfigRepositoryIT {
         clusterManager = ClusterManager.create();
 
         configDao = new ConfigDao(session, clusterManager);
-        AgentDao agentDao = new AgentDao(session, clusterManager);
+        AgentRollupDao agentRollupDao = new AgentRollupDao(session, clusterManager);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        configRepository = new ConfigRepositoryImpl(agentDao, configDao, centralConfigDao, userDao,
-                roleDao, "");
+        configRepository = new ConfigRepositoryImpl(agentRollupDao, configDao, centralConfigDao,
+                userDao, roleDao, "");
     }
 
     @AfterClass

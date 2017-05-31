@@ -49,7 +49,7 @@ import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.ImmutableAgentRollupConfig;
-import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.util.Styles;
@@ -57,9 +57,9 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class AgentDao implements AgentRepository {
+public class AgentRollupDao implements AgentRollupRepository {
 
-    private static final Logger logger = LoggerFactory.getLogger(AgentDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(AgentRollupDao.class);
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -81,7 +81,7 @@ public class AgentDao implements AgentRepository {
     private final Cache<String, Optional<String>> agentRollupIdCache;
     private final Cache<String, Optional<AgentRollupConfig>> agentRollupConfigCache;
 
-    public AgentDao(Session session, ClusterManager clusterManager) throws Exception {
+    public AgentRollupDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
         Sessions.execute(session, "create table if not exists agent_rollup (one int,"

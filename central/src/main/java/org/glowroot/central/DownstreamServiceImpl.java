@@ -38,7 +38,7 @@ import org.infinispan.util.function.SerializableFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.DistributedExecutionMap;
 import org.glowroot.common.live.ImmutableEntries;
@@ -106,14 +106,14 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceImpl.class);
 
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
 
     private final DistributedExecutionMap<String, ConnectedAgent> connectedAgents;
 
     private final ReadWriteLock shuttingDownLock = new ReentrantReadWriteLock(true);
 
-    DownstreamServiceImpl(AgentDao agentDao, ClusterManager clusterManager) {
-        this.agentDao = agentDao;
+    DownstreamServiceImpl(AgentRollupDao agentRollupDao, ClusterManager clusterManager) {
+        this.agentRollupDao = agentRollupDao;
         connectedAgents = clusterManager.createDistributedExecutionMap("connectedAgents");
     }
 
@@ -557,7 +557,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
         private String getDisplayForLogging(String agentRollupId) {
             try {
-                return agentDao.readAgentRollupDisplay(agentRollupId);
+                return agentRollupDao.readAgentRollupDisplay(agentRollupId);
             } catch (Exception e) {
                 logger.error("{} - {}", agentRollupId, e.getMessage(), e);
                 return "id:" + agentRollupId;

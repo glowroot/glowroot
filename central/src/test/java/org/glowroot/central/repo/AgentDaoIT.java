@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
-import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,7 +35,7 @@ public class AgentDaoIT {
     private static Cluster cluster;
     private static Session session;
     private static ClusterManager clusterManager;
-    private static AgentDao agentDao;
+    private static AgentRollupDao agentRollupDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -46,7 +46,7 @@ public class AgentDaoIT {
         session.execute("use glowroot_unit_tests");
         clusterManager = ClusterManager.create();
 
-        agentDao = new AgentDao(session, clusterManager);
+        agentRollupDao = new AgentRollupDao(session, clusterManager);
     }
 
     @AfterClass
@@ -65,9 +65,9 @@ public class AgentDaoIT {
     @Test
     public void shouldReadAgentRollups() throws Exception {
         // given
-        agentDao.store("a", null);
+        agentRollupDao.store("a", null);
         // when
-        List<AgentRollup> agentRollups = agentDao.readAgentRollups();
+        List<AgentRollup> agentRollups = agentRollupDao.readAgentRollups();
         // then
         assertThat(agentRollups).hasSize(1);
         AgentRollup agentRollup = agentRollups.get(0);
@@ -78,9 +78,9 @@ public class AgentDaoIT {
     @Test
     public void shouldReadNullAgentRollup() throws Exception {
         // given
-        agentDao.store("a", null);
+        agentRollupDao.store("a", null);
         // when
-        List<String> agentRollupIds = agentDao.readAgentRollupIds("a");
+        List<String> agentRollupIds = agentRollupDao.readAgentRollupIds("a");
         // then
         assertThat(agentRollupIds).containsExactly("a");
     }
@@ -88,9 +88,9 @@ public class AgentDaoIT {
     @Test
     public void shouldReadSingleLevelAgentRollup() throws Exception {
         // given
-        agentDao.store("a", "x");
+        agentRollupDao.store("a", "x");
         // when
-        List<String> agentRollupIds = agentDao.readAgentRollupIds("a");
+        List<String> agentRollupIds = agentRollupDao.readAgentRollupIds("a");
         // then
         assertThat(agentRollupIds).containsExactly("a", "x");
     }
@@ -98,9 +98,9 @@ public class AgentDaoIT {
     @Test
     public void shouldReadMultiLevelAgentRollup() throws Exception {
         // given
-        agentDao.store("a", "x/y/z");
+        agentRollupDao.store("a", "x/y/z");
         // when
-        List<String> agentRollupIds = agentDao.readAgentRollupIds("a");
+        List<String> agentRollupIds = agentRollupDao.readAgentRollupIds("a");
         // then
         assertThat(agentRollupIds).containsExactly("a", "x/y/z", "x/y", "x");
     }
@@ -108,15 +108,15 @@ public class AgentDaoIT {
     @Test
     public void shouldNotInsertInvalidRow() throws Exception {
         // when
-        agentDao.updateLastCaptureTime("a", 5).get();
+        agentRollupDao.updateLastCaptureTime("a", 5).get();
         // then
-        assertThat(agentDao.readAgentRollups()).isEmpty();
+        assertThat(agentRollupDao.readAgentRollups()).isEmpty();
     }
 
     @Test
     public void shouldCalculateRollupIds() {
-        assertThat(AgentDao.getAgentRollupIds("a")).containsExactly("a");
-        assertThat(AgentDao.getAgentRollupIds("a/b")).containsExactly("a", "a/b");
-        assertThat(AgentDao.getAgentRollupIds("a/b/c")).containsExactly("a", "a/b", "a/b/c");
+        assertThat(AgentRollupDao.getAgentRollupIds("a")).containsExactly("a");
+        assertThat(AgentRollupDao.getAgentRollupIds("a/b")).containsExactly("a", "a/b");
+        assertThat(AgentRollupDao.getAgentRollupIds("a/b/c")).containsExactly("a", "a/b", "a/b/c");
     }
 }

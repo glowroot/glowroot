@@ -69,7 +69,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final ConfigRepository configRepository;
     private final Clock clock;
 
@@ -89,10 +89,11 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final PreparedStatement readNeedsRollupFromChild;
     private final PreparedStatement deleteNeedsRollupFromChild;
 
-    public GaugeValueDao(Session session, AgentDao agentDao, ConfigRepository configRepository,
-            ClusterManager clusterManager, Clock clock) throws Exception {
+    public GaugeValueDao(Session session, AgentRollupDao agentRollupDao,
+            ConfigRepository configRepository, ClusterManager clusterManager, Clock clock)
+            throws Exception {
         this.session = session;
-        this.agentDao = agentDao;
+        this.agentRollupDao = agentRollupDao;
         this.configRepository = configRepository;
         this.clock = clock;
 
@@ -175,7 +176,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         if (gaugeValues.isEmpty()) {
             return;
         }
-        List<String> agentRollupIds = agentDao.readAgentRollupIds(agentId);
+        List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
         int ttl = getTTLs().get(0);
         long maxCaptureTime = 0;
         List<ResultSetFuture> futures = Lists.newArrayList();

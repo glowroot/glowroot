@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.ImmutableAgentRollupConfig;
-import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.ObjectMappers;
 
@@ -32,11 +32,12 @@ class AgentConfigJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigRepository configRepository;
-    private final AgentRepository agentRepository;
+    private final AgentRollupRepository agentRollupRepository;
 
-    AgentConfigJsonService(ConfigRepository configRepository, AgentRepository agentRepository) {
+    AgentConfigJsonService(ConfigRepository configRepository,
+            AgentRollupRepository agentRollupRepository) {
         this.configRepository = configRepository;
-        this.agentRepository = agentRepository;
+        this.agentRollupRepository = agentRollupRepository;
     }
 
     @GET(path = "/backend/admin/agent-rollups", permission = "admin:view:agentRollup")
@@ -45,7 +46,7 @@ class AgentConfigJsonService {
         if (agentRollupId.isPresent()) {
             return getAgentRollupConfigInternal(agentRollupId.get());
         } else {
-            return mapper.writeValueAsString(agentRepository.readAgentRollups());
+            return mapper.writeValueAsString(agentRollupRepository.readAgentRollups());
         }
     }
 

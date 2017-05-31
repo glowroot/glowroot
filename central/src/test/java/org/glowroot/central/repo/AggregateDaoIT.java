@@ -77,7 +77,7 @@ public class AggregateDaoIT {
     private static Cluster cluster;
     private static Session session;
     private static ClusterManager clusterManager;
-    private static AgentDao agentDao;
+    private static AgentRollupDao agentRollupDao;
     private static ConfigDao configDao;
     private static AggregateDao aggregateDao;
 
@@ -92,12 +92,12 @@ public class AggregateDaoIT {
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
         clusterManager = ClusterManager.create();
 
-        agentDao = new AgentDao(session, clusterManager);
+        agentRollupDao = new AgentRollupDao(session, clusterManager);
         configDao = new ConfigDao(session, clusterManager);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        ConfigRepository configRepository = new ConfigRepositoryImpl(agentDao, configDao,
+        ConfigRepository configRepository = new ConfigRepositoryImpl(agentRollupDao, configDao,
                 centralConfigDao, userDao, roleDao, "");
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         configRepository.updateCentralStorageConfig(
@@ -108,8 +108,8 @@ public class AggregateDaoIT {
         TransactionTypeDao transactionTypeDao =
                 new TransactionTypeDao(session, configRepository, clusterManager);
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
-        aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao, fullQueryTextDao,
-                configRepository, Clock.systemClock());
+        aggregateDao = new AggregateDao(session, agentRollupDao, transactionTypeDao,
+                fullQueryTextDao, configRepository, Clock.systemClock());
     }
 
     @AfterClass
@@ -129,7 +129,7 @@ public class AggregateDaoIT {
     @Test
     public void shouldRollup() throws Exception {
 
-        agentDao.store("one", null);
+        agentRollupDao.store("one", null);
         configDao.store("one", null, AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
                 .build());
@@ -304,7 +304,7 @@ public class AggregateDaoIT {
     @Test
     public void shouldRollupFromChildren() throws Exception {
 
-        agentDao.store("one", "the parent");
+        agentRollupDao.store("one", "the parent");
         configDao.store("one", "the parent", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
                 .build());
@@ -481,7 +481,7 @@ public class AggregateDaoIT {
     @Test
     public void shouldRollupFromGrandChildren() throws Exception {
 
-        agentDao.store("one", "the gp/the parent");
+        agentRollupDao.store("one", "the gp/the parent");
         configDao.store("one", "the gp/the parent", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
                 .build());

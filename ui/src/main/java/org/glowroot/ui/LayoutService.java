@@ -32,8 +32,8 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.repo.AgentRepository;
-import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.AgentRollupRepository;
+import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
@@ -59,12 +59,12 @@ class LayoutService {
     private final boolean offline;
     private final String version;
     private final ConfigRepository configRepository;
-    private final AgentRepository agentRepository;
+    private final AgentRollupRepository agentRollupRepository;
     private final TransactionTypeRepository transactionTypeRepository;
     private final TraceAttributeNameRepository traceAttributeNameRepository;
 
     LayoutService(boolean central, boolean servlet, boolean offline, String version,
-            ConfigRepository configRepository, AgentRepository agentRepository,
+            ConfigRepository configRepository, AgentRollupRepository agentRollupRepository,
             TransactionTypeRepository transactionTypeRepository,
             TraceAttributeNameRepository traceAttributeNameRepository) {
         this.central = central;
@@ -72,7 +72,7 @@ class LayoutService {
         this.offline = offline;
         this.version = version;
         this.configRepository = configRepository;
-        this.agentRepository = agentRepository;
+        this.agentRollupRepository = agentRollupRepository;
         this.transactionTypeRepository = transactionTypeRepository;
         this.traceAttributeNameRepository = traceAttributeNameRepository;
     }
@@ -143,7 +143,7 @@ class LayoutService {
 
     private Layout buildLayoutCentral(Authentication authentication) throws Exception {
         List<FilteredAgentRollup> agentRollups =
-                filter(agentRepository.readAgentRollups(), authentication);
+                filter(agentRollupRepository.readAgentRollups(), authentication);
         CentralLayoutBuilder centralLayoutBuilder = new CentralLayoutBuilder(authentication);
         for (FilteredAgentRollup agentRollup : agentRollups) {
             centralLayoutBuilder.process(agentRollup, 0);

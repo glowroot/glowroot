@@ -520,7 +520,7 @@ public class SchemaUpgrade {
             boundStatement.setBool(i++, true);
             Sessions.execute(session, boundStatement);
             if (parentAgentRollupId != null) {
-                parentAgentRollupIds.addAll(AgentDao.getAgentRollupIds(parentAgentRollupId));
+                parentAgentRollupIds.addAll(AgentRollupDao.getAgentRollupIds(parentAgentRollupId));
             }
         }
         for (String parentAgentRollupId : parentAgentRollupIds) {

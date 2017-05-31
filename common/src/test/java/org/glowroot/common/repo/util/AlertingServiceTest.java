@@ -31,8 +31,8 @@ import org.glowroot.common.live.ImmutableTransactionQuery;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
-import org.glowroot.common.repo.AgentRepository;
-import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.AgentRollupRepository;
+import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
@@ -99,7 +99,7 @@ public class AlertingServiceTest {
     }
 
     private ConfigRepository configRepository;
-    private AgentRepository agentRepository;
+    private AgentRollupRepository agentRollupRepository;
     private TriggeredAlertRepository triggeredAlertRepository;
     private AggregateRepository aggregateRepository;
     private GaugeValueRepository gaugeValueRepository;
@@ -109,8 +109,8 @@ public class AlertingServiceTest {
     @Before
     public void beforeEachTest() throws Exception {
         configRepository = mock(ConfigRepository.class);
-        agentRepository = mock(AgentRepository.class);
-        when(agentRepository.readAgentRollups()).thenReturn(ImmutableList.<AgentRollup>of(
+        agentRollupRepository = mock(AgentRollupRepository.class);
+        when(agentRollupRepository.readAgentRollups()).thenReturn(ImmutableList.<AgentRollup>of(
                 ImmutableAgentRollup.builder()
                         .id("")
                         .display("")

@@ -24,7 +24,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
 
-public interface AgentRepository {
+public interface AgentRollupRepository {
 
     List<AgentRollup> readAgentRollups() throws Exception;
 

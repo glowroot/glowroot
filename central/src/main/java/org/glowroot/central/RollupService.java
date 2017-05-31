@@ -28,13 +28,13 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.SyntheticResultDao;
-import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -47,7 +47,7 @@ class RollupService implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RollupService.class);
 
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
     private final SyntheticResultDao syntheticResultDao;
@@ -62,10 +62,11 @@ class RollupService implements Runnable {
 
     private volatile boolean closed;
 
-    RollupService(AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
-            SyntheticResultDao syntheticResultDao, HeartbeatDao heartbeatDao,
-            ConfigRepositoryImpl configRepository, AlertingService alertingService, Clock clock) {
-        this.agentDao = agentDao;
+    RollupService(AgentRollupDao agentRollupDao, AggregateDao aggregateDao,
+            GaugeValueDao gaugeValueDao, SyntheticResultDao syntheticResultDao,
+            HeartbeatDao heartbeatDao, ConfigRepositoryImpl configRepository,
+            AlertingService alertingService, Clock clock) {
+        this.agentRollupDao = agentRollupDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
         this.syntheticResultDao = syntheticResultDao;
@@ -105,7 +106,7 @@ class RollupService implements Runnable {
             timer = "outer rollup loop")
     private void runInternal() throws Exception {
         Glowroot.setTransactionOuter();
-        for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
+        for (AgentRollup agentRollup : agentRollupDao.readAgentRollups()) {
             rollupAggregates(agentRollup, null);
             rollupGauges(agentRollup, null);
             rollupSyntheticMonitors(agentRollup);

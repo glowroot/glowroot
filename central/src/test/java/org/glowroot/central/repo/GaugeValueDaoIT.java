@@ -39,7 +39,7 @@ public class GaugeValueDaoIT {
     private static Cluster cluster;
     private static Session session;
     private static ClusterManager clusterManager;
-    private static AgentDao agentDao;
+    private static AgentRollupDao agentRollupDao;
     private static GaugeValueDao gaugeValueDao;
 
     @BeforeClass
@@ -54,11 +54,11 @@ public class GaugeValueDaoIT {
         clusterManager = ClusterManager.create();
 
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentDao = new AgentDao(session, clusterManager);
+        agentRollupDao = new AgentRollupDao(session, clusterManager);
         ConfigDao configDao = new ConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentDao, configDao,
+        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentRollupDao, configDao,
                 centralConfigDao, userDao, roleDao, "");
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         configRepository.updateCentralStorageConfig(
@@ -66,7 +66,7 @@ public class GaugeValueDaoIT {
                         .copyOf(storageConfig)
                         .withRollupExpirationHours(0, 0, 0, 0),
                 storageConfig.version());
-        gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository, clusterManager,
+        gaugeValueDao = new GaugeValueDao(session, agentRollupDao, configRepository, clusterManager,
                 Clock.systemClock());
     }
 
@@ -112,7 +112,7 @@ public class GaugeValueDaoIT {
     @Test
     public void shouldRollupFromChildren() throws Exception {
 
-        agentDao.store("one", "the parent");
+        agentRollupDao.store("one", "the parent");
 
         gaugeValueDao.truncateAll();
         gaugeValueDao.store("one", createData(60013));
@@ -134,7 +134,7 @@ public class GaugeValueDaoIT {
     @Test
     public void shouldRollupFromGrandChildren() throws Exception {
 
-        agentDao.store("one", "the gp/the parent");
+        agentRollupDao.store("one", "the gp/the parent");
 
         gaugeValueDao.truncateAll();
         gaugeValueDao.store("one", createData(60013));

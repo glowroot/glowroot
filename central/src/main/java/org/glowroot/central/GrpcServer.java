@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.ConfigDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
@@ -89,7 +89,7 @@ class GrpcServer {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final ConfigDao configDao;
     private final EnvironmentDao environmentDao;
     private final AggregateDao aggregateDao;
@@ -110,12 +110,12 @@ class GrpcServer {
     private volatile long currentMinute;
     private final AtomicInteger nextDelay = new AtomicInteger();
 
-    GrpcServer(String bindAddress, int port, AgentDao agentDao, ConfigDao configDao,
+    GrpcServer(String bindAddress, int port, AgentRollupDao agentRollupDao, ConfigDao configDao,
             AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, EnvironmentDao environmentDao,
             HeartbeatDao heartbeatDao, TraceDao traceDao, ConfigRepositoryImpl configRepository,
             AlertingService alertingService, ClusterManager clusterManager, Clock clock,
             String version) throws IOException {
-        this.agentDao = agentDao;
+        this.agentRollupDao = agentRollupDao;
         this.configDao = configDao;
         this.environmentDao = environmentDao;
         this.aggregateDao = aggregateDao;
@@ -127,7 +127,7 @@ class GrpcServer {
         this.clock = clock;
         this.version = version;
 
-        downstreamService = new DownstreamServiceImpl(agentDao, clusterManager);
+        downstreamService = new DownstreamServiceImpl(agentRollupDao, clusterManager);
 
         server = NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port))
                 .addService(new CollectorServiceImpl().bindService())
@@ -199,7 +199,7 @@ class GrpcServer {
                 environmentDao.insert(agentId, request.getEnvironment());
                 // insert into agent_rollup last so environment and agent config will return
                 // non-null if the agent is visible in the UI dropdown
-                agentDao.store(agentId, Strings.emptyToNull(agentRollupId));
+                agentRollupDao.store(agentId, Strings.emptyToNull(agentRollupId));
             } catch (Throwable t) {
                 logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
@@ -327,7 +327,7 @@ class GrpcServer {
             }
             String agentDisplay;
             try {
-                agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+                agentDisplay = agentRollupDao.readAgentRollupDisplay(agentId);
             } catch (Exception e) {
                 logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
                 responseObserver.onError(e);
@@ -379,7 +379,7 @@ class GrpcServer {
             }
             String agentDisplay;
             try {
-                agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+                agentDisplay = agentRollupDao.readAgentRollupDisplay(agentId);
             } catch (Throwable t) {
                 logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
@@ -554,7 +554,7 @@ class GrpcServer {
             try {
                 LogEvent logEvent = request.getLogEvent();
                 Level level = logEvent.getLevel();
-                String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+                String agentDisplay = agentRollupDao.readAgentRollupDisplay(agentId);
                 String formattedTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
                         .format(new Date(logEvent.getTimestamp()));
                 if (logEvent.hasThrowable()) {
@@ -636,7 +636,7 @@ class GrpcServer {
 
         private String getDisplayForLogging(String agentRollupId) {
             try {
-                return agentDao.readAgentRollupDisplay(agentRollupId);
+                return agentRollupDao.readAgentRollupDisplay(agentRollupId);
             } catch (Exception e) {
                 logger.error("{} - {}", agentRollupId, e.getMessage(), e);
                 return "id:" + agentRollupId;

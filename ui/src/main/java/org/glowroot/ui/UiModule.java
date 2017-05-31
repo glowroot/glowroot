@@ -36,7 +36,7 @@ import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
-import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.EnvironmentRepository;
@@ -80,7 +80,7 @@ public class UiModule {
             Clock clock,
             @Nullable LiveJvmService liveJvmService,
             final ConfigRepository configRepository,
-            AgentRepository agentRepository,
+            AgentRollupRepository agentRollupRepository,
             EnvironmentRepository environmentRepository,
             TransactionTypeRepository transactionTypeRepository,
             AggregateRepository aggregateRepository,
@@ -101,7 +101,7 @@ public class UiModule {
         TransactionCommonService transactionCommonService = new TransactionCommonService(
                 aggregateRepository, liveAggregateRepository, configRepository, clock);
         TraceCommonService traceCommonService =
-                new TraceCommonService(traceRepository, liveTraceRepository, agentRepository);
+                new TraceCommonService(traceRepository, liveTraceRepository, agentRollupRepository);
         ErrorCommonService errorCommonService =
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         MailService mailService = new MailService();
@@ -118,16 +118,17 @@ public class UiModule {
         jsonServices.add(new ErrorJsonService(errorCommonService, transactionCommonService,
                 traceRepository, rollupLevelService, clock));
         jsonServices.add(new GaugeValueJsonService(gaugeValueRepository, rollupLevelService,
-                agentRepository, configRepository));
+                agentRollupRepository, configRepository));
         jsonServices.add(new JvmJsonService(environmentRepository, liveJvmService));
         jsonServices.add(new AlertIncidentJsonService(triggeredAlertRepository,
                 configRepository));
-        jsonServices.add(new ConfigJsonService(agentRepository, configRepository));
+        jsonServices.add(new ConfigJsonService(agentRollupRepository, configRepository));
         jsonServices
                 .add(new AlertConfigJsonService(configRepository, gaugeValueRepository, central));
-        jsonServices.add(new AgentConfigJsonService(configRepository, agentRepository));
+        jsonServices.add(new AgentConfigJsonService(configRepository, agentRollupRepository));
         jsonServices.add(new UserConfigJsonService(configRepository));
-        jsonServices.add(new RoleConfigJsonService(central, configRepository, agentRepository));
+        jsonServices
+                .add(new RoleConfigJsonService(central, configRepository, agentRollupRepository));
         jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
         jsonServices.add(new InstrumentationConfigJsonService(configRepository, liveWeavingService,
                 liveJvmService));
@@ -138,14 +139,15 @@ public class UiModule {
             checkNotNull(triggeredAlertRepository);
             jsonServices.add(new SyntheticResultJsonService(syntheticResultRepository,
                     rollupLevelService, configRepository));
-            jsonServices.add(new ReportJsonService(aggregateRepository, agentRepository,
+            jsonServices.add(new ReportJsonService(aggregateRepository, agentRollupRepository,
                     gaugeValueRepository));
             jsonServices.add(new SyntheticMonitorConfigJsonService(configRepository));
         }
 
         LayoutService layoutService =
                 new LayoutService(central, servlet, offline, version, configRepository,
-                        agentRepository, transactionTypeRepository, traceAttributeNameRepository);
+                        agentRollupRepository, transactionTypeRepository,
+                        traceAttributeNameRepository);
         HttpSessionManager httpSessionManager = new HttpSessionManager(central, offline,
                 configRepository, clock, layoutService, sessionMapFactory);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);

@@ -59,7 +59,7 @@ import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.RoleConfig.SimplePermission;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
-import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.util.Clock;
@@ -216,7 +216,7 @@ class EmbeddedAgentModule {
                     .clock(clock)
                     .liveJvmService(agentModule.getLiveJvmService())
                     .configRepository(simpleRepoModule.getConfigRepository())
-                    .agentRepository(new AgentRepositoryImpl())
+                    .agentRollupRepository(new AgentRollupRepositoryImpl())
                     .environmentRepository(simpleRepoModule.getEnvironmentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .traceAttributeNameRepository(
@@ -254,7 +254,7 @@ class EmbeddedAgentModule {
                     .clock(clock)
                     .liveJvmService(null)
                     .configRepository(simpleRepoModule.getConfigRepository())
-                    .agentRepository(new AgentRepositoryImpl())
+                    .agentRollupRepository(new AgentRollupRepositoryImpl())
                     .environmentRepository(simpleRepoModule.getEnvironmentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .traceAttributeNameRepository(
@@ -387,7 +387,7 @@ class EmbeddedAgentModule {
         }
     }
 
-    private static class AgentRepositoryImpl implements AgentRepository {
+    private static class AgentRollupRepositoryImpl implements AgentRollupRepository {
 
         @Override
         public List<AgentRollup> readAgentRollups() {

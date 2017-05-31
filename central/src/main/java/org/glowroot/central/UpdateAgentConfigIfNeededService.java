@@ -24,10 +24,10 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.central.repo.AgentDao;
-import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
+import org.glowroot.central.repo.AgentRollupDao;
+import org.glowroot.central.repo.AgentRollupDao.AgentConfigUpdate;
 import org.glowroot.central.repo.ConfigDao;
-import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 
@@ -38,7 +38,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     private static final Logger logger =
             LoggerFactory.getLogger(UpdateAgentConfigIfNeededService.class);
 
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final ConfigDao configDao;
     private final DownstreamServiceImpl downstreamService;
     private final Clock clock;
@@ -47,9 +47,9 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     private volatile boolean closed;
 
-    UpdateAgentConfigIfNeededService(AgentDao agentDao, ConfigDao configDao,
+    UpdateAgentConfigIfNeededService(AgentRollupDao agentRollupDao, ConfigDao configDao,
             DownstreamServiceImpl downstreamService, Clock clock) {
-        this.agentDao = agentDao;
+        this.agentRollupDao = agentRollupDao;
         this.configDao = configDao;
         this.downstreamService = downstreamService;
         this.clock = clock;
@@ -86,7 +86,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             timer = "outer rollup loop")
     private void runInternal() throws Exception {
         Glowroot.setTransactionOuter();
-        for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
+        for (AgentRollup agentRollup : agentRollupDao.readAgentRollups()) {
             updateAgentConfigIfNeededAndConnected(agentRollup);
         }
     }
@@ -132,7 +132,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     private String getDisplayForLogging(String agentRollupId) throws InterruptedException {
         try {
-            return agentDao.readAgentRollupDisplay(agentRollupId);
+            return agentRollupDao.readAgentRollupDisplay(agentRollupId);
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;

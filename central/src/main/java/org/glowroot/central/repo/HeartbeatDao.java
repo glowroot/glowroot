@@ -34,15 +34,16 @@ public class HeartbeatDao {
     private static final int TTL = (int) HOURS.toMillis(EXPIRATION_HOURS);
 
     private final Session session;
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final Clock clock;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement existsPS;
 
-    public HeartbeatDao(Session session, AgentDao agentDao, Clock clock) throws Exception {
+    public HeartbeatDao(Session session, AgentRollupDao agentRollupDao, Clock clock)
+            throws Exception {
         this.session = session;
-        this.agentDao = agentDao;
+        this.agentRollupDao = agentRollupDao;
         this.clock = clock;
 
         Sessions.createTableWithTWCS(session, "create table if not exists heartbeat"
@@ -55,7 +56,7 @@ public class HeartbeatDao {
     }
 
     public void store(String agentId) throws Exception {
-        List<String> agentRollupIds = agentDao.readAgentRollupIds(agentId);
+        List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
         for (String agentRollupId : agentRollupIds) {
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;

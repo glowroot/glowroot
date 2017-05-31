@@ -40,7 +40,7 @@ public class SyntheticResultDaoIT {
     private static Cluster cluster;
     private static Session session;
     private static ClusterManager clusterManager;
-    private static AgentDao agentDao;
+    private static AgentRollupDao agentRollupDao;
     private static SyntheticResultDao syntheticResultDao;
 
     @BeforeClass
@@ -55,11 +55,11 @@ public class SyntheticResultDaoIT {
 
         clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentDao = new AgentDao(session, clusterManager);
+        agentRollupDao = new AgentRollupDao(session, clusterManager);
         ConfigDao configDao = new ConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentDao, configDao,
+        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentRollupDao, configDao,
                 centralConfigDao, userDao, roleDao, "");
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         configRepository.updateCentralStorageConfig(

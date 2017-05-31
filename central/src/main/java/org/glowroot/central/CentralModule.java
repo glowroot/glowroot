@@ -202,7 +202,7 @@ public class CentralModule {
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(repos.getConfigRepository())
-                    .agentRepository(repos.getAgentDao())
+                    .agentRollupRepository(repos.getAgentDao())
                     .environmentRepository(repos.getEnvironmentDao())
                     .transactionTypeRepository(repos.getTransactionTypeDao())
                     .traceAttributeNameRepository(repos.getTraceAttributeNameDao())

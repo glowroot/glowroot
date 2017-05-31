@@ -77,11 +77,11 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.RollupService.AgentRollupConsumer;
-import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.repo.TriggeredAlertDao;
-import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Encryption;
@@ -121,7 +121,7 @@ class SyntheticMonitorService implements Runnable {
         REQUEST_HEADERS = new RequestHeaders(headersTmp);
     }
 
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final ConfigRepositoryImpl configRepository;
     private final TriggeredAlertDao triggeredAlertDao;
     private final AlertingService alertingService;
@@ -141,10 +141,10 @@ class SyntheticMonitorService implements Runnable {
 
     private volatile boolean closed;
 
-    SyntheticMonitorService(AgentDao agentDao, ConfigRepositoryImpl configRepository,
+    SyntheticMonitorService(AgentRollupDao agentRollupDao, ConfigRepositoryImpl configRepository,
             TriggeredAlertDao triggeredAlertDao, AlertingService alertingService,
             SyntheticResultDao syntheticResponseDao, Ticker ticker, Clock clock) {
-        this.agentDao = agentDao;
+        this.agentRollupDao = agentRollupDao;
         this.configRepository = configRepository;
         this.triggeredAlertDao = triggeredAlertDao;
         this.alertingService = alertingService;
@@ -193,7 +193,7 @@ class SyntheticMonitorService implements Runnable {
             timer = "outer synthetic monitor loop")
     private void runInternal() throws Exception {
         Glowroot.setTransactionOuter();
-        for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
+        for (AgentRollup agentRollup : agentRollupDao.readAgentRollups()) {
             consumeAgentRollups(agentRollup, this::runSyntheticMonitors);
         }
     }

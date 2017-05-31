@@ -38,7 +38,7 @@ import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
+import org.glowroot.central.repo.AgentRollupDao.AgentConfigUpdate;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
@@ -160,7 +160,7 @@ public class ConfigDao {
             agentConfigCache.invalidate(agentId);
         }
         if (agentRollupId != null) {
-            List<String> agentRollupIds = AgentDao.getAgentRollupIds(agentRollupId);
+            List<String> agentRollupIds = AgentRollupDao.getAgentRollupIds(agentRollupId);
             for (String loopAgentRollupId : agentRollupIds) {
                 if (read(loopAgentRollupId) != null) {
                     continue;

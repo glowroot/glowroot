@@ -34,7 +34,7 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.model.MutableProfile;
-import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.TraceRepository.HeaderPlus;
 import org.glowroot.common.util.Styles;
@@ -48,13 +48,13 @@ class TraceCommonService {
 
     private final TraceRepository traceRepository;
     private final LiveTraceRepository liveTraceRepository;
-    private final AgentRepository agentRepository;
+    private final AgentRollupRepository agentRollupRepository;
 
     TraceCommonService(TraceRepository traceRepository, LiveTraceRepository liveTraceRepository,
-            AgentRepository agentRepository) {
+            AgentRollupRepository agentRollupRepository) {
         this.traceRepository = traceRepository;
         this.liveTraceRepository = liveTraceRepository;
-        this.agentRepository = agentRepository;
+        this.agentRollupRepository = agentRollupRepository;
     }
 
     @Nullable
@@ -343,7 +343,7 @@ class TraceCommonService {
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         if (!agentId.isEmpty()) {
-            jg.writeStringField("agent", agentRepository.readAgentRollupDisplay(agentId));
+            jg.writeStringField("agent", agentRollupRepository.readAgentRollupDisplay(agentId));
         }
         if (active) {
             jg.writeBooleanField("active", active);

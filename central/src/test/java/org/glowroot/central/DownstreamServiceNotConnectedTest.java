@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -35,7 +35,7 @@ public class DownstreamServiceNotConnectedTest {
     private static ClusterManager clusterManager;
 
     private DownstreamServiceImpl downstreamService =
-            new DownstreamServiceImpl(mock(AgentDao.class), clusterManager);
+            new DownstreamServiceImpl(mock(AgentRollupDao.class), clusterManager);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();

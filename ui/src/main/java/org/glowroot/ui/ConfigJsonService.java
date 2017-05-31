@@ -26,7 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.immutables.value.Value;
 
-import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.util.ObjectMappers;
@@ -47,11 +47,12 @@ class ConfigJsonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final AgentRepository agentRepository;
+    private final AgentRollupRepository agentRollupRepository;
     private final ConfigRepository configRepository;
 
-    ConfigJsonService(AgentRepository agentRepository, ConfigRepository configRepository) {
-        this.agentRepository = agentRepository;
+    ConfigJsonService(AgentRollupRepository agentRollupRepository,
+            ConfigRepository configRepository) {
+        this.agentRollupRepository = agentRollupRepository;
         this.configRepository = configRepository;
     }
 
@@ -100,7 +101,7 @@ class ConfigJsonService {
     String getAdvancedConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         AdvancedConfig config = configRepository.getAdvancedConfig(agentRollupId);
         return mapper.writeValueAsString(
-                AdvancedConfigDto.create(config, agentRepository.isAgent(agentRollupId)));
+                AdvancedConfigDto.create(config, agentRollupRepository.isAgent(agentRollupId)));
     }
 
     @POST(path = "/backend/config/transaction", permission = "agent:config:edit:transaction")
@@ -162,7 +163,7 @@ class ConfigJsonService {
     String updateAdvancedConfig(@BindAgentRollupId String agentRollupId,
             @BindRequest AdvancedConfigDto configDto) throws Exception {
         try {
-            AdvancedConfig config = configDto.convert(agentRepository.isAgent(agentRollupId));
+            AdvancedConfig config = configDto.convert(agentRollupRepository.isAgent(agentRollupId));
             configRepository.updateAdvancedConfig(agentRollupId, config, configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);

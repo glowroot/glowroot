@@ -32,7 +32,7 @@ public class CentralRepoModule {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private final CentralConfigDao centralConfigDao;
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final ConfigDao configDao;
     private final UserDao userDao;
     private final RoleDao roleDao;
@@ -52,25 +52,25 @@ public class CentralRepoModule {
             KeyspaceMetadata keyspaceMetadata, String cassandraSymmetricEncryptionKey, Clock clock)
             throws Exception {
         centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentDao = new AgentDao(session, clusterManager);
+        agentRollupDao = new AgentRollupDao(session, clusterManager);
         configDao = new ConfigDao(session, clusterManager);
         userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        configRepository = new ConfigRepositoryImpl(agentDao, configDao, centralConfigDao, userDao,
-                roleDao, cassandraSymmetricEncryptionKey);
+        configRepository = new ConfigRepositoryImpl(agentRollupDao, configDao, centralConfigDao,
+                userDao, roleDao, cassandraSymmetricEncryptionKey);
         transactionTypeDao = new TransactionTypeDao(session, configRepository, clusterManager);
         fullQueryTextDao = new FullQueryTextDao(session, configRepository);
-        aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao, fullQueryTextDao,
-                configRepository, clock);
+        aggregateDao = new AggregateDao(session, agentRollupDao, transactionTypeDao,
+                fullQueryTextDao, configRepository, clock);
         traceAttributeNameDao =
                 new TraceAttributeNameDao(session, configRepository, clusterManager);
-        traceDao = new TraceDao(session, agentDao, transactionTypeDao, fullQueryTextDao,
+        traceDao = new TraceDao(session, agentRollupDao, transactionTypeDao, fullQueryTextDao,
                 traceAttributeNameDao, configRepository, clock);
         gaugeValueDao =
-                new GaugeValueDao(session, agentDao, configRepository, clusterManager, clock);
+                new GaugeValueDao(session, agentRollupDao, configRepository, clusterManager, clock);
         syntheticResultDao = new SyntheticResultDao(session, configRepository, clock);
         environmentDao = new EnvironmentDao(session);
-        heartbeatDao = new HeartbeatDao(session, agentDao, clock);
+        heartbeatDao = new HeartbeatDao(session, agentRollupDao, clock);
         triggeredAlertDao = new TriggeredAlertDao(session);
     }
 
@@ -96,8 +96,8 @@ public class CentralRepoModule {
         return centralConfigDao;
     }
 
-    public AgentDao getAgentDao() {
-        return agentDao;
+    public AgentRollupDao getAgentDao() {
+        return agentRollupDao;
     }
 
     public ConfigDao getConfigDao() {

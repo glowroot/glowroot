@@ -75,7 +75,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final ConfigDao configDao;
     private final CentralConfigDao centralConfigDao;
     private final UserDao userDao;
@@ -87,10 +87,10 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Set<AgentConfigListener> agentConfigListeners = Sets.newCopyOnWriteArraySet();
 
-    public ConfigRepositoryImpl(AgentDao agentDao, ConfigDao configDao,
+    public ConfigRepositoryImpl(AgentRollupDao agentRollupDao, ConfigDao configDao,
             CentralConfigDao centralConfigDao, UserDao userDao, RoleDao roleDao,
             String symmetricEncryptionKey) {
-        this.agentDao = agentDao;
+        this.agentRollupDao = agentRollupDao;
         this.configDao = configDao;
         this.centralConfigDao = centralConfigDao;
         this.userDao = userDao;
@@ -278,7 +278,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public @Nullable AgentRollupConfig getAgentRollupConfig(String agentRollupId) throws Exception {
-        return agentDao.readAgentRollupConfig(agentRollupId);
+        return agentRollupDao.readAgentRollupConfig(agentRollupId);
     }
 
     @Override
@@ -845,12 +845,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateAgentRollupConfig(AgentRollupConfig config, String priorVersion)
             throws Exception {
-        agentDao.update(config, priorVersion);
+        agentRollupDao.update(config, priorVersion);
     }
 
     @Override
     public void deleteAgentRollupConfig(String agentRollupId) throws Exception {
-        agentDao.delete(agentRollupId);
+        agentRollupDao.delete(agentRollupId);
     }
 
     @Override

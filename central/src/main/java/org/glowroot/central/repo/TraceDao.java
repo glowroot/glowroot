@@ -75,7 +75,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 public class TraceDao implements TraceRepository {
 
     private final Session session;
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
@@ -132,11 +132,12 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialOverallSlowCount;
     private final PreparedStatement deletePartialTransactionSlowCount;
 
-    public TraceDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
-            ConfigRepository configRepository, Clock clock) throws Exception {
+    public TraceDao(Session session, AgentRollupDao agentRollupDao,
+            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+            TraceAttributeNameDao traceAttributeNameDao, ConfigRepository configRepository,
+            Clock clock) throws Exception {
         this.session = session;
-        this.agentDao = agentDao;
+        this.agentRollupDao = agentRollupDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.traceAttributeNameDao = traceAttributeNameDao;
@@ -394,7 +395,7 @@ public class TraceDao implements TraceRepository {
         Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId) : null;
         Trace.Header header = trace.getHeader();
 
-        List<String> agentRollupIds = agentDao.readAgentRollupIds(agentId);
+        List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
 
         List<ResultSetFuture> futures = Lists.newArrayList();
 

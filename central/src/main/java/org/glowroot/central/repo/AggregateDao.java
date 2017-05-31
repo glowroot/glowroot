@@ -204,7 +204,7 @@ public class AggregateDao implements AggregateRepository {
             .build();
 
     private final Session session;
-    private final AgentDao agentDao;
+    private final AgentRollupDao agentRollupDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final ConfigRepository configRepository;
@@ -235,11 +235,11 @@ public class AggregateDao implements AggregateRepository {
 
     private final ImmutableList<Table> allTables;
 
-    public AggregateDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository, Clock clock)
-            throws Exception {
+    public AggregateDao(Session session, AgentRollupDao agentRollupDao,
+            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+            ConfigRepository configRepository, Clock clock) throws Exception {
         this.session = session;
-        this.agentDao = agentDao;
+        this.agentRollupDao = agentRollupDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.configRepository = configRepository;
@@ -400,10 +400,10 @@ public class AggregateDao implements AggregateRepository {
             List<OldAggregatesByType> aggregatesByTypeList,
             List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
         if (aggregatesByTypeList.isEmpty()) {
-            agentDao.updateLastCaptureTime(agentId, captureTime).get();
+            agentRollupDao.updateLastCaptureTime(agentId, captureTime).get();
             return;
         }
-        List<String> agentRollupIds = agentDao.readAgentRollupIds(agentId);
+        List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
         int adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime, clock);
         List<ResultSetFuture> futures = Lists.newArrayList();
         List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
@@ -458,7 +458,7 @@ public class AggregateDao implements AggregateRepository {
             }
             futures.addAll(transactionTypeDao.store(agentRollupIds, transactionType));
         }
-        futures.add(agentDao.updateLastCaptureTime(agentId, captureTime));
+        futures.add(agentRollupDao.updateLastCaptureTime(agentId, captureTime));
         // wait for success before inserting "needs rollup" records
         MoreFutures.waitForAll(futures);
         futures.clear();
