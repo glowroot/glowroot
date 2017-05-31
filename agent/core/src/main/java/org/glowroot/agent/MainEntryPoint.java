@@ -188,10 +188,11 @@ public class MainEntryPoint {
     private static ImmutableMap<String, String> getGlowrootProperties(File confDir,
             @Nullable File sharedConfDir) throws IOException {
         Map<String, String> properties = Maps.newHashMap();
-        if (sharedConfDir != null) {
+        if (sharedConfDir == null) {
+            addProperties(confDir, properties);
+        } else {
             addProperties(sharedConfDir, properties);
         }
-        addProperties(confDir, properties);
         for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
             if (entry.getKey() instanceof String && entry.getValue() instanceof String
                     && ((String) entry.getKey()).startsWith("glowroot.")) {
