@@ -45,14 +45,9 @@ import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 
-// only the calls to the top-most Filter and to the top-most Servlet are captured
-//
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
 
-    // the life of this thread local is tied to the life of the topLevel thread local
-    // it is only created if the topLevel thread local exists, and it is cleared when topLevel
-    // thread local is cleared
     private static final FastThreadLocal</*@Nullable*/ String> sendError =
             new FastThreadLocal</*@Nullable*/ String>();
 
