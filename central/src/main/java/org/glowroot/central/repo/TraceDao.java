@@ -39,6 +39,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.ByteString;
@@ -73,6 +74,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TraceDao implements TraceRepository {
+
+    @SuppressWarnings("deprecation")
+    private static final HashFunction SHA_1 = Hashing.sha1();
 
     private final Session session;
     private final AgentRollupDao agentRollupDao;
@@ -405,7 +409,7 @@ public class TraceDao implements TraceRepository {
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
                 if (fullText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
-                    fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+                    fullTextSha1 = SHA_1.hashString(fullText, Charsets.UTF_8).toString();
                     futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
                     for (int i = 1; i < agentRollupIds.size(); i++) {
                         futures.addAll(

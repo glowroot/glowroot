@@ -44,6 +44,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.AbstractMessage;
@@ -107,6 +108,9 @@ public class AggregateDao implements AggregateRepository {
     private static final Logger logger = LoggerFactory.getLogger(AggregateDao.class);
 
     private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
+
+    @SuppressWarnings("deprecation")
+    private static final HashFunction SHA_1 = Hashing.sha1();
 
     private static final Table summaryTable = ImmutableTable.builder()
             .partialName("summary")
@@ -412,8 +416,7 @@ public class AggregateDao implements AggregateRepository {
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
                 if (fullText.length() > StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
-                    fullTextSha1 =
-                            Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+                    fullTextSha1 = SHA_1.hashString(fullText, Charsets.UTF_8).toString();
                     futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
                     sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
                             .setTruncatedText(fullText.substring(0,

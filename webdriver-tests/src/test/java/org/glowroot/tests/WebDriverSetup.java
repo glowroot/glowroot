@@ -61,7 +61,7 @@ public class WebDriverSetup {
 
     private static final boolean USE_FIREFOX = false;
 
-    private static final String GECKO_DRIVER_VERSION = "0.15.0";
+    private static final String GECKO_DRIVER_VERSION = "0.16.1";
 
     private static final Logger logger = LoggerFactory.getLogger(WebDriverSetup.class);
 
@@ -219,7 +219,7 @@ public class WebDriverSetup {
 
     private static Container createContainer(int uiPort, File testDir) throws Exception {
         File adminFile = new File(testDir, "admin.json");
-        Files.write("{\"web\":{\"port\":" + uiPort + "}}", adminFile, Charsets.UTF_8);
+        Files.asCharSink(adminFile, Charsets.UTF_8).write("{\"web\":{\"port\":" + uiPort + "}}");
         if (Containers.useJavaagent()) {
             return new JavaagentContainer(testDir, true, ImmutableList.of());
         } else {

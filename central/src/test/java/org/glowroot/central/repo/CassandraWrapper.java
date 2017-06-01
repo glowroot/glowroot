@@ -98,13 +98,13 @@ class CassandraWrapper {
         File confDir = new File(cassandraDir, "conf");
         // reduce logging to stdout
         File logbackXmlFile = new File(confDir, "logback.xml");
-        String xml = Files.toString(logbackXmlFile, Charsets.UTF_8);
+        String xml = Files.asCharSource(logbackXmlFile, Charsets.UTF_8).read();
         xml = xml.replace("<root level=\"INFO\">", "<root level=\"ERROR\">");
         xml = xml.replace("<logger name=\"org.apache.cassandra\" level=\"DEBUG\"/>", "");
         Files.asCharSink(logbackXmlFile, Charsets.UTF_8).write(xml);
         // long timeouts needed on slow travis ci machines
         File yamlFile = new File(confDir, "cassandra.yaml");
-        String yaml = Files.toString(yamlFile, Charsets.UTF_8);
+        String yaml = Files.asCharSource(yamlFile, Charsets.UTF_8).read();
         yaml = yaml.replaceAll("(?m)^read_request_timeout_in_ms: .*$",
                 "read_request_timeout_in_ms: 30000");
         yaml = yaml.replaceAll("(?m)^write_request_timeout_in_ms: .*$",

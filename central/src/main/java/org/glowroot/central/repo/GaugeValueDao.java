@@ -39,6 +39,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -433,7 +434,11 @@ public class GaugeValueDao implements GaugeValueRepository {
                         return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, captureTime,
                                 adjustedTTL, rows);
                     }
-                });
+                },
+                // direct executor will run above AsyncFunction inside cassandra driver thread that
+                // completes the last future, which is ok since the AsyncFunction itself only kicks
+                // off more async work, and should be relatively lightweight itself
+                MoreExecutors.directExecutor());
     }
 
     // from is non-inclusive
@@ -463,7 +468,11 @@ public class GaugeValueDao implements GaugeValueRepository {
                         return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, to,
                                 adjustedTTL, results);
                     }
-                });
+                },
+                // direct executor will run above AsyncFunction inside cassandra driver thread that
+                // completes the last future, which is ok since the AsyncFunction itself only kicks
+                // off more async work, and should be relatively lightweight itself
+                MoreExecutors.directExecutor());
     }
 
     private ListenableFuture<ResultSet> rollupOneFromRows(int rollupLevel, String agentRollupId,

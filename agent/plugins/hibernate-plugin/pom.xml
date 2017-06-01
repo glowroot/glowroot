@@ -19,7 +19,7 @@
     <!-- instrumented libraries -->
     <!-- hibernate 5.2.0+ requires Java 8+, which would prevent any hibernate plugin tests from
       being able to run when building with Java 7 -->
-    <hibernate.version>5.1.6.Final</hibernate.version>
+    <hibernate.version>5.1.7.Final</hibernate.version>
     <hibernate.annotations.version>3.5.6-Final</hibernate.annotations.version>
   </properties>
 
