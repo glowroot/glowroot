@@ -89,8 +89,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 transaction.accept(ticker.read(), entryVisitor);
                 return ImmutableEntries.builder()
                         .addAllEntries(entryVisitor.entries)
-                        .addAllSharedQueryTexts(
-                                TraceCreator.toProto(entryVisitor.sharedQueryTextIndexes))
+                        .addAllSharedQueryTexts(TraceCreator.toProto(entryVisitor.sharedQueryTexts))
                         .build();
             }
         }
@@ -145,8 +144,8 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 }
                 return builder.setHeader(checkNotNull(traceVisitor.header))
                         .addAllEntry(((CollectingEntryVisitor) traceVisitor).entries)
-                        .addAllSharedQueryText(TraceCreator.toProto(
-                                ((CollectingEntryVisitor) traceVisitor).sharedQueryTextIndexes))
+                        .addAllSharedQueryText(TraceCreator
+                                .toProto(((CollectingEntryVisitor) traceVisitor).sharedQueryTexts))
                         .build();
             }
         }
@@ -289,16 +288,18 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     private static class CollectingEntryVisitor implements EntryVisitor {
 
         private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
+        private final List<String> sharedQueryTexts = Lists.newArrayList();
+
         private final List<Trace.Entry> entries = Lists.newArrayList();
 
         @Override
         public int visitSharedQueryText(String sharedQueryText) {
             Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(sharedQueryText);
-            if (sharedQueryTextIndex != null) {
-                return sharedQueryTextIndex;
+            if (sharedQueryTextIndex == null) {
+                sharedQueryTextIndex = sharedQueryTextIndexes.size();
+                sharedQueryTextIndexes.put(sharedQueryText, sharedQueryTextIndex);
+                sharedQueryTexts.add(sharedQueryText);
             }
-            sharedQueryTextIndex = sharedQueryTextIndexes.size();
-            sharedQueryTextIndexes.put(sharedQueryText, sharedQueryTextIndex);
             return sharedQueryTextIndex;
         }
 

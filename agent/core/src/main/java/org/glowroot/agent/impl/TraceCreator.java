@@ -18,7 +18,6 @@ package org.glowroot.agent.impl;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
@@ -91,14 +90,14 @@ public class TraceCreator {
                 auxProfileSampleCount);
     }
 
-    public static List<Trace.SharedQueryText> toProto(Map<String, Integer> sharedQueryTextIndexes) {
-        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
-        for (String sharedQueryText : sharedQueryTextIndexes.keySet()) {
-            sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+    public static List<Trace.SharedQueryText> toProto(List<String> sharedQueryTexts) {
+        List<Trace.SharedQueryText> protos = Lists.newArrayList();
+        for (String sharedQueryText : sharedQueryTexts) {
+            protos.add(Trace.SharedQueryText.newBuilder()
                     .setFullText(sharedQueryText)
                     .build());
         }
-        return sharedQueryTexts;
+        return protos;
     }
 
     // timings for traces that are still active are normalized to the capture tick in order to
