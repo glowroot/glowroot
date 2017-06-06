@@ -448,6 +448,7 @@ class AdminJsonService {
         int activePort();
         String activeBindAddress();
         boolean activeHttps();
+        @Nullable
         String sharedConfDir();
         String confDir();
         boolean portChangeFailed();
