@@ -33,6 +33,9 @@
     <appender-ref ref="FILE" />
   </root>
 
+  <!-- unfortunately, cannot use logback/janino conditional to enable auditing in agent
+    due to https://github.com/qos-ch/logback/pull/291 -->
+
   <!-- to enable auditing (step 1 of 2): comment out the line below -->
 
   <logger name="audit" level="off" />
@@ -41,7 +44,7 @@
 
   <!--appender name="AUDIT" class="org.glowroot.agent.shaded.qos.logback.core.rolling.RollingFileAppender">
     <rollingPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${glowroot.log.dir}/audit.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <fileNamePattern>${glowroot.log.dir}/glowroot-audit.%d{yyyy-MM-dd}.log</fileNamePattern>
       <maxHistory>30</maxHistory>
     </rollingPolicy>
     <encoder>

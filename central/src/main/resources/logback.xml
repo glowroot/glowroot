@@ -40,23 +40,27 @@
     <appender-ref ref="FILE" />
   </root>
 
-  <!-- to enable auditing (step 1 of 2): comment out the line below -->
-
-  <logger name="audit" level="off" />
-
-  <!-- to enable auditing (step 2 of 2): uncomment the lines below -->
-
-  <!--appender name="AUDIT" class="org.glowroot.agent.shaded.qos.logback.core.rolling.RollingFileAppender">
-    <rollingPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.TimeBasedRollingPolicy">
-    <fileNamePattern>${glowroot.log.dir}/audit.%d{yyyy-MM-dd}.log</fileNamePattern>
-    <maxHistory>30</maxHistory>
-    </rollingPolicy>
-    <encoder>
-    <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %msg%n</pattern>
-    </encoder>
-    </appender>
-    <logger name="audit" level="info" additivity="false">
-    <appender-ref ref="AUDIT" />
-    </logger -->
-
+  <!-- use -Dglowroot.log.auditOn=true to turn on audit logging -->
+  <if condition="p(&quot;glowroot.log.auditOn&quot;).equalsIgnoreCase(&quot;true&quot;)">
+    <then>
+      <appender name="AUDIT"
+        class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+          <fileNamePattern>
+            ${glowroot.log.dir}/glowroot-central-audit.%d{yyyy-MM-dd}.log
+          </fileNamePattern>
+          <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+          <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %msg%n</pattern>
+        </encoder>
+      </appender>
+      <logger name="audit" level="info" additivity="false">
+        <appender-ref ref="AUDIT" />
+      </logger>
+    </then>
+    <else>
+      <logger name="audit" level="off" />
+    </else>
+  </if>
 </configuration>
