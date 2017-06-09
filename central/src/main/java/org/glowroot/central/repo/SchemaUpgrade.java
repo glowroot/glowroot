@@ -790,7 +790,7 @@ public class SchemaUpgrade {
                 + " varchar, config blob, config_update boolean, config_update_token uuid,"
                 + " primary key (agent_rollup_id)) " + WITH_LCS);
         ResultSet results = Sessions.execute(session, "select agent_rollup_id, config,"
-                + " config_update, config_update_token from agent_config");
+                + " config_update, config_update_token from config");
         PreparedStatement insertPS =
                 session.prepare("insert into agent_config (agent_rollup_id, config, config_update,"
                         + " config_update_token) values (?, ?, ?, ?)");
