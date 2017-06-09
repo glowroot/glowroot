@@ -36,7 +36,12 @@
   <!-- suppress voluminous infinispan INFO logging -->
   <logger name="org.infinispan.CLUSTER" level="warn" />
   <root level="info">
-    <appender-ref ref="CONSOLE" />
+    <!-- use -Dglowroot.log.consoleOff=true to turn off console logging -->
+    <if condition="p(&quot;glowroot.log.consoleOff&quot;).equalsIgnoreCase(&quot;true&quot;)">
+      <else>
+        <appender-ref ref="CONSOLE" />
+      </else>
+    </if>
     <appender-ref ref="FILE" />
   </root>
 
