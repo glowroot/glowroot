@@ -28,6 +28,7 @@ import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.LdapConfig;
+import org.glowroot.common.config.PagerDutyConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.StorageConfig;
@@ -59,6 +60,7 @@ public interface ConfigRepository {
     String STORAGE_KEY = "storage";
     String SMTP_KEY = "smtp";
     String LDAP_KEY = "ldap";
+    String PAGER_DUTY_KEY = "pagerDuty";
 
     long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", MINUTES.toMillis(1));
@@ -142,6 +144,8 @@ public interface ConfigRepository {
     SmtpConfig getSmtpConfig() throws Exception;
 
     LdapConfig getLdapConfig() throws Exception;
+
+    PagerDutyConfig getPagerDutyConfig() throws Exception;
 
     void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion)
             throws Exception;
@@ -232,6 +236,8 @@ public interface ConfigRepository {
 
     void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception;
 
+    void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion) throws Exception;
+
     long getGaugeCollectionIntervalMillis();
 
     List<RollupConfig> getRollupConfigs();
@@ -307,6 +313,12 @@ public interface ConfigRepository {
 
     @SuppressWarnings("serial")
     class DuplicateRoleNameException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class DuplicatePagerDutyIntegrationKeyException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class DuplicatePagerDutyIntegrationKeyDisplayException extends Exception {}
 
     @SuppressWarnings("serial")
     class AgentRollupNotFoundException extends Exception {}

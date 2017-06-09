@@ -48,15 +48,20 @@ import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
+import org.glowroot.common.config.ImmutablePagerDutyConfig;
+import org.glowroot.common.config.ImmutablePagerDutyIntegrationKey;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.LdapConfig;
+import org.glowroot.common.config.PagerDutyConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common.config.UserConfig;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyDisplayException;
+import org.glowroot.common.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyException;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.AlertingService;
@@ -171,6 +176,12 @@ class AdminJsonService {
                 .build());
     }
 
+    @GET(path = "/backend/admin/pager-duty", permission = "admin:view:pagerDuty")
+    String getPagerDutyConfig() throws Exception {
+        PagerDutyConfig config = configRepository.getPagerDutyConfig();
+        return mapper.writeValueAsString(PagerDutyConfigDto.create(config));
+    }
+
     @POST(path = "/backend/admin/web", permission = "admin:edit:web")
     Object updateWebConfig(@BindRequest String content) throws Exception {
         if (central) {
@@ -269,6 +280,20 @@ class AdminJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getLdapConfig();
+    }
+
+    @POST(path = "/backend/admin/pager-duty", permission = "admin:edit:pagerDuty")
+    String updatePagerDutyConfig(@BindRequest PagerDutyConfigDto configDto) throws Exception {
+        try {
+            configRepository.updatePagerDutyConfig(configDto.convert(), configDto.version());
+        } catch (DuplicatePagerDutyIntegrationKeyException e) {
+            return "{\"duplicateIntegrationKey\":true}";
+        } catch (DuplicatePagerDutyIntegrationKeyDisplayException e) {
+            return "{\"duplicateIntegrationKeyDisplay\":true}";
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getPagerDutyConfig();
     }
 
     @POST(path = "/backend/admin/send-test-email", permission = "admin:edit:smtp")
@@ -704,6 +729,26 @@ class AdminJsonService {
                     .groupBaseDn(config.groupBaseDn())
                     .groupSearchFilter(config.groupSearchFilter())
                     .roleMappings(config.roleMappings())
+                    .version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class PagerDutyConfigDto {
+
+        public abstract List<ImmutablePagerDutyIntegrationKey> integrationKeys();
+        abstract String version();
+
+        private PagerDutyConfig convert() throws Exception {
+            return ImmutablePagerDutyConfig.builder()
+                    .addAllIntegrationKeys(integrationKeys())
+                    .build();
+        }
+
+        private static PagerDutyConfigDto create(PagerDutyConfig config) {
+            return ImmutablePagerDutyConfigDto.builder()
+                    .addAllIntegrationKeys(config.integrationKeys())
                     .version(config.version())
                     .build();
         }

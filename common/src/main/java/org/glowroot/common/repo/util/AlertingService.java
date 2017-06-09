@@ -15,7 +15,10 @@
  */
 package org.glowroot.common.repo.util;
 
+import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
+import java.net.URI;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -29,15 +32,35 @@ import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.xml.bind.DatatypeConverter;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,11 +74,14 @@ import org.glowroot.common.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Formatting;
+import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -120,35 +146,36 @@ public class AlertingService {
                 triggeredAlertRepository.exists(agentRollupId, alertCondition);
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentRollupId, alertCondition);
-            sendMetricAlert(agentRollupId, agentRollupDisplay, metricCondition, alertNotification,
-                    true);
+            sendMetricAlert(agentRollupId, agentRollupDisplay, alertCondition, metricCondition,
+                    alertNotification, endTime, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentRollupId, alertCondition);
-            sendMetricAlert(agentRollupId, agentRollupDisplay, metricCondition, alertNotification,
-                    false);
+            sendMetricAlert(agentRollupId, agentRollupDisplay, alertCondition, metricCondition,
+                    alertNotification, endTime, false);
         }
     }
 
     // only used by central
     public void sendHeartbeatAlertIfNeeded(String agentRollupId, String agentRollupDisplay,
             AlertCondition alertCondition, HeartbeatCondition heartbeatCondition,
-            AlertNotification alertNotification, boolean currentlyTriggered) throws Exception {
+            AlertNotification alertNotification, long endTime, boolean currentlyTriggered)
+            throws Exception {
         boolean previouslyTriggered =
                 triggeredAlertRepository.exists(agentRollupId, alertCondition);
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentRollupId, alertCondition);
-            sendHeartbeatAlert(agentRollupDisplay, heartbeatCondition, alertNotification,
-                    true);
+            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertCondition,
+                    heartbeatCondition, alertNotification, endTime, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentRollupId, alertCondition);
-            sendHeartbeatAlert(agentRollupDisplay, heartbeatCondition, alertNotification,
-                    false);
+            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertCondition,
+                    heartbeatCondition, alertNotification, endTime, false);
         }
     }
 
     private void sendMetricAlert(String agentRollupId, String agentRollupDisplay,
-            MetricCondition metricCondition, AlertNotification alertNotification, boolean ok)
-            throws Exception {
+            AlertCondition alertCondition, MetricCondition metricCondition,
+            AlertNotification alertNotification, long endTime, boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         StringBuilder subject = new StringBuilder();
         subject.append("Glowroot alert");
@@ -214,12 +241,13 @@ public class AlertingService {
             throw new IllegalStateException("Unexpected metric: " + metric);
         }
         message.append(".\n\n");
-        sendNotification(alertNotification, subject.toString(), message.toString());
+        sendNotification(agentRollupId, agentRollupDisplay, alertCondition, alertNotification,
+                endTime, subject.toString(), message.toString(), ok);
     }
 
-    private void sendHeartbeatAlert(String agentRollupDisplay,
-            HeartbeatCondition heartbeatCondition, AlertNotification alertNotification, boolean ok)
-            throws Exception {
+    private void sendHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
+            AlertCondition alertCondition, HeartbeatCondition heartbeatCondition,
+            AlertNotification alertNotification, long endTime, boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentRollupDisplay.equals("")) {
@@ -234,11 +262,13 @@ public class AlertingService {
             sb.append(heartbeatCondition.getTimePeriodSeconds());
             sb.append(" seconds.\n\n");
         }
-        sendNotification(alertNotification, subject, sb.toString());
+        sendNotification(agentRollupId, agentRollupDisplay, alertCondition, alertNotification,
+                endTime, subject, sb.toString(), ok);
     }
 
-    public void sendNotification(AlertNotification alertNotification, String subject,
-            String messageText) throws Exception {
+    public void sendNotification(String agentRollupId, String agentRollupDisplay,
+            AlertCondition alertCondition, AlertNotification alertNotification, long endTime,
+            String subject, String messageText, boolean ok) throws Exception {
         if (alertNotification.hasEmailNotification()) {
             SmtpConfig smtpConfig = configRepository.getSmtpConfig();
             if (smtpConfig.host().isEmpty()) {
@@ -251,6 +281,11 @@ public class AlertingService {
                         messageText, smtpConfig, null, configRepository.getLazySecretKey(),
                         mailService);
             }
+        }
+        if (alertNotification.hasPagerDutyNotification()) {
+            sendPagerDuty(agentRollupId, agentRollupDisplay, alertCondition,
+                    alertNotification.getPagerDutyNotification(), endTime, subject, messageText,
+                    ok);
         }
     }
 
@@ -357,6 +392,54 @@ public class AlertingService {
         return Session.getInstance(props, authenticator);
     }
 
+    private static void sendPagerDuty(String agentRollupId, String agentRollupDisplay,
+            AlertCondition alertCondition, PagerDutyNotification pagerDutyNotification,
+            long endTime, String subject, String messageText, boolean ok) throws Exception {
+        String dedupKey;
+        if (agentRollupId.isEmpty()) {
+            dedupKey = InetAddress.getLocalHost().getHostName();
+        } else {
+            dedupKey = agentRollupId;
+        }
+        dedupKey = escapeDedupKeyPart(dedupKey) + ":" + Versions.getVersion(alertCondition);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        JsonGenerator jg = ObjectMappers.create().getFactory().createGenerator(baos);
+        jg.writeStartObject();
+        jg.writeStringField("routing_key", pagerDutyNotification.getPagerDutyIntegrationKey());
+        jg.writeStringField("dedup_key", dedupKey);
+        jg.writeStringField("event_action", ok ? "resolve" : "trigger");
+        jg.writeStringField("client", "Glowroot");
+        jg.writeObjectFieldStart("payload");
+        jg.writeStringField("summary", subject + "\n\n" + messageText);
+        if (agentRollupId.isEmpty()) {
+            jg.writeStringField("source", InetAddress.getLocalHost().getHostName());
+        } else {
+            jg.writeStringField("source", agentRollupDisplay);
+        }
+        jg.writeStringField("severity", "critical");
+        jg.writeStringField("timestamp", formatAsIso8601(endTime));
+        switch (alertCondition.getValCase()) {
+            case METRIC_CONDITION:
+                jg.writeStringField("class",
+                        "metric: " + alertCondition.getMetricCondition().getMetric());
+                break;
+            case SYNTHETIC_MONITOR_CONDITION:
+                jg.writeStringField("class", "synthetic monitor");
+                break;
+            case HEARTBEAT_CONDITION:
+                jg.writeStringField("class", "heartbeat");
+                break;
+            default:
+                logger.warn("unexpected alert condition: " + alertCondition.getValCase().name());
+                jg.writeStringField("class", "unknown: " + alertCondition.getValCase().name());
+                break;
+        }
+        jg.writeEndObject();
+        jg.writeEndObject();
+        jg.close();
+        post("https://events.pagerduty.com/v2/enqueue", baos.toByteArray(), "application/json");
+    }
+
     private static String getPassword(SmtpConfig smtpConfig, @Nullable String passwordOverride,
             LazySecretKey lazySecretKey) throws Exception {
         if (passwordOverride != null) {
@@ -369,13 +452,75 @@ public class AlertingService {
         return Encryption.decrypt(password, lazySecretKey);
     }
 
+    private static String escapeDedupKeyPart(String agentRollupId) {
+        return agentRollupId.replace("\\", "\\\\").replace(":", "\\:");
+    }
+
+    private static String formatAsIso8601(long endTime) {
+        Calendar end = Calendar.getInstance();
+        end.setTimeInMillis(endTime);
+        return DatatypeConverter.printDateTime(end);
+    }
+
+    private static void post(String url, byte[] content, String contentType) throws Exception {
+        URI uri = new URI(url);
+        String scheme = uri.getScheme();
+        if (scheme == null) {
+            return;
+        }
+        final boolean ssl = uri.getScheme().equalsIgnoreCase("https");
+        final String host = uri.getHost();
+        if (host == null) {
+            return;
+        }
+        final int port;
+        if (uri.getPort() == -1) {
+            port = ssl ? 443 : 80;
+        } else {
+            port = uri.getPort();
+        }
+        EventLoopGroup group = new NioEventLoopGroup();
+        try {
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap.group(group)
+                    .channel(NioSocketChannel.class)
+                    .handler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel ch) throws Exception {
+                            ChannelPipeline p = ch.pipeline();
+                            if (ssl) {
+                                SslContext sslContext = SslContextBuilder.forClient().build();
+                                p.addLast(sslContext.newHandler(ch.alloc(), host, port));
+                            }
+                            p.addLast(new HttpClientCodec());
+                            p.addLast(new HttpObjectAggregator(1048576));
+                            p.addLast(new HttpClientHandler());
+                        }
+                    });
+
+            HttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
+                    uri.getRawPath(), Unpooled.wrappedBuffer(content));
+            request.headers().set(HttpHeaderNames.HOST, host);
+            request.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
+            request.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.length);
+            request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+
+            Channel ch = bootstrap.connect(host, port).sync().channel();
+            ch.writeAndFlush(request);
+            ch.closeFuture().sync();
+        } finally {
+            group.shutdownGracefully();
+        }
+    }
+
     public static class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> {
 
         @Override
         public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
             if (msg instanceof HttpResponse) {
                 HttpResponse response = (HttpResponse) msg;
-                if (!response.status().equals(HttpResponseStatus.OK)) {
+                int statusCode = response.status().code();
+                if (statusCode < 200 || statusCode >= 300) {
                     if (msg instanceof HttpContent) {
                         HttpContent httpContent = (HttpContent) msg;
                         String content = httpContent.content().toString(CharsetUtil.UTF_8);

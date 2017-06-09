@@ -132,9 +132,14 @@ message AgentConfig {
 
     message AlertNotification {
       EmailNotification email_notification = 1;
+      PagerDutyNotification pager_duty_notification = 2;
 
       message EmailNotification {
         repeated string email_address = 1;
+      }
+
+      message PagerDutyNotification {
+        string pager_duty_integration_key = 1;
       }
     }
   }

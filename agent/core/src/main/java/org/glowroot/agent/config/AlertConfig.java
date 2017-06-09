@@ -33,8 +33,8 @@ import org.glowroot.wire.api.model.Proto.OptionalDouble;
 public abstract class AlertConfig {
 
     public abstract AlertCondition condition();
-
     public abstract @Nullable ImmutableEmailNotification emailNotification();
+    public abstract @Nullable ImmutablePagerDutyNotification pagerDutyNotification();
 
     public static AlertConfig create(AgentConfig.AlertConfig config) {
         ImmutableAlertConfig.Builder builder = ImmutableAlertConfig.builder()
@@ -43,15 +43,23 @@ public abstract class AlertConfig {
         if (notification.hasEmailNotification()) {
             builder.emailNotification(create(notification.getEmailNotification()));
         }
+        if (notification.hasPagerDutyNotification()) {
+            builder.pagerDutyNotification(create(notification.getPagerDutyNotification()));
+        }
         return builder.build();
     }
 
     public AgentConfig.AlertConfig toProto() {
-        AgentConfig.AlertConfig.Builder builder = AgentConfig.AlertConfig.newBuilder();
-        builder.setCondition(toProto(condition()));
+        AgentConfig.AlertConfig.Builder builder = AgentConfig.AlertConfig.newBuilder()
+                .setCondition(toProto(condition()));
         EmailNotification emailNotification = emailNotification();
         if (emailNotification != null) {
             builder.getNotificationBuilder().setEmailNotification(toProto(emailNotification));
+        }
+        PagerDutyNotification pagerDutyNotification = pagerDutyNotification();
+        if (pagerDutyNotification != null) {
+            builder.getNotificationBuilder()
+                    .setPagerDutyNotification(toProto(pagerDutyNotification));
         }
         return builder.build();
     }
@@ -74,6 +82,13 @@ public abstract class AlertConfig {
             AgentConfig.AlertConfig.AlertNotification.EmailNotification emailNotification) {
         return ImmutableEmailNotification.builder()
                 .addAllEmailAddresses(emailNotification.getEmailAddressList())
+                .build();
+    }
+
+    private static ImmutablePagerDutyNotification create(
+            AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification pagerDutyNotification) {
+        return ImmutablePagerDutyNotification.builder()
+                .pagerDutyIntegrationKey(pagerDutyNotification.getPagerDutyIntegrationKey())
                 .build();
     }
 
@@ -101,6 +116,13 @@ public abstract class AlertConfig {
             EmailNotification emailNotification) {
         return AgentConfig.AlertConfig.AlertNotification.EmailNotification.newBuilder()
                 .addAllEmailAddress(emailNotification.emailAddresses())
+                .build();
+    }
+
+    private static AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification toProto(
+            PagerDutyNotification pagerDutyNotification) {
+        return AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification.newBuilder()
+                .setPagerDutyIntegrationKey(pagerDutyNotification.pagerDutyIntegrationKey())
                 .build();
     }
 
@@ -222,5 +244,10 @@ public abstract class AlertConfig {
     @Value.Immutable
     public interface EmailNotification {
         ImmutableList<String> emailAddresses();
+    }
+
+    @Value.Immutable
+    public interface PagerDutyNotification {
+        String pagerDutyIntegrationKey();
     }
 }

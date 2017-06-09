@@ -158,6 +158,11 @@ glowroot.controller('ConfigAlertCtrl', [
           emailAddresses: []
         };
       }
+      if (!data.config.pagerDutyNotification) {
+        data.config.pagerDutyNotification = {
+          pagerDutyIntegrationKey: ''
+        };
+      }
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
 
@@ -202,6 +207,7 @@ glowroot.controller('ConfigAlertCtrl', [
         }
       }
       $scope.syntheticMonitors = data.syntheticMonitors;
+      $scope.pagerDutyIntegrationKeys = data.pagerDutyIntegrationKeys;
     }
 
     $scope.unit = function () {
@@ -240,7 +246,8 @@ glowroot.controller('ConfigAlertCtrl', [
                 }
               },
               gauges: response.data.gauges,
-              syntheticMonitors: response.data.syntheticMonitors
+              syntheticMonitors: response.data.syntheticMonitors,
+              pagerDutyIntegrationKeys: response.data.pagerDutyIntegrationKeys
             });
             $scope.loaded = true;
           }, function (response) {
@@ -290,6 +297,19 @@ glowroot.controller('ConfigAlertCtrl', [
       }
     });
 
+    $scope.displayUnavailablePagerDutyIntegrationKey = function () {
+      if (!$scope.config.pagerDutyNotification.pagerDutyIntegrationKey) {
+        return false;
+      }
+      var i;
+      for (i = 0; i < $scope.pagerDutyIntegrationKeys.length; i++) {
+        if ($scope.pagerDutyIntegrationKeys[i].key === $scope.config.pagerDutyNotification.pagerDutyIntegrationKey) {
+          return false;
+        }
+      }
+      return true;
+    };
+
     $scope.hasChanges = function () {
       return !angular.equals($scope.config, $scope.originalConfig);
     };
@@ -299,6 +319,9 @@ glowroot.controller('ConfigAlertCtrl', [
       var postData = angular.copy($scope.config);
       if (!postData.emailNotification.emailAddresses.length) {
         delete postData.emailNotification;
+      }
+      if (!postData.pagerDutyNotification.pagerDutyIntegrationKey) {
+        delete postData.pagerDutyNotification;
       }
       var url;
       if (version) {

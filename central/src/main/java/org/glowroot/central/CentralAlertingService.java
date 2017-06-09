@@ -160,7 +160,8 @@ public class CentralAlertingService {
                     // +/- 20% jitter (see io.grpc.internal.ExponentialBackoffPolicy) but better to
                     // give a bit extra (4 minutes above) to avoid false heartbeat alert
                     checkHeartbeatAlert(agentId, agentDisplay, alertCondition,
-                            alertCondition.getHeartbeatCondition(), alertConfig.getNotification());
+                            alertCondition.getHeartbeatCondition(), alertConfig.getNotification(),
+                            endTime);
                 }
                 break;
             default:
@@ -184,9 +185,9 @@ public class CentralAlertingService {
             traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
     private void checkHeartbeatAlert(String agentId, String agentDisplay,
             AlertCondition alertCondition, HeartbeatCondition heartbeatCondition,
-            AlertNotification alertNotification) throws Exception {
+            AlertNotification alertNotification, long endTime) throws Exception {
         alertingService.sendHeartbeatAlertIfNeeded(agentId, agentDisplay, alertCondition,
-                heartbeatCondition, alertNotification, false);
+                heartbeatCondition, alertNotification, endTime, false);
     }
 
     private static boolean isAggregateMetricCondition(AlertCondition alertCondition) {

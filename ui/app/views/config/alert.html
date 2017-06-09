@@ -286,6 +286,35 @@
           </div>
         </div>
       </fieldset>
+      <fieldset ng-if="pagerDutyIntegrationKeys.length">
+        <legend>PagerDuty notification</legend>
+        <div class="form-group"
+             ng-class="{'has-error': formCtrl.pagerDutyIntegrationKey.$invalid}">
+          <label class="col-lg-3 control-label"
+                 for="pagerDutyIntegrationKey">
+            Integration key
+          </label>
+          <div class="col-lg-9 gt-form-group-without-help-block">
+            <select ng-model="config.pagerDutyNotification.pagerDutyIntegrationKey"
+                    ng-disabled="!agentPermissions.config.edit.alert"
+                    class="form-control"
+                    name="pagerDutyIntegrationKey"
+                    id="pagerDutyIntegrationKey"
+                    style="width: auto;">
+              <option value=""></option>
+              <option ng-repeat="pagerDutyIntegrationKey in pagerDutyIntegrationKeys track by pagerDutyIntegrationKey.key"
+                      ng-value="pagerDutyIntegrationKey.key">
+                {{pagerDutyIntegrationKey.display}} ({{pagerDutyIntegrationKey.key}})
+              </option>
+              <option ng-value="config.pagerDutyNotification.pagerDutyIntegrationKey"
+                      disabled
+                      ng-if="displayUnavailablePagerDutyIntegrationKey()">
+                {{config.pagerDutyNotification.pagerDutyIntegrationKey}} (not available)
+              </option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
       <div class="form-group gt-form-buttons"
            ng-if="agentPermissions.config.edit.alert">
         <div class="col-lg-offset-3 col-lg-9 gt-sometimes-legend-padding">

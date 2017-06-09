@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.AlertConfig;
@@ -47,10 +49,13 @@ import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
+import org.glowroot.common.config.ImmutablePagerDutyConfig;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.LdapConfig;
+import org.glowroot.common.config.PagerDutyConfig;
+import org.glowroot.common.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.StorageConfig;
@@ -82,6 +87,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile EmbeddedStorageConfig storageConfig;
     private volatile SmtpConfig smtpConfig;
     private volatile LdapConfig ldapConfig;
+    private volatile PagerDutyConfig pagerDutyConfig;
 
     static ConfigRepository create(File confDir, ConfigService configService,
             PluginCache pluginCache) throws IOException {
@@ -154,6 +160,13 @@ class ConfigRepositoryImpl implements ConfigRepository {
             this.ldapConfig = ImmutableLdapConfig.builder().build();
         } else {
             this.ldapConfig = ldapConfig;
+        }
+        PagerDutyConfig pagerDutyConfig =
+                configService.getAdminConfig(PAGER_DUTY_KEY, ImmutablePagerDutyConfig.class);
+        if (pagerDutyConfig == null) {
+            this.pagerDutyConfig = ImmutablePagerDutyConfig.builder().build();
+        } else {
+            this.pagerDutyConfig = pagerDutyConfig;
         }
     }
 
@@ -362,6 +375,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public LdapConfig getLdapConfig() {
         return ldapConfig;
+    }
+
+    @Override
+    public PagerDutyConfig getPagerDutyConfig() {
+        return pagerDutyConfig;
     }
 
     @Override
@@ -843,6 +861,27 @@ class ConfigRepositoryImpl implements ConfigRepository {
             checkVersionsEqual(ldapConfig.version(), priorVersion);
             configService.updateAdminConfig(LDAP_KEY, config);
             ldapConfig = config;
+        }
+    }
+
+    @Override
+    public void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion)
+            throws Exception {
+        synchronized (writeLock) {
+            checkVersionsEqual(pagerDutyConfig.version(), priorVersion);
+            // check for duplicate integration key / display
+            Set<String> integrationKeys = Sets.newHashSet();
+            Set<String> integrationDisplays = Sets.newHashSet();
+            for (PagerDutyIntegrationKey integrationKey : config.integrationKeys()) {
+                if (!integrationKeys.add(integrationKey.key())) {
+                    throw new DuplicatePagerDutyIntegrationKeyException();
+                }
+                if (!integrationDisplays.add(integrationKey.display())) {
+                    throw new DuplicatePagerDutyIntegrationKeyDisplayException();
+                }
+            }
+            configService.updateAdminConfig(PAGER_DUTY_KEY, config);
+            pagerDutyConfig = config;
         }
     }
 

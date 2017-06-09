@@ -322,7 +322,7 @@ class SyntheticMonitorService implements Runnable {
             syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
                     captureTime, durationNanos, true);
             sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
-                    e.getMessage());
+                    e.getMessage(), captureTime);
             return;
         }
         future.addListener(new Runnable() {
@@ -374,6 +374,7 @@ class SyntheticMonitorService implements Runnable {
             success = false;
             errorMessage = getRootCause(e).getMessage();
         }
+        long captureTime = clock.currentTimeMillis();
         if (success) {
             for (AlertConfig alertConfig : alertConfigs) {
                 AlertCondition alertCondition = alertConfig.getCondition();
@@ -381,38 +382,40 @@ class SyntheticMonitorService implements Runnable {
                 boolean currentlyTriggered =
                         stopwatch.elapsed(MILLISECONDS) > condition.getThresholdMillis();
                 sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertCondition,
-                        condition, alertConfig.getNotification(), currentlyTriggered, null);
+                        condition, alertConfig.getNotification(), captureTime, currentlyTriggered,
+                        null);
             }
         } else {
             sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
-                    errorMessage);
+                    errorMessage, captureTime);
         }
     }
 
     private void sendAlertOnErrorIfStatusChanged(AgentRollup agentRollup,
-            SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
-            @Nullable String errorMessage) throws Exception {
+            SyntheticMonitorConfig syntheticMonitorConfig,
+            List<AlertConfig> alertConfigs, @Nullable String errorMessage, long captureTime)
+            throws Exception {
         for (AlertConfig alertConfig : alertConfigs) {
             AlertCondition alertCondition = alertConfig.getCondition();
             SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
             sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertCondition, condition,
-                    alertConfig.getNotification(), true, errorMessage);
+                    alertConfig.getNotification(), captureTime, true, errorMessage);
         }
     }
 
     private void sendAlertIfStatusChanged(AgentRollup agentRollup,
             SyntheticMonitorConfig syntheticMonitorConfig, AlertCondition alertCondition,
-            SyntheticMonitorCondition condition, AlertNotification alertNotification,
+            SyntheticMonitorCondition condition, AlertNotification alertNotification, long endTime,
             boolean currentlyTriggered, @Nullable String errorMessage) throws Exception {
         boolean previouslyTriggered = triggeredAlertDao.exists(agentRollup.id(), alertCondition);
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertDao.delete(agentRollup.id(), alertCondition);
-            sendAlert(agentRollup.display(), syntheticMonitorConfig, condition,
-                    alertNotification, true, null);
+            sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
+                    alertCondition, condition, alertNotification, endTime, true, null);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertDao.insert(agentRollup.id(), alertCondition);
-            sendAlert(agentRollup.display(), syntheticMonitorConfig, condition,
-                    alertNotification, false, errorMessage);
+            sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
+                    alertCondition, condition, alertNotification, endTime, false, errorMessage);
         }
     }
 
@@ -438,8 +441,9 @@ class SyntheticMonitorService implements Runnable {
         });
     }
 
-    private void sendAlert(String agentRollupDisplay, SyntheticMonitorConfig syntheticMonitorConfig,
-            SyntheticMonitorCondition condition, AlertNotification alertNotification,
+    private void sendAlert(String agentRollupId, String agentRollupDisplay,
+            SyntheticMonitorConfig syntheticMonitorConfig, AlertCondition alertCondition,
+            SyntheticMonitorCondition condition, AlertNotification alertNotification, long endTime,
             boolean ok, @Nullable String errorMessage) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
@@ -458,7 +462,8 @@ class SyntheticMonitorService implements Runnable {
             sb.append(" resulted in error: ");
             sb.append(errorMessage);
         }
-        alertingService.sendNotification(alertNotification, subject, sb.toString());
+        alertingService.sendNotification(agentRollupId, agentRollupDisplay, alertCondition,
+                alertNotification, endTime, subject, sb.toString(), ok);
     }
 
     private static Throwable getRootCause(Throwable t) {

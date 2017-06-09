@@ -43,8 +43,11 @@ import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
+import org.glowroot.common.config.ImmutablePagerDutyConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.LdapConfig;
+import org.glowroot.common.config.PagerDutyConfig;
+import org.glowroot.common.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.StorageConfig;
@@ -102,6 +105,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         centralConfigDao.addKeyType(STORAGE_KEY, ImmutableCentralStorageConfig.class);
         centralConfigDao.addKeyType(SMTP_KEY, ImmutableSmtpConfig.class);
         centralConfigDao.addKeyType(LDAP_KEY, ImmutableLdapConfig.class);
+        centralConfigDao.addKeyType(PAGER_DUTY_KEY, ImmutableLdapConfig.class);
     }
 
     @Override
@@ -359,6 +363,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         LdapConfig config = (LdapConfig) centralConfigDao.read(LDAP_KEY);
         if (config == null) {
             return ImmutableLdapConfig.builder().build();
+        }
+        return config;
+    }
+
+    @Override
+    public PagerDutyConfig getPagerDutyConfig() throws Exception {
+        PagerDutyConfig config = (PagerDutyConfig) centralConfigDao.read(PAGER_DUTY_KEY);
+        if (config == null) {
+            return ImmutablePagerDutyConfig.builder().build();
         }
         return config;
     }
@@ -962,6 +975,23 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception {
         centralConfigDao.write(LDAP_KEY, config, priorVersion);
+    }
+
+    @Override
+    public void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion)
+            throws Exception {
+        // check for duplicate integration key / display
+        Set<String> integrationKeys = Sets.newHashSet();
+        Set<String> integrationDisplays = Sets.newHashSet();
+        for (PagerDutyIntegrationKey integrationKey : config.integrationKeys()) {
+            if (!integrationKeys.add(integrationKey.key())) {
+                throw new DuplicatePagerDutyIntegrationKeyException();
+            }
+            if (!integrationDisplays.add(integrationKey.display())) {
+                throw new DuplicatePagerDutyIntegrationKeyDisplayException();
+            }
+        }
+        centralConfigDao.write(PAGER_DUTY_KEY, config, priorVersion);
     }
 
     @Override

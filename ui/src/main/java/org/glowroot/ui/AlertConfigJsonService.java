@@ -33,6 +33,7 @@ import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
@@ -111,6 +112,8 @@ class AlertConfigJsonService {
         return mapper.writeValueAsString(ImmutableAlertConfigResponse.builder()
                 .addAllGauges(getGaugeDropdownItems(agentRollupId))
                 .addAllSyntheticMonitors(getSyntheticMonitorDropdownItems(agentRollupId))
+                .addAllPagerDutyIntegrationKeys(
+                        configRepository.getPagerDutyConfig().integrationKeys())
                 .build());
     }
 
@@ -147,6 +150,8 @@ class AlertConfigJsonService {
                         configRepository))
                 .addAllGauges(getGaugeDropdownItems(agentRollupId))
                 .addAllSyntheticMonitors(getSyntheticMonitorDropdownItems(agentRollupId))
+                .addAllPagerDutyIntegrationKeys(
+                        configRepository.getPagerDutyConfig().integrationKeys())
                 .build());
     }
 
@@ -301,6 +306,7 @@ class AlertConfigJsonService {
         String heading();
         List<Gauge> gauges();
         List<SyntheticMonitorItem> syntheticMonitors();
+        List<PagerDutyIntegrationKey> pagerDutyIntegrationKeys();
     }
 
     @Value.Immutable
@@ -315,6 +321,7 @@ class AlertConfigJsonService {
 
         public abstract AlertConditionDto condition();
         public abstract @Nullable ImmutableEmailNotificationDto emailNotification();
+        public abstract @Nullable ImmutablePagerDutyNotificationDto pagerDutyNotification();
 
         abstract Optional<String> version(); // absent for insert operations
 
@@ -325,16 +332,24 @@ class AlertConfigJsonService {
             if (notification.hasEmailNotification()) {
                 builder.emailNotification(toDto(notification.getEmailNotification()));
             }
+            if (notification.hasPagerDutyNotification()) {
+                builder.pagerDutyNotification(toDto(notification.getPagerDutyNotification()));
+            }
             return builder.version(Optional.of(Versions.getVersion(config)))
                     .build();
         }
 
         private AgentConfig.AlertConfig toProto() {
-            AgentConfig.AlertConfig.Builder builder = AgentConfig.AlertConfig.newBuilder();
-            builder.setCondition(toProto(condition()));
+            AgentConfig.AlertConfig.Builder builder = AgentConfig.AlertConfig.newBuilder()
+                    .setCondition(toProto(condition()));
             EmailNotificationDto emailNotification = emailNotification();
             if (emailNotification != null) {
                 builder.getNotificationBuilder().setEmailNotification(toProto(emailNotification));
+            }
+            PagerDutyNotificationDto pagerDutyNotification = pagerDutyNotification();
+            if (pagerDutyNotification != null) {
+                builder.getNotificationBuilder()
+                        .setPagerDutyNotification(toProto(pagerDutyNotification));
             }
             return builder.build();
         }
@@ -358,6 +373,13 @@ class AlertConfigJsonService {
                 AgentConfig.AlertConfig.AlertNotification.EmailNotification emailNotification) {
             return ImmutableEmailNotificationDto.builder()
                     .addAllEmailAddresses(emailNotification.getEmailAddressList())
+                    .build();
+        }
+
+        private static ImmutablePagerDutyNotificationDto toDto(
+                AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification pagerDutyNotification) {
+            return ImmutablePagerDutyNotificationDto.builder()
+                    .pagerDutyIntegrationKey(pagerDutyNotification.getPagerDutyIntegrationKey())
                     .build();
         }
 
@@ -386,6 +408,13 @@ class AlertConfigJsonService {
                 EmailNotificationDto emailNotification) {
             return AgentConfig.AlertConfig.AlertNotification.EmailNotification.newBuilder()
                     .addAllEmailAddress(emailNotification.emailAddresses())
+                    .build();
+        }
+
+        private static AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification toProto(
+                PagerDutyNotificationDto pagerDutyNotification) {
+            return AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification.newBuilder()
+                    .setPagerDutyIntegrationKey(pagerDutyNotification.pagerDutyIntegrationKey())
                     .build();
         }
 
@@ -507,6 +536,11 @@ class AlertConfigJsonService {
         @Value.Immutable
         public interface EmailNotificationDto {
             ImmutableList<String> emailAddresses();
+        }
+
+        @Value.Immutable
+        public interface PagerDutyNotificationDto {
+            String pagerDutyIntegrationKey();
         }
     }
 }

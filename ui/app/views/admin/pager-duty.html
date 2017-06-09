@@ -1,0 +1,82 @@
+<!--
+  Copyright 2017 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>PagerDuty</h2>
+  </div>
+  <div class="panel-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div ng-form
+         gt-form-autofocus-on-first-input
+         class="form-horizontal"
+         name="formCtrl"
+         style="padding-top: 15px;">
+      <fieldset ng-repeat="integrationKey in config.integrationKeys">
+        <legend style="margin-bottom: 20px;">Integration key</legend>
+        <div gt-form-group
+             gt-label="Integration key"
+             gt-model="integrationKey.key"
+             gt-required="true"
+             gt-disabled="!layout.adminEdit || !integrationKey.new"
+             gt-width="40em">
+          <div class="help-block">
+            This is the <em>Integration Key</em> displayed in PagerDuty after creating an integration of type
+            <em>Use our API directly (Events API&nbsp;v2)</em>.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Display"
+             gt-model="integrationKey.display"
+             gt-required="true"
+             gt-disabled="!layout.adminEdit"
+             gt-width="40em">
+          <div class="help-block">
+            Can be any text. Only used when displaying the integration key on the alert configuration page.
+          </div>
+        </div>
+        <div class="form-group gt-form-buttons"
+             ng-if="layout.adminEdit">
+          <div class="col-lg-offset-3 col-lg-9">
+            <button class="btn btn-default"
+                    ng-click="removeIntegrationKey(integrationKey)"
+                    ng-if="layout.adminEdit">
+              Remove this role mapping
+            </button>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset ng-if="layout.adminEdit">
+        <legend>Add {{config.integrationKeys.length ? 'another' : 'an'}} integration key</legend>
+        <button class="btn btn-default"
+                ng-click="addIntegrationKey()"
+                style="margin-bottom: 23px; margin-left: 14px;">
+          Add
+        </button>
+      </fieldset>
+      <div class="form-group gt-form-buttons"
+           ng-if="layout.adminEdit">
+        <div class="col-lg-offset-3 col-lg-9 gt-sometimes-legend-padding">
+          <div gt-button
+               gt-label="Save changes"
+               gt-click="save(deferred)"
+               gt-disabled="formCtrl.$invalid">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

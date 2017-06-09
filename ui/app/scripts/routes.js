@@ -548,6 +548,11 @@ glowroot.config([
       templateUrl: 'views/admin/ldap.html',
       controller: 'AdminLdapCtrl'
     });
+    $stateProvider.state('admin.pagerDuty', {
+      url: '/pager-duty',
+      templateUrl: 'views/admin/pager-duty.html',
+      controller: 'AdminPagerDutyCtrl'
+    });
     $stateProvider.state('profile', {
       url: '/profile',
       templateUrl: 'views/profile.html',
