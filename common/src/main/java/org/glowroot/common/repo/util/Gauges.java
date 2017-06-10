@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class Gauges {
                 "java.lang:type=OperatingSystem:(Free|Total)(Physical|Swap)MemorySize", "bytes"));
         patterns.add(
                 new UnitPattern("java.lang:type=OperatingSystem:(ProcessCpuLoad|SystemCpuLoad)",
-                        GROUPING_PREFIX + "1"));
+                        GROUPING_PREFIX + "cpu-load"));
         patterns.add(new UnitPattern("java.lang:type=Runtime:Uptime", "milliseconds"));
         patterns.add(new UnitPattern("java.lang:type=Threading:CurrentThread(Cpu|User)Time",
                 "nanoseconds"));
@@ -56,9 +56,20 @@ public class Gauges {
         patterns.add(new UnitPattern("java.lang:type=GarbageCollector,name=[^:]+:CollectionTime",
                 "milliseconds"));
         patterns.add(new UnitPattern("java.lang:type=GarbageCollector,name=[^:]+:CollectionCount",
-                GROUPING_PREFIX + "2"));
+                GROUPING_PREFIX + "collection-count"));
         patterns.add(
                 new UnitPattern("java.lang:type=Compilation:TotalCompilationTime", "milliseconds"));
+        patterns.add(new UnitPattern(
+                "java.lang:type=ClassLoading:(Loaded|TotalLoaded|Unloaded)ClassCount",
+                GROUPING_PREFIX + "class-count"));
+        patterns.add(
+                new UnitPattern("sun.management:type=HotspotClassLoading:InitializedClassCount",
+                        GROUPING_PREFIX + "class-count"));
+        patterns.add(new UnitPattern("sun.management:type=HotspotClassLoading:(LoadedClassSize"
+                + "|MethodDataSize|UnloadedClassSize)", "bytes"));
+        patterns.add(new UnitPattern("sun.management:type=HotspotClassLoading:"
+                + "(ClassInitializationTime|ClassLoadingTime|ClassVerificationTime)",
+                "milliseconds"));
         patterns.add(new UnitPattern("sun.management:type=HotspotRuntime:SafepointSyncTime",
                 "milliseconds"));
         patterns.add(new UnitPattern("sun.management:type=HotspotRuntime:TotalSafepointTime",
