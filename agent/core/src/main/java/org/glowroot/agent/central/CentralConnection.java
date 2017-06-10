@@ -33,9 +33,9 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import io.grpc.Attributes;
+import io.grpc.EquivalentAddressGroup;
 import io.grpc.ManagedChannel;
 import io.grpc.NameResolver;
-import io.grpc.ResolvedServerInfo;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
@@ -407,12 +407,12 @@ class CentralConnection {
 
         @Override
         public void start(Listener listener) {
-            List<ResolvedServerInfo> resolvedServerInfos = Lists.newArrayList();
+            List<EquivalentAddressGroup> servers = Lists.newArrayList();
             for (SocketAddress collectorAddress : collectorAddresses) {
-                resolvedServerInfos.add(new ResolvedServerInfo(collectorAddress, Attributes.EMPTY));
+                servers.add(new EquivalentAddressGroup(collectorAddress));
             }
-            Collections.shuffle(resolvedServerInfos);
-            listener.onUpdate(Collections.singletonList(resolvedServerInfos), Attributes.EMPTY);
+            Collections.shuffle(servers);
+            listener.onAddresses(servers, Attributes.EMPTY);
         }
 
         @Override

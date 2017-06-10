@@ -386,6 +386,7 @@ public class JavaagentContainer implements Container {
                     || name.matches("guava-.*\\.jar")
                     || name.matches("h2-.*\\.jar")
                     || name.matches("HdrHistogram-.*\\.jar")
+                    || name.matches("instrumentation-api-.*\\.jar")
                     || name.matches("jackson-.*\\.jar")
                     || name.matches("javax.servlet-api-.*\\.jar")
                     || name.matches("jzlib-.*\\.jar")

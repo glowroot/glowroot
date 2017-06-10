@@ -213,7 +213,7 @@
         <version>0.5.0</version>
         <configuration>
           <protocArtifact>
-            com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}
+            com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
           </protocArtifact>
           <attachProtoSources>false</attachProtoSources>
         </configuration>
@@ -404,21 +404,8 @@
                   <shadedPattern>org.glowroot.agent.shaded.objectweb.asm</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>com.google.common</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.google.common</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.google.protobuf</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.google.protobuf</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.google.gson</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.google.gson</shadedPattern>
-                </relocation>
-                <relocation>
-                  <!-- a couple of classes in guava are under this package name -->
-                  <pattern>com.google.thirdparty</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.google.thirdparty</shadedPattern>
+                  <pattern>com.google</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.google</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>io.grpc</pattern>
