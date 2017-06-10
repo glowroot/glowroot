@@ -71,7 +71,7 @@ public class SuspendedResourceIT {
     private void shouldCaptureSuspendedResponse(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName())

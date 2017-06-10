@@ -57,7 +57,7 @@ public class AnnotatedServletIT {
     @Test
     public void testServlet() throws Exception {
         // when
-        Trace trace = container.execute(InvokeServlet.class);
+        Trace trace = container.execute(InvokeServlet.class, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -72,7 +72,7 @@ public class AnnotatedServletIT {
     @Test
     public void testServletWithContextPath() throws Exception {
         // when
-        Trace trace = container.execute(InvokeServletWithContextPath.class);
+        Trace trace = container.execute(InvokeServletWithContextPath.class, "Web");
 
         // then
         Trace.Header header = trace.getHeader();

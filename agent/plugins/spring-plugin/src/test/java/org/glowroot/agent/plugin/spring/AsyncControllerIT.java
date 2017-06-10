@@ -81,7 +81,7 @@ public class AsyncControllerIT {
     private void shouldCaptureCallableAsyncController(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getAsync()).isTrue();
@@ -146,7 +146,7 @@ public class AsyncControllerIT {
     private void shouldCaptureDeferredResultAsyncController(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getAsync()).isTrue();

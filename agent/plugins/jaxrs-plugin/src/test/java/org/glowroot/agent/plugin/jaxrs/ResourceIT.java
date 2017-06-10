@@ -154,7 +154,7 @@ public class ResourceIT {
     private void shouldCaptureTransactionNameWithNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName())
@@ -173,7 +173,7 @@ public class ResourceIT {
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET " + contextPath + "/");
@@ -191,7 +191,7 @@ public class ResourceIT {
     private void shouldCaptureTransactionNameWithNestedServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName())
@@ -210,7 +210,7 @@ public class ResourceIT {
     private void shouldCaptureTransactionNameWithNestedServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName())
@@ -229,13 +229,12 @@ public class ResourceIT {
     private void shouldCaptureTransactionNameWithLessNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         if (trace.getHeader().getTransactionName().equals("GET " + contextPath + "/")) {
             // Jersey (2.5 and above) doesn't like this "less than normal" servlet mapping, and ends
-            // up
-            // mapping everything to RootResource
+            // up mapping everything to RootResource
             assertThat(trace.getHeader().getTransactionName())
                     .isEqualTo("GET " + contextPath + "/");
 
@@ -265,7 +264,7 @@ public class ResourceIT {
     private void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot(
             String contextPath, Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET " + contextPath + "/");

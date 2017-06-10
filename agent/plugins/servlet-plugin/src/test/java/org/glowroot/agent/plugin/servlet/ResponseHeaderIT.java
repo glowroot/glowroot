@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class ResponseHeaderIT {
                 "Content-Type, Content-Length, Content-Language");
 
         // when
-        Trace trace = container.execute(SetStandardResponseHeaders.class);
+        Trace trace = container.execute(SetStandardResponseHeaders.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
@@ -84,7 +84,7 @@ public class ResponseHeaderIT {
                 "Content-Type, Content-Length, Content-Language");
 
         // when
-        Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class);
+        Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
@@ -101,7 +101,7 @@ public class ResponseHeaderIT {
                 "Content-Type, Content-Length, Content-Language");
 
         // when
-        Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class);
+        Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
@@ -118,7 +118,7 @@ public class ResponseHeaderIT {
                 "Content-Type, Content-Length");
 
         // when
-        Trace trace = container.execute(SetStandardResponseHeadersLowercase.class);
+        Trace trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
@@ -132,7 +132,7 @@ public class ResponseHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
         // when
-        Trace trace = container.execute(SetStandardResponseHeaders.class);
+        Trace trace = container.execute(SetStandardResponseHeaders.class, "Web");
         // then
         assertThat(getResponseHeaders(trace)).isNull();
     }
@@ -142,7 +142,7 @@ public class ResponseHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "ABC");
         // when
-        Trace trace = container.execute(SetStandardResponseHeaders.class);
+        Trace trace = container.execute(SetStandardResponseHeaders.class, "Web");
         // then
         assertThat(getResponseHeaders(trace)).isNull();
     }
@@ -152,7 +152,7 @@ public class ResponseHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
         // when
-        Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class);
+        Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
         // then
         assertThat(getResponseHeaders(trace)).isNull();
     }
@@ -162,7 +162,7 @@ public class ResponseHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
         // when
-        Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class);
+        Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
         // then
         assertThat(getResponseHeaders(trace)).isNull();
     }
@@ -174,7 +174,7 @@ public class ResponseHeaderIT {
                 "One,Two,Date-One,Date-Two,Int-One,Int-Two,X-One");
 
         // when
-        Trace trace = container.execute(SetLotsOfResponseHeaders.class);
+        Trace trace = container.execute(SetLotsOfResponseHeaders.class, "Web");
 
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);

@@ -79,7 +79,7 @@ public class RestControllerIT {
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingRest(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/rest");
@@ -97,7 +97,7 @@ public class RestControllerIT {
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingAbc(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/abc");

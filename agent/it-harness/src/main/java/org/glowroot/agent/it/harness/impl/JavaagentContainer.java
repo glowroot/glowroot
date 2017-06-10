@@ -233,6 +233,18 @@ public class JavaagentContainer implements Container {
     }
 
     @Override
+    public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType)
+            throws Exception {
+        checkNotNull(traceCollector);
+        executeInternal(appClass);
+        // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
+        // can sometimes take a long time for that large trace to be serialized and transferred
+        Trace trace = traceCollector.getCompletedTrace(transactionType, 20, SECONDS);
+        traceCollector.clearTrace();
+        return trace;
+    }
+
+    @Override
     public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
         executeInternal(appClass);
         // give a short time to see if trace gets collected

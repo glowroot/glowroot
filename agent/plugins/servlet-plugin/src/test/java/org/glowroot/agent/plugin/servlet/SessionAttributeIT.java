@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "testattr");
         // when
-        Trace trace = container.execute(HasSessionAttribute.class);
+        Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -82,7 +82,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 " testattr , other");
         // when
-        Trace trace = container.execute(HasSessionAttribute.class);
+        Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -94,7 +94,7 @@ public class SessionAttributeIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
         // when
-        Trace trace = container.execute(HasSessionAttribute.class);
+        Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -107,7 +107,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "*,other,::id");
         // when
-        Trace trace = container.execute(HasSessionAttribute.class);
+        Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -120,7 +120,7 @@ public class SessionAttributeIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "");
         // when
-        Trace trace = container.execute(HasSessionAttribute.class);
+        Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -132,7 +132,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "testattr,testother");
         // when
-        Trace trace = container.execute(SetSessionAttribute.class);
+        Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
         assertThat(getInitialSessionAttributes(trace)).isNotNull();
         assertThat(getInitialSessionAttributes(trace).get("testother")).isEqualTo("v");
@@ -145,7 +145,7 @@ public class SessionAttributeIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
         // when
-        Trace trace = container.execute(SetSessionAttribute.class);
+        Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -158,7 +158,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "*,other");
         // when
-        Trace trace = container.execute(SetSessionAttribute.class);
+        Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -170,7 +170,7 @@ public class SessionAttributeIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "");
         // when
-        Trace trace = container.execute(SetSessionAttribute.class);
+        Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -181,7 +181,7 @@ public class SessionAttributeIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
         // when
-        Trace trace = container.execute(SetSessionAttributeNull.class);
+        Trace trace = container.execute(SetSessionAttributeNull.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -194,7 +194,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "one.two.three,one.amap.x");
         // when
-        Trace trace = container.execute(HasNestedSessionAttribute.class);
+        Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("one.two.three")).isEqualTo("four");
@@ -208,7 +208,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "one.two.three,one.amap.x");
         // when
-        Trace trace = container.execute(SetNestedSessionAttribute.class);
+        Trace trace = container.execute(SetNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -222,7 +222,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "missingtestattr");
         // when
-        Trace trace = container.execute(HasSessionAttribute.class);
+        Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -234,7 +234,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "one.missingtwo");
         // when
-        Trace trace = container.execute(HasNestedSessionAttribute.class);
+        Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -246,7 +246,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "one.*,one.two.*,one.amap.*");
         // when
-        Trace trace = container.execute(HasNestedSessionAttribute.class);
+        Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace)).hasSize(5);
@@ -262,7 +262,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "one.*,one.two.*,one.amap.*");
         // when
-        Trace trace = container.execute(SetNestedSessionAttribute.class);
+        Trace trace = container.execute(SetNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -278,7 +278,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "one.*");
         // when
-        Trace trace = container.execute(SetNestedSessionAttributeToNull.class);
+        Trace trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -293,7 +293,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "one.two");
         // when
-        Trace trace = container.execute(SetNestedSessionAttributeToNull.class);
+        Trace trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -308,7 +308,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "missingtestattr.*");
         // when
-        Trace trace = container.execute(HasSessionAttribute.class);
+        Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -320,7 +320,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "one.missingtwo.*");
         // when
-        Trace trace = container.execute(HasNestedSessionAttribute.class);
+        Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -331,7 +331,7 @@ public class SessionAttributeIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
         // when
-        Trace trace = container.execute(GetBadAttributeNames.class);
+        Trace trace = container.execute(GetBadAttributeNames.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -343,7 +343,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "::id");
         // when
-        Trace trace = container.execute(HasHttpSession.class);
+        Trace trace = container.execute(HasHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("::id")).isEqualTo("123456789");
@@ -357,7 +357,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "::id");
         // when
-        Trace trace = container.execute(HasNoHttpSession.class);
+        Trace trace = container.execute(HasNoHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();
@@ -370,7 +370,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "::id");
         // when
-        Trace trace = container.execute(CreateHttpSession.class);
+        Trace trace = container.execute(CreateHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();
@@ -383,7 +383,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "::id");
         // when
-        Trace trace = container.execute(CreateHttpSessionTrue.class);
+        Trace trace = container.execute(CreateHttpSessionTrue.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();
@@ -396,7 +396,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "::id");
         // when
-        Trace trace = container.execute(CreateHttpSessionFalse.class);
+        Trace trace = container.execute(CreateHttpSessionFalse.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();
@@ -409,7 +409,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "::id");
         // when
-        Trace trace = container.execute(ChangeHttpSession.class);
+        Trace trace = container.execute(ChangeHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace).get("::id")).isEqualTo("123456789");
@@ -422,7 +422,7 @@ public class SessionAttributeIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
                 "::id");
         // when
-        Trace trace = container.execute(CreateAndChangeHttpSession.class);
+        Trace trace = container.execute(CreateAndChangeHttpSession.class, "Web");
         // then
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getInitialSessionAttributes(trace)).isNull();

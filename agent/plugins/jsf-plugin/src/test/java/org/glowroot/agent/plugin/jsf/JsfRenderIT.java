@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class JsfRenderIT {
     @Test
     public void shouldCaptureJsfRendering() throws Exception {
         // when
-        Trace trace = container.execute(GetHello.class);
+        Trace trace = container.execute(GetHello.class, "Web");
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
@@ -75,7 +75,7 @@ public class JsfRenderIT {
     @Test
     public void shouldCaptureJsfAction() throws Exception {
         // when
-        Trace trace = container.execute(PostHello.class);
+        Trace trace = container.execute(PostHello.class, "Web");
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();

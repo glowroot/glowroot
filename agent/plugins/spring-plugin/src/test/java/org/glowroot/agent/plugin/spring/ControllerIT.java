@@ -134,7 +134,7 @@ public class ControllerIT {
         container.getConfigService().setPluginProperty("spring", "useAltTransactionNaming", true);
 
         // when
-        Trace trace = container.execute(WithNormalServletMapping.class);
+        Trace trace = container.execute(WithNormalServletMapping.class, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("TestController#echo");
@@ -152,7 +152,7 @@ public class ControllerIT {
     private void shouldCaptureTransactionNameWithNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/hello/echo/*");
@@ -170,7 +170,7 @@ public class ControllerIT {
     private void shouldCaptureTransactionNameWithNormalServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/");
@@ -188,7 +188,7 @@ public class ControllerIT {
     private void shouldCaptureTransactionNameWithNestedServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName())
@@ -207,7 +207,7 @@ public class ControllerIT {
     private void shouldCaptureTransactionNameWithNestedServletMappingHittingRoot(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/spring/");
@@ -225,7 +225,7 @@ public class ControllerIT {
     private void shouldCaptureTransactionNameWithLessNormalServletMapping(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/hello/echo/*");
@@ -243,7 +243,7 @@ public class ControllerIT {
     private void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot(
             String contextPath, Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo(contextPath + "/");

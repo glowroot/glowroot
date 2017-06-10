@@ -130,6 +130,16 @@ public class LocalContainer implements Container {
     }
 
     @Override
+    public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType)
+            throws Exception {
+        checkNotNull(traceCollector);
+        executeInternal(appClass);
+        Trace trace = traceCollector.getCompletedTrace(transactionType, 10, SECONDS);
+        traceCollector.clearTrace();
+        return trace;
+    }
+
+    @Override
     public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
         executeInternal(appClass);
         Thread.sleep(10);

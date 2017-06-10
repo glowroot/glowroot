@@ -57,7 +57,7 @@ public class StrutsTwoIT {
     @Test
     public void shouldCaptureAction() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteActionInTomcat.class);
+        Trace trace = container.execute(ExecuteActionInTomcat.class, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloAction#helloAction");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,21 @@ class TraceCollector {
             Thread.sleep(10);
         }
         throw new IllegalStateException("No trace was collected");
+    }
+
+    Trace getCompletedTrace(String transactionType, int timeout, TimeUnit unit)
+            throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(unit) < timeout) {
+            Trace trace = this.trace;
+            if (trace != null && !trace.getHeader().getPartial()
+                    && trace.getHeader().getTransactionType().equals(transactionType)) {
+                return trace;
+            }
+            Thread.sleep(10);
+        }
+        throw new IllegalStateException(
+                "No trace was collected for transaction type: " + transactionType);
     }
 
     Trace getPartialTrace(int timeout, TimeUnit unit) throws InterruptedException {

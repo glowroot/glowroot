@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class RequestHeaderIT {
                 "Content-Type, Content-Length");
 
         // when
-        Trace trace = container.execute(SetStandardRequestHeaders.class);
+        Trace trace = container.execute(SetStandardRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -84,7 +84,7 @@ public class RequestHeaderIT {
                 "Content-Type, Content-Length");
 
         // when
-        Trace trace = container.execute(SetStandardRequestHeadersLowercase.class);
+        Trace trace = container.execute(SetStandardRequestHeadersLowercase.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -101,7 +101,7 @@ public class RequestHeaderIT {
                 "One,Two");
 
         // when
-        Trace trace = container.execute(SetOtherRequestHeaders.class);
+        Trace trace = container.execute(SetOtherRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -120,7 +120,7 @@ public class RequestHeaderIT {
                 "Content-Type, Content-Length");
 
         // when
-        Trace trace = container.execute(GetBadRequestHeaders.class);
+        Trace trace = container.execute(GetBadRequestHeaders.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =
@@ -135,7 +135,7 @@ public class RequestHeaderIT {
                 "Content-Type, Content-Length, h1");
 
         // when
-        Trace trace = container.execute(GetBadRequestHeaders2.class);
+        Trace trace = container.execute(GetBadRequestHeaders2.class, "Web");
 
         // then
         Map<String, Object> requestHeaders =

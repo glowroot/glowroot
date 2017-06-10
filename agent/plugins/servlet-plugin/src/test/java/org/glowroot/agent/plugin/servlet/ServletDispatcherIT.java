@@ -100,7 +100,7 @@ public class ServletDispatcherIT {
     private void testForwardServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -119,7 +119,7 @@ public class ServletDispatcherIT {
     private void testForwardServletUsingContext(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -139,7 +139,7 @@ public class ServletDispatcherIT {
     private void testForwardServletUsingNamed(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -159,7 +159,7 @@ public class ServletDispatcherIT {
     private void testIncludeServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         Trace.Header header = trace.getHeader();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public class UserIT {
     @Test
     public void testHasRequestUserPrincipal() throws Exception {
         // when
-        Trace trace = container.execute(HasRequestUserPrincipal.class);
+        Trace trace = container.execute(HasRequestUserPrincipal.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("my name is mock");
     }
@@ -67,7 +67,7 @@ public class UserIT {
     @Test
     public void testHasRequestWithExceptionOnGetUserPrincipal() throws Exception {
         // when
-        container.execute(HasRequestWithExceptionOnGetUserPrincipal.class);
+        container.execute(HasRequestWithExceptionOnGetUserPrincipal.class, "Web");
         // then don't blow up
     }
 
@@ -77,7 +77,7 @@ public class UserIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        Trace trace = container.execute(HasSessionUserAttribute.class);
+        Trace trace = container.execute(HasSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("abc");
     }
@@ -88,7 +88,7 @@ public class UserIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        Trace trace = container.execute(SetSessionUserAttribute.class);
+        Trace trace = container.execute(SetSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("abc");
     }
@@ -99,7 +99,7 @@ public class UserIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        Trace trace = container.execute(SetSessionUserAttributeNull.class);
+        Trace trace = container.execute(SetSessionUserAttributeNull.class, "Web");
         // then
         // this is intentional, setting user attribute to null shouldn't clear out user for
         // that particular request (since the request was in fact, originally, for that user)
@@ -112,7 +112,7 @@ public class UserIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userone.two");
         // when
-        Trace trace = container.execute(HasNestedSessionUserAttribute.class);
+        Trace trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("xyz");
     }
@@ -123,7 +123,7 @@ public class UserIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userone.two");
         // when
-        Trace trace = container.execute(SetNestedSessionUserAttribute.class);
+        Trace trace = container.execute(SetNestedSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("xyz");
     }
@@ -134,7 +134,7 @@ public class UserIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "missinguserattr");
         // when
-        Trace trace = container.execute(HasSessionUserAttribute.class);
+        Trace trace = container.execute(HasSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEmpty();
     }
@@ -145,7 +145,7 @@ public class UserIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userone.missingtwo");
         // when
-        Trace trace = container.execute(HasNestedSessionUserAttribute.class);
+        Trace trace = container.execute(HasNestedSessionUserAttribute.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEmpty();
     }
@@ -155,7 +155,7 @@ public class UserIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "::id");
         // when
-        Trace trace = container.execute(HasHttpSession.class);
+        Trace trace = container.execute(HasHttpSession.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
     }
@@ -165,7 +165,7 @@ public class UserIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "::id");
         // when
-        Trace trace = container.execute(HasNoHttpSession.class);
+        Trace trace = container.execute(HasNoHttpSession.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEmpty();
     }
@@ -175,7 +175,7 @@ public class UserIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "::id");
         // when
-        Trace trace = container.execute(CreateHttpSession.class);
+        Trace trace = container.execute(CreateHttpSession.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
     }
@@ -185,7 +185,7 @@ public class UserIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "::id");
         // when
-        Trace trace = container.execute(CreateHttpSessionTrue.class);
+        Trace trace = container.execute(CreateHttpSessionTrue.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
     }
@@ -195,7 +195,7 @@ public class UserIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "::id");
         // when
-        Trace trace = container.execute(CreateHttpSessionFalse.class);
+        Trace trace = container.execute(CreateHttpSessionFalse.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEmpty();
     }
@@ -205,7 +205,7 @@ public class UserIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "::id");
         // when
-        Trace trace = container.execute(ChangeHttpSession.class);
+        Trace trace = container.execute(ChangeHttpSession.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
     }
@@ -215,7 +215,7 @@ public class UserIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "::id");
         // when
-        Trace trace = container.execute(CreateAndChangeHttpSession.class);
+        Trace trace = container.execute(CreateAndChangeHttpSession.class, "Web");
         // then
         assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
     }

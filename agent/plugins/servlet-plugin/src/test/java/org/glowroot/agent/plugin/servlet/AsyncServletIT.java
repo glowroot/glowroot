@@ -98,7 +98,7 @@ public class AsyncServletIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
 
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -137,7 +137,7 @@ public class AsyncServletIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
 
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -176,7 +176,7 @@ public class AsyncServletIT {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
 
         // when
-        Trace trace = container.execute(appUnderTestClass);
+        Trace trace = container.execute(appUnderTestClass, "Web");
 
         // then
         Trace.Header header = trace.getHeader();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class ServletPluginIT {
     @Test
     public void testServlet() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteServlet.class);
+        Trace trace = container.execute(ExecuteServlet.class, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -77,7 +77,7 @@ public class ServletPluginIT {
     @Test
     public void testFilter() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteFilter.class);
+        Trace trace = container.execute(ExecuteFilter.class, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -90,7 +90,7 @@ public class ServletPluginIT {
     @Test
     public void testCombination() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteFilterWithNestedServlet.class);
+        Trace trace = container.execute(ExecuteFilterWithNestedServlet.class, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -103,7 +103,7 @@ public class ServletPluginIT {
     @Test
     public void testNoQueryString() throws Exception {
         // when
-        Trace trace = container.execute(TestNoQueryString.class);
+        Trace trace = container.execute(TestNoQueryString.class, "Web");
         // then
         assertThat(getDetailValue(trace.getHeader(), "Request query string")).isNull();
         assertThat(trace.getHeader().getEntryCount()).isZero();
@@ -112,7 +112,7 @@ public class ServletPluginIT {
     @Test
     public void testEmptyQueryString() throws Exception {
         // when
-        Trace trace = container.execute(TestEmptyQueryString.class);
+        Trace trace = container.execute(TestEmptyQueryString.class, "Web");
         // then
         assertThat(getDetailValue(trace.getHeader(), "Request query string")).isEqualTo("");
         assertThat(trace.getHeader().getEntryCount()).isZero();
@@ -121,7 +121,7 @@ public class ServletPluginIT {
     @Test
     public void testNonEmptyQueryString() throws Exception {
         // when
-        Trace trace = container.execute(TestNonEmptyQueryString.class);
+        Trace trace = container.execute(TestNonEmptyQueryString.class, "Web");
         // then
         assertThat(getDetailValue(trace.getHeader(), "Request query string")).isEqualTo("a=b&c=d");
         assertThat(trace.getHeader().getEntryCount()).isZero();
@@ -130,7 +130,7 @@ public class ServletPluginIT {
     @Test
     public void testServletThrowsException() throws Exception {
         // when
-        Trace trace = container.execute(ServletThrowsException.class);
+        Trace trace = container.execute(ServletThrowsException.class, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -142,7 +142,7 @@ public class ServletPluginIT {
     @Test
     public void testFilterThrowsException() throws Exception {
         // when
-        Trace trace = container.execute(FilterThrowsException.class);
+        Trace trace = container.execute(FilterThrowsException.class, "Web");
 
         // then
         Trace.Header header = trace.getHeader();
@@ -154,7 +154,7 @@ public class ServletPluginIT {
     @Test
     public void testSend500Error() throws Exception {
         // when
-        Trace trace = container.execute(Send500Error.class);
+        Trace trace = container.execute(Send500Error.class, "Web");
 
         // then
         assertThat(trace.getHeader().getError().getMessage())
@@ -176,7 +176,7 @@ public class ServletPluginIT {
     @Test
     public void testSetStatus500Error() throws Exception {
         // when
-        Trace trace = container.execute(SetStatus500Error.class);
+        Trace trace = container.execute(SetStatus500Error.class, "Web");
 
         // then
         assertThat(trace.getHeader().getError().getMessage())

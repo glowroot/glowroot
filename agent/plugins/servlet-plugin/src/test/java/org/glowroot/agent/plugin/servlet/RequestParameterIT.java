@@ -66,7 +66,7 @@ public class RequestParameterIT {
     @Test
     public void testRequestParameters() throws Exception {
         // when
-        Trace trace = container.execute(GetParameter.class);
+        Trace trace = container.execute(GetParameter.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -84,7 +84,7 @@ public class RequestParameterIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestParameters", "");
         // when
-        Trace trace = container.execute(GetParameter.class);
+        Trace trace = container.execute(GetParameter.class, "Web");
         // then
         assertThat(trace.getHeader().getDetailEntryList()).hasSize(1);
         assertThat(trace.getHeader().getDetailEntryList().get(0).getName())
@@ -94,14 +94,14 @@ public class RequestParameterIT {
     @Test
     public void testRequestParameterMap() throws Exception {
         // when
-        container.execute(GetParameterMap.class);
+        container.execute(GetParameterMap.class, "Web");
         // then don't throw IllegalStateException (see MockCatalinaHttpServletRequest)
     }
 
     @Test
     public void testBadRequestParameterMap() throws Exception {
         // when
-        Trace trace = container.execute(GetBadParameterMap.class);
+        Trace trace = container.execute(GetBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -113,7 +113,7 @@ public class RequestParameterIT {
     @Test
     public void testExtraBadRequestParameterMap() throws Exception {
         // when
-        Trace trace = container.execute(GetExtraBadParameterMap.class);
+        Trace trace = container.execute(GetExtraBadParameterMap.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
@@ -125,7 +125,7 @@ public class RequestParameterIT {
     @Test
     public void testLargeRequestParameters() throws Exception {
         // when
-        Trace trace = container.execute(GetLargeParameter.class);
+        Trace trace = container.execute(GetLargeParameter.class, "Web");
 
         // then
         Map<String, Object> requestParameters =
