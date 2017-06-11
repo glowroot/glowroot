@@ -12,30 +12,53 @@ then
   # MaxPermSize bump is needed for running grails plugin tests
   surefire_jvm_args="$surefire_jvm_args -XX:MaxPermSize=128m"
 fi
+if [[ "$SKIP_SHADING" == "true" ]]
+then
+  skip_shading_opt=-Dglowroot.shade.skip
+fi
 
 case "$1" in
 
-       "test") if [[ "$SKIP_SHADING" == "true" ]]
+      "test1") if [[ "$java_version" > "1.8" ]]
                then
-                 skip_shading_opt=-Dglowroot.shade.skip
+                 # skipping central and webdriver modules to keep build time consistently under the 50 minute limit
+                 # (these modules are built and tested in TARGET=test2 below)
+                 skip_some_modules="-pl !:glowroot-central,!:glowroot-webdriver-tests"
                fi
+               mvn clean install $skip_some_modules \
+                                 -DargLine="$surefire_jvm_args" \
+                                 $skip_shading_opt \
+                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                 -B
+               ;;
+
+      "test2") # skipping tests to keep build time consistently under the 50 minute limit
+               # (these tests are already run in TARGET=test1 above)
                mvn clean install -DargLine="$surefire_jvm_args" \
+                                 -DskipTests \
                                  $skip_shading_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
                # --no-snapshot-updates is used in the builds below because maven-remote-resources-plugin uses an old version of
                # its parent pom that includes the snapshot repository http://repository.apache.org/snapshots, causing maven to
                # check for glowroot snapshot artifacts in that repository, sometimes causing slowness during travis-ci builds
-               if [[ "$java_version" > "1.8" && "$SKIP_SHADING" == "true" ]]
+               if [[ "$java_version" > "1.8" ]]
                then
-                 # glowroot central requires java 8+
-                 # and needs to run against unshaded it-harness to avoid shading complications
-                 mvn clean verify -pl :glowroot-webdriver-tests \
-                                  -Dglowroot.internal.webdriver.useCentral=true \
+                 mvn clean verify -pl :glowroot-central,:glowroot-webdriver-tests \
                                   -DargLine="$surefire_jvm_args" \
                                   -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                   --no-snapshot-updates \
                                   -B
+                 if [[ "$SKIP_SHADING" == "true" ]]
+                 then
+                   # glowroot central tests needs to run against unshaded it-harness to avoid shading complications
+                   mvn clean verify -pl :glowroot-webdriver-tests \
+                                    -Dglowroot.internal.webdriver.useCentral=true \
+                                    -DargLine="$surefire_jvm_args" \
+                                    -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                    --no-snapshot-updates \
+                                    -B
+                 fi
                fi
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
@@ -61,8 +84,10 @@ case "$1" in
                ;;
 
      "deploy") # build other (non-deployed) modules since many are used by deploy :glowroot-agent-it-harness and :glowroot-agent (below)
+               # skipping tests to keep build time consistently under the 50 minute limit (and tests are already run in other jobs)
                # javadoc is needed here since deploy :glowroot-agent attaches the javadoc from :glowroot-agent-core
                mvn clean install -DargLine="$surefire_jvm_args" \
+                                 -DskipTests \
                                  -Pjavadoc \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
@@ -217,12 +242,36 @@ case "$1" in
                exit $mvn_status
                ;;
 
-  "saucelabs") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
+ "saucelabs1") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
                  mvn clean install -DskipTests \
                                    -B
                  cd webdriver-tests
-                 mvn clean verify -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
+                 # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
+                 while true; do sleep 60; echo ...; done &
+                 mvn clean verify -Dit.test=!AlertConfigIT \
+                                  -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
+                                  -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
+                                  -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
+                                  -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
+                                  -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
+                                  -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
+                                  -DargLine="$surefire_jvm_args" \
+                                  -B
+               else
+                 echo skipping, saucelabs only runs against master repository and master branch
+               fi
+               ;;
+
+ "saucelabs2") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
+               then
+                 mvn clean install -DskipTests \
+                                   -B
+                 cd webdriver-tests
+                 # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
+                 while true; do sleep 60; echo ...; done &
+                 mvn clean verify -Dit.test=AlertConfigIT \
+                                  -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                   -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
                                   -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
                                   -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \

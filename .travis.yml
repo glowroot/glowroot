@@ -2,10 +2,6 @@
 # container-based environment (sudo: false) is provisioned with only 4g memory, but haven't run into time limit for jobs yet
 sudo: false
 language: java
-jdk:
-  - oraclejdk8
-  - oraclejdk7
-  - openjdk7
 before_install:
   - "export DISPLAY=:99.0"
   - sh -e /etc/init.d/xvfb start
@@ -20,38 +16,73 @@ cache:
 matrix:
   include:
     - jdk: oraclejdk8
+      env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk8
+      env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk7
+      env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk7
+      env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
+    - jdk: openjdk7
+      env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
+    - jdk: openjdk7
+      env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk8
       env: TARGET=deploy
     - jdk: oraclejdk8
       env: TARGET=checker
+    - jdk: oraclejdk8
+      env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=local
+    - jdk: oraclejdk8
+      env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=local
+    - jdk: oraclejdk8
+      env: TARGET=test1 SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk8
+      env: TARGET=test2 SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk8
+      env: TARGET=test1 SKIP_SHADING=true GLOWROOT_HARNESS=local
+    - jdk: oraclejdk8
+      env: TARGET=test2 SKIP_SHADING=true GLOWROOT_HARNESS=local
       # chrome
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
+      env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
       # firefox
     - jdk: oraclejdk8
-      # having trouble with latest firefox (47) on saucelabs
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=46
+      env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
       # internet explorer
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
+      env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
+      env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
+      env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
       # safari
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.11" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=9
+      env: TARGET=saucelabs1 SAUCELABS_PLATFORM="OS X 10.11" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=9
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
+      env: TARGET=saucelabs2 SAUCELABS_PLATFORM="OS X 10.11" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=9
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.9" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=7
+      env: TARGET=saucelabs1 SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.8" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=6
-env:
-  matrix:
-    - TARGET=test SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
-    - TARGET=test SKIP_SHADING=false GLOWROOT_HARNESS=local
-    - TARGET=test SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
-    - TARGET=test SKIP_SHADING=true GLOWROOT_HARNESS=local
+      env: TARGET=saucelabs2 SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs1 SAUCELABS_PLATFORM="OS X 10.9" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=7
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs2 SAUCELABS_PLATFORM="OS X 10.9" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=7
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs1 SAUCELABS_PLATFORM="OS X 10.8" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=6
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs2 SAUCELABS_PLATFORM="OS X 10.8" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=6
 addons:
   firefox: "latest"
   sauce_connect:
