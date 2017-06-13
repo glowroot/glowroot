@@ -168,10 +168,10 @@
                   <include>io.netty:*</include>
                   <!-- need to shade grpc so it uses shaded netty -->
                   <include>io.grpc:*</include>
-                  <!-- need to shade glowroot-wire-api so it uses shaded grpc -->
-                  <include>org.glowroot:glowroot-wire-api</include>
                   <!-- need to shade instrumentation-api so it uses shaded grpc -->
                   <include>com.google.instrumentation:instrumentation-api</include>
+                  <!-- need to shade glowroot-wire-api so it uses shaded grpc -->
+                  <include>org.glowroot:glowroot-wire-api</include>
                 </includes>
               </artifactSet>
               <relocations>
@@ -182,6 +182,10 @@
                 <relocation>
                   <pattern>io.grpc</pattern>
                   <shadedPattern>org.glowroot.agent.it.harness.shaded.grpc</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.google.instrumentation</pattern>
+                  <shadedPattern>org.glowroot.agent.it.harness.shaded.google.instrumentation</shadedPattern>
                 </relocation>
                 <!-- not relocating glowroot-wire-api since it-harness api exposes glowroot-wire-api
                   unshaded for use by plugin integration tests -->
@@ -240,6 +244,7 @@
                 <includes>
                   <include>io.netty:*</include>
                   <include>io.grpc:*</include>
+                  <include>com.google.instrumentation:instrumentation-api</include>
                   <include>org.glowroot:glowroot-wire-api</include>
                   <include>org.glowroot:glowroot-agent-core</include>
                 </includes>
