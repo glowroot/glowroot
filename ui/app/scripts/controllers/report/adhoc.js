@@ -630,7 +630,14 @@ glowroot.controller('ReportAdhocCtrl', [
       } else if (appliedReport.metric.indexOf('gauge:') === 0) {
         path = 'jvm/gauges';
       }
-      var url = path + '?agent-rollup-id=' + encodeURIComponent(agentRollupId);
+      var agentRollup = $scope.layout.agentRollups[agentRollupId];
+      var url = path;
+      if (agentRollup.agent) {
+        url += '?agent-id=';
+      } else {
+        url += '?agent-rollup-id=';
+      }
+      url += encodeURIComponent(agentRollupId);
       if (showTransactionTypeAndName(appliedReport.metric)) {
         url += '&transaction-type=' + encodeURIComponent(appliedReport.transactionType);
         if (appliedReport.transactionName) {
