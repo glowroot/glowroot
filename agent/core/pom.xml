@@ -187,7 +187,7 @@
         dependencies -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>4.3.8.RELEASE</version>
+      <version>4.3.9.RELEASE</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

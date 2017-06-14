@@ -83,7 +83,7 @@
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <immutables.version>2.5.2</immutables.version>
+    <immutables.version>2.5.3</immutables.version>
     <jmh.version>1.19</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -743,7 +743,7 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>2.1.11</checker.qual.version>
+        <checker.qual.version>2.1.12</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>

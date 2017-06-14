@@ -224,11 +224,7 @@ public class HttpClient {
             updateLibVersion("spring.version", "3.1." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 4; i++) {
-            updateLibVersion("spring.version", "3.1." + i + ".RELEASE");
-            run(test);
-        }
-        for (int i = 0; i <= 16; i++) {
+        for (int i = 0; i <= 18; i++) {
             updateLibVersion("spring.version", "3.2." + i + ".RELEASE");
             run(test);
         }
@@ -240,11 +236,11 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.1." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 8; i++) {
+        for (int i = 0; i <= 9; i++) {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 6; i++) {
+        for (int i = 0; i <= 9; i++) {
             updateLibVersion("spring.version", "4.3." + i + ".RELEASE");
             run(test);
         }

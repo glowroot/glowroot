@@ -20,7 +20,7 @@
     <h2.version>1.3.176</h2.version>
     <postgresql.version>42.1.1.jre6</postgresql.version>
     <commons.dbcp.version>1.4</commons.dbcp.version>
-    <tomcat.version>7.0.77</tomcat.version>
+    <tomcat.version>7.0.78</tomcat.version>
   </properties>
 
   <dependencies>
