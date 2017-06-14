@@ -77,6 +77,4 @@ matrix:
       env: TARGET=saucelabs2 SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
 addons:
   firefox: "latest"
-  sauce_connect:
-    # this is needed on android, see https://support.saucelabs.com/customer/en/portal/questions/13056252
-    no_ssl_bump_domains: all
+  sauce_connect: true
