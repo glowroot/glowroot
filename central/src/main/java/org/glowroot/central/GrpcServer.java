@@ -318,6 +318,7 @@ class GrpcServer {
                 responseObserver.onError(e);
                 return;
             }
+            centralAlertingService.checkForDeletedAlerts(agentId, agentDisplay);
             centralAlertingService.checkAggregateAlertsAsync(agentId, agentDisplay, captureTime);
             responseObserver.onNext(AggregateResponseMessage.newBuilder()
                     .setNextDelayMillis(getNextDelayMillis())
@@ -368,6 +369,7 @@ class GrpcServer {
                 responseObserver.onError(t);
                 return;
             }
+            centralAlertingService.checkForDeletedAlerts(agentId, agentDisplay);
             centralAlertingService.checkGaugeAndHeartbeatAlertsAsync(agentId, agentDisplay,
                     maxCaptureTime);
             responseObserver.onNext(EmptyMessage.getDefaultInstance());

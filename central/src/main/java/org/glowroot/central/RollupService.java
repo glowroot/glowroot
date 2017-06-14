@@ -95,14 +95,14 @@ class RollupService implements Runnable {
             rollupAggregates(agentRollup, null);
             rollupGauges(agentRollup, null);
             rollupSyntheticMonitors(agentRollup);
-            // checking for deleted alerts doesn't depend on rollup
-            consumeAgentRollups(agentRollup, this::checkForDeletedAlerts);
             // checking aggregate and gauge alerts after rollup since their calculation can depend
-            // on rollups depending on time period length
+            // on rollups depending on time period length (and alerts on rollups are not checked
+            // anywhere else)
             //
-            // alerts are also checked right after receiving the respective data
-            // (aggregate/gauge/heartbeat) from agent, but need to also check once a minute in
-            // case no data has been received from agent recently
+            // agent (not rollup) alerts are also checked right after receiving the respective data
+            // (aggregate/gauge/heartbeat) from the agent, but need to also check these once a
+            // minute in case no data has been received from the agent recently
+            consumeAgentRollups(agentRollup, this::checkForDeletedAlerts);
             consumeAgentRollups(agentRollup, this::checkAggregateAndGaugeAndHeartbeatAlertsAsync);
         }
     }
@@ -175,7 +175,7 @@ class RollupService implements Runnable {
     }
 
     private void checkForDeletedAlerts(AgentRollup agentRollup) throws Exception {
-        centralAlertingService.checkForDeletedAlerts(agentRollup.id());
+        centralAlertingService.checkForDeletedAlerts(agentRollup.id(), agentRollup.display());
     }
 
     private void checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup)

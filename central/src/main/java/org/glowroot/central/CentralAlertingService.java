@@ -57,8 +57,12 @@ public class CentralAlertingService {
         alertCheckingExecutor.shutdown();
     }
 
-    void checkForDeletedAlerts(String agentRollupId) throws Exception {
-        alertingService.checkForDeletedAlerts(agentRollupId);
+    void checkForDeletedAlerts(String agentRollupId, String agentRollupDisplay) {
+        try {
+            alertingService.checkForDeletedAlerts(agentRollupId);
+        } catch (Exception e) {
+            logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
+        }
     }
 
     void checkAggregateAlertsAsync(String agentId, String agentDisplay, long endTime) {
@@ -98,13 +102,13 @@ public class CentralAlertingService {
         checkAlertsAsync(agentId, agentDisplay, endTime, gaugeAndHeartbeatAlertConfigs);
     }
 
-    void checkAggregateAndGaugeAndHeartbeatAlertsAsync(String agentId, String agentDisplay,
-            long endTime) {
+    void checkAggregateAndGaugeAndHeartbeatAlertsAsync(String agentRollupId,
+            String agentRollupDisplay, long endTime) {
         List<AlertConfig> alertConfigs;
         try {
-            alertConfigs = configRepository.getAlertConfigs(agentId);
+            alertConfigs = configRepository.getAlertConfigs(agentRollupId);
         } catch (Exception e) {
-            logger.error("{} - {}", agentDisplay, e.getMessage(), e);
+            logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
             return;
         }
         List<AlertConfig> aggregateAndGaugeAndHeartbeatAlertConfigs = Lists.newArrayList();
@@ -115,10 +119,11 @@ public class CentralAlertingService {
                 aggregateAndGaugeAndHeartbeatAlertConfigs.add(alertConfig);
             }
         }
-        checkAlertsAsync(agentId, agentDisplay, endTime, aggregateAndGaugeAndHeartbeatAlertConfigs);
+        checkAlertsAsync(agentRollupId, agentRollupDisplay, endTime,
+                aggregateAndGaugeAndHeartbeatAlertConfigs);
     }
 
-    void checkAlertsAsync(String agentId, String agentDisplay, long endTime,
+    void checkAlertsAsync(String agentRollupId, String agentRollupDisplay, long endTime,
             List<AlertConfig> alertConfigs) {
         alertCheckingExecutor.execute(new Runnable() {
             @Override
@@ -126,30 +131,30 @@ public class CentralAlertingService {
                 try {
                     runInternal();
                 } catch (Throwable t) {
-                    logger.error("{} - {}", agentDisplay, t.getMessage(), t);
+                    logger.error("{} - {}", agentRollupDisplay, t.getMessage(), t);
                 }
             }
             private void runInternal() throws InterruptedException {
                 for (AlertConfig alertConfig : alertConfigs) {
                     try {
-                        checkAlert(agentId, agentDisplay, endTime, alertConfig);
+                        checkAlert(agentRollupId, agentRollupDisplay, endTime, alertConfig);
                     } catch (InterruptedException e) {
                         // shutdown requested
                         throw e;
                     } catch (Exception e) {
-                        logger.error("{} - {}", agentDisplay, e.getMessage(), e);
+                        logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
                     }
                 }
             }
         });
     }
 
-    private void checkAlert(String agentId, String agentDisplay, long endTime,
+    private void checkAlert(String agentRollupId, String agentDisplay, long endTime,
             AlertConfig alertConfig) throws Exception {
         AlertCondition alertCondition = alertConfig.getCondition();
         switch (alertCondition.getValCase()) {
             case METRIC_CONDITION:
-                checkMetricAlert(agentId, agentDisplay, alertCondition,
+                checkMetricAlert(agentRollupId, agentDisplay, alertCondition,
                         alertCondition.getMetricCondition(), alertConfig.getNotification(),
                         endTime);
                 break;
@@ -159,7 +164,7 @@ public class CentralAlertingService {
                     // at least enough time for grpc max reconnect backoff which is 2 minutes
                     // +/- 20% jitter (see io.grpc.internal.ExponentialBackoffPolicy) but better to
                     // give a bit extra (4 minutes above) to avoid false heartbeat alert
-                    checkHeartbeatAlert(agentId, agentDisplay, alertCondition,
+                    checkHeartbeatAlert(agentRollupId, agentDisplay, alertCondition,
                             alertCondition.getHeartbeatCondition(), alertConfig.getNotification(),
                             endTime);
                 }
@@ -173,20 +178,20 @@ public class CentralAlertingService {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check metric alert", traceHeadline = "Check metric alert: {{0}}",
             timer = "check metric alert")
-    private void checkMetricAlert(String agentId, String agentDisplay,
+    private void checkMetricAlert(String agentRollupId, String agentDisplay,
             AlertCondition alertCondition, MetricCondition metricCondition,
             AlertNotification alertNotification, long endTime) throws Exception {
-        alertingService.checkMetricAlert(agentId, agentDisplay, alertCondition, metricCondition,
-                alertNotification, endTime);
+        alertingService.checkMetricAlert(agentRollupId, agentDisplay, alertCondition,
+                metricCondition, alertNotification, endTime);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check heartbeat alert",
             traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
-    private void checkHeartbeatAlert(String agentId, String agentDisplay,
+    private void checkHeartbeatAlert(String agentRollupId, String agentDisplay,
             AlertCondition alertCondition, HeartbeatCondition heartbeatCondition,
             AlertNotification alertNotification, long endTime) throws Exception {
-        alertingService.sendHeartbeatAlertIfNeeded(agentId, agentDisplay, alertCondition,
+        alertingService.sendHeartbeatAlertIfNeeded(agentRollupId, agentDisplay, alertCondition,
                 heartbeatCondition, alertNotification, endTime, false);
     }
 
