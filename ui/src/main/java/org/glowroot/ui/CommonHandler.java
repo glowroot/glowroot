@@ -81,6 +81,7 @@ public class CommonHandler {
     private static final long FIVE_MINUTES = MINUTES.toMillis(5);
 
     private static final String RESOURCE_BASE = "org/glowroot/ui/app-dist";
+
     // only null when running tests with glowroot.ui.skip=true (e.g. travis "deploy" build)
     private static final @Nullable String RESOURCE_BASE_URL_PREFIX;
 
@@ -101,11 +102,14 @@ public class CommonHandler {
     private static final int H2_STATEMENT_WAS_CANCELED = 57014;
 
     static {
-        URL resourceBaseUrl = getUrlForPath(RESOURCE_BASE);
+        // not getting url for directory itself because proguard strips directory entries by default
+        URL resourceBaseUrl = getUrlForPath(RESOURCE_BASE + "/index.html");
         if (resourceBaseUrl == null) {
             RESOURCE_BASE_URL_PREFIX = null;
         } else {
-            RESOURCE_BASE_URL_PREFIX = resourceBaseUrl.toExternalForm();
+            String externalForm = resourceBaseUrl.toExternalForm();
+            RESOURCE_BASE_URL_PREFIX =
+                    externalForm.substring(0, externalForm.length() - "/index.html".length());
         }
     }
 

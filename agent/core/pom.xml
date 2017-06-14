@@ -569,8 +569,95 @@
               </execution>
             </executions>
           </plugin>
+          <plugin>
+            <groupId>com.github.wvengen</groupId>
+            <artifactId>proguard-maven-plugin</artifactId>
+            <version>2.0.14</version>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>proguard</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <includeDependency>false</includeDependency>
+              <obfuscate>false</obfuscate>
+              <libs>
+                <!-- see auto-activated-mac and auto-activated-not-mac profiles below for
+                  ${rt.jar.path} definition -->
+                <lib>${rt.jar.path}</lib>
+              </libs>
+              <options>
+                <option>-dontoptimize</option>
+                <option>-dontnote **</option>
+                <option>-dontwarn **</option>
+                <option>-keep class org.glowroot.agent.* { *; }</option>
+                <option>-keep class org.glowroot.agent.api.** { *; }</option>
+                <option>-keep class org.glowroot.agent.central.** { *; }</option>
+                <option>-keep class org.glowroot.agent.collector.** { *; }</option>
+                <option>-keep class org.glowroot.agent.config.** { *; }</option>
+                <option>-keep class org.glowroot.agent.embedded.** { *; }</option>
+                <option>-keep class org.glowroot.agent.impl.** { *; }</option>
+                <option>-keep class org.glowroot.agent.init.** { *; }</option>
+                <option>-keep class org.glowroot.agent.jul.** { *; }</option>
+                <option>-keep class org.glowroot.agent.live.** { *; }</option>
+                <option>-keep class org.glowroot.agent.model.** { *; }</option>
+                <option>-keep class org.glowroot.agent.plugin.api.** { *; }</option>
+                <option>-keep class org.glowroot.agent.sql.** { *; }</option>
+                <option>-keep class org.glowroot.agent.util.** { *; }</option>
+                <option>-keep class org.glowroot.agent.weaving.** { *; }</option>
+                <option>-keep class org.glowroot.agent.shaded.glowroot.common.** { *; }</option>
+                <option>-keep class org.glowroot.agent.shaded.glowroot.ui.** { *; }</option>
+                <!-- keep all guava classes so that plugins can use them -->
+                <option>-keep class org.glowroot.agent.shaded.google.common.** { *; }</option>
+                <!-- keep all logback appenders -->
+                <option>
+                  -keep class * extends org.glowroot.agent.shaded.qos.logback.** { *; }
+                </option>
+                <!-- keep special enumeration methods (see "Processing enumeration classes" section
+                  at http://proguard.sourceforge.net/manual/examples.html) -->
+                <option>
+                  -keepclassmembers,allowoptimization enum * {
+                    public static **[] values();
+                    public static ** valueOf(java.lang.String);
+                  }
+                </option>
+              </options>
+            </configuration>
+            <dependencies>
+              <dependency>
+                <groupId>net.sf.proguard</groupId>
+                <artifactId>proguard-base</artifactId>
+                <version>5.3.3</version>
+              </dependency>
+            </dependencies>
+          </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>auto-activated-not-mac</id>
+      <activation>
+        <os>
+          <family>!mac</family>
+        </os>
+      </activation>
+      <properties>
+        <rt.jar.path>${java.home}/lib/rt.jar</rt.jar.path>
+      </properties>
+    </profile>
+    <profile>
+      <id>auto-activated-mac</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <properties>
+        <rt.jar.path>${java.home}/../Classes/classes.jar</rt.jar.path>
+      </properties>
     </profile>
   </profiles>
 </project>
