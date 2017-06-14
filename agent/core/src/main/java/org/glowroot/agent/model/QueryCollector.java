@@ -54,14 +54,12 @@ public class QueryCollector {
     private final Map<String, Map<String, MutableQuery>> queries = Maps.newHashMap();
     private final int limit;
     private final int maxMultiplierWhileBuilding;
-    private final boolean traceLevel;
 
     private final Map<String, MinQuery> minQueryPerType = Maps.newHashMap();
 
-    public QueryCollector(int limit, int maxMultiplierWhileBuilding, boolean traceLevel) {
+    public QueryCollector(int limit, int maxMultiplierWhileBuilding) {
         this.limit = limit;
         this.maxMultiplierWhileBuilding = maxMultiplierWhileBuilding;
-        this.traceLevel = traceLevel;
     }
 
     public List<Aggregate.QueriesByType> toAggregateProto(
@@ -152,7 +150,7 @@ public class QueryCollector {
                 }
                 truncateAndRecalculateMinQuery = true;
             }
-            aggregateQuery = new MutableQuery(traceLevel);
+            aggregateQuery = new MutableQuery();
             queriesForType.put(queryText, aggregateQuery);
         }
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);

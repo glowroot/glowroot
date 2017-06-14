@@ -137,7 +137,7 @@ class AggregateCollector {
                     ? AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER
                     : AdvancedConfig.TRANSACTION_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
             queries = new QueryCollector(maxAggregateQueriesPerType,
-                    queriesHardLimitMultiplierWhileBuilding, false);
+                    queriesHardLimitMultiplierWhileBuilding);
         }
         return queries;
     }

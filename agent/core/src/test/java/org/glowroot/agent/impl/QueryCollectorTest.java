@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ public class QueryCollectorTest {
     @Test
     public void testAddInAscendingOrder() {
         // given
-        QueryCollector queries = new QueryCollector(100, 2, false);
+        QueryCollector queries = new QueryCollector(100, 2);
         for (int i = 1; i <= 300; i++) {
             queries.mergeQuery("SQL", Integer.toString(i), i, 1, true, 1);
         }
@@ -48,7 +48,7 @@ public class QueryCollectorTest {
     @Test
     public void testAddInDescendingOrder() {
         // given
-        QueryCollector queries = new QueryCollector(100, 2, false);
+        QueryCollector queries = new QueryCollector(100, 2);
         for (int i = 300; i > 0; i--) {
             queries.mergeQuery("SQL", Integer.toString(i), i, 1, true, 1);
         }

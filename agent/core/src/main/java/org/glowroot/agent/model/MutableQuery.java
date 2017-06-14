@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,18 @@ import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
 class MutableQuery {
 
-    private MutableNumber totalDurationNanos;
+    private MutableDouble totalDurationNanos;
     private long executionCount;
 
     private boolean hasTotalRows;
     private long totalRows;
 
-    MutableQuery(boolean traceLevel) {
-        totalDurationNanos = traceLevel ? new MutableLong() : new MutableDouble();
+    MutableQuery() {
+        totalDurationNanos = new MutableDouble();
     }
 
     double getTotalDurationNanos() {
-        return totalDurationNanos.getDouble();
+        return totalDurationNanos.getValue();
     }
 
     long getExecutionCount() {
@@ -67,7 +67,7 @@ class MutableQuery {
         int sharedQueryTextIndex = sharedQueryTextCollector.getIndex(queryText);
         Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
                 .setSharedQueryTextIndex(sharedQueryTextIndex)
-                .setTotalDurationNanos(totalDurationNanos.getDouble())
+                .setTotalDurationNanos(totalDurationNanos.getValue())
                 .setExecutionCount(executionCount);
         if (hasTotalRows) {
             builder.setTotalRows(OptionalInt64.newBuilder().setValue(totalRows));
@@ -75,50 +75,15 @@ class MutableQuery {
         return builder.build();
     }
 
-    private interface MutableNumber {
-        void add(long value);
-        long getLong();
-        double getDouble();
-    }
-
-    private static class MutableLong implements MutableNumber {
-
-        private long value;
-
-        @Override
-        public void add(long value) {
-            this.value += value;
-        }
-
-        @Override
-        public long getLong() {
-            return value;
-        }
-
-        @Override
-        public double getDouble() {
-            // ok to convert long to double
-            return value;
-        }
-    }
-
-    private static class MutableDouble implements MutableNumber {
+    private static class MutableDouble {
 
         private double value;
 
-        @Override
         public void add(long value) {
             this.value += value;
         }
 
-        @Override
-        public long getLong() {
-            // not ok to convert double to long
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public double getDouble() {
+        public double getValue() {
             return value;
         }
     }
