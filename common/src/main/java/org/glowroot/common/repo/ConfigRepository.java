@@ -27,6 +27,7 @@ import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
+import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.PagerDutyConfig;
 import org.glowroot.common.config.RoleConfig;
@@ -147,6 +148,8 @@ public interface ConfigRepository {
 
     PagerDutyConfig getPagerDutyConfig() throws Exception;
 
+    HealthchecksIoConfig getHealthchecksIoConfig();
+
     void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion)
             throws Exception;
 
@@ -237,6 +240,9 @@ public interface ConfigRepository {
     void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception;
 
     void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion) throws Exception;
+
+    void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig, String version)
+            throws Exception;
 
     long getGaugeCollectionIntervalMillis();
 

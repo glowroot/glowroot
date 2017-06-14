@@ -463,6 +463,15 @@ public class AlertingService {
     }
 
     private static void post(String url, byte[] content, String contentType) throws Exception {
+        postOrGet(url, content, contentType);
+    }
+
+    public static void get(String url) throws Exception {
+        postOrGet(url, null, null);
+    }
+
+    private static void postOrGet(String url, byte /*@Nullable*/ [] content,
+            @Nullable String contentType) throws Exception {
         URI uri = new URI(url);
         String scheme = uri.getScheme();
         if (scheme == null) {
@@ -497,14 +506,18 @@ public class AlertingService {
                             p.addLast(new HttpClientHandler());
                         }
                     });
-
-            HttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
-                    uri.getRawPath(), Unpooled.wrappedBuffer(content));
+            HttpRequest request;
+            if (content == null) {
+                request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET,
+                        uri.getRawPath());
+            } else {
+                request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
+                        uri.getRawPath(), Unpooled.wrappedBuffer(content));
+                request.headers().set(HttpHeaderNames.CONTENT_TYPE, checkNotNull(contentType));
+                request.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.length);
+            }
             request.headers().set(HttpHeaderNames.HOST, host);
-            request.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
-            request.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.length);
             request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-
             Channel ch = bootstrap.connect(host, port).sync().channel();
             ch.writeAndFlush(request);
             ch.closeFuture().sync();

@@ -43,10 +43,12 @@ import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
+import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
+import org.glowroot.common.config.ImmutableHealthchecksIoConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutablePagerDutyConfig;
 import org.glowroot.common.config.ImmutablePagerDutyIntegrationKey;
@@ -182,6 +184,12 @@ class AdminJsonService {
         return mapper.writeValueAsString(PagerDutyConfigDto.create(config));
     }
 
+    @GET(path = "/backend/admin/healthchecks-io", permission = "admin:view:healthchecksIo")
+    String getHealthchecksIoConfig() throws Exception {
+        HealthchecksIoConfig config = configRepository.getHealthchecksIoConfig();
+        return mapper.writeValueAsString(HealthchecksIoConfigDto.create(config));
+    }
+
     @POST(path = "/backend/admin/web", permission = "admin:edit:web")
     Object updateWebConfig(@BindRequest String content) throws Exception {
         if (central) {
@@ -294,6 +302,17 @@ class AdminJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getPagerDutyConfig();
+    }
+
+    @POST(path = "/backend/admin/healthchecks-io", permission = "admin:edit:healthchecksIo")
+    String updateHealthchecksIoConfig(@BindRequest HealthchecksIoConfigDto configDto)
+            throws Exception {
+        try {
+            configRepository.updateHealthchecksIoConfig(configDto.convert(), configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getHealthchecksIoConfig();
     }
 
     @POST(path = "/backend/admin/send-test-email", permission = "admin:edit:smtp")
@@ -749,6 +768,26 @@ class AdminJsonService {
         private static PagerDutyConfigDto create(PagerDutyConfig config) {
             return ImmutablePagerDutyConfigDto.builder()
                     .addAllIntegrationKeys(config.integrationKeys())
+                    .version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class HealthchecksIoConfigDto {
+
+        abstract String pingUrl();
+        abstract String version();
+
+        private HealthchecksIoConfig convert() {
+            return ImmutableHealthchecksIoConfig.builder()
+                    .pingUrl(pingUrl())
+                    .build();
+        }
+
+        private static HealthchecksIoConfigDto create(HealthchecksIoConfig config) {
+            return ImmutableHealthchecksIoConfigDto.builder()
+                    .pingUrl(config.pingUrl())
                     .version(config.version())
                     .build();
         }

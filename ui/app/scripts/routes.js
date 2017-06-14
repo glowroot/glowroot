@@ -553,6 +553,11 @@ glowroot.config([
       templateUrl: 'views/admin/pager-duty.html',
       controller: 'AdminPagerDutyCtrl'
     });
+    $stateProvider.state('admin.healthchecksIo', {
+      url: '/healthchecks-io',
+      templateUrl: 'views/admin/healthchecks-io.html',
+      controller: 'AdminHealthchecksIoCtrl'
+    });
     $stateProvider.state('profile', {
       url: '/profile',
       templateUrl: 'views/profile.html',

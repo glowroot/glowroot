@@ -39,6 +39,7 @@ import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
+import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
@@ -374,6 +375,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             return ImmutablePagerDutyConfig.builder().build();
         }
         return config;
+    }
+
+    @Override
+    public HealthchecksIoConfig getHealthchecksIoConfig() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -992,6 +998,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
         }
         centralConfigDao.write(PAGER_DUTY_KEY, config, priorVersion);
+    }
+
+    @Override
+    public void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig,
+            String priorVersion) throws Exception {
+        throw new UnsupportedOperationException();
     }
 
     @Override

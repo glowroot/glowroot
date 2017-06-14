@@ -46,8 +46,10 @@ import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
+import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
+import org.glowroot.common.config.ImmutableHealthchecksIoConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutablePagerDutyConfig;
 import org.glowroot.common.config.ImmutableRoleConfig;
@@ -72,6 +74,8 @@ import static com.google.common.base.Preconditions.checkState;
 
 class ConfigRepositoryImpl implements ConfigRepository {
 
+    private static final String HEALTHCHECKS_IO_KEY = "healthchecksIo";
+
     private final ConfigService configService;
     private final PluginCache pluginCache;
 
@@ -88,6 +92,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile SmtpConfig smtpConfig;
     private volatile LdapConfig ldapConfig;
     private volatile PagerDutyConfig pagerDutyConfig;
+    private volatile HealthchecksIoConfig healthchecksIoConfig;
 
     static ConfigRepository create(File confDir, ConfigService configService,
             PluginCache pluginCache) throws IOException {
@@ -167,6 +172,13 @@ class ConfigRepositoryImpl implements ConfigRepository {
             this.pagerDutyConfig = ImmutablePagerDutyConfig.builder().build();
         } else {
             this.pagerDutyConfig = pagerDutyConfig;
+        }
+        HealthchecksIoConfig healthchecksIoConfig = configService
+                .getAdminConfig(HEALTHCHECKS_IO_KEY, ImmutableHealthchecksIoConfig.class);
+        if (healthchecksIoConfig == null) {
+            this.healthchecksIoConfig = ImmutableHealthchecksIoConfig.builder().build();
+        } else {
+            this.healthchecksIoConfig = healthchecksIoConfig;
         }
     }
 
@@ -380,6 +392,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public PagerDutyConfig getPagerDutyConfig() {
         return pagerDutyConfig;
+    }
+
+    @Override
+    public HealthchecksIoConfig getHealthchecksIoConfig() {
+        return healthchecksIoConfig;
     }
 
     @Override
@@ -882,6 +899,16 @@ class ConfigRepositoryImpl implements ConfigRepository {
             }
             configService.updateAdminConfig(PAGER_DUTY_KEY, config);
             pagerDutyConfig = config;
+        }
+    }
+
+    @Override
+    public void updateHealthchecksIoConfig(HealthchecksIoConfig updatedConfig, String priorVersion)
+            throws Exception {
+        synchronized (writeLock) {
+            checkVersionsEqual(healthchecksIoConfig.version(), priorVersion);
+            configService.updateAdminConfig(HEALTHCHECKS_IO_KEY, updatedConfig);
+            healthchecksIoConfig = updatedConfig;
         }
     }
 

@@ -28,6 +28,7 @@ import org.glowroot.agent.embedded.repo.AggregateDao;
 import org.glowroot.agent.embedded.repo.EnvironmentDao;
 import org.glowroot.agent.embedded.repo.GaugeValueDao;
 import org.glowroot.agent.embedded.repo.TraceDao;
+import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -86,6 +87,11 @@ class CollectorImpl implements Collector {
                     logger.error(e.getMessage(), e);
                 }
             }
+        }
+        HealthchecksIoConfig healthchecksIoConfig = configRepository.getHealthchecksIoConfig();
+        String healthchecksIoPingUrl = healthchecksIoConfig.pingUrl();
+        if (!healthchecksIoPingUrl.isEmpty()) {
+            AlertingService.get(healthchecksIoPingUrl);
         }
     }
 
