@@ -65,6 +65,8 @@ import static org.glowroot.agent.util.Checkers.castInitialized;
 
 public class ThreadContextImpl implements ThreadContextPlus {
 
+    private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
+
     private static final MessageSupplier DETACHED_MESSAGE_SUPPLIER = MessageSupplier
             .create("this auxiliary thread was still running when the transaction ended");
 
@@ -270,10 +272,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (headQueryData == null) {
             // the call to allowAnotherAggregateQuery() is needed to increment the counter
             if (!transaction.allowAnotherAggregateQuery(bypassLimit)) {
-                // maxAggregateQueriesPerType set to 0
-                return new QueryData(queryType, queryText, null);
+                // this only occurs if maxAggregateQueriesPerType is set to 0
+                return new QueryData(queryType, queryText, null, null);
             }
-            QueryData queryData = new QueryData(queryType, queryText, null);
+            QueryData queryData = new QueryData(queryType, queryText, null, null);
             queriesForFirstType = new QueryDataMap(queryType);
             queriesForFirstType.put(queryText, queryData);
             headQueryData = queryData;
@@ -284,39 +286,73 @@ public class ThreadContextImpl implements ThreadContextPlus {
             queriesForCurrentType = getOrCreateQueriesForType(queryType);
         }
         QueryData queryData = queriesForCurrentType.get(queryText);
-        if (queryData == null && transaction.allowAnotherAggregateQuery(bypassLimit)) {
-            queryData = new QueryData(queryType, queryText, headQueryData);
-            queriesForCurrentType.put(queryText, queryData);
-            headQueryData = queryData;
-        }
         if (queryData == null) {
-            return new QueryData(queryType, queryText, null);
+            if (transaction.allowAnotherAggregateQuery(bypassLimit)) {
+                queryData = createQueryData(queriesForCurrentType, queryType, queryText);
+            } else {
+                QueryData limitExceededBucket = queriesForCurrentType.get(LIMIT_EXCEEDED_BUCKET);
+                if (limitExceededBucket == null) {
+                    limitExceededBucket = createQueryData(queriesForCurrentType, queryType,
+                            LIMIT_EXCEEDED_BUCKET);
+                }
+                queryData = new QueryData(queryType, queryText, null, limitExceededBucket);
+            }
         }
         return queryData;
     }
 
+    private QueryData createQueryData(QueryDataMap queriesForCurrentType, String queryType,
+            String queryText) {
+        QueryData queryData = new QueryData(queryType, queryText, headQueryData, null);
+        queriesForCurrentType.put(queryText, queryData);
+        headQueryData = queryData;
+        return queryData;
+    }
+
     // only called by transaction thread
-    private @Nullable QueryData getOrCreateServiceCallDataIfPossible(String type, String text) {
+    private @Nullable QueryData getOrCreateServiceCallDataIfPossible(String serviceCallType,
+            String serviceCallText) {
         if (headServiceCallData == null) {
             if (!transaction.allowAnotherAggregateServiceCall()) {
+                // this only occurs if maxAggregateServiceCallsPerType is set to 0
                 return null;
             }
-            QueryData serviceCallData = new QueryData(type, text, null);
-            serviceCallsForFirstType = new QueryDataMap(type);
-            serviceCallsForFirstType.put(text, serviceCallData);
+            QueryData serviceCallData = new QueryData(serviceCallType, serviceCallText, null, null);
+            serviceCallsForFirstType = new QueryDataMap(serviceCallType);
+            serviceCallsForFirstType.put(serviceCallText, serviceCallData);
             headServiceCallData = serviceCallData;
             return headServiceCallData;
         }
         QueryDataMap serviceCallsForCurrentType = checkNotNull(serviceCallsForFirstType);
-        if (!serviceCallsForCurrentType.getType().equals(type)) {
-            serviceCallsForCurrentType = getOrCreateServiceCallsForType(type);
+        if (!serviceCallsForCurrentType.getType().equals(serviceCallType)) {
+            serviceCallsForCurrentType = getOrCreateServiceCallsForType(serviceCallType);
         }
-        QueryData serviceCallData = serviceCallsForCurrentType.get(text);
-        if (serviceCallData == null && transaction.allowAnotherAggregateServiceCall()) {
-            serviceCallData = new QueryData(type, text, headServiceCallData);
-            serviceCallsForCurrentType.put(text, serviceCallData);
-            headServiceCallData = serviceCallData;
+        QueryData serviceCallData = serviceCallsForCurrentType.get(serviceCallText);
+        if (serviceCallData == null) {
+            if (transaction.allowAnotherAggregateServiceCall()) {
+                serviceCallData =
+                        createServiceCallData(serviceCallType, serviceCallText,
+                                serviceCallsForCurrentType);
+            } else {
+                QueryData limitExceededBucket =
+                        serviceCallsForCurrentType.get(LIMIT_EXCEEDED_BUCKET);
+                if (limitExceededBucket == null) {
+                    limitExceededBucket = createQueryData(serviceCallsForCurrentType,
+                            serviceCallType, LIMIT_EXCEEDED_BUCKET);
+                }
+                serviceCallData =
+                        new QueryData(serviceCallType, serviceCallText, null, limitExceededBucket);
+            }
         }
+        return serviceCallData;
+    }
+
+    private QueryData createServiceCallData(String serviceCallType, String serviceCallText,
+            QueryDataMap serviceCallsForCurrentType) {
+        QueryData serviceCallData =
+                new QueryData(serviceCallType, serviceCallText, headServiceCallData, null);
+        serviceCallsForCurrentType.put(serviceCallText, serviceCallData);
+        headServiceCallData = serviceCallData;
         return serviceCallData;
     }
 
@@ -644,14 +680,14 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public TraceEntry startServiceCallEntry(String type, String text,
+    public TraceEntry startServiceCallEntry(String serviceCallType, String serviceCallText,
             MessageSupplier messageSupplier, TimerName timerName) {
-        if (type == null) {
-            logger.error("startServiceCallEntry(): argument 'type' must be non-null");
+        if (serviceCallType == null) {
+            logger.error("startServiceCallEntry(): argument 'serviceCallType' must be non-null");
             return NopTransactionService.TRACE_ENTRY;
         }
-        if (text == null) {
-            logger.error("startServiceCallEntry(): argument 'text' must be non-null");
+        if (serviceCallText == null) {
+            logger.error("startServiceCallEntry(): argument 'serviceCallText' must be non-null");
             return NopTransactionService.TRACE_ENTRY;
         }
         if (messageSupplier == null) {
@@ -664,7 +700,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         long startTick = ticker.read();
         TimerImpl timer = startTimer(timerName, startTick);
-        QueryData queryData = getOrCreateServiceCallDataIfPossible(type, text);
+        QueryData queryData =
+                getOrCreateServiceCallDataIfPossible(serviceCallType, serviceCallText);
         if (transaction.allowAnotherEntry()) {
             return traceEntryComponent.pushEntry(startTick, messageSupplier, timer, null, queryData,
                     1);
@@ -675,14 +712,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
-            MessageSupplier messageSupplier, TimerName timerName) {
-        if (type == null) {
-            logger.error("startAsyncServiceCallEntry(): argument 'type' must be non-null");
+    public AsyncTraceEntry startAsyncServiceCallEntry(String serviceCallType,
+            String serviceCallText, MessageSupplier messageSupplier, TimerName timerName) {
+        if (serviceCallType == null) {
+            logger.error(
+                    "startAsyncServiceCallEntry(): argument 'serviceCallType' must be non-null");
             return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
-        if (text == null) {
-            logger.error("startAsyncServiceCallEntry(): argument 'text' must be non-null");
+        if (serviceCallText == null) {
+            logger.error(
+                    "startAsyncServiceCallEntry(): argument 'serviceCallText' must be non-null");
             return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
         if (messageSupplier == null) {
@@ -697,7 +736,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         long startTick = ticker.read();
         TimerImpl syncTimer = startTimer(timerName, startTick);
         AsyncTimerImpl asyncTimer = startAsyncTimer(timerName, startTick);
-        QueryData queryData = getOrCreateServiceCallDataIfPossible(type, text);
+        QueryData queryData =
+                getOrCreateServiceCallDataIfPossible(serviceCallType, serviceCallText);
         if (transaction.allowAnotherEntry()) {
             return startAsyncServiceCallEntry(startTick, messageSupplier, syncTimer, asyncTimer,
                     queryData);

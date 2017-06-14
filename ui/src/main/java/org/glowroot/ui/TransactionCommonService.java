@@ -324,7 +324,7 @@ class TransactionCommonService {
                 break;
             }
         }
-        return queryCollector.getSortedQueries();
+        return queryCollector.getSortedAndTruncatedQueries();
     }
 
     @Nullable

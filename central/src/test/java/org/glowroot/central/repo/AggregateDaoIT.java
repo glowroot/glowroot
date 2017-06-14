@@ -215,7 +215,7 @@ public class AggregateDaoIT {
 
         QueryCollector queryCollector = new QueryCollector(1000);
         aggregateDao.mergeQueriesInto("one", transactionQuery, queryCollector);
-        Map<String, List<MutableQuery>> queries = queryCollector.getSortedQueries();
+        Map<String, List<MutableQuery>> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         List<MutableQuery> queriesByType = queries.get("sqlo");
         assertThat(queriesByType).hasSize(1);
@@ -288,7 +288,7 @@ public class AggregateDaoIT {
 
         queryCollector = new QueryCollector(1000);
         aggregateDao.mergeQueriesInto("one", transactionQuery, queryCollector);
-        queries = queryCollector.getSortedQueries();
+        queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         queriesByType = queries.get("sqlo");
         assertThat(queriesByType).hasSize(1);
@@ -393,7 +393,7 @@ public class AggregateDaoIT {
 
         QueryCollector queryCollector = new QueryCollector(1000);
         aggregateDao.mergeQueriesInto("the parent", transactionQuery, queryCollector);
-        Map<String, List<MutableQuery>> queries = queryCollector.getSortedQueries();
+        Map<String, List<MutableQuery>> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         List<MutableQuery> queriesByType = queries.get("sqlo");
         assertThat(queriesByType).hasSize(1);
@@ -465,7 +465,7 @@ public class AggregateDaoIT {
 
         queryCollector = new QueryCollector(1000);
         aggregateDao.mergeQueriesInto("the parent", transactionQuery, queryCollector);
-        queries = queryCollector.getSortedQueries();
+        queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         queriesByType = queries.get("sqlo");
         assertThat(queriesByType).hasSize(1);
@@ -571,7 +571,7 @@ public class AggregateDaoIT {
 
         QueryCollector queryCollector = new QueryCollector(1000);
         aggregateDao.mergeQueriesInto("the gp", transactionQuery, queryCollector);
-        Map<String, List<MutableQuery>> queries = queryCollector.getSortedQueries();
+        Map<String, List<MutableQuery>> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         List<MutableQuery> queriesByType = queries.get("sqlo");
         assertThat(queriesByType).hasSize(1);
@@ -643,7 +643,7 @@ public class AggregateDaoIT {
 
         queryCollector = new QueryCollector(1000);
         aggregateDao.mergeQueriesInto("the gp", transactionQuery, queryCollector);
-        queries = queryCollector.getSortedQueries();
+        queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         queriesByType = queries.get("sqlo");
         assertThat(queriesByType).hasSize(1);

@@ -139,21 +139,24 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public TraceEntry startServiceCallEntry(String type, String text,
+    public TraceEntry startServiceCallEntry(String serviceCallType, String serviceCallText,
             MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopTransactionService.TRACE_ENTRY;
         }
-        return threadContext.startServiceCallEntry(type, text, messageSupplier, timerName);
+        return threadContext.startServiceCallEntry(serviceCallType, serviceCallText,
+                messageSupplier, timerName);
     }
 
     @Override
-    public AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
+    public AsyncTraceEntry startAsyncServiceCallEntry(String serviceCallType,
+            String serviceCallText,
             MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopTransactionService.ASYNC_TRACE_ENTRY;
         }
-        return threadContext.startAsyncServiceCallEntry(type, text, messageSupplier, timerName);
+        return threadContext.startAsyncServiceCallEntry(serviceCallType, serviceCallText,
+                messageSupplier, timerName);
     }
 
     @Override

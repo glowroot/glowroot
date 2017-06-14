@@ -18,14 +18,11 @@ package org.glowroot.agent.impl;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.Maps;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AggregateReader;
@@ -49,12 +46,10 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public class AggregateIntervalCollector {
 
-    private static final Logger logger = LoggerFactory.getLogger(AggregateIntervalCollector.class);
-
-    private static final AtomicBoolean maxAggregateTransactionsWarnLogged = new AtomicBoolean();
+    private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
     private final long captureTime;
-    private final int maxAggregateTransactionsPerTransactionType;
+    private final int maxAggregateTransactionsType;
     private final int maxAggregateQueriesPerType;
     private final int maxAggregateServiceCallsPerType;
     private final Clock clock;
@@ -65,11 +60,10 @@ public class AggregateIntervalCollector {
     private final Object lock = new Object();
 
     AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
-            int maxAggregateTransactionsPerTransactionType, int maxAggregateQueriesPerType,
+            int maxAggregateTransactionsType, int maxAggregateQueriesPerType,
             int maxAggregateServiceCallsPerType, Clock clock) {
         captureTime = Utils.getRollupCaptureTime(currentTime, aggregateIntervalMillis);
-        this.maxAggregateTransactionsPerTransactionType =
-                maxAggregateTransactionsPerTransactionType;
+        this.maxAggregateTransactionsType = maxAggregateTransactionsType;
         this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
         this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
         this.clock = clock;
@@ -283,25 +277,27 @@ public class AggregateIntervalCollector {
             merge(transaction, overallAggregateCollector);
             AggregateCollector transactionAggregateCollector =
                     transactionAggregateCollectors.get(transaction.getTransactionName());
-            if (transactionAggregateCollector == null && transactionAggregateCollectors
-                    .size() < maxAggregateTransactionsPerTransactionType) {
-                transactionAggregateCollector =
-                        new AggregateCollector(transaction.getTransactionName(),
-                                maxAggregateQueriesPerType, maxAggregateServiceCallsPerType);
-                transactionAggregateCollectors.put(transaction.getTransactionName(),
-                        transactionAggregateCollector);
-            }
             if (transactionAggregateCollector == null) {
-                if (!maxAggregateTransactionsWarnLogged.getAndSet(true)) {
-                    logger.warn("the max transaction names per transaction type was exceeded"
-                            + " during the current interval. consider increasing the limit under"
-                            + " Configuration > Advanced, or reducing the number of transaction"
-                            + " names by configuring instrumentation points under Configuration"
-                            + " > Instrumentation that override the transaction name.");
+                if (transactionAggregateCollectors.size() < maxAggregateTransactionsType) {
+                    transactionAggregateCollector =
+                            createTransactionAggregateCollector(transaction.getTransactionName());
+                } else {
+                    transactionAggregateCollector =
+                            transactionAggregateCollectors.get(LIMIT_EXCEEDED_BUCKET);
+                    if (transactionAggregateCollector == null) {
+                        transactionAggregateCollector =
+                                createTransactionAggregateCollector(LIMIT_EXCEEDED_BUCKET);
+                    }
                 }
-                return;
             }
             merge(transaction, transactionAggregateCollector);
+        }
+
+        private AggregateCollector createTransactionAggregateCollector(String transactionName) {
+            AggregateCollector transactionAggregateCollector = new AggregateCollector(
+                    transactionName, maxAggregateQueriesPerType, maxAggregateServiceCallsPerType);
+            transactionAggregateCollectors.put(transactionName, transactionAggregateCollector);
+            return transactionAggregateCollector;
         }
 
         private void merge(Transaction transaction, AggregateCollector aggregateCollector) {

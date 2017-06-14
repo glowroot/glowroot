@@ -1451,7 +1451,7 @@ public class AggregateDao implements AggregateRepository {
             collector.mergeQuery(queryType, truncatedText, fullTextSha1, totalDurationNanos,
                     executionCount, hasTotalRows, totalRows);
         }
-        return insertQueries(collector.getSortedQueries(), rollup.rollupLevel(),
+        return insertQueries(collector.getSortedAndTruncatedQueries(), rollup.rollupLevel(),
                 rollup.agentRollupId(), query.transactionType(), query.transactionName(),
                 query.to(), rollup.adjustedTTL(), rollupFromChildren);
     }

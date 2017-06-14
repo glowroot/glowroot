@@ -29,37 +29,42 @@ public class QueryCollectorTest {
 
     @Test
     public void testAddInAscendingOrder() {
-        // given
-        QueryCollector queries = new QueryCollector(100, 2);
+        QueryCollector queries = new QueryCollector(100, 4);
         for (int i = 1; i <= 300; i++) {
             queries.mergeQuery("SQL", Integer.toString(i), i, 1, true, 1);
         }
-        // when
-        List<Aggregate.QueriesByType> queriesByTypeList =
-                queries.toAggregateProto(new SharedQueryTextCollector());
-        // then
-        assertThat(queriesByTypeList).hasSize(1);
-        Aggregate.QueriesByType queriesByType = queriesByTypeList.get(0);
-        assertThat(queriesByType.getQueryList()).hasSize(100);
-        assertThat(queriesByType.getQueryList().get(0).getTotalDurationNanos()).isEqualTo(300);
-        assertThat(queriesByType.getQueryList().get(99).getTotalDurationNanos()).isEqualTo(201);
+        test(queries);
     }
 
     @Test
     public void testAddInDescendingOrder() {
-        // given
-        QueryCollector queries = new QueryCollector(100, 2);
+        QueryCollector queries = new QueryCollector(100, 4);
         for (int i = 300; i > 0; i--) {
             queries.mergeQuery("SQL", Integer.toString(i), i, 1, true, 1);
         }
+        test(queries);
+    }
+
+    private void test(QueryCollector queries) {
         // when
+        SharedQueryTextCollector sharedQueryTextCollector = new SharedQueryTextCollector();
         List<Aggregate.QueriesByType> queriesByTypeList =
-                queries.toAggregateProto(new SharedQueryTextCollector());
+                queries.toAggregateProto(sharedQueryTextCollector);
         // then
+        List<String> sharedQueryTexts =
+                sharedQueryTextCollector.getAndClearLastestSharedQueryTexts();
         assertThat(queriesByTypeList).hasSize(1);
         Aggregate.QueriesByType queriesByType = queriesByTypeList.get(0);
-        assertThat(queriesByType.getQueryList()).hasSize(100);
-        assertThat(queriesByType.getQueryList().get(0).getTotalDurationNanos()).isEqualTo(300);
-        assertThat(queriesByType.getQueryList().get(99).getTotalDurationNanos()).isEqualTo(201);
+        assertThat(queriesByType.getQueryList()).hasSize(101);
+        Aggregate.Query topQuery = queriesByType.getQueryList().get(0);
+        assertThat(sharedQueryTexts.get(topQuery.getSharedQueryTextIndex()))
+                .isEqualTo("LIMIT EXCEEDED BUCKET");
+        int limitExceededBucketTotalNanos = 0;
+        for (int i = 1; i <= 200; i++) {
+            limitExceededBucketTotalNanos += i;
+        }
+        assertThat(topQuery.getTotalDurationNanos()).isEqualTo(limitExceededBucketTotalNanos);
+        assertThat(queriesByType.getQueryList().get(1).getTotalDurationNanos()).isEqualTo(300);
+        assertThat(queriesByType.getQueryList().get(100).getTotalDurationNanos()).isEqualTo(201);
     }
 }

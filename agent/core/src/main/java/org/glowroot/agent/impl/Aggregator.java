@@ -83,8 +83,7 @@ public class Aggregator {
                 .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Aggregate-Flushing"));
         activeIntervalCollector =
                 new AggregateIntervalCollector(clock.currentTimeMillis(), aggregateIntervalMillis,
-                        configService.getAdvancedConfig()
-                                .maxAggregateTransactionsPerType(),
+                        configService.getAdvancedConfig().maxAggregateTransactionsPerType(),
                         configService.getAdvancedConfig().maxAggregateQueriesPerType(),
                         configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
         processingExecutor.execute(new TransactionProcessor());

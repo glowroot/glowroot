@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,20 @@
  */
 package org.glowroot.common.model;
 
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Doubles;
+
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 class MutableServiceCall {
+
+    static final Ordering<MutableServiceCall> byTotalDurationDesc =
+            new Ordering<MutableServiceCall>() {
+                @Override
+                public int compare(MutableServiceCall left, MutableServiceCall right) {
+                    return Doubles.compare(right.totalDurationNanos, left.totalDurationNanos);
+                }
+            };
 
     private final String serviceCallText;
 
@@ -34,6 +45,11 @@ class MutableServiceCall {
 
     void addToExecutionCount(long executionCount) {
         this.executionCount += executionCount;
+    }
+
+    void addTo(MutableServiceCall serviceCall) {
+        this.totalDurationNanos += serviceCall.totalDurationNanos;
+        this.executionCount += serviceCall.executionCount;
     }
 
     Aggregate.ServiceCall toProto() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ public class QueryData {
     private final String queryType;
     private final String queryText;
     private final @Nullable QueryData nextQueryData;
+    private final @Nullable QueryData limitExceededBucket;
 
     // nanosecond rollover (292 years) isn't a concern for total time on a single transaction
     private long totalDurationNanos;
@@ -54,10 +55,12 @@ public class QueryData {
     private long startTick;
     private int selfNestingLevel;
 
-    public QueryData(String queryType, String queryText, @Nullable QueryData nextQueryData) {
+    public QueryData(String queryType, String queryText, @Nullable QueryData nextQueryData,
+            @Nullable QueryData limitExceededBucket) {
         this.queryType = queryType;
         this.queryText = queryText;
         this.nextQueryData = nextQueryData;
+        this.limitExceededBucket = limitExceededBucket;
     }
 
     public String getQueryType() {
@@ -77,21 +80,9 @@ public class QueryData {
             this.startTick = startTick;
             executionCount += batchSize;
         }
-    }
-
-    void end(long endTick) {
-        if (--selfNestingLevel == 0) {
-            endInternal(endTick);
+        if (limitExceededBucket != null) {
+            limitExceededBucket.start(startTick, batchSize);
         }
-    }
-
-    void setHasTotalRows() {
-        hasTotalRows = true;
-    }
-
-    void incrementRowCount(long inc) {
-        hasTotalRows = true;
-        totalRows += inc;
     }
 
     public long getTotalDurationNanos() {
@@ -113,9 +104,36 @@ public class QueryData {
         return totalRows;
     }
 
+    void end(long endTick) {
+        if (--selfNestingLevel == 0) {
+            endInternal(endTick);
+        }
+        if (limitExceededBucket != null) {
+            limitExceededBucket.end(endTick);
+        }
+    }
+
+    void setHasTotalRows() {
+        hasTotalRows = true;
+        if (limitExceededBucket != null) {
+            limitExceededBucket.setHasTotalRows();
+        }
+    }
+
+    void incrementRowCount(long inc) {
+        hasTotalRows = true;
+        totalRows += inc;
+        if (limitExceededBucket != null) {
+            limitExceededBucket.incrementRowCount(inc);
+        }
+    }
+
     void extend(long startTick) {
         if (selfNestingLevel++ == 0) {
             this.startTick = startTick;
+        }
+        if (limitExceededBucket != null) {
+            limitExceededBucket.extend(startTick);
         }
     }
 

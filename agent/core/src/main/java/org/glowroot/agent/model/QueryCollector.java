@@ -27,38 +27,24 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
-import org.immutables.value.Value;
 
 import org.glowroot.common.config.StorageConfig;
-import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public class QueryCollector {
 
-    private static final Ordering<Entry<String, MutableQuery>> bySmallestTotalDuration =
-            new Ordering<Entry<String, MutableQuery>>() {
-                @Override
-                public int compare(Entry<String, MutableQuery> left,
-                        Entry<String, MutableQuery> right) {
-                    return Doubles.compare(left.getValue().getTotalDurationNanos(),
-                            right.getValue().getTotalDurationNanos());
-                }
-            };
-
-    private static final int REMOVE_SMALLEST_N = 10;
+    private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
     // first key is query type, second key is query text
     private final Map<String, Map<String, MutableQuery>> queries = Maps.newHashMap();
-    private final int limit;
+    private final Map<String, MutableQuery> limitExceededBuckets = Maps.newHashMap();
+    private final int limitPerQueryType;
     private final int maxMultiplierWhileBuilding;
 
-    private final Map<String, MinQuery> minQueryPerType = Maps.newHashMap();
-
-    public QueryCollector(int limit, int maxMultiplierWhileBuilding) {
-        this.limit = limit;
+    public QueryCollector(int limitPerQueryType, int maxMultiplierWhileBuilding) {
+        this.limitPerQueryType = limitPerQueryType;
         this.maxMultiplierWhileBuilding = maxMultiplierWhileBuilding;
     }
 
@@ -69,15 +55,34 @@ public class QueryCollector {
         }
         List<Aggregate.QueriesByType> proto = Lists.newArrayList();
         for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
+            Map<String, MutableQuery> innerMap = outerEntry.getValue();
+            // + 1 is for possible limit exceeded bucket
             List<Aggregate.Query> queries =
-                    Lists.newArrayListWithCapacity(outerEntry.getValue().values().size());
-            for (Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
-                queries.add(entry.getValue().toAggregateProto(entry.getKey(),
+                    Lists.newArrayListWithCapacity(innerMap.values().size() + 1);
+            for (Entry<String, MutableQuery> innerEntry : innerMap.entrySet()) {
+                queries.add(innerEntry.getValue().toAggregateProto(innerEntry.getKey(),
                         sharedQueryTextCollector));
             }
-            if (queries.size() > limit) {
-                orderAggregateQueries(queries);
-                queries = queries.subList(0, limit);
+            if (queries.size() > limitPerQueryType) {
+                sort(queries);
+                List<Aggregate.Query> exceededQueries =
+                        queries.subList(limitPerQueryType, queries.size());
+                queries = Lists.newArrayList(queries.subList(0, limitPerQueryType));
+                MutableQuery limitExceededBucket = limitExceededBuckets.get(outerEntry.getKey());
+                if (limitExceededBucket == null) {
+                    limitExceededBucket = new MutableQuery();
+                }
+                for (Aggregate.Query exceededQuery : exceededQueries) {
+                    limitExceededBucket
+                            .addToTotalDurationNanos((long) exceededQuery.getTotalDurationNanos());
+                    limitExceededBucket.addToExecutionCount(exceededQuery.getExecutionCount());
+                    limitExceededBucket.addToTotalRows(exceededQuery.hasTotalRows(),
+                            exceededQuery.getTotalRows().getValue());
+                }
+                queries.add(limitExceededBucket.toAggregateProto(LIMIT_EXCEEDED_BUCKET,
+                        sharedQueryTextCollector));
+                // need to re-sort now including the limit exceeded bucket
+                sort(queries);
             }
             proto.add(Aggregate.QueriesByType.newBuilder()
                     .setType(outerEntry.getKey())
@@ -140,38 +145,24 @@ public class QueryCollector {
             long executionCount, long totalRows, boolean hasTotalRows,
             Map<String, MutableQuery> queriesForType) {
         MutableQuery aggregateQuery = queriesForType.get(queryText);
-        boolean truncateAndRecalculateMinQuery = false;
         if (aggregateQuery == null) {
-            if (maxMultiplierWhileBuilding != 0
-                    && queriesForType.size() >= limit * maxMultiplierWhileBuilding) {
-                MinQuery minQuery = minQueryPerType.get(queryType);
-                if (minQuery != null && totalDurationNanos < minQuery.totalDurationNanos()) {
-                    return;
+            if (queriesForType.size() < limitPerQueryType * maxMultiplierWhileBuilding) {
+                aggregateQuery = new MutableQuery();
+                queriesForType.put(queryText, aggregateQuery);
+            } else {
+                aggregateQuery = limitExceededBuckets.get(queryType);
+                if (aggregateQuery == null) {
+                    aggregateQuery = new MutableQuery();
+                    limitExceededBuckets.put(queryType, aggregateQuery);
                 }
-                truncateAndRecalculateMinQuery = true;
             }
-            aggregateQuery = new MutableQuery();
-            queriesForType.put(queryText, aggregateQuery);
         }
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);
         aggregateQuery.addToExecutionCount(executionCount);
         aggregateQuery.addToTotalRows(hasTotalRows, totalRows);
-        if (truncateAndRecalculateMinQuery) {
-            // TODO report checker framework issue that occurs without this suppression
-            @SuppressWarnings("assignment.type.incompatible")
-            List<Entry<String, MutableQuery>> sortedEntries =
-                    bySmallestTotalDuration.sortedCopy(queriesForType.entrySet());
-            // remove smallest N (instead of just smallest 1) to avoid re-sort again so quickly
-            for (int i = 0; i < REMOVE_SMALLEST_N; i++) {
-                queriesForType.remove(sortedEntries.get(i).getKey());
-            }
-            MutableQuery lastQuery = sortedEntries.get(REMOVE_SMALLEST_N).getValue();
-            minQueryPerType.put(queryType,
-                    ImmutableMinQuery.of(lastQuery, lastQuery.getTotalDurationNanos()));
-        }
     }
 
-    private static void orderAggregateQueries(List<Aggregate.Query> queries) {
+    private static void sort(List<Aggregate.Query> queries) {
         // reverse sort by total
         Collections.sort(queries, new Comparator<Aggregate.Query>() {
             @Override
@@ -179,13 +170,6 @@ public class QueryCollector {
                 return Doubles.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
             }
         });
-    }
-
-    @Value.Immutable
-    @Styles.AllParameters
-    interface MinQuery {
-        MutableQuery query();
-        double totalDurationNanos();
     }
 
     public static class SharedQueryTextCollector {

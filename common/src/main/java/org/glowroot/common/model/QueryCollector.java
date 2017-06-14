@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.common.model;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -22,9 +23,12 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class QueryCollector {
+
+    private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
     // first key is query type, second key is either full query text (if query text is relatively
     // short) or sha1 of full query text (if query text is long)
@@ -46,15 +50,36 @@ public class QueryCollector {
         return lastCaptureTime;
     }
 
-    public Map<String, List<MutableQuery>> getSortedQueries() {
+    public Map<String, List<MutableQuery>> getSortedAndTruncatedQueries() {
         Map<String, List<MutableQuery>> sortedQueries = Maps.newHashMap();
-        for (Entry<String, Map<String, MutableQuery>> entry : queries.entrySet()) {
-            List<MutableQuery> list =
-                    MutableQuery.byTotalDurationDesc.sortedCopy(entry.getValue().values());
-            if (list.size() > limitPerQueryType) {
-                list = list.subList(0, limitPerQueryType);
+        for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
+            Map<String, MutableQuery> innerMap = outerEntry.getValue();
+            if (innerMap.size() > limitPerQueryType) {
+                MutableQuery limitExceededBucket = innerMap.get(LIMIT_EXCEEDED_BUCKET);
+                if (limitExceededBucket == null) {
+                    limitExceededBucket = new MutableQuery(LIMIT_EXCEEDED_BUCKET, null);
+                } else {
+                    // make copy to not modify original
+                    innerMap = Maps.newHashMap(innerMap);
+                    // remove temporarily so it is not included in initial sort/truncation
+                    innerMap.remove(LIMIT_EXCEEDED_BUCKET);
+                }
+                List<MutableQuery> queries =
+                        MutableQuery.byTotalDurationDesc.sortedCopy(innerMap.values());
+                List<MutableQuery> exceededQueries =
+                        queries.subList(limitPerQueryType, queries.size());
+                queries = Lists.newArrayList(queries.subList(0, limitPerQueryType));
+                for (MutableQuery exceededQuery : exceededQueries) {
+                    limitExceededBucket.addTo(exceededQuery);
+                }
+                queries.add(limitExceededBucket);
+                // need to re-sort now including limit exceeded bucket
+                Collections.sort(queries, MutableQuery.byTotalDurationDesc);
+                sortedQueries.put(outerEntry.getKey(), queries);
+            } else {
+                sortedQueries.put(outerEntry.getKey(),
+                        MutableQuery.byTotalDurationDesc.sortedCopy(innerMap.values()));
             }
-            sortedQueries.put(entry.getKey(), list);
         }
         return sortedQueries;
     }
