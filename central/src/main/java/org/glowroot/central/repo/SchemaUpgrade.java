@@ -828,13 +828,13 @@ public class SchemaUpgrade {
         dropTable("config");
     }
 
-    private void upgradeAlertConfigs() {
+    private void upgradeAlertConfigs() throws Exception {
         PreparedStatement readPS =
                 session.prepare("select agent_rollup_id, config from agent_config");
         PreparedStatement insertPS = session.prepare("insert into agent_config (agent_rollup_id,"
                 + " config, config_update, config_update_token) values (?, ?, ?, ?)");
         BoundStatement boundStatement = readPS.bind();
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = Sessions.execute(session, boundStatement);
         for (Row row : results) {
             String agentRollupId = row.getString(0);
             AgentConfig oldAgentConfig;
@@ -853,7 +853,7 @@ public class SchemaUpgrade {
             boundStatement = insertPS.bind();
             boundStatement.setString(0, agentRollupId);
             boundStatement.setBytes(1, ByteBuffer.wrap(agentConfig.toByteArray()));
-            session.execute(boundStatement);
+            Sessions.execute(session, boundStatement);
         }
     }
 
