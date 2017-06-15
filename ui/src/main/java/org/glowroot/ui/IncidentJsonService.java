@@ -29,14 +29,14 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
 @JsonService
-class AlertIncidentJsonService {
+class IncidentJsonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final TriggeredAlertRepository triggeredAlertRepository;
     private final ConfigRepository configRepository;
 
-    AlertIncidentJsonService(TriggeredAlertRepository triggeredAlertRepository,
+    IncidentJsonService(TriggeredAlertRepository triggeredAlertRepository,
             ConfigRepository configRepository) {
         this.triggeredAlertRepository = triggeredAlertRepository;
         this.configRepository = configRepository;
@@ -44,17 +44,16 @@ class AlertIncidentJsonService {
 
     // seems better to read all alerts and then filter by permission, instead of reading
     // individually for every agentRollupId that user has permission to read
-    @GET(path = "/backend/alerts", permission = "")
+    @GET(path = "/backend/incidents", permission = "")
     String getAlerts(@BindAuthentication Authentication authentication) throws Exception {
         List<TriggeredAlert> triggeredAlerts = triggeredAlertRepository.readAll();
         List<AlertItem> alertItems = Lists.newArrayList();
         for (TriggeredAlert triggeredAlert : triggeredAlerts) {
-            if (!authentication.isAgentPermitted(triggeredAlert.agentRollupId(), "agent:alert")) {
-                continue;
+            if (authentication.isAgentPermitted(triggeredAlert.agentRollupId(), "agent:incident")) {
+                alertItems.add(ImmutableAlertItem.of(triggeredAlert.agentRollupId(),
+                        AlertConfigJsonService.getConditionDisplay(triggeredAlert.agentRollupId(),
+                                triggeredAlert.alertCondition(), configRepository)));
             }
-            alertItems.add(ImmutableAlertItem.of(triggeredAlert.agentRollupId(),
-                    AlertConfigJsonService.getConditionDisplay(triggeredAlert.agentRollupId(),
-                            triggeredAlert.alertCondition(), configRepository)));
         }
         return mapper.writeValueAsString(alertItems);
     }

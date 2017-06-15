@@ -65,7 +65,6 @@ class ConfigFile {
         }
         if (adminFile.exists()) {
             adminRootObjectNode = getRootObjectNode(adminFile);
-            // upgrade from 0.9.1 to 0.9.2
             upgradeAdminIfNeeded(adminRootObjectNode);
         } else {
             adminRootObjectNode = mapper.createObjectNode();
@@ -232,13 +231,19 @@ class ConfigFile {
                 }
                 permissions.add(permissionNode.asText());
             }
-            boolean upgraded = PermissionParser.upgradeAgentPermissions(permissions);
+            boolean upgraded =
+                    PermissionParser.upgradeAgentPermissionsFrom_0_9_1_to_0_9_2(permissions);
             if (upgraded && permissions.contains("admin:view")
                     && permissions.contains("admin:edit")) {
                 // only apply these updates if upgrading from 0.9.1 to 0.9.2
                 permissions.remove("admin:view");
                 permissions.remove("admin:edit");
                 permissions.add("admin");
+            }
+            // upgrade from 0.9.19 to 0.9.20
+            int index = permissions.indexOf("agent:alert");
+            if (index != -1) {
+                permissions.set(index, "agent:incident");
             }
             permissionsArrayNode.removeAll();
             for (String permission : permissions) {

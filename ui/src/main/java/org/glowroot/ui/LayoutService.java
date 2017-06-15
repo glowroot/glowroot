@@ -106,8 +106,8 @@ class LayoutService {
         boolean showNavbarTransaction = permissions.transaction().hasSomeAccess();
         boolean showNavbarError = permissions.error().hasSomeAccess();
         boolean showNavbarJvm = permissions.jvm().hasSomeAccess();
-        boolean showNavbarAlert =
-                permissions.alert() && !configRepository.getAlertConfigs(AGENT_ID).isEmpty();
+        boolean showNavbarIncident =
+                permissions.incident() && !configRepository.getAlertConfigs(AGENT_ID).isEmpty();
         // for now (for simplicity) reporting requires permission for ALL reportable metrics
         // (currently transaction:overview, error:overview and jvm:gauges)
         boolean showNavbarReport = permissions.transaction().overview()
@@ -142,7 +142,7 @@ class LayoutService {
                 .build());
 
         return createLayout(authentication, agentRollups, showNavbarTransaction, showNavbarError,
-                showNavbarJvm, false, showNavbarAlert, showNavbarReport, showNavbarConfig);
+                showNavbarJvm, false, showNavbarIncident, showNavbarReport, showNavbarConfig);
     }
 
     private Layout buildLayoutCentral(Authentication authentication) throws Exception {
@@ -167,7 +167,7 @@ class LayoutService {
                 .showNavbarError(false)
                 .showNavbarJvm(false)
                 .showNavbarSyntheticMonitor(false)
-                .showNavbarAlert(false)
+                .showNavbarIncident(false)
                 .showNavbarReport(false)
                 .showNavbarConfig(false)
                 .adminView(false)
@@ -182,7 +182,7 @@ class LayoutService {
     private ImmutableLayout createLayout(Authentication authentication,
             Map<String, AgentRollupLayout> agentRollups, boolean showNavbarTransaction,
             boolean showNavbarError, boolean showNavbarJvm, boolean showNavbarSyntheticMonitor,
-            boolean showNavbarAlert, boolean showNavbarReport, boolean showNavbarConfig)
+            boolean showNavbarIncident, boolean showNavbarReport, boolean showNavbarConfig)
             throws Exception {
         List<Long> rollupExpirationMillis = Lists.newArrayList();
         for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
@@ -204,7 +204,7 @@ class LayoutService {
                 .showNavbarError(showNavbarError)
                 .showNavbarJvm(showNavbarJvm)
                 .showNavbarSyntheticMonitor(showNavbarSyntheticMonitor)
-                .showNavbarAlert(showNavbarAlert)
+                .showNavbarIncident(showNavbarIncident)
                 .showNavbarReport(showNavbarReport)
                 .showNavbarConfig(showNavbarConfig)
                 .adminView(authentication.isAdminPermitted("admin:view"))
@@ -282,7 +282,7 @@ class LayoutService {
                         .build())
                 .syntheticMonitor(
                         authentication.isAgentPermitted(agentRollupId, "agent:syntheticMonitor"))
-                .alert(authentication.isAgentPermitted(agentRollupId, "agent:alert"))
+                .incident(authentication.isAgentPermitted(agentRollupId, "agent:incident"))
                 .config(ImmutableConfigPermissions.builder()
                         // central supports alert configs and ui config on rollups
                         .view(authentication.isAgentPermitted(agentRollupId, "agent:config:view"))
@@ -328,7 +328,7 @@ class LayoutService {
         private boolean showNavbarError = false;
         private boolean showNavbarJvm = false;
         private boolean showNavbarSyntheticMonitor = false;
-        private boolean showNavbarAlert = false;
+        private boolean showNavbarIncident = false;
         private boolean showNavbarReport = false;
         private boolean showNavbarConfig = false;
 
@@ -344,7 +344,7 @@ class LayoutService {
             showNavbarError = permissions.error().hasSomeAccess();
             showNavbarJvm = permissions.jvm().hasSomeAccess();
             showNavbarSyntheticMonitor = permissions.syntheticMonitor();
-            showNavbarAlert = permissions.alert();
+            showNavbarIncident = permissions.incident();
             // for now (for simplicity) reporting requires permission for ALL reportable metrics
             // (currently transaction:overview, error:overview and jvm:gauges)
             showNavbarReport = permissions.transaction().overview()
@@ -369,7 +369,7 @@ class LayoutService {
             showNavbarJvm = showNavbarJvm || permissions.jvm().hasSomeAccess();
             showNavbarSyntheticMonitor =
                     showNavbarSyntheticMonitor || permissions.syntheticMonitor();
-            showNavbarAlert = showNavbarAlert || permissions.alert();
+            showNavbarIncident = showNavbarIncident || permissions.incident();
             // for now (for simplicity) reporting requires permission for ALL reportable metrics
             // (currently transaction:overview, error:overview and jvm:gauges)
             showNavbarReport = showNavbarReport || (permissions.transaction().overview()
@@ -407,7 +407,8 @@ class LayoutService {
         private ImmutableLayout build(Authentication authentication) throws Exception {
             if (hasSomeAccess) {
                 return createLayout(authentication, agentRollups, showNavbarTransaction,
-                        showNavbarError, showNavbarJvm, showNavbarSyntheticMonitor, showNavbarAlert,
+                        showNavbarError, showNavbarJvm, showNavbarSyntheticMonitor,
+                        showNavbarIncident,
                         showNavbarReport, showNavbarConfig);
             } else {
                 return createNoAccessLayout(authentication);
@@ -440,7 +441,7 @@ class LayoutService {
         abstract boolean showNavbarError();
         abstract boolean showNavbarJvm();
         abstract boolean showNavbarSyntheticMonitor();
-        abstract boolean showNavbarAlert();
+        abstract boolean showNavbarIncident();
         abstract boolean showNavbarReport();
         abstract boolean showNavbarConfig();
         abstract boolean adminView();
@@ -476,7 +477,7 @@ class LayoutService {
         abstract ErrorPermissions error();
         abstract JvmPermissions jvm();
         abstract boolean syntheticMonitor();
-        abstract boolean alert();
+        abstract boolean incident();
         abstract ConfigPermissions config();
 
         private boolean hasSomeAccess() {

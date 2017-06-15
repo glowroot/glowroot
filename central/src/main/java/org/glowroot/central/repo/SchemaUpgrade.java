@@ -83,7 +83,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 26;
+    private static final int CURR_SCHEMA_VERSION = 27;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -230,6 +230,11 @@ public class SchemaUpgrade {
             // this is needed due to change from OldAlertConfig to AlertConfig in schema version 24
             yetAnotherRedoOnTriggeredAlertTable();
             updateSchemaVersion(26);
+        }
+        // 0.9.19 to 0.9.20
+        if (initialSchemaVersion < 27) {
+            updateRolePermissionName();
+            updateSchemaVersion(27);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -863,6 +868,36 @@ public class SchemaUpgrade {
         addColumnIfNotExists("aggregate_tn_throughput_rollup_3", "error_count", "bigint");
     }
 
+    private void updateRolePermissionName() throws Exception {
+        PreparedStatement insertPS =
+                session.prepare("insert into role (name, permissions) values (?, ?)");
+        ResultSet results = Sessions.execute(session, "select name, permissions from role");
+        for (Row row : results) {
+            String name = row.getString(0);
+            Set<String> permissions = row.getSet(1, String.class);
+            boolean updated = false;
+            Set<String> upgradedPermissions = Sets.newHashSet();
+            for (String permission : permissions) {
+                PermissionParser parser = new PermissionParser(permission);
+                parser.parse();
+                if (parser.getPermission().equals("agent:alert")) {
+                    upgradedPermissions.add("agent:"
+                            + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                            + ":incident");
+                    updated = true;
+                } else {
+                    upgradedPermissions.add(permission);
+                }
+            }
+            if (updated) {
+                BoundStatement boundStatement = insertPS.bind();
+                boundStatement.setString(0, name);
+                boundStatement.setSet(1, upgradedPermissions, String.class);
+                Sessions.execute(session, boundStatement);
+            }
+        }
+    }
+
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
             throws Exception {
         if (!columnExists(tableName, columnName)) {
@@ -1011,7 +1046,7 @@ public class SchemaUpgrade {
         }
         for (Entry<String, List<String>> entry : Multimaps.asMap(agentPermissions).entrySet()) {
             List<String> perms = entry.getValue();
-            PermissionParser.upgradeAgentPermissions(perms);
+            PermissionParser.upgradeAgentPermissionsFrom_0_9_1_to_0_9_2(perms);
             for (String perm : perms) {
                 updatedPermissions
                         .add("agent:" + entry.getKey() + ":" + perm.substring("agent:".length()));

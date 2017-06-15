@@ -123,8 +123,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
         if (this.roleConfigs.isEmpty()) {
             this.roleConfigs = ImmutableList.<RoleConfig>of(ImmutableRoleConfig.builder()
                     .name("Administrator")
-                    .addPermissions("agent:transaction", "agent:error", "agent:jvm", "agent:alert",
-                            "agent:config", "admin")
+                    .addPermissions("agent:transaction", "agent:error", "agent:jvm",
+                            "agent:incident", "agent:config", "admin")
                     .build());
         }
         EmbeddedWebConfig webConfig =

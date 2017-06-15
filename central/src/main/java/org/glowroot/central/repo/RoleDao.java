@@ -81,7 +81,7 @@ public class RoleDao {
             boundStatement.setString(i++, "Administrator");
             boundStatement.setSet(i++,
                     ImmutableSet.of("agent:*:transaction", "agent:*:error", "agent:*:jvm",
-                            "agent:*:syntheticMonitor", "agent:*:alert", "agent:*:config",
+                            "agent:*:syntheticMonitor", "agent:*:incident", "agent:*:config",
                             "admin"));
             Sessions.execute(session, boundStatement);
         }

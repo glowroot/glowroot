@@ -16,21 +16,21 @@
 
 /* global glowroot */
 
-glowroot.controller('AlertsCtrl', [
+glowroot.controller('IncidentsCtrl', [
   '$scope',
   '$http',
   '$timeout',
   'httpErrors',
   function ($scope, $http, $timeout, httpErrors) {
     // \u00b7 is &middot;
-    document.title = 'Alerts \u00b7 Glowroot';
-    $scope.$parent.activeNavbarItem = 'alert';
+    document.title = 'Incidents \u00b7 Glowroot';
+    $scope.$parent.activeNavbarItem = 'incident';
 
     function refresh() {
-      $http.get('backend/alerts')
+      $http.get('backend/incidents')
           .then(function (response) {
             $scope.loaded = true;
-            $scope.alerts = response.data;
+            $scope.incidents = response.data;
           }, function (response) {
             httpErrors.handle(response, $scope);
           });

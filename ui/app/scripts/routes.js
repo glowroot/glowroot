@@ -391,10 +391,10 @@ glowroot.config([
         waitForLayout: waitForLayout(false)
       }
     });
-    $stateProvider.state('alerts', {
-      url: '/alerts',
-      templateUrl: 'views/alerts.html',
-      controller: 'AlertsCtrl',
+    $stateProvider.state('incidents', {
+      url: '/incidents',
+      templateUrl: 'views/incidents.html',
+      controller: 'IncidentsCtrl',
       resolve: {
         waitForLayout: waitForLayout(false)
       }

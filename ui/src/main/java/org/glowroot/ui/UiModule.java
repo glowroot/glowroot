@@ -120,7 +120,7 @@ public class UiModule {
         jsonServices.add(new GaugeValueJsonService(gaugeValueRepository, rollupLevelService,
                 agentRollupRepository, configRepository));
         jsonServices.add(new JvmJsonService(environmentRepository, liveJvmService));
-        jsonServices.add(new AlertIncidentJsonService(triggeredAlertRepository,
+        jsonServices.add(new IncidentJsonService(triggeredAlertRepository,
                 configRepository));
         jsonServices.add(new ReportJsonService(aggregateRepository, agentRollupRepository,
                 gaugeValueRepository));
@@ -163,7 +163,7 @@ public class UiModule {
         httpServices.put(Pattern.compile("^/transaction/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/alerts$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/incidents$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/report/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);

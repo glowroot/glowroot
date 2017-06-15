@@ -129,7 +129,7 @@ public class PermissionParser {
         return Joiner.on(',').join(quotedIfNeededAgentRollupIds);
     }
 
-    public static boolean upgradeAgentPermissions(List<String> perms) {
+    public static boolean upgradeAgentPermissionsFrom_0_9_1_to_0_9_2(List<String> perms) {
         boolean hasAgentJvmAll = perms.contains("agent:tool");
         boolean upgrade = false;
         ListIterator<String> i = perms.listIterator();

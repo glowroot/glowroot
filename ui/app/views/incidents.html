@@ -15,23 +15,23 @@
 -->
 <div class="gt-header" style="margin-bottom: 6px;">
   <div class="gt-header-page-name">
-    Alerts
+    Incidents
   </div>
 </div>
 
-<div class="panel panel-default gt-alert-active">
+<div class="panel panel-default gt-incident-active">
   <div class="panel-heading">
-    <h2>Active alerts</h2>
+    <h2>Active incidents</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div style="margin: 15px;">
-      <div ng-repeat="alert in alerts"
+      <div ng-repeat="incident in incidents"
            class="gt-red"
            style="font-weight: bold; font-size: 16px;">
-        <span ng-if="layout.central">{{layout.agentRollups[alert.agentRollupId].display}} - </span>
-        {{alert.display}}
+        <span ng-if="layout.central">{{layout.agentRollups[incident.agentRollupId].display}} - </span>
+        {{incident.display}}
       </div>
     </div>
   </div>
@@ -39,7 +39,7 @@
 
 <!--div class="panel panel-default">
   <div class="panel-heading">
-    <h2>Alert history</h2>
+    <h2>Incident history</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
