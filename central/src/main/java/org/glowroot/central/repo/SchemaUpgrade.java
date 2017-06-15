@@ -72,7 +72,6 @@ import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SchemaUpgrade {
@@ -849,6 +848,7 @@ public class SchemaUpgrade {
             boundStatement = insertPS.bind();
             boundStatement.setString(0, agentRollupId);
             boundStatement.setBytes(1, ByteBuffer.wrap(agentConfig.toByteArray()));
+            session.execute(boundStatement);
         }
     }
 
@@ -935,7 +935,7 @@ public class SchemaUpgrade {
                 .setMetric("transaction:x-percentile")
                 .setTransactionType(oldAlertConfig.getTransactionType())
                 .setPercentile(oldAlertConfig.getTransactionPercentile())
-                .setThreshold(MILLISECONDS.toNanos(oldAlertConfig.getThresholdMillis().getValue()))
+                .setThreshold(oldAlertConfig.getThresholdMillis().getValue())
                 .setTimePeriodSeconds(oldAlertConfig.getTimePeriodSeconds())
                 .setMinTransactionCount(oldAlertConfig.getMinTransactionCount().getValue())
                 .build();
