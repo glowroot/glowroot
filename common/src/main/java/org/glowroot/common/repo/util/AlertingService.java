@@ -190,7 +190,7 @@ public class AlertingService {
         } else {
             throw new IllegalStateException("Unexpected metric: " + metric);
         }
-        message.append(getOverTheLastText(metricCondition.getTimePeriodSeconds()));
+        message.append(getOverTheLastMinutesText(metricCondition.getTimePeriodSeconds()));
         if (metricCondition.getLowerBoundThreshold()) {
             message.append(getPreLowerBoundText(ok));
         } else {
@@ -299,12 +299,8 @@ public class AlertingService {
         }
     }
 
-    public static String getOverTheLastText(int timePeriodSeconds) {
-        String text = " over the last " + timePeriodSeconds / 60 + " minute";
-        if (timePeriodSeconds != 60) {
-            text += "s";
-        }
-        return text;
+    public static String getOverTheLastMinutesText(int timePeriodSeconds) {
+        return " over the last " + getWithUnit(timePeriodSeconds / 60.0, "minute");
     }
 
     public static String getWithUnit(double val, String unit) {

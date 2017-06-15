@@ -215,7 +215,7 @@
         <div ng-if="config.condition.conditionType === 'heartbeat'">
           <div gt-form-group
                gt-label="Time period"
-               gt-model="config.timePeriodSeconds"
+               gt-model="config.condition.timePeriodSeconds"
                gt-number="true"
                gt-pattern="pattern.integer"
                gt-required="loaded"
@@ -260,7 +260,7 @@
           </div>
           <div gt-form-group
                gt-label="Threshold"
-               gt-model="config.thresholdMillis"
+               gt-model="config.condition.thresholdMillis"
                gt-number="true"
                gt-pattern="pattern.integer"
                gt-required="loaded"

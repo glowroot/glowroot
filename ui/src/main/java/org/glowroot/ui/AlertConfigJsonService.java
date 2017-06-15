@@ -227,7 +227,8 @@ class AlertConfigJsonService {
         } else {
             throw new IllegalStateException("Unexpected metric: " + metric);
         }
-        sb.append(AlertingService.getOverTheLastText(metricCondition.getTimePeriodSeconds()));
+        sb.append(
+                AlertingService.getOverTheLastMinutesText(metricCondition.getTimePeriodSeconds()));
         if (metricCondition.getLowerBoundThreshold()) {
             sb.append(" drops below ");
         } else {
@@ -253,8 +254,8 @@ class AlertConfigJsonService {
 
     private static String getConditionDisplay(HeartbeatCondition condition) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Heartbeat - not received");
-        sb.append(AlertingService.getOverTheLastText(condition.getTimePeriodSeconds()));
+        sb.append("Heartbeat - not received over the last ");
+        sb.append(AlertingService.getWithUnit(condition.getTimePeriodSeconds(), "second"));
         return sb.toString();
     }
 
