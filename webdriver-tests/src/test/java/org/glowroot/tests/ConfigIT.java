@@ -19,6 +19,7 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import org.glowroot.tests.admin.HttpProxyConfigPage;
 import org.glowroot.tests.admin.LdapConfigPage;
 import org.glowroot.tests.admin.SmtpConfigPage;
 import org.glowroot.tests.admin.StorageConfigPage;
@@ -259,6 +260,42 @@ public class ConfigIT extends WebDriverIT {
         assertThat(page.getFromEmailAddressTextField().getAttribute("value"))
                 .isEqualTo("user1234@example.org");
         assertThat(page.getFromDisplayNameTextField().getAttribute("value")).isEqualTo("User 1234");
+    }
+
+    @Test
+    public void shouldUpdateHttpProxyConfig() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        HttpProxyConfigPage page = new HttpProxyConfigPage(driver);
+
+        app.open();
+        globalNavbar.getAdminConfigLink().click();
+        // http proxy config is not accessible via admin sidebar currently
+        app.open("/admin/http-proxy");
+
+        // when
+        page.getHostTextField().clear();
+        page.getHostTextField().sendKeys("example.org");
+        page.getPortTextField().clear();
+        page.getPortTextField().sendKeys("5678");
+        page.getUsernameTextField().clear();
+        page.getUsernameTextField().sendKeys("user1234");
+        page.getPasswordTextField().clear();
+        page.getPasswordTextField().sendKeys("p");
+        page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(1000);
+
+        // then
+        app.open();
+        globalNavbar.getAdminConfigLink().click();
+        // http proxy config is not accessible via admin sidebar currently
+        app.open("/admin/http-proxy");
+        assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
+        assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("5678");
+        assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
+        assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
     }
 
     @Test

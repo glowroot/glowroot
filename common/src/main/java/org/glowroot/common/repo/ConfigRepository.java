@@ -28,6 +28,7 @@ import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
+import org.glowroot.common.config.HttpProxyConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.PagerDutyConfig;
 import org.glowroot.common.config.RoleConfig;
@@ -60,6 +61,7 @@ public interface ConfigRepository {
     String WEB_KEY = "web";
     String STORAGE_KEY = "storage";
     String SMTP_KEY = "smtp";
+    String HTTP_PROXY_KEY = "httpProxy";
     String LDAP_KEY = "ldap";
     String PAGER_DUTY_KEY = "pagerDuty";
 
@@ -143,6 +145,8 @@ public interface ConfigRepository {
     CentralStorageConfig getCentralStorageConfig() throws Exception;
 
     SmtpConfig getSmtpConfig() throws Exception;
+
+    HttpProxyConfig getHttpProxyConfig() throws Exception;
 
     LdapConfig getLdapConfig() throws Exception;
 
@@ -236,6 +240,8 @@ public interface ConfigRepository {
             throws Exception;
 
     void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception;
+
+    void updateHttpProxyConfig(HttpProxyConfig config, String priorVersion) throws Exception;
 
     void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception;
 

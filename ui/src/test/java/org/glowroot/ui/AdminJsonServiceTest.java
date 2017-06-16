@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.repo.util.HttpClient;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.ui.AdminJsonService.SmtpConfigDto;
 
@@ -35,14 +36,16 @@ import static org.mockito.Mockito.mock;
 public class AdminJsonServiceTest {
 
     private MockMailService mailService;
+    private HttpClient httpClient;
     private AdminJsonService adminJsonService;
 
     @Before
     public void beforeEachTest() {
         mailService = new MockMailService();
-        adminJsonService =
-                new AdminJsonService(false, new File("."), null, mock(ConfigRepository.class),
-                        mock(RepoAdmin.class), mock(LiveAggregateRepository.class), mailService);
+        httpClient = mock(HttpClient.class);
+        adminJsonService = new AdminJsonService(false, new File("."), null,
+                mock(ConfigRepository.class), mock(RepoAdmin.class),
+                mock(LiveAggregateRepository.class), mailService, httpClient);
     }
 
     @Test

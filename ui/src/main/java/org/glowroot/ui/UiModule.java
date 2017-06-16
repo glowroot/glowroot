@@ -47,6 +47,7 @@ import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.repo.TriggeredAlertRepository;
+import org.glowroot.common.repo.util.HttpClient;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
@@ -95,6 +96,7 @@ public class UiModule {
             LiveAggregateRepository liveAggregateRepository,
             @Nullable LiveWeavingService liveWeavingService,
             SessionMapFactory sessionMapFactory,
+            HttpClient httpClient,
             int numWorkerThreads,
             String version) throws Exception {
 
@@ -107,7 +109,7 @@ public class UiModule {
         MailService mailService = new MailService();
 
         AdminJsonService adminJsonService = new AdminJsonService(central, confDir, sharedConfDir,
-                configRepository, repoAdmin, liveAggregateRepository, mailService);
+                configRepository, repoAdmin, liveAggregateRepository, mailService, httpClient);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(new TransactionJsonService(transactionCommonService, aggregateRepository,

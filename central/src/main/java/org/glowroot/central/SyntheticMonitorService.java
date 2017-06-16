@@ -564,11 +564,10 @@ class SyntheticMonitorService implements Runnable {
 
         @Override
         public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
-            if (msg instanceof HttpResponse) {
+            if (msg instanceof HttpResponse && msg instanceof HttpContent) {
                 HttpResponse response = (HttpResponse) msg;
                 responseStatus = response.status();
-                if (!responseStatus.equals(HttpResponseStatus.OK) && logger.isDebugEnabled()
-                        && msg instanceof HttpContent) {
+                if (!responseStatus.equals(HttpResponseStatus.OK) && logger.isDebugEnabled()) {
                     HttpContent httpContent = (HttpContent) msg;
                     String content = httpContent.content().toString(CharsetUtil.UTF_8);
                     logger.debug("unexpected response status: {}, content: {}", responseStatus,

@@ -44,11 +44,13 @@ import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
+import org.glowroot.common.config.HttpProxyConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableHealthchecksIoConfig;
+import org.glowroot.common.config.ImmutableHttpProxyConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutablePagerDutyConfig;
 import org.glowroot.common.config.ImmutablePagerDutyIntegrationKey;
@@ -68,6 +70,7 @@ import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Encryption;
+import org.glowroot.common.repo.util.HttpClient;
 import org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.util.ObjectMappers;
@@ -94,13 +97,15 @@ class AdminJsonService {
     private final RepoAdmin repoAdmin;
     private final LiveAggregateRepository liveAggregateRepository;
     private final MailService mailService;
+    private final HttpClient httpClient;
 
     // null when running in servlet container
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     AdminJsonService(boolean central, File confDir, @Nullable File sharedConfDir,
             ConfigRepository configRepository, RepoAdmin repoAdmin,
-            LiveAggregateRepository liveAggregateRepository, MailService mailService) {
+            LiveAggregateRepository liveAggregateRepository, MailService mailService,
+            HttpClient httpClient) {
         this.central = central;
         this.confDir = confDir;
         this.sharedConfDir = sharedConfDir;
@@ -108,6 +113,7 @@ class AdminJsonService {
         this.repoAdmin = repoAdmin;
         this.liveAggregateRepository = liveAggregateRepository;
         this.mailService = mailService;
+        this.httpClient = httpClient;
     }
 
     void setHttpServer(HttpServer httpServer) {
@@ -163,6 +169,12 @@ class AdminJsonService {
                 .config(SmtpConfigDto.create(config))
                 .localServerName(localServerName)
                 .build());
+    }
+
+    @GET(path = "/backend/admin/http-proxy", permission = "admin:view:httpProxy")
+    String getHttpProxyConfig() throws Exception {
+        HttpProxyConfig config = configRepository.getHttpProxyConfig();
+        return mapper.writeValueAsString(HttpProxyConfigDto.create(config));
     }
 
     @GET(path = "/backend/admin/ldap", permission = "admin:view:ldap")
@@ -277,6 +289,19 @@ class AdminJsonService {
         return getSmtpConfig();
     }
 
+    @POST(path = "/backend/admin/http-proxy", permission = "admin:edit:httpProxy")
+    String updateHttpProxyConfig(@BindRequest HttpProxyConfigDto configDto) throws Exception {
+        try {
+            configRepository.updateHttpProxyConfig(configDto.convert(configRepository),
+                    configDto.version());
+        } catch (SymmetricEncryptionKeyMissingException e) {
+            return "{\"symmetricEncryptionKeyMissing\":true}";
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getHttpProxyConfig();
+    }
+
     @POST(path = "/backend/admin/ldap", permission = "admin:edit:ldap")
     String updateLdapConfig(@BindRequest LdapConfigDto configDto) throws Exception {
         try {
@@ -348,8 +373,45 @@ class AdminJsonService {
         return "{}";
     }
 
-    @POST(path = "/backend/admin/test-ldap-connection", permission = "admin:edit:ldap")
-    String testLdapConnection(@BindRequest LdapConfigDto configDto) throws Exception {
+    @POST(path = "/backend/admin/test-http-proxy", permission = "admin:edit:httpProxy")
+    String testHttpProxy(@BindRequest HttpProxyConfigDto configDto) throws IOException {
+        // capturing newPlainPassword separately so that newPassword doesn't go through
+        // encryption/decryption which has possibility of throwing
+        // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
+        HttpProxyConfigDto configDtoWithoutNewPassword;
+        String passwordOverride;
+        String newPassword = configDto.newPassword();
+        if (newPassword.isEmpty()) {
+            configDtoWithoutNewPassword = configDto;
+            passwordOverride = null;
+        } else {
+            configDtoWithoutNewPassword = ImmutableHttpProxyConfigDto.builder()
+                    .copyFrom(configDto)
+                    .newPassword("")
+                    .build();
+            passwordOverride = newPassword;
+        }
+        String testUrl = configDtoWithoutNewPassword.testUrl();
+        checkNotNull(testUrl);
+        String responseContent;
+        try {
+            responseContent = httpClient.getWithHttpProxyConfigOverride(testUrl,
+                    configDtoWithoutNewPassword.convert(configRepository), passwordOverride);
+        } catch (Exception e) {
+            logger.debug(e.getMessage(), e);
+            return createErrorResponse(e.getMessage());
+        }
+        StringWriter sw = new StringWriter();
+        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        jg.writeStartObject();
+        jg.writeStringField("content", responseContent);
+        jg.writeEndObject();
+        jg.close();
+        return sw.toString();
+    }
+
+    @POST(path = "/backend/admin/test-ldap", permission = "admin:edit:ldap")
+    String testLdap(@BindRequest LdapConfigDto configDto) throws Exception {
         // capturing newPlainPassword separately so that newPassword doesn't go through
         // encryption/decryption which has possibility of throwing
         // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
@@ -684,6 +746,51 @@ class AdminJsonService {
                     .putAllAdditionalProperties(config.additionalProperties())
                     .fromEmailAddress(config.fromEmailAddress())
                     .fromDisplayName(config.fromDisplayName())
+                    .version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class HttpProxyConfigDto {
+
+        abstract String host();
+        abstract @Nullable Integer port();
+        abstract String username();
+        abstract boolean passwordExists();
+        @Value.Default
+        String newPassword() { // only used in request
+            return "";
+        }
+        abstract @Nullable String testUrl(); // only used in request
+        abstract String version();
+
+        private HttpProxyConfig convert(ConfigRepository configRepository) throws Exception {
+            ImmutableHttpProxyConfig.Builder builder = ImmutableHttpProxyConfig.builder()
+                    .host(host())
+                    .port(port())
+                    .username(username());
+            if (!passwordExists()) {
+                // clear password
+                builder.password("");
+            } else if (passwordExists() && !newPassword().isEmpty()) {
+                // change password
+                String newPassword =
+                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey());
+                builder.password(newPassword);
+            } else {
+                // keep existing password
+                builder.password(configRepository.getHttpProxyConfig().password());
+            }
+            return builder.build();
+        }
+
+        private static HttpProxyConfigDto create(HttpProxyConfig config) {
+            return ImmutableHttpProxyConfigDto.builder()
+                    .host(config.host())
+                    .port(config.port())
+                    .username(config.username())
+                    .passwordExists(!config.password().isEmpty())
                     .version(config.version())
                     .build();
         }

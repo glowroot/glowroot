@@ -47,9 +47,11 @@ import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
+import org.glowroot.common.config.HttpProxyConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableHealthchecksIoConfig;
+import org.glowroot.common.config.ImmutableHttpProxyConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutablePagerDutyConfig;
 import org.glowroot.common.config.ImmutableRoleConfig;
@@ -90,6 +92,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile EmbeddedWebConfig webConfig;
     private volatile EmbeddedStorageConfig storageConfig;
     private volatile SmtpConfig smtpConfig;
+    private volatile HttpProxyConfig httpProxyConfig;
     private volatile LdapConfig ldapConfig;
     private volatile PagerDutyConfig pagerDutyConfig;
     private volatile HealthchecksIoConfig healthchecksIoConfig;
@@ -159,6 +162,13 @@ class ConfigRepositoryImpl implements ConfigRepository {
             this.smtpConfig = ImmutableSmtpConfig.builder().build();
         } else {
             this.smtpConfig = smtpConfig;
+        }
+        HttpProxyConfig httpProxyConfig =
+                configService.getAdminConfig(HTTP_PROXY_KEY, ImmutableHttpProxyConfig.class);
+        if (httpProxyConfig == null) {
+            this.httpProxyConfig = ImmutableHttpProxyConfig.builder().build();
+        } else {
+            this.httpProxyConfig = httpProxyConfig;
         }
         LdapConfig ldapConfig = configService.getAdminConfig(LDAP_KEY, ImmutableLdapConfig.class);
         if (ldapConfig == null) {
@@ -382,6 +392,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public SmtpConfig getSmtpConfig() {
         return smtpConfig;
+    }
+
+    @Override
+    public HttpProxyConfig getHttpProxyConfig() {
+        return httpProxyConfig;
     }
 
     @Override
@@ -869,6 +884,16 @@ class ConfigRepositoryImpl implements ConfigRepository {
             checkVersionsEqual(smtpConfig.version(), priorVersion);
             configService.updateAdminConfig(SMTP_KEY, config);
             smtpConfig = config;
+        }
+    }
+
+    @Override
+    public void updateHttpProxyConfig(HttpProxyConfig config, String priorVersion)
+            throws Exception {
+        synchronized (writeLock) {
+            checkVersionsEqual(httpProxyConfig.version(), priorVersion);
+            configService.updateAdminConfig(HTTP_PROXY_KEY, config);
+            httpProxyConfig = config;
         }
     }
 

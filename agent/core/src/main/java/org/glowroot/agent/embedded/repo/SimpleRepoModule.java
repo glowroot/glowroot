@@ -35,6 +35,7 @@ import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.repo.util.AlertingService;
+import org.glowroot.common.repo.util.HttpClient;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
@@ -62,6 +63,7 @@ public class SimpleRepoModule {
     private final RepoAdmin repoAdmin;
     private final RollupLevelService rollupLevelService;
     private final AlertingService alertingService;
+    private final HttpClient httpClient;
     private final @Nullable ReaperRunnable reaperRunnable;
 
     public SimpleRepoModule(DataSource dataSource, File dataDir, Clock clock, Ticker ticker,
@@ -107,8 +109,10 @@ public class SimpleRepoModule {
                 configRepository, environmentDao, gaugeValueDao, gaugeNameDao, transactionTypeDao,
                 fullQueryTextDao, traceAttributeNameDao);
 
+        httpClient = new HttpClient(configRepository);
+
         alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
-                gaugeValueDao, rollupLevelService, new MailService());
+                gaugeValueDao, rollupLevelService, new MailService(), httpClient);
         if (backgroundExecutor == null) {
             reaperRunnable = null;
         } else {
@@ -174,6 +178,10 @@ public class SimpleRepoModule {
 
     public AlertingService getAlertingService() {
         return alertingService;
+    }
+
+    public HttpClient getHttpClient() {
+        return httpClient;
     }
 
     @OnlyUsedByTests

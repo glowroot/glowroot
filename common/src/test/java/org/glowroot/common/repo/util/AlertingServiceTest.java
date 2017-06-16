@@ -24,6 +24,8 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.common.config.HttpProxyConfig;
+import org.glowroot.common.config.ImmutableHttpProxyConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.SmtpConfig.ConnectionSecurity;
@@ -100,6 +102,7 @@ public class AlertingServiceTest {
     private static final LazySecretKey LAZY_SECRET_KEY;
 
     private static final SmtpConfig SMTP_CONFIG;
+    private static final HttpProxyConfig HTTP_PROXY_CONFIG;
 
     static {
         try {
@@ -115,6 +118,7 @@ public class AlertingServiceTest {
                     .putAdditionalProperties("a", "x")
                     .putAdditionalProperties("b", "y")
                     .build();
+            HTTP_PROXY_CONFIG = ImmutableHttpProxyConfig.builder().build();
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -127,6 +131,7 @@ public class AlertingServiceTest {
     private GaugeValueRepository gaugeValueRepository;
     private RollupLevelService rollupLevelService;
     private MockMailService mailService;
+    private HttpClient httpClient;
 
     @Before
     public void beforeEachTest() throws Exception {
@@ -143,8 +148,10 @@ public class AlertingServiceTest {
         gaugeValueRepository = mock(GaugeValueRepository.class);
         rollupLevelService = mock(RollupLevelService.class);
         mailService = new MockMailService();
+        httpClient = new HttpClient(configRepository);
         when(configRepository.getLazySecretKey()).thenReturn(LAZY_SECRET_KEY);
         when(configRepository.getSmtpConfig()).thenReturn(SMTP_CONFIG);
+        when(configRepository.getHttpProxyConfig()).thenReturn(HTTP_PROXY_CONFIG);
     }
 
     @Test
@@ -153,7 +160,7 @@ public class AlertingServiceTest {
         setupForTransaction(1000001);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService);
+                rollupLevelService, mailService, httpClient);
         // when
         alertingService.checkMetricAlert("", "", TRANSACTION_TIME_ALERT_CONDITION,
                 TRANSACTION_X_PERCENTILE_CONDITION, ALERT_NOTIFICATION, 120000);
@@ -170,7 +177,7 @@ public class AlertingServiceTest {
         setupForTransaction(1000000);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService);
+                rollupLevelService, mailService, httpClient);
         // when
         alertingService.checkMetricAlert("", "", TRANSACTION_TIME_ALERT_CONDITION,
                 TRANSACTION_X_PERCENTILE_CONDITION, ALERT_NOTIFICATION, 120000);
@@ -184,7 +191,7 @@ public class AlertingServiceTest {
         setupForGauge(500.1);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService);
+                rollupLevelService, mailService, httpClient);
         // when
         alertingService.checkMetricAlert("", "", GAUGE_ALERT_CONDITION, GAUGE_CONDITION,
                 ALERT_NOTIFICATION, 120000);
@@ -201,7 +208,7 @@ public class AlertingServiceTest {
         setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService);
+                rollupLevelService, mailService, httpClient);
         // when
         alertingService.checkMetricAlert("", "", GAUGE_ALERT_CONDITION, GAUGE_CONDITION,
                 ALERT_NOTIFICATION, 120000);
@@ -215,7 +222,7 @@ public class AlertingServiceTest {
         setupForGauge(499.9);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService);
+                rollupLevelService, mailService, httpClient);
         // when
         alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONDITION,
                 LOWER_BOUND_GAUGE_CONDITION, ALERT_NOTIFICATION, 120000);
@@ -232,7 +239,7 @@ public class AlertingServiceTest {
         setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService);
+                rollupLevelService, mailService, httpClient);
         // when
         alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONDITION,
                 LOWER_BOUND_GAUGE_CONDITION, ALERT_NOTIFICATION, 120000);

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2017 the original author or authors.
+  Copyright 2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 <div class="panel panel-default">
   <div class="panel-heading">
     <h2>
-      SMTP configuration
+      HTTP Proxy configuration
     </h2>
   </div>
   <div class="panel-body">
@@ -33,7 +33,8 @@
            gt-disabled="!layout.adminEdit"
            gt-width="20em">
         <div class="help-block">
-          SMTP server hostname or IP address.
+          HTTP Proxy server hostname or IP address.
+          Currently this is only used by the PagerDuty integration.
         </div>
       </div>
       <div gt-form-group
@@ -44,22 +45,7 @@
            gt-disabled="!layout.adminEdit"
            gt-width="7em">
         <div class="help-block">
-          Defaults to port 25
-        </div>
-      </div>
-      <div class="form-group gt-form-group-without-help-block">
-        <label class="col-lg-3 control-label">
-          Connection security
-        </label>
-        <div class="col-lg-9">
-          <select ng-model="page.connectionSecurity"
-                  ng-disabled="!layout.adminEdit"
-                  class="form-control"
-                  style="width: auto;">
-            <option value="none">None</option>
-            <option value="ssl-tls">SSL/TLS</option>
-            <option value="starttls">STARTTLS</option>
-          </select>
+          Defaults to port 80.
         </div>
       </div>
       <div gt-form-group
@@ -87,24 +73,6 @@
                  style="max-width: 20em; display: inline-block">
         </div>
       </div>
-      <div gt-form-group
-           gt-label="From email address"
-           gt-model="config.fromEmailAddress"
-           gt-disabled="!layout.adminEdit"
-           gt-width="20em">
-        <div class="help-block">
-          Defaults to <em>glowroot@&lt;server name&gt;</em> (currently glowroot@{{localServerName}}).
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="From display name"
-           gt-model="config.fromDisplayName"
-           gt-disabled="!layout.adminEdit"
-           gt-width="20em">
-        <div class="help-block">
-          Defaults to <em>Glowroot</em>.
-        </div>
-      </div>
       <div class="form-group gt-form-buttons"
            ng-if="layout.adminEdit">
         <div class="col-lg-offset-3 col-lg-9">
@@ -121,25 +89,31 @@
          class="form-horizontal"
          style="padding-top: 30px;">
       <fieldset class="gt-send-email-fieldset">
-        <legend>Send test email</legend>
+        <legend>Test HTTP proxy</legend>
         <div class="form-group">
-          <label class="col-lg-3 control-label" for="testEmailRecipient">
-            Test email recipient
+          <label class="col-lg-3 control-label" for="testUrl">
+            Test url
           </label>
           <div class="col-lg-9">
             <input type="text"
                    class="form-control"
-                   ng-model="page.testEmailRecipient"
-                   id="testEmailRecipient"
+                   ng-model="page.testUrl"
+                   id="testUrl"
                    style="max-width: 25em; float: left; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
             <div gt-button
                  gt-btn-class="btn-default"
-                 gt-label="Send test email"
-                 gt-click="sendTestEmail(deferred)"
-                 gt-disabled="!page.testEmailRecipient || !config.host"
+                 gt-label="Test"
+                 gt-click="testHttpProxy(deferred)"
+                 gt-disabled="!page.testUrl || !config.host"
                  style="vertical-align: top; margin-bottom: 10px;">
             </div>
           </div>
+        </div>
+        <div ng-if="testHttpProxyResponse"
+             style="padding: 0 30px 30px;">
+          <textarea ng-model="testHttpProxyResponse"
+                    style="width: 100%; height: 400px;">
+          </textarea>
         </div>
       </fieldset>
     </div>

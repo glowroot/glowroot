@@ -95,12 +95,12 @@ glowroot.controller('AdminLdapCtrl', [
           });
     };
 
-    $scope.testConnection = function (deferred) {
+    $scope.testLdap = function (deferred) {
       // copy to modify for the http post data
       var postData = angular.copy($scope.config);
       postData.authTestUsername = $scope.page.authTestUsername;
       postData.authTestPassword = $scope.page.authTestPassword;
-      $http.post('backend/admin/test-ldap-connection', postData)
+      $http.post('backend/admin/test-ldap', postData)
           .then(function (response) {
             var data = response.data;
             if (data.error) {

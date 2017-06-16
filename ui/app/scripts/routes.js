@@ -543,6 +543,11 @@ glowroot.config([
       templateUrl: 'views/admin/smtp.html',
       controller: 'AdminSmtpCtrl'
     });
+    $stateProvider.state('admin.httpProxy', {
+      url: '/http-proxy',
+      templateUrl: 'views/admin/http-proxy.html',
+      controller: 'AdminHttpProxyCtrl'
+    });
     $stateProvider.state('admin.ldap', {
       url: '/ldap',
       templateUrl: 'views/admin/ldap.html',

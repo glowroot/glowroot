@@ -31,6 +31,7 @@ import org.glowroot.agent.embedded.repo.TraceDao;
 import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
+import org.glowroot.common.repo.util.HttpClient;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
@@ -51,16 +52,19 @@ class CollectorImpl implements Collector {
     private final GaugeValueDao gaugeValueDao;
     private final ConfigRepository configRepository;
     private final AlertingService alertingService;
+    private final HttpClient httpClient;
 
     CollectorImpl(EnvironmentDao environmentDao, AggregateDao aggregateRepository,
             TraceDao traceRepository, GaugeValueDao gaugeValueRepository,
-            ConfigRepository configRepository, AlertingService alertingService) {
+            ConfigRepository configRepository, AlertingService alertingService,
+            HttpClient httpClient) {
         this.environmentDao = environmentDao;
         this.aggregateDao = aggregateRepository;
         this.traceDao = traceRepository;
         this.gaugeValueDao = gaugeValueRepository;
         this.configRepository = configRepository;
         this.alertingService = alertingService;
+        this.httpClient = httpClient;
     }
 
     @Override
@@ -91,7 +95,7 @@ class CollectorImpl implements Collector {
         HealthchecksIoConfig healthchecksIoConfig = configRepository.getHealthchecksIoConfig();
         String healthchecksIoPingUrl = healthchecksIoConfig.pingUrl();
         if (!healthchecksIoPingUrl.isEmpty()) {
-            AlertingService.get(healthchecksIoPingUrl);
+            httpClient.get(healthchecksIoPingUrl);
         }
     }
 

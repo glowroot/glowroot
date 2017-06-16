@@ -1,5 +1,5 @@
 <!--
-  Copyright 2016 the original author or authors.
+  Copyright 2016-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@
              gt-col-class1="col-lg-4"
              gt-col-class2="col-lg-8">
           <div class="help-block">
-            This is required in order to send alerts.
+            LDAP server hostname or IP address.
           </div>
         </div>
         <div gt-form-group
@@ -214,31 +214,35 @@
       <fieldset style="padding-bottom: 30px;">
         <legend>Test LDAP authentication</legend>
         <div class="gt-test-ldap-alignment">
-          <label class="col-lg-4 control-label" for="authTestUsername">
-            Username
-          </label>
-          <div class="col-lg-8">
-            <input type="text"
-                   class="form-control"
-                   ng-model="page.authTestUsername"
-                   id="authTestUsername"
-                   style="max-width: 15em; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="col-lg-4 control-label" for="authTestUsername">
+              Username
+            </label>
+            <div class="col-lg-8">
+              <input type="text"
+                     class="form-control"
+                     ng-model="page.authTestUsername"
+                     id="authTestUsername"
+                     style="max-width: 15em; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
+            </div>
           </div>
-          <label class="col-lg-4 control-label" for="authTestPassword">
-            Password
-          </label>
-          <div class="col-lg-8" style="padding-top: 10px;">
-            <input type="password"
-                   class="form-control"
-                   ng-model="page.authTestPassword"
-                   id="authTestPassword"
-                   style="max-width: 15em; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="col-lg-4 control-label" for="authTestPassword">
+              Password
+            </label>
+            <div class="col-lg-8" style="padding-top: 10px;">
+              <input type="password"
+                     class="form-control"
+                     ng-model="page.authTestPassword"
+                     id="authTestPassword"
+                     style="max-width: 15em; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
+            </div>
           </div>
           <div class="col-lg-offset-4 col-lg-8" style="padding-top: 10px;">
             <div gt-button
                  gt-btn-class="btn-default"
                  gt-label="Test"
-                 gt-click="testConnection(deferred)"
+                 gt-click="testLdap(deferred)"
                  gt-disabled="!page.authTestUsername || !page.authTestPassword || !config.host || formCtrl.$invalid"
                  style="vertical-align: top; margin-bottom: 10px;">
             </div>

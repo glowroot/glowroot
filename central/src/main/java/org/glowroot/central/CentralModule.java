@@ -66,6 +66,7 @@ import org.glowroot.central.util.Sessions;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.AlertingService;
+import org.glowroot.common.repo.util.HttpClient;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
@@ -163,9 +164,10 @@ public class CentralModule {
 
             RollupLevelService rollupLevelService =
                     new RollupLevelService(repos.getConfigRepository(), clock);
+            HttpClient httpClient = new HttpClient(repos.getConfigRepository());
             AlertingService alertingService = new AlertingService(repos.getConfigRepository(),
                     repos.getTriggeredAlertDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
-                    rollupLevelService, new MailService());
+                    rollupLevelService, new MailService(), httpClient);
             centralAlertingService =
                     new CentralAlertingService(repos.getConfigRepository(), alertingService);
 
@@ -229,6 +231,7 @@ public class CentralModule {
                             return clusterManagerEffectivelyFinal.createReplicatedMap("sessionMap");
                         }
                     })
+                    .httpClient(httpClient)
                     .numWorkerThreads(50)
                     .version(version)
                     .build();

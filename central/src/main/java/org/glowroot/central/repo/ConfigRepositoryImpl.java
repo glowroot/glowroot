@@ -40,9 +40,11 @@ import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
+import org.glowroot.common.config.HttpProxyConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
+import org.glowroot.common.config.ImmutableHttpProxyConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutablePagerDutyConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
@@ -105,6 +107,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         centralConfigDao.addKeyType(WEB_KEY, ImmutableCentralWebConfig.class);
         centralConfigDao.addKeyType(STORAGE_KEY, ImmutableCentralStorageConfig.class);
         centralConfigDao.addKeyType(SMTP_KEY, ImmutableSmtpConfig.class);
+        centralConfigDao.addKeyType(HTTP_PROXY_KEY, ImmutableHttpProxyConfig.class);
         centralConfigDao.addKeyType(LDAP_KEY, ImmutableLdapConfig.class);
         centralConfigDao.addKeyType(PAGER_DUTY_KEY, ImmutableLdapConfig.class);
     }
@@ -355,6 +358,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         SmtpConfig config = (SmtpConfig) centralConfigDao.read(SMTP_KEY);
         if (config == null) {
             return ImmutableSmtpConfig.builder().build();
+        }
+        return config;
+    }
+
+    @Override
+    public HttpProxyConfig getHttpProxyConfig() throws Exception {
+        HttpProxyConfig config = (HttpProxyConfig) centralConfigDao.read(HTTP_PROXY_KEY);
+        if (config == null) {
+            return ImmutableHttpProxyConfig.builder().build();
         }
         return config;
     }
@@ -976,6 +988,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception {
         centralConfigDao.write(SMTP_KEY, config, priorVersion);
+    }
+
+    @Override
+    public void updateHttpProxyConfig(HttpProxyConfig config, String priorVersion)
+            throws Exception {
+        centralConfigDao.write(HTTP_PROXY_KEY, config, priorVersion);
     }
 
     @Override

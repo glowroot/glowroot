@@ -17,7 +17,6 @@ package org.glowroot.common.repo.util;
 
 import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
-import java.net.URI;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map.Entry;
@@ -37,31 +36,6 @@ import javax.xml.bind.DatatypeConverter;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
-import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObject;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,6 +68,7 @@ public class AlertingService {
     private final ConfigRepository configRepository;
     private final TriggeredAlertRepository triggeredAlertRepository;
     private final MailService mailService;
+    private final HttpClient httpClient;
 
     private final MetricService metricService;
 
@@ -103,10 +78,11 @@ public class AlertingService {
     public AlertingService(ConfigRepository configRepository,
             TriggeredAlertRepository triggeredAlertRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
-            RollupLevelService rollupLevelService, MailService mailService) {
+            RollupLevelService rollupLevelService, MailService mailService, HttpClient httpClient) {
         this.configRepository = configRepository;
         this.triggeredAlertRepository = triggeredAlertRepository;
         this.mailService = mailService;
+        this.httpClient = httpClient;
         this.metricService =
                 new MetricService(aggregateRepository, gaugeValueRepository, rollupLevelService);
     }
@@ -289,7 +265,56 @@ public class AlertingService {
         }
     }
 
-    // optional newPlainPassword can be passed in to test SMTP from
+    private void sendPagerDuty(String agentRollupId, String agentRollupDisplay,
+            AlertCondition alertCondition, PagerDutyNotification pagerDutyNotification,
+            long endTime, String subject, String messageText, boolean ok) throws Exception {
+        String dedupKey;
+        if (agentRollupId.isEmpty()) {
+            dedupKey = InetAddress.getLocalHost().getHostName();
+        } else {
+            dedupKey = agentRollupId;
+        }
+        dedupKey = escapeDedupKeyPart(dedupKey) + ":" + Versions.getVersion(alertCondition);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        JsonGenerator jg = ObjectMappers.create().getFactory().createGenerator(baos);
+        jg.writeStartObject();
+        jg.writeStringField("routing_key", pagerDutyNotification.getPagerDutyIntegrationKey());
+        jg.writeStringField("dedup_key", dedupKey);
+        jg.writeStringField("event_action", ok ? "resolve" : "trigger");
+        jg.writeStringField("client", "Glowroot");
+        jg.writeObjectFieldStart("payload");
+        jg.writeStringField("summary", subject + "\n\n" + messageText);
+        if (agentRollupId.isEmpty()) {
+            jg.writeStringField("source", InetAddress.getLocalHost().getHostName());
+        } else {
+            jg.writeStringField("source", agentRollupDisplay);
+        }
+        jg.writeStringField("severity", "critical");
+        jg.writeStringField("timestamp", formatAsIso8601(endTime));
+        switch (alertCondition.getValCase()) {
+            case METRIC_CONDITION:
+                jg.writeStringField("class",
+                        "metric: " + alertCondition.getMetricCondition().getMetric());
+                break;
+            case SYNTHETIC_MONITOR_CONDITION:
+                jg.writeStringField("class", "synthetic monitor");
+                break;
+            case HEARTBEAT_CONDITION:
+                jg.writeStringField("class", "heartbeat");
+                break;
+            default:
+                logger.warn("unexpected alert condition: " + alertCondition.getValCase().name());
+                jg.writeStringField("class", "unknown: " + alertCondition.getValCase().name());
+                break;
+        }
+        jg.writeEndObject();
+        jg.writeEndObject();
+        jg.close();
+        httpClient.post("https://events.pagerduty.com/v2/enqueue", baos.toByteArray(),
+                "application/json");
+    }
+
+    // optional passwordOverride can be passed in to test SMTP from
     // AdminJsonService.sentTestEmail() without possibility of throwing
     // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
     public static void sendEmail(List<String> emailAddresses, String subject, String messageText,
@@ -392,54 +417,6 @@ public class AlertingService {
         return Session.getInstance(props, authenticator);
     }
 
-    private static void sendPagerDuty(String agentRollupId, String agentRollupDisplay,
-            AlertCondition alertCondition, PagerDutyNotification pagerDutyNotification,
-            long endTime, String subject, String messageText, boolean ok) throws Exception {
-        String dedupKey;
-        if (agentRollupId.isEmpty()) {
-            dedupKey = InetAddress.getLocalHost().getHostName();
-        } else {
-            dedupKey = agentRollupId;
-        }
-        dedupKey = escapeDedupKeyPart(dedupKey) + ":" + Versions.getVersion(alertCondition);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        JsonGenerator jg = ObjectMappers.create().getFactory().createGenerator(baos);
-        jg.writeStartObject();
-        jg.writeStringField("routing_key", pagerDutyNotification.getPagerDutyIntegrationKey());
-        jg.writeStringField("dedup_key", dedupKey);
-        jg.writeStringField("event_action", ok ? "resolve" : "trigger");
-        jg.writeStringField("client", "Glowroot");
-        jg.writeObjectFieldStart("payload");
-        jg.writeStringField("summary", subject + "\n\n" + messageText);
-        if (agentRollupId.isEmpty()) {
-            jg.writeStringField("source", InetAddress.getLocalHost().getHostName());
-        } else {
-            jg.writeStringField("source", agentRollupDisplay);
-        }
-        jg.writeStringField("severity", "critical");
-        jg.writeStringField("timestamp", formatAsIso8601(endTime));
-        switch (alertCondition.getValCase()) {
-            case METRIC_CONDITION:
-                jg.writeStringField("class",
-                        "metric: " + alertCondition.getMetricCondition().getMetric());
-                break;
-            case SYNTHETIC_MONITOR_CONDITION:
-                jg.writeStringField("class", "synthetic monitor");
-                break;
-            case HEARTBEAT_CONDITION:
-                jg.writeStringField("class", "heartbeat");
-                break;
-            default:
-                logger.warn("unexpected alert condition: " + alertCondition.getValCase().name());
-                jg.writeStringField("class", "unknown: " + alertCondition.getValCase().name());
-                break;
-        }
-        jg.writeEndObject();
-        jg.writeEndObject();
-        jg.close();
-        post("https://events.pagerduty.com/v2/enqueue", baos.toByteArray(), "application/json");
-    }
-
     private static String getPassword(SmtpConfig smtpConfig, @Nullable String passwordOverride,
             LazySecretKey lazySecretKey) throws Exception {
         if (passwordOverride != null) {
@@ -460,98 +437,5 @@ public class AlertingService {
         Calendar end = Calendar.getInstance();
         end.setTimeInMillis(endTime);
         return DatatypeConverter.printDateTime(end);
-    }
-
-    private static void post(String url, byte[] content, String contentType) throws Exception {
-        postOrGet(url, content, contentType);
-    }
-
-    public static void get(String url) throws Exception {
-        postOrGet(url, null, null);
-    }
-
-    private static void postOrGet(String url, byte /*@Nullable*/ [] content,
-            @Nullable String contentType) throws Exception {
-        URI uri = new URI(url);
-        String scheme = uri.getScheme();
-        if (scheme == null) {
-            return;
-        }
-        final boolean ssl = uri.getScheme().equalsIgnoreCase("https");
-        final String host = uri.getHost();
-        if (host == null) {
-            return;
-        }
-        final int port;
-        if (uri.getPort() == -1) {
-            port = ssl ? 443 : 80;
-        } else {
-            port = uri.getPort();
-        }
-        EventLoopGroup group = new NioEventLoopGroup();
-        try {
-            Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(group)
-                    .channel(NioSocketChannel.class)
-                    .handler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        protected void initChannel(SocketChannel ch) throws Exception {
-                            ChannelPipeline p = ch.pipeline();
-                            if (ssl) {
-                                SslContext sslContext = SslContextBuilder.forClient().build();
-                                p.addLast(sslContext.newHandler(ch.alloc(), host, port));
-                            }
-                            p.addLast(new HttpClientCodec());
-                            p.addLast(new HttpObjectAggregator(1048576));
-                            p.addLast(new HttpClientHandler());
-                        }
-                    });
-            HttpRequest request;
-            if (content == null) {
-                request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET,
-                        uri.getRawPath());
-            } else {
-                request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
-                        uri.getRawPath(), Unpooled.wrappedBuffer(content));
-                request.headers().set(HttpHeaderNames.CONTENT_TYPE, checkNotNull(contentType));
-                request.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.length);
-            }
-            request.headers().set(HttpHeaderNames.HOST, host);
-            request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-            Channel ch = bootstrap.connect(host, port).sync().channel();
-            ch.writeAndFlush(request);
-            ch.closeFuture().sync();
-        } finally {
-            group.shutdownGracefully();
-        }
-    }
-
-    public static class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> {
-
-        @Override
-        public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
-            if (msg instanceof HttpResponse) {
-                HttpResponse response = (HttpResponse) msg;
-                int statusCode = response.status().code();
-                if (statusCode < 200 || statusCode >= 300) {
-                    if (msg instanceof HttpContent) {
-                        HttpContent httpContent = (HttpContent) msg;
-                        String content = httpContent.content().toString(CharsetUtil.UTF_8);
-                        logger.warn("unexpected response status: {}, content: {}",
-                                response.status(), content);
-                    } else {
-                        logger.warn("unexpected response status: {}", response.status());
-                    }
-                }
-            } else {
-                logger.error("unexpected response: {}", msg);
-            }
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            logger.error(cause.getMessage(), cause);
-            ctx.close();
-        }
     }
 }

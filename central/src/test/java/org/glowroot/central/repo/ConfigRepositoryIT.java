@@ -30,8 +30,10 @@ import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
+import org.glowroot.common.config.HttpProxyConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
+import org.glowroot.common.config.ImmutableHttpProxyConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
@@ -566,6 +568,25 @@ public class ConfigRepositoryIT {
         // when
         configRepository.updateSmtpConfig(updatedConfig, config.version());
         config = configRepository.getSmtpConfig();
+
+        // then
+        assertThat(config).isEqualTo(updatedConfig);
+    }
+
+    @Test
+    public void shouldUpdateHttpProxyConfig() throws Exception {
+        // given
+        HttpProxyConfig config = configRepository.getHttpProxyConfig();
+        HttpProxyConfig updatedConfig = ImmutableHttpProxyConfig.builder()
+                .host("a")
+                .port(555)
+                .username("b")
+                .password("c")
+                .build();
+
+        // when
+        configRepository.updateHttpProxyConfig(updatedConfig, config.version());
+        config = configRepository.getHttpProxyConfig();
 
         // then
         assertThat(config).isEqualTo(updatedConfig);

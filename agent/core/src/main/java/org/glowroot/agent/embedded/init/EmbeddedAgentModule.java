@@ -168,7 +168,8 @@ class EmbeddedAgentModule {
                                 simpleRepoModule.getEnvironmentDao(),
                                 simpleRepoModule.getAggregateDao(), simpleRepoModule.getTraceDao(),
                                 simpleRepoModule.getGaugeValueDao(), configRepository,
-                                simpleRepoModule.getAlertingService());
+                                simpleRepoModule.getAlertingService(),
+                                simpleRepoModule.getHttpClient());
                         collectorProxy.setInstance(collectorImpl);
                         // embedded CollectorImpl does nothing with agent config parameter
                         collectorImpl.init(confDir, sharedConfDir,
@@ -237,6 +238,7 @@ class EmbeddedAgentModule {
                             return Maps.newConcurrentMap();
                         }
                     })
+                    .httpClient(simpleRepoModule.getHttpClient())
                     .numWorkerThreads(2)
                     .version(version)
                     .build();
@@ -275,6 +277,7 @@ class EmbeddedAgentModule {
                             return Maps.newConcurrentMap();
                         }
                     })
+                    .httpClient(simpleRepoModule.getHttpClient())
                     .numWorkerThreads(10)
                     .version(version)
                     .build();
