@@ -1,0 +1,8 @@
+{
+  "name": "Elasticsearch Plugin",
+  "id": "elasticsearch",
+  "aspects": [
+    "org.glowroot.agent.plugin.elasticsearch.ActionRequestBuilderAspect",
+    "org.glowroot.agent.plugin.elasticsearch.ListenableActionFutureAspect"
+  ]
+}

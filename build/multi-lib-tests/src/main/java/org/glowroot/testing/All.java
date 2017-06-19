@@ -20,6 +20,7 @@ public class All {
     public static void main(String[] args) throws Exception {
         AgentIntegrationTests.main(args);
         Cassandra.main(args);
+        Elasticsearch.main(args);
         Executor.main(args);
         Grails.main(args);
         Hibernate.main(args);

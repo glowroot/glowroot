@@ -27,8 +27,8 @@ case "$1" in
                fi
                if [[ "$SKIP_SHADING" != "true" ]]
                then
-                 # run play tests
-                 extra_profiles="-P play-2.4.x,play-2.x"
+                 # run elasticsearch and play tests
+                 extra_profiles="-P elasticsearch-5.x,play-2.4.x,play-2.x"
                fi
                mvn clean install $skip_some_modules \
                                  $extra_profiles \
@@ -160,6 +160,14 @@ case "$1" in
                  common_mvn_args="$common_mvn_args \
                                   -Denforcer.skip \
                                   \"-DargLine=$surefire_jvm_args \\\${jacocoArgLine}\""
+                 # elasticsearch 5.x
+                 mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
+                                      -P elasticsearch-5.x \
+                                      -B
+                 # elasticsearch 2.x
+                 mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
+                                      -P elasticsearch-2.x \
+                                      -B
                  # async-http-client 2.x (AsyncHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-2.x \

@@ -43,6 +43,7 @@
     <module>agent/it-harness</module>
     <module>agent/integration-tests</module>
     <module>agent/plugins/cassandra-plugin</module>
+    <module>agent/plugins/elasticsearch-plugin</module>
     <module>agent/plugins/executor-plugin</module>
     <module>agent/plugins/grails-plugin</module>
     <module>agent/plugins/hibernate-plugin</module>
