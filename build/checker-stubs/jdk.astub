@@ -77,6 +77,14 @@ public class FileChannel {
 }
 
 /* ========================================================================== */
+package java.security;
+
+public class CodeSource {
+    public CodeSource(URL url, Certificate @Nullable [] signers);
+    public CodeSource(URL url, CodeSigner @Nullable [] signers);
+}
+
+/* ========================================================================== */
 package java.text;
 
 public class MessageFormat {

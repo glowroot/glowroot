@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,16 @@
  */
 package org.glowroot.agent.weaving;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.CodeSigner;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -106,6 +113,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             }
         }
         byte[] bytes = manualClasses.get(name);
+        CodeSource codeSource = null;
         if (bytes == null) {
             String resourceName = ClassNames.toInternalName(name) + ".class";
             URL url = getResource(resourceName);
@@ -117,17 +125,33 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             } catch (IOException e) {
                 throw new ClassNotFoundException("Error loading class", e);
             }
+            String path = url.getPath();
+            if (url.getProtocol().equals("jar")) {
+                int index = path.indexOf("!/");
+                File jarFile = new File(path.substring(5, index));
+                try {
+                    codeSource = new CodeSource(jarFile.toURI().toURL(), (CodeSigner[]) null);
+                } catch (MalformedURLException e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
         }
-        return weaveAndDefineClass(name, bytes);
+        return weaveAndDefineClass(name, bytes, codeSource);
     }
 
-    public Class<?> weaveAndDefineClass(String name, byte[] bytes) {
+    public Class<?> weaveAndDefineClass(String name, byte[] bytes,
+            @Nullable CodeSource codeSource) {
         byte[] wovenBytes = weaveClass(name, bytes);
         String packageName = Reflection.getPackageName(name);
         if (getPackage(packageName) == null) {
             definePackage(packageName, null, null, null, null, null, null, null);
         }
-        return super.defineClass(name, wovenBytes, 0, wovenBytes.length);
+        if (codeSource == null) {
+            return super.defineClass(name, wovenBytes, 0, wovenBytes.length);
+        } else {
+            ProtectionDomain protectionDomain = new ProtectionDomain(codeSource, null);
+            return super.defineClass(name, wovenBytes, 0, wovenBytes.length, protectionDomain);
+        }
     }
 
     private byte[] weaveClass(String name, byte[] bytes) throws ClassFormatError {

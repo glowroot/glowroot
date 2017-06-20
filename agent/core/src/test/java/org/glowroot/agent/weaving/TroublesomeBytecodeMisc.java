@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ public class TroublesomeBytecodeMisc implements Misc {
         IsolatedWeavingClassLoader loader =
                 (IsolatedWeavingClassLoader) getClass().getClassLoader();
         byte[] bytes = generateTroublesomeBytecode();
-        Class<?> clazz = loader.weaveAndDefineClass("TroublesomeBytecode", bytes);
+        Class<?> clazz = loader.weaveAndDefineClass("TroublesomeBytecode", bytes, null);
         Reflection.initialize(clazz);
     }
 
