@@ -25,7 +25,13 @@ case "$1" in
                  # (these modules are built and tested in TARGET=test2 below)
                  skip_some_modules="-pl !:glowroot-central,!:glowroot-webdriver-tests"
                fi
+               if [[ "$SKIP_SHADING" != "true" ]]
+               then
+                 # run play tests
+                 extra_profiles="-P play-2.4.x,play-2.x"
+               fi
                mvn clean install $skip_some_modules \
+                                 $extra_profiles \
                                  -DargLine="$surefire_jvm_args" \
                                  $skip_shading_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \

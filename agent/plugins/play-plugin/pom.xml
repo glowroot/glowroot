@@ -109,6 +109,20 @@
           <version>${project.version}</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+          <version>1.10</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+          <version>${scala.version}</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
       <repositories>
         <repository>
