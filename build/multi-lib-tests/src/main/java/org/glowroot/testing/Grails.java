@@ -44,12 +44,9 @@ public class Grails {
         }
         runSpecial320("3.2.0");
         run("3.2.1");
-        run("3.2.4");
-        run("3.2.5");
-        run("3.2.6");
-        run("3.2.7");
-        run("3.2.8");
-        run("3.2.9");
+        for (int i = 4; i <= 11; i++) {
+            run("3.2." + i);
+        }
     }
 
     private static void run(String version) throws Exception {

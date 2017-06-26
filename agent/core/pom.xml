@@ -179,7 +179,7 @@
       <!-- this is included to test weaving against jdk 1.7 bytecode -->
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
-      <version>1.4.15.Final</version>
+      <version>1.4.18.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>

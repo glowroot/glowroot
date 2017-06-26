@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,11 +88,7 @@ glowroot.controller('TransactionFlameGraphCtrl', [
               }
               var flameGraph = d3.flameGraph()
                   .height(height * 18)
-                  .width(960)
-                  .cellHeight(18)
-                  .transitionDuration(750)
-                  .transitionEase('cubic-in-out')
-                  .title('');
+                  .width(960);
               d3.select('#chart')
                   .datum(chartData)
                   .call(flameGraph);
