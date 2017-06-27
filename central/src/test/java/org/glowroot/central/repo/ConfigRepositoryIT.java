@@ -77,16 +77,15 @@ public class ConfigRepositoryIT {
         session = cluster.newSession();
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
-        KeyspaceMetadata keyspaceMetadata =
-                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
-
         session.execute("drop table if exists agent_rollup");
         session.execute("drop table if exists agent_config");
         session.execute("drop table if exists user");
         session.execute("drop table if exists role");
         session.execute("drop table if exists central_config");
-        clusterManager = ClusterManager.create();
+        KeyspaceMetadata keyspaceMetadata =
+                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
+        clusterManager = ClusterManager.create();
         agentConfigDao = new AgentConfigDao(session, clusterManager);
         AgentRollupDao agentRollupDao = new AgentRollupDao(session, clusterManager);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
