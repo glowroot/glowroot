@@ -17,20 +17,38 @@ then
   skip_shading_opt=-Dglowroot.shade.skip
 fi
 
+test1_excluded_plugin_modules="!:glowroot-agent-cassandra-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-elasticsearch-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-hibernate-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-http-client-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jdbc-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jms-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jsp-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-logger-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-netty-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-play-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-quartz-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-redis-plugin"
+
+# these plugins are not excluded in test1:
+#   glowroot-agent-executor-plugin
+#   glowroot-agent-grails-plugin
+#   glowroot-agent-jaxrs-plugin
+#   glowroot-agent-jsf-plugin
+#   glowroot-agent-servlet-plugin
+#   glowroot-agent-spring-plugin
+#   glowroot-agent-struts-plugin
+
 case "$1" in
 
-      "test1") if [[ "$java_version" > "1.8" ]]
+      "test1") # excluding :glowroot-agent-ui-sandbox and :glowroot-agent since they depend on plugins which are being excluded
+               exclude_modules="-pl $test1_excluded_plugin_modules,!:glowroot-agent-ui-sandbox,!:glowroot-agent"
+               if [[ "$java_version" > "1.8" ]]
                then
-                 # skipping central and webdriver modules to keep build time consistently under the 50 minute limit
-                 # (these modules are built and tested in TARGET=test2 below)
-                 skip_some_modules="-pl !:glowroot-central,!:glowroot-webdriver-tests"
+                 # these modules are only part of build under Java 8+
+                 exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
                fi
-               if [[ "$SKIP_SHADING" != "true" ]]
-               then
-                 # run elasticsearch and play tests
-                 extra_profiles="-P elasticsearch-5.x,play-2.4.x,play-2.x"
-               fi
-               mvn clean install $skip_some_modules \
+               mvn clean install $exclude_modules \
                                  $extra_profiles \
                                  -DargLine="$surefire_jvm_args" \
                                  $skip_shading_opt \
@@ -38,13 +56,31 @@ case "$1" in
                                  -B
                ;;
 
-      "test2") # skipping tests to keep build time consistently under the 50 minute limit
-               # (these tests are already run in TARGET=test1 above)
-               mvn clean install -DargLine="$surefire_jvm_args" \
+      "test2") mvn clean install -DargLine="$surefire_jvm_args" \
                                  -DskipTests \
                                  $skip_shading_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
+
+               if [[ "$java_version" > "1.8" && "$SKIP_SHADING" != "true" ]]
+               then
+                 # elasticsearch and play tests both require Java 8 and shading
+                 extra_profiles="-P elasticsearch-5.x,play-2.4.x,play-2.x"
+               fi
+               mvn clean install -pl ${test1_excluded_plugin_modules//!:/:} \
+                                 $extra_profiles \
+                                 -DargLine="$surefire_jvm_args" \
+                                 $skip_shading_opt \
+                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                 -B
+               ;;
+
+      "test3") mvn clean install -DargLine="$surefire_jvm_args" \
+                                 -DskipTests \
+                                 $skip_shading_opt \
+                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                 -B
+
                # --no-snapshot-updates is used in the builds below because maven-remote-resources-plugin uses an old version of
                # its parent pom that includes the snapshot repository http://repository.apache.org/snapshots, causing maven to
                # check for glowroot snapshot artifacts in that repository, sometimes causing slowness during travis-ci builds
@@ -263,7 +299,7 @@ case "$1" in
                  cd webdriver-tests
                  # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
                  while true; do sleep 60; echo ...; done &
-                 mvn clean verify -Dit.test=!AlertConfigIT \
+                 mvn clean verify -Dit.test=!AlertConfigIT,!ConfigIT \
                                   -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                   -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
                                   -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
@@ -284,7 +320,7 @@ case "$1" in
                  cd webdriver-tests
                  # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
                  while true; do sleep 60; echo ...; done &
-                 mvn clean verify -Dit.test=AlertConfigIT \
+                 mvn clean verify -Dit.test=AlertConfigIT,ConfigIT \
                                   -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                   -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
                                   -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
