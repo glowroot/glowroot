@@ -88,5 +88,4 @@ matrix:
     - jdk: oraclejdk8
       env: TARGET=saucelabs2 SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
 addons:
-  firefox: "latest"
   sauce_connect: true
