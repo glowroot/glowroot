@@ -50,6 +50,8 @@ public class InstrumentationConfigPage {
 
     public void clickMethodNameAutoCompleteItem(String methodName) {
         clickTypeAheadItem("Method name", methodName);
+        // wait for signature radio button list to populate
+        Utils.withWait(driver, xpath("//label[text()[contains(.,'" + methodName + "')]]//input"));
     }
 
     public void clickAnySignatureRadioButton() {
