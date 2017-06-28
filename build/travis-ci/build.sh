@@ -150,7 +150,7 @@ case "$1" in
                fi
                ;;
 
-      "sonar") if [[ $SONAR_LOGIN && "$TRAVIS_PULL_REQUEST" == "false" ]]
+      "sonar") if [[ $SONAR_LOGIN ]]
                then
                  # need to skip shading when running jacoco, otherwise the bytecode changes done to
                  # the classes during shading will modify the jacoco class id and the sonar reports
@@ -186,6 +186,7 @@ case "$1" in
                  # install unshaded to run webdriver tests against the central collector
                  mvn clean install -Dglowroot.shade.skip -DskipTests -B
                  # run webdriver tests against the central collector
+                 rm -rf webdriver-tests/cassandra
                  mvn $common_mvn_args -pl :glowroot-webdriver-tests \
                                       -Dglowroot.internal.webdriver.useCentral=true \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
@@ -194,52 +195,61 @@ case "$1" in
                  mvn clean install -DskipTests -B
                  # enforcer.skip is needed for remaining tests
                  common_mvn_args="$common_mvn_args \
-                                  -Denforcer.skip \
-                                  \"-DargLine=$surefire_jvm_args \\\${jacocoArgLine}\""
+                                  -Denforcer.skip"
                  # elasticsearch 5.x
                  mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
                                       -P elasticsearch-5.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # elasticsearch 2.x
                  mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
                                       -P elasticsearch-2.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # async-http-client 2.x (AsyncHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-2.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # async-http-client 1.x (AsyncHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-1.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # okhttp prior to 2.2.0 (OkHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -Dokhttpclient.version=2.1.0 \
                                       -Dit.test=OkHttpClientPluginIT \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # LogbackIT (only runs against shaded agent)
                  mvn $common_mvn_args -pl agent/plugins/logger-plugin \
                                       -Dit.test=LogbackIT \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # LogbackIT prior to 0.9.16
                  mvn $common_mvn_args -pl agent/plugins/logger-plugin \
                                       -P logback-old \
                                       -Dit.test=LogbackIT \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # netty 3.x
                  mvn $common_mvn_args -pl agent/plugins/netty-plugin \
                                       -P netty-3.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # play 2.2.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-2.2.x,play-2.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # TODO Play 2.0.x and 2.1.x require Java 7
                  # play 1.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-1.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # the sonar.login system property is set in the pom.xml using the
                  # environment variable SONAR_LOGIN (instead of setting the system
@@ -252,7 +262,7 @@ case "$1" in
                                    -Dglowroot.shade.skip \
                                    -B
                else
-                 echo skipping, sonar analysis only runs against master repository and master branch
+                 echo SONAR_LOGIN token missing
                fi
                ;;
 
