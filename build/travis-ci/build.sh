@@ -270,7 +270,8 @@ case "$1" in
                  # environment variable SONAR_LOGIN (instead of setting the system
                  # property on the command line which which would make it visible to ps)
                  mvn clean verify sonar:sonar -pl !build/license-bundle,!build/checker-jdk6,!build/multi-lib-tests,!agent/benchmarks,!agent/ui-sandbox,!agent/dist-maven-plugin,!agent/dist \
-                                   -Dsonar.host.url=$SONAR_HOST_URL \
+                                   -Dsonar.host.url=https://sonarcloud.io \
+                                   -Dsonar.organization=glowroot \
                                    -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
                                    -Dsonar.jacoco.itReportPath=$PWD/jacoco-combined-it.exec \
                                    -DargLine="$surefire_jvm_args" \
