@@ -80,6 +80,10 @@ public class AlertConfigPage {
         return withWait(xpath("//div[@gt-model='config.condition.minTransactionCount']//input"));
     }
 
+    public Select getSeveritySelect() {
+        return new Select(withWait(xpath("//select[@ng-model='config.severity']")));
+    }
+
     public WebElement getEmailAddressesTextField() {
         return withWait(xpath("//div[@gt-model='page.emailAddresses']//textarea"));
     }

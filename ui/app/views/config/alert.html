@@ -270,6 +270,31 @@
         </div>
       </fieldset>
       <fieldset>
+        <legend>Severity</legend>
+        <div class="form-group gt-form-group-without-help-block"
+             ng-class="{'has-error': formCtrl.severity.$invalid}">
+          <label class="col-lg-3 control-label"
+                 for="severity">
+            Severity
+          </label>
+          <div class="col-lg-9">
+            <select ng-model="config.severity"
+                    class="form-control"
+                    id="severity"
+                    name="severity"
+                    ng-required="true"
+                    ng-disabled="!agentPermissions.config.edit.alert"
+                    style="width: auto;">
+              <option value="" ng-if="!config.severity"></option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset>
         <legend>Email notification</legend>
         <div gt-form-group
              gt-type="textarea"

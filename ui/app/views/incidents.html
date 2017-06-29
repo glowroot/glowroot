@@ -22,30 +22,64 @@
 
 <div class="panel panel-default gt-incident-active">
   <div class="panel-heading">
-    <h2>Active incidents</h2>
+    <h2>Open</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div style="margin: 15px;">
-      <div ng-repeat="incident in incidents"
-           class="gt-red"
-           style="font-weight: bold; font-size: 16px;">
-        <span ng-if="layout.central">{{layout.agentRollups[incident.agentRollupId].display}} - </span>
-        {{incident.display}}
-      </div>
+      <table class="table"
+             style="table-layout: fixed;">
+        <thead>
+        <th style="width: 105px;">Severity</th>
+        <th style="width: 110px;">Duration</th>
+        <th style="width: 160px;" ng-if="layout.central">Agent</th>
+        <th>Condition</th>
+        </thead>
+        <tbody>
+        <tr ng-repeat="incident in openIncidents"
+            class="gt-red"
+            style="font-weight: bold; font-size: 16px;">
+          <td>{{incident.severity}}</td>
+          <td>{{incident.durationMillis | gtDuration}}</td>
+          <td ng-if="layout.central">{{layout.agentRollups[incident.agentRollupId].display}}</td>
+          <td>{{incident.display}}</td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
 
-<!--div class="panel panel-default">
+<div class="panel panel-default"
+     ng-if="loaded"
+     style="margin-top: 50px;">
   <div class="panel-heading">
-    <h2>Incident history</h2>
+    <h2>Resolved<div style="float: right; padding-top: 10px; font-size: 24px;">(last 30 days)</div></h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div style="margin: 15px;">
-      TODO
+      <table class="table"
+             style="table-layout: fixed;">
+        <thead>
+        <th style="width: 105px;">Severity</th>
+        <th style="width: 220px;">Resolved</th>
+        <th style="width: 110px;">Duration</th>
+        <th style="width: 160px;" ng-if="layout.central">Agent</th>
+        <th>Condition</th>
+        </thead>
+        <tbody>
+        <tr ng-repeat="incident in resolvedIncidents"
+            style="font-size: 16px;">
+          <td>{{incident.severity}}</td>
+          <td>{{incident.resolveTime | date:'medium'}}</td>
+          <td>{{incident.durationMillis | gtDuration}}</td>
+          <td ng-if="layout.central">{{layout.agentRollups[incident.agentRollupId].display}}</td>
+          <td>{{incident.display}}</td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   </div>
-</div-->
+</div>

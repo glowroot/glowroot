@@ -41,12 +41,12 @@ import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common.repo.IncidentRepository;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.SyntheticResultRepository;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
-import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.util.HttpClient;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
@@ -89,7 +89,7 @@ public class UiModule {
             TraceRepository traceRepository,
             GaugeValueRepository gaugeValueRepository,
             @Nullable SyntheticResultRepository syntheticResultRepository, // null for embedded
-            TriggeredAlertRepository triggeredAlertRepository,
+            IncidentRepository incidentRepository,
             RepoAdmin repoAdmin,
             RollupLevelService rollupLevelService,
             LiveTraceRepository liveTraceRepository,
@@ -122,8 +122,8 @@ public class UiModule {
         jsonServices.add(new GaugeValueJsonService(gaugeValueRepository, rollupLevelService,
                 agentRollupRepository, configRepository));
         jsonServices.add(new JvmJsonService(environmentRepository, liveJvmService));
-        jsonServices.add(new IncidentJsonService(triggeredAlertRepository,
-                configRepository));
+        jsonServices.add(new IncidentJsonService(incidentRepository,
+                configRepository, clock));
         jsonServices.add(new ReportJsonService(aggregateRepository, agentRollupRepository,
                 gaugeValueRepository));
         jsonServices.add(new ConfigJsonService(agentRollupRepository, gaugeValueRepository,

@@ -27,18 +27,21 @@ import org.immutables.value.Value;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 @Value.Immutable
 public abstract class AlertConfig {
 
     public abstract AlertCondition condition();
+    public abstract AlertSeverity severity();
     public abstract @Nullable ImmutableEmailNotification emailNotification();
     public abstract @Nullable ImmutablePagerDutyNotification pagerDutyNotification();
 
     public static AlertConfig create(AgentConfig.AlertConfig config) {
         ImmutableAlertConfig.Builder builder = ImmutableAlertConfig.builder()
-                .condition(create(config.getCondition()));
+                .condition(create(config.getCondition()))
+                .severity(config.getSeverity());
         AlertNotification notification = config.getNotification();
         if (notification.hasEmailNotification()) {
             builder.emailNotification(create(notification.getEmailNotification()));
@@ -51,7 +54,8 @@ public abstract class AlertConfig {
 
     public AgentConfig.AlertConfig toProto() {
         AgentConfig.AlertConfig.Builder builder = AgentConfig.AlertConfig.newBuilder()
-                .setCondition(toProto(condition()));
+                .setCondition(toProto(condition()))
+                .setSeverity(severity());
         EmailNotification emailNotification = emailNotification();
         if (emailNotification != null) {
             builder.getNotificationBuilder().setEmailNotification(toProto(emailNotification));

@@ -31,11 +31,13 @@ class ReaperRunnable extends ScheduledRunnable {
     private final GaugeNameDao gaugeNameDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
+    private final IncidentDao incidentDao;
     private final Clock clock;
 
     ReaperRunnable(ConfigRepository configService, AggregateDao aggregateDao, TraceDao traceDao,
             GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
-            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao, Clock clock) {
+            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+            IncidentDao incidentDao, Clock clock) {
         this.configRepository = configService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
@@ -43,6 +45,7 @@ class ReaperRunnable extends ScheduledRunnable {
         this.gaugeNameDao = gaugeNameDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
+        this.incidentDao = incidentDao;
         this.clock = clock;
     }
 
@@ -83,5 +86,7 @@ class ReaperRunnable extends ScheduledRunnable {
             fullQueryTextDao
                     .deleteBefore(currentTime - HOURS.toMillis(fullQueryTextExpirationHours));
         }
+        incidentDao.deleteResolvedIncidentsBefore(
+                currentTime - HOURS.toMillis(StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS));
     }
 }

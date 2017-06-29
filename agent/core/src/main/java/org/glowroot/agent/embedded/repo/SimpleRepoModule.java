@@ -58,7 +58,7 @@ public class SimpleRepoModule {
     private final TraceAttributeNameDao traceAttributeNameDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
-    private final TriggeredAlertDao triggeredAlertDao;
+    private final IncidentDao incidentDao;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final RollupLevelService rollupLevelService;
@@ -99,7 +99,7 @@ public class SimpleRepoModule {
                 fullQueryTextDao, traceAttributeNameDao);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
-        triggeredAlertDao = new TriggeredAlertDao(dataSource, schemaVersion);
+        incidentDao = new IncidentDao(dataSource);
 
         if (schemaVersion == null || schemaVersion < CURR_SCHEMA_VERSION) {
             schemaVersionDao.updateSchemaVersion(CURR_SCHEMA_VERSION);
@@ -111,13 +111,14 @@ public class SimpleRepoModule {
 
         httpClient = new HttpClient(configRepository);
 
-        alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
-                gaugeValueDao, rollupLevelService, new MailService(), httpClient);
+        alertingService = new AlertingService(configRepository, incidentDao, aggregateDao,
+                gaugeValueDao, rollupLevelService, new MailService(), httpClient, clock);
         if (backgroundExecutor == null) {
             reaperRunnable = null;
         } else {
-            reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
-                    gaugeValueDao, gaugeNameDao, transactionTypeDao, fullQueryTextDao, clock);
+            reaperRunnable =
+                    new ReaperRunnable(configRepository, aggregateDao, traceDao, gaugeValueDao,
+                            gaugeNameDao, transactionTypeDao, fullQueryTextDao, incidentDao, clock);
             reaperRunnable.scheduleWithFixedDelay(backgroundExecutor,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
@@ -160,8 +161,8 @@ public class SimpleRepoModule {
         return gaugeValueDao;
     }
 
-    public TriggeredAlertDao getTriggeredAlertDao() {
-        return triggeredAlertDao;
+    public IncidentDao getIncidentDao() {
+        return incidentDao;
     }
 
     public ConfigRepository getConfigRepository() {

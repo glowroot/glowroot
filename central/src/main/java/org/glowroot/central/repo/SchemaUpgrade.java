@@ -57,6 +57,7 @@ import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.PermissionParser;
+import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -83,7 +84,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 30;
+    private static final int CURR_SCHEMA_VERSION = 31;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -196,12 +197,12 @@ public class SchemaUpgrade {
             updateSchemaVersion(18);
         }
         if (initialSchemaVersion < 19) {
-            anotherRedoOnTriggeredAlertTable();
+            redoOnTriggeredAlertTable();
             updateSchemaVersion(19);
         }
         // 0.9.15 to 0.9.16
         if (initialSchemaVersion < 20) {
-            yetAnotherRedoOnTriggeredAlertTable();
+            redoOnTriggeredAlertTable();
             updateSchemaVersion(20);
         }
         if (initialSchemaVersion < 21) {
@@ -228,7 +229,7 @@ public class SchemaUpgrade {
         }
         if (initialSchemaVersion < 26) {
             // this is needed due to change from OldAlertConfig to AlertConfig in schema version 24
-            yetAnotherRedoOnTriggeredAlertTable();
+            redoOnTriggeredAlertTable();
             updateSchemaVersion(26);
         }
         // 0.9.19 to 0.9.20
@@ -252,6 +253,12 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 30) {
             addDefaultGaugeNameToUiConfigs();
             updateSchemaVersion(30);
+        }
+        // 0.9.24 to 0.9.25
+        if (initialSchemaVersion < 31) {
+            // this is needed due to change from triggered_alert to open_incident/resolved_incident
+            redoOnTriggeredAlertTable();
+            updateSchemaVersion(31);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -721,14 +728,7 @@ public class SchemaUpgrade {
     }
 
     private void redoOnTriggeredAlertTable() throws Exception {
-        if (columnExists("triggered_alert", "alert_config_id")) {
-            // previously failed mid-upgrade prior to updating schema version
-            return;
-        }
         dropTable("triggered_alert");
-        session.execute("create table if not exists triggered_alert"
-                + " (agent_rollup_id varchar, alert_config_id varchar, primary key"
-                + " (agent_rollup_id, alert_config_id)) " + WITH_LCS);
     }
 
     private void addSyntheticMonitorAndAlertPermissions() throws Exception {
@@ -748,24 +748,6 @@ public class SchemaUpgrade {
             boundStatement.setSet(1, permissions, String.class);
             session.execute(boundStatement);
         }
-    }
-
-    private void anotherRedoOnTriggeredAlertTable() throws Exception {
-        if (columnExists("triggered_alert", "alert_id")) {
-            // previously failed mid-upgrade prior to updating schema version
-            return;
-        }
-        dropTable("triggered_alert");
-        session.execute("create table if not exists triggered_alert (agent_rollup_id"
-                + " varchar, alert_id varchar, primary key (agent_rollup_id, alert_id)) "
-                + WITH_LCS);
-    }
-
-    private void yetAnotherRedoOnTriggeredAlertTable() throws Exception {
-        dropTable("triggered_alert");
-        session.execute("create table if not exists triggered_alert (agent_rollup_id"
-                + " varchar, alert_condition blob, primary key (agent_rollup_id, alert_condition)) "
-                + WITH_LCS);
     }
 
     private void updateWebConfig() throws Exception {
@@ -1109,6 +1091,8 @@ public class SchemaUpgrade {
             return storageConfig.rollupExpirationHours().get(rollupLevel);
         } else if (tableName.equals("heartbeat")) {
             return HeartbeatDao.EXPIRATION_HOURS;
+        } else if (tableName.equals("resolved_incident")) {
+            return StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS;
         } else {
             logger.warn("unexpected table: {}", tableName);
             return -1;

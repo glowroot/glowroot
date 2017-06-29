@@ -46,7 +46,7 @@ public class HeartbeatDao {
 
         session.createTableWithTWCS("create table if not exists heartbeat (agent_id varchar,"
                 + " central_capture_time timestamp, primary key (agent_id, central_capture_time))",
-                24);
+                EXPIRATION_HOURS);
         insertPS = session.prepare(
                 "insert into heartbeat (agent_id, central_capture_time) values (?, ?) using ttl ?");
         existsPS = session.prepare("select central_capture_time from heartbeat where agent_id = ?"

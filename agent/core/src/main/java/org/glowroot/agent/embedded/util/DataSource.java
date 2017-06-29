@@ -72,8 +72,7 @@ public class DataSource {
     private final Map</*@Untainted*/String, ImmutableList<Index>> indexes = Maps.newConcurrentMap();
 
     private final LoadingCache</*@Untainted*/ String, PreparedStatement> preparedStatementCache =
-            CacheBuilder.newBuilder()
-                    .weakValues()
+            CacheBuilder.newBuilder().weakValues()
                     .build(new CacheLoader</*@Untainted*/String, PreparedStatement>() {
                         @Override
                         public PreparedStatement load(@Untainted String sql) throws SQLException {
@@ -328,11 +327,16 @@ public class DataSource {
     }
 
     public void deleteBefore(@Untainted String tableName, long captureTime) throws SQLException {
+        deleteBefore(tableName, "capture_time", captureTime);
+    }
+
+    public void deleteBefore(@Untainted String tableName, @Untainted String columnName,
+            long captureTime) throws SQLException {
         // delete 100 at a time, which is both faster than deleting all at once, and doesn't
         // lock the single jdbc connection for one large chunk of time
         int deleted;
         do {
-            deleted = update("delete from " + tableName + " where capture_time < ? limit 100",
+            deleted = update("delete from " + tableName + " where " + columnName + " < ? limit 100",
                     captureTime);
         } while (deleted > 0);
     }

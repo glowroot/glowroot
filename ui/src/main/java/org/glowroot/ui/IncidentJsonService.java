@@ -16,52 +16,105 @@
 package org.glowroot.ui;
 
 import java.util.List;
+import java.util.Locale;
+
+import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.TriggeredAlertRepository;
-import org.glowroot.common.repo.TriggeredAlertRepository.TriggeredAlert;
+import org.glowroot.common.repo.IncidentRepository;
+import org.glowroot.common.repo.IncidentRepository.OpenIncident;
+import org.glowroot.common.repo.IncidentRepository.ResolvedIncident;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.common.util.Styles;
 import org.glowroot.ui.HttpSessionManager.Authentication;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
+
+import static java.util.concurrent.TimeUnit.DAYS;
 
 @JsonService
 class IncidentJsonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final TriggeredAlertRepository triggeredAlertRepository;
+    private final IncidentRepository incidentRepository;
     private final ConfigRepository configRepository;
+    private final Clock clock;
 
-    IncidentJsonService(TriggeredAlertRepository triggeredAlertRepository,
-            ConfigRepository configRepository) {
-        this.triggeredAlertRepository = triggeredAlertRepository;
+    IncidentJsonService(IncidentRepository incidentRepository,
+            ConfigRepository configRepository, Clock clock) {
+        this.incidentRepository = incidentRepository;
         this.configRepository = configRepository;
+        this.clock = clock;
     }
 
-    // seems better to read all alerts and then filter by permission, instead of reading
-    // individually for every agentRollupId that user has permission to read
     @GET(path = "/backend/incidents", permission = "")
-    String getAlerts(@BindAuthentication Authentication authentication) throws Exception {
-        List<TriggeredAlert> triggeredAlerts = triggeredAlertRepository.readAll();
-        List<AlertItem> alertItems = Lists.newArrayList();
-        for (TriggeredAlert triggeredAlert : triggeredAlerts) {
-            if (authentication.isAgentPermitted(triggeredAlert.agentRollupId(), "agent:incident")) {
-                alertItems.add(ImmutableAlertItem.of(triggeredAlert.agentRollupId(),
-                        AlertConfigJsonService.getConditionDisplay(triggeredAlert.agentRollupId(),
-                                triggeredAlert.alertCondition(), configRepository)));
+    String getIncidents(@BindAuthentication Authentication authentication) throws Exception {
+        ImmutableIncidentResponse.Builder response = ImmutableIncidentResponse.builder();
+        // seems better to read all incidents and then filter by permission, instead of reading
+        // individually for every agentRollupId that user has permission to read
+        List<OpenIncident> openIncidents = incidentRepository.readAllOpenIncidents();
+        for (OpenIncident openIncident : openIncidents) {
+            if (authentication.isAgentPermitted(openIncident.agentRollupId(),
+                    "agent:incident")) {
+                response.addOpenIncidents(createDisplayedIncident(openIncident));
             }
         }
-        return mapper.writeValueAsString(alertItems);
+        List<ResolvedIncident> resolvedIncidents = incidentRepository
+                .readResolvedIncidents(clock.currentTimeMillis() - DAYS.toMillis(7));
+        for (ResolvedIncident resolvedIncident : resolvedIncidents) {
+            if (authentication.isAgentPermitted(resolvedIncident.agentRollupId(),
+                    "agent:incident")) {
+                response.addResolvedIncidents(createDisplayedIncident(resolvedIncident));
+            }
+        }
+        return mapper.writeValueAsString(response.build());
+    }
+
+    private DisplayedIncident createDisplayedIncident(OpenIncident incident) throws Exception {
+        return ImmutableDisplayedIncident.builder()
+                .agentRollupId(incident.agentRollupId())
+                .openTime(incident.openTime())
+                .durationMillis(clock.currentTimeMillis() - incident.openTime())
+                .severity(toString(incident.severity()))
+                .display(AlertConfigJsonService.getConditionDisplay(incident.agentRollupId(),
+                        incident.condition(), configRepository))
+                .build();
+    }
+
+    private DisplayedIncident createDisplayedIncident(ResolvedIncident incident) throws Exception {
+        return ImmutableDisplayedIncident.builder()
+                .agentRollupId(incident.agentRollupId())
+                .openTime(incident.openTime())
+                .durationMillis(incident.resolveTime() - incident.openTime())
+                .resolveTime(incident.resolveTime())
+                .severity(toString(incident.severity()))
+                .display(AlertConfigJsonService.getConditionDisplay(incident.agentRollupId(),
+                        incident.condition(), configRepository))
+                .build();
+    }
+
+    private static String toString(AlertSeverity alertSeverity) {
+        String name = alertSeverity.name();
+        return name.substring(0, 1) + name.substring(1).toLowerCase(Locale.ENGLISH);
     }
 
     @Value.Immutable
-    @Styles.AllParameters
-    interface AlertItem {
+    interface DisplayedIncident {
         String agentRollupId();
+        long openTime();
+        long durationMillis();
+        @Nullable
+        Long resolveTime();
+        String severity();
         String display();
+    }
+
+    @Value.Immutable
+    interface IncidentResponse {
+        List<DisplayedIncident> openIncidents();
+        List<DisplayedIncident> resolvedIncidents();
     }
 }

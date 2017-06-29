@@ -32,7 +32,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -162,9 +161,8 @@ class CentralAlertingService {
         AlertCondition alertCondition = alertConfig.getCondition();
         switch (alertCondition.getValCase()) {
             case METRIC_CONDITION:
-                checkMetricAlert(agentRollupId, agentDisplay, alertCondition,
-                        alertCondition.getMetricCondition(), alertConfig.getNotification(),
-                        endTime);
+                checkMetricAlert(agentRollupId, agentDisplay, alertConfig,
+                        alertCondition.getMetricCondition(), endTime);
                 break;
             case HEARTBEAT_CONDITION:
                 if (stopwatch.elapsed(MINUTES) >= 4) {
@@ -172,9 +170,8 @@ class CentralAlertingService {
                     // at least enough time for grpc max reconnect backoff which is 2 minutes
                     // +/- 20% jitter (see io.grpc.internal.ExponentialBackoffPolicy) but better to
                     // give a bit extra (4 minutes above) to avoid false heartbeat alert
-                    checkHeartbeatAlert(agentRollupId, agentDisplay, alertCondition,
-                            alertCondition.getHeartbeatCondition(), alertConfig.getNotification(),
-                            endTime);
+                    checkHeartbeatAlert(agentRollupId, agentDisplay, alertConfig,
+                            alertCondition.getHeartbeatCondition(), endTime);
                 }
                 break;
             default:
@@ -187,22 +184,22 @@ class CentralAlertingService {
             transactionName = "Check metric alert", traceHeadline = "Check metric alert: {{0}}",
             timer = "check metric alert")
     private void checkMetricAlert(String agentRollupId, String agentDisplay,
-            AlertCondition alertCondition, MetricCondition metricCondition,
-            AlertNotification alertNotification, long endTime) throws Exception {
-        alertingService.checkMetricAlert(agentRollupId, agentDisplay, alertCondition,
-                metricCondition, alertNotification, endTime);
+            AlertConfig alertConfig, MetricCondition metricCondition, long endTime)
+            throws Exception {
+        alertingService.checkMetricAlert(agentRollupId, agentDisplay, alertConfig, metricCondition,
+                endTime);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check heartbeat alert",
             traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
     private void checkHeartbeatAlert(String agentRollupId, String agentDisplay,
-            AlertCondition alertCondition, HeartbeatCondition heartbeatCondition,
-            AlertNotification alertNotification, long endTime) throws Exception {
+            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime)
+            throws Exception {
         long startTime = endTime - SECONDS.toMillis(heartbeatCondition.getTimePeriodSeconds());
         boolean currentlyTriggered = !heartbeatDao.exists(agentRollupId, startTime, endTime);
-        alertingService.sendHeartbeatAlertIfNeeded(agentRollupId, agentDisplay, alertCondition,
-                heartbeatCondition, alertNotification, endTime, currentlyTriggered);
+        alertingService.sendHeartbeatAlertIfNeeded(agentRollupId, agentDisplay, alertConfig,
+                heartbeatCondition, endTime, currentlyTriggered);
     }
 
     private static boolean isAggregateMetricCondition(AlertCondition alertCondition) {

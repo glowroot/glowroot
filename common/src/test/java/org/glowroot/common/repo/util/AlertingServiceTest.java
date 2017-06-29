@@ -40,8 +40,10 @@ import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.ImmutableAgentRollup;
-import org.glowroot.common.repo.TriggeredAlertRepository;
+import org.glowroot.common.repo.IncidentRepository;
 import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.Clock;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
@@ -57,47 +59,46 @@ public class AlertingServiceTest {
 
     private static final String AGENT_ID = "";
 
-    private static final MetricCondition TRANSACTION_X_PERCENTILE_CONDITION =
-            MetricCondition.newBuilder()
-                    .setMetric("transaction:x-percentile")
-                    .setTransactionType("tt")
-                    .setPercentile(OptionalDouble.newBuilder().setValue(95))
-                    .setThreshold(1)
-                    .setTimePeriodSeconds(60)
-                    .build();
+    private static final AlertConfig TRANSACTION_X_PERCENTILE_ALERT_CONFIG;
+    private static final AlertConfig UPPER_BOUND_GAUGE_ALERT_CONFIG;
+    private static final AlertConfig LOWER_BOUND_GAUGE_ALERT_CONFIG;
 
-    private static final AlertCondition TRANSACTION_TIME_ALERT_CONDITION =
-            AlertCondition.newBuilder()
-                    .setMetricCondition(TRANSACTION_X_PERCENTILE_CONDITION)
-                    .build();
+    static {
+        AlertNotification alertNotification = AlertNotification.newBuilder()
+                .setEmailNotification(EmailNotification.newBuilder()
+                        .addEmailAddress("to@example.org"))
+                .build();
 
-    private static final MetricCondition GAUGE_CONDITION =
-            MetricCondition.newBuilder()
-                    .setMetric("gauge:java.lang:type=GarbageCollector,name=ConcurrentMarkSweep"
-                            + ":CollectionTime[counter]")
-                    .setThreshold(500.0)
-                    .setTimePeriodSeconds(60)
-                    .build();
-
-    private static final AlertCondition GAUGE_ALERT_CONDITION =
-            AlertCondition.newBuilder()
-                    .setMetricCondition(GAUGE_CONDITION)
-                    .build();
-
-    private static final MetricCondition LOWER_BOUND_GAUGE_CONDITION =
-            GAUGE_CONDITION.toBuilder()
-                    .setLowerBoundThreshold(true)
-                    .build();
-
-    private static final AlertCondition LOWER_BOUND_GAUGE_ALERT_CONDITION =
-            AlertCondition.newBuilder()
-                    .setMetricCondition(LOWER_BOUND_GAUGE_CONDITION)
-                    .build();
-
-    private static final AlertNotification ALERT_NOTIFICATION = AlertNotification.newBuilder()
-            .setEmailNotification(EmailNotification.newBuilder()
-                    .addEmailAddress("to@example.org"))
-            .build();
+        TRANSACTION_X_PERCENTILE_ALERT_CONFIG = AlertConfig.newBuilder()
+                .setCondition(AlertCondition.newBuilder()
+                        .setMetricCondition(MetricCondition.newBuilder()
+                                .setMetric("transaction:x-percentile")
+                                .setTransactionType("tt")
+                                .setPercentile(OptionalDouble.newBuilder().setValue(95))
+                                .setThreshold(1)
+                                .setTimePeriodSeconds(60)))
+                .setNotification(alertNotification)
+                .build();
+        UPPER_BOUND_GAUGE_ALERT_CONFIG = AlertConfig.newBuilder()
+                .setCondition(AlertCondition.newBuilder()
+                        .setMetricCondition(MetricCondition.newBuilder()
+                                .setMetric("gauge:java.lang:type=GarbageCollector,"
+                                        + "name=ConcurrentMarkSweep:CollectionTime[counter]")
+                                .setThreshold(500.0)
+                                .setTimePeriodSeconds(60)))
+                .setNotification(alertNotification)
+                .build();
+        LOWER_BOUND_GAUGE_ALERT_CONFIG = AlertConfig.newBuilder()
+                .setCondition(AlertCondition.newBuilder()
+                        .setMetricCondition(MetricCondition.newBuilder()
+                                .setMetric("gauge:java.lang:type=GarbageCollector,"
+                                        + "name=ConcurrentMarkSweep:CollectionTime[counter]")
+                                .setThreshold(500.0)
+                                .setTimePeriodSeconds(60)
+                                .setLowerBoundThreshold(true)))
+                .setNotification(alertNotification)
+                .build();
+    }
 
     private static final LazySecretKey LAZY_SECRET_KEY;
 
@@ -126,7 +127,7 @@ public class AlertingServiceTest {
 
     private ConfigRepository configRepository;
     private AgentRollupRepository agentRollupRepository;
-    private TriggeredAlertRepository triggeredAlertRepository;
+    private IncidentRepository incidentRepository;
     private AggregateRepository aggregateRepository;
     private GaugeValueRepository gaugeValueRepository;
     private RollupLevelService rollupLevelService;
@@ -143,7 +144,7 @@ public class AlertingServiceTest {
                         .display("")
                         .agent(true)
                         .build()));
-        triggeredAlertRepository = mock(TriggeredAlertRepository.class);
+        incidentRepository = mock(IncidentRepository.class);
         aggregateRepository = mock(AggregateRepository.class);
         gaugeValueRepository = mock(GaugeValueRepository.class);
         rollupLevelService = mock(RollupLevelService.class);
@@ -159,11 +160,11 @@ public class AlertingServiceTest {
         // given
         setupForTransaction(1000001);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient);
+                incidentRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", TRANSACTION_TIME_ALERT_CONDITION,
-                TRANSACTION_X_PERCENTILE_CONDITION, ALERT_NOTIFICATION, 120000);
+        alertingService.checkMetricAlert("", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
+                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -176,11 +177,11 @@ public class AlertingServiceTest {
         // given
         setupForTransaction(1000000);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient);
+                incidentRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", TRANSACTION_TIME_ALERT_CONDITION,
-                TRANSACTION_X_PERCENTILE_CONDITION, ALERT_NOTIFICATION, 120000);
+        alertingService.checkMetricAlert("", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
+                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -190,11 +191,11 @@ public class AlertingServiceTest {
         // given
         setupForGauge(500.1);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient);
+                incidentRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", GAUGE_ALERT_CONDITION, GAUGE_CONDITION,
-                ALERT_NOTIFICATION, 120000);
+        alertingService.checkMetricAlert("", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
+                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -207,11 +208,11 @@ public class AlertingServiceTest {
         // given
         setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient);
+                incidentRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", GAUGE_ALERT_CONDITION, GAUGE_CONDITION,
-                ALERT_NOTIFICATION, 120000);
+        alertingService.checkMetricAlert("", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
+                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -221,11 +222,11 @@ public class AlertingServiceTest {
         // given
         setupForGauge(499.9);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient);
+                incidentRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONDITION,
-                LOWER_BOUND_GAUGE_CONDITION, ALERT_NOTIFICATION, 120000);
+        alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
+                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -238,11 +239,11 @@ public class AlertingServiceTest {
         // given
         setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
-                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient);
+                incidentRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONDITION,
-                LOWER_BOUND_GAUGE_CONDITION, ALERT_NOTIFICATION, 120000);
+        alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
+                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNull();
     }

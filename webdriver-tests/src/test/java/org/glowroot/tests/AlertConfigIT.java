@@ -62,6 +62,8 @@ public class AlertConfigIT extends WebDriverIT {
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getMinTransactionCountTextField().getAttribute("value"))
                 .isEqualTo("2");
+        assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
+                .isEqualTo("high");
         assertThat(alertPage.getEmailAddressesTextField().getAttribute("value"))
                 .isEqualTo("noone@example.org, example@example.org");
     }
@@ -97,6 +99,8 @@ public class AlertConfigIT extends WebDriverIT {
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isFalse();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
+        assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
+                .isEqualTo("high");
         assertThat(alertPage.getEmailAddressesTextField().getAttribute("value"))
                 .isEqualTo("noone@example.org, example@example.org");
     }
@@ -132,6 +136,8 @@ public class AlertConfigIT extends WebDriverIT {
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isTrue();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
+        assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
+                .isEqualTo("high");
         assertThat(alertPage.getEmailAddressesTextField().getAttribute("value"))
                 .isEqualTo("noone@example.org, example@example.org");
     }
@@ -165,6 +171,8 @@ public class AlertConfigIT extends WebDriverIT {
                         .isEqualTo("string:Web");
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("5");
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
+        assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
+                .isEqualTo("high");
         assertThat(alertPage.getEmailAddressesTextField().getAttribute("value"))
                 .isEqualTo("noone@example.org, example@example.org");
     }
@@ -195,6 +203,8 @@ public class AlertConfigIT extends WebDriverIT {
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("2000");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isFalse();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
+        assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
+                .isEqualTo("high");
         assertThat(alertPage.getEmailAddressesTextField().getAttribute("value"))
                 .isEqualTo("noone@example.org, example@example.org");
     }
@@ -225,6 +235,8 @@ public class AlertConfigIT extends WebDriverIT {
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("2000");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isTrue();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
+        assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
+                .isEqualTo("high");
         assertThat(alertPage.getEmailAddressesTextField().getAttribute("value"))
                 .isEqualTo("noone@example.org, example@example.org");
     }
@@ -449,6 +461,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getThresholdTextField().sendKeys("1000");
         alertPage.getTimePeriodMinutesTextField().sendKeys("1");
         alertPage.getMinTransactionCountTextField().sendKeys("2");
+        alertPage.getSeveritySelect().selectByValue("high");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");
         alertPage.clickAddButton();
         // getDeleteButton() waits for the save/redirect
@@ -471,6 +484,7 @@ public class AlertConfigIT extends WebDriverIT {
             alertPage.getLowerBoundThresholdCheckBox().click();
         }
         alertPage.getTimePeriodMinutesTextField().sendKeys("1");
+        alertPage.getSeveritySelect().selectByValue("high");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");
         alertPage.clickAddButton();
         // getDeleteButton() waits for the save/redirect
@@ -490,6 +504,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getThresholdTextField().sendKeys("5");
         alertPage.getTimePeriodMinutesTextField().sendKeys("1");
         alertPage.getMinTransactionCountTextField().sendKeys("2");
+        alertPage.getSeveritySelect().selectByValue("high");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");
         alertPage.clickAddButton();
         // getDeleteButton() waits for the save/redirect
@@ -511,6 +526,7 @@ public class AlertConfigIT extends WebDriverIT {
             alertPage.getLowerBoundThresholdCheckBox().click();
         }
         alertPage.getTimePeriodMinutesTextField().sendKeys("1");
+        alertPage.getSeveritySelect().selectByValue("high");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");
         alertPage.clickAddButton();
         // getDeleteButton() waits for the save/redirect

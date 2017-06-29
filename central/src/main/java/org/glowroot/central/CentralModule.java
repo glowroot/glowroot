@@ -162,8 +162,8 @@ public class CentralModule {
                     new RollupLevelService(repos.getConfigRepository(), clock);
             HttpClient httpClient = new HttpClient(repos.getConfigRepository());
             alertingService = new AlertingService(repos.getConfigRepository(),
-                    repos.getTriggeredAlertDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
-                    rollupLevelService, new MailService(), httpClient);
+                    repos.getIncidentDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
+                    rollupLevelService, new MailService(), httpClient, clock);
             centralAlertingService = new CentralAlertingService(repos.getConfigRepository(),
                     repos.getHeartbeatDao(), alertingService);
 
@@ -188,7 +188,7 @@ public class CentralModule {
                     repos.getGaugeValueDao(), repos.getSyntheticResultDao(), centralAlertingService,
                     clock);
             syntheticMonitorService = new SyntheticMonitorService(repos.getAgentRollupDao(),
-                    repos.getConfigRepository(), repos.getTriggeredAlertDao(), alertingService,
+                    repos.getConfigRepository(), repos.getIncidentDao(), alertingService,
                     repos.getSyntheticResultDao(), ticker, clock);
 
             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
@@ -214,7 +214,7 @@ public class CentralModule {
                     .aggregateRepository(repos.getAggregateDao())
                     .gaugeValueRepository(repos.getGaugeValueDao())
                     .syntheticResultRepository(repos.getSyntheticResultDao())
-                    .triggeredAlertRepository(repos.getTriggeredAlertDao())
+                    .incidentRepository(repos.getIncidentDao())
                     .repoAdmin(new NopRepoAdmin())
                     .rollupLevelService(rollupLevelService)
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService,

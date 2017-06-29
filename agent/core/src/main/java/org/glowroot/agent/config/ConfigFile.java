@@ -209,6 +209,10 @@ class ConfigFile {
                         alertObjectNode.remove("emailAddresses"));
                 alertObjectNode.set("emailNotification", emailNotificationObjectNode);
             }
+            if (!alertObjectNode.has("severity")) {
+                // upgrade from 0.9.21 to 0.9.22
+                alertObjectNode.put("severity", "critical");
+            }
         }
     }
 

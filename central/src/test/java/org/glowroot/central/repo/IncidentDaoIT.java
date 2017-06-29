@@ -24,21 +24,27 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.TriggeredAlertRepository.TriggeredAlert;
+import org.glowroot.common.repo.IncidentRepository.OpenIncident;
+import org.glowroot.common.repo.IncidentRepository.ResolvedIncident;
+import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-// NOTE this is mostly a copy of TriggeredAlertDaoTest in glowroot-agent
-public class TriggeredAlertDaoIT {
+// NOTE this is mostly a copy of IncidentDaoTest in glowroot-agent-core
+public class IncidentDaoIT {
 
     private static final String AGENT_ID = "xyz";
 
     private static Cluster cluster;
     private static Session session;
-    private static TriggeredAlertDao triggeredAlertDao;
+    private static IncidentDao incidentDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -48,7 +54,9 @@ public class TriggeredAlertDaoIT {
         session.createKeyspaceIfNotExists("glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
 
-        triggeredAlertDao = new TriggeredAlertDao(session);
+        Clock clock = mock(Clock.class);
+        when(clock.currentTimeMillis()).thenReturn(345L);
+        incidentDao = new IncidentDao(session, clock);
     }
 
     @AfterClass
@@ -60,7 +68,8 @@ public class TriggeredAlertDaoIT {
 
     @Before
     public void beforeEach() throws Exception {
-        session.execute("truncate triggered_alert");
+        session.execute("truncate open_incident");
+        session.execute("truncate resolved_incident");
     }
 
     @Test
@@ -69,7 +78,8 @@ public class TriggeredAlertDaoIT {
                 .setHeartbeatCondition(HeartbeatCondition.newBuilder()
                         .setTimePeriodSeconds(60))
                 .build();
-        assertThat(triggeredAlertDao.exists(AGENT_ID, alertCondition)).isFalse();
+        assertThat(incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH))
+                .isNull();
     }
 
     @Test
@@ -86,24 +96,52 @@ public class TriggeredAlertDaoIT {
                         .setTimePeriodSeconds(60))
                 .build();
         // when
-        triggeredAlertDao.insert(AGENT_ID, alertCondition);
+        incidentDao.insertOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH,
+                AlertNotification.getDefaultInstance(), 123);
         // then
-        assertThat(triggeredAlertDao.exists(AGENT_ID, otherAlertCondition)).isFalse();
-        assertThat(triggeredAlertDao.exists(AGENT_ID, alertCondition)).isTrue();
+        assertThat(incidentDao.readOpenIncident(AGENT_ID, otherAlertCondition, AlertSeverity.HIGH))
+                .isNull();
+        OpenIncident openIncident =
+                incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH);
+        assertThat(openIncident).isNotNull();
+        assertThat(openIncident.openTime()).isEqualTo(123);
     }
 
     @Test
-    public void shouldNotExistAfterDelete() throws Exception {
+    public void shouldNotBeOpenAfterClose() throws Exception {
         // given
         AlertCondition alertCondition = AlertCondition.newBuilder()
                 .setHeartbeatCondition(HeartbeatCondition.newBuilder()
                         .setTimePeriodSeconds(60))
                 .build();
         // when
-        triggeredAlertDao.insert(AGENT_ID, alertCondition);
-        triggeredAlertDao.delete(AGENT_ID, alertCondition);
+        incidentDao.insertOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH,
+                AlertNotification.getDefaultInstance(), 234);
+        OpenIncident openIncident =
+                incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH);
+        incidentDao.resolveIncident(openIncident, 345);
         // then
-        assertThat(triggeredAlertDao.exists(AGENT_ID, alertCondition)).isFalse();
+        assertThat(incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH))
+                .isNull();
+    }
+
+    @Test
+    public void shouldBeClosedAfterClose() throws Exception {
+        // given
+        AlertCondition alertCondition = AlertCondition.newBuilder()
+                .setHeartbeatCondition(HeartbeatCondition.newBuilder()
+                        .setTimePeriodSeconds(60))
+                .build();
+        // when
+        incidentDao.insertOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH,
+                AlertNotification.getDefaultInstance(), 234);
+        OpenIncident openIncident =
+                incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH);
+        incidentDao.resolveIncident(openIncident, 345);
+        List<ResolvedIncident> resolvedIncidents = incidentDao.readResolvedIncidents(345);
+        // then
+        assertThat(resolvedIncidents).hasSize(1);
+        assertThat(resolvedIncidents.get(0).condition()).isEqualTo(alertCondition);
     }
 
     @Test
@@ -120,10 +158,12 @@ public class TriggeredAlertDaoIT {
                         .setTimePeriodSeconds(60))
                 .build();
         // when
-        triggeredAlertDao.insert("xyz", alertCondition);
-        triggeredAlertDao.insert("abc", alertCondition2);
+        incidentDao.insertOpenIncident("xyz", alertCondition, AlertSeverity.HIGH,
+                AlertNotification.getDefaultInstance(), 456);
+        incidentDao.insertOpenIncident("abc", alertCondition2, AlertSeverity.HIGH,
+                AlertNotification.getDefaultInstance(), 567);
         // then
-        List<TriggeredAlert> triggeredAlerts = triggeredAlertDao.readAll();
-        assertThat(triggeredAlerts).hasSize(2);
+        List<OpenIncident> openIncidents = incidentDao.readAllOpenIncidents();
+        assertThat(openIncidents).hasSize(2);
     }
 }

@@ -105,6 +105,11 @@ public class Session {
     }
 
     public void createTableWithTWCS(String createTableQuery, int expirationHours) throws Exception {
+        createTableWithTWCS(createTableQuery, expirationHours, false);
+    }
+
+    public void createTableWithTWCS(String createTableQuery, int expirationHours,
+            boolean useAndInsteadOfWith) throws Exception {
         // "Ideally, operators should select a compaction_window_unit and compaction_window_size
         // pair that produces approximately 20-30 windows"
         // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
@@ -118,15 +123,16 @@ public class Session {
         //
         // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
         long gcGraceSeconds = DAYS.toSeconds(1);
+        String term = useAndInsteadOfWith ? "and" : "with";
         try {
-            session.execute(createTableQuery + " with compaction = { 'class' :"
+            session.execute(createTableQuery + " " + term + " compaction = { 'class' :"
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
                     + " 'compaction_window_size' : '" + windowSizeHours + "' }"
                     + " and gc_grace_seconds = " + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
             session.execute(createTableQuery
-                    + " with compaction = { 'class' : 'DateTieredCompactionStrategy' }"
+                    + " " + term + " compaction = { 'class' : 'DateTieredCompactionStrategy' }"
                     + " and gc_grace_seconds = " + gcGraceSeconds);
         }
     }

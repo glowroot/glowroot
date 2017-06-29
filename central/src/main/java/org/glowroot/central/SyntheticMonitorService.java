@@ -79,9 +79,10 @@ import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.RollupService.AgentRollupConsumer;
 import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
+import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
-import org.glowroot.central.repo.TriggeredAlertDao;
 import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
+import org.glowroot.common.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Encryption;
@@ -90,7 +91,6 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -126,7 +126,7 @@ class SyntheticMonitorService implements Runnable {
 
     private final AgentRollupDao agentRollupDao;
     private final ConfigRepositoryImpl configRepository;
-    private final TriggeredAlertDao triggeredAlertDao;
+    private final IncidentDao incidentDao;
     private final AlertingService alertingService;
 
     private final SyntheticResultDao syntheticResponseDao;
@@ -145,11 +145,11 @@ class SyntheticMonitorService implements Runnable {
     private volatile boolean closed;
 
     SyntheticMonitorService(AgentRollupDao agentRollupDao, ConfigRepositoryImpl configRepository,
-            TriggeredAlertDao triggeredAlertDao, AlertingService alertingService,
+            IncidentDao incidentDao, AlertingService alertingService,
             SyntheticResultDao syntheticResponseDao, Ticker ticker, Clock clock) {
         this.agentRollupDao = agentRollupDao;
         this.configRepository = configRepository;
-        this.triggeredAlertDao = triggeredAlertDao;
+        this.incidentDao = incidentDao;
         this.alertingService = alertingService;
         this.syntheticResponseDao = syntheticResponseDao;
         this.ticker = ticker;
@@ -385,9 +385,8 @@ class SyntheticMonitorService implements Runnable {
                 SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
                 boolean currentlyTriggered =
                         stopwatch.elapsed(MILLISECONDS) > condition.getThresholdMillis();
-                sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertCondition,
-                        condition, alertConfig.getNotification(), captureTime, currentlyTriggered,
-                        null);
+                sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
+                        condition, captureTime, currentlyTriggered, null);
             }
         } else {
             sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
@@ -402,24 +401,28 @@ class SyntheticMonitorService implements Runnable {
         for (AlertConfig alertConfig : alertConfigs) {
             AlertCondition alertCondition = alertConfig.getCondition();
             SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
-            sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertCondition, condition,
-                    alertConfig.getNotification(), captureTime, true, errorMessage);
+            sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig, condition,
+                    captureTime, true, errorMessage);
         }
     }
 
     private void sendAlertIfStatusChanged(AgentRollup agentRollup,
-            SyntheticMonitorConfig syntheticMonitorConfig, AlertCondition alertCondition,
-            SyntheticMonitorCondition condition, AlertNotification alertNotification, long endTime,
-            boolean currentlyTriggered, @Nullable String errorMessage) throws Exception {
-        boolean previouslyTriggered = triggeredAlertDao.exists(agentRollup.id(), alertCondition);
-        if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertDao.delete(agentRollup.id(), alertCondition);
+            SyntheticMonitorConfig syntheticMonitorConfig, AlertConfig alertConfig,
+            SyntheticMonitorCondition condition, long endTime, boolean currentlyTriggered,
+            @Nullable String errorMessage) throws Exception {
+        AlertCondition alertCondition = alertConfig.getCondition();
+        OpenIncident openIncident = incidentDao.readOpenIncident(agentRollup.id(), alertCondition,
+                alertConfig.getSeverity());
+        if (openIncident != null && !currentlyTriggered) {
+            incidentDao.resolveIncident(openIncident, endTime);
             sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
-                    alertCondition, condition, alertNotification, endTime, true, null);
-        } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertDao.insert(agentRollup.id(), alertCondition);
+                    alertConfig, condition, endTime, true, null);
+        } else if (openIncident == null && currentlyTriggered) {
+            // the start time for the incident is the end time of the interval evaluated above
+            incidentDao.insertOpenIncident(agentRollup.id(), alertCondition,
+                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
             sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
-                    alertCondition, condition, alertNotification, endTime, false, errorMessage);
+                    alertConfig, condition, endTime, false, errorMessage);
         }
     }
 
@@ -445,9 +448,9 @@ class SyntheticMonitorService implements Runnable {
     }
 
     private void sendAlert(String agentRollupId, String agentRollupDisplay,
-            SyntheticMonitorConfig syntheticMonitorConfig, AlertCondition alertCondition,
-            SyntheticMonitorCondition condition, AlertNotification alertNotification, long endTime,
-            boolean ok, @Nullable String errorMessage) throws Exception {
+            SyntheticMonitorConfig syntheticMonitorConfig, AlertConfig alertConfig,
+            SyntheticMonitorCondition condition, long endTime, boolean ok,
+            @Nullable String errorMessage) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentRollupDisplay.equals("")) {
@@ -465,8 +468,8 @@ class SyntheticMonitorService implements Runnable {
             sb.append(" resulted in error: ");
             sb.append(errorMessage);
         }
-        alertingService.sendNotification(agentRollupId, agentRollupDisplay, alertCondition,
-                alertNotification, endTime, subject, sb.toString(), ok);
+        alertingService.sendNotification(agentRollupId, agentRollupDisplay, alertConfig, endTime,
+                subject, sb.toString(), ok);
     }
 
     private static Throwable getRootCause(Throwable t) {

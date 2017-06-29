@@ -52,6 +52,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
@@ -312,6 +313,7 @@ class AlertConfigJsonService {
     abstract static class AlertConfigDto {
 
         public abstract AlertConditionDto condition();
+        public abstract AlertSeverity severity();
         public abstract @Nullable ImmutableEmailNotificationDto emailNotification();
         public abstract @Nullable ImmutablePagerDutyNotificationDto pagerDutyNotification();
 
@@ -319,7 +321,8 @@ class AlertConfigJsonService {
 
         private static AlertConfigDto toDto(AgentConfig.AlertConfig config) {
             ImmutableAlertConfigDto.Builder builder = ImmutableAlertConfigDto.builder()
-                    .condition(toDto(config.getCondition()));
+                    .condition(toDto(config.getCondition()))
+                    .severity(config.getSeverity());
             AlertNotification notification = config.getNotification();
             if (notification.hasEmailNotification()) {
                 builder.emailNotification(toDto(notification.getEmailNotification()));
@@ -333,7 +336,8 @@ class AlertConfigJsonService {
 
         private AgentConfig.AlertConfig toProto() {
             AgentConfig.AlertConfig.Builder builder = AgentConfig.AlertConfig.newBuilder()
-                    .setCondition(toProto(condition()));
+                    .setCondition(toProto(condition()))
+                    .setSeverity(severity());
             EmailNotificationDto emailNotification = emailNotification();
             if (emailNotification != null) {
                 builder.getNotificationBuilder().setEmailNotification(toProto(emailNotification));

@@ -22,6 +22,8 @@ public interface StorageConfig {
     int AGGREGATE_QUERY_TEXT_TRUNCATE = 120; // first X characters
     int TRACE_QUERY_TEXT_TRUNCATE = 120; // first X and last X characters
 
+    int RESOLVED_INCIDENT_EXPIRATION_HOURS = 30 * 24;
+
     // TODO revisit this comment
     //
     // currently aggregate expiration should be at least as big as trace expiration

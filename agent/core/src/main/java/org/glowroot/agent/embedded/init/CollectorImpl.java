@@ -81,9 +81,8 @@ class CollectorImpl implements Collector {
             AlertCondition alertCondition = alertConfig.getCondition();
             if (isAggregateMetricCondition(alertCondition)) {
                 try {
-                    alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY,
-                            alertCondition, alertCondition.getMetricCondition(),
-                            alertConfig.getNotification(), aggregateReader.captureTime());
+                    alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
+                            alertCondition.getMetricCondition(), aggregateReader.captureTime());
                 } catch (InterruptedException e) {
                     // shutdown request
                     throw e;
@@ -111,9 +110,8 @@ class CollectorImpl implements Collector {
             AlertCondition alertCondition = alertConfig.getCondition();
             if (isGaugeMetricCondition(alertCondition)) {
                 try {
-                    alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY, alertCondition,
-                            alertCondition.getMetricCondition(), alertConfig.getNotification(),
-                            maxCaptureTime);
+                    alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
+                            alertCondition.getMetricCondition(), maxCaptureTime);
                 } catch (InterruptedException e) {
                     // shutdown request
                     throw e;

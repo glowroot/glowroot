@@ -17,6 +17,7 @@ package org.glowroot.common.repo.util;
 
 import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map.Entry;
@@ -47,9 +48,11 @@ import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
-import org.glowroot.common.repo.TriggeredAlertRepository;
+import org.glowroot.common.repo.IncidentRepository;
+import org.glowroot.common.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.repo.util.HttpClient.TooManyRequestsHttpResponseException;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Formatting;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
@@ -59,6 +62,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -70,9 +74,10 @@ public class AlertingService {
     private static final Logger logger = LoggerFactory.getLogger(AlertingService.class);
 
     private final ConfigRepository configRepository;
-    private final TriggeredAlertRepository triggeredAlertRepository;
+    private final IncidentRepository incidentRepository;
     private final MailService mailService;
     private final HttpClient httpClient;
+    private final Clock clock;
 
     private final MetricService metricService;
 
@@ -83,14 +88,15 @@ public class AlertingService {
 
     private volatile boolean closed;
 
-    public AlertingService(ConfigRepository configRepository,
-            TriggeredAlertRepository triggeredAlertRepository,
+    public AlertingService(ConfigRepository configRepository, IncidentRepository incidentRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
-            RollupLevelService rollupLevelService, MailService mailService, HttpClient httpClient) {
+            RollupLevelService rollupLevelService, MailService mailService, HttpClient httpClient,
+            Clock clock) {
         this.configRepository = configRepository;
-        this.triggeredAlertRepository = triggeredAlertRepository;
+        this.incidentRepository = incidentRepository;
         this.mailService = mailService;
         this.httpClient = httpClient;
+        this.clock = clock;
         this.metricService =
                 new MetricService(aggregateRepository, gaugeValueRepository, rollupLevelService);
         pagerDutyRetryExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -111,18 +117,17 @@ public class AlertingService {
         for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollupId)) {
             alertConditions.add(alertConfig.getCondition());
         }
-        for (AlertCondition alertCondition : triggeredAlertRepository
-                .readAlertConditions(agentRollupId)) {
-            if (!alertConditions.contains(alertCondition)) {
-                triggeredAlertRepository.delete(agentRollupId, alertCondition);
+        for (OpenIncident openIncident : incidentRepository.readOpenIncidents(agentRollupId)) {
+            if (!alertConditions.contains(openIncident.condition())) {
+                incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis());
             }
         }
     }
 
     public void checkMetricAlert(String agentRollupId, String agentRollupDisplay,
-            AlertCondition alertCondition, MetricCondition metricCondition,
-            AlertNotification alertNotification, long endTime) throws Exception {
-
+            AlertConfig alertConfig, MetricCondition metricCondition, long endTime)
+            throws Exception {
+        AlertCondition alertCondition = alertConfig.getCondition();
         long startTime = endTime - SECONDS.toMillis(metricCondition.getTimePeriodSeconds());
         Number value =
                 metricService.getMetricValue(agentRollupId, metricCondition, startTime, endTime);
@@ -137,40 +142,44 @@ public class AlertingService {
         } else {
             currentlyTriggered = value.doubleValue() > metricCondition.getThreshold();
         }
-        boolean previouslyTriggered =
-                triggeredAlertRepository.exists(agentRollupId, alertCondition);
-        if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentRollupId, alertCondition);
-            sendMetricAlert(agentRollupId, agentRollupDisplay, alertCondition, metricCondition,
-                    alertNotification, endTime, true);
-        } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentRollupId, alertCondition);
-            sendMetricAlert(agentRollupId, agentRollupDisplay, alertCondition, metricCondition,
-                    alertNotification, endTime, false);
+        OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
+                alertCondition, alertConfig.getSeverity());
+        if (openIncident != null && !currentlyTriggered) {
+            incidentRepository.resolveIncident(openIncident, endTime);
+            sendMetricAlert(agentRollupId, agentRollupDisplay, alertConfig, metricCondition,
+                    endTime, true);
+        } else if (openIncident == null && currentlyTriggered) {
+            // the start time for the incident is the end time of the interval evaluated above
+            incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
+                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
+            sendMetricAlert(agentRollupId, agentRollupDisplay, alertConfig, metricCondition,
+                    endTime, false);
         }
     }
 
     // only used by central
     public void sendHeartbeatAlertIfNeeded(String agentRollupId, String agentRollupDisplay,
-            AlertCondition alertCondition, HeartbeatCondition heartbeatCondition,
-            AlertNotification alertNotification, long endTime, boolean currentlyTriggered)
-            throws Exception {
-        boolean previouslyTriggered =
-                triggeredAlertRepository.exists(agentRollupId, alertCondition);
-        if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentRollupId, alertCondition);
-            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertCondition,
-                    heartbeatCondition, alertNotification, endTime, true);
-        } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentRollupId, alertCondition);
-            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertCondition,
-                    heartbeatCondition, alertNotification, endTime, false);
+            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
+            boolean currentlyTriggered) throws Exception {
+        AlertCondition alertCondition = alertConfig.getCondition();
+        OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
+                alertCondition, alertConfig.getSeverity());
+        if (openIncident != null && !currentlyTriggered) {
+            incidentRepository.resolveIncident(openIncident, endTime);
+            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
+                    endTime, true);
+        } else if (openIncident == null && currentlyTriggered) {
+            // the start time for the incident is the end time of the interval evaluated above
+            incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
+                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
+            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
+                    endTime, false);
         }
     }
 
     private void sendMetricAlert(String agentRollupId, String agentRollupDisplay,
-            AlertCondition alertCondition, MetricCondition metricCondition,
-            AlertNotification alertNotification, long endTime, boolean ok) throws Exception {
+            AlertConfig alertConfig, MetricCondition metricCondition, long endTime, boolean ok)
+            throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         StringBuilder subject = new StringBuilder();
         subject.append("Glowroot alert");
@@ -236,13 +245,13 @@ public class AlertingService {
             throw new IllegalStateException("Unexpected metric: " + metric);
         }
         message.append(".\n\n");
-        sendNotification(agentRollupId, agentRollupDisplay, alertCondition, alertNotification,
-                endTime, subject.toString(), message.toString(), ok);
+        sendNotification(agentRollupId, agentRollupDisplay, alertConfig, endTime,
+                subject.toString(), message.toString(), ok);
     }
 
     private void sendHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
-            AlertCondition alertCondition, HeartbeatCondition heartbeatCondition,
-            AlertNotification alertNotification, long endTime, boolean ok) throws Exception {
+            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
+            boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentRollupDisplay.equals("")) {
@@ -257,13 +266,14 @@ public class AlertingService {
             sb.append(heartbeatCondition.getTimePeriodSeconds());
             sb.append(" seconds.\n\n");
         }
-        sendNotification(agentRollupId, agentRollupDisplay, alertCondition, alertNotification,
-                endTime, subject, sb.toString(), ok);
+        sendNotification(agentRollupId, agentRollupDisplay, alertConfig, endTime, subject,
+                sb.toString(), ok);
     }
 
     public void sendNotification(String agentRollupId, String agentRollupDisplay,
-            AlertCondition alertCondition, AlertNotification alertNotification, long endTime,
-            String subject, String messageText, boolean ok) throws Exception {
+            AlertConfig alertConfig, long endTime, String subject, String messageText, boolean ok)
+            throws Exception {
+        AlertNotification alertNotification = alertConfig.getNotification();
         if (alertNotification.hasEmailNotification()) {
             SmtpConfig smtpConfig = configRepository.getSmtpConfig();
             if (smtpConfig.host().isEmpty()) {
@@ -278,63 +288,63 @@ public class AlertingService {
             }
         }
         if (alertNotification.hasPagerDutyNotification()) {
-            sendPagerDutyWithRetry(agentRollupId, agentRollupDisplay, alertCondition,
+            sendPagerDutyWithRetry(agentRollupId, agentRollupDisplay, alertConfig,
                     alertNotification.getPagerDutyNotification(), endTime, subject, messageText,
                     ok);
         }
     }
 
     private void sendPagerDutyWithRetry(String agentRollupId, String agentRollupDisplay,
-            AlertCondition alertCondition, PagerDutyNotification pagerDutyNotification,
+            AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification,
             long endTime, String subject, String messageText, boolean ok) throws Exception {
         SendPagerDuty sendPagerDuty = new SendPagerDuty(agentRollupId, agentRollupDisplay,
-                alertCondition, pagerDutyNotification, endTime, subject, messageText, ok);
+                alertConfig, pagerDutyNotification, endTime, subject, messageText, ok);
         sendPagerDuty.run();
     }
 
     private void sendPagerDuty(String agentRollupId, String agentRollupDisplay,
-            AlertCondition alertCondition, PagerDutyNotification pagerDutyNotification,
-            long endTime, String subject, String messageText, boolean ok) throws Exception {
-        String dedupKey;
-        if (agentRollupId.isEmpty()) {
-            dedupKey = InetAddress.getLocalHost().getHostName();
-        } else {
-            dedupKey = agentRollupId;
-        }
-        dedupKey = escapeDedupKeyPart(dedupKey) + ":" + Versions.getVersion(alertCondition);
+            AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification, long endTime,
+            String subject, String messageText, boolean ok) throws Exception {
+        AlertCondition alertCondition = alertConfig.getCondition();
+        String dedupKey = getPagerDutyDedupKey(agentRollupId, alertCondition);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         JsonGenerator jg = ObjectMappers.create().getFactory().createGenerator(baos);
         jg.writeStartObject();
         jg.writeStringField("routing_key", pagerDutyNotification.getPagerDutyIntegrationKey());
         jg.writeStringField("dedup_key", dedupKey);
-        jg.writeStringField("event_action", ok ? "resolve" : "trigger");
-        jg.writeStringField("client", "Glowroot");
-        jg.writeObjectFieldStart("payload");
-        jg.writeStringField("summary", subject + "\n\n" + messageText);
-        if (agentRollupId.isEmpty()) {
-            jg.writeStringField("source", InetAddress.getLocalHost().getHostName());
+        if (ok) {
+            jg.writeStringField("event_action", "resolve");
         } else {
-            jg.writeStringField("source", agentRollupDisplay);
+            jg.writeStringField("event_action", "trigger");
+            jg.writeStringField("client", "Glowroot");
+            jg.writeObjectFieldStart("payload");
+            jg.writeStringField("summary", subject + "\n\n" + messageText);
+            if (agentRollupId.isEmpty()) {
+                jg.writeStringField("source", InetAddress.getLocalHost().getHostName());
+            } else {
+                jg.writeStringField("source", agentRollupDisplay);
+            }
+            jg.writeStringField("severity", getPagerDutySeverity(alertConfig.getSeverity()));
+            jg.writeStringField("timestamp", formatAsIso8601(endTime));
+            switch (alertCondition.getValCase()) {
+                case METRIC_CONDITION:
+                    jg.writeStringField("class",
+                            "metric: " + alertCondition.getMetricCondition().getMetric());
+                    break;
+                case SYNTHETIC_MONITOR_CONDITION:
+                    jg.writeStringField("class", "synthetic monitor");
+                    break;
+                case HEARTBEAT_CONDITION:
+                    jg.writeStringField("class", "heartbeat");
+                    break;
+                default:
+                    logger.warn(
+                            "unexpected alert condition: " + alertCondition.getValCase().name());
+                    jg.writeStringField("class", "unknown: " + alertCondition.getValCase().name());
+                    break;
+            }
+            jg.writeEndObject();
         }
-        jg.writeStringField("severity", "critical");
-        jg.writeStringField("timestamp", formatAsIso8601(endTime));
-        switch (alertCondition.getValCase()) {
-            case METRIC_CONDITION:
-                jg.writeStringField("class",
-                        "metric: " + alertCondition.getMetricCondition().getMetric());
-                break;
-            case SYNTHETIC_MONITOR_CONDITION:
-                jg.writeStringField("class", "synthetic monitor");
-                break;
-            case HEARTBEAT_CONDITION:
-                jg.writeStringField("class", "heartbeat");
-                break;
-            default:
-                logger.warn("unexpected alert condition: " + alertCondition.getValCase().name());
-                jg.writeStringField("class", "unknown: " + alertCondition.getValCase().name());
-                break;
-        }
-        jg.writeEndObject();
         jg.writeEndObject();
         jg.close();
         httpClient.post("https://events.pagerduty.com/v2/enqueue", baos.toByteArray(),
@@ -407,6 +417,33 @@ public class AlertingService {
         }
     }
 
+    private static String getPagerDutyDedupKey(String agentRollupId, AlertCondition alertCondition)
+            throws UnknownHostException {
+        String dedupKey;
+        if (agentRollupId.isEmpty()) {
+            dedupKey = InetAddress.getLocalHost().getHostName();
+        } else {
+            dedupKey = agentRollupId;
+        }
+        dedupKey = escapeDedupKeyPart(dedupKey) + ":" + Versions.getVersion(alertCondition);
+        return dedupKey;
+    }
+
+    private static String getPagerDutySeverity(AlertSeverity severity) {
+        switch (severity) {
+            case CRITICAL:
+                return "critical";
+            case HIGH:
+                return "error";
+            case MEDIUM:
+                return "warning";
+            case LOW:
+                return "info";
+            default:
+                throw new IllegalStateException("Unknown alert severity: " + severity);
+        }
+    }
+
     // optional newPlainPassword can be passed in to test SMTP from
     // AdminJsonService.sentTestEmail() without possibility of throwing
     // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
@@ -470,7 +507,7 @@ public class AlertingService {
 
         private final String agentRollupId;
         private final String agentRollupDisplay;
-        private final AlertCondition alertCondition;
+        private final AlertConfig alertConfig;
         private final PagerDutyNotification pagerDutyNotification;
         private final long endTime;
         private final String subject;
@@ -480,11 +517,11 @@ public class AlertingService {
         private volatile int currentTryCount = 1;
 
         private SendPagerDuty(String agentRollupId, String agentRollupDisplay,
-                AlertCondition alertCondition, PagerDutyNotification pagerDutyNotification,
+                AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification,
                 long endTime, String subject, String messageText, boolean ok) {
             this.agentRollupId = agentRollupId;
             this.agentRollupDisplay = agentRollupDisplay;
-            this.alertCondition = alertCondition;
+            this.alertConfig = alertConfig;
             this.pagerDutyNotification = pagerDutyNotification;
             this.endTime = endTime;
             this.subject = subject;
@@ -495,7 +532,7 @@ public class AlertingService {
         @Override
         public void run() {
             try {
-                sendPagerDuty(agentRollupId, agentRollupDisplay, alertCondition,
+                sendPagerDuty(agentRollupId, agentRollupDisplay, alertConfig,
                         pagerDutyNotification, endTime, subject, messageText, ok);
                 if (currentTryCount > 1) {
                     logger.info(

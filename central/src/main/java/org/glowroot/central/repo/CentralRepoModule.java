@@ -44,7 +44,7 @@ public class CentralRepoModule {
     private final SyntheticResultDao syntheticResultDao;
     private final EnvironmentDao environmentDao;
     private final HeartbeatDao heartbeatDao;
-    private final TriggeredAlertDao triggeredAlertDao;
+    private final IncidentDao incidentDao;
 
     public CentralRepoModule(ClusterManager clusterManager, Session session,
             KeyspaceMetadata keyspaceMetadata, String cassandraSymmetricEncryptionKey, Clock clock)
@@ -69,7 +69,7 @@ public class CentralRepoModule {
         syntheticResultDao = new SyntheticResultDao(session, configRepository, clock);
         environmentDao = new EnvironmentDao(session);
         heartbeatDao = new HeartbeatDao(session, agentRollupDao, clock);
-        triggeredAlertDao = new TriggeredAlertDao(session);
+        incidentDao = new IncidentDao(session, clock);
     }
 
     public boolean setupAdminUser(List<String> args) throws Exception {
@@ -134,7 +134,7 @@ public class CentralRepoModule {
         return heartbeatDao;
     }
 
-    public TriggeredAlertDao getTriggeredAlertDao() {
-        return triggeredAlertDao;
+    public IncidentDao getIncidentDao() {
+        return incidentDao;
     }
 }

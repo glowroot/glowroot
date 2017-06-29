@@ -30,7 +30,8 @@ glowroot.controller('IncidentsCtrl', [
       $http.get('backend/incidents')
           .then(function (response) {
             $scope.loaded = true;
-            $scope.incidents = response.data;
+            $scope.openIncidents = response.data.openIncidents;
+            $scope.resolvedIncidents = response.data.resolvedIncidents;
           }, function (response) {
             httpErrors.handle(response, $scope);
           });

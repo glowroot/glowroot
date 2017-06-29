@@ -97,6 +97,7 @@ message AgentConfig {
     // independent of any notifications, including any changes to the notifications)
 
     AlertCondition condition = 1;
+    AlertSeverity severity = 3;
     AlertNotification notification = 2;
 
     message AlertCondition {
@@ -140,6 +141,13 @@ message AgentConfig {
       message PagerDutyNotification {
         string pager_duty_integration_key = 1;
       }
+    }
+
+    enum AlertSeverity {
+      CRITICAL = 0;
+      HIGH = 1;
+      MEDIUM = 2;
+      LOW = 3;
     }
   }
 
