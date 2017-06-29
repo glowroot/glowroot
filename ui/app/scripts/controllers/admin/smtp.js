@@ -36,12 +36,24 @@ glowroot.controller('AdminSmtpCtrl', [
     function onNewData(data) {
       $scope.loaded = true;
       $scope.config = data.config;
+      $scope.page.connectionSecurity = $scope.config.connectionSecurity || 'none';
       $scope.originalConfig = angular.copy(data.config);
       if (data.config.passwordExists) {
         $scope.password = '********';
       }
       $scope.localServerName = data.localServerName;
     }
+
+    $scope.$watch('page.connectionSecurity', function (newValue) {
+      if (!$scope.config) {
+        return;
+      }
+      if (newValue === 'none') {
+        delete $scope.config.connectionSecurity;
+      } else {
+        $scope.config.connectionSecurity = newValue;
+      }
+    });
 
     $scope.onPasswordChange = function () {
       $scope.config.newPassword = $scope.password;

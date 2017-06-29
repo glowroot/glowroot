@@ -39,6 +39,7 @@ import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
@@ -83,7 +84,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 27;
+    private static final int CURR_SCHEMA_VERSION = 28;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -235,6 +236,10 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 27) {
             updateRolePermissionName();
             updateSchemaVersion(27);
+        }
+        if (initialSchemaVersion < 28) {
+            updateSmtpConfig();
+            updateSchemaVersion(28);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -896,6 +901,34 @@ public class SchemaUpgrade {
                 Sessions.execute(session, boundStatement);
             }
         }
+    }
+
+    private void updateSmtpConfig() throws Exception {
+        ResultSet results =
+                Sessions.execute(session, "select value from central_config where key = 'smtp'");
+        Row row = results.one();
+        if (row == null) {
+            return;
+        }
+        String smtpConfigText = row.getString(0);
+        if (smtpConfigText == null) {
+            return;
+        }
+        JsonNode jsonNode = mapper.readTree(smtpConfigText);
+        if (jsonNode == null || !jsonNode.isObject()) {
+            return;
+        }
+        ObjectNode smtpConfigNode = (ObjectNode) jsonNode;
+        JsonNode sslNode = smtpConfigNode.remove("ssl");
+        if (sslNode != null && sslNode.isBoolean() && sslNode.asBoolean()) {
+            smtpConfigNode.put("connectionSecurity", "ssl-tls");
+        }
+        String updatedWebConfigText = mapper.writeValueAsString(smtpConfigNode);
+        PreparedStatement preparedStatement =
+                session.prepare("insert into central_config (key, value) values ('web', ?)");
+        BoundStatement boundStatement = preparedStatement.bind();
+        boundStatement.setString(0, updatedWebConfigText);
+        Sessions.execute(session, boundStatement);
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

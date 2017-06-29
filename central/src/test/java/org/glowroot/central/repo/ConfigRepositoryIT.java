@@ -39,6 +39,7 @@ import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
+import org.glowroot.common.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common.config.UserConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Versions;
@@ -554,7 +555,7 @@ public class ConfigRepositoryIT {
         SmtpConfig updatedConfig = ImmutableSmtpConfig.builder()
                 .host("a")
                 .port(555)
-                .ssl(true)
+                .connectionSecurity(ConnectionSecurity.SSL_TLS)
                 .username("b")
                 .password("c")
                 .putAdditionalProperties("f", "g")

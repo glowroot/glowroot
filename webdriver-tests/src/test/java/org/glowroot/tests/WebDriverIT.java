@@ -134,7 +134,6 @@ public abstract class WebDriverIT {
                 + "\"fullQueryTextExpirationHours\":336,"
                 + "\"version\":\"$version\"}");
         resetCentralConfigAdmin("smtp", "{\"host\":\"\","
-                + "\"ssl\":false,"
                 + "\"username\":\"\","
                 + "\"passwordExists\":false,"
                 + "\"newPassword\":\"\","

@@ -53,6 +53,7 @@ import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.SmtpConfig;
+import org.glowroot.common.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common.config.UserConfig;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
@@ -592,7 +593,7 @@ class AdminJsonService {
 
         abstract String host();
         abstract @Nullable Integer port();
-        abstract boolean ssl();
+        abstract @Nullable ConnectionSecurity connectionSecurity();
         abstract String username();
         abstract boolean passwordExists();
         @Value.Default
@@ -609,7 +610,7 @@ class AdminJsonService {
             ImmutableSmtpConfig.Builder builder = ImmutableSmtpConfig.builder()
                     .host(host())
                     .port(port())
-                    .ssl(ssl())
+                    .connectionSecurity(connectionSecurity())
                     .username(username())
                     .putAllAdditionalProperties(additionalProperties())
                     .fromEmailAddress(fromEmailAddress())
@@ -633,7 +634,7 @@ class AdminJsonService {
             return ImmutableSmtpConfigDto.builder()
                     .host(config.host())
                     .port(config.port())
-                    .ssl(config.ssl())
+                    .connectionSecurity(config.connectionSecurity())
                     .username(config.username())
                     .passwordExists(!config.password().isEmpty())
                     .putAllAdditionalProperties(config.additionalProperties())

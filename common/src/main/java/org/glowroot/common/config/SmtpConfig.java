@@ -40,11 +40,8 @@ public abstract class SmtpConfig {
     @JsonInclude(Include.NON_NULL)
     public abstract @Nullable Integer port();
 
-    @Value.Default
-    @JsonInclude(Include.NON_EMPTY)
-    public boolean ssl() {
-        return false;
-    }
+    @JsonInclude(Include.NON_NULL)
+    public abstract @Nullable ConnectionSecurity connectionSecurity();
 
     @Value.Default
     @JsonInclude(Include.NON_EMPTY)
@@ -77,5 +74,9 @@ public abstract class SmtpConfig {
     @JsonIgnore
     public String version() {
         return Versions.getJsonVersion(this);
+    }
+
+    public static enum ConnectionSecurity {
+        SSL_TLS, STARTTLS;
     }
 }

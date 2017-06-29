@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.config.SmtpConfig;
+import org.glowroot.common.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
@@ -326,14 +327,17 @@ public class AlertingService {
             @Nullable String passwordOverride, LazySecretKey lazySecretKey) throws Exception {
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpConfig.host());
+        ConnectionSecurity connectionSecurity = smtpConfig.connectionSecurity();
         Integer port = smtpConfig.port();
         if (port == null) {
             port = 25;
         }
         props.put("mail.smtp.port", port);
-        if (smtpConfig.ssl()) {
+        if (connectionSecurity == ConnectionSecurity.SSL_TLS) {
             props.put("mail.smtp.socketFactory.port", port);
             props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        } else if (connectionSecurity == ConnectionSecurity.STARTTLS) {
+            props.put("mail.smtp.starttls.enable", true);
         }
         for (Entry<String, String> entry : smtpConfig.additionalProperties().entrySet()) {
             props.put(entry.getKey(), entry.getValue());

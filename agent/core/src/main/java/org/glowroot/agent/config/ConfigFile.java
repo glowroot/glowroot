@@ -59,13 +59,14 @@ class ConfigFile {
         this.adminFile = adminFile;
         if (configFile.exists()) {
             configRootObjectNode = getRootObjectNode(configFile);
-            upgradeConfigIfNeeded(configRootObjectNode);
+            upgradeAlertsIfNeeded(configRootObjectNode);
         } else {
             configRootObjectNode = mapper.createObjectNode();
         }
         if (adminFile.exists()) {
             adminRootObjectNode = getRootObjectNode(adminFile);
-            upgradeAdminIfNeeded(adminRootObjectNode);
+            upgradeRolesIfNeeded(adminRootObjectNode);
+            upgradeSmtpIfNeeded(adminRootObjectNode);
         } else {
             adminRootObjectNode = mapper.createObjectNode();
         }
@@ -159,7 +160,7 @@ class ConfigFile {
         }
     }
 
-    private static void upgradeConfigIfNeeded(ObjectNode configRootObjectNode) {
+    private static void upgradeAlertsIfNeeded(ObjectNode configRootObjectNode) {
         JsonNode alertsNode = configRootObjectNode.get("alerts");
         if (alertsNode == null || !alertsNode.isArray()) {
             return;
@@ -211,7 +212,7 @@ class ConfigFile {
         }
     }
 
-    private static void upgradeAdminIfNeeded(ObjectNode adminRootObjectNode) {
+    private static void upgradeRolesIfNeeded(ObjectNode adminRootObjectNode) {
         // upgrade from 0.9.1 to 0.9.2
         JsonNode rolesNode = adminRootObjectNode.get("roles");
         if (rolesNode == null || !rolesNode.isArray()) {
@@ -249,6 +250,19 @@ class ConfigFile {
             for (String permission : permissions) {
                 permissionsArrayNode.add(new TextNode(permission));
             }
+        }
+    }
+
+    private static void upgradeSmtpIfNeeded(ObjectNode adminRootObjectNode) {
+        // upgrade from 0.9.19 to 0.9.20
+        JsonNode smtpNode = adminRootObjectNode.get("smtp");
+        if (smtpNode == null || !smtpNode.isObject()) {
+            return;
+        }
+        ObjectNode smtpObjectNode = (ObjectNode) smtpNode;
+        JsonNode sslNode = smtpObjectNode.remove("ssl");
+        if (sslNode != null && sslNode.isBoolean() && sslNode.asBoolean()) {
+            smtpObjectNode.put("connectionSecurity", "ssl-tls");
         }
     }
 

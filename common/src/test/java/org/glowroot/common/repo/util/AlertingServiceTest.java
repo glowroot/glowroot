@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.SmtpConfig;
+import org.glowroot.common.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableTransactionQuery;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
@@ -108,7 +109,7 @@ public class AlertingServiceTest {
             when(LAZY_SECRET_KEY.getExisting()).thenReturn(secretKey);
             SMTP_CONFIG = ImmutableSmtpConfig.builder()
                     .host("localhost")
-                    .ssl(true)
+                    .connectionSecurity(ConnectionSecurity.SSL_TLS)
                     .username("u")
                     .password(Encryption.encrypt("test", LAZY_SECRET_KEY))
                     .putAdditionalProperties("a", "x")

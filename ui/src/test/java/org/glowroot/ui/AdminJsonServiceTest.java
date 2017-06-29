@@ -50,7 +50,6 @@ public class AdminJsonServiceTest {
         // given
         SmtpConfigDto configDto = ImmutableSmtpConfigDto.builder()
                 .host("localhost")
-                .ssl(false)
                 .username("")
                 .passwordExists(false)
                 .fromEmailAddress("from@example.org")
@@ -74,7 +73,6 @@ public class AdminJsonServiceTest {
         // given
         SmtpConfigDto configDto = ImmutableSmtpConfigDto.builder()
                 .host("localhost")
-                .ssl(false)
                 .username("")
                 .passwordExists(false)
                 .fromEmailAddress("")
@@ -100,7 +98,6 @@ public class AdminJsonServiceTest {
         // given
         SmtpConfigDto configDto = ImmutableSmtpConfigDto.builder()
                 .host("localhost")
-                .ssl(false)
                 .username("")
                 .passwordExists(false)
                 .fromEmailAddress("")

@@ -18,6 +18,7 @@ package org.glowroot.tests.admin;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.Select;
 
 import org.glowroot.tests.util.Utils;
 
@@ -39,8 +40,8 @@ public class SmtpConfigPage {
         return withWait(xpath("//div[@gt-label='Port']//input"));
     }
 
-    public WebElement getUseSslCheckBox() {
-        return withWait(xpath("//div[@gt-label='Use SSL']//input"));
+    public Select getConnectionSecuritySelect() {
+        return new Select(withWait(xpath("//select[@ng-model='page.connectionSecurity']")));
     }
 
     public WebElement getUsernameTextField() {

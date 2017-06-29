@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2016 the original author or authors.
+  Copyright 2015-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -44,15 +44,23 @@
            gt-disabled="!layout.adminEdit"
            gt-width="7em">
         <div class="help-block">
-          Defaults to port 25.
+          Defaults to port 25
         </div>
       </div>
-      <div gt-form-group
-           gt-type="checkbox"
-           gt-label="Use SSL"
-           gt-model="config.ssl"
-           gt-disabled="!layout.adminEdit"
-           class="gt-form-group-without-help-block">
+      <div class="form-group gt-form-group-without-help-block">
+        <label class="col-lg-3 control-label">
+          Connection security
+        </label>
+        <div class="col-lg-9">
+          <select ng-model="page.connectionSecurity"
+                  ng-disabled="!layout.adminEdit"
+                  class="form-control"
+                  style="width: auto;">
+            <option value="none">None</option>
+            <option value="ssl-tls">SSL/TLS</option>
+            <option value="starttls">STARTTLS</option>
+          </select>
+        </div>
       </div>
       <div gt-form-group
            gt-label="Username"

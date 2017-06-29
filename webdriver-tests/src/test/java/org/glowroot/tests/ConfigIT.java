@@ -232,7 +232,7 @@ public class ConfigIT extends WebDriverIT {
         page.getHostTextField().sendKeys("example.org");
         page.getPortTextField().clear();
         page.getPortTextField().sendKeys("5678");
-        page.getUseSslCheckBox().click();
+        page.getConnectionSecuritySelect().selectByValue("starttls");
         page.getUsernameTextField().clear();
         page.getUsernameTextField().sendKeys("user1234");
         page.getPasswordTextField().clear();
@@ -251,7 +251,9 @@ public class ConfigIT extends WebDriverIT {
         configSidebar.getSmtpLink().click();
         assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
         assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("5678");
-        assertThat(page.getUseSslCheckBox().isSelected()).isTrue();
+        assertThat(
+                page.getConnectionSecuritySelect().getFirstSelectedOption().getAttribute("value"))
+                        .isEqualTo("starttls");
         assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
         assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
         assertThat(page.getFromEmailAddressTextField().getAttribute("value"))
