@@ -208,19 +208,23 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.xolstice.maven.plugins</groupId>
-        <artifactId>protobuf-maven-plugin</artifactId>
-        <version>0.5.0</version>
+        <groupId>com.github.os72</groupId>
+        <artifactId>protoc-jar-maven-plugin</artifactId>
+        <version>3.3.0.1</version>
         <configuration>
-          <protocArtifact>
-            com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
-          </protocArtifact>
-          <attachProtoSources>false</attachProtoSources>
+          <protocVersion>${protoc.version}</protocVersion>
+          <outputTargets>
+            <outputTarget>
+              <type>java</type>
+              <outputDirectory>target/generated-sources/protobuf-java</outputDirectory>
+            </outputTarget>
+          </outputTargets>
         </configuration>
         <executions>
           <execution>
+            <phase>generate-sources</phase>
             <goals>
-              <goal>compile</goal>
+              <goal>run</goal>
             </goals>
           </execution>
         </executions>
