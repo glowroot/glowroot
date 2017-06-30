@@ -614,6 +614,7 @@
                 <option>-keep class org.glowroot.agent.weaving.** { *; }</option>
                 <option>-keep class org.glowroot.agent.shaded.glowroot.common.** { *; }</option>
                 <option>-keep class org.glowroot.agent.shaded.glowroot.ui.** { *; }</option>
+                <option>-keep class org.glowroot.agent.shaded.sun.mail.smtp.** { *; }</option>
                 <!-- keep all guava classes so that plugins can use them -->
                 <option>-keep class org.glowroot.agent.shaded.google.common.** { *; }</option>
                 <!-- keep all logback appenders -->
