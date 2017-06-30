@@ -134,7 +134,7 @@ case "$1" in
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
-               if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" != "true" && "$version" == *-SNAPSHOT ]]
+               if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" == "false" && "$version" == *-SNAPSHOT ]]
                then
                  mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                   -Pjavadoc \
@@ -302,7 +302,7 @@ case "$1" in
                exit $mvn_status
                ;;
 
- "saucelabs1") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" != "true" ]]
+ "saucelabs1") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
                  mvn clean install -DskipTests \
                                    -B
@@ -323,7 +323,7 @@ case "$1" in
                fi
                ;;
 
- "saucelabs2") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" != "true" ]]
+ "saucelabs2") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
                  mvn clean install -DskipTests \
                                    -B
