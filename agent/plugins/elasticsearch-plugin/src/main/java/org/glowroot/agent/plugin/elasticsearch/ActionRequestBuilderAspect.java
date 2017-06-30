@@ -43,7 +43,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ActionRequestBuilderAspect {
 
-    private static final String QUERY_TYPE = "ES";
+    private static final String QUERY_TYPE = "Elasticsearch";
 
     private static final ConfigService configService = Agent.getConfigService("elasticsearch");
 
