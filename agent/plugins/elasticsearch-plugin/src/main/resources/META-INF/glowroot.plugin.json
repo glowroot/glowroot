@@ -1,6 +1,15 @@
 {
   "name": "Elasticsearch Plugin",
   "id": "elasticsearch",
+  "properties": [
+    {
+      "name": "stackTraceThresholdMillis",
+      "type": "double",
+      "default": 1000.0,
+      "label": "Stack trace threshold (millis)",
+      "description": "Any query that exceeds this threshold will have a stack trace captured and attached to it. An empty value will not collect any stack traces, a zero value will collect a stack trace for every query."
+    }
+  ],
   "aspects": [
     "org.glowroot.agent.plugin.elasticsearch.ActionRequestBuilderAspect",
     "org.glowroot.agent.plugin.elasticsearch.ListenableActionFutureAspect"
