@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2016 the original author or authors.
+  Copyright 2012-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -179,8 +179,7 @@
                 style="width: 100%; max-width: 25em;">
           <option value=""></option>
           <option ng-repeat="attributeName in traceAttributeNames"
-                  value="{{attributeName}}"
-                  ng-selected="attributeName === filter.attributeName">
+                  ng-value="attributeName">
             {{attributeName}}
           </option>
         </select>

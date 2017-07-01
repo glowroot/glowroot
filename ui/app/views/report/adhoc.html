@@ -67,9 +67,8 @@
                   id="reportMetric"
                   style="width: auto;">
             <option ng-repeat="metric in metrics track by metric.id"
-                    value="{{metric.id}}"
+                    ng-value="metric.id"
                     ng-disabled="metric.disabled"
-                    ng-selected="metric.id === report.metric"
                     ng-style="{'font-weight': metric.heading ? 'bold' : 'normal'}">
               {{metric.display}}
             </option>
@@ -96,8 +95,7 @@
               (select one or more agents to see available transaction types)
             </option>
             <option ng-repeat="transactionType in allTransactionTypes"
-                    value="{{transactionType}}"
-                    ng-selected="transactionType === report.transactionType">
+                    ng-value="transactionType">
               {{transactionType}}
             </option>
           </select>

@@ -92,9 +92,8 @@
                       style="width: auto;">
                 <option value="" ng-disabled="config.condition.metricName"></option>
                 <option ng-repeat="metric in metrics track by metric.id"
-                        value="{{metric.id}}"
+                        ng-value="metric.id"
                         ng-disabled="metric.disabled"
-                        ng-selected="metric.id === report.metricId"
                         ng-style="{'font-weight': metric.heading ? 'bold' : 'normal'}">
                   {{metric.display}}
                 </option>
@@ -119,12 +118,10 @@
                       id="transactionType"
                       style="width: auto;">
                 <option ng-repeat="transactionType in transactionTypes()"
-                        value="{{transactionType}}"
-                        ng-selected="transactionType === config.transactionType">
+                        ng-value="transactionType">
                   {{transactionType}}
                 </option>
-                <option value="{{config.condition.transactionType}}"
-                        ng-selected="config.condition.transactionType === config.transactionType"
+                <option ng-value="config.condition.transactionType"
                         disabled
                         ng-if="config.condition.transactionType && transactionTypes().indexOf(config.condition.transactionType) === -1">
                   {{config.condition.transactionType}} (not available)
@@ -248,8 +245,7 @@
                   (there are no synthetic monitors available)
                 </option>
                 <option ng-repeat="syntheticMonitor in syntheticMonitors"
-                        value="{{syntheticMonitor.id}}"
-                        ng-selected="syntheticMonitor.id === config.syntheticMonitorId">
+                        ng-value="syntheticMonitor.id">
                   {{syntheticMonitor.display}}
                 </option>
               </select>

@@ -52,10 +52,10 @@ public class AlertConfigIT extends WebDriverIT {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
         assertThat(alertPage.getMetricSelect().getFirstSelectedOption().getAttribute("value"))
-                .isEqualTo("transaction:x-percentile");
+                .isEqualTo("string:transaction:x-percentile");
         assertThat(
                 alertPage.getTransactionTypeSelect().getFirstSelectedOption().getAttribute("value"))
-                        .isEqualTo("Web");
+                        .isEqualTo("string:Web");
         assertThat(alertPage.getTransactionPercentileTextField().getAttribute("value"))
                 .isEqualTo("95");
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("1000");
@@ -89,10 +89,10 @@ public class AlertConfigIT extends WebDriverIT {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
         assertThat(alertPage.getMetricSelect().getFirstSelectedOption().getAttribute("value"))
-                .isEqualTo("transaction:count");
+                .isEqualTo("string:transaction:count");
         assertThat(
                 alertPage.getTransactionTypeSelect().getFirstSelectedOption().getAttribute("value"))
-                        .isEqualTo("Web");
+                        .isEqualTo("string:Web");
         assertThat(alertPage.getTransactionNameTextField().getAttribute("value")).isEqualTo("XYZ");
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isFalse();
@@ -124,10 +124,10 @@ public class AlertConfigIT extends WebDriverIT {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
         assertThat(alertPage.getMetricSelect().getFirstSelectedOption().getAttribute("value"))
-                .isEqualTo("transaction:count");
+                .isEqualTo("string:transaction:count");
         assertThat(
                 alertPage.getTransactionTypeSelect().getFirstSelectedOption().getAttribute("value"))
-                        .isEqualTo("Web");
+                        .isEqualTo("string:Web");
         assertThat(alertPage.getTransactionNameTextField().getAttribute("value")).isEqualTo("XYZ");
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isTrue();
@@ -159,10 +159,10 @@ public class AlertConfigIT extends WebDriverIT {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
         assertThat(alertPage.getMetricSelect().getFirstSelectedOption().getAttribute("value"))
-                .isEqualTo("error:rate");
+                .isEqualTo("string:error:rate");
         assertThat(
                 alertPage.getTransactionTypeSelect().getFirstSelectedOption().getAttribute("value"))
-                        .isEqualTo("Web");
+                        .isEqualTo("string:Web");
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("5");
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getEmailAddressesTextField().getAttribute("value"))
@@ -191,7 +191,7 @@ public class AlertConfigIT extends WebDriverIT {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
         assertThat(alertPage.getMetricSelect().getFirstSelectedOption().getAttribute("value"))
-                .isEqualTo("gauge:java.lang:type=Memory:HeapMemoryUsage.used");
+                .isEqualTo("string:gauge:java.lang:type=Memory:HeapMemoryUsage.used");
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("2000");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isFalse();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
@@ -221,7 +221,7 @@ public class AlertConfigIT extends WebDriverIT {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
         assertThat(alertPage.getMetricSelect().getFirstSelectedOption().getAttribute("value"))
-                .isEqualTo("gauge:java.lang:type=Memory:HeapMemoryUsage.used");
+                .isEqualTo("string:gauge:java.lang:type=Memory:HeapMemoryUsage.used");
         assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("2000");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isTrue();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
@@ -443,8 +443,8 @@ public class AlertConfigIT extends WebDriverIT {
         if (WebDriverSetup.useCentral) {
             alertPage.getMetricRadioButton().click();
         }
-        alertPage.getMetricSelect().selectByValue("transaction:x-percentile");
-        alertPage.getTransactionTypeSelect().selectByValue("Web");
+        alertPage.getMetricSelect().selectByValue("string:transaction:x-percentile");
+        alertPage.getTransactionTypeSelect().selectByValue("string:Web");
         alertPage.getTransactionPercentileTextField().sendKeys("95");
         alertPage.getThresholdTextField().sendKeys("1000");
         alertPage.getTimePeriodMinutesTextField().sendKeys("1");
@@ -463,8 +463,8 @@ public class AlertConfigIT extends WebDriverIT {
         if (WebDriverSetup.useCentral) {
             alertPage.getMetricRadioButton().click();
         }
-        alertPage.getMetricSelect().selectByValue("transaction:count");
-        alertPage.getTransactionTypeSelect().selectByValue("Web");
+        alertPage.getMetricSelect().selectByValue("string:transaction:count");
+        alertPage.getTransactionTypeSelect().selectByValue("string:Web");
         alertPage.getTransactionNameTextField().sendKeys("XYZ");
         alertPage.getThresholdTextField().sendKeys("1");
         if (lowerBoundThreshold) {
@@ -485,8 +485,8 @@ public class AlertConfigIT extends WebDriverIT {
         if (WebDriverSetup.useCentral) {
             alertPage.getMetricRadioButton().click();
         }
-        alertPage.getMetricSelect().selectByValue("error:rate");
-        alertPage.getTransactionTypeSelect().selectByValue("Web");
+        alertPage.getMetricSelect().selectByValue("string:error:rate");
+        alertPage.getTransactionTypeSelect().selectByValue("string:Web");
         alertPage.getThresholdTextField().sendKeys("5");
         alertPage.getTimePeriodMinutesTextField().sendKeys("1");
         alertPage.getMinTransactionCountTextField().sendKeys("2");
@@ -505,7 +505,7 @@ public class AlertConfigIT extends WebDriverIT {
             alertPage.getMetricRadioButton().click();
         }
         alertPage.getMetricSelect()
-                .selectByValue("gauge:java.lang:type=Memory:HeapMemoryUsage.used");
+                .selectByValue("string:gauge:java.lang:type=Memory:HeapMemoryUsage.used");
         alertPage.getThresholdTextField().sendKeys("2000");
         if (lowerBoundThreshold) {
             alertPage.getLowerBoundThresholdCheckBox().click();
