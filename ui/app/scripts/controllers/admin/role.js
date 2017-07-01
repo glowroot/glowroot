@@ -134,8 +134,8 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.jvm.environment = true;
       } else if (permission === 'agent:syntheticMonitor') {
         permissionBlock.syntheticMonitor = true;
-      } else if (permission === 'agent:alert') {
-        permissionBlock.alert = true;
+      } else if (permission === 'agent:incident') {
+        permissionBlock.incident = true;
       } else if (permission === 'agent:config') {
         permissionBlock.config._ = true;
       } else if (permission === 'agent:config:view') {
@@ -282,8 +282,8 @@ glowroot.controller('AdminRoleCtrl', [
       if (permissionsObj.syntheticMonitor) {
         permissions.push('agent:syntheticMonitor');
       }
-      if (permissionsObj.alert) {
-        permissions.push('agent:alert');
+      if (permissionsObj.incident) {
+        permissions.push('agent:incident');
       }
       if (permissionsObj.config._) {
         permissions.push('agent:config');
@@ -381,7 +381,7 @@ glowroot.controller('AdminRoleCtrl', [
           environment: false
         },
         syntheticMonitor: false,
-        alert: false,
+        incident: false,
         config: {
           _: false,
           view: false,
