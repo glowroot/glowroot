@@ -591,6 +591,9 @@ glowroot.controller('ReportAdhocCtrl', [
       } else if (appliedReport.rollup === 'monthly') {
         to.subtract(1, 'days');
         return moment(from).format('L') + ' through ' + moment(to).format('L');
+      } else {
+        // unexpected rollup
+        return '';
       }
     };
 

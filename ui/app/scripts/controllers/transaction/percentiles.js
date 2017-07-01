@@ -66,6 +66,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
         event.preventDefault();
         return false;
       }
+      return true;
     };
 
     $scope.openCustomPercentilesModal = function () {

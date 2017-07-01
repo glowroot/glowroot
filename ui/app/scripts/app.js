@@ -123,7 +123,7 @@ glowroot.run([
           var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
           $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
         } else {
-          $rootScope.agentPermissions = undefined;
+          delete $rootScope.agentPermissions;
         }
       }
     });
@@ -200,6 +200,7 @@ glowroot.run([
         // suppress normal hyperlink
         return false;
       }
+      return true;
     };
 
     $rootScope.signOut = function () {
@@ -285,7 +286,7 @@ glowroot.run([
         var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
         $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
       } else {
-        $rootScope.agentPermissions = undefined;
+        delete $rootScope.agentPermissions;
       }
       var timeZoneIdMap = {};
       angular.forEach(moment.tz.names(), function (timeZoneId) {

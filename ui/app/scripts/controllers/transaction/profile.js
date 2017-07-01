@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ glowroot.controller('TransactionProfileCtrl', [
 
     $scope.clickActiveTopLink = function (event, auxiliary) {
       if (event.ctrlKey) {
-        return;
+        return true;
       }
       if (($scope.auxiliary && auxiliary) || (!$scope.auxiliary && !auxiliary)) {
         $scope.range.chartRefresh++;
@@ -68,6 +68,7 @@ glowroot.controller('TransactionProfileCtrl', [
         event.preventDefault();
         return false;
       }
+      return true;
     };
 
     $scope.flameGraphHref = function () {
@@ -110,7 +111,7 @@ glowroot.controller('TransactionProfileCtrl', [
     });
 
     function refreshData() {
-      $scope.parsingError = undefined;
+      delete $scope.parsingError;
       var parseResult = gtParseIncludesExcludes($scope.filter);
       if (parseResult.error) {
         $scope.parsingError = parseResult.error;

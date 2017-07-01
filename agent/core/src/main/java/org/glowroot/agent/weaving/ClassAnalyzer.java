@@ -538,7 +538,7 @@ class ClassAnalyzer {
 
         @Override
         public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String /*@Nullable*/[] exceptions) {
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             if ((access & ACC_BRIDGE) == 0) {
                 return null;
             }

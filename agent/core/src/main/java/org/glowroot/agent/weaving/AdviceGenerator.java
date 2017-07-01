@@ -567,8 +567,7 @@ class AdviceGenerator {
     }
 
     @RequiresNonNull("methodMetaInternalName")
-    private LazyDefinedClass generateMethodMetaClass(InstrumentationConfig config)
-            throws Exception {
+    private LazyDefinedClass generateMethodMetaClass(InstrumentationConfig config) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, methodMetaInternalName, null, "java/lang/Object",
                 null);

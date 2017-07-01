@@ -23,10 +23,10 @@ import java.util.Properties;
 
 import javax.annotation.Nullable;
 
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.glowroot.common.util.OnlyUsedByTests;
-
 import com.google.common.annotations.VisibleForTesting;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+
+import org.glowroot.common.util.OnlyUsedByTests;
 
 // DO NOT USE ANY GUAVA CLASSES HERE because they trigger loading of jul
 // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)

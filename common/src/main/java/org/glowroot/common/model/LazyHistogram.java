@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.glowroot.common.model;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
-import java.util.zip.DataFormatException;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
@@ -78,7 +77,7 @@ public class LazyHistogram {
         return builder.build();
     }
 
-    public void merge(Aggregate.Histogram toBeMergedHistogram) throws DataFormatException {
+    public void merge(Aggregate.Histogram toBeMergedHistogram) {
         ByteString encodedBytes = toBeMergedHistogram.getEncodedBytes();
         if (encodedBytes.isEmpty()) {
             for (long rawValue : toBeMergedHistogram.getOrderedRawValueList()) {

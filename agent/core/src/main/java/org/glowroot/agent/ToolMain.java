@@ -84,8 +84,8 @@ public class ToolMain {
     }
 
     private static void h2(File dataDir) throws Exception {
-        Console.main(new String[] {"-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data",
-                "-user", "sa"});
+        Console.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
+                "sa");
     }
 
     @RequiresNonNull("startupLogger")
@@ -94,7 +94,7 @@ public class ToolMain {
         if (recoverFile.exists() && !recoverFile.delete()) {
             startupLogger.warn("recover failed: cannot delete existing data.h2.sql");
         }
-        Recover.main(new String[] {"-dir", dataDir.getPath(), "-db", "data"});
+        Recover.main("-dir", dataDir.getPath(), "-db", "data");
         File dbFile = new File(dataDir, "data.h2.db");
         File dbBakFile = new File(dataDir, "data.h2.db.bak");
         if (dbBakFile.exists() && !dbBakFile.delete()) {
@@ -106,9 +106,8 @@ public class ToolMain {
                     dbBakFile.getPath());
             return;
         }
-        RunScript.main(
-                new String[] {"-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data",
-                        "-script", recoverFile.getPath()});
+        RunScript.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-script",
+                recoverFile.getPath());
         startupLogger.info("recover succeeded");
 
         // clean up
@@ -139,11 +138,12 @@ public class ToolMain {
         } finally {
             out.close();
         }
-        RunScript.main(
-                new String[] {"-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data",
-                        "-user", "sa", "-script", maskScriptFile.getPath()});
-        // just a temp file, no need to log if delete fails
-        maskScriptFile.delete();
+        RunScript.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
+                "sa", "-script", maskScriptFile.getPath());
+        if (!maskScriptFile.delete()) {
+            startupLogger.info("failed to clean-up, cannot delete file: {}",
+                    maskScriptFile.getPath());
+        }
         // re-create data file to eliminate any trace of previous values
         recover(dataDir);
     }

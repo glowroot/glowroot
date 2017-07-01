@@ -1719,7 +1719,7 @@ public class AggregateDao implements AggregateRepository {
 
     private List<ResultSetFuture> storeTransactionSummary(String agentRollupId,
             String transactionType, String transactionName, long captureTime, Aggregate aggregate,
-            int adjustedTTL) throws IOException {
+            int adjustedTTL) {
 
         final int rollupLevel = 0;
 

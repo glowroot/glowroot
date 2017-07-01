@@ -152,7 +152,7 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       updateLocation();
       var node = nodeMap[objectName];
       incNodeVersion(node);
-      node.attributeMap = undefined;
+      delete node.attributeMap;
       $parent.html(JST['mbean-node-unexpanded'](node));
     });
 

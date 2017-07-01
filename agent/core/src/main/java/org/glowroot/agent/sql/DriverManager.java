@@ -53,7 +53,7 @@ public class DriverManager {
         return driver.connect(url, info);
     }
 
-    public static Driver getDriver(@SuppressWarnings("unused") String url) throws SQLException {
+    public static Driver getDriver(@SuppressWarnings("unused") String url) {
         return driver;
     }
 

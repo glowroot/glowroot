@@ -87,8 +87,8 @@ public class Weaver {
         this.timerName = timerNameCache.getTimerName(OnlyForTheTimerName.class);
     }
 
-    byte /*@Nullable*/[] weave(byte[] classBytes, String className, @Nullable CodeSource codeSource,
-            @Nullable ClassLoader loader) {
+    byte /*@Nullable*/ [] weave(byte[] classBytes, String className,
+            @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         TimerImpl weavingTimer = startWeavingTimer();
         try {
             logger.trace("transform(): className={}", className);
@@ -119,7 +119,7 @@ public class Weaver {
         return currentTimer.startNestedTimer(timerName);
     }
 
-    private byte/*@Nullable*/[] weaveUnderTimer(byte[] classBytes, String className,
+    private byte /*@Nullable*/ [] weaveUnderTimer(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         List<Advice> advisors = analyzedWorld.mergeInstrumentationAnnotations(this.advisors.get(),
                 classBytes, loader, className);
@@ -194,13 +194,13 @@ public class Weaver {
         String originalBytesVerifyError = verify(originalBytes, loader);
         if (!originalBytesVerifyError.isEmpty()) {
             // not much to do if original byte code fails to verify
-            logger.debug("class verify error for original bytecode\n:" + originalBytesVerifyError);
+            logger.debug("class verify error for original bytecode\n{}", originalBytesVerifyError);
             return;
         }
         String transformedBytesVerifyError = verify(transformedBytes, loader);
         if (!transformedBytesVerifyError.isEmpty()) {
-            logger.error(
-                    "class verify error for transformed bytecode\n:" + transformedBytesVerifyError);
+            logger.error("class verify error for transformed bytecode\n:{}",
+                    transformedBytesVerifyError);
             try {
                 File originalBytesFile =
                         getTempFile(className, "glowroot-verify-error-", "-original.class");
@@ -246,7 +246,7 @@ public class Weaver {
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String/*@Nullable*/[] exceptions) {
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             MethodVisitor mv =
                     checkNotNull(cv).visitMethod(access, name, desc, signature, exceptions);
             return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
@@ -404,7 +404,7 @@ public class Weaver {
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String /*@Nullable*/[] exceptions) {
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
             if (name.equals("shouldBootDelegate") && desc.equals("(Ljava/lang/String;)Z")) {
                 return new FelixOsgiHackMethodVisitor(mv, access, name, desc);
@@ -446,7 +446,7 @@ public class Weaver {
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String /*@Nullable*/[] exceptions) {
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
             if (name.equals("internalInitURLHandlers") && desc.equals("()V")) {
                 return new JBoss4HackMethodVisitor(mv, access, name, desc);

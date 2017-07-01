@@ -1197,9 +1197,9 @@ public class SchemaUpgrade {
             throw new IllegalStateException(
                     "Glowroot central could not start, see error message above for instructions");
         }
-        FileWriter out = new FileWriter(propFile, true);
-        out.write(sb.toString());
-        out.close();
+        try (FileWriter out = new FileWriter(propFile, true)) {
+            out.write(sb.toString());
+        }
         return true;
     }
 

@@ -83,7 +83,7 @@ public class LazyPlatformMBeanServer {
         return lazyPlatformMBeanServer;
     }
 
-    private LazyPlatformMBeanServer() throws InterruptedException {
+    private LazyPlatformMBeanServer() {
         String command = AppServerDetection.getCommand();
         boolean oldJBoss = AppServerDetection.isOldJBoss(command);
         boolean websphere = AppServerDetection.isWebSphere(command);

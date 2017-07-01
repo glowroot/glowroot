@@ -35,8 +35,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class RequestDispatcherAspect {
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend javax.servlet.RequestDispatcher
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("javax.servlet.RequestDispatcher")
     public abstract static class RequestDispatcherImpl implements RequestDispatcherMixin {
 
@@ -49,12 +48,11 @@ public class RequestDispatcherAspect {
 
         @Override
         public void glowroot$setPath(@Nullable String path) {
-            this.glowroot$path = path;
+            glowroot$path = path;
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend javax.servlet.RequestDispatcher
+    // the method names are verbose since they will be mixed in to existing classes
     public interface RequestDispatcherMixin {
 
         @Nullable

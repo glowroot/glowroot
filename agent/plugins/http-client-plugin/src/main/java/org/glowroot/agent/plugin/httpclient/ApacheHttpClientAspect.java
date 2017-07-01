@@ -35,12 +35,22 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class ApacheHttpClientAspect {
 
-    @Shim("org.apache.http.client.methods.HttpUriRequest")
-    public interface HttpUriRequest {
+    @Shim("org.apache.http.HttpRequest")
+    public interface HttpRequest {
+
+        @Shim("org.apache.http.RequestLine getRequestLine()")
+        @Nullable
+        RequestLine glowroot$getRequestLine();
+    }
+
+    @Shim("org.apache.http.RequestLine")
+    public interface RequestLine {
+
         @Nullable
         String getMethod();
+
         @Nullable
-        URI getURI();
+        String getUri();
     }
 
     @Shim("org.apache.http.HttpHost")
@@ -49,19 +59,14 @@ public class ApacheHttpClientAspect {
         String toURI();
     }
 
-    @Shim("org.apache.http.HttpRequest")
-    public interface HttpRequest {
-        @Shim("org.apache.http.RequestLine getRequestLine()")
-        @Nullable
-        RequestLine glowroot$getRequestLine();
-    }
+    @Shim("org.apache.http.client.methods.HttpUriRequest")
+    public interface HttpUriRequest {
 
-    @Shim("org.apache.http.RequestLine")
-    public interface RequestLine {
         @Nullable
         String getMethod();
+
         @Nullable
-        String getUri();
+        URI getURI();
     }
 
     @Pointcut(className = "org.apache.http.client.HttpClient", methodName = "execute",

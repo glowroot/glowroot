@@ -61,9 +61,9 @@ class AggregateInsert implements JdbcUpdate {
     private final @Nullable Long serviceCallsCappedId;
     private final @Nullable Long mainThreadProfileCappedId;
     private final @Nullable Long auxThreadProfileCappedId;
-    private final byte /*@Nullable*/[] mainThreadRootTimers;
-    private final byte /*@Nullable*/[] auxThreadRootTimers;
-    private final byte /*@Nullable*/[] asyncTimers;
+    private final byte /*@Nullable*/ [] mainThreadRootTimers;
+    private final byte /*@Nullable*/ [] auxThreadRootTimers;
+    private final byte /*@Nullable*/ [] asyncTimers;
     private final @Nullable Double mainThreadTotalCpuNanos;
     private final @Nullable Double mainThreadTotalBlockedNanos;
     private final @Nullable Double mainThreadTotalWaitedNanos;
@@ -109,22 +109,30 @@ class AggregateInsert implements JdbcUpdate {
         asyncTimers = toByteArray(aggregate.getAsyncTimerList());
         Aggregate.ThreadStats mainThreadStats = aggregate.getMainThreadStats();
         mainThreadTotalCpuNanos = mainThreadStats.hasTotalCpuNanos()
-                ? mainThreadStats.getTotalCpuNanos().getValue() : null;
+                ? mainThreadStats.getTotalCpuNanos().getValue()
+                : null;
         mainThreadTotalBlockedNanos = mainThreadStats.hasTotalBlockedNanos()
-                ? mainThreadStats.getTotalBlockedNanos().getValue() : null;
+                ? mainThreadStats.getTotalBlockedNanos().getValue()
+                : null;
         mainThreadTotalWaitedNanos = mainThreadStats.hasTotalWaitedNanos()
-                ? mainThreadStats.getTotalWaitedNanos().getValue() : null;
+                ? mainThreadStats.getTotalWaitedNanos().getValue()
+                : null;
         mainThreadTotalAllocatedBytes = mainThreadStats.hasTotalAllocatedBytes()
-                ? mainThreadStats.getTotalAllocatedBytes().getValue() : null;
+                ? mainThreadStats.getTotalAllocatedBytes().getValue()
+                : null;
         Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
         auxThreadTotalCpuNanos = auxThreadStats.hasTotalCpuNanos()
-                ? auxThreadStats.getTotalCpuNanos().getValue() : null;
+                ? auxThreadStats.getTotalCpuNanos().getValue()
+                : null;
         auxThreadTotalBlockedNanos = auxThreadStats.hasTotalBlockedNanos()
-                ? auxThreadStats.getTotalBlockedNanos().getValue() : null;
+                ? auxThreadStats.getTotalBlockedNanos().getValue()
+                : null;
         auxThreadTotalWaitedNanos = auxThreadStats.hasTotalWaitedNanos()
-                ? auxThreadStats.getTotalWaitedNanos().getValue() : null;
+                ? auxThreadStats.getTotalWaitedNanos().getValue()
+                : null;
         auxThreadTotalAllocatedBytes = auxThreadStats.hasTotalAllocatedBytes()
-                ? auxThreadStats.getTotalAllocatedBytes().getValue() : null;
+                ? auxThreadStats.getTotalAllocatedBytes().getValue()
+                : null;
         durationNanosHistogramBytes = aggregate.getDurationNanosHistogram().toByteArray();
     }
 

@@ -237,7 +237,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
     }
 
-    private static class LastRollupTimesQuery implements JdbcQuery<long/*@Nullable*/[]> {
+    private static class LastRollupTimesQuery implements JdbcQuery<long /*@Nullable*/ []> {
 
         private final @Untainted String selectClause;
 
@@ -254,7 +254,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         public void bind(PreparedStatement preparedStatement) throws Exception {}
 
         @Override
-        public long/*@Nullable*/[] processResultSet(ResultSet resultSet) throws Exception {
+        public long /*@Nullable*/ [] processResultSet(ResultSet resultSet) throws Exception {
             if (!resultSet.next()) {
                 return null;
             }
@@ -267,7 +267,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
 
         @Override
-        public long/*@Nullable*/[] valueIfDataSourceClosed() {
+        public long /*@Nullable*/ [] valueIfDataSourceClosed() {
             return null;
         }
     }

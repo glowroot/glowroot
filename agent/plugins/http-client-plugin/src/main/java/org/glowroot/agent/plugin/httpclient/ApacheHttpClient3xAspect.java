@@ -35,8 +35,10 @@ public class ApacheHttpClient3xAspect {
 
     @Shim("org.apache.commons.httpclient.HttpMethod")
     public interface HttpMethod {
+
         @Nullable
         String getName();
+
         @Shim("org.apache.commons.httpclient.URI getURI()")
         @Nullable
         Object glowroot$getURI();

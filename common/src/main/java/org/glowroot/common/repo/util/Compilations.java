@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.CodeSource;
 import java.util.List;
@@ -53,6 +52,8 @@ public class Compilations {
             Pattern.compile("\\bpublic\\s+class\\s+([^\\s{]+)[\\s{]");
     private static final Pattern PACKAGE_NAME_PATTERN =
             Pattern.compile("^\\s*\\bpackage\\s+([^;]+)\\s*;");
+
+    private Compilations() {}
 
     public static Class<?> compile(String source) throws Exception {
         JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
@@ -200,8 +201,7 @@ public class Compilations {
 
         private final String source;
 
-        private SourceJavaFileObject(String simpleClassName, String source)
-                throws URISyntaxException {
+        private SourceJavaFileObject(String simpleClassName, String source) {
             super(URI.create(simpleClassName + JavaFileObject.Kind.SOURCE.extension),
                     JavaFileObject.Kind.SOURCE);
             this.source = source;

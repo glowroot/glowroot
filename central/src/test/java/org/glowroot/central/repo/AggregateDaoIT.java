@@ -90,8 +90,8 @@ public class AggregateDaoIT {
         session.execute("use glowroot_unit_tests");
         KeyspaceMetadata keyspaceMetadata =
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
-        clusterManager = ClusterManager.create();
 
+        clusterManager = ClusterManager.create();
         agentRollupDao = new AgentRollupDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);

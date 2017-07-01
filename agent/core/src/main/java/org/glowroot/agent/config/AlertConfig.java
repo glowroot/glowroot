@@ -211,7 +211,7 @@ public abstract class AlertConfig {
     public interface AlertCondition {}
 
     @Value.Immutable
-    public static abstract class MetricCondition implements AlertCondition {
+    public abstract static class MetricCondition implements AlertCondition {
         abstract String metric();
         abstract @Nullable String transactionType();
         abstract @Nullable String transactionName();

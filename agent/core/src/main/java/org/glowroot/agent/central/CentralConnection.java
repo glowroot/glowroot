@@ -259,7 +259,7 @@ class CentralConnection {
         }
     }
 
-    static abstract class GrpcCall<T extends /*@NonNull*/ Object> {
+    abstract static class GrpcCall<T extends /*@NonNull*/ Object> {
         abstract void call(StreamObserver<T> responseObserver);
         void doWithResponse(@SuppressWarnings("unused") T response) {}
     }

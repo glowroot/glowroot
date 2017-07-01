@@ -91,7 +91,7 @@ public abstract class PluginCache {
         return builder.build();
     }
 
-    private static ImmutableList<File> getPluginJars(@Nullable File pluginsDir) throws IOException {
+    private static ImmutableList<File> getPluginJars(@Nullable File pluginsDir) {
         if (pluginsDir == null) {
             return ImmutableList.of();
         }
@@ -108,8 +108,7 @@ public abstract class PluginCache {
         return ImmutableList.copyOf(pluginJars);
     }
 
-    private static ImmutableList<File> getStandaloneDescriptors(@Nullable File pluginsDir)
-            throws IOException {
+    private static ImmutableList<File> getStandaloneDescriptors(@Nullable File pluginsDir) {
         if (pluginsDir == null) {
             return ImmutableList.of();
         }

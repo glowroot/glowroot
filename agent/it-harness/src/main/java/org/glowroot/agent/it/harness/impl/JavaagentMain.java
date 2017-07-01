@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.it.harness.impl;
 
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,10 +44,8 @@ class JavaagentMain {
         }
 
         int port = Integer.parseInt(args[0]);
-        // socket is never closed since program is still running after main returns
-        Socket socket = new Socket((String) null, port);
-        ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
-        new Thread(new SocketHeartbeat(objectOut)).start();
+        final SocketHeartbeat socketHeartbeat = new SocketHeartbeat(port);
+        new Thread(socketHeartbeat).start();
 
         int javaagentServicePort = Integer.parseInt(args[1]);
         JavaagentServiceImpl javaagentService = new JavaagentServiceImpl();
@@ -89,6 +85,7 @@ class JavaagentMain {
                     throw new IllegalStateException(
                             "Could not terminate gRPC worker event loop group");
                 }
+                socketHeartbeat.close();
                 return null;
             }
         });

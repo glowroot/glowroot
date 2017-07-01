@@ -235,7 +235,7 @@ class HttpServer {
                 try {
                     Thread.sleep(backoffMillis);
                 } catch (InterruptedException f) {
-                    Thread.interrupted();
+                    Thread.currentThread().interrupt();
                     return;
                 }
                 backoffMillis = Math.min(backoffMillis * 2, 60000);

@@ -150,8 +150,10 @@ public class GlowrootServlet extends HttpServlet {
         if (!centralDir.exists()) {
             // upgrade from 0.9.11 to 0.9.12 if needed
             File oldCentralDir = new File("glowroot");
-            if (oldCentralDir.exists()) {
-                oldCentralDir.renameTo(centralDir);
+            if (oldCentralDir.exists() && !oldCentralDir.renameTo(centralDir)) {
+                throw new IOException("Unable to rename glowroot central directory from '"
+                        + oldCentralDir.getAbsolutePath() + "' to '" + centralDir.getAbsolutePath()
+                        + "'");
             }
         }
         centralDir.mkdirs();

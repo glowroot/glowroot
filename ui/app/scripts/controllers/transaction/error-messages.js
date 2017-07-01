@@ -53,7 +53,7 @@ glowroot.controller('ErrorMessagesCtrl', [
       if (($scope.layout.central && !$scope.agentRollupId) || !$scope.transactionType) {
         return;
       }
-      $scope.parsingError = undefined;
+      delete $scope.parsingError;
       var parseResult = gtParseIncludesExcludes($scope.filter);
       if (parseResult.error) {
         $scope.parsingError = parseResult.error;

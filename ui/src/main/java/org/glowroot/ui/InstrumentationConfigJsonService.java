@@ -106,7 +106,7 @@ class InstrumentationConfigJsonService {
 
     @GET(path = "/backend/config/preload-classpath-cache",
             permission = "agent:config:view:instrumentation")
-    void preloadClasspathCache(final @BindAgentId String agentId) throws Exception {
+    void preloadClasspathCache(final @BindAgentId String agentId) {
         if (liveWeavingService == null) {
             return;
         }

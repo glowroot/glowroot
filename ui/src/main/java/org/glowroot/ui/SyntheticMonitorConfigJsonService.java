@@ -162,7 +162,7 @@ class SyntheticMonitorConfigJsonService {
                 // since synthetic monitors are only used in central, this class is present
                 Class<?> webDriverClass = Class.forName("org.openqa.selenium.WebDriver");
                 try {
-                    javaSource.getMethod("test", new Class[] {webDriverClass});
+                    javaSource.getMethod("test", webDriverClass);
                 } catch (NoSuchMethodException e) {
                     return buildCompilationErrorResponse(ImmutableList.of("Class must have a"
                             + " \"public void test(WebDriver driver) { ... }\" method"));

@@ -51,14 +51,14 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, @Nullable String signature,
-            @Nullable String superName, String /*@Nullable*/[] interfaces) {
+            @Nullable String superName, String /*@Nullable*/ [] interfaces) {
         super.visit(version, access, name, signature, superName, interfaces);
         this.owner = name;
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc,
-            @Nullable String signature, String/*@Nullable*/[] exceptions) {
+            @Nullable String signature, String /*@Nullable*/ [] exceptions) {
         return new InstrumentationAnnotationMethodVisitor(name, desc);
     }
 

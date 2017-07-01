@@ -223,7 +223,7 @@ class ClasspathCache {
         return getAnalyzedMethods(bytes);
     }
 
-    private List<UiAnalyzedMethod> getAnalyzedMethods(byte[] bytes) throws IOException {
+    private List<UiAnalyzedMethod> getAnalyzedMethods(byte[] bytes) {
         AnalyzingClassVisitor cv = new AnalyzingClassVisitor();
         ClassReader cr = new ClassReader(bytes);
         cr.accept(cv, 0);
@@ -435,9 +435,16 @@ class ClasspathCache {
             throw new RuntimeException(e);
         }
         Closer closer = Closer.create();
-        InputStream s = uri.toURL().openStream();
-        JarInputStream jarIn = closer.register(new JarInputStream(s));
         try {
+            InputStream in = uri.toURL().openStream();
+            JarInputStream jarIn;
+            try {
+                jarIn = new JarInputStream(in);
+            } catch (IOException e) {
+                in.close();
+                throw e;
+            }
+            closer.register(jarIn);
             loadClassNamesFromJarInputStream(jarIn, location, newClassNameLocations);
         } catch (Throwable t) {
             throw closer.rethrow(t);
@@ -523,7 +530,7 @@ class ClasspathCache {
 
         @Override
         public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String /*@Nullable*/[] exceptions) {
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             if ((access & ACC_SYNTHETIC) != 0 || (access & ACC_NATIVE) != 0) {
                 // don't add synthetic or native methods to the analyzed model
                 return null;
@@ -622,9 +629,16 @@ class ClasspathCache {
             throw new RuntimeException(e);
         }
         Closer closer = Closer.create();
-        InputStream s = uri.toURL().openStream();
-        JarInputStream jarIn = closer.register(new JarInputStream(s));
         try {
+            InputStream in = uri.toURL().openStream();
+            JarInputStream jarIn;
+            try {
+                jarIn = new JarInputStream(in);
+            } catch (IOException e) {
+                in.close();
+                throw e;
+            }
+            closer.register(jarIn);
             JarEntry jarEntry;
             while ((jarEntry = jarIn.getNextJarEntry()) != null) {
                 if (jarEntry.isDirectory()) {

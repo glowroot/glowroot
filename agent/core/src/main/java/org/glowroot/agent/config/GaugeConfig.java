@@ -54,7 +54,7 @@ public abstract class GaugeConfig {
 
     @Value.Immutable
     @Styles.AllParameters
-    public static abstract class MBeanAttribute {
+    public abstract static class MBeanAttribute {
 
         public abstract String name();
 

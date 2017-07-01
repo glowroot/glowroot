@@ -353,7 +353,7 @@ public class AgentRollupDao implements AgentRollupRepository {
         Date lastCaptureTime();
 
         @Override
-        default public int compareTo(AgentRollupRecord right) {
+        public default int compareTo(AgentRollupRecord right) {
             return display().compareToIgnoreCase(right.display());
         }
     }

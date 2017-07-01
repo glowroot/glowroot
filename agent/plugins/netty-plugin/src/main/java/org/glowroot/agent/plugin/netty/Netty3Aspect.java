@@ -38,8 +38,7 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class Netty3Aspect {
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend org.jboss.netty.channel.Channel
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin({"org.jboss.netty.channel.Channel"})
     public abstract static class ChannelImpl implements ChannelMixin {
 
@@ -52,12 +51,11 @@ public class Netty3Aspect {
 
         @Override
         public void glowroot$setCompleteAsyncTransaction(boolean completeAsyncTransaction) {
-            this.glowroot$completeAsyncTransaction = completeAsyncTransaction;
+            glowroot$completeAsyncTransaction = completeAsyncTransaction;
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend org.jboss.netty.channel.Channel
+    // the method names are verbose since they will be mixed in to existing classes
     public interface ChannelMixin {
 
         boolean glowroot$getCompleteAsyncTransaction();
@@ -65,8 +63,7 @@ public class Netty3Aspect {
         void glowroot$setCompleteAsyncTransaction(boolean completeAsyncTransaction);
     }
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend org.jboss.netty.channel.ChannelFutureListener
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin({"org.jboss.netty.channel.ChannelFutureListener"})
     public abstract static class ListenerImpl implements ListenerMixin {
 
@@ -79,12 +76,11 @@ public class Netty3Aspect {
 
         @Override
         public void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext) {
-            this.glowroot$auxContext = auxContext;
+            glowroot$auxContext = auxContext;
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend org.jboss.netty.channel.ChannelFutureListener
+    // the method names are verbose since they will be mixed in to existing classes
     public interface ListenerMixin {
 
         @Nullable

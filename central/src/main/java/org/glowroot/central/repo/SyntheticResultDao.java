@@ -257,7 +257,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
 
     // from is non-inclusive
     private ListenableFuture<ResultSet> rollupOne(int rollupLevel, String agentRollupId,
-            String syntheticMonitorId, long from, long to, int adjustedTTL) throws Exception {
+            String syntheticMonitorId, long from, long to, int adjustedTTL) {
         BoundStatement boundStatement = readResultForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);

@@ -55,6 +55,7 @@ glowroot.controller('TransactionThroughputCtrl', [
         event.preventDefault();
         return false;
       }
+      return true;
     };
 
     function onRefreshData(data) {

@@ -138,10 +138,10 @@ class WeavingClassVisitor extends ClassVisitor {
     @Override
     public void visit(int version, int access, String internalName, @Nullable String signature,
             @Nullable String superInternalName,
-            String /*@Nullable*/[] interfaceInternalNamesNullable) {
+            String /*@Nullable*/ [] interfaceInternalNamesNullable) {
 
         type = Type.getObjectType(internalName);
-        String /*@Nullable*/[] interfacesIncludingMixins = getInterfacesIncludingShimsAndMixins(
+        String /*@Nullable*/ [] interfacesIncludingMixins = getInterfacesIncludingShimsAndMixins(
                 interfaceInternalNamesNullable, shimTypes, mixinTypes);
         cw.visit(version, access, internalName, signature, superInternalName,
                 interfacesIncludingMixins);
@@ -149,7 +149,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @Override
     public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
-            @Nullable String signature, String /*@Nullable*/[] exceptions) {
+            @Nullable String signature, String /*@Nullable*/ [] exceptions) {
         if (isMixinProxy(name, desc)) {
             return null;
         }
@@ -385,8 +385,8 @@ class WeavingClassVisitor extends ClassVisitor {
                 "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;", false);
     }
 
-    private static String /*@Nullable*/[] getInterfacesIncludingShimsAndMixins(
-            String /*@Nullable*/[] interfaces, List<ShimType> shimTypes,
+    private static String /*@Nullable*/ [] getInterfacesIncludingShimsAndMixins(
+            String /*@Nullable*/ [] interfaces, List<ShimType> shimTypes,
             List<MixinType> mixinTypes) {
         if (mixinTypes.isEmpty() && shimTypes.isEmpty()) {
             return interfaces;
@@ -412,7 +412,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @RequiresNonNull("type")
     private MethodVisitor visitInitWithMixins(int access, String name, String desc,
-            @Nullable String signature, String /*@Nullable*/[] exceptions,
+            @Nullable String signature, String /*@Nullable*/ [] exceptions,
             List<Advice> matchingAdvisors) {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
         MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
@@ -429,7 +429,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @RequiresNonNull("type")
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
-            @Nullable String signature, String /*@Nullable*/[] exceptions,
+            @Nullable String signature, String /*@Nullable*/ [] exceptions,
             Iterable<Advice> matchingAdvisors) {
         // FIXME remove superseded advisors
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);

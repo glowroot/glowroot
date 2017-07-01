@@ -589,7 +589,7 @@ class AdminJsonService {
         abstract String sessionCookieName();
         abstract String version();
 
-        private EmbeddedWebConfig convert() throws Exception {
+        private EmbeddedWebConfig convert() {
             return ImmutableEmbeddedWebConfig.builder()
                     .port(port())
                     .bindAddress(bindAddress())
@@ -620,7 +620,7 @@ class AdminJsonService {
         abstract String sessionCookieName();
         abstract String version();
 
-        private CentralWebConfig convert() throws Exception {
+        private CentralWebConfig convert() {
             return ImmutableCentralWebConfig.builder()
                     .sessionTimeoutMinutes(sessionTimeoutMinutes())
                     .sessionCookieName(sessionCookieName())
@@ -866,7 +866,7 @@ class AdminJsonService {
         public abstract List<ImmutablePagerDutyIntegrationKey> integrationKeys();
         abstract String version();
 
-        private PagerDutyConfig convert() throws Exception {
+        private PagerDutyConfig convert() {
             return ImmutablePagerDutyConfig.builder()
                     .addAllIntegrationKeys(integrationKeys())
                     .build();

@@ -158,7 +158,7 @@ message LogEvent {
   Throwable throwable = 5;
 
   enum Level {
-    NONE = 0;
+    NONE = 0; // TODO this seems unnecessary
     TRACE = 1;
     DEBUG = 2;
     INFO = 3;

@@ -49,8 +49,8 @@ public class AgentPremain {
                 mainEntryPointClass =
                         Class.forName("org.glowroot.agent.MainEntryPoint", true, null);
             }
-            Method premainMethod = mainEntryPointClass.getMethod("premain",
-                    new Class<?>[] {Instrumentation.class, File.class});
+            Method premainMethod =
+                    mainEntryPointClass.getMethod("premain", Instrumentation.class, File.class);
             premainMethod.invoke(null, instrumentation, glowrootJarFile);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting

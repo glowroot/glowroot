@@ -148,6 +148,9 @@ glowroot.controller('ConfigAlertCtrl', [
         return 'error count';
       } else if (metric && metric.lastIndexOf('gauge:', 0) === 0) {
         return 'average gauge value';
+      } else {
+        // unexpected metric
+        return 'value';
       }
     };
 
@@ -168,7 +171,7 @@ glowroot.controller('ConfigAlertCtrl', [
 
       if (data.heading) {
         if (data.config.condition.timePeriodSeconds === undefined) {
-          $scope.page.timePeriodMinutes = undefined;
+          delete $scope.page.timePeriodMinutes;
         } else {
           $scope.page.timePeriodMinutes = data.config.condition.timePeriodSeconds / 60;
         }
@@ -265,7 +268,7 @@ glowroot.controller('ConfigAlertCtrl', [
       $scope.config.condition = {
         conditionType: newValue
       };
-      $scope.page.timePeriodMinutes = undefined;
+      delete $scope.page.timePeriodMinutes;
       if ($scope.showTransactionTypeAndName()) {
         $scope.config.condition.transactionType = $scope.defaultTransactionType();
       }
@@ -276,7 +279,7 @@ glowroot.controller('ConfigAlertCtrl', [
         return;
       }
       if (newValue === undefined) {
-        $scope.config.condition.timePeriodSeconds = undefined;
+        delete $scope.config.condition.timePeriodSeconds;
       } else {
         $scope.config.condition.timePeriodSeconds = newValue * 60;
       }

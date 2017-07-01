@@ -65,8 +65,8 @@ glowroot.controller('ConfigSyntheticMonitorCtrl', [
       if (oldValue === undefined) {
         return;
       }
-      $scope.config.pingUrl = undefined;
-      $scope.config.javaSource = undefined;
+      delete $scope.config.pingUrl;
+      delete $scope.config.javaSource;
       if (newValue === 'java') {
         $scope.config.javaSource = 'import org.openqa.selenium.*;\n'
             + 'import org.openqa.selenium.support.ui.*;\n\n'

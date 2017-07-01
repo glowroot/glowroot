@@ -46,13 +46,17 @@ public class LogbackAspect {
 
     @Shim("ch.qos.logback.classic.spi.ILoggingEvent")
     public interface ILoggingEvent {
+
         @Shim("ch.qos.logback.classic.Level getLevel()")
         @Nullable
         Level glowroot$getLevel();
+
         @Nullable
         String getFormattedMessage();
+
         @Nullable
         String getLoggerName();
+
         @Shim("ch.qos.logback.classic.spi.IThrowableProxy getThrowableProxy()")
         @Nullable
         Object glowroot$getThrowableProxy();

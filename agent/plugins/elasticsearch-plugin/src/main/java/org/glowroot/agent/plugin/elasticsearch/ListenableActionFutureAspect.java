@@ -32,8 +32,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class ListenableActionFutureAspect {
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend org.elasticsearch.action.ListenableActionFuture
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("org.elasticsearch.action.ListenableActionFuture")
     public static class ListenableActionFutureImpl implements ListenableActionFutureMixin {
 
@@ -72,8 +71,7 @@ public class ListenableActionFutureAspect {
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend org.elasticsearch.action.ListenableActionFuture
+    // the method names are verbose since they will be mixed in to existing classes
     public interface ListenableActionFutureMixin {
 
         void glowroot$setCompleted();

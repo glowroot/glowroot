@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,7 @@
  */
 package org.glowroot.common.repo;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.zip.DataFormatException;
 
 import javax.annotation.Nullable;
 
@@ -201,12 +199,11 @@ public class MutableAggregate {
         auxThreadStats.addThreadStats(threadStats);
     }
 
-    public void mergeDurationNanosHistogram(Aggregate.Histogram toBeMergedDurationNanosHistogram)
-            throws DataFormatException {
+    public void mergeDurationNanosHistogram(Aggregate.Histogram toBeMergedDurationNanosHistogram) {
         durationNanosHistogram.merge(toBeMergedDurationNanosHistogram);
     }
 
-    public OverviewAggregate toOverviewAggregate(long captureTime) throws IOException {
+    public OverviewAggregate toOverviewAggregate(long captureTime) {
         ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                 .captureTime(captureTime)
                 .totalDurationNanos(totalDurationNanos)
@@ -224,7 +221,7 @@ public class MutableAggregate {
         return builder.build();
     }
 
-    public PercentileAggregate toPercentileAggregate(long captureTime) throws IOException {
+    public PercentileAggregate toPercentileAggregate(long captureTime) {
         return ImmutablePercentileAggregate.builder()
                 .captureTime(captureTime)
                 .totalDurationNanos(totalDurationNanos)
@@ -243,22 +240,21 @@ public class MutableAggregate {
                 executionCount, hasTotalRows, totalRows);
     }
 
-    public void mergeServiceCalls(List<Aggregate.ServiceCallsByType> toBeMergedServiceCalls)
-            throws IOException {
+    public void mergeServiceCalls(List<Aggregate.ServiceCallsByType> toBeMergedServiceCalls) {
         if (serviceCalls == null) {
             serviceCalls = new ServiceCallCollector(maxAggregateServiceCallsPerType, 0);
         }
         serviceCalls.mergeServiceCalls(toBeMergedServiceCalls);
     }
 
-    public void mergeMainThreadProfile(Profile toBeMergedProfile) throws IOException {
+    public void mergeMainThreadProfile(Profile toBeMergedProfile) {
         if (mainThreadProfile == null) {
             mainThreadProfile = new MutableProfile();
         }
         mainThreadProfile.merge(toBeMergedProfile);
     }
 
-    public void mergeAuxThreadProfile(Profile toBeMergedProfile) throws IOException {
+    public void mergeAuxThreadProfile(Profile toBeMergedProfile) {
         if (auxThreadProfile == null) {
             auxThreadProfile = new MutableProfile();
         }

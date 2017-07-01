@@ -251,7 +251,6 @@ class SyntheticMonitorService implements Runnable {
                     } catch (InterruptedException e) {
                         // probably shutdown requested
                         logger.debug(e.getMessage(), e);
-                        return;
                     } catch (Exception e) {
                         logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
                     }
@@ -426,8 +425,7 @@ class SyntheticMonitorService implements Runnable {
                 Class<?> syntheticUserTestClass = Compilations.compile(javaSource);
                 // validation for default constructor and test method occurs on save
                 Constructor<?> defaultConstructor = syntheticUserTestClass.getConstructor();
-                Method method =
-                        syntheticUserTestClass.getMethod("test", new Class[] {WebDriver.class});
+                Method method = syntheticUserTestClass.getMethod("test", WebDriver.class);
                 JBrowserDriver driver = new JBrowserDriver(Settings.builder()
                         .requestHeaders(REQUEST_HEADERS)
                         .build());

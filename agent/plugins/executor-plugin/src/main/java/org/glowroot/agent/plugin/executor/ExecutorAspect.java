@@ -48,8 +48,7 @@ public class ExecutorAspect {
 
     private static final AtomicBoolean isDoneExceptionLogged = new AtomicBoolean();
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend Runnable, Callable and/or ForkJoinTask
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin({"java.lang.Runnable", "java.util.concurrent.Callable",
             "java.util.concurrent.ForkJoinTask", "akka.jsr166y.ForkJoinTask",
             "scala.concurrent.forkjoin.ForkJoinTask"})
@@ -64,15 +63,14 @@ public class ExecutorAspect {
 
         @Override
         public void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext) {
-            this.glowroot$auxContext = auxContext;
+            glowroot$auxContext = auxContext;
         }
     }
 
     @Mixin("org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor")
     public static class SuppressedRunnableImpl implements SuppressedRunnableEtcMixin {}
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend Runnable, Callable and/or ForkJoinTask
+    // the method names are verbose since they will be mixed in to existing classes
     public interface RunnableEtcMixin {
 
         @Nullable
@@ -81,8 +79,6 @@ public class ExecutorAspect {
         void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext);
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend java.lang.Runnable and/or java.util.concurrent.Callable
     public interface SuppressedRunnableEtcMixin {}
 
     @Pointcut(

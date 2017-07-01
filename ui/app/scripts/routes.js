@@ -26,7 +26,8 @@ glowroot.config([
         if (window.layout) {
           if ($location.path() === '/login') {
             // no need to add transaction-type to url
-            return;
+            return function () {
+            };
           }
           var hasAgent = !$rootScope.layout.central || $location.search()['agent-id']
               || $location.search()['agent-rollup-id'];
@@ -150,6 +151,9 @@ glowroot.config([
                         + ' ms';
                   } else if (sortOrder === 'throughput') {
                     return (60 * 1000 * summary.transactionCount / durationMillis).toFixed(1) + '/min';
+                  } else {
+                    // unexpected sort order
+                    return '';
                   }
                 };
               }
@@ -290,6 +294,9 @@ glowroot.config([
                   return summary.errorCount;
                 } else if (sortOrder === 'error-rate') {
                   return (100 * summary.errorCount / summary.transactionCount).toFixed(1) + ' %';
+                } else {
+                  // unexpected sort order
+                  return '';
                 }
               };
             }

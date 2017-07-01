@@ -248,7 +248,7 @@ class AggregateCollector {
         return queries.getFullQueryText(fullQueryTextSha1);
     }
 
-    void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector) throws IOException {
+    void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector) {
         if (queries != null) {
             queries.mergeQueriesInto(collector);
         }

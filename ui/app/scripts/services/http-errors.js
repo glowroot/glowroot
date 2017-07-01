@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ glowroot.factory('httpErrors', [
 
     $rootScope.$on('$locationChangeSuccess', function () {
       // e.g. clear error on back button
-      $rootScope.httpError = undefined;
+      delete $rootScope.httpError;
     });
 
     function getHttpErrorsObject(response) {
@@ -62,7 +62,7 @@ glowroot.factory('httpErrors', [
         }
       },
       clear: function () {
-        $rootScope.httpError = undefined;
+        delete $rootScope.httpError;
       }
     };
   }

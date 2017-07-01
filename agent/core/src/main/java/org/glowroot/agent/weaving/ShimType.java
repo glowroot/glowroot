@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.weaving;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.regex.Pattern;
 
@@ -30,7 +29,7 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 @Value.Immutable
 abstract class ShimType {
 
-    static ShimType create(Shim shim, Class<?> iface) throws IOException {
+    static ShimType create(Shim shim, Class<?> iface) {
         ImmutableShimType.Builder builder = ImmutableShimType.builder();
         String value = shim.value();
         Pattern pattern = AdviceBuilder.buildPattern(value);

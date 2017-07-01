@@ -252,7 +252,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       } else {
         // the user cleared the text input and tabbed away
         resetMethodSignatures();
-        $scope.selectedMethodSignature = undefined;
+        delete $scope.selectedMethodSignature;
       }
     };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ class ThinClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, @Nullable String signature,
-            @Nullable String superName, String/*@Nullable*/[] interfaces) {
+            @Nullable String superName, String /*@Nullable*/ [] interfaces) {
         thinClassBuilder.access(access);
         thinClassBuilder.name(name);
         thinClassBuilder.superName(superName);
@@ -57,7 +57,7 @@ class ThinClassVisitor extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc,
-            @Nullable String signature, String /*@Nullable*/[] exceptions) {
+            @Nullable String signature, String /*@Nullable*/ [] exceptions) {
         ImmutableThinMethod.Builder thinMethodBuilder = ImmutableThinMethod.builder();
         thinMethodBuilder.access(access);
         thinMethodBuilder.name(name);

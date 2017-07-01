@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -48,7 +49,7 @@ public class DataSourceTest {
         // when
         DataSource.debug(logger, "select x from y where a = ?", "aaa");
         // then
-        verify(logger).isDebugEnabled();
+        verify(logger, times(2)).isDebugEnabled();
         verify(logger).debug("{} [{}]", "select x from y where a = ?", "'aaa'");
         verifyNoMoreInteractions(logger);
     }
@@ -61,7 +62,7 @@ public class DataSourceTest {
         // when
         DataSource.debug(logger, "select x from y where a = ?", new Object[] {null});
         // then
-        verify(logger).isDebugEnabled();
+        verify(logger, times(2)).isDebugEnabled();
         verify(logger).debug("{} [{}]", "select x from y where a = ?", "NULL");
         verifyNoMoreInteractions(logger);
     }
@@ -74,7 +75,7 @@ public class DataSourceTest {
         // when
         DataSource.debug(logger, "select x from y where a = ?", 99);
         // then
-        verify(logger).isDebugEnabled();
+        verify(logger, times(2)).isDebugEnabled();
         verify(logger).debug("{} [{}]", "select x from y where a = ?", "99");
         verifyNoMoreInteractions(logger);
     }
@@ -88,7 +89,7 @@ public class DataSourceTest {
         DataSource.debug(logger, "select x from y where a = ? and b = ? and c = ?", "aaa", null,
                 99);
         // then
-        verify(logger).isDebugEnabled();
+        verify(logger, times(2)).isDebugEnabled();
         verify(logger).debug("{} [{}]", "select x from y where a = ? and b = ? and c = ?",
                 "'aaa', NULL, 99");
         verifyNoMoreInteractions(logger);

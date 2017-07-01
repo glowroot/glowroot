@@ -62,12 +62,6 @@ public class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             @Override
             public void execute(boolean alreadyInsideNewThread) throws Exception {
                 checkNotNull(embeddedAgentModule);
-                if (embeddedAgentModule.isSimpleRepoModuleReady()) {
-                    // prefer to run in same thread
-                    embeddedAgentModule.initEmbeddedServer();
-                    return;
-                }
-                // needs to finish initializing
                 if (alreadyInsideNewThread) {
                     embeddedAgentModule.waitForSimpleRepoModule();
                     embeddedAgentModule.initEmbeddedServer();

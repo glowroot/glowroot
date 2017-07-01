@@ -77,7 +77,7 @@ public class ServiceRegistryImpl implements ServiceRegistry {
     }
 
     public static void init(GlowrootService glowrootService, TimerNameCache timerNameCache,
-            ConfigServiceFactory configServiceFactory) throws Exception {
+            ConfigServiceFactory configServiceFactory) {
         instance = new ServiceRegistryImpl(glowrootService, timerNameCache, configServiceFactory);
     }
 

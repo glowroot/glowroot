@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.httpclient;
 
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -167,9 +168,14 @@ public class ApacheHttpAsyncClientPluginIT {
             httpClient.start();
             HttpGet httpGet = new HttpGet("http://localhost:" + getPort() + "/hello1");
             SimpleFutureCallback callback = new SimpleFutureCallback();
-            httpClient.execute(httpGet, callback);
+            Future<HttpResponse> future = httpClient.execute(httpGet, callback);
             callback.latch.await();
             httpClient.close();
+            int responseStatusCode = future.get().getStatusLine().getStatusCode();
+            if (responseStatusCode != 200) {
+                throw new IllegalStateException(
+                        "Unexpected response status code: " + responseStatusCode);
+            }
         }
     }
 
@@ -181,9 +187,14 @@ public class ApacheHttpAsyncClientPluginIT {
             HttpHost httpHost = new HttpHost("localhost", getPort());
             HttpGet httpGet = new HttpGet("/hello2");
             SimpleFutureCallback callback = new SimpleFutureCallback();
-            httpClient.execute(httpHost, httpGet, callback);
+            Future<HttpResponse> future = httpClient.execute(httpHost, httpGet, callback);
             callback.latch.await();
             httpClient.close();
+            int responseStatusCode = future.get().getStatusLine().getStatusCode();
+            if (responseStatusCode != 200) {
+                throw new IllegalStateException(
+                        "Unexpected response status code: " + responseStatusCode);
+            }
         }
     }
 
@@ -194,9 +205,14 @@ public class ApacheHttpAsyncClientPluginIT {
             httpClient.start();
             HttpPost httpPost = new HttpPost("http://localhost:" + getPort() + "/hello3");
             SimpleFutureCallback callback = new SimpleFutureCallback();
-            httpClient.execute(httpPost, callback);
+            Future<HttpResponse> future = httpClient.execute(httpPost, callback);
             callback.latch.await();
             httpClient.close();
+            int responseStatusCode = future.get().getStatusLine().getStatusCode();
+            if (responseStatusCode != 200) {
+                throw new IllegalStateException(
+                        "Unexpected response status code: " + responseStatusCode);
+            }
         }
     }
 
@@ -208,9 +224,14 @@ public class ApacheHttpAsyncClientPluginIT {
             HttpHost httpHost = new HttpHost("localhost", getPort());
             HttpPost httpPost = new HttpPost("/hello4");
             SimpleFutureCallback callback = new SimpleFutureCallback();
-            httpClient.execute(httpHost, httpPost, callback);
+            Future<HttpResponse> future = httpClient.execute(httpHost, httpPost, callback);
             callback.latch.await();
             httpClient.close();
+            int responseStatusCode = future.get().getStatusLine().getStatusCode();
+            if (responseStatusCode != 200) {
+                throw new IllegalStateException(
+                        "Unexpected response status code: " + responseStatusCode);
+            }
         }
     }
 

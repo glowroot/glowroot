@@ -174,12 +174,11 @@ class RollupService implements Runnable {
         agentRollupConsumer.accept(agentRollup);
     }
 
-    private void checkForDeletedAlerts(AgentRollup agentRollup) throws Exception {
+    private void checkForDeletedAlerts(AgentRollup agentRollup) {
         centralAlertingService.checkForDeletedAlerts(agentRollup.id(), agentRollup.display());
     }
 
-    private void checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup)
-            throws Exception {
+    private void checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup) {
         centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup.id(),
                 agentRollup.display(), clock.currentTimeMillis());
     }

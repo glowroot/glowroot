@@ -344,7 +344,7 @@ glowroot.directive('gtSpinner', function () {
                 spinner.spin(iElement[0]);
               }, 100);
             }
-          } else if (spinner !== undefined) {
+          } else if (spinner) {
             clearTimeout(timer);
             iElement.addClass('hide');
             spinner.stop();

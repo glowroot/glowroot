@@ -83,7 +83,7 @@ class MetricService {
             long startTime, long endTime) throws Exception {
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
         // startTime + 1 in order to not include the aggregate value at startTime
-        List<PercentileAggregate> percentileAggregates =
+        List<PercentileAggregate> aggregates =
                 aggregateRepository.readPercentileAggregates(agentRollupId,
                         ImmutableTransactionQuery.builder()
                                 .transactionType(transactionType)
@@ -92,11 +92,11 @@ class MetricService {
                                 .to(endTime)
                                 .rollupLevel(rollupLevel)
                                 .build());
-        if (percentileAggregates.isEmpty()) {
+        if (aggregates.isEmpty()) {
             return null;
         }
         LazyHistogram durationNanosHistogram = new LazyHistogram();
-        for (PercentileAggregate aggregate : percentileAggregates) {
+        for (PercentileAggregate aggregate : aggregates) {
             durationNanosHistogram.merge(aggregate.durationNanosHistogram());
         }
         return durationNanosHistogram.getValueAtPercentile(percentile)
@@ -111,53 +111,56 @@ class MetricService {
             return null;
         }
         long totalDurationNanos = 0;
-        long transactionCount = 0;
+        long totalTransactionCount = 0;
         for (OverviewAggregate aggregate : aggregates) {
             totalDurationNanos += aggregate.totalDurationNanos();
-            transactionCount += aggregate.transactionCount();
+            totalTransactionCount += aggregate.transactionCount();
         }
         // individual aggregate transaction counts cannot be zero, and aggregates is non-empty
-        // (see above conditional), so transactionCount is guaranteed non-zero
-        checkState(transactionCount != 0);
-        return totalDurationNanos / (transactionCount * NANOSECONDS_PER_MILLISECOND);
+        // (see above conditional), so totalTransactionCount is guaranteed non-zero
+        checkState(totalTransactionCount != 0);
+        return totalDurationNanos / (totalTransactionCount * NANOSECONDS_PER_MILLISECOND);
     }
 
     private long getTransactionCount(String agentRollupId, String transactionType,
             @Nullable String transactionName, long startTime, long endTime) throws Exception {
         List<ThroughputAggregate> throughputAggregates = getThroughputAggregates(agentRollupId,
                 transactionType, transactionName, startTime, endTime);
-        long transactionCount = 0;
+        long totalTransactionCount = 0;
         for (ThroughputAggregate throughputAggregate : throughputAggregates) {
-            transactionCount += throughputAggregate.transactionCount();
+            totalTransactionCount += throughputAggregate.transactionCount();
         }
-        return transactionCount;
+        return totalTransactionCount;
     }
 
     private @Nullable Double getErrorRate(String agentRollupId, String transactionType,
             @Nullable String transactionName, long startTime, long endTime) throws Exception {
-        List<ThroughputAggregate> throughputAggregates = getThroughputAggregates(agentRollupId,
+        List<ThroughputAggregate> aggregates = getThroughputAggregates(agentRollupId,
                 transactionType, transactionName, startTime, endTime);
-        if (throughputAggregates.isEmpty()) {
+        if (aggregates.isEmpty()) {
             return null;
         }
-        long transactionCount = 0;
-        long errorCount = 0;
-        for (ThroughputAggregate throughputAggregate : throughputAggregates) {
-            transactionCount += throughputAggregate.transactionCount();
-            errorCount += MoreObjects.firstNonNull(throughputAggregate.errorCount(), 0L);
+        long totalTransactionCount = 0;
+        long totalErrorCount = 0;
+        for (ThroughputAggregate aggregate : aggregates) {
+            totalTransactionCount += aggregate.transactionCount();
+            totalErrorCount += MoreObjects.firstNonNull(aggregate.errorCount(), 0L);
         }
-        return (100.0 * errorCount) / transactionCount;
+        // individual aggregate transaction counts cannot be zero, and aggregates is non-empty
+        // (see above conditional), so totalTransactionCount is guaranteed non-zero
+        checkState(totalTransactionCount != 0);
+        return (100.0 * totalErrorCount) / totalTransactionCount;
     }
 
     private long getErrorCount(String agentRollupId, String transactionType,
             @Nullable String transactionName, long startTime, long endTime) throws Exception {
-        List<ThroughputAggregate> throughputAggregates = getThroughputAggregates(agentRollupId,
+        List<ThroughputAggregate> aggregates = getThroughputAggregates(agentRollupId,
                 transactionType, transactionName, startTime, endTime);
-        long errorCount = 0;
-        for (ThroughputAggregate throughputAggregate : throughputAggregates) {
-            errorCount += MoreObjects.firstNonNull(throughputAggregate.errorCount(), 0L);
+        long totalErrorCount = 0;
+        for (ThroughputAggregate aggregate : aggregates) {
+            totalErrorCount += MoreObjects.firstNonNull(aggregate.errorCount(), 0L);
         }
-        return errorCount;
+        return totalErrorCount;
     }
 
     private @Nullable Double getGaugeValue(String agentRollupId, String gaugeName,

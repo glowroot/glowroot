@@ -471,7 +471,7 @@ class LayoutService {
     }
 
     @Value.Immutable
-    static abstract class Permissions {
+    abstract static class Permissions {
 
         abstract TransactionPermissions transaction();
         abstract ErrorPermissions error();
@@ -487,7 +487,7 @@ class LayoutService {
     }
 
     @Value.Immutable
-    static abstract class TransactionPermissions {
+    abstract static class TransactionPermissions {
 
         abstract boolean overview();
         abstract boolean traces();
@@ -501,7 +501,7 @@ class LayoutService {
     }
 
     @Value.Immutable
-    static abstract class ErrorPermissions {
+    abstract static class ErrorPermissions {
 
         abstract boolean overview();
         abstract boolean traces();
@@ -512,7 +512,7 @@ class LayoutService {
     }
 
     @Value.Immutable
-    static abstract class JvmPermissions {
+    abstract static class JvmPermissions {
 
         abstract boolean gauges();
         abstract boolean threadDump();

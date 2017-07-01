@@ -26,8 +26,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class ResultSetAspect {
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend com.datastax.driver.core.ResultSet
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("com.datastax.driver.core.ResultSet")
     public static class ResultSetImpl implements ResultSet {
 
@@ -45,7 +44,7 @@ public class ResultSetAspect {
 
         @Override
         public void glowroot$setLastQueryEntry(@Nullable QueryEntry lastQueryEntry) {
-            this.glowroot$lastQueryEntry = lastQueryEntry;
+            glowroot$lastQueryEntry = lastQueryEntry;
         }
 
         @Override
@@ -54,8 +53,7 @@ public class ResultSetAspect {
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend com.datastax.driver.core.ResultSet
+    // the method names are verbose since they will be mixed in to existing classes
     public interface ResultSet {
 
         @Nullable

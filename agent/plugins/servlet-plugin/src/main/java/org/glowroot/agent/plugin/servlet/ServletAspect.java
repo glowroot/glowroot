@@ -77,13 +77,13 @@ public class ServletAspect {
         String getHeader(String name);
 
         @Nullable
-        Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/[]> getParameterMap();
+        Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> getParameterMap();
 
         @Nullable
-        Enumeration<? extends /*@Nullable*/Object> getParameterNames();
+        Enumeration<? extends /*@Nullable*/ Object> getParameterNames();
 
         @Nullable
-        String /*@Nullable*/[] getParameterValues(String name);
+        String /*@Nullable*/ [] getParameterValues(String name);
 
         @Nullable
         Object getAttribute(String name);
@@ -104,7 +104,7 @@ public class ServletAspect {
         Object getAttribute(String name);
 
         @Nullable
-        Enumeration<? extends /*@Nullable*/Object> getAttributeNames();
+        Enumeration<? extends /*@Nullable*/ Object> getAttributeNames();
 
         @Nullable
         String getId();
@@ -130,8 +130,7 @@ public class ServletAspect {
             AuxThreadContext auxContextObj = (AuxThreadContext) request
                     .getAttribute(AsyncServletAspect.GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE);
             if (auxContextObj != null) {
-                request.removeAttribute(
-                        AsyncServletAspect.GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE);
+                request.removeAttribute(AsyncServletAspect.GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE);
                 AuxThreadContext auxContext = auxContextObj;
                 return auxContext.startAndMarkAsyncTransactionComplete();
             }

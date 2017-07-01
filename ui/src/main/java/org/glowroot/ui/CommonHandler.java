@@ -76,7 +76,7 @@ public class CommonHandler {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final long TEN_YEARS = DAYS.toMillis(365 * 10);
+    private static final long TEN_YEARS = DAYS.toMillis(3650);
     private static final long ONE_DAY = DAYS.toMillis(1);
     private static final long FIVE_MINUTES = MINUTES.toMillis(5);
 
@@ -213,7 +213,7 @@ public class CommonHandler {
         return handleStaticResource(path, request);
     }
 
-    private @Nullable HttpService getHttpService(String path) throws Exception {
+    private @Nullable HttpService getHttpService(String path) {
         for (Entry<Pattern, HttpService> entry : httpServices.entrySet()) {
             Matcher matcher = entry.getKey().matcher(path);
             if (matcher.matches()) {

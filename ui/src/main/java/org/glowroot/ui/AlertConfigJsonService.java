@@ -503,7 +503,7 @@ class AlertConfigJsonService {
         public interface AlertConditionDto {}
 
         @Value.Immutable
-        public static abstract class MetricConditionDto implements AlertConditionDto {
+        public abstract static class MetricConditionDto implements AlertConditionDto {
             abstract String metric();
             abstract @Nullable String transactionType();
             abstract @Nullable String transactionName();

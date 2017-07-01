@@ -15,7 +15,6 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -599,7 +598,7 @@ class TransactionJsonService {
         // stacked timer values only include time spent as a leaf node in the timer tree
         private final MutableDoubleMap<String> stackedTimers;
 
-        private static StackedPoint create(OverviewAggregate overviewAggregate) throws IOException {
+        private static StackedPoint create(OverviewAggregate overviewAggregate) {
             MutableDoubleMap<String> stackedTimers = new MutableDoubleMap<String>();
             for (Aggregate.Timer rootTimer : overviewAggregate.mainThreadRootTimers()) {
                 // skip root timers

@@ -30,8 +30,8 @@ public class HttpClient {
         apacheHttpAsyncClient();
         apacheHttpClient3x();
         asyncHttpClient();
-        okHttpClient();
         cxfClient();
+        okHttpClient();
         springWebClient();
     }
 
@@ -152,28 +152,6 @@ public class HttpClient {
         }
     }
 
-    private static void okHttpClient() throws Exception {
-        final String test = "OkHttpClientPluginIT";
-        updateLibVersion("okhttpclient.version", "2.0.0");
-        runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.1.0");
-        runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.2.0");
-        runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.3.0");
-        runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.4.0");
-        runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.5.0");
-        runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.6.0");
-        runJava7(test);
-        for (int i = 0; i <= 5; i++) {
-            updateLibVersion("okhttpclient.version", "2.7." + i);
-            runJava7(test);
-        }
-    }
-
     private static void cxfClient() throws Exception {
         final String test = "CxfClientPluginIT";
         for (int i = 1; i <= 10; i++) {
@@ -210,6 +188,28 @@ public class HttpClient {
         }
         for (int i = 0; i <= 12; i++) {
             updateLibVersion("cxf.version", "3.1." + i);
+            runJava7(test);
+        }
+    }
+
+    private static void okHttpClient() throws Exception {
+        final String test = "OkHttpClientPluginIT";
+        updateLibVersion("okhttpclient.version", "2.0.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "2.1.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "2.2.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "2.3.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "2.4.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "2.5.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "2.6.0");
+        runJava7(test);
+        for (int i = 0; i <= 5; i++) {
+            updateLibVersion("okhttpclient.version", "2.7." + i);
             runJava7(test);
         }
     }

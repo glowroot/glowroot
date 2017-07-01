@@ -53,6 +53,7 @@ glowroot.controller('TransactionAverageCtrl', [
         event.preventDefault();
         return false;
       }
+      return true;
     };
 
     function onRefreshData(data) {

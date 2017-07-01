@@ -141,10 +141,10 @@ public class DataSource {
                 return;
             }
             Statement statement = connection.createStatement();
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            statement.setQueryTimeout(0);
             StatementCloser closer = new StatementCloser(statement);
             try {
+                // setQueryTimeout() affects all statements of this connection (at least with h2)
+                statement.setQueryTimeout(0);
                 statement.execute(sql);
             } catch (Throwable t) {
                 throw closer.rethrow(t);
@@ -482,7 +482,9 @@ public class DataSource {
                 argStrings.add(arg.toString());
             }
         }
-        logger.debug("{} [{}]", sql, Joiner.on(", ").join(argStrings));
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} [{}]", sql, Joiner.on(", ").join(argStrings));
+        }
     }
 
     public interface JdbcQuery<T> {

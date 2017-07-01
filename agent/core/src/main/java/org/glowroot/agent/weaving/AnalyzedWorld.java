@@ -57,8 +57,8 @@ public class AnalyzedWorld {
 
     static {
         try {
-            findLoadedClassMethod = ClassLoader.class.getDeclaredMethod("findLoadedClass",
-                    new Class[] {String.class});
+            findLoadedClassMethod =
+                    ClassLoader.class.getDeclaredMethod("findLoadedClass", String.class);
             findLoadedClassMethod.setAccessible(true);
         } catch (Exception e) {
             // unrecoverable error

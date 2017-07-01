@@ -51,8 +51,8 @@ public class GaugeValueDaoIT {
         session.execute("use glowroot_unit_tests");
         KeyspaceMetadata keyspaceMetadata =
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
-        clusterManager = ClusterManager.create();
 
+        clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentRollupDao = new AgentRollupDao(session, clusterManager);
         AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager);

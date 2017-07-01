@@ -41,6 +41,9 @@ glowroot.controller('TransactionSidebarCtrl', [
     $scope.overallSummaryValue = function () {
       if ($scope.overallSummary) {
         return summaryValueFn($scope.overallSummary, lastSortOrder, $scope.overallSummary, lastDurationMillis);
+      } else {
+        // hasn't loaded yet
+        return '';
       }
     };
 
@@ -67,8 +70,8 @@ glowroot.controller('TransactionSidebarCtrl', [
           if (newValues !== oldValues) {
             if (newValues[4] !== oldValues[4]) {
               $scope.summariesNoSearch = true;
-              $scope.transactionSummaries = undefined;
-              $scope.moreSummariesAvailable = undefined;
+              delete $scope.transactionSummaries;
+              delete $scope.moreSummariesAvailable;
             }
             $timeout(function () {
               // slight delay to de-prioritize summaries data request

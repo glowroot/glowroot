@@ -53,7 +53,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     //
     // so all exceptions must be caught and logged here or they will be lost
     @Override
-    public byte /*@Nullable*/[] transform(@Nullable ClassLoader loader, @Nullable String className,
+    public byte /*@Nullable*/ [] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
         // internal subclasses of MethodHandle are passed in with null className
@@ -70,7 +70,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         }
     }
 
-    private byte /*@Nullable*/[] transformInternal(@Nullable ClassLoader loader, String className,
+    private byte /*@Nullable*/ [] transformInternal(@Nullable ClassLoader loader, String className,
             @Nullable ProtectionDomain protectionDomain, byte[] bytes) {
         if (ignoreClass(className)) {
             return null;

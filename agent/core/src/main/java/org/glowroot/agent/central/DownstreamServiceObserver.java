@@ -121,7 +121,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             AgentConfigUpdater agentConfigUpdater, LiveJvmServiceImpl liveJvmService,
             LiveWeavingServiceImpl liveWeavingService, LiveTraceRepositoryImpl liveTraceRepository,
             String agentId, AtomicBoolean inConnectionFailure,
-            SharedQueryTextLimiter sharedQueryTextLimiter) throws Exception {
+            SharedQueryTextLimiter sharedQueryTextLimiter) {
         this.centralConnection = centralConnection;
         downstreamServiceStub = DownstreamServiceGrpc.newStub(centralConnection.getChannel())
                 .withCompression("gzip");

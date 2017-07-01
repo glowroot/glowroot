@@ -117,7 +117,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         connectedAgents = clusterManager.createDistributedExecutionMap("connectedAgents");
     }
 
-    void stopSendingDownstreamRequests() throws InterruptedException {
+    void stopSendingDownstreamRequests() {
         shuttingDownLock.writeLock().lock();
     }
 
@@ -542,7 +542,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                         .value(response)
                         .build();
             } catch (InterruptedException e) {
-                // this should not happen
+                Thread.currentThread().interrupt();
                 return ImmutableAgentResult.builder()
                         .interrupted(true)
                         .build();

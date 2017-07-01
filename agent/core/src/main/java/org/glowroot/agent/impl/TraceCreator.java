@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.impl;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
@@ -41,7 +40,7 @@ public class TraceCreator {
     private TraceCreator() {}
 
     public static TraceReader createTraceReaderForPartial(final Transaction transaction,
-            final long captureTime, final long captureTick) throws IOException {
+            final long captureTime, final long captureTick) {
         final boolean partial = true;
         return new TraceReaderImpl(captureTime, transaction.getTraceId(), partial,
                 transaction.isPartiallyStored()) {
@@ -53,7 +52,7 @@ public class TraceCreator {
     }
 
     public static TraceReader createTraceReaderForCompleted(final Transaction transaction,
-            final boolean slow) throws IOException {
+            final boolean slow) {
         final boolean partial = false;
         return new TraceReaderImpl(transaction.getCaptureTime(), transaction.getTraceId(),
                 partial, transaction.isPartiallyStored()) {
@@ -103,9 +102,8 @@ public class TraceCreator {
     // timings for traces that are still active are normalized to the capture tick in order to
     // *attempt* to present a picture of the trace at that exact tick
     // (without using synchronization to block updates to the trace while it is being read)
-    private static <T extends Exception> void createFullTrace(Transaction transaction,
-            boolean slow, boolean partial, long captureTime, long captureTick,
-            TraceVisitor traceVisitor) throws Exception {
+    private static void createFullTrace(Transaction transaction, boolean slow, boolean partial,
+            long captureTime, long captureTick, TraceVisitor traceVisitor) throws Exception {
         CountingEntryVisitorWrapper entryVisitorWrapper =
                 new CountingEntryVisitorWrapper(traceVisitor);
         transaction.accept(captureTick, entryVisitorWrapper);
@@ -132,7 +130,7 @@ public class TraceCreator {
 
     private static Trace.Header createTraceHeader(Transaction transaction, boolean slow,
             boolean partial, long captureTime, long captureTick, int entryCount,
-            long mainProfileSampleCount, long auxProfileSampleCount) throws IOException {
+            long mainProfileSampleCount, long auxProfileSampleCount) {
         Trace.Header.Builder builder = Trace.Header.newBuilder();
         builder.setPartial(partial);
         builder.setSlow(slow);

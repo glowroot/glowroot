@@ -48,11 +48,14 @@ public class Log4jAspect {
 
     @Shim("org.apache.log4j.Category")
     public interface Logger {
+
         @Nullable
         String getName();
+
         @Shim("org.apache.log4j.Category getParent()")
         @Nullable
         Logger glowroot$getParent();
+
         @Nullable
         Enumeration<?> getAllAppenders();
     }

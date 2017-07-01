@@ -572,7 +572,7 @@ public class MutableProfile {
 
         private final JsonGenerator jg;
 
-        private ProfileWriter(ProfileNode rootNode, JsonGenerator jg) throws IOException {
+        private ProfileWriter(ProfileNode rootNode, JsonGenerator jg) {
             super(rootNode);
             this.jg = jg;
         }
@@ -611,7 +611,7 @@ public class MutableProfile {
         private final JsonGenerator jg;
         private int height;
 
-        private FlameGraphWriter(ProfileNode rootNode, JsonGenerator jg) throws IOException {
+        private FlameGraphWriter(ProfileNode rootNode, JsonGenerator jg) {
             super(rootNode);
             this.jg = jg;
         }

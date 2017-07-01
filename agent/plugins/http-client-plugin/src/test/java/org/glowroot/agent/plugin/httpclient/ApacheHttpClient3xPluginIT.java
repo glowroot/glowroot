@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,7 +61,7 @@ public class ApacheHttpClient3xPluginIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("http client request: GET http://www.example.com/hello1");
+                .matches("http client request: GET http://localhost:\\d+/hello1");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -79,36 +77,36 @@ public class ApacheHttpClient3xPluginIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("http client request: POST http://www.example.com/hello3");
+                .matches("http client request: POST http://localhost:\\d+/hello1");
 
         assertThat(i.hasNext()).isFalse();
     }
 
-    public static class ExecuteHttpGet implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpGet extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             HttpClient httpClient = new HttpClient();
-            GetMethod httpGet = new GetMethod("http://www.example.com/hello1");
+            GetMethod httpGet = new GetMethod("http://localhost:" + getPort() + "/hello1");
             httpClient.executeMethod(httpGet);
             httpGet.releaseConnection();
+            if (httpGet.getStatusCode() != 200) {
+                throw new IllegalStateException(
+                        "Unexpected response status code: " + httpGet.getStatusCode());
+            }
         }
     }
 
-    public static class ExecuteHttpPost implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpPost extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             HttpClient httpClient = new HttpClient();
-            PostMethod httpPost = new PostMethod("http://www.example.com/hello3");
+            PostMethod httpPost = new PostMethod("http://localhost:" + getPort() + "/hello1");
             httpClient.executeMethod(httpPost);
             httpPost.releaseConnection();
+            if (httpPost.getStatusCode() != 200) {
+                throw new IllegalStateException(
+                        "Unexpected response status code: " + httpPost.getStatusCode());
+            }
         }
     }
 }

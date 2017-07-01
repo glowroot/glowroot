@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
       var postData = {
         directory: $scope.page.directory
       };
-      $scope.availableDiskSpaceBytes = undefined;
+      delete $scope.availableDiskSpaceBytes;
       $scope.heapDumpResponse = false;
       $http.post('backend/jvm/available-disk-space?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .then(function (response) {
@@ -57,7 +57,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
       var postData = {
         directory: $scope.page.directory
       };
-      $scope.availableDiskSpaceBytes = undefined;
+      delete $scope.availableDiskSpaceBytes;
       $scope.heapDumpResponse = false;
       $http.post('backend/jvm/heap-dump?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .then(function (response) {

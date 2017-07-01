@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -123,11 +122,11 @@ public class JavaagentContainer implements Container {
                 try {
                     // TODO report checker framework issue that occurs without checkNotNull
                     Socket socket = checkNotNull(heartbeatListenerSocket).accept();
-                    ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
-                    while (true) {
-                        objectIn.readObject();
+                    InputStream socketIn = socket.getInputStream();
+                    while (socketIn.read() != -1) {
                     }
-                } catch (Exception e) {
+                } catch (IOException e) {
+                    logger.error(e.getMessage(), e);
                 }
             }
         });
@@ -297,10 +296,6 @@ public class JavaagentContainer implements Container {
         if (server != null) {
             server.close();
         }
-        cleanup();
-    }
-
-    private void cleanup() throws Exception {
         process.waitFor();
         consolePipeExecutor.shutdown();
         if (!consolePipeExecutor.awaitTermination(10, SECONDS)) {
@@ -317,7 +312,7 @@ public class JavaagentContainer implements Container {
         }
     }
 
-    private void executeInternal(Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
+    private void executeInternal(Class<? extends AppUnderTest> appUnderTestClass) {
         javaagentService.executeApp(AppUnderTestClassName.newBuilder()
                 .setValue(appUnderTestClass.getName())
                 .build());
@@ -406,16 +401,19 @@ public class JavaagentContainer implements Container {
         if (javaagentJarFile == null) {
             bootPaths.addAll(maybeBootstrapJar);
         } else {
-            JarInputStream jarIn = new JarInputStream(new FileInputStream(javaagentJarFile));
-            JarEntry jarEntry;
             boolean shaded = false;
-            while ((jarEntry = jarIn.getNextJarEntry()) != null) {
-                if (jarEntry.getName().startsWith("org/glowroot/agent/shaded/")) {
-                    shaded = true;
-                    break;
+            JarInputStream jarIn = new JarInputStream(new FileInputStream(javaagentJarFile));
+            try {
+                JarEntry jarEntry;
+                while ((jarEntry = jarIn.getNextJarEntry()) != null) {
+                    if (jarEntry.getName().startsWith("org/glowroot/agent/shaded/")) {
+                        shaded = true;
+                        break;
+                    }
                 }
+            } finally {
+                jarIn.close();
             }
-            jarIn.close();
             if (shaded) {
                 paths.addAll(maybeBootstrapJar);
             } else {

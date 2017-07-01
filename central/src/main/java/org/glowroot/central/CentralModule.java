@@ -496,11 +496,11 @@ public class CentralModule {
                 byte[] bytes = Files.toByteArray(secretFile);
                 String newValue = BaseEncoding.base16().lowerCase().encode(bytes);
                 if (existingValue == null) {
-                    FileWriter out = new FileWriter(propFile, true);
-                    out.write("\ncassandra.symmetricEncryptionKey=");
-                    out.write(newValue);
-                    out.write("\n");
-                    out.close();
+                    try (FileWriter out = new FileWriter(propFile, true)) {
+                        out.write("\ncassandra.symmetricEncryptionKey=");
+                        out.write(newValue);
+                        out.write("\n");
+                    }
                 } else {
                     // existingValue is ""
                     PropertiesFiles.upgradeIfNeeded(propFile,
@@ -724,7 +724,7 @@ public class CentralModule {
     }
 
     @Value.Immutable
-    static abstract class CentralConfiguration {
+    abstract static class CentralConfiguration {
 
         @Value.Default
         @SuppressWarnings("immutables")

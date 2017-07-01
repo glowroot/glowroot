@@ -68,8 +68,7 @@ public class ActionRequestBuilderAspect {
         ActionRequest glowroot$request();
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend org.elasticsearch.action.search.SearchRequestBuilder
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("org.elasticsearch.action.search.SearchRequestBuilder")
     public abstract static class SearchRequestBuilderImpl implements SearchRequestBuilder {
 
@@ -86,8 +85,7 @@ public class ActionRequestBuilderAspect {
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend org.elasticsearch.action.search.SearchRequestBuilder
+    // the method names are verbose since they will be mixed in to existing classes
     public interface SearchRequestBuilder extends ActionRequestBuilder {
         @Nullable
         Object glowroot$getQueryBuilder();

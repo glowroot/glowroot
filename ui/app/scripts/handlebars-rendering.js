@@ -323,6 +323,8 @@ HandlebarsRendering = (function () {
   Handlebars.registerHelper('initialMftStyle', function (id) {
     if (id > 10) {
       return ' style="display: none;"';
+    } else {
+      return '';
     }
   });
 

@@ -15,7 +15,6 @@
  */
 package org.glowroot.common.model;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -103,8 +102,7 @@ public class ServiceCallCollector {
         return sortedQueries;
     }
 
-    public void mergeServiceCalls(List<Aggregate.ServiceCallsByType> toBeMergedServiceCalls)
-            throws IOException {
+    public void mergeServiceCalls(List<Aggregate.ServiceCallsByType> toBeMergedServiceCalls) {
         for (Aggregate.ServiceCallsByType toBeMergedServiceCallsByType : toBeMergedServiceCalls) {
             String serviceCallType = toBeMergedServiceCallsByType.getType();
             Map<String, MutableServiceCall> serviceCallsForType = serviceCalls.get(serviceCallType);

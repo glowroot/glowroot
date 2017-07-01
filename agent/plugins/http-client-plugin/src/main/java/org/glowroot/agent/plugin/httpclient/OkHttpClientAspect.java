@@ -48,8 +48,7 @@ public class OkHttpClientAspect {
         URL url();
     }
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend com.squareup.okhttp.Callback
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("com.squareup.okhttp.Callback")
     public abstract static class CallbackImpl implements CallbackMixin {
 
@@ -63,7 +62,7 @@ public class OkHttpClientAspect {
 
         @Override
         public void glowroot$setAsyncTraceEntry(@Nullable AsyncTraceEntry asyncTraceEntry) {
-            this.glowroot$asyncTraceEntry = asyncTraceEntry;
+            glowroot$asyncTraceEntry = asyncTraceEntry;
         }
 
         @Override
@@ -73,12 +72,11 @@ public class OkHttpClientAspect {
 
         @Override
         public void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext) {
-            this.glowroot$auxContext = auxContext;
+            glowroot$auxContext = auxContext;
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend com.squareup.okhttp.Callback
+    // the method names are verbose since they will be mixed in to existing classes
     public interface CallbackMixin {
 
         @Nullable

@@ -40,8 +40,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 class LdapAuthentication {
 
-    static Set<String> getGlowrootRoles(Set<String> ldapGroupDns, LdapConfig ldapConfig)
-            throws NamingException {
+    static Set<String> getGlowrootRoles(Set<String> ldapGroupDns, LdapConfig ldapConfig) {
         Set<String> glowrootRoles = Sets.newHashSet();
         for (String ldapGroupDn : ldapGroupDns) {
             List<String> roles = ldapConfig.roleMappings().get(ldapGroupDn);

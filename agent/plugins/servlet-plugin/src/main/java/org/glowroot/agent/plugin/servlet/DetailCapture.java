@@ -46,11 +46,11 @@ class DetailCapture {
     private DetailCapture() {}
 
     static ImmutableMap<String, Object> captureRequestParameters(
-            Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/[]> requestParameters) {
+            Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> requestParameters) {
         ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();
         ImmutableList<Pattern> maskPatterns = ServletPluginProperties.maskRequestParameters();
         ImmutableMap.Builder<String, Object> map = ImmutableMap.builder();
-        for (Entry</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/[]> entry : requestParameters
+        for (Entry</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> entry : requestParameters
                 .entrySet()) {
             String name = entry.getKey();
             if (name == null) {
@@ -75,7 +75,7 @@ class DetailCapture {
     }
 
     static ImmutableMap<String, Object> captureRequestParameters(HttpServletRequest request) {
-        Enumeration<? extends /*@Nullable*/Object> e = request.getParameterNames();
+        Enumeration<? extends /*@Nullable*/ Object> e = request.getParameterNames();
         if (e == null) {
             return ImmutableMap.of();
         }

@@ -126,20 +126,23 @@ class CappedDatabaseOutputStream extends OutputStream {
         lastResizeBaseIndex = currIndex - numKeepBytes;
         File tmpCappedFile = new File(file.getPath() + ".resizing.tmp");
         RandomAccessFile tmpOut = new RandomAccessFile(tmpCappedFile, "rw");
-        tmpOut.writeLong(currIndex);
-        tmpOut.writeInt(newSizeKb);
-        tmpOut.writeLong(lastResizeBaseIndex);
-        long remaining = sizeBytes - startPosition;
-        out.seek(HEADER_SKIP_BYTES + startPosition);
-        if (numKeepBytes > remaining) {
-            copy(out, tmpOut, remaining);
-            out.seek(HEADER_SKIP_BYTES);
-            copy(out, tmpOut, numKeepBytes - remaining);
-        } else {
-            copy(out, tmpOut, numKeepBytes);
+        try {
+            tmpOut.writeLong(currIndex);
+            tmpOut.writeInt(newSizeKb);
+            tmpOut.writeLong(lastResizeBaseIndex);
+            long remaining = sizeBytes - startPosition;
+            out.seek(HEADER_SKIP_BYTES + startPosition);
+            if (numKeepBytes > remaining) {
+                copy(out, tmpOut, remaining);
+                out.seek(HEADER_SKIP_BYTES);
+                copy(out, tmpOut, numKeepBytes - remaining);
+            } else {
+                copy(out, tmpOut, numKeepBytes);
+            }
+            out.close();
+        } finally {
+            tmpOut.close();
         }
-        out.close();
-        tmpOut.close();
         if (!file.delete()) {
             throw new IOException("Unable to delete existing capped database during resize");
         }

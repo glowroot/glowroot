@@ -62,6 +62,7 @@ glowroot.controller('TransactionTabCtrl', [
         event.preventDefault();
         return false;
       }
+      return true;
     };
 
     $scope.keydownTab = function (left, right, event) {

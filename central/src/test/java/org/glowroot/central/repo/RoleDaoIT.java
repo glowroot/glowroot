@@ -45,8 +45,8 @@ public class RoleDaoIT {
         session.execute("use glowroot_unit_tests");
         KeyspaceMetadata keyspaceMetadata =
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
-        clusterManager = ClusterManager.create();
 
+        clusterManager = ClusterManager.create();
         roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
     }
 

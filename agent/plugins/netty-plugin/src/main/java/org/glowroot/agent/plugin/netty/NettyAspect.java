@@ -38,8 +38,7 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class NettyAspect {
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend io.netty.channel.Channel
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin({"io.netty.channel.Channel"})
     public abstract static class ChannelImpl implements ChannelMixin {
 
@@ -53,7 +52,7 @@ public class NettyAspect {
 
         @Override
         public void glowroot$setCompleteAsyncTransaction(boolean completeAsyncTransaction) {
-            this.glowroot$completeAsyncTransaction = completeAsyncTransaction;
+            glowroot$completeAsyncTransaction = completeAsyncTransaction;
         }
 
         @Override
@@ -63,12 +62,11 @@ public class NettyAspect {
 
         @Override
         public void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext) {
-            this.glowroot$auxContext = auxContext;
+            glowroot$auxContext = auxContext;
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend io.netty.channel.Channel
+    // the method names are verbose since they will be mixed in to existing classes
     public interface ChannelMixin {
 
         boolean glowroot$getCompleteAsyncTransaction();
@@ -83,6 +81,7 @@ public class NettyAspect {
 
     @Shim("io.netty.channel.ChannelHandlerContext")
     public interface ChannelHandlerContext {
+
         @Shim("io.netty.channel.Channel channel()")
         @Nullable
         ChannelMixin glowroot$channel();

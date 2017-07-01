@@ -107,7 +107,7 @@ public class LogRecord {
         return parameters;
     }
 
-    public void setParameters(@Nullable Object/*@Nullable*/ [] parameters) {
+    public void setParameters(@Nullable Object /*@Nullable*/ [] parameters) {
         this.parameters = parameters;
     }
 

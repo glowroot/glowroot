@@ -35,8 +35,7 @@ import org.glowroot.agent.plugin.cassandra.ResultSetAspect.ResultSet;
 
 public class ResultSetFutureAspect {
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend com.datastax.driver.core.ResultSetFuture
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("com.datastax.driver.core.ResultSetFuture")
     public static class ResultSetFutureImpl implements ResultSetFutureMixin {
 
@@ -71,12 +70,11 @@ public class ResultSetFutureAspect {
 
         @Override
         public void glowroot$setAsyncQueryEntry(@Nullable AsyncQueryEntry asyncQueryEntry) {
-            this.glowroot$asyncQueryEntry = asyncQueryEntry;
+            glowroot$asyncQueryEntry = asyncQueryEntry;
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend com.datastax.driver.core.ResultSetFuture
+    // the method names are verbose since they will be mixed in to existing classes
     public interface ResultSetFutureMixin {
 
         void glowroot$setCompleted();

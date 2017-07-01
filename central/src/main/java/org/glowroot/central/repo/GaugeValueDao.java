@@ -443,7 +443,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     // from is non-inclusive
     private ListenableFuture<ResultSet> rollupOne(int rollupLevel, String agentRollupId,
-            String gaugeName, long from, long to, int adjustedTTL) throws Exception {
+            String gaugeName, long from, long to, int adjustedTTL) {
         BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);

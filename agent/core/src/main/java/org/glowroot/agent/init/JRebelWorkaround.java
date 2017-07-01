@@ -35,6 +35,8 @@ public class JRebelWorkaround {
 
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
+    private JRebelWorkaround() {}
+
     public static void performWorkaroundIfNeeded() {
         if (!isJrebel()) {
             return;

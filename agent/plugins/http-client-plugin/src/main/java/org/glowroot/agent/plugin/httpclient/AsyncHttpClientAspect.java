@@ -58,9 +58,7 @@ public class AsyncHttpClientAspect {
         String getMethod();
     }
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend org.asynchttpclient.ListenableFuture or
-    // com.ning.http.client.ListenableFuture
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin({"org.asynchttpclient.ListenableFuture", "com.ning.http.client.ListenableFuture"})
     public abstract static class ListenableFutureImpl implements ListenableFutureMixin {
 
@@ -74,12 +72,11 @@ public class AsyncHttpClientAspect {
 
         @Override
         public void glowroot$setAsyncTraceEntry(@Nullable AsyncTraceEntry asyncTraceEntry) {
-            this.glowroot$asyncTraceEntry = asyncTraceEntry;
+            glowroot$asyncTraceEntry = asyncTraceEntry;
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend org.asynchttpclient.ListenableFuture or com.ning.http.client.ListenableFuture
+    // the method names are verbose since they will be mixed in to existing classes
     public interface ListenableFutureMixin {
 
         @Nullable

@@ -413,7 +413,7 @@ class TransactionCommonService {
 
     static List<OverviewAggregate> rollUpOverviewAggregates(
             List<OverviewAggregate> orderedNonRolledUpOverviewAggregates,
-            Function<Long, Long> rollupCaptureTimeFn) throws Exception {
+            Function<Long, Long> rollupCaptureTimeFn) {
         List<OverviewAggregate> rolledUpOverviewAggregates = Lists.newArrayList();
         MutableAggregate currMergedAggregate = new MutableAggregate(0, 0);
         long currRollupCaptureTime = Long.MIN_VALUE;
@@ -481,7 +481,7 @@ class TransactionCommonService {
 
     static List<ThroughputAggregate> rollUpThroughputAggregates(
             List<ThroughputAggregate> orderedNonRolledUpThroughputAggregates,
-            Function<Long, Long> rollupCaptureTimeFn) throws Exception {
+            Function<Long, Long> rollupCaptureTimeFn) {
         List<ThroughputAggregate> rolledUpThroughputAggregates = Lists.newArrayList();
         long currTransactionCount = 0;
         // error_count is null for data inserted prior to glowroot central 0.9.18

@@ -107,6 +107,7 @@ glowroot.controller('ChartRangeCtrl', [
         event.preventDefault();
         return false;
       }
+      return true;
     };
 
     $scope.rangeSelections = [

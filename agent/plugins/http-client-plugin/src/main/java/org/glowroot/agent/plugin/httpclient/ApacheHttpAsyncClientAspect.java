@@ -47,8 +47,7 @@ public class ApacheHttpAsyncClientAspect {
     private static final FastThreadLocal</*@Nullable*/ AsyncTraceEntry> asyncTraceEntryHolder =
             new FastThreadLocal</*@Nullable*/ AsyncTraceEntry>();
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend org.apache.http.nio.protocol.HttpAsyncResponseConsumer
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("org.apache.http.nio.protocol.HttpAsyncResponseConsumer")
     public abstract static class HttpAsyncResponseConsumerImpl
             implements HttpAsyncResponseConsumerMixin {
@@ -62,12 +61,11 @@ public class ApacheHttpAsyncClientAspect {
 
         @Override
         public void glowroot$setAsyncTraceEntry(@Nullable AsyncTraceEntry asyncTraceEntry) {
-            this.glowroot$asyncTraceEntry = asyncTraceEntry;
+            glowroot$asyncTraceEntry = asyncTraceEntry;
         }
     }
 
-    // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend org.apache.http.concurrent.FutureCallback
+    // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("org.apache.http.concurrent.FutureCallback")
     public abstract static class FutureCallbackImpl implements FutureCallbackMixin {
 
@@ -80,12 +78,11 @@ public class ApacheHttpAsyncClientAspect {
 
         @Override
         public void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext) {
-            this.glowroot$auxContext = auxContext;
+            glowroot$auxContext = auxContext;
         }
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend org.apache.http.nio.protocol.HttpAsyncResponseConsumer
+    // the method names are verbose since they will be mixed in to existing classes
     public interface HttpAsyncResponseConsumerMixin {
 
         @Nullable
@@ -94,8 +91,7 @@ public class ApacheHttpAsyncClientAspect {
         void glowroot$setAsyncTraceEntry(@Nullable AsyncTraceEntry asyncTraceEntry);
     }
 
-    // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend org.apache.http.concurrent.FutureCallback
+    // the method names are verbose since they will be mixed in to existing classes
     public interface FutureCallbackMixin {
 
         @Nullable
