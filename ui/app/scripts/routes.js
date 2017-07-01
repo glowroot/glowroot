@@ -548,19 +548,23 @@ glowroot.config([
       templateUrl: 'views/admin/http-proxy.html',
       controller: 'AdminHttpProxyCtrl'
     });
+    $stateProvider.state('admin.integrationList', {
+      url: '/integration-list',
+      templateUrl: 'views/admin/integration-list.html'
+    });
     $stateProvider.state('admin.ldap', {
-      url: '/ldap',
-      templateUrl: 'views/admin/ldap.html',
+      url: '/integration/ldap',
+      templateUrl: 'views/admin/integration/ldap.html',
       controller: 'AdminLdapCtrl'
     });
     $stateProvider.state('admin.pagerDuty', {
-      url: '/pager-duty',
-      templateUrl: 'views/admin/pager-duty.html',
+      url: '/integration/pager-duty',
+      templateUrl: 'views/admin/integration/pager-duty.html',
       controller: 'AdminPagerDutyCtrl'
     });
     $stateProvider.state('admin.healthchecksIo', {
-      url: '/healthchecks-io',
-      templateUrl: 'views/admin/healthchecks-io.html',
+      url: '/integration/healthchecks-io',
+      templateUrl: 'views/admin/integration/healthchecks-io.html',
       controller: 'AdminHealthchecksIoCtrl'
     });
     $stateProvider.state('profile', {

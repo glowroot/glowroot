@@ -55,8 +55,14 @@
            gt-url="admin/smtp">
       </div>
       <div gt-sidebar-item
-           gt-display="LDAP"
-           gt-url="admin/ldap">
+           gt-display="HTTP proxy"
+           gt-url="admin/http-proxy">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Integrations"
+           gt-url="admin/integration-list"
+           gt-active="currentUrl() === 'admin/integration-list'"
+           gt-sub-active="currentUrl().lastIndexOf('admin/integration/', 0) === 0">
       </div>
     </ul>
   </div>

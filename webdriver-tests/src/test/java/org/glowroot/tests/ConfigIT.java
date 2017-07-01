@@ -31,6 +31,7 @@ import org.glowroot.tests.config.UserRecordingConfigPage;
 import org.glowroot.tests.util.Utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openqa.selenium.By.linkText;
 
 public class ConfigIT extends WebDriverIT {
 
@@ -308,7 +309,8 @@ public class ConfigIT extends WebDriverIT {
 
         app.open();
         globalNavbar.getAdminConfigLink().click();
-        configSidebar.getLdapLink().click();
+        configSidebar.getIntegrationsLink().click();
+        Utils.withWait(driver, linkText("LDAP")).click();
 
         // when
         page.getHostTextField().clear();
@@ -335,7 +337,8 @@ public class ConfigIT extends WebDriverIT {
         // then
         app.open();
         globalNavbar.getAdminConfigLink().click();
-        configSidebar.getLdapLink().click();
+        configSidebar.getIntegrationsLink().click();
+        Utils.withWait(driver, linkText("LDAP")).click();
         assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
         assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("5678");
         assertThat(page.getUseSslCheckBox().isSelected()).isTrue();

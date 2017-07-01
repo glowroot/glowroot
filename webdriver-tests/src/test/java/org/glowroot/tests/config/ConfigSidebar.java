@@ -75,8 +75,8 @@ public class ConfigSidebar {
         return Utils.withWait(driver, getSidebar(), linkText("SMTP"));
     }
 
-    public WebElement getLdapLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("LDAP"));
+    public WebElement getIntegrationsLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Integrations"));
     }
 
     public WebElement getChangePasswordLink() {
