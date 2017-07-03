@@ -89,8 +89,18 @@ class ElasticsearchWrapper {
     private static void downloadAndExtract(File baseDir) throws IOException {
         // using System.out to make sure user sees why there is a big delay here
         System.out.print("Downloading Elasticsearch " + ELASTICSEARCH_VERSION + " ...");
-        URL url = new URL("https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-"
-                + ELASTICSEARCH_VERSION + ".tar.gz");
+        URL url;
+        if (ELASTICSEARCH_VERSION.startsWith("5.")) {
+            url = new URL("https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-"
+                    + ELASTICSEARCH_VERSION + ".tar.gz");
+        } else if (ELASTICSEARCH_VERSION.startsWith("2.")) {
+            url = new URL("https://download.elastic.co/elasticsearch/release/org/elasticsearch"
+                    + "/distribution/tar/elasticsearch/" + ELASTICSEARCH_VERSION + "/elasticsearch-"
+                    + ELASTICSEARCH_VERSION + ".tar.gz");
+        } else {
+            throw new IllegalStateException(
+                    "Unexpected Elasticsearch version: " + ELASTICSEARCH_VERSION);
+        }
         InputStream in = url.openStream();
         File archiveFile =
                 File.createTempFile("elasticsearch-" + ELASTICSEARCH_VERSION + "-", ".tar.gz");
