@@ -136,10 +136,9 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialOverallSlowCount;
     private final PreparedStatement deletePartialTransactionSlowCount;
 
-    public TraceDao(Session session, AgentRollupDao agentRollupDao,
-            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-            TraceAttributeNameDao traceAttributeNameDao, ConfigRepository configRepository,
-            Clock clock) throws Exception {
+    TraceDao(Session session, AgentRollupDao agentRollupDao, TransactionTypeDao transactionTypeDao,
+            FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
+            ConfigRepository configRepository, Clock clock) throws Exception {
         this.session = session;
         this.agentRollupDao = agentRollupDao;
         this.transactionTypeDao = transactionTypeDao;

@@ -47,7 +47,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
 
     private final PreparedStatement readAllPS;
 
-    public TriggeredAlertDao(Session session) throws Exception {
+    TriggeredAlertDao(Session session) throws Exception {
         this.session = session;
 
         Sessions.execute(session, "create table if not exists triggered_alert (agent_rollup_id"

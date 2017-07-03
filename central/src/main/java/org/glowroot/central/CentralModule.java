@@ -100,7 +100,7 @@ public class CentralModule {
         return new CentralModule(new File("."), false);
     }
 
-    public static CentralModule createForServletContainer(File centralDir) throws Exception {
+    static CentralModule createForServletContainer(File centralDir) throws Exception {
         return new CentralModule(centralDir, true);
     }
 

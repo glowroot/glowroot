@@ -43,7 +43,7 @@ import org.glowroot.common.util.Styles;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 
-public class TransactionTypeDao implements TransactionTypeRepository {
+class TransactionTypeDao implements TransactionTypeRepository {
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -60,7 +60,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
 
     private final Cache<String, Map<String, List<String>>> transactionTypesCache;
 
-    public TransactionTypeDao(Session session, ConfigRepository configRepository,
+    TransactionTypeDao(Session session, ConfigRepository configRepository,
             ClusterManager clusterManager) throws Exception {
         this.session = session;
         this.configRepository = configRepository;

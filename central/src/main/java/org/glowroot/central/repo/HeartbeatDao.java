@@ -40,8 +40,7 @@ public class HeartbeatDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement existsPS;
 
-    public HeartbeatDao(Session session, AgentRollupDao agentRollupDao, Clock clock)
-            throws Exception {
+    HeartbeatDao(Session session, AgentRollupDao agentRollupDao, Clock clock) throws Exception {
         this.session = session;
         this.agentRollupDao = agentRollupDao;
         this.clock = clock;

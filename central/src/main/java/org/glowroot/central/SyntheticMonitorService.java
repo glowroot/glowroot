@@ -103,7 +103,7 @@ class SyntheticMonitorService implements Runnable {
 
     private static final Pattern encryptedPattern = Pattern.compile("\"ENCRYPTED:([^\"]*)\"");
 
-    public static final RequestHeaders REQUEST_HEADERS;
+    private static final RequestHeaders REQUEST_HEADERS;
 
     static {
         // this list is from com.machinepublishers.jbrowserdriver.RequestHeaders,
@@ -262,7 +262,7 @@ class SyntheticMonitorService implements Runnable {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Synthetic monitor", traceHeadline = "Synthetic monitor: {{0.id}}",
             timer = "synthetic monitor")
-    public void runPing(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
+    private void runPing(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
             List<AlertConfig> alertConfigs) throws Exception {
         runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,
                 new Callable<ListenableFuture<?>>() {
@@ -276,7 +276,7 @@ class SyntheticMonitorService implements Runnable {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Synthetic monitor", traceHeadline = "Synthetic monitor: {{0.id}}",
             timer = "synthetic monitor")
-    public void runJava(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
+    private void runJava(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
             List<AlertConfig> alertConfigs) throws Exception {
         Matcher matcher = encryptedPattern.matcher(syntheticMonitorConfig.getJavaSource());
         StringBuffer sb = new StringBuffer();

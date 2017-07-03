@@ -90,9 +90,8 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final PreparedStatement readNeedsRollupFromChild;
     private final PreparedStatement deleteNeedsRollupFromChild;
 
-    public GaugeValueDao(Session session, AgentRollupDao agentRollupDao,
-            ConfigRepository configRepository, ClusterManager clusterManager, Clock clock)
-            throws Exception {
+    GaugeValueDao(Session session, AgentRollupDao agentRollupDao, ConfigRepository configRepository,
+            ClusterManager clusterManager, Clock clock) throws Exception {
         this.session = session;
         this.agentRollupDao = agentRollupDao;
         this.configRepository = configRepository;

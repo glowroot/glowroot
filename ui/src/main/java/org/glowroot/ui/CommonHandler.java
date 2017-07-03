@@ -120,7 +120,7 @@ public class CommonHandler {
     private final HttpSessionManager httpSessionManager;
     private final Clock clock;
 
-    public CommonHandler(boolean central, LayoutService layoutService,
+    CommonHandler(boolean central, LayoutService layoutService,
             Map<Pattern, HttpService> httpServices, HttpSessionManager httpSessionManager,
             List<Object> jsonServices, Clock clock) {
         this.central = central;
@@ -481,8 +481,8 @@ public class CommonHandler {
         }
     }
 
-    static String getHttpResponseWithStackTrace(Exception e, @Nullable String simplifiedMessage)
-            throws IOException {
+    private static String getHttpResponseWithStackTrace(Exception e,
+            @Nullable String simplifiedMessage) throws IOException {
         StringWriter sw = new StringWriter();
         e.printStackTrace(new PrintWriter(sw));
         StringBuilder sb = new StringBuilder();

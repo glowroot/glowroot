@@ -43,7 +43,7 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class FullQueryTextDao {
+class FullQueryTextDao {
 
     private static final Logger logger = LoggerFactory.getLogger(FullQueryTextDao.class);
 
@@ -58,7 +58,7 @@ public class FullQueryTextDao {
 
     private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(10000);
 
-    public FullQueryTextDao(Session session, ConfigRepository configRepository) throws Exception {
+    FullQueryTextDao(Session session, ConfigRepository configRepository) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
 

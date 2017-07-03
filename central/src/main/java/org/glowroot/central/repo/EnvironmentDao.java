@@ -42,7 +42,7 @@ public class EnvironmentDao implements EnvironmentRepository {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    public EnvironmentDao(Session session) throws Exception {
+    EnvironmentDao(Session session) throws Exception {
         this.session = session;
 
         Sessions.execute(session, "create table if not exists environment (agent_id varchar,"

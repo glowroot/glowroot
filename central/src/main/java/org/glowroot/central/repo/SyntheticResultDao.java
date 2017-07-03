@@ -73,7 +73,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
     private final List<PreparedStatement> readNeedsRollup;
     private final List<PreparedStatement> deleteNeedsRollup;
 
-    public SyntheticResultDao(Session session, ConfigRepository configRepository, Clock clock)
+    SyntheticResultDao(Session session, ConfigRepository configRepository, Clock clock)
             throws Exception {
         this.session = session;
         this.configRepository = configRepository;

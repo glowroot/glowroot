@@ -29,7 +29,6 @@ import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.repo.AgentRollupDao.AgentConfigUpdate;
 import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.util.Clock;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -150,15 +149,5 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     @SuppressWarnings("return.type.incompatible")
     private static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
         return obj;
-    }
-
-    @FunctionalInterface
-    interface AgentRollupConsumer {
-        void accept(AgentRollup agentRollup) throws Exception;
-    }
-
-    @FunctionalInterface
-    interface AlertConfigConsumer {
-        void accept(AlertConfig alertConfig) throws Exception;
     }
 }

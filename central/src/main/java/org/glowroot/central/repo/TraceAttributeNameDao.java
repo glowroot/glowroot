@@ -44,7 +44,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
-public class TraceAttributeNameDao implements TraceAttributeNameRepository {
+class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -61,7 +61,7 @@ public class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
     private final Cache<String, Map<String, Map<String, List<String>>>> traceAttributeNamesCache;
 
-    public TraceAttributeNameDao(Session session, ConfigRepository configRepository,
+    TraceAttributeNameDao(Session session, ConfigRepository configRepository,
             ClusterManager clusterManager) throws Exception {
         this.session = session;
         this.configRepository = configRepository;

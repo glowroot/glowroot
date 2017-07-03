@@ -39,7 +39,7 @@ import org.glowroot.common.repo.ConfigRepository.DuplicateRoleNameException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class RoleDao {
+class RoleDao {
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -58,8 +58,8 @@ public class RoleDao {
     private final Cache<String, Optional<RoleConfig>> roleConfigCache;
     private final Cache<String, List<RoleConfig>> allRoleConfigsCache;
 
-    public RoleDao(Session session, KeyspaceMetadata keyspaceMetadata,
-            ClusterManager clusterManager) throws Exception {
+    RoleDao(Session session, KeyspaceMetadata keyspaceMetadata, ClusterManager clusterManager)
+            throws Exception {
         this.session = session;
 
         boolean createAnonymousRole = keyspaceMetadata.getTable("role") == null;

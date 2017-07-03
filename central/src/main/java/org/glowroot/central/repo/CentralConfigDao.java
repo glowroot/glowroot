@@ -41,7 +41,7 @@ import org.glowroot.common.util.Versions;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class CentralConfigDao {
+class CentralConfigDao {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralConfigDao.class);
 
@@ -60,7 +60,7 @@ public class CentralConfigDao {
 
     private final Map<String, Class<?>> keyTypes = Maps.newConcurrentMap();
 
-    public CentralConfigDao(Session session, ClusterManager clusterManager) throws Exception {
+    CentralConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
         Sessions.execute(session, "create table if not exists central_config (key varchar,"

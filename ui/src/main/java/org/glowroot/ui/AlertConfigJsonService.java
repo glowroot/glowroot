@@ -278,14 +278,6 @@ class AlertConfigJsonService {
         return sb.toString();
     }
 
-    public static String getExceedsOrLessThan(boolean lowerThreshold) {
-        if (lowerThreshold) {
-            return " is less than ";
-        } else {
-            return " exceeds ";
-        }
-    }
-
     @Value.Immutable
     interface AlertConfigRequest {
         Optional<String> version();
@@ -325,7 +317,7 @@ class AlertConfigJsonService {
 
         abstract Optional<String> version(); // absent for insert operations
 
-        public static AlertConfigDto toDto(AgentConfig.AlertConfig config) {
+        private static AlertConfigDto toDto(AgentConfig.AlertConfig config) {
             ImmutableAlertConfigDto.Builder builder = ImmutableAlertConfigDto.builder()
                     .condition(toDto(config.getCondition()));
             AlertNotification notification = config.getNotification();

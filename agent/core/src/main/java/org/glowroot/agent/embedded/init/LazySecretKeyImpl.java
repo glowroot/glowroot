@@ -28,14 +28,14 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.repo.util.LazySecretKey;
 
-public class LazySecretKeyImpl implements LazySecretKey {
+class LazySecretKeyImpl implements LazySecretKey {
 
     private final File secretFile;
 
     // volatile not needed as access is guarded by secretFile
     private @MonotonicNonNull SecretKey secretKey;
 
-    public LazySecretKeyImpl(File secretFile) {
+    LazySecretKeyImpl(File secretFile) {
         this.secretFile = secretFile;
     }
 

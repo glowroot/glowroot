@@ -81,7 +81,7 @@ public class AgentRollupDao implements AgentRollupRepository {
     private final Cache<String, Optional<String>> agentRollupIdCache;
     private final Cache<String, Optional<AgentRollupConfig>> agentRollupConfigCache;
 
-    public AgentRollupDao(Session session, ClusterManager clusterManager) throws Exception {
+    AgentRollupDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
         Sessions.execute(session, "create table if not exists agent_rollup (one int,"

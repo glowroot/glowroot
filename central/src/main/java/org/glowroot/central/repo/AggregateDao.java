@@ -240,7 +240,7 @@ public class AggregateDao implements AggregateRepository {
 
     private final ImmutableList<Table> allTables;
 
-    public AggregateDao(Session session, AgentRollupDao agentRollupDao,
+    AggregateDao(Session session, AgentRollupDao agentRollupDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
             ConfigRepository configRepository, Clock clock) throws Exception {
         this.session = session;

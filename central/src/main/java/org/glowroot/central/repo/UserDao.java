@@ -38,7 +38,7 @@ import org.glowroot.common.repo.ConfigRepository.DuplicateUsernameException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class UserDao {
+class UserDao {
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -54,7 +54,7 @@ public class UserDao {
 
     private final Cache<String, List<UserConfig>> allUserConfigsCache;
 
-    public UserDao(Session session, KeyspaceMetadata keyspaceMetadata,
+    UserDao(Session session, KeyspaceMetadata keyspaceMetadata,
             ClusterManager clusterManager) throws Exception {
         this.session = session;
 

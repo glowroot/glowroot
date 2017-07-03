@@ -182,7 +182,7 @@ class SyntheticResultJsonService {
         }
     }
 
-    static List<SyntheticResult> rollUpSyntheticResults(
+    private static List<SyntheticResult> rollUpSyntheticResults(
             List<SyntheticResult> orderedNonRolledUpSyntheticResults,
             Function<Long, Long> rollupCaptureTimeFn) {
         List<SyntheticResult> rolledUpSyntheticResults = Lists.newArrayList();
@@ -249,7 +249,7 @@ class SyntheticResultJsonService {
         ImmutableList<String> syntheticMonitorId();
     }
 
-    static class SyntheticMonitorOrdering extends Ordering<SyntheticMonitor> {
+    private static class SyntheticMonitorOrdering extends Ordering<SyntheticMonitor> {
         @Override
         public int compare(SyntheticMonitor left, SyntheticMonitor right) {
             return left.display().compareToIgnoreCase(right.display());

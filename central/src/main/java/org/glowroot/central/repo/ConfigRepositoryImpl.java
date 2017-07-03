@@ -93,7 +93,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Set<AgentConfigListener> agentConfigListeners = Sets.newCopyOnWriteArraySet();
 
-    public ConfigRepositoryImpl(AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao,
+    ConfigRepositoryImpl(AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao,
             CentralConfigDao centralConfigDao, UserDao userDao, RoleDao roleDao,
             String symmetricEncryptionKey) {
         this.agentRollupDao = agentRollupDao;

@@ -47,7 +47,6 @@ import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
@@ -158,11 +157,6 @@ class GrpcServer {
     @VisibleForTesting
     static String trimSpacesAroundAgentRollupIdSeparator(String agentRollupId) {
         return agentRollupId.replaceAll(" */ *", "/").trim();
-    }
-
-    @FunctionalInterface
-    interface AlertConfigConsumer {
-        void accept(AlertConfig alertConfig) throws Exception;
     }
 
     private class CollectorServiceImpl extends CollectorServiceImplBase {

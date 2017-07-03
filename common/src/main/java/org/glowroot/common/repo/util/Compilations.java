@@ -144,7 +144,7 @@ public class Compilations {
 
         private final List<String> compilationErrors;
 
-        public CompilationException(List<String> compilationErrors) {
+        private CompilationException(List<String> compilationErrors) {
             this.compilationErrors = compilationErrors;
         }
 

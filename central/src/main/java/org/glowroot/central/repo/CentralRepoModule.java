@@ -31,14 +31,12 @@ public class CentralRepoModule {
 
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private final CentralConfigDao centralConfigDao;
     private final AgentRollupDao agentRollupDao;
     private final AgentConfigDao agentConfigDao;
     private final UserDao userDao;
     private final RoleDao roleDao;
     private final ConfigRepositoryImpl configRepository;
     private final TransactionTypeDao transactionTypeDao;
-    private final FullQueryTextDao fullQueryTextDao;
     private final AggregateDao aggregateDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
     private final TraceDao traceDao;
@@ -51,7 +49,7 @@ public class CentralRepoModule {
     public CentralRepoModule(ClusterManager clusterManager, Session session,
             KeyspaceMetadata keyspaceMetadata, String cassandraSymmetricEncryptionKey, Clock clock)
             throws Exception {
-        centralConfigDao = new CentralConfigDao(session, clusterManager);
+        CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentRollupDao = new AgentRollupDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
         userDao = new UserDao(session, keyspaceMetadata, clusterManager);
@@ -59,7 +57,7 @@ public class CentralRepoModule {
         configRepository = new ConfigRepositoryImpl(agentRollupDao, agentConfigDao,
                 centralConfigDao, userDao, roleDao, cassandraSymmetricEncryptionKey);
         transactionTypeDao = new TransactionTypeDao(session, configRepository, clusterManager);
-        fullQueryTextDao = new FullQueryTextDao(session, configRepository);
+        FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
         aggregateDao = new AggregateDao(session, agentRollupDao, transactionTypeDao,
                 fullQueryTextDao, configRepository, clock);
         traceAttributeNameDao =
@@ -92,10 +90,6 @@ public class CentralRepoModule {
         return true;
     }
 
-    public CentralConfigDao getCentralConfigDao() {
-        return centralConfigDao;
-    }
-
     public AgentRollupDao getAgentRollupDao() {
         return agentRollupDao;
     }
@@ -104,24 +98,12 @@ public class CentralRepoModule {
         return agentConfigDao;
     }
 
-    public UserDao getUserDao() {
-        return userDao;
-    }
-
-    public RoleDao getRoleDao() {
-        return roleDao;
-    }
-
     public ConfigRepositoryImpl getConfigRepository() {
         return configRepository;
     }
 
     public TransactionTypeDao getTransactionTypeDao() {
         return transactionTypeDao;
-    }
-
-    public FullQueryTextDao getFullQueryTextDao() {
-        return fullQueryTextDao;
     }
 
     public AggregateDao getAggregateDao() {

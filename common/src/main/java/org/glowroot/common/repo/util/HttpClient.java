@@ -73,16 +73,16 @@ public class HttpClient {
         postOrGet(url, null, null, configRepository.getHttpProxyConfig(), null);
     }
 
-    public void post(String url, byte[] content, String contentType) throws Exception {
-        postOrGet(url, content, contentType, configRepository.getHttpProxyConfig(), null);
-    }
-
     // optional passwordOverride can be passed in to test HTTP proxy from
     // AdminJsonService.sentTestHttpProxyRequest() without possibility of throwing
     // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
     public String getWithHttpProxyConfigOverride(String url,
             HttpProxyConfig httpProxyConfig, @Nullable String passwordOverride) throws Exception {
         return postOrGet(url, null, null, httpProxyConfig, passwordOverride);
+    }
+
+    void post(String url, byte[] content, String contentType) throws Exception {
+        postOrGet(url, content, contentType, configRepository.getHttpProxyConfig(), null);
     }
 
     private String postOrGet(String url, byte /*@Nullable*/ [] content,

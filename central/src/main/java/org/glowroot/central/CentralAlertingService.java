@@ -37,7 +37,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class CentralAlertingService {
+class CentralAlertingService {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralAlertingService.class);
 
@@ -128,7 +128,7 @@ public class CentralAlertingService {
                 aggregateAndGaugeAndHeartbeatAlertConfigs);
     }
 
-    void checkAlertsAsync(String agentRollupId, String agentRollupDisplay, long endTime,
+    private void checkAlertsAsync(String agentRollupId, String agentRollupDisplay, long endTime,
             List<AlertConfig> alertConfigs) {
         alertCheckingExecutor.execute(new Runnable() {
             @Override

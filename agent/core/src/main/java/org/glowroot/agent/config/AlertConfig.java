@@ -208,10 +208,10 @@ public abstract class AlertConfig {
             @Type(value = ImmutableMetricCondition.class, name = "metric"),
             @Type(value = ImmutableSyntheticMonitorCondition.class, name = "synthetic-monitor"),
             @Type(value = ImmutableHeartbeatCondition.class, name = "heartbeat")})
-    public interface AlertCondition {}
+    interface AlertCondition {}
 
     @Value.Immutable
-    public abstract static class MetricCondition implements AlertCondition {
+    abstract static class MetricCondition implements AlertCondition {
         abstract String metric();
         abstract @Nullable String transactionType();
         abstract @Nullable String transactionName();
@@ -231,23 +231,23 @@ public abstract class AlertConfig {
     }
 
     @Value.Immutable
-    public interface SyntheticMonitorCondition extends AlertCondition {
+    interface SyntheticMonitorCondition extends AlertCondition {
         String syntheticMonitorId();
         int thresholdMillis();
     }
 
     @Value.Immutable
-    public interface HeartbeatCondition extends AlertCondition {
+    interface HeartbeatCondition extends AlertCondition {
         int timePeriodSeconds();
     }
 
     @Value.Immutable
-    public interface EmailNotification {
+    interface EmailNotification {
         ImmutableList<String> emailAddresses();
     }
 
     @Value.Immutable
-    public interface PagerDutyNotification {
+    interface PagerDutyNotification {
         String pagerDutyIntegrationKey();
     }
 }

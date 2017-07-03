@@ -74,7 +74,7 @@ public class AgentConfigDao {
 
     private final Cache<String, Optional<AgentConfig>> agentConfigCache;
 
-    public AgentConfigDao(Session session, ClusterManager clusterManager) throws Exception {
+    AgentConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
         Sessions.execute(session, "create table if not exists agent_config (agent_rollup_id"

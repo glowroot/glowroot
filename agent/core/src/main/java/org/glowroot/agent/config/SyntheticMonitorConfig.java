@@ -56,7 +56,7 @@ public abstract class SyntheticMonitorConfig {
                 .build();
     }
 
-    public AgentConfig.SyntheticMonitorConfig toProto() {
+    AgentConfig.SyntheticMonitorConfig toProto() {
         return AgentConfig.SyntheticMonitorConfig.newBuilder()
                 .setId(id())
                 .setDisplay(display())

@@ -333,9 +333,6 @@ public interface ConfigRepository {
     class DuplicatePagerDutyIntegrationKeyDisplayException extends Exception {}
 
     @SuppressWarnings("serial")
-    class AgentRollupNotFoundException extends Exception {}
-
-    @SuppressWarnings("serial")
     class SyntheticNotFoundException extends Exception {}
 
     @SuppressWarnings("serial")

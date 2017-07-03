@@ -159,11 +159,11 @@ class LdapAuthentication {
             super(message);
         }
 
-        AuthenticationException(Throwable cause) {
+        private AuthenticationException(Throwable cause) {
             super(cause);
         }
 
-        AuthenticationException(String message, @Nullable Throwable cause) {
+        private AuthenticationException(String message, @Nullable Throwable cause) {
             super(message, cause);
         }
     }
