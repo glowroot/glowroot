@@ -73,35 +73,6 @@ case "$1" in
                                  $skip_shading_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
-               ;;
-
-      "test3") mvn clean install -DargLine="$surefire_jvm_args" \
-                                 -DskipTests \
-                                 $skip_shading_opt \
-                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                 -B
-
-               # --no-snapshot-updates is used in the builds below because maven-remote-resources-plugin uses an old version of
-               # its parent pom that includes the snapshot repository http://repository.apache.org/snapshots, causing maven to
-               # check for glowroot snapshot artifacts in that repository, sometimes causing slowness during travis-ci builds
-               if [[ "$java_version" > "1.8" ]]
-               then
-                 mvn clean verify -pl :glowroot-central,:glowroot-webdriver-tests \
-                                  -DargLine="$surefire_jvm_args" \
-                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                  --no-snapshot-updates \
-                                  -B
-                 if [[ "$SKIP_SHADING" == "true" ]]
-                 then
-                   # glowroot central tests needs to run against unshaded it-harness to avoid shading complications
-                   mvn clean verify -pl :glowroot-webdriver-tests \
-                                    -Dglowroot.internal.webdriver.useCentral=true \
-                                    -DargLine="$surefire_jvm_args" \
-                                    -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                    --no-snapshot-updates \
-                                    -B
-                 fi
-               fi
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
                                 $skip_shading_opt \
@@ -121,6 +92,50 @@ case "$1" in
                                 $skip_shading_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
+                                --no-snapshot-updates \
+                                -B
+               ;;
+
+      "test3") if [[ "$java_version" < "1.8" ]]
+               then
+                 echo test3 target requires Java 8
+                 exit 1
+               fi
+               mvn clean install -DargLine="$surefire_jvm_args" \
+                                 -DskipTests \
+                                 $skip_shading_opt \
+                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                 -B
+
+               # --no-snapshot-updates is used in the builds below because maven-remote-resources-plugin uses an old version of
+               # its parent pom that includes the snapshot repository http://repository.apache.org/snapshots, causing maven to
+               # check for glowroot snapshot artifacts in that repository, sometimes causing slowness during travis-ci builds
+               mvn clean verify -pl :glowroot-central,:glowroot-webdriver-tests \
+                                -DargLine="$surefire_jvm_args" \
+                                -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                --no-snapshot-updates \
+                                -B
+               ;;
+
+      "test4") if [[ "$java_version" < "1.8" || "$SKIP_SHADING" != "true" ]]
+               then
+                 # webdriver tests against central need to run against unshaded it-harness to avoid shading complications
+                 echo test4 target requires Java 8 and SKIP_SHADING=true
+                 exit 1
+               fi
+               mvn clean install -DargLine="$surefire_jvm_args" \
+                                 -DskipTests \
+                                 $skip_shading_opt \
+                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                 -B
+
+               # --no-snapshot-updates is used in the builds below because maven-remote-resources-plugin uses an old version of
+               # its parent pom that includes the snapshot repository http://repository.apache.org/snapshots, causing maven to
+               # check for glowroot snapshot artifacts in that repository, sometimes causing slowness during travis-ci builds
+               mvn clean verify -pl :glowroot-webdriver-tests \
+                                -Dglowroot.internal.webdriver.useCentral=true \
+                                -DargLine="$surefire_jvm_args" \
+                                -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 --no-snapshot-updates \
                                 -B
                ;;
@@ -271,7 +286,7 @@ case "$1" in
                if [ $? -ne 0 ]
                then
                  echo you have unstaged changes!
-                 exit
+                 exit 1
                fi
                set -e
 
