@@ -27,11 +27,14 @@ import java.util.Properties;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Charsets;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.Files;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.Request;
 import com.saucelabs.common.SauceOnDemandAuthentication;
 import com.saucelabs.common.SauceOnDemandSessionIdProvider;
 import com.saucelabs.junit.SauceOnDemandTestWatcher;
@@ -53,6 +56,8 @@ import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.agent.it.harness.impl.LocalContainer;
 import org.glowroot.central.CentralModule;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class WebDriverSetup {
 
@@ -220,11 +225,33 @@ public class WebDriverSetup {
     private static Container createContainer(int uiPort, File testDir) throws Exception {
         File adminFile = new File(testDir, "admin.json");
         Files.asCharSink(adminFile, Charsets.UTF_8).write("{\"web\":{\"port\":" + uiPort + "}}");
+        Container container;
         if (Containers.useJavaagent()) {
-            return new JavaagentContainer(testDir, true, ImmutableList.of());
+            container = new JavaagentContainer(testDir, true, ImmutableList.of());
         } else {
-            return new LocalContainer(testDir, true, ImmutableMap.of());
+            container = new LocalContainer(testDir, true, ImmutableMap.of());
         }
+        // wait for UI to be available (UI starts asynchronously in order to not block startup)
+        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        Exception lastException = null;
+        while (stopwatch.elapsed(SECONDS) < 10) {
+            Request request = asyncHttpClient
+                    .prepareGet("http://localhost:" + uiPort)
+                    .build();
+            try {
+                asyncHttpClient.executeRequest(request).get();
+                lastException = null;
+                break;
+            } catch (Exception e) {
+                lastException = e;
+            }
+        }
+        asyncHttpClient.close();
+        if (lastException != null) {
+            throw new IllegalStateException("Timed out waiting for Glowroot UI", lastException);
+        }
+        return container;
     }
 
     private static CentralModule createCentralModule(int uiPort, int grpcPort) throws Exception {
