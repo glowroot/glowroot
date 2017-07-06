@@ -52,8 +52,18 @@ public class AsyncHttpClientAspect {
         }
     };
 
-    @Shim("org.asynchttpclient.Request|com.ning.http.client.Request")
+    @Shim("org.asynchttpclient.Request")
     public interface Request {
+
+        @Nullable
+        String getMethod();
+
+        @Nullable
+        String getUrl();
+    }
+
+    @Shim("com.ning.http.client.Request")
+    public interface OldRequest {
         @Nullable
         String getMethod();
     }
@@ -107,18 +117,14 @@ public class AsyncHttpClientAspect {
         Object glowroot$addListener(Runnable listener, Executor exec);
     }
 
-    @Pointcut(
-            className = "org.asynchttpclient.AsyncHttpClient|com.ning.http.client.AsyncHttpClient",
-            methodName = "executeRequest",
-            methodParameterTypes = {"org.asynchttpclient.Request|com.ning.http.client.Request",
-                    ".."},
+    @Pointcut(className = "org.asynchttpclient.AsyncHttpClient", methodName = "executeRequest",
+            methodParameterTypes = {"org.asynchttpclient.Request", ".."},
             nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteRequestAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteRequestAdvice.class);
         @OnBefore
         public static @Nullable AsyncTraceEntry onBefore(ThreadContext context,
-                @BindParameter @Nullable Request request,
-                @BindClassMeta AsyncHttpClientRequestInvoker requestInvoker) {
+                @BindParameter @Nullable Request request) {
             // need to start trace entry @OnBefore in case it is executed in a "same thread
             // executor" in which case will be over in @OnReturn
             if (request == null) {
@@ -130,7 +136,10 @@ public class AsyncHttpClientAspect {
             } else {
                 method += " ";
             }
-            String url = requestInvoker.getUrl(request);
+            String url = request.getUrl();
+            if (url == null) {
+                url = "";
+            }
             return context.startAsyncServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
                     MessageSupplier.create("http client request: {}{}", method, url), timerName);
         }
@@ -181,6 +190,43 @@ public class AsyncHttpClientAspect {
                 ignoreFutureGet.set(false);
             }
             return null;
+        }
+    }
+
+    @Pointcut(className = "com.ning.http.client.AsyncHttpClient", methodName = "executeRequest",
+            methodParameterTypes = {"com.ning.http.client.Request", ".."},
+            nestingGroup = "http-client", timerName = "http client request")
+    public static class OldExecuteRequestAdvice {
+        private static final TimerName timerName =
+                Agent.getTimerName(OldExecuteRequestAdvice.class);
+        @OnBefore
+        public static @Nullable AsyncTraceEntry onBefore(ThreadContext context,
+                @BindParameter @Nullable OldRequest request,
+                @BindClassMeta AsyncHttpClientRequestInvoker requestInvoker) {
+            // need to start trace entry @OnBefore in case it is executed in a "same thread
+            // executor" in which case will be over in @OnReturn
+            if (request == null) {
+                return null;
+            }
+            String method = request.getMethod();
+            if (method == null) {
+                method = "";
+            } else {
+                method += " ";
+            }
+            String url = requestInvoker.getUrl(request);
+            return context.startAsyncServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
+                    MessageSupplier.create("http client request: {}{}", method, url), timerName);
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn @Nullable ListenableFutureMixin future,
+                final @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
+            ExecuteRequestAdvice.onReturn(future, asyncTraceEntry);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
+            ExecuteRequestAdvice.onThrow(t, asyncTraceEntry);
         }
     }
 
