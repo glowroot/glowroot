@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,9 @@ public class CxfClientPluginIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.create();
+        // this is just testing HttpURLConnection instrumentation, so need to use javaagent
+        // container since HttpURLConnection is in the bootstrap class loader
+        container = Containers.createJavaagent();
     }
 
     @AfterClass
@@ -67,8 +69,8 @@ public class CxfClientPluginIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).matches("cxf client soap request:"
-                + " http://localhost:\\d+/cxf/helloWorld\\?wsdl, operation=hello");
+        assertThat(entry.getMessage()).matches("http client request:"
+                + " POST http://localhost:\\d+/cxf/helloWorld");
 
         assertThat(i.hasNext()).isFalse();
     }

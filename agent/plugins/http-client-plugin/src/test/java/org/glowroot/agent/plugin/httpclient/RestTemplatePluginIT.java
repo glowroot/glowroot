@@ -35,7 +35,9 @@ public class RestTemplatePluginIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.create();
+        // this is just testing HttpURLConnection instrumentation, so need to use javaagent
+        // container since HttpURLConnection is in the bootstrap class loader
+        container = Containers.createJavaagent();
     }
 
     @AfterClass

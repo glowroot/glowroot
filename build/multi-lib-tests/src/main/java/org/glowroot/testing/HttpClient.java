@@ -31,6 +31,7 @@ public class HttpClient {
         apacheHttpClient3x();
         asyncHttpClient();
         cxfClient();
+        httpUrlConnection();
         okHttpClient();
         springWebClient();
     }
@@ -190,6 +191,12 @@ public class HttpClient {
             updateLibVersion("cxf.version", "3.1." + i);
             runJava7(test);
         }
+    }
+
+    private static void httpUrlConnection() throws Exception {
+        final String test = "HttpURLConnectionIT";
+        Util.log("http client plugin (HttpURLConnection)");
+        Util.runTest(MODULE_PATH, test, JAVA6, JAVA7, JAVA8);
     }
 
     private static void okHttpClient() throws Exception {
