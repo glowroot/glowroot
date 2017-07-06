@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 
 import javax.annotation.Nullable;
 
@@ -85,100 +84,108 @@ public class HttpURLConnectionAspect {
     public static class ConnectAdvice {
         private static final TimerName timerName = Agent.getTimerName(ConnectAdvice.class);
         @OnBefore
-        public static @Nullable TraceEntry onBefore(ThreadContext threadContext,
-                @BindReceiver HttpURLConnection httpUrlConnection) {
-            if (!(httpUrlConnection instanceof HasTraceEntry)) {
+        public static @Nullable Object onBefore(ThreadContext threadContext,
+                @BindReceiver HttpURLConnection httpURLConnection) {
+            return onBefore(threadContext, httpURLConnection, false);
+        }
+        @OnReturn
+        public static void onReturn(@BindTraveler @Nullable Object entryOrTimer) {
+            if (entryOrTimer instanceof TraceEntry) {
+                ((TraceEntry) entryOrTimer).end();
+            } else if (entryOrTimer instanceof Timer) {
+                ((Timer) entryOrTimer).stop();
+            }
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable Object entryOrTimer) {
+            if (entryOrTimer instanceof TraceEntry) {
+                ((TraceEntry) entryOrTimer).endWithError(t);
+            } else if (entryOrTimer instanceof Timer) {
+                ((Timer) entryOrTimer).stop();
+            }
+        }
+        private static @Nullable Object onBefore(ThreadContext threadContext,
+                HttpURLConnection httpURLConnection, boolean overrideGetWithPost) {
+            if (!(httpURLConnection instanceof HasTraceEntry)) {
                 return null;
             }
-            String method = httpUrlConnection.getRequestMethod();
+            TraceEntry traceEntry = ((HasTraceEntry) httpURLConnection).glowroot$getTraceEntry();
+            if (traceEntry != null) {
+                return traceEntry.extend();
+            }
+            String method = httpURLConnection.getRequestMethod();
             if (method == null) {
                 method = "";
+            } else if (overrideGetWithPost && method.equals("GET")) {
+                // this is to match behavior in
+                // sun.net.www.protocol.http.HttpURLConnection.getOutputStream0()
+                method = "POST ";
             } else {
                 method += " ";
             }
-            URL urlObj = httpUrlConnection.getURL();
+            URL urlObj = httpURLConnection.getURL();
             String url;
             if (urlObj == null) {
                 url = "";
             } else {
                 url = urlObj.toString();
             }
-            TraceEntry traceEntry = threadContext.startServiceCallEntry("HTTP",
+            traceEntry = threadContext.startServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(url),
                     MessageSupplier.create("http client request: {}{}", method, url), timerName);
-            ((HasTraceEntry) httpUrlConnection).glowroot$setTraceEntry(traceEntry);
+            ((HasTraceEntry) httpURLConnection).glowroot$setTraceEntry(traceEntry);
             return traceEntry;
         }
+    }
+
+    @Pointcut(className = "java.net.URLConnection",
+            subTypeRestriction = "java.net.HttpURLConnection", methodName = "getInputStream",
+            methodParameterTypes = {}, nestingGroup = "http-client")
+    public static class GetInputStreamAdvice {
+        @OnBefore
+        public static @Nullable Object onBefore(ThreadContext threadContext,
+                @BindReceiver HttpURLConnection httpURLConnection) {
+            return ConnectAdvice.onBefore(threadContext, httpURLConnection, false);
+        }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.end();
+        public static void onReturn(@BindReturn @Nullable Object returnValue,
+                @BindReceiver HttpURLConnection httpURLConnection,
+                @BindTraveler @Nullable Object entryOrTimer) {
+            if (httpURLConnection instanceof HasTraceEntry
+                    && returnValue instanceof HasTraceEntry) {
+                TraceEntry traceEntry =
+                        ((HasTraceEntry) httpURLConnection).glowroot$getTraceEntry();
+                ((HasTraceEntry) returnValue).glowroot$setTraceEntry(traceEntry);
             }
+            ConnectAdvice.onReturn(entryOrTimer);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(t);
-            }
+                @BindTraveler @Nullable Object entryOrTimer) {
+            ConnectAdvice.onThrow(t, entryOrTimer);
         }
     }
 
-    @Pointcut(className = "java.net.URLConnection", methodName = "getInputStream",
-            methodParameterTypes = {})
-    public static class GetInputStreamAdvice {
-        @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver URLConnection urlConnection) {
-            if (urlConnection instanceof HasTraceEntry) {
-                TraceEntry traceEntry = ((HasTraceEntry) urlConnection).glowroot$getTraceEntry();
-                if (traceEntry != null) {
-                    return traceEntry.extend();
-                }
-            }
-            return null;
-        }
-        @OnReturn
-        public static void onReturn(@BindReturn @Nullable InputStream inputStream,
-                @BindReceiver URLConnection urlConnection) {
-            if (urlConnection instanceof HasTraceEntry && inputStream instanceof HasTraceEntry) {
-                TraceEntry traceEntry = ((HasTraceEntry) urlConnection).glowroot$getTraceEntry();
-                ((HasTraceEntry) inputStream).glowroot$setTraceEntry(traceEntry);
-            }
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.stop();
-            }
-        }
-    }
-
-    @Pointcut(className = "java.net.URLConnection", methodName = "getOutputStream",
-            methodParameterTypes = {})
+    @Pointcut(className = "java.net.URLConnection",
+            subTypeRestriction = "java.net.HttpURLConnection", methodName = "getOutputStream",
+            methodParameterTypes = {}, nestingGroup = "http-client")
     public static class GetOutputStreamAdvice {
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver URLConnection urlConnection) {
-            if (urlConnection instanceof HasTraceEntry) {
-                TraceEntry traceEntry = ((HasTraceEntry) urlConnection).glowroot$getTraceEntry();
-                if (traceEntry != null) {
-                    return traceEntry.extend();
-                }
-            }
-            return null;
+        public static @Nullable Object onBefore(ThreadContext threadContext,
+                @BindReceiver HttpURLConnection httpURLConnection) {
+            return ConnectAdvice.onBefore(threadContext, httpURLConnection, true);
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable OutputStream outputStream,
-                @BindReceiver URLConnection urlConnection) {
-            if (urlConnection instanceof HasTraceEntry && outputStream instanceof HasTraceEntry) {
-                ((HasTraceEntry) outputStream).glowroot$setTraceEntry(
-                        ((HasTraceEntry) urlConnection).glowroot$getTraceEntry());
-            }
+        public static void onReturn(@BindReturn @Nullable Object returnValue,
+                @BindReceiver HttpURLConnection httpURLConnection,
+                @BindTraveler @Nullable Object entryOrTimer) {
+            GetInputStreamAdvice.onReturn(returnValue, httpURLConnection, entryOrTimer);
         }
-        @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.stop();
-            }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable Object entryOrTimer) {
+            ConnectAdvice.onThrow(t, entryOrTimer);
         }
     }
 
