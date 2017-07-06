@@ -64,8 +64,8 @@ case "$1" in
 
                if [[ "$java_version" > "1.8" && "$SKIP_SHADING" != "true" ]]
                then
-                 # elasticsearch and play tests both require Java 8 and shading
-                 extra_profiles="-P elasticsearch-5.x,play-2.4.x,play-2.x"
+                 # async-http-client, elasticsearch and play tests all require Java 8 and shading
+                 extra_profiles="-P async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x"
                fi
                mvn clean install -pl ${test1_excluded_plugin_modules//!:/:} \
                                  $extra_profiles \
