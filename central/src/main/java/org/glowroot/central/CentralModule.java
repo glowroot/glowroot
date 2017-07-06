@@ -168,8 +168,8 @@ public class CentralModule {
             AlertingService alertingService = new AlertingService(repos.getConfigRepository(),
                     repos.getTriggeredAlertDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
                     rollupLevelService, new MailService(), httpClient);
-            centralAlertingService =
-                    new CentralAlertingService(repos.getConfigRepository(), alertingService);
+            centralAlertingService = new CentralAlertingService(repos.getConfigRepository(),
+                    repos.getHeartbeatDao(), alertingService);
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
                     repos.getAgentRollupDao(), repos.getAgentConfigDao(), repos.getAggregateDao(),
