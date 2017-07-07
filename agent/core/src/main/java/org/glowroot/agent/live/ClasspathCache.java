@@ -353,12 +353,19 @@ class ClasspathCache {
             if (dir != null) {
                 loadClassNamesFromDirectory(dir, "", location, newClassNameLocations);
             } else if (jarFile != null) {
-                String nestedJarFilePath = location.nestedJarFilePath();
-                if (nestedJarFilePath == null) {
+                String jarFileInsideJarFile = location.jarFileInsideJarFile();
+                String directoryInsideJarFile = location.directoryInsideJarFile();
+                if (jarFileInsideJarFile == null && directoryInsideJarFile == null) {
                     loadClassNamesFromJarFile(jarFile, location, newClassNameLocations);
-                } else {
-                    loadClassNamesFromNestedJarFile(jarFile, nestedJarFilePath, location,
+                } else if (jarFileInsideJarFile != null) {
+                    loadClassNamesFromJarFileInsideJarFile(jarFile, jarFileInsideJarFile, location,
                             newClassNameLocations);
+                } else if (directoryInsideJarFile != null) {
+                    loadClassNamesFromDirectoryInsideJarFile(jarFile, directoryInsideJarFile,
+                            location, newClassNameLocations);
+                } else {
+                    throw new IllegalStateException(
+                            "jarFileInsideJarFile and directoryInsideJarFile cannot both be null");
                 }
             } else {
                 throw new AssertionError("Both Location directory() and jarFile() are null");
@@ -396,7 +403,7 @@ class ClasspathCache {
         JarInputStream jarIn = closer.register(new JarInputStream(s));
         try {
             loadClassNamesFromManifestClassPath(jarIn, jarFile, newClassNameLocations);
-            loadClassNamesFromJarInputStream(jarIn, location, newClassNameLocations);
+            loadClassNamesFromJarInputStream(jarIn, "", location, newClassNameLocations);
         } catch (Throwable t) {
             throw closer.rethrow(t);
         } finally {
@@ -424,12 +431,12 @@ class ClasspathCache {
         }
     }
 
-    private static void loadClassNamesFromNestedJarFile(File jarFile, String nestedJarFilePath,
-            Location location, Multimap<String, Location> newClassNameLocations)
-            throws IOException {
+    private static void loadClassNamesFromJarFileInsideJarFile(File jarFile,
+            String jarFileInsideJarFile, Location location,
+            Multimap<String, Location> newClassNameLocations) throws IOException {
         URI uri;
         try {
-            uri = new URI("jar", "file:" + jarFile.getPath() + "!/" + nestedJarFilePath, "");
+            uri = new URI("jar", "file:" + jarFile.getPath() + "!/" + jarFileInsideJarFile, "");
         } catch (URISyntaxException e) {
             // this is a programmatic error
             throw new RuntimeException(e);
@@ -445,7 +452,7 @@ class ClasspathCache {
                 throw e;
             }
             closer.register(jarIn);
-            loadClassNamesFromJarInputStream(jarIn, location, newClassNameLocations);
+            loadClassNamesFromJarInputStream(jarIn, "", location, newClassNameLocations);
         } catch (Throwable t) {
             throw closer.rethrow(t);
         } finally {
@@ -453,19 +460,36 @@ class ClasspathCache {
         }
     }
 
-    private static void loadClassNamesFromJarInputStream(JarInputStream jarIn, Location location,
+    private static void loadClassNamesFromDirectoryInsideJarFile(File jarFile,
+            String directoryInsideJarFile, Location location,
             Multimap<String, Location> newClassNameLocations) throws IOException {
+        Closer closer = Closer.create();
+        InputStream s = new FileInputStream(jarFile);
+        JarInputStream jarIn = closer.register(new JarInputStream(s));
+        try {
+            loadClassNamesFromJarInputStream(jarIn, directoryInsideJarFile, location,
+                    newClassNameLocations);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
+    }
+
+    private static void loadClassNamesFromJarInputStream(JarInputStream jarIn, String directory,
+            Location location, Multimap<String, Location> newClassNameLocations)
+            throws IOException {
         JarEntry jarEntry;
         while ((jarEntry = jarIn.getNextJarEntry()) != null) {
             if (jarEntry.isDirectory()) {
                 continue;
             }
             String name = jarEntry.getName();
-            if (!name.endsWith(".class")) {
-                continue;
+            if (name.startsWith(directory) && name.endsWith(".class")) {
+                name = name.substring(directory.length());
+                String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
+                newClassNameLocations.put(className, location);
             }
-            String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
-            newClassNameLocations.put(className, location);
         }
     }
 
@@ -574,17 +598,27 @@ class ClasspathCache {
     private static Location getLocationFromJarFile(String f) {
         int index = f.indexOf("!/");
         File jarFile = new File(f.substring(5, index));
-        String nestedJarFilePath = f.substring(index + 2);
-        if (nestedJarFilePath.isEmpty()) {
+        String pathInsideJarFile = f.substring(index + 2);
+        if (pathInsideJarFile.isEmpty()) {
             // the jar file itself
             return ImmutableLocation.builder().jarFile(jarFile).build();
         }
         // strip off trailing !/
-        nestedJarFilePath = nestedJarFilePath.substring(0, nestedJarFilePath.length() - 2);
-        return ImmutableLocation.builder()
-                .jarFile(jarFile)
-                .nestedJarFilePath(nestedJarFilePath)
-                .build();
+        pathInsideJarFile = pathInsideJarFile.substring(0, pathInsideJarFile.length() - 2);
+        if (pathInsideJarFile.endsWith(".jar")) {
+            return ImmutableLocation.builder()
+                    .jarFile(jarFile)
+                    .jarFileInsideJarFile(pathInsideJarFile)
+                    .build();
+        } else {
+            if (!pathInsideJarFile.endsWith("/")) {
+                pathInsideJarFile += '/';
+            }
+            return ImmutableLocation.builder()
+                    .jarFile(jarFile)
+                    .directoryInsideJarFile(pathInsideJarFile)
+                    .build();
+        }
     }
 
     private static byte[] getBytes(Location location, String className) throws IOException {
@@ -595,11 +629,17 @@ class ClasspathCache {
             URI uri = new File(dir, name).toURI();
             return Resources.toByteArray(uri.toURL());
         } else if (jarFile != null) {
-            String nestedJarFilePath = location.nestedJarFilePath();
-            if (nestedJarFilePath == null) {
+            String jarFileInsideJarFile = location.jarFileInsideJarFile();
+            String directoryInsideJarFile = location.directoryInsideJarFile();
+            if (jarFileInsideJarFile == null && directoryInsideJarFile == null) {
                 return getBytesFromJarFile(name, jarFile);
+            } else if (jarFileInsideJarFile != null) {
+                return getBytesFromJarFileInsideJarFile(name, jarFile, jarFileInsideJarFile);
+            } else if (directoryInsideJarFile != null) {
+                return getBytesFromDirectoryInsideJarFile(name, jarFile, directoryInsideJarFile);
             } else {
-                return getBytesFromNestedJarFile(name, jarFile, nestedJarFilePath);
+                throw new IllegalStateException(
+                        "jarFileInsideJarFile and directoryInsideJarFile cannot both be null");
             }
         } else {
             throw new AssertionError("Both Location directory() and jarFile() are null");
@@ -618,12 +658,12 @@ class ClasspathCache {
         return Resources.toByteArray(uri.toURL());
     }
 
-    private static byte[] getBytesFromNestedJarFile(String name, File jarFile,
-            String nestedJarFilePath) throws IOException {
+    private static byte[] getBytesFromJarFileInsideJarFile(String name, File jarFile,
+            String jarFileInsideJarFile) throws IOException {
         String path = jarFile.getPath();
         URI uri;
         try {
-            uri = new URI("jar", "file:" + path + "!/" + nestedJarFilePath, "");
+            uri = new URI("jar", "file:" + path + "!/" + jarFileInsideJarFile, "");
         } catch (URISyntaxException e) {
             // this is a programmatic error
             throw new RuntimeException(e);
@@ -656,6 +696,19 @@ class ClasspathCache {
         throw new UnsupportedOperationException();
     }
 
+    private static byte[] getBytesFromDirectoryInsideJarFile(String name, File jarFile,
+            String directoryInsideJarFile) throws IOException {
+        String path = jarFile.getPath();
+        URI uri;
+        try {
+            uri = new URI("jar", "file:" + path + "!/" + directoryInsideJarFile + name, "");
+        } catch (URISyntaxException e) {
+            // this is a programmatic error
+            throw new RuntimeException(e);
+        }
+        return Resources.toByteArray(uri.toURL());
+    }
+
     @Value.Immutable
     interface Location {
         @Nullable
@@ -663,6 +716,8 @@ class ClasspathCache {
         @Nullable
         File jarFile();
         @Nullable
-        String nestedJarFilePath();
+        String jarFileInsideJarFile();
+        @Nullable
+        String directoryInsideJarFile();
     }
 }
