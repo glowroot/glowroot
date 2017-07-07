@@ -52,7 +52,7 @@ public class Play2xAspect {
 
     // "play.core.routing.TaggingInvoker" is for play 2.4.x and later
     // "play.core.Router$Routes$TaggingInvoker" is for play 2.3.x
-    @Shim("play.core.routing.TaggingInvoker|play.core.Router$Routes$TaggingInvoker")
+    @Shim({"play.core.routing.TaggingInvoker", "play.core.Router$Routes$TaggingInvoker"})
     public interface TaggingInvoker {
 
         @Shim("scala.collection.immutable.Map cachedHandlerTags()")

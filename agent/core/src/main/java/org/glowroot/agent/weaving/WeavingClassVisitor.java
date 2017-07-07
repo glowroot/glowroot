@@ -470,7 +470,11 @@ class WeavingClassVisitor extends ClassVisitor {
             Method method = Method.getMethod(reflectMethod);
             Shim shim = reflectMethod.getAnnotation(Shim.class);
             checkNotNull(shim);
-            Method targetMethod = Method.getMethod(shim.value());
+            if (shim.value().length != 1) {
+                throw new IllegalStateException(
+                        "@Shim annotation must have exactly one value when used on methods");
+            }
+            Method targetMethod = Method.getMethod(shim.value()[0]);
             MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, method.getName(), method.getDescriptor(),
                     null, null);
             mv.visitCode();

@@ -16,9 +16,6 @@
 package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Method;
-import java.util.regex.Pattern;
-
-import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
@@ -31,15 +28,7 @@ abstract class ShimType {
 
     static ShimType create(Shim shim, Class<?> iface) {
         ImmutableShimType.Builder builder = ImmutableShimType.builder();
-        String value = shim.value();
-        Pattern pattern = AdviceBuilder.buildPattern(value);
-        if (pattern == null) {
-            builder.target(value);
-        } else {
-            builder.target("");
-            builder.targetPattern(pattern);
-        }
-        builder.target(value);
+        builder.addTargets(shim.value());
         builder.iface(Type.getType(iface));
         for (Method method : iface.getMethods()) {
             if (method.isAnnotationPresent(Shim.class)) {
@@ -50,7 +39,6 @@ abstract class ShimType {
     }
 
     abstract Type iface();
-    abstract String target();
-    abstract @Nullable Pattern targetPattern();
+    abstract ImmutableList<String> targets();
     abstract ImmutableList<Method> shimMethods();
 }
