@@ -65,6 +65,9 @@ import static org.glowroot.agent.util.Checkers.castInitialized;
 
 public class ThreadContextImpl implements ThreadContextPlus {
 
+    private static final boolean CAPTURE_AUXILIARY_THREAD_LOCATION_STACK_TRACES =
+            Boolean.getBoolean("glowroot.debug.captureAuxiliaryThreadLocationStackTraces");
+
     private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
     private static final MessageSupplier DETACHED_MESSAGE_SUPPLIER = MessageSupplier
@@ -408,15 +411,23 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AuxThreadContext createAuxThreadContext() {
+        ImmutableList<StackTraceElement> locationStackTrace = null;
+        if (CAPTURE_AUXILIARY_THREAD_LOCATION_STACK_TRACES) {
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            // strip up through this method, plus 1 additional method (the plugin advice method)
+            int index = getNormalizedStartIndex(stackTrace, "createAuxThreadContext", 1);
+            locationStackTrace = ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length);
+        }
         if (limitExceededAuxThreadContext) {
             // no auxiliary thread context hierarchy after limit exceeded in order to limit the
             // retention of auxiliary thread contexts
             return new AuxThreadContextImpl(transaction, null, null, servletMessageSupplier,
-                    transaction.getTransactionRegistry(), transaction.getTransactionService());
+                    locationStackTrace, transaction.getTransactionRegistry(),
+                    transaction.getTransactionService());
         } else {
             mayHaveChildAuxThreadContext = true;
             return new AuxThreadContextImpl(transaction, traceEntryComponent.getActiveEntry(),
-                    traceEntryComponent.getTailEntry(), servletMessageSupplier,
+                    traceEntryComponent.getTailEntry(), servletMessageSupplier, locationStackTrace,
                     transaction.getTransactionRegistry(), transaction.getTransactionService());
         }
     }

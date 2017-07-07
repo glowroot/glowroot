@@ -292,6 +292,10 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         endWithLocationStackTraceInternal(threshold, unit);
     }
 
+    boolean hasLocationStackTrace() {
+        return locationStackTrace != null;
+    }
+
     void setLocationStackTrace(ImmutableList<StackTraceElement> locationStackTrace) {
         this.locationStackTrace = locationStackTrace;
     }

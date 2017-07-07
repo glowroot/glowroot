@@ -17,6 +17,7 @@ package org.glowroot.agent.impl;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,17 +46,20 @@ class AuxThreadContextImpl implements AuxThreadContext {
     // null when parent is a limit exceeded auxiliary thread context, to prevent retaining parent
     private final @Nullable TraceEntryImpl parentThreadContextPriorEntry;
     private final @Nullable MessageSupplier servletMessageSupplier;
+    private final @Nullable ImmutableList<StackTraceElement> locationStackTrace;
     private final TransactionRegistry transactionRegistry;
     private final TransactionServiceImpl transactionService;
 
     AuxThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable MessageSupplier servletMessageSupplier,
+            @Nullable ImmutableList<StackTraceElement> locationStackTrace,
             TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService) {
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
         this.parentThreadContextPriorEntry = parentThreadContextPriorEntry;
         this.servletMessageSupplier = servletMessageSupplier;
+        this.locationStackTrace = locationStackTrace;
         this.transactionRegistry = transactionRegistry;
         this.transactionService = transactionService;
         if (logger.isDebugEnabled()
@@ -115,7 +119,11 @@ class AuxThreadContextImpl implements AuxThreadContext {
         if (completeAsyncTransaction) {
             context.setTransactionAsyncComplete();
         }
-        return context.getRootEntry();
+        TraceEntryImpl rootEntry = context.getRootEntry();
+        if (locationStackTrace != null) {
+            rootEntry.setLocationStackTrace(locationStackTrace);
+        }
+        return rootEntry;
     }
 
     private static Object getThreadContextDisplay(@Nullable TraceEntryImpl parentTraceEntry) {

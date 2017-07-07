@@ -906,7 +906,8 @@ public class Transaction {
         }
         Collection<TraceEntryImpl> childEntries = parentChildMap.get(entry);
         for (TraceEntryImpl childEntry : childEntries) {
-            boolean singleAuxEntry = childEntries.size() == 1 && childEntry.isAuxThreadRoot();
+            boolean singleAuxEntry = childEntries.size() == 1 && childEntry.isAuxThreadRoot()
+                    && !childEntry.hasLocationStackTrace();
             if (singleAuxEntry && removeSingleAuxEntry) {
                 addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
                         captureTick, depth, entryVisitor, removeSingleAuxEntry);
@@ -1103,7 +1104,7 @@ public class Transaction {
             i = childEntries.listIterator();
             while (i.hasNext()) {
                 TraceEntryImpl childEntry = i.next();
-                if (!childEntry.isAuxThreadRoot()) {
+                if (!childEntry.isAuxThreadRoot() || childEntry.hasLocationStackTrace()) {
                     continue;
                 }
                 if (!parentChildMap.containsKey(childEntry)) {
