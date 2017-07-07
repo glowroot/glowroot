@@ -303,8 +303,8 @@ public class StatementAspect {
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
-                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
-                        MILLISECONDS);
+                queryEntry.endWithLocationStackTrace(
+                        JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             }
         }
         @OnThrow
@@ -342,8 +342,8 @@ public class StatementAspect {
                 resultSet.glowroot$setStatementMirror(mirror);
             }
             if (queryEntry != null) {
-                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
-                        MILLISECONDS);
+                queryEntry.endWithLocationStackTrace(
+                        JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             }
         }
         @OnThrow
@@ -373,8 +373,8 @@ public class StatementAspect {
                 @BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
                 queryEntry.setCurrRow(rowCount);
-                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
-                        MILLISECONDS);
+                queryEntry.endWithLocationStackTrace(
+                        JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             }
         }
         @OnThrow
@@ -416,7 +416,7 @@ public class StatementAspect {
         }
         @OnReturn
         public static void onReturn(@BindTraveler QueryEntry queryEntry) {
-            queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+            queryEntry.endWithLocationStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                     MILLISECONDS);
         }
         @OnThrow
@@ -451,7 +451,7 @@ public class StatementAspect {
                 StatementMirror mirror = preparedStatement.glowroot$getStatementMirror();
                 resultSet.glowroot$setStatementMirror(mirror);
             }
-            queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+            queryEntry.endWithLocationStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                     MILLISECONDS);
         }
         @OnThrow
@@ -478,7 +478,7 @@ public class StatementAspect {
         public static void onReturn(@BindReturn int rowCount,
                 @BindTraveler QueryEntry queryEntry) {
             queryEntry.setCurrRow(rowCount);
-            queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+            queryEntry.endWithLocationStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                     MILLISECONDS);
         }
         @OnThrow
@@ -524,7 +524,7 @@ public class StatementAspect {
             if (count) {
                 queryEntry.setCurrRow(totalRowCount);
             }
-            queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+            queryEntry.endWithLocationStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                     MILLISECONDS);
         }
         @OnThrow

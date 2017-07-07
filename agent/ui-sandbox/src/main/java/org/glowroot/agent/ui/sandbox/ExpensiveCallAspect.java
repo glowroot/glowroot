@@ -77,10 +77,9 @@ public class ExpensiveCallAspect {
             query.incrementCurrRow();
             query.incrementCurrRow();
             if (random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                query.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                query.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, query, 0);
             }
@@ -99,10 +98,9 @@ public class ExpensiveCallAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             if (traceEntry != null && random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                traceEntry.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, traceEntry, 1);
             }
@@ -121,10 +119,9 @@ public class ExpensiveCallAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             if (traceEntry != null && random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                traceEntry.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, traceEntry, 2);
             }
@@ -143,10 +140,9 @@ public class ExpensiveCallAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             if (traceEntry != null && random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                traceEntry.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, traceEntry, 3);
             }
@@ -165,10 +161,9 @@ public class ExpensiveCallAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             if (traceEntry != null && random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                traceEntry.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, traceEntry, 4);
             }
@@ -187,10 +182,9 @@ public class ExpensiveCallAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             if (traceEntry != null && random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                traceEntry.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, traceEntry, 5);
             }
@@ -209,10 +203,9 @@ public class ExpensiveCallAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             if (traceEntry != null && random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                traceEntry.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, traceEntry, 6);
             }
@@ -231,10 +224,9 @@ public class ExpensiveCallAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             if (traceEntry != null && random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                traceEntry.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, traceEntry, 7);
             }
@@ -253,10 +245,9 @@ public class ExpensiveCallAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             if (traceEntry != null && random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                traceEntry.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, traceEntry, 8);
             }
@@ -275,10 +266,9 @@ public class ExpensiveCallAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             if (traceEntry != null && random.nextDouble() < 0.05) {
-                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
-                // can
-                // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                // TraceEntry.endWithLocationStackTrace() must be called directly from @On.. method
+                // so it can strip back the stack trace to the method picked out by the @Pointcut
+                traceEntry.endWithLocationStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(context, traceEntry, 9);
             }

@@ -48,7 +48,7 @@ public class NopTransactionService {
         public void end() {}
 
         @Override
-        public void endWithStackTrace(long threshold, TimeUnit unit) {}
+        public void endWithLocationStackTrace(long threshold, TimeUnit unit) {}
 
         @Override
         public void endWithError(Throwable t) {}
@@ -88,6 +88,10 @@ public class NopTransactionService {
         public Timer extendSyncTimer(ThreadContext currThreadContext) {
             return NopTimer.INSTANCE;
         }
+
+        @Override
+        @Deprecated
+        public void endWithStackTrace(long threshold, TimeUnit unit) {}
     }
 
     public static class NopAuxThreadContext implements AuxThreadContext {

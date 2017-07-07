@@ -1010,12 +1010,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
             org.glowroot.agent.impl.TraceEntryImpl entry =
                     addErrorEntry(currTick, currTick, null, null, errorMessage);
             if (t == null) {
-                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
                 // strip up through this method, plus 2 additional methods:
                 // ThreadContextImpl.addErrorEntry() and the plugin advice method
-                int index = getNormalizedStartIndex(stackTrace, "addErrorEntryInternal", 2);
-                entry.setStackTrace(
-                        ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
+                int index = getNormalizedStartIndex(locationStackTrace, "addErrorEntryInternal", 2);
+                entry.setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
+                        locationStackTrace.length));
             }
         }
     }
@@ -1041,10 +1041,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
     }
 
-    static int getNormalizedStartIndex(StackTraceElement[] stackTrace, String methodName,
+    static int getNormalizedStartIndex(StackTraceElement[] locationStackTrace, String methodName,
             int additionalMethodsToSkip) {
-        for (int i = 0; i < stackTrace.length; i++) {
-            if (methodName.equals(stackTrace[i].getMethodName())) {
+        for (int i = 0; i < locationStackTrace.length; i++) {
+            if (methodName.equals(locationStackTrace[i].getMethodName())) {
                 return i + 1 + additionalMethodsToSkip;
             }
         }
@@ -1085,9 +1085,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
 
         @Override
-        public void endWithStackTrace(long threshold, TimeUnit unit) {
+        public void endWithLocationStackTrace(long threshold, TimeUnit unit) {
             if (threshold < 0) {
-                logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
+                logger.error(
+                        "endWithLocationStackTrace(): argument 'threshold' must be non-negative");
             }
             endInternal(ticker.read());
         }
@@ -1112,6 +1113,15 @@ public class ThreadContextImpl implements ThreadContextPlus {
             endInternal(ticker.read());
         }
 
+        @Override
+        @Deprecated
+        public void endWithStackTrace(long threshold, TimeUnit unit) {
+            if (threshold < 0) {
+                logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
+            }
+            endInternal(ticker.read());
+        }
+
         private void endWithErrorInternal(@Nullable String message, @Nullable Throwable t) {
             if (initialComplete) {
                 // this guards against end*() being called multiple times on async trace entries
@@ -1126,12 +1136,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 org.glowroot.agent.impl.TraceEntryImpl entry = addErrorEntry(startTick, endTick,
                         messageSupplier, getQueryData(), errorMessage);
                 if (t == null) {
-                    StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                    StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
                     // strip up through this method, plus 2 additional methods:
                     // DummyTraceEntryOrQuery.endWithError() and the plugin advice method
-                    int index = getNormalizedStartIndex(stackTrace, "endWithErrorInternal", 2);
-                    entry.setStackTrace(
-                            ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
+                    int index =
+                            getNormalizedStartIndex(locationStackTrace, "endWithErrorInternal", 2);
+                    entry.setLocationStackTrace(ImmutableList.copyOf(locationStackTrace)
+                            .subList(index, locationStackTrace.length));
                 }
             }
         }

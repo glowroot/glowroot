@@ -36,8 +36,8 @@ public interface ThreadContext {
      * {@link MessageSupplier} in response to {@link TraceEntry#getMessageSupplier()}. Calling
      * {@link TraceEntry#end()} on the dummy entry ends the timer. If {@code endWithError} is called
      * on the dummy entry, then the dummy entry will be escalated to a real entry. If
-     * {@link TraceEntry#endWithStackTrace(long, TimeUnit)} is called on the dummy entry and the
-     * dummy entry total time exceeds the specified threshold, then the dummy entry will be
+     * {@link TraceEntry#endWithLocationStackTrace(long, TimeUnit)} is called on the dummy entry and
+     * the dummy entry total time exceeds the specified threshold, then the dummy entry will be
      * escalated to a real entry. If {@code endWithError} is called on the dummy entry, then the
      * dummy entry will be escalated to a real entry. A hard cap (
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
@@ -285,7 +285,7 @@ public interface ThreadContext {
      * 
      * Since there is no throwable passed to this variant, a stack trace is captured and displayed
      * in the UI as a location stack trace (as opposed to an exception stack trace), similar to
-     * {@link TraceEntry#endWithStackTrace(long, TimeUnit)}.
+     * {@link TraceEntry#endWithLocationStackTrace(long, TimeUnit)}.
      * 
      * This method bypasses the regular {@code maxTraceEntriesPerTransaction} check so that errors
      * after {@code maxTraceEntriesPerTransaction} will still be included in the trace. A hard cap (

@@ -110,7 +110,7 @@ public class DataSourceAspect {
                     messageSupplier.setAutoCommit(autoCommit);
                 }
             }
-            traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+            traceEntry.endWithLocationStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                     MILLISECONDS);
         }
     }

@@ -118,7 +118,7 @@ public class SessionAspect {
                 if (resultSet != null) {
                     resultSet.glowroot$setLastQueryEntry(queryEntry);
                 }
-                queryEntry.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+                queryEntry.endWithLocationStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
         @OnThrow

@@ -48,7 +48,7 @@ public interface TraceEntry {
      * thread, and so a stack trace at that time does not point to the code which executed triggered
      * the trace entry creation.
      */
-    void endWithStackTrace(long threshold, TimeUnit unit);
+    void endWithLocationStackTrace(long threshold, TimeUnit unit);
 
     /**
      * End the entry and mark the trace entry as an error with the specified throwable.
@@ -68,9 +68,9 @@ public interface TraceEntry {
      * End the entry and mark the trace entry as an error with the specified throwable.
      * 
      * A stack trace is captured and displayed in the UI as a location stack trace (as opposed to an
-     * exception stack trace), similar to {@link #endWithStackTrace(long, TimeUnit)}. Unless this is
-     * the root trace entry in which case no location stack trace is captured / displayed (since
-     * location stack trace is typically not mysterious for root trace entries).
+     * exception stack trace), similar to {@link #endWithLocationStackTrace(long, TimeUnit)}. Unless
+     * this is the root trace entry in which case no location stack trace is captured / displayed
+     * (since location stack trace is typically not mysterious for root trace entries).
      * 
      * If this is the root entry, then the error flag on the transaction is set.
      * 
@@ -127,4 +127,10 @@ public interface TraceEntry {
      */
     @Nullable
     Object getMessageSupplier();
+
+    /**
+     * @deprecated Replaced by {@link #endWithLocationStackTrace(long, TimeUnit)}.
+     */
+    @Deprecated
+    void endWithStackTrace(long threshold, TimeUnit unit);
 }

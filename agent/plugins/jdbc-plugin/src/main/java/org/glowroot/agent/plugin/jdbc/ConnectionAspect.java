@@ -108,7 +108,7 @@ public class ConnectionAspect {
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+            traceEntry.endWithLocationStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                     MILLISECONDS);
         }
         @OnThrow
@@ -128,7 +128,7 @@ public class ConnectionAspect {
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+            traceEntry.endWithLocationStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                     MILLISECONDS);
         }
         @OnThrow
@@ -158,7 +158,7 @@ public class ConnectionAspect {
         @OnReturn
         public static void onReturn(@BindTraveler Object entryOrTimer) {
             if (entryOrTimer instanceof TraceEntry) {
-                ((TraceEntry) entryOrTimer).endWithStackTrace(
+                ((TraceEntry) entryOrTimer).endWithLocationStackTrace(
                         JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             } else {
                 ((Timer) entryOrTimer).stop();
@@ -192,7 +192,7 @@ public class ConnectionAspect {
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+            traceEntry.endWithLocationStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                     MILLISECONDS);
         }
         @OnThrow

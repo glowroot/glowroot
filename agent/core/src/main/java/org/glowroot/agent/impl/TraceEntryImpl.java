@@ -74,10 +74,10 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     private final @Nullable TimerImpl syncTimer;
     private final @Nullable AsyncTimerImpl asyncTimer;
     // not volatile, so depends on memory barrier in Transaction for visibility
-    private @Nullable ImmutableList<StackTraceElement> stackTrace;
+    private @Nullable ImmutableList<StackTraceElement> locationStackTrace;
 
     // only used by transaction thread
-    private long stackTraceThreshold;
+    private long locationStackTraceThreshold;
     // only used by transaction thread
     private @MonotonicNonNull TimerImpl extendedTimer;
 
@@ -168,8 +168,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
             }
             errorBuilder.build();
         }
-        if (stackTrace != null) {
-            for (StackTraceElement stackTraceElement : stackTrace) {
+        if (locationStackTrace != null) {
+            for (StackTraceElement stackTraceElement : locationStackTrace) {
                 builder.addLocationStackTraceElementBuilder()
                         .setClassName(stackTraceElement.getClassName())
                         .setMethodName(Strings.nullToEmpty(stackTraceElement.getMethodName()))
@@ -196,35 +196,13 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     }
 
     @Override
-    public void endWithStackTrace(long threshold, TimeUnit unit) {
+    public void endWithLocationStackTrace(long threshold, TimeUnit unit) {
         if (threshold < 0) {
-            logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
+            logger.error("endWithLocationStackTrace(): argument 'threshold' must be non-negative");
             end();
             return;
         }
-        if (initialComplete) {
-            // this guards against end*() being called multiple times on async trace entries
-            return;
-        }
-        if (isAsync()) {
-            // it is not helpful to capture stack trace at end of async trace entry since it is
-            // ended by a different thread (and by not capturing, it reduces thread safety needs)
-            endInternal(endTick, null);
-            return;
-        }
-        long endTick = ticker.read();
-        long thresholdNanos = unit.toNanos(threshold);
-        if (endTick - startTick >= thresholdNanos) {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            // strip up through this method, plus 1 additional method (the plugin advice method)
-            int index =
-                    ThreadContextImpl.getNormalizedStartIndex(stackTrace, "endWithStackTrace", 1);
-            setStackTrace(ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
-        } else {
-            // store threshold in case this trace entry is extended, see extend() below
-            stackTraceThreshold = thresholdNanos;
-        }
-        endInternal(endTick, null);
+        endWithLocationStackTraceInternal(threshold, unit);
     }
 
     @Override
@@ -291,18 +269,31 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
             endQueryData(endTick);
             // it is not helpful to capture stack trace at end of async trace entry since it is
             // ended by a different thread (and by not capturing, it reduces thread safety needs)
-            if (!isAsync() && stackTrace == null && stackTraceThreshold != 0
-                    && endTick - revisedStartTick >= stackTraceThreshold) {
-                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            if (!isAsync() && locationStackTrace == null && locationStackTraceThreshold != 0
+                    && endTick - revisedStartTick >= locationStackTraceThreshold) {
+                StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
                 // strip up through this method, plus 1 additional method (the plugin advice method)
-                int index = ThreadContextImpl.getNormalizedStartIndex(stackTrace, "stop", 1);
-                setStackTrace(ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
+                int index =
+                        ThreadContextImpl.getNormalizedStartIndex(locationStackTrace, "stop", 1);
+                setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
+                        locationStackTrace.length));
             }
         }
     }
 
-    void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
-        this.stackTrace = stackTrace;
+    @Override
+    @Deprecated
+    public void endWithStackTrace(long threshold, TimeUnit unit) {
+        if (threshold < 0) {
+            logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
+            end();
+            return;
+        }
+        endWithLocationStackTraceInternal(threshold, unit);
+    }
+
+    void setLocationStackTrace(ImmutableList<StackTraceElement> locationStackTrace) {
+        this.locationStackTrace = locationStackTrace;
     }
 
     ThreadContextImpl getThreadContext() {
@@ -345,6 +336,35 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         return asyncTimer != null;
     }
 
+    private void endWithLocationStackTraceInternal(long threshold, TimeUnit unit) {
+        if (initialComplete) {
+            // this guards against end*() being called multiple times on async trace entries
+            return;
+        }
+        if (isAsync()) {
+            // it is not helpful to capture stack trace at end of async trace entry since it is
+            // ended by a different thread (and by not capturing, it reduces thread safety needs)
+            endInternal(endTick, null);
+            return;
+        }
+        long endTick = ticker.read();
+        long thresholdNanos = unit.toNanos(threshold);
+        if (endTick - startTick >= thresholdNanos) {
+            StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
+            // strip up through this method, plus 2 additional methods:
+            // TraceEntryImpl.endWithLocationStackTrace/endWithStackTrace() and the plugin advice
+            // method
+            int index = ThreadContextImpl.getNormalizedStartIndex(locationStackTrace,
+                    "endWithLocationStackTraceInternal", 2);
+            setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
+                    locationStackTrace.length));
+        } else {
+            // store threshold in case this trace entry is extended, see extend() below
+            locationStackTraceThreshold = thresholdNanos;
+        }
+        endInternal(endTick, null);
+    }
+
     private void endWithErrorInternal(@Nullable String message, @Nullable Throwable t) {
         ErrorMessage errorMessage = ErrorMessage.create(message, t,
                 threadContext.getTransaction().getThrowableFrameLimitCounter());
@@ -352,12 +372,13 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         // it is not helpful to capture stack trace at end of async trace entry since it is
         // ended by a different thread (and by not capturing, it reduces thread safety needs)
         if (!isAsync() && t == null) {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
             // strip up through this method, plus 2 additional methods:
             // TraceEntryImpl.endWithError() and the plugin advice method
-            int index = ThreadContextImpl.getNormalizedStartIndex(stackTrace,
+            int index = ThreadContextImpl.getNormalizedStartIndex(locationStackTrace,
                     "endWithErrorInternal", 2);
-            setStackTrace(ImmutableList.copyOf(stackTrace).subList(index, stackTrace.length));
+            setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
+                    locationStackTrace.length));
         }
     }
 

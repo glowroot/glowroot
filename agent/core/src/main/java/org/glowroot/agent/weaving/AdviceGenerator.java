@@ -534,7 +534,7 @@ class AdviceGenerator {
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/TraceEntry",
-                    "endWithStackTrace", "(JLjava/util/concurrent/TimeUnit;)V", true);
+                    "endWithLocationStackTrace", "(JLjava/util/concurrent/TimeUnit;)V", true);
         }
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);

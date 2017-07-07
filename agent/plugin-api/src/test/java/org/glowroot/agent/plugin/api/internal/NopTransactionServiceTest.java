@@ -29,7 +29,7 @@ public class NopTransactionServiceTest {
     @Test
     public void testNopTraceEntry() {
         NopTransactionService.TRACE_ENTRY.end();
-        NopTransactionService.TRACE_ENTRY.endWithStackTrace(0, MILLISECONDS);
+        NopTransactionService.TRACE_ENTRY.endWithLocationStackTrace(0, MILLISECONDS);
         NopTransactionService.TRACE_ENTRY.endWithError(new Throwable());
         NopTransactionService.TRACE_ENTRY.endWithError("");
         NopTransactionService.TRACE_ENTRY.endWithError("", new Throwable());

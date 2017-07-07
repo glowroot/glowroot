@@ -161,7 +161,7 @@ public class ActionRequestBuilderAspect {
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
-                queryEntry.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+                queryEntry.endWithLocationStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
         @OnThrow
