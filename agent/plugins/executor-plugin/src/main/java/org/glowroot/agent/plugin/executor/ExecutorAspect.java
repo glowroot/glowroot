@@ -200,12 +200,18 @@ public class ExecutorAspect {
         }
     }
 
-    // TODO revisit this
     // this method uses submit() and returns Future, but none of the callers use/wait on the Future
     @Pointcut(className = "net.sf.ehcache.store.disk.DiskStorageFactory", methodName = "schedule",
             methodParameterTypes = {"java.util.concurrent.Callable"},
             nestingGroup = "executor-execute")
     public static class EhcacheDiskStorageScheduleAdvice {}
+
+    // these methods use execute() to start long running threads that should not be tied to the
+    // current transaction
+    @Pointcut(className = "org.eclipse.jetty.io.SelectorManager"
+            + "|org.eclipse.jetty.server.AbstractConnector",
+            methodName = "doStart", methodParameterTypes = {}, nestingGroup = "executor-execute")
+    public static class JettyDoStartAdvice {}
 
     @Pointcut(className = "javax.servlet.AsyncContext", methodName = "start",
             methodParameterTypes = {"java.lang.Runnable"})
