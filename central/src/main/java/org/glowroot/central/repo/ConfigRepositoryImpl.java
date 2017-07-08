@@ -109,7 +109,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         centralConfigDao.addKeyType(SMTP_KEY, ImmutableSmtpConfig.class);
         centralConfigDao.addKeyType(HTTP_PROXY_KEY, ImmutableHttpProxyConfig.class);
         centralConfigDao.addKeyType(LDAP_KEY, ImmutableLdapConfig.class);
-        centralConfigDao.addKeyType(PAGER_DUTY_KEY, ImmutableLdapConfig.class);
+        centralConfigDao.addKeyType(PAGER_DUTY_KEY, ImmutablePagerDutyConfig.class);
     }
 
     @Override
