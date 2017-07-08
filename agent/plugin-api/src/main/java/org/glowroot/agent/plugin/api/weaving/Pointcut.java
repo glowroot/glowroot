@@ -30,7 +30,7 @@ public @interface Pointcut {
      * given name.
      * 
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
-     * starting and ending methodName with /
+     * starting and ending className with /
      */
     String className() default "";
 
@@ -39,7 +39,7 @@ public @interface Pointcut {
      * methods that are declared in a classes (or interfaces) matching the given annotation.
      * 
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
-     * starting and ending methodName with /
+     * starting and ending classAnnotation with /
      */
     String classAnnotation() default "";
 
@@ -49,7 +49,7 @@ public @interface Pointcut {
      * subTypeRestriction="com.ning.http.client.ListenableFuture"
      * 
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
-     * starting and ending methodName with /
+     * starting and ending subTypeRestriction with /
      */
     String subTypeRestriction() default "";
 
@@ -58,7 +58,7 @@ public @interface Pointcut {
      * but only for classes with superTypeRestriction="java.lang.Runnable"
      * 
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
-     * starting and ending methodName with /
+     * starting and ending superTypeRestriction with /
      */
     String superTypeRestriction() default "";
 
