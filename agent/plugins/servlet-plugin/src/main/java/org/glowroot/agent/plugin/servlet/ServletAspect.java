@@ -253,10 +253,13 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(className = "org.eclipse.jetty.server.Handler",
-            subTypeRestriction = "/(?!org\\.eclipse\\.jetty.).*/",
+    @Pointcut(className = "org.eclipse.jetty.server.Handler"
+            + "|wiremock.org.eclipse.jetty.server.Handler",
+            subTypeRestriction = "/(?!org\\.eclipse\\.jetty.)"
+                    + "(?!wiremock.org\\.eclipse\\.jetty.).*/",
             methodName = "handle",
-            methodParameterTypes = {"java.lang.String", "org.eclipse.jetty.server.Request",
+            methodParameterTypes = {"java.lang.String",
+                    "org.eclipse.jetty.server.Request|wiremock.org.eclipse.jetty.server.Request",
                     "javax.servlet.http.HttpServletRequest",
                     "javax.servlet.http.HttpServletResponse"},
             nestingGroup = "outer-servlet-or-filter", timerName = "http request")

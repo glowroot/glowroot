@@ -209,7 +209,9 @@ public class ExecutorAspect {
     // these methods use execute() to start long running threads that should not be tied to the
     // current transaction
     @Pointcut(className = "org.eclipse.jetty.io.SelectorManager"
-            + "|org.eclipse.jetty.server.AbstractConnector",
+            + "|org.eclipse.jetty.server.AbstractConnector"
+            + "|wiremock.org.eclipse.jetty.io.SelectorManager"
+            + "|wiremock.org.eclipse.jetty.server.AbstractConnector",
             methodName = "doStart", methodParameterTypes = {}, nestingGroup = "executor-execute")
     public static class JettyDoStartAdvice {}
 
