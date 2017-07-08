@@ -119,6 +119,37 @@ public class ServletAspect {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable Object req) {
+            return onBeforeCommon(context, req, null);
+        }
+        @OnReturn
+        public static void onReturn(OptionalThreadContext context,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry == null) {
+                return;
+            }
+            FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder = sendError.getHolder();
+            String errorMessage = errorMessageHolder.get();
+            if (errorMessage != null) {
+                traceEntry.endWithError(errorMessage);
+                errorMessageHolder.set(null);
+            } else {
+                traceEntry.end();
+            }
+            context.setServletMessageSupplier(null);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry == null) {
+                return;
+            }
+            // ignoring potential sendError since this seems worse
+            sendError.set(null);
+            traceEntry.endWithError(t);
+            context.setServletMessageSupplier(null);
+        }
+        private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
+                @Nullable Object req, @Nullable String transactionTypeOverride) {
             if (context.getServletMessageSupplier() != null) {
                 return null;
             }
@@ -168,15 +199,25 @@ public class ServletAspect {
                             sessionUserAttributePath);
                 }
             }
-            TraceEntry traceEntry =
-                    context.startTransaction("Web", requestUri, messageSupplier, timerName);
-            context.setServletMessageSupplier(messageSupplier);
-            // Glowroot-Transaction-Type header currently only accepts "Synthetic", in order to
-            // prevent spamming of transaction types, which could cause some issues
-            String transactionTypeOverride = request.getHeader("Glowroot-Transaction-Type");
-            if (transactionTypeOverride != null && transactionTypeOverride.equals("Synthetic")) {
-                context.setTransactionType(transactionTypeOverride, Priority.CORE_MAX);
+            String transactionType;
+            boolean setWithCoreMaxPriority = false;
+            String transactionTypeHeader = request.getHeader("Glowroot-Transaction-Type");
+            if (transactionTypeHeader != null && transactionTypeHeader.equals("Synthetic")) {
+                // Glowroot-Transaction-Type header currently only accepts "Synthetic", in order to
+                // prevent spamming of transaction types, which could cause some issues
+                transactionType = transactionTypeHeader;
+                setWithCoreMaxPriority = true;
+            } else if (transactionTypeOverride != null) {
+                transactionType = transactionTypeOverride;
+            } else {
+                transactionType = "Web";
             }
+            TraceEntry traceEntry = context.startTransaction(transactionType, requestUri,
+                    messageSupplier, timerName);
+            if (setWithCoreMaxPriority) {
+                context.setTransactionType(transactionType, Priority.CORE_MAX);
+            }
+            context.setServletMessageSupplier(messageSupplier);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
             String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
@@ -188,33 +229,6 @@ public class ServletAspect {
             }
             return traceEntry;
         }
-        @OnReturn
-        public static void onReturn(OptionalThreadContext context,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry == null) {
-                return;
-            }
-            FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder = sendError.getHolder();
-            String errorMessage = errorMessageHolder.get();
-            if (errorMessage != null) {
-                traceEntry.endWithError(errorMessage);
-                errorMessageHolder.set(null);
-            } else {
-                traceEntry.end();
-            }
-            context.setServletMessageSupplier(null);
-        }
-        @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry == null) {
-                return;
-            }
-            // ignoring potential sendError since this seems worse
-            sendError.set(null);
-            traceEntry.endWithError(t);
-            context.setServletMessageSupplier(null);
-        }
     }
 
     @Pointcut(className = "javax.servlet.Filter", methodName = "doFilter",
@@ -225,7 +239,7 @@ public class ServletAspect {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable Object request) {
-            return ServiceAdvice.onBefore(context, request);
+            return ServiceAdvice.onBeforeCommon(context, request, null);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
@@ -239,7 +253,9 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(className = "org.eclipse.jetty.server.Handler", methodName = "handle",
+    @Pointcut(className = "org.eclipse.jetty.server.Handler",
+            subTypeRestriction = "/(?!org\\.eclipse\\.jetty.).*/",
+            methodName = "handle",
             methodParameterTypes = {"java.lang.String", "org.eclipse.jetty.server.Request",
                     "javax.servlet.http.HttpServletRequest",
                     "javax.servlet.http.HttpServletResponse"},
@@ -250,7 +266,34 @@ public class ServletAspect {
                 @SuppressWarnings("unused") @BindParameter @Nullable String target,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object baseRequest,
                 @BindParameter @Nullable Object request) {
-            return ServiceAdvice.onBefore(context, request);
+            return ServiceAdvice.onBeforeCommon(context, request, null);
+        }
+        @OnReturn
+        public static void onReturn(OptionalThreadContext context,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            ServiceAdvice.onReturn(context, traceEntry);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            ServiceAdvice.onThrow(t, context, traceEntry);
+        }
+    }
+
+    // this pointcut makes sure to only set the transaction type to WireMock if WireMock is the
+    // first servlet encountered
+    @Pointcut(className = "javax.servlet.Servlet",
+            subTypeRestriction = "com.github.tomakehurst.wiremock.jetty9"
+                    + ".JettyHandlerDispatchingServlet",
+            methodName = "service",
+            methodParameterTypes = {"javax.servlet.ServletRequest",
+                    "javax.servlet.ServletResponse"},
+            nestingGroup = "outer-servlet-or-filter", timerName = "http request", order = -1)
+    public static class WireMockAdvice {
+        @OnBefore
+        public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
+                @BindParameter @Nullable Object request) {
+            return ServiceAdvice.onBeforeCommon(context, request, "WireMock");
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
