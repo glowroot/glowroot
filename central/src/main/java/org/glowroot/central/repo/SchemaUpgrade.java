@@ -83,7 +83,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 28;
+    private static final int CURR_SCHEMA_VERSION = 29;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -239,6 +239,14 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 28) {
             updateSmtpConfig();
             updateSchemaVersion(28);
+        }
+        // 0.9.21 to 0.9.22
+        if (initialSchemaVersion == 28) {
+            // only applies when upgrading from immediately prior schema version (28)
+            // (fix bad upgrade in 28 that inserted 'smtp' config row into 'web' config row)
+            updateSmtpConfig();
+            sortOfFixWebConfig();
+            updateSchemaVersion(29);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -921,10 +929,33 @@ public class SchemaUpgrade {
         }
         String updatedWebConfigText = mapper.writeValueAsString(smtpConfigNode);
         PreparedStatement preparedStatement =
-                session.prepare("insert into central_config (key, value) values ('web', ?)");
+                session.prepare("insert into central_config (key, value) values ('smtp', ?)");
         BoundStatement boundStatement = preparedStatement.bind();
         boundStatement.setString(0, updatedWebConfigText);
         session.execute(boundStatement);
+    }
+
+    // fix bad upgrade that inserted 'smtp' config row into 'web' config row
+    private void sortOfFixWebConfig() throws Exception {
+        ResultSet results =
+                session.execute("select value from central_config where key = 'web'");
+        Row row = results.one();
+        if (row == null) {
+            return;
+        }
+        String webConfigText = row.getString(0);
+        if (webConfigText == null) {
+            return;
+        }
+        JsonNode jsonNode = mapper.readTree(webConfigText);
+        if (jsonNode == null || !jsonNode.isObject()) {
+            return;
+        }
+        ObjectNode webConfigNode = (ObjectNode) jsonNode;
+        if (webConfigNode.has("host")) {
+            // remove 'web' config row which has 'smtp' config (old 'web' config row is lost)
+            session.execute("delete from central_config where key = 'web'");
+        }
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
