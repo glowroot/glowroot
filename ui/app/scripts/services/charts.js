@@ -230,7 +230,11 @@ glowroot.factory('charts', [
           min: 0,
           // 10 second yaxis max just for initial empty chart rendering
           max: 10,
-          label: 'milliseconds'
+          label: 'milliseconds',
+          labelPadding: 7,
+          tickFormatter: function (val) {
+            return val.toLocaleString(undefined);
+          }
         },
         zoom: {
           interactive: true,
