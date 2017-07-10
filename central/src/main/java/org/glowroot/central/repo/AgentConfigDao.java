@@ -27,7 +27,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -42,7 +41,7 @@ import org.glowroot.central.repo.AgentRollupDao.AgentConfigUpdate;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -77,11 +76,11 @@ public class AgentConfigDao {
     AgentConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        Sessions.execute(session, "create table if not exists agent_config (agent_rollup_id"
+        session.execute("create table if not exists agent_config (agent_rollup_id"
                 + " varchar, config blob, config_update boolean, config_update_token uuid,"
                 + " primary key (agent_rollup_id)) " + WITH_LCS);
         // secondary index is needed for Cassandra 2.x (to avoid error on readUpdatePS)
-        Sessions.execute(session,
+        session.execute(
                 "create index if not exists config_update_idx on agent_config (config_update)");
 
         insertPS = session.prepare("insert into agent_config (agent_rollup_id, config,"
@@ -158,7 +157,7 @@ public class AgentConfigDao {
             // agent config
             boundStatement.setBool(i++, false);
             boundStatement.setToNull(i++);
-            Sessions.execute(session, boundStatement);
+            session.execute(boundStatement);
             agentConfigCache.invalidate(agentId);
         }
         if (agentRollupId != null) {
@@ -185,7 +184,7 @@ public class AgentConfigDao {
                         .toByteArray()));
                 boundStatement.setBool(i++, false);
                 boundStatement.setToNull(i++);
-                Sessions.execute(session, boundStatement);
+                session.execute(boundStatement);
                 agentConfigCache.invalidate(loopAgentRollupId);
             }
         }
@@ -197,7 +196,7 @@ public class AgentConfigDao {
         for (int j = 0; j < 10; j++) {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
-            ResultSet results = Sessions.execute(session, boundStatement);
+            ResultSet results = session.execute(boundStatement);
             Row row = checkNotNull(results.one());
             ByteString currValue = ByteString.copyFrom(checkNotNull(row.getBytes(0)));
             AgentConfig currAgentConfig = AgentConfig.parseFrom(currValue);
@@ -212,7 +211,7 @@ public class AgentConfigDao {
             boundStatement.setString(i++, agentRollupId);
 
             boundStatement.setBytes(i++, ByteBuffer.wrap(currValue.toByteArray()));
-            results = Sessions.execute(session, boundStatement);
+            results = session.execute(boundStatement);
             row = checkNotNull(results.one());
             boolean applied = row.getBool("[applied]");
             if (applied) {
@@ -233,7 +232,7 @@ public class AgentConfigDao {
     public @Nullable AgentConfigUpdate readForUpdate(String agentId) throws Exception {
         BoundStatement boundStatement = readForUpdatePS.bind();
         boundStatement.setString(0, agentId);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             // no pending config update for this agent (or agent has been manually deleted)
@@ -253,7 +252,7 @@ public class AgentConfigDao {
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setUUID(i++, configUpdateToken);
-        Sessions.execute(session, boundStatement);
+        session.execute(boundStatement);
     }
 
     static String generateNewId() {
@@ -303,7 +302,7 @@ public class AgentConfigDao {
         public Optional<AgentConfig> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
-            ResultSet results = Sessions.execute(session, boundStatement);
+            ResultSet results = session.execute(boundStatement);
             Row row = results.one();
             if (row == null) {
                 // agent must have been manually deleted

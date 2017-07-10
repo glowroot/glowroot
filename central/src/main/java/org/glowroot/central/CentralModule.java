@@ -34,7 +34,6 @@ import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TimestampGenerator;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
@@ -62,7 +61,7 @@ import org.glowroot.central.repo.CentralRepoModule;
 import org.glowroot.central.repo.ConfigRepositoryImpl.AgentConfigListener;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.AlertingService;
@@ -608,12 +607,13 @@ public class CentralModule {
         while (stopwatch.elapsed(MINUTES) < 30) {
             try {
                 if (session == null) {
-                    session = createCluster(centralConfig, defaultTimestampGenerator).connect();
+                    session = new Session(
+                            createCluster(centralConfig, defaultTimestampGenerator).connect());
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
                 String keyspace = centralConfig.cassandraKeyspace();
-                Sessions.createKeyspaceIfNotExists(session, keyspace);
-                Sessions.execute(session, "use " + keyspace);
+                session.createKeyspaceIfNotExists(keyspace);
+                session.execute("use " + keyspace);
                 KeyspaceMetadata keyspaceMetadata =
                         checkNotNull(session.getCluster().getMetadata().getKeyspace(keyspace));
                 String replicationFactor =
@@ -678,9 +678,9 @@ public class CentralModule {
         return builder.build();
     }
 
-    private static String verifyCassandraVersion(Session session) {
-        ResultSet results = session
-                .execute("select release_version from system.local where key = 'local'");
+    private static String verifyCassandraVersion(Session session) throws Exception {
+        ResultSet results =
+                session.execute("select release_version from system.local where key = 'local'");
         Row row = checkNotNull(results.one());
         String cassandraVersion = checkNotNull(row.getString(0));
         if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")

@@ -18,14 +18,13 @@ package org.glowroot.central.repo;
 import java.util.List;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,8 +40,8 @@ public class AgentDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = cluster.newSession();
-        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
+        session = new Session(cluster.newSession());
+        session.createKeyspaceIfNotExists("glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
         clusterManager = ClusterManager.create();
 
@@ -58,7 +57,7 @@ public class AgentDaoIT {
     }
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         session.execute("truncate agent_rollup");
     }
 

@@ -33,7 +33,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -47,7 +46,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.ImmutableTracePoint;
@@ -149,32 +148,32 @@ public class TraceDao implements TraceRepository {
 
         int expirationHours = configRepository.getStorageConfig().traceExpirationHours();
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_check"
-                + " (agent_rollup varchar, agent_id varchar, trace_id varchar, primary key"
-                + " ((agent_rollup, agent_id), trace_id))", expirationHours);
+        session.createTableWithTWCS("create table if not exists trace_check (agent_rollup varchar,"
+                + " agent_id varchar, trace_id varchar, primary key ((agent_rollup, agent_id),"
+                + " trace_id))", expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_slow_point"
+        session.createTableWithTWCS("create table if not exists trace_tt_slow_point"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, duration_nanos bigint, partial boolean,"
                 + " error boolean, headline varchar, user varchar, attributes blob, primary key"
                 + " ((agent_rollup, transaction_type), capture_time, agent_id, trace_id))",
                 expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_slow_point"
+        session.createTableWithTWCS("create table if not exists trace_tn_slow_point"
                 + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
                 + " capture_time timestamp, agent_id varchar, trace_id varchar,"
                 + " duration_nanos bigint, partial boolean, error boolean, headline varchar,"
                 + " user varchar, attributes blob, primary key ((agent_rollup, transaction_type,"
                 + " transaction_name), capture_time, agent_id, trace_id))", expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_error_point"
+        session.createTableWithTWCS("create table if not exists trace_tt_error_point"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, duration_nanos bigint, partial boolean,"
                 + " error_message varchar, headline varchar, user varchar, attributes blob,"
                 + " primary key ((agent_rollup, transaction_type), capture_time, agent_id,"
                 + " trace_id))", expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_error_point"
+        session.createTableWithTWCS("create table if not exists trace_tn_error_point"
                 + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
                 + " capture_time timestamp, agent_id varchar, trace_id varchar,"
                 + " duration_nanos bigint, partial boolean, error_message varchar,"
@@ -182,24 +181,24 @@ public class TraceDao implements TraceRepository {
                 + " transaction_type, transaction_name), capture_time, agent_id, trace_id))",
                 expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_error_message"
+        session.createTableWithTWCS("create table if not exists trace_tt_error_message"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, error_message varchar, primary key"
                 + " ((agent_rollup, transaction_type), capture_time, agent_id, trace_id))",
                 expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_error_message"
+        session.createTableWithTWCS("create table if not exists trace_tn_error_message"
                 + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
                 + " capture_time timestamp, agent_id varchar, trace_id varchar,"
                 + " error_message varchar, primary key ((agent_rollup, transaction_type,"
                 + " transaction_name), capture_time, agent_id, trace_id))", expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_header"
+        session.createTableWithTWCS("create table if not exists trace_header"
                 + " (agent_id varchar, trace_id varchar, header blob, primary key (agent_id,"
                 + " trace_id))", expirationHours);
 
         // index_ is just to provide uniqueness
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_entry"
+        session.createTableWithTWCS("create table if not exists trace_entry"
                 + " (agent_id varchar, trace_id varchar, index_ int, depth int,"
                 + " start_offset_nanos bigint, duration_nanos bigint, active boolean,"
                 + " message varchar, shared_query_text_index int, query_message_prefix varchar,"
@@ -207,16 +206,16 @@ public class TraceDao implements TraceRepository {
                 + " error blob, primary key (agent_id, trace_id, index_))", expirationHours);
 
         // index_ is just to provide uniqueness
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_shared_query_text"
+        session.createTableWithTWCS("create table if not exists trace_shared_query_text"
                 + " (agent_id varchar, trace_id varchar, index_ int, truncated_text varchar,"
                 + " truncated_end_text varchar, full_text_sha1 varchar, primary key (agent_id,"
                 + " trace_id, index_))", expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_main_thread_profile"
+        session.createTableWithTWCS("create table if not exists trace_main_thread_profile"
                 + " (agent_id varchar, trace_id varchar, profile blob, primary key (agent_id,"
                 + " trace_id))", expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_aux_thread_profile"
+        session.createTableWithTWCS("create table if not exists trace_aux_thread_profile"
                 + " (agent_id varchar, trace_id varchar, profile blob, primary key (agent_id,"
                 + " trace_id))", expirationHours);
 
@@ -224,23 +223,23 @@ public class TraceDao implements TraceRepository {
         // using a counter would be nice since only need sum over capture_time range
         // but counter has no TTL, see https://issues.apache.org/jira/browse/CASSANDRA-2103
         // so adding trace_id to provide uniqueness
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_slow_count"
+        session.createTableWithTWCS("create table if not exists trace_tt_slow_count"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
                 + " transaction_type), capture_time, agent_id, trace_id))", expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_slow_count"
+        session.createTableWithTWCS("create table if not exists trace_tn_slow_count"
                 + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
                 + " capture_time timestamp, agent_id varchar, trace_id varchar, primary key"
                 + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
                 + " trace_id))", expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_error_count"
+        session.createTableWithTWCS("create table if not exists trace_tt_error_count"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
                 + " transaction_type), capture_time, agent_id, trace_id))", expirationHours);
 
-        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_error_count"
+        session.createTableWithTWCS("create table if not exists trace_tn_error_count"
                 + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
                 + " capture_time timestamp, agent_id varchar, trace_id varchar, primary key"
                 + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
@@ -636,7 +635,7 @@ public class TraceDao implements TraceRepository {
             boundStatement = readTransactionSlowPoint.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         return processPoints(results, filter, limit, false);
     }
 
@@ -652,7 +651,7 @@ public class TraceDao implements TraceRepository {
             boundStatement = readTransactionErrorPoint.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         return processPoints(results, filter, limit, true);
     }
 
@@ -667,7 +666,7 @@ public class TraceDao implements TraceRepository {
             boundStatement = readTransactionSlowCount.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         return results.one().getLong(0);
     }
 
@@ -682,7 +681,7 @@ public class TraceDao implements TraceRepository {
             boundStatement = readTransactionErrorCount.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         return results.one().getLong(0);
     }
 
@@ -698,7 +697,7 @@ public class TraceDao implements TraceRepository {
             boundStatement = readTransactionErrorMessage.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         // rows are already in order by captureTime, so saving sort step by using linked hash map
         Map<Long, MutableLong> pointCounts = Maps.newLinkedHashMap();
         Map<String, MutableLong> messageCounts = Maps.newHashMap();
@@ -802,7 +801,7 @@ public class TraceDao implements TraceRepository {
         BoundStatement boundStatement = readMainThreadProfile.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -818,7 +817,7 @@ public class TraceDao implements TraceRepository {
         BoundStatement boundStatement = readAuxThreadProfile.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -837,7 +836,7 @@ public class TraceDao implements TraceRepository {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, traceId);
-        if (Sessions.execute(session, boundStatement).isExhausted()) {
+        if (session.execute(boundStatement).isExhausted()) {
             throw new IllegalArgumentException("Agent " + agentId + " was not a child of rollup "
                     + agentRollupId + " at the time of trace " + traceId);
         }
@@ -847,7 +846,7 @@ public class TraceDao implements TraceRepository {
         BoundStatement boundStatement = readHeader.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -860,7 +859,7 @@ public class TraceDao implements TraceRepository {
         BoundStatement boundStatement = readEntries.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         List<Trace.Entry> entries = Lists.newArrayList();
         while (!results.isExhausted()) {
             Row row = results.one();
@@ -909,7 +908,7 @@ public class TraceDao implements TraceRepository {
         BoundStatement boundStatement = readSharedQueryTexts.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
         while (!results.isExhausted()) {
             Row row = results.one();

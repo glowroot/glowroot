@@ -20,7 +20,6 @@ import java.util.Map;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.AfterClass;
@@ -29,7 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
@@ -85,8 +84,8 @@ public class AggregateDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = cluster.newSession();
-        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
+        session = new Session(cluster.newSession());
+        session.createKeyspaceIfNotExists("glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
         KeyspaceMetadata keyspaceMetadata =
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
@@ -121,7 +120,7 @@ public class AggregateDaoIT {
     }
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         session.execute("truncate agent_rollup");
         session.execute("truncate agent_config");
     }

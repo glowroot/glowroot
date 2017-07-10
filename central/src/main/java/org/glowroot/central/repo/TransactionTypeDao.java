@@ -23,7 +23,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -35,7 +34,7 @@ import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.util.Styles;
@@ -65,7 +64,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
         this.session = session;
         this.configRepository = configRepository;
 
-        Sessions.execute(session, "create table if not exists transaction_type (one int,"
+        session.execute("create table if not exists transaction_type (one int,"
                 + " agent_rollup varchar, transaction_type varchar, primary key"
                 + " (one, agent_rollup, transaction_type)) " + WITH_LCS);
 
@@ -97,7 +96,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, transactionType);
             boundStatement.setInt(i++, getMaxTTL());
-            ResultSetFuture future = Sessions.executeAsyncWithOnFailure(session, boundStatement,
+            ResultSetFuture future = session.executeAsyncWithOnFailure(boundStatement,
                     () -> rateLimiter.invalidate(rateLimiterKey));
             future.addListener(() -> transactionTypesCache.invalidate(SINGLE_CACHE_KEY),
                     MoreExecutors.directExecutor());
@@ -130,7 +129,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
             implements CacheLoader<String, Map<String, List<String>>> {
         @Override
         public Map<String, List<String>> load(String key) throws Exception {
-            ResultSet results = Sessions.execute(session, readPS.bind());
+            ResultSet results = session.execute(readPS.bind());
 
             ImmutableMap.Builder<String, List<String>> builder = ImmutableMap.builder();
             String currAgentRollup = null;

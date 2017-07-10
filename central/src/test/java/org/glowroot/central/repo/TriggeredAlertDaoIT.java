@@ -18,13 +18,12 @@ package org.glowroot.central.repo;
 import java.util.List;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.TriggeredAlertRepository.TriggeredAlert;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
@@ -45,8 +44,8 @@ public class TriggeredAlertDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = cluster.newSession();
-        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
+        session = new Session(cluster.newSession());
+        session.createKeyspaceIfNotExists("glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
 
         triggeredAlertDao = new TriggeredAlertDao(session);
@@ -60,7 +59,7 @@ public class TriggeredAlertDaoIT {
     }
 
     @Before
-    public void beforeEach() {
+    public void beforeEach() throws Exception {
         session.execute("truncate triggered_alert");
     }
 

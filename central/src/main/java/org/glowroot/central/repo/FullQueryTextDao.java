@@ -24,7 +24,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
@@ -33,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.RateLimiter;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.util.Styles;
@@ -63,10 +62,10 @@ class FullQueryTextDao {
         this.configRepository = configRepository;
 
         // intentionally using default size-tiered compaction strategy
-        Sessions.execute(session, "create table if not exists full_query_text_check"
+        session.execute("create table if not exists full_query_text_check"
                 + " (agent_rollup varchar, full_query_text_sha1 varchar, primary key (agent_rollup,"
                 + " full_query_text_sha1))");
-        Sessions.execute(session, "create table if not exists full_query_text"
+        session.execute("create table if not exists full_query_text"
                 + " (full_query_text_sha1 varchar, full_query_text varchar, primary key"
                 + " (full_query_text_sha1))");
 
@@ -86,13 +85,13 @@ class FullQueryTextDao {
         BoundStatement boundStatement = readCheckPS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setString(1, fullTextSha1);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         if (results.isExhausted()) {
             return null;
         }
         boundStatement = readPS.bind();
         boundStatement.setString(0, fullTextSha1);
-        results = Sessions.execute(session, boundStatement);
+        results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -116,7 +115,7 @@ class FullQueryTextDao {
         }
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, fullTextSha1);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             // this shouldn't happen any more now that full query text insert futures are waited on
@@ -148,7 +147,7 @@ class FullQueryTextDao {
         boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
         boundStatement.setString(i++, fullText);
         boundStatement.setInt(i++, getTTL());
-        futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
+        futures.add(session.executeAsyncWithOnFailure(boundStatement,
                 () -> rateLimiter.invalidate(rateLimiterKey)));
         return futures;
     }
@@ -159,7 +158,7 @@ class FullQueryTextDao {
         boundStatement.setString(i++, rateLimiterKey.agentRollupId());
         boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
         boundStatement.setInt(i++, getTTL());
-        return Sessions.executeAsyncWithOnFailure(session, boundStatement,
+        return session.executeAsyncWithOnFailure(boundStatement,
                 () -> rateLimiter.invalidate(rateLimiterKey));
     }
 

@@ -22,7 +22,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
@@ -33,7 +32,7 @@ import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Styles;
 
@@ -60,7 +59,7 @@ class GaugeNameDao {
         this.session = session;
         this.configRepository = configRepository;
 
-        Sessions.execute(session, "create table if not exists gauge_name (agent_rollup varchar,"
+        session.execute("create table if not exists gauge_name (agent_rollup varchar,"
                 + " gauge_name varchar, primary key (agent_rollup, gauge_name)) " + WITH_LCS);
 
         insertPS = session.prepare("insert into gauge_name (agent_rollup, gauge_name)"
@@ -84,7 +83,7 @@ class GaugeNameDao {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setInt(i++, getMaxTTL());
-        ResultSetFuture future = Sessions.executeAsyncWithOnFailure(session, boundStatement,
+        ResultSetFuture future = session.executeAsyncWithOnFailure(boundStatement,
                 () -> rateLimiter.invalidate(rateLimiterKey));
         future.addListener(() -> gaugeNamesCache.invalidate(agentRollupId),
                 MoreExecutors.directExecutor());
@@ -116,7 +115,7 @@ class GaugeNameDao {
         public List<String> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
-            ResultSet results = Sessions.execute(session, boundStatement);
+            ResultSet results = session.execute(boundStatement);
             List<String> gaugeNames = Lists.newArrayList();
             for (Row row : results) {
                 gaugeNames.add(checkNotNull(row.getString(0)));

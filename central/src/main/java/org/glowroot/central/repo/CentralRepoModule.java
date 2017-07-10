@@ -18,11 +18,11 @@ package org.glowroot.central.repo;
 import java.util.List;
 
 import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.util.Clock;
 import org.glowroot.ui.PasswordHash;

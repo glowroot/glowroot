@@ -25,7 +25,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -42,7 +41,7 @@ import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AggregateDao.NeedsRollup;
 import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.MoreFutures;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.ImmutableSyntheticResult;
@@ -87,12 +86,11 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         List<PreparedStatement> readResultPS = Lists.newArrayList();
         List<PreparedStatement> readResultForRollupPS = Lists.newArrayList();
         for (int i = 0; i < count; i++) {
-            Sessions.createTableWithTWCS(session, "create table if not exists"
-                    + " synthetic_result_rollup_" + i + " (agent_rollup_id varchar,"
-                    + " synthetic_config_id varchar, capture_time timestamp,"
-                    + " total_duration_nanos double, execution_count bigint, error_count bigint,"
-                    + " primary key ((agent_rollup_id, synthetic_config_id), capture_time))",
-                    rollupExpirationHours.get(i));
+            session.createTableWithTWCS("create table if not exists synthetic_result_rollup_" + i
+                    + " (agent_rollup_id varchar, synthetic_config_id varchar,"
+                    + " capture_time timestamp, total_duration_nanos double,"
+                    + " execution_count bigint, error_count bigint, primary key ((agent_rollup_id,"
+                    + " synthetic_config_id), capture_time))", rollupExpirationHours.get(i));
             insertResultPS.add(session.prepare("insert into synthetic_result_rollup_" + i
                     + " (agent_rollup_id, synthetic_config_id, capture_time, total_duration_nanos,"
                     + " execution_count, error_count) values (?, ?, ?, ?, ?, ?) using ttl ?"));
@@ -121,7 +119,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i < count; i++) {
-            Sessions.execute(session, "create table if not exists synthetic_needs_rollup_" + i
+            session.execute("create table if not exists synthetic_needs_rollup_" + i
                     + " (agent_rollup_id varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " synthetic_config_ids set<varchar>, primary key (agent_rollup_id,"
                     + " capture_time, uniqueness)) with gc_grace_seconds = "
@@ -156,7 +154,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         boundStatement.setLong(i++, error ? 1 : 0);
         boundStatement.setInt(i++, adjustedTTL);
         // wait for success before inserting "needs rollup" records
-        Sessions.execute(session, boundStatement);
+        session.execute(boundStatement);
 
         // insert into synthetic_needs_rollup_1
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -171,7 +169,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         boundStatement.setUUID(i++, UUIDs.timeBased());
         boundStatement.setSet(i++, ImmutableSet.of(syntheticMonitorId));
         boundStatement.setInt(i++, needsRollupAdjustedTTL);
-        Sessions.execute(session, boundStatement);
+        session.execute(boundStatement);
     }
 
     // from is INCLUSIVE
@@ -184,7 +182,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         boundStatement.setString(i++, syntheticMonitorId);
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         List<SyntheticResult> syntheticResults = Lists.newArrayList();
         for (Row row : results) {
             i = 0;
@@ -257,7 +255,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
 
     // from is non-inclusive
     private ListenableFuture<ResultSet> rollupOne(int rollupLevel, String agentRollupId,
-            String syntheticMonitorId, long from, long to, int adjustedTTL) {
+            String syntheticMonitorId, long from, long to, int adjustedTTL) throws Exception {
         BoundStatement boundStatement = readResultForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
@@ -291,7 +289,8 @@ public class SyntheticResultDao implements SyntheticResultRepository {
     }
 
     private ListenableFuture<ResultSet> rollupOneFromRows(int rollupLevel, String agentRollupId,
-            String syntheticMonitorId, long to, int adjustedTTL, Iterable<Row> rows) {
+            String syntheticMonitorId, long to, int adjustedTTL, Iterable<Row> rows)
+            throws Exception {
         double totalDurationNanos = 0;
         long executionCount = 0;
         long errorCount = 0;
@@ -326,10 +325,10 @@ public class SyntheticResultDao implements SyntheticResultRepository {
     @OnlyUsedByTests
     void truncateAll() throws Exception {
         for (int i = 0; i < configRepository.getRollupConfigs().size(); i++) {
-            Sessions.execute(session, "truncate synthetic_result_rollup_" + i);
+            session.execute("truncate synthetic_result_rollup_" + i);
         }
         for (int i = 1; i < configRepository.getRollupConfigs().size(); i++) {
-            Sessions.execute(session, "truncate synthetic_needs_rollup_" + i);
+            session.execute("truncate synthetic_needs_rollup_" + i);
         }
     }
 }

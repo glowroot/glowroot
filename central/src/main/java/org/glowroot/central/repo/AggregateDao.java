@@ -33,7 +33,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
@@ -49,7 +48,6 @@ import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +55,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
@@ -275,9 +273,9 @@ public class AggregateDao implements AggregateRepository {
             for (int i = 0; i < count; i++) {
                 int expirationHours = rollupExpirationHours.get(i);
                 if (table.summary()) {
-                    Sessions.createTableWithTWCS(session, createSummaryTableQuery(table, false, i),
+                    session.createTableWithTWCS(createSummaryTableQuery(table, false, i),
                             expirationHours);
-                    Sessions.createTableWithTWCS(session, createSummaryTableQuery(table, true, i),
+                    session.createTableWithTWCS(createSummaryTableQuery(table, true, i),
                             expirationHours);
                     insertOverallList.add(session.prepare(insertSummaryPS(table, false, i)));
                     insertTransactionList.add(session.prepare(insertSummaryPS(table, true, i)));
@@ -288,10 +286,8 @@ public class AggregateDao implements AggregateRepository {
                     readTransactionForRollupList
                             .add(session.prepare(readSummaryForRollupPS(table, true, i)));
                 } else {
-                    Sessions.createTableWithTWCS(session, createTableQuery(table, false, i),
-                            expirationHours);
-                    Sessions.createTableWithTWCS(session, createTableQuery(table, true, i),
-                            expirationHours);
+                    session.createTableWithTWCS(createTableQuery(table, false, i), expirationHours);
+                    session.createTableWithTWCS(createTableQuery(table, true, i), expirationHours);
                     insertOverallList.add(session.prepare(insertPS(table, false, i)));
                     insertTransactionList.add(session.prepare(insertPS(table, true, i)));
                     readOverallList.add(session.prepare(readPS(table, false, i)));
@@ -365,7 +361,7 @@ public class AggregateDao implements AggregateRepository {
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i < count; i++) {
-            Sessions.execute(session, "create table if not exists aggregate_needs_rollup_" + i
+            session.execute("create table if not exists aggregate_needs_rollup_" + i
                     + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " transaction_types set<varchar>, primary key (agent_rollup, capture_time,"
                     + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and "
@@ -384,7 +380,7 @@ public class AggregateDao implements AggregateRepository {
         this.readNeedsRollup = readNeedsRollup;
         this.deleteNeedsRollup = deleteNeedsRollup;
 
-        Sessions.execute(session, "create table if not exists aggregate_needs_rollup_from_child"
+        session.execute("create table if not exists aggregate_needs_rollup_from_child"
                 + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                 + " child_agent_rollup varchar, transaction_types set<varchar>,"
                 + " primary key (agent_rollup, capture_time, uniqueness))"
@@ -528,7 +524,7 @@ public class AggregateDao implements AggregateRepository {
         BoundStatement boundStatement =
                 checkNotNull(readTransactionPS.get(summaryTable)).get(query.rollupLevel()).bind();
         bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         for (Row row : results) {
             int i = 0;
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
@@ -568,7 +564,7 @@ public class AggregateDao implements AggregateRepository {
         BoundStatement boundStatement = checkNotNull(readTransactionPS.get(errorSummaryTable))
                 .get(query.rollupLevel()).bind();
         bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         for (Row row : results) {
             int i = 0;
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
@@ -745,7 +741,7 @@ public class AggregateDao implements AggregateRepository {
                 ? existsMainThreadProfileOverallPS.get(query.rollupLevel()).bind()
                 : existsMainThreadProfileTransactionPS.get(query.rollupLevel()).bind();
         bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         return results.one() != null;
     }
 
@@ -757,7 +753,7 @@ public class AggregateDao implements AggregateRepository {
                 ? existsAuxThreadProfileOverallPS.get(query.rollupLevel()).bind()
                 : existsAuxThreadProfileTransactionPS.get(query.rollupLevel()).bind();
         bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         return results.one() != null;
     }
 
@@ -793,15 +789,14 @@ public class AggregateDao implements AggregateRepository {
     void truncateAll() throws Exception {
         for (Table table : allTables) {
             for (int i = 0; i < configRepository.getRollupConfigs().size(); i++) {
-                Sessions.execute(session,
-                        "truncate " + getTableName(table.partialName(), false, i));
-                Sessions.execute(session, "truncate " + getTableName(table.partialName(), true, i));
+                session.execute("truncate " + getTableName(table.partialName(), false, i));
+                session.execute("truncate " + getTableName(table.partialName(), true, i));
             }
         }
         for (int i = 1; i < configRepository.getRollupConfigs().size(); i++) {
-            Sessions.execute(session, "truncate aggregate_needs_rollup_" + i);
+            session.execute("truncate aggregate_needs_rollup_" + i);
         }
-        Sessions.execute(session, "truncate aggregate_needs_rollup_from_child");
+        session.execute("truncate aggregate_needs_rollup_from_child");
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
@@ -855,7 +850,7 @@ public class AggregateDao implements AggregateRepository {
                 boundStatement.setString(i++, agentRollupId);
                 boundStatement.setSet(i++, needsRollupFromChildren.getKeys().keySet());
                 boundStatement.setInt(i++, needsRollupAdjustedTTL);
-                Sessions.execute(session, boundStatement);
+                session.execute(boundStatement);
             }
             postRollup(agentRollupId, needsRollupFromChildren.getCaptureTime(),
                     needsRollupFromChildren.getKeys().keySet(),
@@ -1021,7 +1016,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> rollupOverallSummaryFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) {
+            TransactionQuery query, Iterable<Row> rows) throws Exception {
         double totalDurationNanos = 0;
         long transactionCount = 0;
         for (Row row : rows) {
@@ -1059,7 +1054,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> rollupErrorSummaryFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) {
+            TransactionQuery query, Iterable<Row> rows) throws Exception {
         long errorCount = 0;
         long transactionCount = 0;
         for (Row row : rows) {
@@ -1084,7 +1079,7 @@ public class AggregateDao implements AggregateRepository {
         BoundStatement boundStatement = checkNotNull(readTransactionForRollupPS.get(summaryTable))
                 .get(query.rollupLevel()).bind();
         bindQuery(boundStatement, rollup.agentRollupId(), query);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         if (results.isExhausted()) {
             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
             logger.warn("no summary table records found for agentRollupId={}, query={}",
@@ -1111,7 +1106,8 @@ public class AggregateDao implements AggregateRepository {
 
     // transactionNames is passed in empty, and populated by method
     private List<ResultSetFuture> rollupTransactionSummaryFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows, List<String> transactionNames) {
+            TransactionQuery query, Iterable<Row> rows, List<String> transactionNames)
+            throws Exception {
         BoundStatement boundStatement;
         Map<String, MutableSummary> summaries = Maps.newHashMap();
         for (Row row : rows) {
@@ -1151,7 +1147,7 @@ public class AggregateDao implements AggregateRepository {
                 checkNotNull(readTransactionForRollupPS.get(errorSummaryTable))
                         .get(query.rollupLevel()).bind();
         bindQuery(boundStatement, rollup.agentRollupId(), query);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         if (results.isExhausted()) {
             return ImmutableList.of();
         }
@@ -1170,7 +1166,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> rollupTransactionErrorSummaryFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) {
+            TransactionQuery query, Iterable<Row> rows) throws Exception {
         BoundStatement boundStatement;
         Map<String, MutableErrorSummary> summaries = Maps.newHashMap();
         for (Row row : rows) {
@@ -1228,7 +1224,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> rollupOverviewFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) throws IOException {
+            TransactionQuery query, Iterable<Row> rows) throws Exception {
         double totalDurationNanos = 0;
         long transactionCount = 0;
         boolean asyncTransactions = false;
@@ -1380,7 +1376,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> rollupThroughputFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) {
+            TransactionQuery query, Iterable<Row> rows) throws Exception {
         long transactionCount = 0;
         // error_count is null for data inserted prior to glowroot central 0.9.18
         // rolling up any interval with null error_count should result in null error_count
@@ -1475,7 +1471,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> rollupServiceCallsFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) {
+            TransactionQuery query, Iterable<Row> rows) throws Exception {
         ServiceCallCollector collector =
                 new ServiceCallCollector(rollup.maxAggregateServiceCallsPerType(), 0);
         for (Row row : rows) {
@@ -1512,7 +1508,7 @@ public class AggregateDao implements AggregateRepository {
 
     private List<ResultSetFuture> rollupThreadProfileFromRows(RollupParams rollup,
             TransactionQuery query, Iterable<Row> rows, Table table)
-            throws InvalidProtocolBufferException {
+            throws Exception {
         MutableProfile profile = new MutableProfile();
         for (Row row : rows) {
             ByteBuffer bytes = checkNotNull(row.getBytes(0));
@@ -1543,7 +1539,7 @@ public class AggregateDao implements AggregateRepository {
             BoundStatement boundStatement =
                     checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
             bindQueryForRollupFromChild(boundStatement, childAgentRollup, query);
-            for (Row row : Sessions.execute(session, boundStatement)) {
+            for (Row row : session.execute(boundStatement)) {
                 rows.add(row);
             }
         }
@@ -1648,7 +1644,7 @@ public class AggregateDao implements AggregateRepository {
 
     private List<ResultSetFuture> storeTransactionAggregate(String agentRollupId,
             String transactionType, String transactionName, long captureTime, Aggregate aggregate,
-            List<Aggregate.SharedQueryText> sharedQueryTexts, int adjustedTTL) throws IOException {
+            List<Aggregate.SharedQueryText> sharedQueryTexts, int adjustedTTL) throws Exception {
 
         final int rollupLevel = 0;
 
@@ -1719,7 +1715,7 @@ public class AggregateDao implements AggregateRepository {
 
     private List<ResultSetFuture> storeTransactionSummary(String agentRollupId,
             String transactionType, String transactionName, long captureTime, Aggregate aggregate,
-            int adjustedTTL) {
+            int adjustedTTL) throws Exception {
 
         final int rollupLevel = 0;
 
@@ -1753,7 +1749,7 @@ public class AggregateDao implements AggregateRepository {
     private List<ResultSetFuture> insertQueries(List<Aggregate.QueriesByType> queriesByTypeList,
             List<Aggregate.SharedQueryText> sharedQueryTexts, int rollupLevel, String agentRollupId,
             String transactionType, @Nullable String transactionName, long captureTime,
-            int adjustedTTL) {
+            int adjustedTTL) throws Exception {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (Aggregate.QueriesByType queriesByType : queriesByTypeList) {
             for (Aggregate.Query query : queriesByType.getQueryList()) {
@@ -1841,7 +1837,7 @@ public class AggregateDao implements AggregateRepository {
     private List<ResultSetFuture> insertServiceCalls(
             List<Aggregate.ServiceCallsByType> serviceCallsByTypeList, int rollupLevel,
             String agentRollupId, String transactionType, @Nullable String transactionName,
-            long captureTime, int adjustedTTL) {
+            long captureTime, int adjustedTTL) throws Exception {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (Aggregate.ServiceCallsByType serviceCallsByType : serviceCallsByTypeList) {
             for (Aggregate.ServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
@@ -1951,7 +1947,7 @@ public class AggregateDao implements AggregateRepository {
         BoundStatement boundStatement =
                 checkNotNull(readOverallPS.get(table)).get(query.rollupLevel()).bind();
         bindQuery(boundStatement, agentRollupId, query);
-        return Sessions.execute(session, boundStatement);
+        return session.execute(boundStatement);
     }
 
     private ResultSet executeQuery(String agentRollupId, TransactionQuery query, Table table)
@@ -1964,7 +1960,7 @@ public class AggregateDao implements AggregateRepository {
                     checkNotNull(readTransactionPS.get(table)).get(query.rollupLevel()).bind();
         }
         bindQuery(boundStatement, agentRollupId, query);
-        return Sessions.execute(session, boundStatement);
+        return session.execute(boundStatement);
     }
 
     private ResultSet executeQueryForRollup(String agentRollupId, TransactionQuery query,
@@ -1978,7 +1974,7 @@ public class AggregateDao implements AggregateRepository {
                     .get(query.rollupLevel()).bind();
         }
         bindQuery(boundStatement, agentRollupId, query);
-        return Sessions.execute(session, boundStatement);
+        return session.execute(boundStatement);
     }
 
     private List<Row> executeQueryForRollupFromChild(String childAgentRollup,
@@ -1990,7 +1986,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement = checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
         }
         bindQueryForRollupFromChild(boundStatement, childAgentRollup, query);
-        return Sessions.execute(session, boundStatement).all();
+        return session.execute(boundStatement).all();
     }
 
     private void mergeProfilesInto(String agentRollupId, TransactionQuery query, Table profileTable,
@@ -2070,7 +2066,7 @@ public class AggregateDao implements AggregateRepository {
             Clock clock) throws Exception {
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
         boundStatement.setString(0, agentRollupId);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Map<Long, NeedsRollup> needsRollupMap = Maps.newLinkedHashMap();
         for (Row row : results) {
             int i = 0;
@@ -2110,7 +2106,7 @@ public class AggregateDao implements AggregateRepository {
             PreparedStatement readNeedsRollupFromChild, Session session) throws Exception {
         BoundStatement boundStatement = readNeedsRollupFromChild.bind();
         boundStatement.setString(0, agentRollupId);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = Maps.newLinkedHashMap();
         for (Row row : results) {
             int i = 0;
@@ -2153,7 +2149,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setSet(i++, keys);
             boundStatement.setInt(i++, needsRollupAdjustedTTL);
             // intentionally not async, see method-level comment
-            Sessions.execute(session, boundStatement);
+            session.execute(boundStatement);
         }
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (UUID uniqueness : uniquenessKeysForDeletion) {

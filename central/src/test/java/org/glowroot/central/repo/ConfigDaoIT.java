@@ -16,14 +16,13 @@
 package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
@@ -43,8 +42,8 @@ public class ConfigDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = cluster.newSession();
-        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
+        session = new Session(cluster.newSession());
+        session.createKeyspaceIfNotExists("glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
         clusterManager = ClusterManager.create();
 
@@ -60,7 +59,7 @@ public class ConfigDaoIT {
     }
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         session.execute("truncate agent_config");
     }
 

@@ -17,13 +17,12 @@ package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.RoleConfig;
 
@@ -40,8 +39,8 @@ public class RoleDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = cluster.newSession();
-        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
+        session = new Session(cluster.newSession());
+        session.createKeyspaceIfNotExists("glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
         KeyspaceMetadata keyspaceMetadata =
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");

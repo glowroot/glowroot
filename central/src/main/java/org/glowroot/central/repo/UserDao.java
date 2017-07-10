@@ -24,14 +24,13 @@ import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.UserConfig;
 import org.glowroot.common.repo.ConfigRepository.DuplicateUsernameException;
@@ -60,7 +59,7 @@ class UserDao {
 
         boolean createAnonymousUser = keyspaceMetadata.getTable("user") == null;
 
-        Sessions.execute(session, "create table if not exists user (username varchar, ldap boolean,"
+        session.execute("create table if not exists user (username varchar, ldap boolean,"
                 + " password_hash varchar, roles set<varchar>, primary key (username)) "
                 + WITH_LCS);
 
@@ -78,7 +77,7 @@ class UserDao {
             boundStatement.setBool(i++, false);
             boundStatement.setString(i++, "");
             boundStatement.setSet(i++, ImmutableSet.of("Administrator"));
-            Sessions.execute(session, boundStatement);
+            session.execute(boundStatement);
         }
 
         allUserConfigsCache =
@@ -121,14 +120,14 @@ class UserDao {
     void insert(UserConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         bindInsert(boundStatement, userConfig);
-        Sessions.execute(session, boundStatement);
+        session.execute(boundStatement);
         allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
     void insertIfNotExists(UserConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         bindInsert(boundStatement, userConfig);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -141,7 +140,7 @@ class UserDao {
     void delete(String username) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, username);
-        Sessions.execute(session, boundStatement);
+        session.execute(boundStatement);
         allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
@@ -166,7 +165,7 @@ class UserDao {
     private class AllUsersCacheLoader implements CacheLoader<String, List<UserConfig>> {
         @Override
         public List<UserConfig> load(String dummy) throws Exception {
-            ResultSet results = Sessions.execute(session, readPS.bind());
+            ResultSet results = session.execute(readPS.bind());
             List<UserConfig> users = Lists.newArrayList();
             for (Row row : results) {
                 users.add(buildUser(row));

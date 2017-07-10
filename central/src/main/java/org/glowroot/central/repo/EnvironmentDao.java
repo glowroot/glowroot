@@ -22,10 +22,9 @@ import javax.annotation.Nullable;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.google.protobuf.ByteString;
 
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
@@ -45,7 +44,7 @@ public class EnvironmentDao implements EnvironmentRepository {
     EnvironmentDao(Session session) throws Exception {
         this.session = session;
 
-        Sessions.execute(session, "create table if not exists environment (agent_id varchar,"
+        session.execute("create table if not exists environment (agent_id varchar,"
                 + " environment blob, primary key (agent_id)) " + WITH_LCS);
 
         insertPS = session.prepare("insert into environment (agent_id, environment) values (?, ?)");
@@ -57,14 +56,14 @@ public class EnvironmentDao implements EnvironmentRepository {
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(environment.toByteArray()));
-        Sessions.execute(session, boundStatement);
+        session.execute(boundStatement);
     }
 
     @Override
     public @Nullable Environment read(String agentId) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
-        Row row = Sessions.execute(session, boundStatement).one();
+        Row row = session.execute(boundStatement).one();
         if (row == null) {
             return null;
         }

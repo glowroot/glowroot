@@ -16,13 +16,12 @@
 package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.live.ImmutableTracePointFilter;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
@@ -54,8 +53,8 @@ public class TraceDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = cluster.newSession();
-        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
+        session = new Session(cluster.newSession());
+        session.createKeyspaceIfNotExists("glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
 
         clusterManager = ClusterManager.create();

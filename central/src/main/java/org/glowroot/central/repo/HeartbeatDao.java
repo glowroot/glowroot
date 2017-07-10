@@ -20,9 +20,8 @@ import java.util.List;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Session;
 
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -45,9 +44,9 @@ public class HeartbeatDao {
         this.agentRollupDao = agentRollupDao;
         this.clock = clock;
 
-        Sessions.createTableWithTWCS(session, "create table if not exists heartbeat"
-                + " (agent_id varchar, central_capture_time timestamp, primary key (agent_id,"
-                + " central_capture_time))", 24);
+        session.createTableWithTWCS("create table if not exists heartbeat (agent_id varchar,"
+                + " central_capture_time timestamp, primary key (agent_id, central_capture_time))",
+                24);
         insertPS = session.prepare(
                 "insert into heartbeat (agent_id, central_capture_time) values (?, ?) using ttl ?");
         existsPS = session.prepare("select central_capture_time from heartbeat where agent_id = ?"
@@ -62,7 +61,7 @@ public class HeartbeatDao {
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setTimestamp(i++, new Date(clock.currentTimeMillis()));
             boundStatement.setInt(i++, TTL);
-            Sessions.execute(session, boundStatement);
+            session.execute(boundStatement);
         }
     }
 
@@ -73,6 +72,6 @@ public class HeartbeatDao {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setTimestamp(i++, new Date(centralCaptureFrom));
         boundStatement.setTimestamp(i++, new Date(centralCaptureTo));
-        return !Sessions.execute(session, boundStatement).isExhausted();
+        return !session.execute(boundStatement).isExhausted();
     }
 }

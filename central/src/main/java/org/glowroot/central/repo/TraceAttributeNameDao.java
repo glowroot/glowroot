@@ -25,7 +25,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -35,7 +34,7 @@ import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.util.Styles;
@@ -66,7 +65,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         this.session = session;
         this.configRepository = configRepository;
 
-        Sessions.execute(session, "create table if not exists trace_attribute_name"
+        session.execute("create table if not exists trace_attribute_name"
                 + " (agent_rollup varchar, transaction_type varchar, trace_attribute_name varchar,"
                 + " primary key ((agent_rollup, transaction_type), trace_attribute_name)) "
                 + WITH_LCS);
@@ -98,7 +97,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         boundStatement.setString(i++, transactionType);
         boundStatement.setString(i++, traceAttributeName);
         boundStatement.setInt(i++, getMaxTTL());
-        ResultSetFuture future = Sessions.executeAsyncWithOnFailure(session, boundStatement,
+        ResultSetFuture future = session.executeAsyncWithOnFailure(boundStatement,
                 () -> rateLimiter.invalidate(rateLimiterKey));
         future.addListener(() -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY),
                 MoreExecutors.directExecutor());
@@ -132,7 +131,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         @Override
         public Map<String, Map<String, List<String>>> load(String key) throws Exception {
             BoundStatement boundStatement = readPS.bind();
-            ResultSet results = Sessions.execute(session, boundStatement);
+            ResultSet results = session.execute(boundStatement);
             Map<String, Map<String, List<String>>> traceAttributeNames = Maps.newHashMap();
             for (Row row : results) {
                 int i = 0;

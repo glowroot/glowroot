@@ -24,7 +24,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Sessions;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
@@ -63,7 +62,7 @@ class CentralConfigDao {
     CentralConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        Sessions.execute(session, "create table if not exists central_config (key varchar,"
+        session.execute("create table if not exists central_config (key varchar,"
                 + " value varchar, primary key (key)) " + WITH_LCS);
 
         insertIfNotExistsPS = session
@@ -83,7 +82,7 @@ class CentralConfigDao {
     void write(String key, Object config, String priorVersion) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.bind(key);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             writeIfNotExists(key, config);
@@ -100,7 +99,7 @@ class CentralConfigDao {
         boundStatement.setString(i++, newValue);
         boundStatement.setString(i++, key);
         boundStatement.setString(i++, currValue);
-        results = Sessions.execute(session, boundStatement);
+        results = session.execute(boundStatement);
         row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -121,7 +120,7 @@ class CentralConfigDao {
         int i = 0;
         boundStatement.setString(i++, key);
         boundStatement.setString(i++, initialValue);
-        ResultSet results = Sessions.execute(session, boundStatement);
+        ResultSet results = session.execute(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -142,7 +141,7 @@ class CentralConfigDao {
         public Optional<Object> load(String key) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.bind(key);
-            ResultSet results = Sessions.execute(session, boundStatement);
+            ResultSet results = session.execute(boundStatement);
             Row row = results.one();
             if (row == null) {
                 return Optional.absent();
