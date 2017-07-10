@@ -173,8 +173,17 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           chartYaxisLabel = '';
         }
       }
+      if (chartYaxisLabel !== '') {
+        // strip leading space ' '
+        chartYaxisLabel = chartYaxisLabel.substring(1);
+      }
+      var convertBytesToMB = false;
+      if (chartYaxisLabel === 'bytes') {
+        chartYaxisLabel = 'MB';
+        convertBytesToMB = true;
+      }
       chartState.plot.getAxes().yaxis.options.label = chartYaxisLabel;
-      updatePlotData(data.dataSeries, chartYaxisLabel === '' && data.dataSeries.length !== 1);
+      updatePlotData(data.dataSeries, chartYaxisLabel === '' && data.dataSeries.length !== 1, convertBytesToMB);
     }
 
     locationChanges.on($scope, function () {
@@ -262,7 +271,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       return scale;
     }
 
-    function updatePlotData(data, needScale) {
+    function updatePlotData(data, needScale, convertBytesToMB) {
       // reset gauge scales
       gaugeScales = {};
       yvalMaps = {};
@@ -282,6 +291,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           setNegativeDataToZero(dataSeries);
           if (needScale) {
             scale = getPointsScale(dataSeries.data);
+          } else if (convertBytesToMB) {
+            scale = 1 / (1024 * 1024);
           } else {
             scale = 1;
           }
@@ -305,7 +316,11 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           if (scale === undefined) {
             scale = 1; // this corresponds to 'ANY' above
           }
-          gaugeScales[dataSeries.name] = scale;
+          if (convertBytesToMB) {
+            gaugeScales[dataSeries.name] = 1;
+          } else {
+            gaugeScales[dataSeries.name] = scale;
+          }
           scalePoints(dataSeries.data, scale);
         }
       }
