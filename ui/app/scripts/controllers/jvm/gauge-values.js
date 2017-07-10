@@ -162,11 +162,19 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     }
 
     function onRefreshData(data) {
-      updatePlotData(data.dataSeries);
+      var chartYaxisLabel = '';
       var i;
       for (i = 0; i < data.dataSeries.length; i++) {
         data.dataSeries[i].shortLabel = gaugeShortDisplayMap[data.dataSeries[i].name];
+        var gaugeUnit = gaugeUnits[data.dataSeries[i].name];
+        if (i === 0) {
+          chartYaxisLabel = gaugeUnit;
+        } else if (gaugeUnit !== chartYaxisLabel) {
+          chartYaxisLabel = '';
+        }
       }
+      chartState.plot.getAxes().yaxis.options.label = chartYaxisLabel;
+      updatePlotData(data.dataSeries, chartYaxisLabel === '' && data.dataSeries.length !== 1);
     }
 
     locationChanges.on($scope, function () {
@@ -254,7 +262,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       return scale;
     }
 
-    function updatePlotData(data) {
+    function updatePlotData(data, needScale) {
       // reset gauge scales
       gaugeScales = {};
       yvalMaps = {};
@@ -272,7 +280,11 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         if (dataSeries.data.length) {
           // set negative data to zero after putting real value into yval map
           setNegativeDataToZero(dataSeries);
-          scale = getPointsScale(dataSeries.data);
+          if (needScale) {
+            scale = getPointsScale(dataSeries.data);
+          } else {
+            scale = 1;
+          }
           grouping = gaugeGrouping[dataSeries.name];
           if (groupingScale[grouping]) {
             if (scale !== 'ANY') {
