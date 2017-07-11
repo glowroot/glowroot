@@ -414,6 +414,15 @@ glowroot.controller('ReportAdhocCtrl', [
       yvalMaps[label] = map;
     }
 
+    function convertBytesToMB(points) {
+      for (var j = 0; j < points.length; j++) {
+        var point = points[j];
+        if (point) {
+          point[1] /= (1024 * 1024);
+        }
+      }
+    }
+
     function refreshData(deferred) {
       var query = angular.copy(appliedReport);
       query.fromDate = moment(appliedReport.fromDate).format('YYYYMMDD');
@@ -471,6 +480,13 @@ glowroot.controller('ReportAdhocCtrl', [
               var dataSeries = data.dataSeries[index];
               var label = dataSeries.name;
               updateYvalMap(label, dataSeries.data);
+              if (query.metric.indexOf('gauge:') === 0) {
+                var gaugeName = query.metric.substring('gauge:'.length);
+                var gaugeUnit = gaugeUnits[gaugeName];
+                if (gaugeUnit === ' bytes') {
+                  convertBytesToMB(dataSeries.data);
+                }
+              }
               var tableRow = {};
               var yvalMap = yvalMaps[label];
               angular.forEach($scope.allXvals, function (xval) {
@@ -507,7 +523,16 @@ glowroot.controller('ReportAdhocCtrl', [
                 plot.getAxes().yaxis.options.label = 'percent';
               } else if (query.metric.indexOf('gauge:') === 0) {
                 var gaugeName = query.metric.substring('gauge:'.length);
-                plot.getAxes().yaxis.options.label = gaugeUnits[gaugeName];
+                var gaugeUnit = gaugeUnits[gaugeName];
+                if (gaugeUnit !== '') {
+                  // strip leading space ' '
+                  gaugeUnit = gaugeUnit.substring(1);
+                }
+                if (gaugeUnit === 'bytes') {
+                  plot.getAxes().yaxis.options.label = 'MB';
+                } else {
+                  plot.getAxes().yaxis.options.label = gaugeUnit;
+                }
               } else {
                 plot.getAxes().yaxis.options.label = '';
               }
