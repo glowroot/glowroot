@@ -28,8 +28,7 @@
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-if="layout.central" class="alert alert-danger">
-      In order to support a cluster of glowroot central nodes with separate ping urls per node, this must be
-      configured in the glowroot-central.properties file using the property "healthchecksIo.pingUrl".
+      Use glowroot agent (with embedded database and UI, not pointing to central) to monitor glowroot central itself.
     </div>
     <div ng-form
          gt-form-autofocus-on-first-input

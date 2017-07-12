@@ -25,8 +25,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -93,7 +91,6 @@ public class CentralModule {
     private final GrpcServer grpcServer;
     private final UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService;
     private final UiModule uiModule;
-    private final @Nullable HealthchecksIoService healthchecksIoService;
 
     public static CentralModule create() throws Exception {
         return new CentralModule(new File("."), false);
@@ -113,7 +110,6 @@ public class CentralModule {
         GrpcServer grpcServer = null;
         UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService = null;
         UiModule uiModule = null;
-        HealthchecksIoService healthchecksIoService = null;
         try {
             // init logger as early as possible
             initLogging(centralDir);
@@ -234,11 +230,6 @@ public class CentralModule {
                     .numWorkerThreads(50)
                     .version(version)
                     .build();
-            String healthchecksIoPingUrl = centralConfig.healthchecksIoPingUrl();
-            if (healthchecksIoPingUrl != null) {
-                healthchecksIoService =
-                        new HealthchecksIoService(httpClient, healthchecksIoPingUrl);
-            }
             startupLogger.info("startup complete");
         } catch (Throwable t) {
             if (startupLogger == null) {
@@ -248,9 +239,6 @@ public class CentralModule {
             }
             // try to shut down cleanly, otherwise apache commons daemon (via Procrun) doesn't
             // know service failed to start up
-            if (healthchecksIoService != null) {
-                healthchecksIoService.close();
-            }
             if (uiModule != null) {
                 uiModule.close();
             }
@@ -289,7 +277,6 @@ public class CentralModule {
         this.grpcServer = grpcServer;
         this.updateAgentConfigIfNeededService = updateAgentConfigIfNeededService;
         this.uiModule = uiModule;
-        this.healthchecksIoService = healthchecksIoService;
     }
 
     CommonHandler getCommonHandler() {
@@ -301,9 +288,6 @@ public class CentralModule {
             startupLogger.info("shutting down ...");
         }
         try {
-            if (healthchecksIoService != null) {
-                healthchecksIoService.close();
-            }
             // close down external inputs first (ui and grpc)
             uiModule.close();
             // updateAgentConfigIfNeededService depends on grpc downstream, so must be shutdown
@@ -581,10 +565,6 @@ public class CentralModule {
                 }
             }
         }
-        String healthchecksIoPingUrl = props.getProperty("healthchecksIo.pingUrl");
-        if (!Strings.isNullOrEmpty(healthchecksIoPingUrl)) {
-            builder.healthchecksIoPingUrl(healthchecksIoPingUrl);
-        }
         return builder.build();
     }
 
@@ -786,8 +766,6 @@ public class CentralModule {
         String uiContextPath() {
             return "/";
         }
-
-        abstract @Nullable String healthchecksIoPingUrl();
 
         abstract Map<String, String> jgroupsProperties();
     }
