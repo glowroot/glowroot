@@ -239,7 +239,11 @@ glowroot.controller('ReportAdhocCtrl', [
       yaxis: {
         ticks: 10,
         zoomRange: false,
-        min: 0
+        min: 0,
+        labelPadding: 7,
+        tickFormatter: function (val) {
+          return val.toLocaleString(undefined);
+        }
       },
       series: {
         lines: {
