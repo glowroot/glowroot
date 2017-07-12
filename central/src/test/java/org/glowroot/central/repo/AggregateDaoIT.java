@@ -73,8 +73,8 @@ public class AggregateDaoIT {
     private static Cluster cluster;
     private static Session session;
     private static ClusterManager clusterManager;
-    private static AgentRollupDao agentRollupDao;
     private static AgentConfigDao agentConfigDao;
+    private static AgentRollupDao agentRollupDao;
     private static AggregateDao aggregateDao;
 
     @BeforeClass
@@ -88,13 +88,13 @@ public class AggregateDaoIT {
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
         clusterManager = ClusterManager.create();
-        agentRollupDao = new AgentRollupDao(session, clusterManager);
-        agentConfigDao = new AgentConfigDao(session, clusterManager);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+        agentConfigDao = new AgentConfigDao(session, clusterManager);
+        agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentRollupDao,
-                agentConfigDao, centralConfigDao, userDao, roleDao, "");
+        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,
+                agentConfigDao, agentRollupDao, userDao, roleDao, "");
         TransactionTypeDao transactionTypeDao =
                 new TransactionTypeDao(session, configRepository, clusterManager);
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
@@ -294,10 +294,10 @@ public class AggregateDaoIT {
     @Test
     public void shouldRollupFromChildren() throws Exception {
 
-        agentRollupDao.store("one", "the parent");
         agentConfigDao.store("one", "the parent", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
                 .build());
+        agentRollupDao.store("one", "the parent");
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList
@@ -471,10 +471,10 @@ public class AggregateDaoIT {
     @Test
     public void shouldRollupFromGrandChildren() throws Exception {
 
-        agentRollupDao.store("one", "the gp/the parent");
         agentConfigDao.store("one", "the gp/the parent", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
                 .build());
+        agentRollupDao.store("one", "the gp/the parent");
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList

@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.common.config.AdminGeneralConfig;
-import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
@@ -42,6 +41,7 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
@@ -75,6 +75,8 @@ public interface ConfigRepository {
             Long.getLong("glowroot.internal.rollup.2.intervalMillis", MINUTES.toMillis(30));
     long ROLLUP_3_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.3.intervalMillis", HOURS.toMillis(4));
+
+    GeneralConfig getGeneralConfig(String agentRollupId) throws Exception;
 
     TransactionConfig getTransactionConfig(String agentId) throws Exception;
 
@@ -118,9 +120,6 @@ public interface ConfigRepository {
     @Nullable
     InstrumentationConfig getInstrumentationConfig(String agentId, String version) throws Exception;
 
-    @Nullable
-    AgentRollupConfig getAgentRollupConfig(String agentRollupId) throws Exception;
-
     AdminGeneralConfig getAdminGeneralConfig();
 
     List<UserConfig> getUserConfigs() throws Exception;
@@ -159,6 +158,9 @@ public interface ConfigRepository {
     PagerDutyConfig getPagerDutyConfig() throws Exception;
 
     HealthchecksIoConfig getHealthchecksIoConfig();
+
+    void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion)
+            throws Exception;
 
     void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion)
             throws Exception;
@@ -221,9 +223,7 @@ public interface ConfigRepository {
     void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion)
             throws Exception;
 
-    void updateAgentRollupConfig(AgentRollupConfig config, String priorVersion) throws Exception;
-
-    void deleteAgentRollupConfig(String agentRollupId) throws Exception;
+    void deleteAgentRollup(String agentRollupId) throws Exception;
 
     void updateAdminGeneralConfig(AdminGeneralConfig config, String priorVersion) throws Exception;
 

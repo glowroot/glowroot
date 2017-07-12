@@ -52,12 +52,12 @@ public class GaugeValueDaoIT {
 
         clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentRollupDao = new AgentRollupDao(session, clusterManager);
         AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager);
+        agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentRollupDao,
-                agentConfigDao, centralConfigDao, userDao, roleDao, "");
+        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,
+                agentConfigDao, agentRollupDao, userDao, roleDao, "");
         gaugeValueDao =
                 new GaugeValueDao(session, agentRollupDao, configRepository, Clock.systemClock());
     }

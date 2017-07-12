@@ -17,11 +17,8 @@ package org.glowroot.ui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.AgentRollupConfig;
-import org.glowroot.common.config.ImmutableAgentRollupConfig;
 import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.ObjectMappers;
@@ -41,61 +38,31 @@ class AgentConfigJsonService {
     }
 
     @GET(path = "/backend/admin/agent-rollups", permission = "admin:view:agentRollup")
-    String getAgentRollupConfig(@BindRequest AgentRollupConfigRequest request) throws Exception {
-        Optional<String> agentRollupId = request.agentRollupId();
-        if (agentRollupId.isPresent()) {
-            return getAgentRollupConfigInternal(agentRollupId.get());
+    String getAgentRollup(@BindRequest AgentRollupRequest request) throws Exception {
+        if (request.agentRollupId().isPresent()) {
+            String agentRollupId = request.agentRollupId().get();
+            return mapper.writeValueAsString(ImmutableAgentRollupResponse.builder()
+                    .id(agentRollupId)
+                    .display(agentRollupRepository.readAgentRollupDisplay(agentRollupId))
+                    .build());
         } else {
             return mapper.writeValueAsString(agentRollupRepository.readAgentRollups());
         }
     }
 
-    @POST(path = "/backend/admin/agent-rollups/update", permission = "admin:edit:agentRollup")
-    String updateAgentRollup(@BindRequest AgentRollupConfigDto agentRollupConfigDto)
-            throws Exception {
-        configRepository.updateAgentRollupConfig(agentRollupConfigDto.convert(),
-                agentRollupConfigDto.version());
-        return getAgentRollupConfigInternal(agentRollupConfigDto.id());
-    }
-
     @POST(path = "/backend/admin/agent-rollups/remove", permission = "admin:edit:agentRollup")
-    void removeUser(@BindRequest AgentRollupConfigRequest request) throws Exception {
-        configRepository.deleteAgentRollupConfig(request.agentRollupId().get());
-    }
-
-    private String getAgentRollupConfigInternal(String agentRollupId) throws Exception {
-        AgentRollupConfig agentRollupConfig = configRepository.getAgentRollupConfig(agentRollupId);
-        if (agentRollupConfig == null) {
-            throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
-        }
-        return mapper.writeValueAsString(AgentRollupConfigDto.create(agentRollupConfig));
+    void removeAgentRollup(@BindRequest AgentRollupRequest request) throws Exception {
+        configRepository.deleteAgentRollup(request.agentRollupId().get());
     }
 
     @Value.Immutable
-    interface AgentRollupConfigRequest {
+    interface AgentRollupRequest {
         Optional<String> agentRollupId();
     }
 
     @Value.Immutable
-    abstract static class AgentRollupConfigDto {
-
-        abstract String id();
-        abstract String display();
-        abstract String version();
-
-        private AgentRollupConfig convert() {
-            return ImmutableAgentRollupConfig.builder()
-                    .id(id())
-                    .display(display())
-                    .build();
-        }
-
-        private static AgentRollupConfigDto create(AgentRollupConfig config) {
-            return ImmutableAgentRollupConfigDto.builder()
-                    .id(config.id())
-                    .display(config.display())
-                    .version(config.version())
-                    .build();
-        }
+    interface AgentRollupResponse {
+        String id();
+        String display();
     }
 }

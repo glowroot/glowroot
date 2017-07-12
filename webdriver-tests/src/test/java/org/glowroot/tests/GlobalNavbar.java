@@ -33,11 +33,9 @@ import static org.openqa.selenium.By.xpath;
 class GlobalNavbar {
 
     private final WebDriver driver;
-    private final boolean central;
 
-    GlobalNavbar(WebDriver driver, boolean central) {
+    GlobalNavbar(WebDriver driver) {
         this.driver = driver;
-        this.central = central;
     }
 
     WebElement getTransactionsLink() {
@@ -55,11 +53,7 @@ class GlobalNavbar {
     WebElement getConfigLink() {
         getNavbarLink(driver, id("gtGearsMenuToggle")).click();
         WebElement gearsMenu = Utils.withWait(driver, id("gtGearsMenu"));
-        if (central) {
-            return Utils.withWait(driver, gearsMenu, linkText("Agent configuration"));
-        } else {
-            return Utils.withWait(driver, gearsMenu, linkText("Configuration"));
-        }
+        return Utils.withWait(driver, gearsMenu, linkText("Configuration"));
     }
 
     WebElement getAdminConfigLink() {

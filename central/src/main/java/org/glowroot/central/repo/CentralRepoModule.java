@@ -31,8 +31,8 @@ public class CentralRepoModule {
 
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private final AgentRollupDao agentRollupDao;
     private final AgentConfigDao agentConfigDao;
+    private final AgentRollupDao agentRollupDao;
     private final UserDao userDao;
     private final RoleDao roleDao;
     private final ConfigRepositoryImpl configRepository;
@@ -50,12 +50,12 @@ public class CentralRepoModule {
             KeyspaceMetadata keyspaceMetadata, String cassandraSymmetricEncryptionKey, Clock clock)
             throws Exception {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentRollupDao = new AgentRollupDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
+        agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
         userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        configRepository = new ConfigRepositoryImpl(agentRollupDao, agentConfigDao,
-                centralConfigDao, userDao, roleDao, cassandraSymmetricEncryptionKey);
+        configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao,
+                agentRollupDao, userDao, roleDao, cassandraSymmetricEncryptionKey);
         transactionTypeDao = new TransactionTypeDao(session, configRepository, clusterManager);
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
         aggregateDao = new AggregateDao(session, agentRollupDao, transactionTypeDao,

@@ -59,6 +59,12 @@
   <div class="panel panel-default">
     <ul class="list-group">
       <div gt-sidebar-item
+           gt-display="General"
+           gt-url="config/general{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/general'"
+           ng-if="layout.central">
+      </div>
+      <div gt-sidebar-item
            gt-display="Transactions"
            gt-url="config/transaction{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/transaction'"

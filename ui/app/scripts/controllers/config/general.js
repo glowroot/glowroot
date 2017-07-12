@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('ConfigAdvancedCtrl', [
+glowroot.controller('ConfigGeneralCtrl', [
   '$scope',
   '$location',
   '$http',
@@ -41,7 +41,7 @@ glowroot.controller('ConfigAdvancedCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      $http.post('backend/config/advanced?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId), postData)
+      $http.post('backend/config/general?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId), postData)
           .then(function (response) {
             onNewData(response.data);
             deferred.resolve('Saved');
@@ -50,7 +50,7 @@ glowroot.controller('ConfigAdvancedCtrl', [
           });
     };
 
-    $http.get('backend/config/advanced?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
+    $http.get('backend/config/general?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
         .then(function (response) {
           onNewData(response.data);
         }, function (response) {

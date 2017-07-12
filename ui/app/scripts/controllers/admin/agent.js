@@ -49,17 +49,6 @@ glowroot.controller('AdminAgentCtrl', [
     };
     var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.save = function (deferred) {
-      var postData = angular.copy($scope.config);
-      $http.post('backend/admin/agent-rollups/update', postData)
-          .then(function (response) {
-            onNewData(response.data);
-            deferred.resolve('Saved');
-          }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
-          });
-    };
-
     $scope.displayDeleteConfirmationModal = function () {
       modals.display('#deleteConfirmationModal', true);
     };

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2016 the original author or authors.
+  Copyright 2016-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -40,31 +40,15 @@
          style="padding-top: 15px;">
       <div gt-form-group
            gt-label="Agent ID"
-           gt-model="config.id"
+           gt-model="agentRollupId"
            gt-disabled="true"
            gt-width="40em"
            class="gt-form-group-without-help-block">
-      </div>
-      <div gt-form-group
-           gt-label="Display"
-           gt-model="config.display"
-           gt-disabled="!layout.adminEdit"
-           gt-width="40em"
-           gt-placeholder="{{config.id}}">
-        <div class="help-block">
-          Display defaults to the Agent ID if not set.
-        </div>
       </div>
       <div class="form-group gt-form-buttons"
            ng-if="layout.adminEdit">
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button-group>
-            <div gt-button
-                 gt-label="Save changes"
-                 gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid"
-                 class="gt-inline-block">
-            </div>
             <button ng-click="displayDeleteConfirmationModal()"
                     class="btn btn-default gt-button-spacing">
               Delete

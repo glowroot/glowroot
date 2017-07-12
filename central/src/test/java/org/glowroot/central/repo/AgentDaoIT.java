@@ -45,7 +45,8 @@ public class AgentDaoIT {
         session.execute("use glowroot_unit_tests");
         clusterManager = ClusterManager.create();
 
-        agentRollupDao = new AgentRollupDao(session, clusterManager);
+        AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager);
+        agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
     }
 
     @AfterClass

@@ -296,6 +296,8 @@ class LayoutService {
                         // central supports alert configs and ui config on rollups
                         .view(authentication.isAgentPermitted(agentRollupId, "agent:config:view"))
                         .edit(ImmutableEditConfigPermissions.builder()
+                                .general(authentication.isAgentPermitted(agentRollupId,
+                                        "agent:config:edit:general"))
                                 .transaction(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:transaction"))
                                 .gauge(agent && authentication.isAgentPermitted(agentRollupId,
@@ -361,8 +363,7 @@ class LayoutService {
             // "*" is to check permissions for "all agents"
             Permissions permissions = getPermissions(authentication, "*", true);
             hasSomeAccess =
-                    permissions.hasSomeAccess()
-                            || authentication.isAdminPermitted("admin:view");
+                    permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
             showNavbarTransaction = permissions.transaction().hasSomeAccess();
             showNavbarError = permissions.error().hasSomeAccess();
             showNavbarJvm = permissions.jvm().hasSomeAccess();
@@ -564,6 +565,7 @@ class LayoutService {
 
     @Value.Immutable
     interface EditConfigPermissions {
+        boolean general();
         boolean transaction();
         boolean gauge();
         boolean jvm();

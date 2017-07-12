@@ -183,8 +183,7 @@ public class AgentConfigDao {
         return updatedAgentConfig;
     }
 
-    void update(String agentRollupId, AgentConfigUpdater agentConfigUpdater)
-            throws Exception {
+    void update(String agentRollupId, AgentConfigUpdater agentConfigUpdater) throws Exception {
         for (int j = 0; j < 10; j++) {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
@@ -201,7 +200,6 @@ public class AgentConfigDao {
             boundStatement.setBool(i++, true);
             boundStatement.setUUID(i++, UUIDs.random());
             boundStatement.setString(i++, agentRollupId);
-
             boundStatement.setBytes(i++, ByteBuffer.wrap(currValue.toByteArray()));
             results = session.execute(boundStatement);
             row = checkNotNull(results.one());

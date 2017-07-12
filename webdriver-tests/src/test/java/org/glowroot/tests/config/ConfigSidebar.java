@@ -31,6 +31,10 @@ public class ConfigSidebar {
         this.driver = driver;
     }
 
+    public WebElement getTransactionsLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Transactions"));
+    }
+
     public WebElement getGaugesLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Gauges"));
     }

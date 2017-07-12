@@ -98,7 +98,7 @@ glowroot.config([
           return 'jvm/gauges';
         }
       } else if ($rootScope.layout.showNavbarConfig) {
-        return 'config/transaction';
+        return $rootScope.layout.central ? 'config/general' : 'config/transaction';
       } else if ($rootScope.layout.adminView) {
         return $rootScope.layout.central ? 'admin/agent-list' : 'admin/general';
       } else if ($rootScope.layout.loggedIn && !$rootScope.layout.ldap) {
@@ -426,6 +426,11 @@ glowroot.config([
       resolve: {
         waitForLayout: waitForLayout(false)
       }
+    });
+    $stateProvider.state('config.general', {
+      url: '/general',
+      templateUrl: 'views/config/general.html',
+      controller: 'ConfigGeneralCtrl'
     });
     $stateProvider.state('config.transaction', {
       url: '/transaction',

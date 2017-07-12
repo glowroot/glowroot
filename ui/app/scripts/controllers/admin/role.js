@@ -142,6 +142,8 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.config.view = true;
       } else if (permission === 'agent:config:edit') {
         permissionBlock.config.edit._ = true;
+      } else if ($scope.layout.central && permission === 'agent:config:edit:general') {
+        permissionBlock.config.edit.general = true;
       } else if (permission === 'agent:config:edit:transaction') {
         permissionBlock.config.edit.transaction = true;
       } else if (permission === 'agent:config:edit:gauge') {
@@ -187,6 +189,9 @@ glowroot.controller('AdminRoleCtrl', [
       if (permissionsObj.config._) {
         permissionsObj.config.view = false;
         permissionsObj.config.edit._ = false;
+        if ($scope.layout.central) {
+          permissionsObj.config.edit.general = false;
+        }
         permissionsObj.config.edit.transaction = false;
         permissionsObj.config.edit.gauge = false;
         permissionsObj.config.edit.jvm = false;
@@ -201,6 +206,9 @@ glowroot.controller('AdminRoleCtrl', [
         permissionsObj.config.edit.advanced = false;
       }
       if (permissionsObj.config.edit._) {
+        if ($scope.layout.central) {
+          permissionsObj.config.edit.general = false;
+        }
         permissionsObj.config.edit.transaction = false;
         permissionsObj.config.edit.gauge = false;
         permissionsObj.config.edit.jvm = false;
@@ -232,7 +240,8 @@ glowroot.controller('AdminRoleCtrl', [
       if (!permissionsObj) {
         return false;
       }
-      return permissionsObj.config.edit._ || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
+      return permissionsObj.config.edit._ || ($scope.layout.central && permissionsObj.config.edit.general)
+          || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
           || permissionsObj.config.edit.jvm || ($scope.layout.central && permissionsObj.config.edit.syntheticMonitor)
           || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui || permissionsObj.config.edit.plugin
           || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.reweave
@@ -306,6 +315,9 @@ glowroot.controller('AdminRoleCtrl', [
       }
       if (permissionsObj.config.edit._) {
         permissions.push('agent:config:edit');
+      }
+      if ($scope.layout.central && permissionsObj.config.edit.general) {
+        permissions.push('agent:config:edit:general');
       }
       if (permissionsObj.config.edit.transaction) {
         permissions.push('agent:config:edit:transaction');

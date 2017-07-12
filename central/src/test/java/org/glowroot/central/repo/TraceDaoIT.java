@@ -60,7 +60,8 @@ public class TraceDaoIT {
         ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
         when(configRepository.getCentralStorageConfig())
                 .thenReturn(ImmutableCentralStorageConfig.builder().build());
-        traceDao = new TraceDao(session, new AgentRollupDao(session, clusterManager),
+        traceDao = new TraceDao(session,
+                new AgentRollupDao(session, mock(AgentConfigDao.class), clusterManager),
                 mock(TransactionTypeDao.class), mock(FullQueryTextDao.class),
                 mock(TraceAttributeNameDao.class), configRepository, Clock.systemClock());
     }

@@ -88,13 +88,13 @@ public class ConfigRepositoryIT {
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
         clusterManager = ClusterManager.create();
-        agentConfigDao = new AgentConfigDao(session, clusterManager);
-        AgentRollupDao agentRollupDao = new AgentRollupDao(session, clusterManager);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
+        agentConfigDao = new AgentConfigDao(session, clusterManager);
+        AgentRollupDao agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        configRepository = new ConfigRepositoryImpl(agentRollupDao, agentConfigDao,
-                centralConfigDao, userDao, roleDao, "");
+        configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao,
+                agentRollupDao, userDao, roleDao, "");
     }
 
     @AfterClass

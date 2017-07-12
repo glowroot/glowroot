@@ -43,7 +43,6 @@ import org.glowroot.agent.config.TransactionConfig;
 import org.glowroot.agent.config.UiConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.common.config.AdminGeneralConfig;
-import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
@@ -205,6 +204,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public AgentConfig.GeneralConfig getGeneralConfig(String agentRollupId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public AgentConfig.TransactionConfig getTransactionConfig(String agentId) {
         return configService.getTransactionConfig().toProto();
     }
@@ -215,7 +219,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AgentConfig.UiConfig getUiConfig(String agentId) {
+    public AgentConfig.UiConfig getUiConfig(String agentRollupId) {
         return configService.getUiConfig().toProto();
     }
 
@@ -225,7 +229,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AgentConfig.AdvancedConfig getAdvancedConfig(String agentId) {
+    public AgentConfig.AdvancedConfig getAdvancedConfig(String agentRollupId) {
         return configService.getAdvancedConfig().toProto();
     }
 
@@ -319,11 +323,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
         }
         return null;
-    }
-
-    @Override
-    public AgentRollupConfig getAgentRollupConfig(String agentRollup) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -434,6 +433,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public HealthchecksIoConfig getHealthchecksIoConfig() {
         return healthchecksIoConfig;
+    }
+
+    @Override
+    public void updateGeneralConfig(String agentId, AgentConfig.GeneralConfig protoConfig,
+            String priorVersion) throws Exception {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -743,12 +748,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateAgentRollupConfig(AgentRollupConfig agentRollupConfig, String priorVersion) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void deleteAgentRollupConfig(String agentRollup) {
+    public void deleteAgentRollup(String agentRollup) {
         throw new UnsupportedOperationException();
     }
 

@@ -76,6 +76,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.OldAlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
@@ -94,7 +95,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 35;
+    private static final int CURR_SCHEMA_VERSION = 36;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -296,6 +297,10 @@ public class SchemaUpgrade {
             updateSchemaVersion(35);
         } else if (initialSchemaVersion < 35) {
             updateSchemaVersion(35);
+        }
+        if (initialSchemaVersion < 36) {
+            populateAgentConfigGeneral();
+            updateSchemaVersion(36);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -1077,10 +1082,52 @@ public class SchemaUpgrade {
         logger.info("populating new gauge name history table - complete");
     }
 
+    private void populateAgentConfigGeneral() throws Exception {
+        if (!columnExists("agent_rollup", "display")) {
+            return;
+        }
+        ResultSet results =
+                session.execute("select agent_rollup_id, display from agent_rollup where one = 1");
+        PreparedStatement readConfigPS =
+                session.prepare("select config from agent_config where agent_rollup_id = ?");
+        PreparedStatement insertConfigPS =
+                session.prepare("insert into agent_config (agent_rollup_id, config) values (?, ?)");
+        for (Row row : results) {
+            String agentRollupId = row.getString(0);
+            String display = row.getString(1);
+            if (display == null) {
+                continue;
+            }
+            BoundStatement boundStatement = readConfigPS.bind();
+            boundStatement.setString(0, agentRollupId);
+            Row configRow = session.execute(boundStatement).one();
+            if (configRow == null) {
+                logger.warn("could not find config for agent rollup id: {}", agentRollupId);
+                continue;
+            }
+            AgentConfig agentConfig = AgentConfig.parseFrom(checkNotNull(configRow.getBytes(0)));
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
+                    .setGeneralConfig(GeneralConfig.newBuilder()
+                            .setDisplay(display))
+                    .build();
+            boundStatement = insertConfigPS.bind();
+            boundStatement.setString(0, agentRollupId);
+            boundStatement.setBytes(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
+            session.execute(boundStatement);
+        }
+        dropColumnIfExists("agent_rollup", "display");
+    }
+
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
             throws Exception {
         if (!columnExists(tableName, columnName)) {
             session.execute("alter table " + tableName + " add " + columnName + " " + cqlType);
+        }
+    }
+
+    private void dropColumnIfExists(String tableName, String columnName) throws Exception {
+        if (columnExists(tableName, columnName)) {
+            session.execute("alter table " + tableName + " drop " + columnName);
         }
     }
 

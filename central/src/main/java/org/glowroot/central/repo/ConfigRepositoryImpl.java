@@ -34,7 +34,6 @@ import com.google.common.io.BaseEncoding;
 
 import org.glowroot.central.repo.AgentConfigDao.AgentConfigUpdater;
 import org.glowroot.common.config.AdminGeneralConfig;
-import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.ConfigDefaults;
@@ -65,6 +64,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedCon
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
@@ -83,9 +83,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
-    private final AgentRollupDao agentRollupDao;
-    private final AgentConfigDao agentConfigDao;
     private final CentralConfigDao centralConfigDao;
+    private final AgentConfigDao agentConfigDao;
+    private final AgentRollupDao agentRollupDao;
     private final UserDao userDao;
     private final RoleDao roleDao;
 
@@ -95,12 +95,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Set<AgentConfigListener> agentConfigListeners = Sets.newCopyOnWriteArraySet();
 
-    ConfigRepositoryImpl(AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao,
-            CentralConfigDao centralConfigDao, UserDao userDao, RoleDao roleDao,
+    ConfigRepositoryImpl(CentralConfigDao centralConfigDao, AgentConfigDao agentConfigDao,
+            AgentRollupDao agentRollupDao, UserDao userDao, RoleDao roleDao,
             String symmetricEncryptionKey) {
-        this.agentRollupDao = agentRollupDao;
-        this.agentConfigDao = agentConfigDao;
         this.centralConfigDao = centralConfigDao;
+        this.agentConfigDao = agentConfigDao;
+        this.agentRollupDao = agentRollupDao;
         this.userDao = userDao;
         this.roleDao = roleDao;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
@@ -112,6 +112,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         centralConfigDao.addKeyType(HTTP_PROXY_KEY, ImmutableHttpProxyConfig.class);
         centralConfigDao.addKeyType(LDAP_KEY, ImmutableLdapConfig.class);
         centralConfigDao.addKeyType(PAGER_DUTY_KEY, ImmutablePagerDutyConfig.class);
+    }
+
+    @Override
+    public GeneralConfig getGeneralConfig(String agentRollupId) throws Exception {
+        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
+        if (agentConfig == null) {
+            // for some reason received data from agent, but not initial agent config
+            throw new AgentConfigNotFoundException(agentRollupId);
+        }
+        return agentConfig.getGeneralConfig();
     }
 
     @Override
@@ -286,11 +296,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentRollupConfig getAgentRollupConfig(String agentRollupId) throws Exception {
-        return agentRollupDao.readAgentRollupConfig(agentRollupId);
-    }
-
-    @Override
     public AdminGeneralConfig getAdminGeneralConfig() {
         throw new UnsupportedOperationException();
     }
@@ -409,6 +414,24 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public HealthchecksIoConfig getHealthchecksIoConfig() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion)
+            throws Exception {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
+                String existingVersion = Versions.getVersion(agentConfig.getGeneralConfig());
+                if (!priorVersion.equals(existingVersion)) {
+                    throw new OptimisticLockException();
+                }
+                return agentConfig.toBuilder()
+                        .setGeneralConfig(config)
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentId);
     }
 
     @Override
@@ -905,13 +928,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateAgentRollupConfig(AgentRollupConfig config, String priorVersion)
-            throws Exception {
-        agentRollupDao.update(config, priorVersion);
-    }
-
-    @Override
-    public void deleteAgentRollupConfig(String agentRollupId) throws Exception {
+    public void deleteAgentRollup(String agentRollupId) throws Exception {
         agentRollupDao.delete(agentRollupId);
     }
 

@@ -116,7 +116,7 @@ public abstract class WebDriverIT {
     }
 
     protected GlobalNavbar globalNavbar() {
-        return new GlobalNavbar(driver, WebDriverSetup.useCentral);
+        return new GlobalNavbar(driver);
     }
 
     protected static int getUiPort() throws Exception {

@@ -8,6 +8,9 @@ option java_package = "org.glowroot.wire.api.model";
 
 message AgentConfig {
 
+  string agent_version = 1;
+
+  GeneralConfig general_config = 16;
   TransactionConfig transaction_config = 2;
   JvmConfig jvm_config = 17;
   UiConfig ui_config = 3;
@@ -20,6 +23,11 @@ message AgentConfig {
   repeated AlertConfig alert_config = 15;
   repeated PluginConfig plugin_config = 12;
   repeated InstrumentationConfig instrumentation_config = 13;
+
+  // only stored in central
+  message GeneralConfig {
+    string display = 1;
+  }
 
   message TransactionConfig {
     OptionalInt32 slow_threshold_millis = 1; // optional used due to non-zero default value
@@ -96,7 +104,7 @@ message AgentConfig {
 
   message AlertConfig {
 
-    // condition and notification are split out into their own messages because it is convenient to
+    // condition and notification are split out into their own messages because it is convenient
     // for passing them around and storing them separately from their AlertConfig
     // (e.g. the condition is used and stored separately as unique key to track incidents
     // independent of any notifications, including any changes to the notifications)

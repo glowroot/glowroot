@@ -520,7 +520,7 @@
                      ng-model="page.permissions.config.view"
                      ng-disabled="page.permissions.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(page.permissions)">
-              View (Transactions, Gauges, Synthetic monitors, Alerts, UI, Plugins, Instrumentation, Advanced)
+              View (General, Transactions, Gauges, Synthetic monitors, Alerts, UI, Plugins, Instrumentation, Advanced)
               <span ng-if="!page.permissions.config.view && viewConfigRequired(page.permissions)"
                     style="font-style: italic;">
                 -- required for edit permission
@@ -533,6 +533,14 @@
               <input type="checkbox"
                      ng-model="page.permissions.config.edit._"
                      ng-disabled="page.permissions.config._ || !layout.adminEdit">Edit
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.config.edit.general"
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">General
             </label>
           </div>
           <div class="checkbox">
@@ -844,7 +852,7 @@
                      ng-model="permissionBlock.config.view"
                      ng-disabled="permissionBlock.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(permissionBlock)">
-              View (Transactions, Gauges, Synthetic monitors, Alerts, UI, Plugins, Instrumentation, Advanced)
+              View (General, Transactions, Gauges, Synthetic monitors, Alerts, UI, Plugins, Instrumentation, Advanced)
               <span ng-if="!permissionBlock.config.view && viewConfigRequired(permissionBlock)"
                     style="font-style: italic;">
                 -- required for edit permission
@@ -857,6 +865,14 @@
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit._"
                      ng-disabled="permissionBlock.config._ || !layout.adminEdit">Edit
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
+                   style="margin-left: 60px;">
+              <input type="checkbox"
+                     ng-model="permissionBlock.config.edit.general"
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">General
             </label>
           </div>
           <div class="checkbox">

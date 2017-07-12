@@ -166,6 +166,11 @@ glowroot.run([
       return query;
     };
 
+    $rootScope.isAgentRollup = function () {
+      // using query string instead of layout.agentRollups[agentRollupId].agent in case agentRollupId doesn't exist
+      return $location.search()['agent-rollup-id'];
+    };
+
     $rootScope.transactionTypes = function () {
       if (!$rootScope.layout) {
         return [];

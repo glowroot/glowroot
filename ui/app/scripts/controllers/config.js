@@ -58,11 +58,6 @@ glowroot.controller('ConfigCtrl', [
       return $location.path().substring(1);
     };
 
-    $scope.isAgentRollup = function () {
-      // using query string instead of layout.agentRollups[agentRollupId].agent in case agentRollupId doesn't exist
-      return $location.search()['agent-rollup-id'];
-    };
-
     function agentRollupUrl(path, agentRollup) {
       var query = $scope.agentRollupQuery(agentRollup);
       return path + queryStrings.encodeObject(query);
@@ -73,7 +68,8 @@ glowroot.controller('ConfigCtrl', [
       if (agentRollup.agent) {
         return agentRollupUrl(path, agentRollup);
       }
-      if (path === 'config/synthetic-monitor-list'
+      if (path === 'config/general'
+          || path === 'config/synthetic-monitor-list'
           || path === 'config/synthetic-monitor'
           || path === 'config/alert-list'
           || path === 'config/alert'
@@ -81,7 +77,7 @@ glowroot.controller('ConfigCtrl', [
           || path === 'config/advanced') {
         return agentRollupUrl(path, agentRollup);
       } else {
-        return agentRollupUrl('config/synthetic-monitor-list', agentRollup);
+        return agentRollupUrl('config/general', agentRollup);
       }
     };
 

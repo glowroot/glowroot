@@ -35,6 +35,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
@@ -60,6 +61,12 @@ class ConfigJsonService {
         this.agentRollupRepository = agentRollupRepository;
         this.gaugeValueRepository = gaugeValueRepository;
         this.configRepository = configRepository;
+    }
+
+    @GET(path = "/backend/config/general", permission = "agent:config:view:general")
+    String getGeneralConfig(@BindAgentRollupId String agentRollupId) throws Exception {
+        GeneralConfig config = configRepository.getGeneralConfig(agentRollupId);
+        return mapper.writeValueAsString(GeneralConfigDto.create(config));
     }
 
     @GET(path = "/backend/config/transaction", permission = "agent:config:view:transaction")
@@ -119,6 +126,18 @@ class ConfigJsonService {
         AdvancedConfig config = configRepository.getAdvancedConfig(agentRollupId);
         return mapper.writeValueAsString(
                 AdvancedConfigDto.create(config, agentRollupRepository.isAgent(agentRollupId)));
+    }
+
+    @POST(path = "/backend/config/general", permission = "agent:config:edit:general")
+    String updateGeneralConfig(@BindAgentRollupId String agentRollupId,
+            @BindRequest GeneralConfigDto configDto) throws Exception {
+        try {
+            configRepository.updateGeneralConfig(agentRollupId, configDto.convert(),
+                    configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getGeneralConfig(agentRollupId);
     }
 
     @POST(path = "/backend/config/transaction", permission = "agent:config:edit:transaction")
@@ -225,6 +244,26 @@ class ConfigJsonService {
 
     // these DTOs are only different from underlying config objects in that they contain the version
     // attribute, and that they have no default attribute values
+
+    @Value.Immutable
+    abstract static class GeneralConfigDto {
+
+        abstract String display();
+        abstract String version();
+
+        private GeneralConfig convert() {
+            return GeneralConfig.newBuilder()
+                    .setDisplay(display())
+                    .build();
+        }
+
+        private static GeneralConfigDto create(GeneralConfig config) {
+            return ImmutableGeneralConfigDto.builder()
+                    .display(config.getDisplay())
+                    .version(Versions.getVersion(config))
+                    .build();
+        }
+    }
 
     @Value.Immutable
     abstract static class TransactionConfigDto {

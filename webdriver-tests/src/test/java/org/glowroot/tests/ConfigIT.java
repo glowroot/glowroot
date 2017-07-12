@@ -45,6 +45,9 @@ public class ConfigIT extends WebDriverIT {
 
         app.open();
         globalNavbar.getConfigLink().click();
+        if (WebDriverSetup.useCentral) {
+            new ConfigSidebar(driver).getTransactionsLink().click();
+        }
 
         // when
         page.getSlowThresholdTextField().clear();
@@ -59,6 +62,9 @@ public class ConfigIT extends WebDriverIT {
         // then
         app.open();
         globalNavbar.getConfigLink().click();
+        if (WebDriverSetup.useCentral) {
+            new ConfigSidebar(driver).getTransactionsLink().click();
+        }
         assertThat(page.getSlowThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
         assertThat(page.getCaptureThreadStatsCheckBox().isSelected()).isFalse();
