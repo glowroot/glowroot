@@ -146,6 +146,8 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.config.edit.transaction = true;
       } else if (permission === 'agent:config:edit:gauge') {
         permissionBlock.config.edit.gauge = true;
+      } else if ($scope.layout.central && permission === 'agent:config:edit:syntheticMonitor') {
+        permissionBlock.config.edit.syntheticMonitor = true;
       } else if (permission === 'agent:config:edit:alert') {
         permissionBlock.config.edit.alert = true;
       } else if (permission === 'agent:config:edit:ui') {
@@ -185,6 +187,9 @@ glowroot.controller('AdminRoleCtrl', [
         permissionsObj.config.edit._ = false;
         permissionsObj.config.edit.transaction = false;
         permissionsObj.config.edit.gauge = false;
+        if ($scope.layout.central) {
+          permissionsObj.config.edit.syntheticMonitor = false;
+        }
         permissionsObj.config.edit.alert = false;
         permissionsObj.config.edit.ui = false;
         permissionsObj.config.edit.plugin = false;
@@ -195,6 +200,9 @@ glowroot.controller('AdminRoleCtrl', [
       if (permissionsObj.config.edit._) {
         permissionsObj.config.edit.transaction = false;
         permissionsObj.config.edit.gauge = false;
+        if ($scope.layout.central) {
+          permissionsObj.config.edit.syntheticMonitor = false;
+        }
         permissionsObj.config.edit.alert = false;
         permissionsObj.config.edit.ui = false;
         permissionsObj.config.edit.plugin = false;
@@ -221,6 +229,7 @@ glowroot.controller('AdminRoleCtrl', [
         return false;
       }
       return permissionsObj.config.edit._ || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
+          || ($scope.layout.central && permissionsObj.config.edit.syntheticMonitor)
           || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui || permissionsObj.config.edit.plugin
           || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.reweave
           || permissionsObj.config.edit.advanced;
@@ -299,6 +308,9 @@ glowroot.controller('AdminRoleCtrl', [
       }
       if (permissionsObj.config.edit.gauge) {
         permissions.push('agent:config:edit:gauge');
+      }
+      if ($scope.layout.central && permissionsObj.config.edit.syntheticMonitor) {
+        permissions.push('agent:config:edit:syntheticMonitor');
       }
       if (permissionsObj.config.edit.alert) {
         permissions.push('agent:config:edit:alert');
