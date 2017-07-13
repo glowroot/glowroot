@@ -124,35 +124,16 @@ public class AgentRollupDao implements AgentRollupRepository {
                 new AgentRollupConfigCacheLoader());
     }
 
-    // returns stored agent config
     public void store(String agentId, @Nullable String agentRollupId) throws Exception {
-        // insert into agent_rollup last so readEnvironment() and readAgentConfig() are more likely
-        // to return non-null
-        BoundStatement boundStatement = insertPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setBool(i++, true);
-        session.execute(boundStatement);
+        insert(agentId, agentRollupId, true);
         if (agentRollupId != null) {
             List<String> agentRollupIds = getAgentRollupIds(agentRollupId);
             for (int j = agentRollupIds.size() - 1; j >= 0; j--) {
                 String loopAgentRollupId = agentRollupIds.get(j);
                 String loopParentAgentRollupId = j == 0 ? null : agentRollupIds.get(j - 1);
-                boundStatement = insertPS.bind();
-                i = 0;
-                boundStatement.setString(i++, loopAgentRollupId);
-                boundStatement.setString(i++, loopParentAgentRollupId);
-                boundStatement.setBool(i++, false);
-                session.execute(boundStatement);
+                insert(loopAgentRollupId, loopParentAgentRollupId, false);
             }
         }
-
-        agentRollupIdCache.invalidate(agentId);
-        // currently agent rollup config cannot be changed from agent (via glowroot.properties)
-        // but this will probably change, and likely to forget to invalidate agent rollup config
-        // cache at that time, so...
-        agentRollupConfigCache.invalidate(agentId);
     }
 
     @Override
@@ -262,10 +243,9 @@ public class AgentRollupDao implements AgentRollupRepository {
         }
         boundStatement = updateDisplayPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupConfig.id());
         boundStatement.setString(i++, Strings.emptyToNull(agentRollupConfig.display()));
+        boundStatement.setString(i++, agentRollupConfig.id());
         boundStatement.setString(i++, currDisplay);
-        session.execute(boundStatement);
         results = session.execute(boundStatement);
         row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
@@ -280,6 +260,19 @@ public class AgentRollupDao implements AgentRollupRepository {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, agentRollupId);
         session.execute(boundStatement);
+    }
+
+    private void insert(String agentRollupId, @Nullable String parentAgentRollupId, boolean agent)
+            throws Exception {
+        BoundStatement boundStatement = insertPS.bind();
+        int i = 0;
+        boundStatement.setString(i++, agentRollupId);
+        boundStatement.setString(i++, parentAgentRollupId);
+        boundStatement.setBool(i++, agent);
+        session.execute(boundStatement);
+
+        agentRollupIdCache.invalidate(agentRollupId);
+        agentRollupConfigCache.invalidate(agentRollupId);
     }
 
     private AgentRollup createAgentRollup(AgentRollupRecord agentRollupRecord,
