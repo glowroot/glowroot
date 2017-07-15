@@ -64,14 +64,13 @@
         </div>
       </div>
       <div gt-form-group
-           gt-label="Display"
+           gt-label="Display name"
            gt-model="config.display"
            gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
            gt-width="40em"
            gt-required="loaded">
         <div class="help-block">
-          Display for this synthetic monitor. Must be unique across synthetic monitors for the same
-          agent{{isAgentRollup() ? ' rollup' : ''}}.
+          Display name for this synthetic monitor.
         </div>
       </div>
       <div ng-if="config.kind === 'ping'">
