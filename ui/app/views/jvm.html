@@ -19,10 +19,11 @@
       JVM
     </div>
     <div style="margin-top: -16px;" ng-hide="hideAgentRollupDropdown()">
-      <span class="gt-inline-block gt-header-menu">
+      <span class="gt-inline-block gt-header-menu"
+            style="margin: 20px 0 8px;">
         <span class="dropdown">
           <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
-            {{layout.agentRollups[agentRollupId].display || '&lt;agent&gt;'}}
+            {{layout.agentRollups[agentRollupId].display || '&lt;select&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
           <!-- margin-bottom helps when large menu that extends to the bottom of the page -->

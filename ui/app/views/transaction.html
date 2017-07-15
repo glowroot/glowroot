@@ -22,10 +22,11 @@
         {{headerDisplay}}
       </span>
       <span class="gt-inline-block gt-header-menu"
-            ng-hide="hideAgentRollupDropdown()">
+            ng-hide="hideAgentRollupDropdown()"
+            style="margin: 20px 0 8px;">
         <span class="dropdown">
           <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
-            {{layout.agentRollups[agentRollupId].display || '&lt;agent&gt;'}}
+            {{layout.agentRollups[agentRollupId].display || '&lt;select&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
           <!-- margin-bottom helps when large menu that extends to the bottom of the page -->
@@ -44,35 +45,37 @@
           </ul>
         </span>
       </span>
-      <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
-           while chrome guesses the placement of the border based on default font and then it moves slightly
-           once font is available -->
-      <span class="gt-inline-block gt-separator">
-        |
-      </span>
-      <span class="gt-inline-block"
-            ng-show="hideTransactionTypeDropdown()">
-        {{transactionType}}
-      </span>
-      <span class="gt-inline-block gt-header-menu"
-            ng-hide="hideTransactionTypeDropdown()"
-            style="margin-bottom: 6px;">
-        <span class="dropdown">
-          <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
-            {{transactionType || '&lt;transaction type&gt;'}}
-            <span class="gt-large-caret"></span>
-          </a>
-          <ul class="dropdown-menu"
-              role="menu">
-            <li ng-repeat="tt in layout.agentRollups[agentRollupId].transactionTypes"
-                ng-hide="tt === transactionType">
-              <a role="menuitem"
-                 tabindex="-1"
-                 ng-href="{{currentTabUrl()}}{{headerQueryString(layout.agentRollups[agentRollupId], tt)}}">
-                {{tt}}
-              </a>
-            </li>
-          </ul>
+      <span ng-if="!layout.central || agentRollupId">
+        <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+             while chrome guesses the placement of the border based on default font and then it moves slightly
+             once font is available -->
+        <span class="gt-inline-block gt-separator">
+          |
+        </span>
+        <span class="gt-inline-block"
+              ng-show="hideTransactionTypeDropdown()">
+          {{transactionType}}
+        </span>
+        <span class="gt-inline-block gt-header-menu"
+              ng-hide="hideTransactionTypeDropdown()"
+              style="margin: 20px 0 8px;">
+          <span class="dropdown">
+            <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
+              {{transactionType || '&lt;transaction type&gt;'}}
+              <span class="gt-large-caret"></span>
+            </a>
+            <ul class="dropdown-menu"
+                role="menu">
+              <li ng-repeat="tt in layout.agentRollups[agentRollupId].transactionTypes"
+                  ng-hide="tt === transactionType">
+                <a role="menuitem"
+                   tabindex="-1"
+                   ng-href="{{currentTabUrl()}}{{headerQueryString(layout.agentRollups[agentRollupId], tt)}}">
+                  {{tt}}
+                </a>
+              </li>
+            </ul>
+          </span>
         </span>
       </span>
     </div>
