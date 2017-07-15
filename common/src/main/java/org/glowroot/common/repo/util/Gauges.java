@@ -29,7 +29,7 @@ import org.glowroot.common.repo.ImmutableGauge;
 
 public class Gauges {
 
-    public static final String DISPLAY_PATH_SEPARATOR = " / ";
+    public static final String DISPLAY_PARTS_SEPARATOR = " / ";
 
     private static final ImmutableList<UnitPattern> unitPatterns;
 
@@ -96,15 +96,15 @@ public class Gauges {
             mbeanAttributeName = mbeanAttributeName.substring(0,
                     mbeanAttributeName.length() - "[counter]".length());
         }
-        mbeanAttributeName = mbeanAttributeName.replaceAll("\\.", DISPLAY_PATH_SEPARATOR);
-        List<String> displayPath = displayPath(mbeanObjectName);
-        displayPath.addAll(Splitter.on('.').splitToList(mbeanAttributeName));
-        String display = Joiner.on(DISPLAY_PATH_SEPARATOR).join(displayPath);
+        mbeanAttributeName = mbeanAttributeName.replaceAll("\\.", DISPLAY_PARTS_SEPARATOR);
+        List<String> displayParts = getDisplayParts(mbeanObjectName);
+        displayParts.addAll(Splitter.on('.').splitToList(mbeanAttributeName));
+        String display = Joiner.on(DISPLAY_PARTS_SEPARATOR).join(displayParts);
         String unit = unit(gaugeName);
         ImmutableGauge.Builder gauge = ImmutableGauge.builder()
                 .name(gaugeName)
                 .display(display)
-                .displayPath(displayPath)
+                .displayParts(displayParts)
                 .counter(counter)
                 .grouping(unit);
         if (unit.startsWith(GROUPING_PREFIX)) {
@@ -118,11 +118,11 @@ public class Gauges {
         }
     }
 
-    public static List<String> displayPath(String mbeanObjectName) {
+    public static List<String> getDisplayParts(String mbeanObjectName) {
         // e.g. java.lang:name=PS Eden Space,type=MemoryPool
         List<String> parts = Splitter.on(CharMatcher.anyOf(":,")).splitToList(mbeanObjectName);
-        List<String> display = Lists.newArrayList();
-        display.add(parts.get(0));
+        List<String> displayParts = Lists.newArrayList();
+        displayParts.add(parts.get(0));
         for (int i = 1; i < parts.size(); i++) {
             String part = parts.get(i).split("=")[1];
             if (part.startsWith("\"") && part.endsWith("\"")) {
@@ -130,12 +130,12 @@ public class Gauges {
             }
             if (part.contains("/")) {
                 // special case since this is also the display path separator
-                display.add("\"" + part + "\"");
+                displayParts.add("\"" + part + "\"");
             } else {
-                display.add(part);
+                displayParts.add(part);
             }
         }
-        return display;
+        return displayParts;
     }
 
     private static String unit(String gaugeName) {

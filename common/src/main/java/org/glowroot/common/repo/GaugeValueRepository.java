@@ -35,7 +35,7 @@ public interface GaugeValueRepository {
     public interface Gauge {
         String name();
         String display();
-        List<String> displayPath();
+        List<String> displayParts();
         boolean counter();
         String unit();
         String grouping();

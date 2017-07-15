@@ -396,7 +396,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       var GAUGE_PATH_SEPARATOR = ' / ';
       var splitGaugeNames = [];
       angular.forEach(gauges, function (gauge) {
-        splitGaugeNames.push(gauge.displayPath);
+        splitGaugeNames.push(gauge.displayParts);
       });
       var minRequiredForUniqueName;
       var i, j;

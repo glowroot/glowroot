@@ -56,8 +56,9 @@ class GaugeConfigJsonService {
         @Override
         public int compare(GaugeConfig left, GaugeConfig right) {
             Joiner joiner = Joiner.on('/');
-            return joiner.join(Gauges.displayPath(left.getMbeanObjectName())).compareToIgnoreCase(
-                    joiner.join(Gauges.displayPath(right.getMbeanObjectName())));
+            return joiner.join(Gauges.getDisplayParts(left.getMbeanObjectName()))
+                    .compareToIgnoreCase(
+                            joiner.join(Gauges.getDisplayParts(right.getMbeanObjectName())));
         }
     };
 
@@ -254,8 +255,8 @@ class GaugeConfigJsonService {
         }
 
         private static GaugeConfigDto create(GaugeConfig config) {
-            List<String> displayPath = Gauges.displayPath(config.getMbeanObjectName());
-            String display = Joiner.on(Gauges.DISPLAY_PATH_SEPARATOR).join(displayPath);
+            List<String> displayPath = Gauges.getDisplayParts(config.getMbeanObjectName());
+            String display = Joiner.on(Gauges.DISPLAY_PARTS_SEPARATOR).join(displayPath);
             ImmutableGaugeConfigDto.Builder builder = ImmutableGaugeConfigDto.builder()
                     .display(display)
                     .displayPath(displayPath)
