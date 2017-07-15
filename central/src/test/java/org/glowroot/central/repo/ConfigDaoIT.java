@@ -24,10 +24,6 @@ import org.junit.Test;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -90,31 +86,5 @@ public class ConfigDaoIT {
         AgentConfig readAgentConfig = agentConfigDao.read("a");
         // then
         assertThat(readAgentConfig).isEqualTo(agentConfig);
-    }
-
-    @Test
-    public void shouldRegenerateIds() {
-        // given
-        AgentConfig agentConfig = AgentConfig.newBuilder()
-                .addSyntheticMonitorConfig(SyntheticMonitorConfig.newBuilder()
-                        .setId("11"))
-                .addSyntheticMonitorConfig(SyntheticMonitorConfig.newBuilder()
-                        .setId("22"))
-                .addAlertConfig(AlertConfig.newBuilder()
-                        .setCondition(AlertCondition.newBuilder()
-                                .setSyntheticMonitorCondition(SyntheticMonitorCondition.newBuilder()
-                                        .setSyntheticMonitorId("11"))))
-                .build();
-        // when
-        AgentConfig updatedAgentConfig = AgentConfigDao.generateNewIds(agentConfig);
-        // then
-        assertThat(updatedAgentConfig.getSyntheticMonitorConfigList()).hasSize(2);
-        String syntheticMonitorId = updatedAgentConfig.getSyntheticMonitorConfig(0).getId();
-        assertThat(syntheticMonitorId).hasSize(32);
-        assertThat(updatedAgentConfig.getSyntheticMonitorConfig(1).getId()).hasSize(32);
-        assertThat(updatedAgentConfig.getAlertConfigList()).hasSize(1);
-        assertThat(updatedAgentConfig.getAlertConfig(0).getCondition()
-                .getSyntheticMonitorCondition().getSyntheticMonitorId())
-                        .isEqualTo(syntheticMonitorId);
     }
 }
