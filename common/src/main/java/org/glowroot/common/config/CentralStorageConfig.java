@@ -34,7 +34,6 @@ public abstract class CentralStorageConfig implements StorageConfig {
     // errors/messages page depends on this for calculating error rate when using the filter
     @Override
     @Value.Default
-    @SuppressWarnings("immutables")
     public ImmutableList<Integer> rollupExpirationHours() {
         return DEFAULT_ROLLUP_EXPIRATION_HOURS;
     }

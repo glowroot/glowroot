@@ -712,7 +712,6 @@ public class CentralModule {
     abstract static class CentralConfiguration {
 
         @Value.Default
-        @SuppressWarnings("immutables")
         List<String> cassandraContactPoint() {
             return ImmutableList.of("127.0.0.1");
         }

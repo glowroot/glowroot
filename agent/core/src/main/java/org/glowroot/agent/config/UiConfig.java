@@ -30,7 +30,6 @@ public abstract class UiConfig {
     }
 
     @Value.Default
-    @SuppressWarnings("immutables")
     public ImmutableList<Double> defaultDisplayedPercentiles() {
         return ImmutableList.of(ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_1,
                 ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_2,

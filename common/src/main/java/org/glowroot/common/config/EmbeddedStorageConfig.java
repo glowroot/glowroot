@@ -37,7 +37,6 @@ public abstract class EmbeddedStorageConfig implements StorageConfig {
     // errors/messages page depends on this for calculating error rate when using the filter
     @Override
     @Value.Default
-    @SuppressWarnings("immutables")
     public ImmutableList<Integer> rollupExpirationHours() {
         return DEFAULT_ROLLUP_EXPIRATION_HOURS;
     }
@@ -57,7 +56,6 @@ public abstract class EmbeddedStorageConfig implements StorageConfig {
     }
 
     @Value.Default
-    @SuppressWarnings("immutables")
     public ImmutableList<Integer> rollupCappedDatabaseSizesMb() {
         return DEFAULT_CAPPED_DATABASE_SIZES_MB;
     }
