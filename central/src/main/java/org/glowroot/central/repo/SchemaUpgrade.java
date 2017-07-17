@@ -36,6 +36,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -83,7 +84,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 29;
+    private static final int CURR_SCHEMA_VERSION = 30;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -247,6 +248,11 @@ public class SchemaUpgrade {
             updateSmtpConfig();
             sortOfFixWebConfig();
             updateSchemaVersion(29);
+        }
+        // 0.9.22 to 0.9.23
+        if (initialSchemaVersion < 30) {
+            addDefaultGaugeNameToUiConfigs();
+            updateSchemaVersion(30);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -933,6 +939,36 @@ public class SchemaUpgrade {
         BoundStatement boundStatement = preparedStatement.bind();
         boundStatement.setString(0, updatedWebConfigText);
         session.execute(boundStatement);
+    }
+
+    private void addDefaultGaugeNameToUiConfigs() throws Exception {
+        PreparedStatement readPS =
+                session.prepare("select agent_rollup_id, config from agent_config");
+        PreparedStatement insertPS = session.prepare("insert into agent_config (agent_rollup_id,"
+                + " config, config_update, config_update_token) values (?, ?, ?, ?)");
+        BoundStatement boundStatement = readPS.bind();
+        ResultSet results = session.execute(boundStatement);
+        for (Row row : results) {
+            String agentRollupId = row.getString(0);
+            AgentConfig oldAgentConfig;
+            try {
+                oldAgentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(1)));
+            } catch (InvalidProtocolBufferException e) {
+                logger.error(e.getMessage(), e);
+                continue;
+            }
+            AgentConfig agentConfig = oldAgentConfig.toBuilder()
+                    .setUiConfig(oldAgentConfig.getUiConfig().toBuilder()
+                            .addDefaultGaugeName("java.lang:type=Memory:HeapMemoryUsage.used"))
+                    .build();
+            boundStatement = insertPS.bind();
+            int i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
+            boundStatement.setBool(i++, true);
+            boundStatement.setUUID(i++, UUIDs.random());
+            session.execute(boundStatement);
+        }
     }
 
     // fix bad upgrade that inserted 'smtp' config row into 'web' config row

@@ -56,6 +56,29 @@
             14 milliseconds from the true 99.9<sup>th</sup> percentile value.
           </div>
         </div>
+        <div class="form-group">
+          <label class="col-lg-4 control-label"
+                 for="defaultGaugeNames">
+            Default gauges
+          </label>
+          <div class="col-lg-8">
+            <select multiple
+                    ng-model="config.defaultGaugeNames"
+                    ng-disabled="!agentPermissions.config.edit.ui"
+                    id="defaultGaugeNames"
+                    class="form-control"
+                    style="width: auto; height: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
+              <option ng-repeat="gauge in allGauges"
+                      ng-value="gauge.name"
+                      ng-disabled="gauge.disabled">
+                {{gauge.display}}
+              </option>
+            </select>
+            <div class="help-block">
+              The default gauges displayed on the JVM gauges page.
+            </div>
+          </div>
+        </div>
         <div class="form-group gt-form-buttons"
              ng-if="agentPermissions.config.edit.ui">
           <div class="col-lg-offset-4 col-lg-8">

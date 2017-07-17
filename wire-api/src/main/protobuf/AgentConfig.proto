@@ -31,6 +31,7 @@ message AgentConfig {
   message UiConfig {
     string default_displayed_transaction_type = 1;
     repeated double default_displayed_percentile = 2;
+    repeated string default_gauge_name = 3;
   }
 
   message UserRecordingConfig {

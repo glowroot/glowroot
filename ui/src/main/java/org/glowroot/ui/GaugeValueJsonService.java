@@ -104,8 +104,13 @@ class GaugeValueJsonService {
     @GET(path = "/backend/jvm/all-gauges", permission = "agent:jvm:gauges")
     String getAllGaugeNames(@BindAgentRollupId String agentRollupId) throws Exception {
         List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollupId);
-        ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
-        return mapper.writeValueAsString(sortedGauges);
+        List<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
+        List<String> defaultGaugeNames =
+                configRepository.getUiConfig(agentRollupId).getDefaultGaugeNameList();
+        return mapper.writeValueAsString(ImmutableAllGaugeResponse.builder()
+                .addAllAllGauges(sortedGauges)
+                .addAllDefaultGaugeNames(defaultGaugeNames)
+                .build());
     }
 
     private List<GaugeValue> getGaugeValues(String agentRollupId, long from, long to,
@@ -234,6 +239,12 @@ class GaugeValueJsonService {
         long to();
         // singular because this is used in query string
         ImmutableList<String> gaugeName();
+    }
+
+    @Value.Immutable
+    interface AllGaugeResponse {
+        List<Gauge> allGauges();
+        List<String> defaultGaugeNames();
     }
 
     static class GaugeOrdering extends Ordering<Gauge> {

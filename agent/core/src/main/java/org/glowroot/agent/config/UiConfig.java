@@ -36,18 +36,24 @@ public abstract class UiConfig {
                 ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_3);
     }
 
+    @Value.Default
+    public ImmutableList<String> defaultGaugeNames() {
+        return ImmutableList.of("java.lang:type=Memory:HeapMemoryUsage.used");
+    }
+
     public AgentConfig.UiConfig toProto() {
         return AgentConfig.UiConfig.newBuilder()
                 .setDefaultDisplayedTransactionType(defaultDisplayedTransactionType())
                 .addAllDefaultDisplayedPercentile(defaultDisplayedPercentiles())
+                .addAllDefaultGaugeName(defaultGaugeNames())
                 .build();
     }
 
     public static UiConfig create(AgentConfig.UiConfig config) {
         return ImmutableUiConfig.builder()
                 .defaultDisplayedTransactionType(config.getDefaultDisplayedTransactionType())
-                .defaultDisplayedPercentiles(
-                        ImmutableList.copyOf(config.getDefaultDisplayedPercentileList()))
+                .defaultDisplayedPercentiles(config.getDefaultDisplayedPercentileList())
+                .addAllDefaultGaugeNames(config.getDefaultGaugeNameList())
                 .build();
     }
 }

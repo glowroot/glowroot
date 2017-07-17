@@ -29,8 +29,11 @@ import org.immutables.value.Value;
 import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
+import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
+import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
@@ -48,11 +51,13 @@ class ConfigJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final AgentRollupRepository agentRollupRepository;
+    private final GaugeValueRepository gaugeValueRepository;
     private final ConfigRepository configRepository;
 
     ConfigJsonService(AgentRollupRepository agentRollupRepository,
-            ConfigRepository configRepository) {
+            GaugeValueRepository gaugeValueRepository, ConfigRepository configRepository) {
         this.agentRollupRepository = agentRollupRepository;
+        this.gaugeValueRepository = gaugeValueRepository;
         this.configRepository = configRepository;
     }
 
@@ -66,7 +71,12 @@ class ConfigJsonService {
     @GET(path = "/backend/config/ui", permission = "agent:config:view:ui")
     String getUiConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         UiConfig config = configRepository.getUiConfig(agentRollupId);
-        return mapper.writeValueAsString(UiConfigDto.create(config));
+        List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollupId);
+        ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
+        return mapper.writeValueAsString(ImmutableUiConfigResponse.builder()
+                .config(UiConfigDto.create(config))
+                .addAllAllGauges(sortedGauges)
+                .build());
     }
 
     @GET(path = "/backend/config/plugins", permission = "agent:config:view:plugin")
@@ -286,10 +296,10 @@ class ConfigJsonService {
         abstract String name();
         abstract PropertyType type();
         abstract @Nullable Object value();
-        abstract @Nullable Object defaultValue(); // only used in response
-        abstract @Nullable String label(); // only used in response
-        abstract @Nullable String checkboxLabel(); // only used in response
-        abstract @Nullable String description(); // only used in response
+        abstract @Nullable Object defaultValue();
+        abstract @Nullable String label();
+        abstract @Nullable String checkboxLabel();
+        abstract @Nullable String description();
 
         private PluginProperty convert() {
             return PluginProperty.newBuilder()
@@ -437,10 +447,17 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
+    interface UiConfigResponse {
+        ImmutableUiConfigDto config();
+        List<Gauge> allGauges();
+    }
+
+    @Value.Immutable
     abstract static class UiConfigDto {
 
         abstract String defaultDisplayedTransactionType();
-        abstract ImmutableList<Double> defaultDisplayedPercentiles();
+        abstract List<Double> defaultDisplayedPercentiles();
+        abstract List<String> defaultGaugeNames();
         abstract String version();
 
         private UiConfig convert() throws Exception {
@@ -448,14 +465,16 @@ class ConfigJsonService {
                     .setDefaultDisplayedTransactionType(defaultDisplayedTransactionType())
                     .addAllDefaultDisplayedPercentile(
                             Ordering.natural().immutableSortedCopy(defaultDisplayedPercentiles()))
+                    .addAllDefaultGaugeName(defaultGaugeNames())
                     .build();
         }
 
-        private static UiConfigDto create(UiConfig config) {
+        private static ImmutableUiConfigDto create(UiConfig config) {
             return ImmutableUiConfigDto.builder()
                     .defaultDisplayedTransactionType(config.getDefaultDisplayedTransactionType())
                     .defaultDisplayedPercentiles(Ordering.natural()
                             .immutableSortedCopy(config.getDefaultDisplayedPercentileList()))
+                    .defaultGaugeNames(config.getDefaultGaugeNameList())
                     .version(Versions.getVersion(config))
                     .build();
         }

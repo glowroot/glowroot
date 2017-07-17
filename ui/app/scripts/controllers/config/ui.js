@@ -54,9 +54,23 @@ glowroot.controller('ConfigUiCtrl', [
 
     function onNewData(data) {
       $scope.loaded = true;
-      $scope.config = data;
-      $scope.originalConfig = angular.copy(data);
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
       $scope.page = {};
+      $scope.allGauges = data.allGauges;
+      var allGaugeNames = [];
+      angular.forEach(data.allGauges, function (gauge) {
+        allGaugeNames.push(gauge.name);
+      });
+      angular.forEach(data.config.defaultGaugeNames, function (defaultGaugeName) {
+        if (allGaugeNames.indexOf(defaultGaugeName) === -1) {
+          $scope.allGauges.push({
+            name: defaultGaugeName,
+            display: defaultGaugeName + ' (not available)',
+            disabled: true
+          });
+        }
+      });
 
       if ($scope.config.defaultDisplayedPercentiles) {
         $scope.page.defaultDisplayedPercentiles = $scope.config.defaultDisplayedPercentiles.join(', ');

@@ -42,7 +42,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     // initialize page binding object
     $scope.page = {};
 
-    var DEFAULT_GAUGES = ['java.lang:type=Memory:HeapMemoryUsage.used'];
+    var defaultGaugeNames = [];
 
     var chartState = charts.createState();
 
@@ -124,7 +124,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
         query.last = $scope.range.last;
       }
-      if (angular.equals($scope.gaugeNames, DEFAULT_GAUGES)) {
+      if (angular.equals($scope.gaugeNames, defaultGaugeNames)) {
         delete query['gauge-name'];
       } else {
         query['gauge-name'] = $scope.gaugeNames;
@@ -201,9 +201,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       location.gaugeNames = $location.search()['gauge-name'];
       if (!location.gaugeNames) {
         location.gaugeNames = [];
-        angular.forEach(DEFAULT_GAUGES, function (defaultGauge) {
-          if (allGaugeNames.indexOf(defaultGauge) !== -1) {
-            location.gaugeNames.push(defaultGauge);
+        angular.forEach(defaultGaugeNames, function (defaultGaugeName) {
+          if (allGaugeNames.indexOf(defaultGaugeName) !== -1) {
+            location.gaugeNames.push(defaultGaugeName);
           }
         });
       }
@@ -224,13 +224,14 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       $http.get('backend/jvm/all-gauges?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
           .then(function (response) {
             $scope.loaded = true;
-            $scope.allGauges = response.data;
-            createShortDataSeriesNames(response.data);
+            $scope.allGauges = response.data.allGauges;
+            defaultGaugeNames = response.data.defaultGaugeNames;
+            createShortDataSeriesNames(response.data.allGauges);
             allGaugeNames = [];
             gaugeShortDisplayMap = {};
             gaugeUnits = {};
             gaugeGrouping = {};
-            angular.forEach(response.data, function (gauge) {
+            angular.forEach(response.data.allGauges, function (gauge) {
               allGaugeNames.push(gauge.name);
               gaugeShortDisplayMap[gauge.name] = gauge.shortDisplay;
               if (gauge.unit) {
@@ -245,9 +246,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
               }
             });
             if (!$scope.gaugeNames.length) {
-              angular.forEach(DEFAULT_GAUGES, function (defaultGauge) {
-                if (allGaugeNames.indexOf(defaultGauge) !== -1) {
-                  $scope.gaugeNames.push(defaultGauge);
+              angular.forEach(defaultGaugeNames, function (defaultGaugeName) {
+                if (allGaugeNames.indexOf(defaultGaugeName) !== -1) {
+                  $scope.gaugeNames.push(defaultGaugeName);
                 }
               });
             }
