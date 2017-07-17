@@ -124,8 +124,8 @@
         </div>
       </td>
       <td ng-if="sortAttribute !== 'bytes' || sortAsc">{{item.className}}</td>
-      <td class="gt-heap-histogram-other-column">{{item.bytes}}</td>
-      <td class="gt-heap-histogram-other-column">{{item.count}}</td>
+      <td class="gt-heap-histogram-other-column">{{item.bytes | number}}</td>
+      <td class="gt-heap-histogram-other-column">{{item.count | number}}</td>
     </tr>
     <tr ng-show="limitApplied">
       <td>... <em>display limit applied</em></td>
@@ -144,11 +144,11 @@
       <td style="border-top: none; padding-top: 0;"></td>
       <td class="gt-heap-histogram-other-column"
           style="border-top: none; padding-top: 0;">
-        {{item.bytes}}
+        {{item.bytes | number}}
       </td>
       <td class="gt-heap-histogram-other-column"
           style="border-top: none; padding-top: 0;">
-        {{item.count}}
+        {{item.count | number}}
       </td>
     </tr>
     <tr ng-show="limitApplied">
