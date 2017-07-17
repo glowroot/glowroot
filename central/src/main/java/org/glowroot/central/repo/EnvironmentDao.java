@@ -22,7 +22,6 @@ import javax.annotation.Nullable;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
-import com.google.protobuf.ByteString;
 
 import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.EnvironmentRepository;
@@ -67,6 +66,6 @@ public class EnvironmentDao implements EnvironmentRepository {
         if (row == null) {
             return null;
         }
-        return Environment.parseFrom(ByteString.copyFrom(checkNotNull(row.getBytes(0))));
+        return Environment.parseFrom(checkNotNull(row.getBytes(0)));
     }
 }

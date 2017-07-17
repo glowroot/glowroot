@@ -233,7 +233,7 @@ public class AgentConfigDao {
         ByteBuffer bytes = checkNotNull(row.getBytes(0));
         UUID configUpdateToken = checkNotNull(row.getUUID(1));
         return ImmutableAgentConfigUpdate.builder()
-                .config(AgentConfig.parseFrom(ByteString.copyFrom(bytes)))
+                .config(AgentConfig.parseFrom(bytes))
                 .configUpdateToken(configUpdateToken)
                 .build();
     }
@@ -265,7 +265,7 @@ public class AgentConfigDao {
                 return Optional.absent();
             }
             ByteBuffer bytes = checkNotNull(row.getBytes(0));
-            return Optional.of(AgentConfig.parseFrom(ByteString.copyFrom(bytes)));
+            return Optional.of(AgentConfig.parseFrom(bytes));
         }
     }
 

@@ -48,7 +48,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -701,8 +700,7 @@ public class SchemaUpgrade {
                 boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
             } else {
                 try {
-                    AgentConfig agentConfig = AgentConfig
-                            .parseFrom(ByteString.copyFrom(checkNotNull(row.getBytes(0))));
+                    AgentConfig agentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(0)));
                     AdvancedConfig advancedConfig = agentConfig.getAdvancedConfig();
                     AgentConfig rollupAgentConfig = AgentConfig.newBuilder()
                             .setUiConfig(agentConfig.getUiConfig())
@@ -854,8 +852,7 @@ public class SchemaUpgrade {
             String agentRollupId = row.getString(0);
             AgentConfig oldAgentConfig;
             try {
-                oldAgentConfig =
-                        AgentConfig.parseFrom(ByteString.copyFrom(checkNotNull(row.getBytes(1))));
+                oldAgentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(1)));
             } catch (InvalidProtocolBufferException e) {
                 logger.error(e.getMessage(), e);
                 continue;

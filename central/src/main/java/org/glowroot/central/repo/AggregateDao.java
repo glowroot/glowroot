@@ -47,7 +47,6 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.AbstractMessage;
-import com.google.protobuf.ByteString;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -638,8 +637,7 @@ public class AggregateDao implements AggregateRepository {
             double totalDurationNanos = row.getDouble(i++);
             long transactionCount = row.getLong(i++);
             ByteBuffer bytes = checkNotNull(row.getBytes(i++));
-            Aggregate.Histogram durationNanosHistogram =
-                    Aggregate.Histogram.parseFrom(ByteString.copyFrom(bytes));
+            Aggregate.Histogram durationNanosHistogram = Aggregate.Histogram.parseFrom(bytes);
             percentileAggregates.add(ImmutablePercentileAggregate.builder()
                     .captureTime(captureTime)
                     .totalDurationNanos(totalDurationNanos)
@@ -1329,7 +1327,7 @@ public class AggregateDao implements AggregateRepository {
             totalDurationNanos += row.getDouble(i++);
             transactionCount += row.getLong(i++);
             ByteBuffer bytes = checkNotNull(row.getBytes(i++));
-            durationNanosHistogram.merge(Aggregate.Histogram.parseFrom(ByteString.copyFrom(bytes)));
+            durationNanosHistogram.merge(Aggregate.Histogram.parseFrom(bytes));
         }
         BoundStatement boundStatement;
         if (query.transactionName() == null) {
@@ -1512,7 +1510,7 @@ public class AggregateDao implements AggregateRepository {
         MutableProfile profile = new MutableProfile();
         for (Row row : rows) {
             ByteBuffer bytes = checkNotNull(row.getBytes(0));
-            profile.merge(Profile.parseFrom(ByteString.copyFrom(bytes)));
+            profile.merge(Profile.parseFrom(bytes));
         }
         BoundStatement boundStatement;
         if (query.transactionName() == null) {
@@ -1997,7 +1995,7 @@ public class AggregateDao implements AggregateRepository {
             captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(0)).getTime());
             ByteBuffer bytes = checkNotNull(row.getBytes(1));
             // TODO optimize this byte copying
-            Profile profile = Profile.parseFrom(ByteString.copyFrom(bytes));
+            Profile profile = Profile.parseFrom(bytes);
             collector.mergeProfile(profile);
             collector.updateLastCaptureTime(captureTime);
         }
@@ -2434,7 +2432,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private static ByteBuffer toByteBuffer(AbstractMessage message) {
-        return ByteBuffer.wrap(message.toByteString().toByteArray());
+        return ByteBuffer.wrap(message.toByteArray());
     }
 
     @Value.Immutable

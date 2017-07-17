@@ -41,7 +41,6 @@ import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
-import com.google.protobuf.ByteString;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Messages;
@@ -806,8 +805,7 @@ public class TraceDao implements TraceRepository {
         if (row == null) {
             return null;
         }
-        ByteBuffer bytes = checkNotNull(row.getBytes(0));
-        return Profile.parseFrom(ByteString.copyFrom(bytes));
+        return Profile.parseFrom(checkNotNull(row.getBytes(0)));
     }
 
     @Override
@@ -822,8 +820,7 @@ public class TraceDao implements TraceRepository {
         if (row == null) {
             return null;
         }
-        ByteBuffer bytes = checkNotNull(row.getBytes(0));
-        return Profile.parseFrom(ByteString.copyFrom(bytes));
+        return Profile.parseFrom(checkNotNull(row.getBytes(0)));
     }
 
     private void checkValidAgentIdForRequest(String agentRollupId, String agentId, String traceId)
@@ -851,8 +848,7 @@ public class TraceDao implements TraceRepository {
         if (row == null) {
             return null;
         }
-        ByteBuffer bytes = checkNotNull(row.getBytes(0));
-        return Trace.Header.parseFrom(ByteString.copyFrom(bytes));
+        return Trace.Header.parseFrom(checkNotNull(row.getBytes(0)));
     }
 
     private List<Trace.Entry> readEntriesInternal(String agentId, String traceId) throws Exception {
@@ -896,7 +892,7 @@ public class TraceDao implements TraceRepository {
             }
             ByteBuffer errorBytes = row.getBytes(i++);
             if (errorBytes != null) {
-                entry.setError(Trace.Error.parseFrom(ByteString.copyFrom(errorBytes)));
+                entry.setError(Trace.Error.parseFrom(errorBytes));
             }
             entries.add(entry.build());
         }
