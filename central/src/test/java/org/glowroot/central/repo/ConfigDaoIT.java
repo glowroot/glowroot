@@ -63,7 +63,6 @@ public class ConfigDaoIT {
     public void shouldStoreAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.newBuilder()
-                .setAgentVersion("123")
                 .build();
         agentConfigDao.store("a", null, agentConfig);
         // when
@@ -76,11 +75,9 @@ public class ConfigDaoIT {
     public void shouldNotOverwriteExistingAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.newBuilder()
-                .setAgentVersion("123")
                 .build();
         agentConfigDao.store("a", null, agentConfig);
         agentConfigDao.store("a", null, AgentConfig.newBuilder()
-                .setAgentVersion("456")
                 .build());
         // when
         AgentConfig readAgentConfig = agentConfigDao.read("a");
