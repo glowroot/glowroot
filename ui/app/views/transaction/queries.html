@@ -115,7 +115,9 @@
           {{query.timePerExecution | gtMillis}}
         </td>
         <td class="gt-query-rows-column">
-          {{query.rowsPerExecution | gtCount}}
+          <span ng-if="query.rowsPerExecution !== -1">
+            {{query.rowsPerExecution | gtCount}}
+          </span>
         </td>
       </tr>
       </tbody>
@@ -172,7 +174,7 @@
       </div>
       <div ng-if="queryError"
            class="gt-red">
-          An error occurred retrieving the query
+        An error occurred retrieving the query
       </div>
       <!-- display: inline-block is so that true width can be calculated and modal shrunk to fit if possible -->
       <!-- not using ng-show/hide here since need it to be visible for size calculation -->
