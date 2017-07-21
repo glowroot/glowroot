@@ -47,7 +47,7 @@ public class WebSphereAppStartupAspect {
         public static TraceEntry onBefore(OptionalThreadContext context,
                 @BindReceiver WebApp webApp) {
             String path = webApp.getContextPath();
-            return CatalinaAppStartupAspect.onBeforeCommon(context, path, timerName);
+            return ContainerStartup.onBeforeCommon(context, path, timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
