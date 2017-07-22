@@ -142,7 +142,7 @@
                 <configuration>
                   <artifactSet>
                     <includes>
-                      <include>org.glowroot.plugins:jdbc-plugin</include>
+                      <include>org.glowroot:glowroot-agent-jdbc-plugin</include>
                     </includes>
                   </artifactSet>
                   <relocations>

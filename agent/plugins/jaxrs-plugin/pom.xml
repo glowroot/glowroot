@@ -87,6 +87,7 @@
       <artifactId>javax.servlet-api</artifactId>
       <!-- Tomcat 7 (above) uses Servlet API 3.0 -->
       <version>3.0.1</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.containers</groupId>
