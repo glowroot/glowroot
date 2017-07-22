@@ -39,8 +39,9 @@ public class WebSphereAppStartupAspect {
     }
 
     @Pointcut(className = "com.ibm.ws.webcontainer.webapp.WebApp",
-            methodName = "commonInitializationFinally", methodParameterTypes = {"java.util.List"},
-            nestingGroup = "servlet-startup", timerName = "startup")
+            methodName = "commonInitializationFinally|commonInitializationFinish",
+            methodParameterTypes = {"java.util.List"}, nestingGroup = "servlet-startup",
+            timerName = "startup")
     public static class StartAdvice {
         private static final TimerName timerName = Agent.getTimerName(StartAdvice.class);
         @OnBefore
