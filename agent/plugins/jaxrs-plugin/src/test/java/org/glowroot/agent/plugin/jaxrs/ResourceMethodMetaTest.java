@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 package org.glowroot.agent.plugin.jaxrs;
-
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
 
 import org.junit.Test;
 
@@ -41,7 +38,4 @@ public class ResourceMethodMetaTest {
         assertThat(ResourceMethodMeta.combine("/abc", "")).isEqualTo("/abc");
         assertThat(ResourceMethodMeta.combine("", "/xyz")).isEqualTo("/xyz");
     }
-
-    public void methodContainingSuspended(
-            @SuppressWarnings("unused") @Suspended AsyncResponse response) {}
 }
