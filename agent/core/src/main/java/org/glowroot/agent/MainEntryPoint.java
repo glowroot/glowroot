@@ -18,6 +18,7 @@ package org.glowroot.agent;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
@@ -53,6 +54,7 @@ import org.glowroot.agent.init.AgentDirsLocking.AgentDirsLockedException;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
+import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
@@ -96,6 +98,12 @@ public class MainEntryPoint {
             return;
         }
         try {
+            if (AppServerDetection.isIbmJvm() && JavaVersion.isJava6()) {
+                ClassFileTransformer transformer = new IbmJava6HackClassFileTransformer();
+                instrumentation.addTransformer(transformer);
+                Class.forName("com.google.protobuf.UnsafeUtil");
+                instrumentation.removeTransformer(transformer);
+            }
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
             start(directories, properties, instrumentation);

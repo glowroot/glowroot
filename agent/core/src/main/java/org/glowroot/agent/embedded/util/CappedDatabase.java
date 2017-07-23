@@ -43,9 +43,13 @@ import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
+import com.ning.compress.lzf.util.ChunkDecoderFactory;
+import com.ning.compress.lzf.util.ChunkEncoderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.util.AppServerDetection;
+import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.SizeLimitBypassingParser;
 
@@ -123,7 +127,7 @@ public class CappedDatabase {
             NonClosingCountingOutputStream countingStreamAfterCompression =
                     new NonClosingCountingOutputStream(out);
             CountingOutputStream countingStreamBeforeCompression =
-                    new CountingOutputStream(new LZFOutputStream(countingStreamAfterCompression));
+                    new CountingOutputStream(newLZFOutputStream(countingStreamAfterCompression));
             copier.copyTo(countingStreamBeforeCompression);
             countingStreamBeforeCompression.close();
             long endTick = ticker.read();
@@ -160,7 +164,7 @@ public class CappedDatabase {
         // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
         // lots of small reads from the underlying RandomAccessFile
         final int bufferSize = 32768;
-        InputStream input = new LZFInputStream(
+        InputStream input = newLZFInputStream(
                 new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize));
         try {
             return parser.parseFrom(input);
@@ -196,7 +200,7 @@ public class CappedDatabase {
         // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
         // lots of small reads from the underlying RandomAccessFile
         final int bufferSize = 32768;
-        InputStream input = new LZFInputStream(
+        InputStream input = newLZFInputStream(
                 new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize));
         SizeLimitBypassingParser<T> sizeLimitBypassingParser =
                 new SizeLimitBypassingParser<T>(parser);
@@ -255,6 +259,22 @@ public class CappedDatabase {
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
+    private static LZFOutputStream newLZFOutputStream(OutputStream outputStream) {
+        if (AppServerDetection.isIbmJvm() && JavaVersion.isJava6()) {
+            return new LZFOutputStream(ChunkEncoderFactory.safeInstance(), outputStream);
+        } else {
+            return new LZFOutputStream(outputStream);
+        }
+    }
+
+    private static LZFInputStream newLZFInputStream(InputStream inputStream) throws IOException {
+        if (AppServerDetection.isIbmJvm() && JavaVersion.isJava6()) {
+            return new LZFInputStream(ChunkDecoderFactory.safeInstance(), inputStream);
+        } else {
+            return new LZFInputStream(inputStream);
+        }
+    }
+
     @OnlyUsedByTests
     private class CappedBlockCharSource extends CharSource {
 
@@ -269,7 +289,7 @@ public class CappedDatabase {
             // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
             // lots of small reads from the underlying RandomAccessFile
             final int bufferSize = 32768;
-            return new InputStreamReader(new LZFInputStream(
+            return new InputStreamReader(newLZFInputStream(
                     new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize)),
                     Charsets.UTF_8);
         }
