@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:jaxws="http://cxf.apache.org/jaxws"
+  xsi:schemaLocation=" http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd">
+
+  <jaxws:endpoint id="helloService" address="/hello"
+    implementor="org.glowroot.agent.plugin.jaxws.WebServiceIT$HelloService">
+  </jaxws:endpoint>
+  <jaxws:endpoint id="rootService" address="/"
+    implementor="org.glowroot.agent.plugin.jaxws.WebServiceIT$RootService">
+  </jaxws:endpoint>
+</beans>

@@ -51,6 +51,7 @@
     <module>agent/plugins/http-client-plugin</module>
     <module>agent/plugins/java-http-server-plugin</module>
     <module>agent/plugins/jaxrs-plugin</module>
+    <module>agent/plugins/jaxws-plugin</module>
     <module>agent/plugins/jdbc-plugin</module>
     <module>agent/plugins/jms-plugin</module>
     <module>agent/plugins/jsf-plugin</module>

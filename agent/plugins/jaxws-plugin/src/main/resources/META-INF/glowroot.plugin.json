@@ -1,0 +1,16 @@
+{
+  "name": "JAX-WS Plugin",
+  "id": "jaxws",
+  "properties": [
+    {
+      "name": "useAltTransactionNaming",
+      "type": "boolean",
+      "label": "Alternate transaction naming",
+      "checkboxLabel": "Use alternate transaction naming",
+      "description": "Set transaction name to the service's className#methodName instead of using the service's URL mapping"
+    }
+  ],
+  "aspects": [
+    "org.glowroot.agent.plugin.jaxws.WebServiceAspect"
+  ]
+}

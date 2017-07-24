@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
+    <version>0.9.23-SNAPSHOT</version>
+    <relativePath>../../..</relativePath>
+  </parent>
+
+  <artifactId>glowroot-agent-jaxws-plugin</artifactId>
+
+  <name>Glowroot Agent JAX-WS Plugin</name>
+  <description>Glowroot Agent JAX-WS Plugin</description>
+
+  <properties>
+    <!-- instrumented libraries -->
+    <cxf.version>3.1.12</cxf.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-plugin-api</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <!-- cannot set to optional, all annotation classes must be available on IBM Java 1.6 SR8 and
+        earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-it-harness</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.ning</groupId>
+      <artifactId>async-http-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-jasper</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-logging-juli</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed because logback classic 1.1.10+ contains
+        META-INF/services/javax.servlet.ServletContainerInitializer which causes issues when running
+        tests with embedded tomcat inside JavaagentContainer because logback is loaded in the
+        bootstrap class loader (see JavaagentContainer.java) and so
+        LogbackServletContainerInitializer is loaded in the bootstrap class loader which then
+        looks for ServletContainerInitializer in the bootstrap class loader, but it is not, and
+        adding tomcat-embed-core (which has ServletContainerInitializer) to the bootstrap class
+        loader causes NullPointerException in org.apache.catalina.startup.ContextConfig
+
+        to get around this problem, javax.servlet-api artifact is included, and put in the bootstrap
+        class loader (see JavaagentContainer.java) so that logback's ServletContainerInitializer
+        can load in the the bootstrap class loader successfully
+      -->
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <!-- Tomcat 7 (above) uses Servlet API 3.0 -->
+      <version>3.0.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.cxf</groupId>
+      <artifactId>cxf-rt-frontend-jaxws</artifactId>
+      <version>${cxf.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.cxf</groupId>
+      <artifactId>cxf-rt-transports-http</artifactId>
+      <version>${cxf.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>4.1.9.RELEASE</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- servlet plugin is included to capture transactions -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-servlet-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>5.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <!-- this is just so eclipse will use Java 7 for this module, since Java 7 is needed for
+            running the tests against the latest version of cxf -->
+          <artifactId>maven-compiler-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>default-testCompile</id>
+              <configuration>
+                <source>1.7</source>
+                <target>1.7</target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>shade</id>
+      <activation>
+        <property>
+          <name>!glowroot.shade.skip</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-shade-plugin</artifactId>
+            <configuration>
+              <dependencyReducedPomLocation>
+                ${project.build.directory}/dependency-reduced-pom.xml
+              </dependencyReducedPomLocation>
+              <createSourcesJar>true</createSourcesJar>
+              <shadeSourcesContent>true</shadeSourcesContent>
+            </configuration>
+            <executions>
+              <execution>
+                <id>default</id>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+                <configuration>
+                  <relocations>
+                    <relocation>
+                      <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier
+                        due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+                      <pattern>javax.annotation</pattern>
+                      <shadedPattern>org.glowroot.agent.shaded.javax.annotation</shadedPattern>
+                    </relocation>
+                  </relocations>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>force-java6</id>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>default-testCompile</id>
+                  <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
+</project>
