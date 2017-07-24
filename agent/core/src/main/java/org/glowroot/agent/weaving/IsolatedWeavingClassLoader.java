@@ -55,6 +55,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     // bridge classes can be either interfaces or base classes
     private final ImmutableList<Class<?>> bridgeClasses;
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
+    private final Map<String, Package> packages = Maps.newConcurrentMap();
 
     private final Map<String, byte[]> manualClasses = Maps.newConcurrentMap();
 
@@ -139,12 +140,18 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return weaveAndDefineClass(name, bytes, codeSource);
     }
 
+    @Override
+    protected @Nullable Package getPackage(String name) {
+        return packages.get(name);
+    }
+
     public Class<?> weaveAndDefineClass(String name, byte[] bytes,
             @Nullable CodeSource codeSource) {
         byte[] wovenBytes = weaveClass(name, bytes);
         String packageName = Reflection.getPackageName(name);
-        if (getPackage(packageName) == null) {
-            definePackage(packageName, null, null, null, null, null, null, null);
+        if (!packages.containsKey(packageName)) {
+            Package pkg = definePackage(packageName, null, null, null, null, null, null, null);
+            packages.put(packageName, pkg);
         }
         if (codeSource == null) {
             return super.defineClass(name, wovenBytes, 0, wovenBytes.length);
