@@ -57,7 +57,6 @@ public class JavaLoggingAspect {
       @Nullable
       String getLoggerName();
 
-      @Shim("java.lang.Throwable getThrown()")
       @Nullable
       Throwable getThrown();
   }
