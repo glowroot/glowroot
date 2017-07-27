@@ -386,4 +386,13 @@ public class ServletAspect {
             GetSessionAdvice.onReturn(session, context);
         }
     }
+
+    @Pointcut(className = "javax.servlet.Servlet", methodName = "init",
+            methodParameterTypes = {"javax.servlet.ServletConfig"})
+    public static class ServiceInitAdvice {
+        @OnBefore
+        public static void onBefore() {
+            ContainerStartup.initPlatformMBeanServer();
+        }
+    }
 }

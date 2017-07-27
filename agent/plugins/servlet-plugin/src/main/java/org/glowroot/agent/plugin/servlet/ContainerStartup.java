@@ -35,15 +35,7 @@ public class ContainerStartup {
 
     static TraceEntry onBeforeCommon(OptionalThreadContext context, @Nullable String path,
             TimerName timerName) {
-        // make sure the platform mbean server gets created so that it can then be retrieved by
-        // LazyPlatformMBeanServer which may be waiting for it to be created (the current
-        // thread context class loader should have access to the platform mbean server that is set
-        // via the javax.management.builder.initial system property)
-        try {
-            ManagementFactory.getPlatformMBeanServer();
-        } catch (Throwable t) {
-            logger.error("could not create platform mbean server: {}", t.getMessage(), t);
-        }
+        initPlatformMBeanServer();
         String transactionName;
         if (path == null || path.isEmpty()) {
             // root context path is empty "", but makes more sense to display "/"
@@ -55,5 +47,17 @@ public class ContainerStartup {
                 MessageSupplier.create(transactionName), timerName);
         context.setTransactionSlowThreshold(0, MILLISECONDS, Priority.CORE_PLUGIN);
         return traceEntry;
+    }
+
+    static void initPlatformMBeanServer() {
+        // make sure the platform mbean server gets created so that it can then be retrieved by
+        // LazyPlatformMBeanServer which may be waiting for it to be created (the current
+        // thread context class loader should have access to the platform mbean server that is set
+        // via the javax.management.builder.initial system property)
+        try {
+            ManagementFactory.getPlatformMBeanServer();
+        } catch (Throwable t) {
+            logger.error("could not create platform mbean server: {}", t.getMessage(), t);
+        }
     }
 }
