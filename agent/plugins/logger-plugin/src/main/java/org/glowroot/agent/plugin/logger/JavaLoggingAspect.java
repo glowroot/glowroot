@@ -74,7 +74,7 @@ public class JavaLoggingAspect {
             }
             final String loggerName = LoggerPlugin.getAbbreviatedLoggerName(loggingEvent.getLoggerName());
             final TraceEntry traceEntry = context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
-                    level.getName(), loggerName, formattedMessage), timerName);
+                    level.getName().toLowerCase(), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
 
