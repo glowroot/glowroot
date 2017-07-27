@@ -36,8 +36,9 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <!-- don't need this dependency at runtime since only annotations -->
-      <optional>true</optional>
+      <!-- cannot set to optional, all annotation classes must be available on IBM Java 1.6 SR8 and
+        earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -170,6 +171,46 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>shade</id>
+      <activation>
+        <property>
+          <name>!glowroot.shade.skip</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-shade-plugin</artifactId>
+            <configuration>
+              <dependencyReducedPomLocation>
+                ${project.build.directory}/dependency-reduced-pom.xml
+              </dependencyReducedPomLocation>
+              <createSourcesJar>true</createSourcesJar>
+              <shadeSourcesContent>true</shadeSourcesContent>
+            </configuration>
+            <executions>
+              <execution>
+                <id>default</id>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+                <configuration>
+                  <relocations>
+                    <relocation>
+                      <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier
+                        due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+                      <pattern>javax.annotation</pattern>
+                      <shadedPattern>org.glowroot.agent.shaded.javax.annotation</shadedPattern>
+                    </relocation>
+                  </relocations>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <profile>
       <id>async-http-client-2.x</id>
       <properties>

@@ -262,6 +262,13 @@
       <version>1.4.0</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>com.google.errorprone</groupId>
+      <artifactId>error_prone_annotations</artifactId>
+      <version>2.0.21</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
