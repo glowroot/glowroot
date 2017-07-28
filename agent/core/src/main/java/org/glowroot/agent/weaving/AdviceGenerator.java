@@ -387,14 +387,6 @@ class AdviceGenerator {
         MethodVisitor mv =
                 cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore", desc.toString(), null, null);
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/OnBefore;");
-        if (config.isTransaction()) {
-            mv.visitParameterAnnotation(0,
-                    "Lorg/glowroot/agent/plugin/api/weaving/BindOptionalThreadContext;", true)
-                    .visitEnd();
-        } else {
-            mv.visitParameterAnnotation(0,
-                    "Lorg/glowroot/agent/plugin/api/weaving/BindThreadContext;", true).visitEnd();
-        }
         if (methodMetaInternalName != null) {
             mv.visitParameterAnnotation(1, "Lorg/glowroot/agent/plugin/api/weaving/BindReceiver;",
                     true).visitEnd();

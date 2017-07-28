@@ -16,6 +16,7 @@
 package org.glowroot.agent.util;
 
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
 
@@ -24,7 +25,6 @@ import javax.annotation.concurrent.GuardedBy;
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
 import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
@@ -57,15 +57,11 @@ public class LazyPlatformMBeanServer {
 
     private static final Logger logger = LoggerFactory.getLogger(LazyPlatformMBeanServer.class);
 
-    // log startup messages using logger name "org.glowroot"
-    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
-
     @GuardedBy("initListeners")
     private final List<InitListener> initListeners = Lists.newArrayList();
 
     private final boolean waitForContainerToCreatePlatformMBeanServer;
     private final boolean needsManualPatternMatching;
-    private final boolean websphere;
 
     private final List<ObjectNamePair> toBeRegistered = Lists.newCopyOnWriteArrayList();
     private final List<ObjectName> toBeUnregistered = Lists.newCopyOnWriteArrayList();
@@ -86,12 +82,11 @@ public class LazyPlatformMBeanServer {
     private LazyPlatformMBeanServer() {
         String command = AppServerDetection.getCommand();
         boolean oldJBoss = AppServerDetection.isOldJBoss(command);
-        boolean websphere = AppServerDetection.isWebSphere(command);
         waitForContainerToCreatePlatformMBeanServer = AppServerDetection.isJBossModules(command)
                 || oldJBoss || AppServerDetection.isGlassfish(command)
-                || AppServerDetection.isWebLogic(command) || websphere;
+                || AppServerDetection.isWebLogic(command)
+                || AppServerDetection.isWebSphere(command);
         needsManualPatternMatching = oldJBoss;
-        this.websphere = websphere;
     }
 
     public void lazyRegisterMBean(Object object, String name) {
@@ -199,20 +194,7 @@ public class LazyPlatformMBeanServer {
             if (waitForContainerToCreatePlatformMBeanServer) {
                 waitForContainerToCreatePlatformMBeanServer(Stopwatch.createUnstarted());
             }
-            try {
-                platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-            } catch (Exception e) {
-                // e.g. on old jboss: JMRuntimeException: Failed to load MBeanServerBuilder class
-                // org.jboss.mx.server.MBeanServerBuilderImpl
-                logger.debug(e.getMessage(), e);
-                List<MBeanServer> mbeanServers = MBeanServerFactory.findMBeanServer(null);
-                if (mbeanServers.isEmpty()) {
-                    throw e;
-                }
-                platformMBeanServer = mbeanServers.get(0);
-                startupLogger.info("could not load platform mbean server, using {}",
-                        platformMBeanServer.getClass().getName());
-            }
+            platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
             for (InitListener initListener : initListeners) {
                 try {
                     initListener.postInit(platformMBeanServer);
@@ -228,46 +210,20 @@ public class LazyPlatformMBeanServer {
         }
     }
 
-    private void waitForContainerToCreatePlatformMBeanServer(Stopwatch stopwatch)
-            throws InterruptedException {
+    private void waitForContainerToCreatePlatformMBeanServer(Stopwatch stopwatch) throws Exception {
+        String platformMBeanServerFieldName =
+                AppServerDetection.isIbmJvm() ? "platformServer" : "platformMBeanServer";
+        Field platformMBeanServerField =
+                ManagementFactory.class.getDeclaredField(platformMBeanServerFieldName);
+        platformMBeanServerField.setAccessible(true);
         stopwatch.start();
-        while (stopwatch.elapsed(SECONDS) < 60 && !isPlatformMBeanServerCreated(false)) {
+        while (stopwatch.elapsed(SECONDS) < 60) {
+            if (platformMBeanServerField.get(null) != null) {
+                return;
+            }
             Thread.sleep(100);
         }
-        if (!isPlatformMBeanServerCreated(true)) {
-            logger.error("platform mbean server was never created by container");
-        }
-    }
-
-    private boolean isPlatformMBeanServerCreated(boolean logError) {
-        List<MBeanServer> mbeanServers = MBeanServerFactory.findMBeanServer(null);
-        if (!websphere) {
-            return !mbeanServers.isEmpty();
-        }
-        for (MBeanServer mbeanServer : mbeanServers) {
-            if (isWebSpherePlatformMbeanServerAndReady(mbeanServer, logError)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean isWebSpherePlatformMbeanServerAndReady(MBeanServer mbeanServer,
-            boolean logError) {
-        Class<?> mbeanServerClass = mbeanServer.getClass();
-        if (!mbeanServerClass.getName().equals("com.ibm.ws.management.PlatformMBeanServer")) {
-            return false;
-        }
-        try {
-            // ready when getAdminService() returns non-null
-            return mbeanServerClass.getMethod("getAdminService").invoke(mbeanServer) != null;
-        } catch (Exception e) {
-            logger.debug(e.getMessage(), e);
-            if (logError) {
-                logger.error(e.getMessage(), e);
-            }
-            return false;
-        }
+        logger.error("platform mbean server was never created by container");
     }
 
     public interface InitListener {

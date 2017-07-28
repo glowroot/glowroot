@@ -220,7 +220,7 @@
                      ng-model="page.permissions.config.view"
                      ng-disabled="page.permissions.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(page.permissions)">
-              View (Transactions, Gauges, UI, Plugins, Instrumentation, Advanced)
+              View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
               <span ng-if="!page.permissions.config.view && viewConfigRequired(page.permissions)"
                     style="font-style: italic;">
                 -- required for edit permission

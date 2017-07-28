@@ -316,11 +316,14 @@ class ClasspathCache {
                 return ImmutableList.of();
             }
         }
-        // special case for jboss/wildfly
+        // special case for jboss/wildfly class loader
         try {
             return Collections.list(loader.getResources("/"));
-        } catch (IOException e) {
-            logger.warn(e.getMessage(), e);
+        } catch (Exception e) {
+            // some problematic class loaders (e.g. drools) can throw unchecked exception above
+            //
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
             return ImmutableList.of();
         }
     }

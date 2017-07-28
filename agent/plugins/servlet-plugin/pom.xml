@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.9.22</version>
+    <version>0.9.23-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -23,8 +23,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!-- guava library is shaded below so that the plugin can use the guava library that is
-        already shaded and embedded inside glowroot-agent -->
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <scope>provided</scope>
@@ -33,14 +31,16 @@
       <groupId>${checker.qual.group.id}</groupId>
       <artifactId>${checker.qual.artifact.id}</artifactId>
       <version>${checker.qual.version}</version>
-      <!-- don't need this dependency at runtime since only annotations -->
-      <optional>true</optional>
+      <!-- cannot set to optional, all annotation classes must be available on IBM Java 1.6 SR8 and
+        earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <!-- don't need this dependency at runtime since only annotations -->
-      <optional>true</optional>
+      <!-- cannot set to optional, all annotation classes must be available on IBM Java 1.6 SR8 and
+        earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -96,6 +96,7 @@
       <artifactId>javax.servlet-api</artifactId>
       <!-- Tomcat 7 (above) uses Servlet API 3.0 -->
       <version>3.0.1</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -165,23 +166,6 @@
 
   <profiles>
     <profile>
-      <id>java6or7</id>
-      <activation>
-        <jdk>[1.6,1.8)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <!-- this is needed when building with Java 6 or 7 -->
-              <argLine>-XX:MaxPermSize=128m</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
       <id>shade</id>
       <activation>
         <property>
@@ -208,7 +192,7 @@
                 <configuration>
                   <artifactSet>
                     <includes>
-                      <include>org.glowroot.plugins:servlet-plugin</include>
+                      <include>org.glowroot:glowroot-agent-servlet-plugin</include>
                     </includes>
                   </artifactSet>
                   <relocations>
@@ -216,10 +200,39 @@
                       <pattern>com.google.common</pattern>
                       <shadedPattern>org.glowroot.agent.shaded.google.common</shadedPattern>
                     </relocation>
+                    <relocation>
+                      <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier
+                        due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+                      <pattern>org.checkerframework</pattern>
+                      <shadedPattern>org.glowroot.agent.shaded.checkerframework</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier
+                        due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+                      <pattern>javax.annotation</pattern>
+                      <shadedPattern>org.glowroot.agent.shaded.javax.annotation</shadedPattern>
+                    </relocation>
                   </relocations>
                 </configuration>
               </execution>
             </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>java6or7</id>
+      <activation>
+        <jdk>[1.6,1.8)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <!-- this is needed when building with Java 6 or 7 -->
+              <argLine>-XX:MaxPermSize=128m</argLine>
+            </configuration>
           </plugin>
         </plugins>
       </build>

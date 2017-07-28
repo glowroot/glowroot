@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.9.22</version>
+    <version>0.9.23-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
@@ -30,14 +30,14 @@
       <groupId>${checker.qual.group.id}</groupId>
       <artifactId>${checker.qual.artifact.id}</artifactId>
       <version>${checker.qual.version}</version>
-      <!-- don't need this dependency at runtime since only annotations -->
-      <optional>true</optional>
+      <!-- cannot set to optional, all annotation classes must be available on IBM Java 1.6 SR8 and
+        earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <!-- don't need this dependency at runtime since only annotations -->
-      <optional>true</optional>
+      <!-- cannot set to optional, all annotation classes must be available on IBM Java 1.6 SR8 and
+        earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
     </dependency>
     <dependency>
       <groupId>junit</groupId>

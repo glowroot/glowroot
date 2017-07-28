@@ -39,15 +39,16 @@ public class WebSphereAppStartupAspect {
     }
 
     @Pointcut(className = "com.ibm.ws.webcontainer.webapp.WebApp",
-            methodName = "commonInitializationFinally", methodParameterTypes = {"java.util.List"},
-            nestingGroup = "servlet-startup", timerName = "startup")
+            methodName = "commonInitializationFinally|commonInitializationFinish",
+            methodParameterTypes = {"java.util.List"}, nestingGroup = "servlet-startup",
+            timerName = "startup")
     public static class StartAdvice {
         private static final TimerName timerName = Agent.getTimerName(StartAdvice.class);
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
                 @BindReceiver WebApp webApp) {
             String path = webApp.getContextPath();
-            return CatalinaAppStartupAspect.onBeforeCommon(context, path, timerName);
+            return ContainerStartup.onBeforeCommon(context, path, timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
