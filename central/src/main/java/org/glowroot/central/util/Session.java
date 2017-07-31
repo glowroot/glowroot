@@ -36,19 +36,20 @@ import static java.util.concurrent.TimeUnit.DAYS;
 
 public class Session {
 
+    public static final int MAX_CONCURRENT_QUERIES = 4096;
+
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
 
     private final com.datastax.driver.core.Session session;
 
-    // limit 4000 concurrent async queries overall (just under driver setting maxQueueSize 4096)
-    private final Semaphore overallSemaphore = new Semaphore(4000, true);
+    private final Semaphore overallSemaphore = new Semaphore(MAX_CONCURRENT_QUERIES);
 
-    // limit 800 concurrent async queries per thread (mainly so rollup thread doesn't hog all 4000)
+    // limit concurrent async queries per thread (mainly so rollup thread doesn't hog all)
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Semaphore> perThreadSemaphores = new ThreadLocal<Semaphore>() {
         @Override
         protected Semaphore initialValue() {
-            return new Semaphore(800, true);
+            return new Semaphore(MAX_CONCURRENT_QUERIES / 8);
         }
     };
 

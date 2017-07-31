@@ -648,7 +648,8 @@ public class CentralModule {
                         .setConsistencyLevel(centralConfig.cassandraConsistencyLevel()))
                 // central runs lots of parallel async queries and is very spiky since all
                 // aggregates come in right after each minute marker
-                .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096))
+                .withPoolingOptions(
+                        new PoolingOptions().setMaxQueueSize(Session.MAX_CONCURRENT_QUERIES))
                 .withTimestampGenerator(defaultTimestampGenerator);
         String cassandraUsername = centralConfig.cassandraUsername();
         if (!cassandraUsername.isEmpty()) {
