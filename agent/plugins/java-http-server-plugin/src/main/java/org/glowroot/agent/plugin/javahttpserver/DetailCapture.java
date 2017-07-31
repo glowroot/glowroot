@@ -33,13 +33,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-// shallow copies are necessary because request may not be thread safe, which may affect ability
-// to see detail from active traces
-//
-// shallow copies are also necessary because servlet container may clear out the objects after the
-// request is complete (e.g. tomcat does this) in order to reuse them, in which case this detail
-// would need to be captured synchronously at end of request anyways (although then it could be
-// captured only if trace met threshold for storage...)
 class DetailCapture {
 
     private DetailCapture() {}
