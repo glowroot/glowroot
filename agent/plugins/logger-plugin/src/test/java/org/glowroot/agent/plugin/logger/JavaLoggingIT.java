@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Iterator;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
@@ -190,6 +191,38 @@ public class JavaLoggingIT {
                 .isEqualTo("log severe: o.g.a.p.l.JavaLoggingIT$ShouldLogWithNullThrowable - efg_");
 
         assertThat(entry.getError().getMessage()).isEqualTo("efg_");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
+    public void testLogWithLogRecord() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
+                "traceErrorOnErrorWithoutThrowable", true);
+
+        // when
+        Trace trace = container.execute(ShouldLogWithLogRecord.class);
+
+        // then
+        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg__");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("log info: null - cde__");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("log warning: o.g.a.p.l.JavaLoggingIT$ShouldLogWithLogRecord - def__");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("log severe: null - efg__");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -436,7 +469,7 @@ public class JavaLoggingIT {
             try {
                 logger.log(null, "abc__");
             } catch (NullPointerException e) {
-                // re-throw if it does not originate from log4j
+                // re-throw if it does not originate from jul
                 if (!e.getStackTrace()[0].getClassName().startsWith("java.util.logging.")) {
                     throw e;
                 }
@@ -464,7 +497,7 @@ public class JavaLoggingIT {
             try {
                 logger.log(null, "abc___", new IllegalStateException("123_"));
             } catch (NullPointerException e) {
-                // re-throw if it does not originate from log4j
+                // re-throw if it does not originate from jul
                 if (!e.getStackTrace()[0].getClassName().startsWith("java.util.logging.")) {
                     throw e;
                 }
@@ -536,6 +569,41 @@ public class JavaLoggingIT {
             logger.log(Level.INFO, "log.message.key1", new Object[] { 56, 67 });
             logger.log(Level.WARNING, "log.message.key2", new Object[] { 67, 78 });
             logger.log(Level.SEVERE, "log.message.key1", new Object[] { 78, 89 });
+        }
+    }
+
+    public static class ShouldLogWithLogRecord implements AppUnderTest, TransactionMarker {
+        private static final Logger logger = Logger.getLogger(ShouldLogWithLogRecord.class.getName());
+        @Override
+        public void executeApp() {
+            transactionMarker();
+        }
+        @Override
+        public void transactionMarker() {
+            LogRecord lr;
+            try {
+                lr = new LogRecord(null, "abc__");
+            } catch (NullPointerException e) {
+                // re-throw if it does not originate from jul
+                if (!e.getStackTrace()[0].getClassName().startsWith("java.util.logging.")) {
+                    throw e;
+                }
+            }
+            lr = new LogRecord(Level.FINEST, "vwx__");
+            logger.log(lr);
+            lr = new LogRecord(Level.FINER, "wxy__");
+            logger.log(lr);
+            lr = new LogRecord(Level.FINE, "xyz__");
+            logger.log(lr);
+            lr = new LogRecord(Level.CONFIG, "bcd__");
+            logger.log(lr);
+            lr = new LogRecord(Level.INFO, "cde__");
+            logger.log(lr);
+            lr = new LogRecord(Level.WARNING, "def__");
+            lr.setLoggerName(logger.getName()); // test logger name
+            logger.log(lr);
+            lr = new LogRecord(Level.SEVERE, "efg__");
+            logger.log(lr);
         }
     }
 
