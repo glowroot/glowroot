@@ -69,6 +69,7 @@ class DetailCapture {
         if (headerNames == null) {
             return ImmutableMap.of();
         }
+        final ImmutableList<Pattern> maskPatterns = JavaHttpServerPluginProperties.maskRequestHeaders();
         final Map<String, Object> requestHeaders = Maps.newHashMap();
         for (final String name : headerNames) {
             if (name == null) {
@@ -77,6 +78,10 @@ class DetailCapture {
             // converted to lower case for case-insensitive matching (patterns are lower case)
             final String keyLowerCase = name.toLowerCase(Locale.ENGLISH);
             if (!matchesOneOf(keyLowerCase, capturePatterns)) {
+                continue;
+            }
+            if (matchesOneOf(keyLowerCase, maskPatterns)) {
+                requestHeaders.put(name, "****");
                 continue;
             }
             final List<String> values = headers.get(name);
@@ -113,7 +118,7 @@ class DetailCapture {
 
     private static @Nullable String getRemoteHost(@Nullable InetSocketAddress remoteAddress) {
         if (remoteAddress != null) {
-            return remoteAddress.getHostString();
+            return remoteAddress.getHostName();
         } else {
             return null;
         }

@@ -30,6 +30,7 @@ import com.google.common.collect.Lists;
 class JavaHttpServerPluginProperties {
 
     private static final String CAPTURE_REQUEST_HEADER_PROPERTY_NAME = "captureRequestHeaders";
+    private static final String MASK_REQUEST_HEADER_PROPERTY_NAME = "maskRequestHeaders";
     private static final String CAPTURE_REQUEST_REMOTE_ADDR_PROPERTY_NAME =
             "captureRequestRemoteAddr";
     private static final String CAPTURE_REQUEST_REMOTE_HOST_PROPERTY_NAME =
@@ -41,12 +42,12 @@ class JavaHttpServerPluginProperties {
     private static final Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
 
     private static ImmutableList<Pattern> captureRequestHeaders = ImmutableList.of();
+    private static ImmutableList<Pattern> maskRequestHeaders = ImmutableList.of();
 
     private static boolean captureRequestRemoteAddr;
     private static boolean captureRequestRemoteHost;
 
     private static ImmutableList<Pattern> captureResponseHeaders = ImmutableList.of();
-    private static boolean captureResponseHeadersNonEmpty;
 
     static {
         configService.registerConfigListener(new ServletPluginConfigListener());
@@ -56,6 +57,10 @@ class JavaHttpServerPluginProperties {
 
     static ImmutableList<Pattern> captureRequestHeaders() {
         return captureRequestHeaders;
+    }
+
+    static ImmutableList<Pattern> maskRequestHeaders() {
+        return maskRequestHeaders;
     }
 
     static boolean captureRequestRemoteAddr() {
@@ -70,10 +75,6 @@ class JavaHttpServerPluginProperties {
         return captureResponseHeaders;
     }
 
-    static boolean captureResponseHeadersNonEmpty() {
-        return captureResponseHeadersNonEmpty;
-    }
-
     private static class ServletPluginConfigListener implements ConfigListener {
 
         @Override
@@ -83,12 +84,12 @@ class JavaHttpServerPluginProperties {
 
         private static void recalculateProperties() {
             captureRequestHeaders = buildPatternList(CAPTURE_REQUEST_HEADER_PROPERTY_NAME);
+            maskRequestHeaders = buildPatternList(MASK_REQUEST_HEADER_PROPERTY_NAME);
             captureRequestRemoteAddr = configService
                     .getBooleanProperty(CAPTURE_REQUEST_REMOTE_ADDR_PROPERTY_NAME).value();
             captureRequestRemoteHost = configService
                     .getBooleanProperty(CAPTURE_REQUEST_REMOTE_HOST_PROPERTY_NAME).value();
             captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
-            captureResponseHeadersNonEmpty = !captureResponseHeaders.isEmpty();
         }
 
         private static ImmutableList<Pattern> buildPatternList(String propertyName) {

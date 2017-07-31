@@ -9,6 +9,13 @@
       "description": "Comma-separated list of request headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
     },
     {
+      "name": "maskRequestHeaders",
+      "type": "string",
+      "default": "Authorization",
+      "label": "Mask request headers",
+      "description": "Comma-separated list of sensitive request headers to mask, e.g. credentials. The wildcard '*' is supported anywhere in the parameter."
+    },
+    {
       "name": "captureRequestRemoteAddr",
       "type": "boolean",
       "label": "Capture request remote address",
@@ -18,7 +25,7 @@
       "name": "captureRequestRemoteHost",
       "type": "boolean",
       "label": "Capture request remote host",
-      "description": "Capture request remote host using HttpExchange.getRemoteAddress().getHostString()."
+      "description": "Capture request remote host using HttpExchange.getRemoteAddress().getHostName()."
     },
     {
       "name": "captureResponseHeaders",

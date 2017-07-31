@@ -21,7 +21,7 @@ public class MockHttpExchange extends com.sun.net.httpserver.HttpExchange implem
     private final PatchedHeaders requestHeaders;
     private final PatchedHeaders responseHeaders;
     private String queryString = "";
-    private int statusCode;
+    private HttpPrincipal principal;
 
     public MockHttpExchange(String method, String requestURI) {
         this.method = method;
@@ -54,7 +54,7 @@ public class MockHttpExchange extends com.sun.net.httpserver.HttpExchange implem
 
     @Override
     public HttpPrincipal getPrincipal() {
-        return null;
+        return principal;
     }
 
     @Override
@@ -112,7 +112,6 @@ public class MockHttpExchange extends com.sun.net.httpserver.HttpExchange implem
 
     @Override
     public void sendResponseHeaders(int statusCode, long contentLength) throws IOException {
-        this.statusCode = statusCode;
         this.responseHeaders.set("Content-Length", Long.toString(contentLength));
     }
 
@@ -136,8 +135,8 @@ public class MockHttpExchange extends com.sun.net.httpserver.HttpExchange implem
         this.queryString = queryString;
     }
 
-    int getStatusCode() {
-        return statusCode;
+    void setPrincipal(HttpPrincipal principal) {
+        this.principal = principal;
     }
 
 }
