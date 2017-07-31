@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+<configuration>
+  <appender name="CONSOLE" class="org.glowroot.agent.shaded.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="warn">
+    <appender-ref ref="CONSOLE" />
+  </root>
+  <!-- this is needed to deal with a sporadic error message -->
+  <logger name="org.eclipse.jetty.util.thread.QueuedThreadPool" level="error" />
+</configuration>
