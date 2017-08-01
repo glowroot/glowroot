@@ -49,6 +49,8 @@ class CentralAlertingService {
 
     private final Stopwatch stopwatch = Stopwatch.createStarted();
 
+    private volatile boolean closed;
+
     CentralAlertingService(ConfigRepositoryImpl configRepository, HeartbeatDao heartbeatDao,
             AlertingService alertingService) {
         this.configRepository = configRepository;
@@ -57,9 +59,14 @@ class CentralAlertingService {
         alertCheckingExecutor = Executors.newSingleThreadExecutor();
     }
 
-    void close() {
-        // then shutdown alert checking executor
-        alertCheckingExecutor.shutdown();
+    void close() throws InterruptedException {
+        closed = true;
+        // shutdownNow() is needed here to send interrupt to alert checking thread
+        alertCheckingExecutor.shutdownNow();
+        if (!alertCheckingExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException(
+                    "Timed out waiting for alert checking thread to terminate");
+        }
     }
 
     void checkForDeletedAlerts(String agentRollupId, String agentRollupDisplay) {
@@ -130,24 +137,20 @@ class CentralAlertingService {
 
     private void checkAlertsAsync(String agentRollupId, String agentRollupDisplay, long endTime,
             List<AlertConfig> alertConfigs) {
+        if (closed) {
+            return;
+        }
         alertCheckingExecutor.execute(new Runnable() {
             @Override
             public void run() {
-                try {
-                    runInternal();
-                } catch (Throwable t) {
-                    logger.error("{} - {}", agentRollupDisplay, t.getMessage(), t);
-                }
-            }
-            private void runInternal() throws InterruptedException {
                 for (AlertConfig alertConfig : alertConfigs) {
                     try {
                         checkAlert(agentRollupId, agentRollupDisplay, endTime, alertConfig);
                     } catch (InterruptedException e) {
                         // shutdown requested
-                        throw e;
-                    } catch (Exception e) {
-                        logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
+                        return;
+                    } catch (Throwable t) {
+                        logger.error("{} - {}", agentRollupDisplay, t.getMessage(), t);
                     }
                 }
             }
