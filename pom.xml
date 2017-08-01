@@ -89,11 +89,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
-    <!-- use custom-built jdk6 compatible checker framework annotations by default except when
-      actually running checker framework code quality tests -->
-    <checker.qual.group.id>org.glowroot.build</checker.qual.group.id>
-    <checker.qual.artifact.id>glowroot-build-checker-jdk6</checker.qual.artifact.id>
-    <checker.qual.version>${project.version}</checker.qual.version>
     <!-- the sonar.login system property is set here instead of on the command line so it is
       not visible to ps -->
     <sonar.login>${env.SONAR_LOGIN}</sonar.login>
@@ -732,28 +727,38 @@
     </profile>
     <profile>
       <!-- use "travis-build/travis-build.sh checker" to execute this profile -->
-      <id>checker</id>
+      <id>the-checker-build</id>
+      <activation>
+        <property>
+          <name>glowroot.checker.build</name>
+        </property>
+      </activation>
       <properties>
-        <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
-        <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>2.1.12</checker.qual.version>
+        <checker.version>2.1.12</checker.version>
       </properties>
       <dependencies>
         <dependency>
           <groupId>org.checkerframework</groupId>
+          <artifactId>checker-qual</artifactId>
+          <version>${checker.version}</version>
+          <optional>true</optional>
+        </dependency>
+        <dependency>
+          <groupId>org.checkerframework</groupId>
           <artifactId>checker</artifactId>
-          <version>${checker.qual.version}</version>
+          <version>${checker.version}</version>
           <optional>true</optional>
         </dependency>
         <dependency>
           <groupId>org.checkerframework</groupId>
           <artifactId>compiler</artifactId>
-          <version>${checker.qual.version}</version>
+          <version>${checker.version}</version>
+          <optional>true</optional>
         </dependency>
         <dependency>
           <groupId>org.checkerframework</groupId>
           <artifactId>jdk8</artifactId>
-          <version>${checker.qual.version}</version>
+          <version>${checker.version}</version>
           <optional>true</optional>
         </dependency>
         <dependency>

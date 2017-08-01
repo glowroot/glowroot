@@ -306,9 +306,8 @@ case "$1" in
                                  -B
                # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
                while true; do sleep 60; echo ...; done &
-               # disabling auto-actived-add-license-jar-bundle profile is needed to prevent the build from failing
                mvn clean compile -pl !build/checker-jdk6,!wire-api,!agent/benchmarks,!agent/ui-sandbox,!agent/dist \
-                                 -Pchecker,!auto-actived-add-license-jar-bundle \
+                                 -Dglowroot.checker.build \
                                  -Dchecker.stubs.dir=$PWD/build/checker-stubs \
                                  -Dglowroot.ui.skip \
                                  -B \
