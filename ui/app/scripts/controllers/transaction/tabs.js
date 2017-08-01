@@ -21,10 +21,11 @@ glowroot.controller('TransactionTabCtrl', [
   '$location',
   '$http',
   '$timeout',
+  '$filter',
   'queryStrings',
   'httpErrors',
   'shortName',
-  function ($scope, $location, $http, $timeout, queryStrings, httpErrors, shortName) {
+  function ($scope, $location, $http, $timeout, $filter, queryStrings, httpErrors, shortName) {
 
     var filteredTraceTabCount;
     var concurrentUpdateCount = 0;
@@ -50,9 +51,9 @@ glowroot.controller('TransactionTabCtrl', [
         return '...';
       }
       if (filteredTraceTabCount !== undefined) {
-        return filteredTraceTabCount;
+        return $filter('number')(filteredTraceTabCount);
       }
-      return $scope.traceCount;
+      return $filter('number')($scope.traceCount);
     };
 
     $scope.clickTab = function (tabItem, event) {
