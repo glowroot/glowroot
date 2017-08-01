@@ -457,6 +457,10 @@
           <version>3.4</version>
         </plugin>
         <plugin>
+          <artifactId>maven-remote-resources-plugin</artifactId>
+          <version>1.5</version>
+        </plugin>
+        <plugin>
           <artifactId>maven-resources-plugin</artifactId>
           <version>3.0.1</version>
         </plugin>
@@ -615,7 +619,6 @@
         <plugins>
           <plugin>
             <artifactId>maven-remote-resources-plugin</artifactId>
-            <version>1.5</version>
             <executions>
               <execution>
                 <phase>generate-resources</phase>
