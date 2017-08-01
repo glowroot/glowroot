@@ -41,14 +41,12 @@ glowroot.controller('ConfigSyntheticMonitorListCtrl', [
     };
 
     $scope.newQueryString = function () {
-      if ($scope.agentRollupId) {
-        if ($scope.layout.agentRollups[$scope.agentRollupId].agent) {
-          return '?agent-id=' + encodeURIComponent($scope.agentRollupId) + '&new';
-        } else {
-          return '?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId) + '&new';
-        }
+      var queryString = $scope.agentQueryString();
+      if (queryString === '') {
+        return '?new';
+      } else {
+        return queryString + '&new';
       }
-      return '?new';
     };
 
     $http.get('backend/config/synthetic-monitors?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
