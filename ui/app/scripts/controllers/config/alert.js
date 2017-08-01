@@ -114,11 +114,11 @@ glowroot.controller('ConfigAlertCtrl', [
       return showTransactionTypeAndName($scope.config.condition.metric);
     };
 
-    $scope.$watch('config.condition.metric', function (metric) {
-      if (!$scope.condition) {
+    $scope.$watch('config.condition.metric', function (newValue, oldValue) {
+      if (!$scope.config) {
         return;
       }
-      if (showTransactionTypeAndName(metric)) {
+      if (showTransactionTypeAndName(newValue)) {
         if ($scope.config.condition.transactionType === undefined) {
           $scope.config.condition.transactionType = $scope.defaultTransactionType();
         }
@@ -129,8 +129,11 @@ glowroot.controller('ConfigAlertCtrl', [
         delete $scope.config.condition.transactionType;
         delete $scope.config.condition.transactionName;
       }
-      if (metric !== 'transaction:x-percentile' && $scope.config) {
+      if (newValue !== 'transaction:x-percentile' && $scope.config) {
         delete $scope.config.condition.percentile;
+      }
+      if (oldValue) {
+        delete $scope.config.condition.threshold;
       }
     });
 
