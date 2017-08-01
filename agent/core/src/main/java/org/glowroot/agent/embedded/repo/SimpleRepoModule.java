@@ -189,6 +189,7 @@ public class SimpleRepoModule {
         if (reaperRunnable != null) {
             reaperRunnable.cancel();
         }
+        alertingService.close();
         for (CappedDatabase cappedDatabase : rollupCappedDatabases) {
             cappedDatabase.close();
         }

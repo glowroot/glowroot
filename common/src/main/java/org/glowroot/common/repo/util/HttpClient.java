@@ -140,7 +140,9 @@ public class HttpClient {
             }
             HttpResponseStatus responseStatus = checkNotNull(handler.responseStatus);
             int statusCode = responseStatus.code();
-            if (statusCode < 200 || statusCode >= 300) {
+            if (statusCode == 429) {
+                throw new TooManyRequestsHttpResponseException();
+            } else if (statusCode < 200 || statusCode >= 300) {
                 throw new IOException("Unexpected response status code: " + statusCode);
             }
             return checkNotNull(handler.responseContent);
@@ -201,4 +203,7 @@ public class HttpClient {
             ctx.close();
         }
     }
+
+    @SuppressWarnings("serial")
+    static class TooManyRequestsHttpResponseException extends Exception {}
 }

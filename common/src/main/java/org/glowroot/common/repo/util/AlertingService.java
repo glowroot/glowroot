@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
 import javax.mail.Address;
@@ -47,6 +49,7 @@ import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.Utils;
+import org.glowroot.common.repo.util.HttpClient.TooManyRequestsHttpResponseException;
 import org.glowroot.common.util.Formatting;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
@@ -59,6 +62,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class AlertingService {
@@ -75,6 +79,10 @@ public class AlertingService {
     // limit missing smtp host configuration warning to once per hour
     private final RateLimiter smtpHostWarningRateLimiter = RateLimiter.create(1.0 / 3600);
 
+    private final ScheduledExecutorService pagerDutyRetryExecutor;
+
+    private volatile boolean closed;
+
     public AlertingService(ConfigRepository configRepository,
             TriggeredAlertRepository triggeredAlertRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
@@ -85,6 +93,17 @@ public class AlertingService {
         this.httpClient = httpClient;
         this.metricService =
                 new MetricService(aggregateRepository, gaugeValueRepository, rollupLevelService);
+        pagerDutyRetryExecutor = Executors.newSingleThreadScheduledExecutor();
+    }
+
+    public void close() throws InterruptedException {
+        closed = true;
+        // shutdownNow() is needed here to send interrupt to pager duty retry thread
+        pagerDutyRetryExecutor.shutdownNow();
+        if (!pagerDutyRetryExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException(
+                    "Timed out waiting for pager duty retry thread to terminate");
+        }
     }
 
     public void checkForDeletedAlerts(String agentRollupId) throws Exception {
@@ -259,10 +278,18 @@ public class AlertingService {
             }
         }
         if (alertNotification.hasPagerDutyNotification()) {
-            sendPagerDuty(agentRollupId, agentRollupDisplay, alertCondition,
+            sendPagerDutyWithRetry(agentRollupId, agentRollupDisplay, alertCondition,
                     alertNotification.getPagerDutyNotification(), endTime, subject, messageText,
                     ok);
         }
+    }
+
+    private void sendPagerDutyWithRetry(String agentRollupId, String agentRollupDisplay,
+            AlertCondition alertCondition, PagerDutyNotification pagerDutyNotification,
+            long endTime, String subject, String messageText, boolean ok) throws Exception {
+        SendPagerDuty sendPagerDuty = new SendPagerDuty(agentRollupId, agentRollupDisplay,
+                alertCondition, pagerDutyNotification, endTime, subject, messageText, ok);
+        sendPagerDuty.run();
     }
 
     private void sendPagerDuty(String agentRollupId, String agentRollupDisplay,
@@ -437,5 +464,71 @@ public class AlertingService {
         Calendar end = Calendar.getInstance();
         end.setTimeInMillis(endTime);
         return DatatypeConverter.printDateTime(end);
+    }
+
+    private class SendPagerDuty implements Runnable {
+
+        private final String agentRollupId;
+        private final String agentRollupDisplay;
+        private final AlertCondition alertCondition;
+        private final PagerDutyNotification pagerDutyNotification;
+        private final long endTime;
+        private final String subject;
+        private final String messageText;
+        private final boolean ok;
+
+        private volatile int currentTryCount = 1;
+
+        private SendPagerDuty(String agentRollupId, String agentRollupDisplay,
+                AlertCondition alertCondition, PagerDutyNotification pagerDutyNotification,
+                long endTime, String subject, String messageText, boolean ok) {
+            this.agentRollupId = agentRollupId;
+            this.agentRollupDisplay = agentRollupDisplay;
+            this.alertCondition = alertCondition;
+            this.pagerDutyNotification = pagerDutyNotification;
+            this.endTime = endTime;
+            this.subject = subject;
+            this.messageText = messageText;
+            this.ok = ok;
+        }
+
+        @Override
+        public void run() {
+            try {
+                sendPagerDuty(agentRollupId, agentRollupDisplay, alertCondition,
+                        pagerDutyNotification, endTime, subject, messageText, ok);
+                if (currentTryCount > 1) {
+                    logger.info(
+                            "{} - PagerDuty no longer responded with 429 Too many requests (rate"
+                                    + " limit exceeded), successfully {} incident \"{} / {}\"",
+                            agentRollupDisplay, ok ? "resolved" : "triggered", subject,
+                            messageText);
+                }
+            } catch (TooManyRequestsHttpResponseException e) {
+                logger.debug(e.getMessage(), e);
+                if (currentTryCount == 1) {
+                    logger.warn(
+                            "{} - PagerDuty responded with 429 Too many requests (rate limit"
+                                    + " exceeded), unable to {} incident \"{} / {}\" (will keep"
+                                    + " trying...)",
+                            agentRollupDisplay, ok ? "resolve" : "trigger", subject, messageText);
+                }
+                if (currentTryCount < 10) {
+                    currentTryCount++;
+                    if (!closed) {
+                        pagerDutyRetryExecutor.schedule(this, 1, MINUTES);
+                    }
+                } else {
+                    String action = ok ? "resolve" : "trigger";
+                    logger.warn(
+                            "{} - PagerDuty responded with 429 Too many requests (rate limit"
+                                    + " exceeded), unable to {} incident \"{} / {}\" (will stop"
+                                    + " trying to {} this incident)",
+                            agentRollupDisplay, action, subject, messageText, action);
+                }
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+            }
+        }
     }
 }

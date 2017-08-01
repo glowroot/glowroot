@@ -104,6 +104,7 @@ public class CentralModule {
         ClusterManager clusterManager = null;
         Cluster cluster = null;
         Session session = null;
+        AlertingService alertingService = null;
         CentralAlertingService centralAlertingService = null;
         RollupService rollupService = null;
         SyntheticMonitorService syntheticMonitorService = null;
@@ -160,7 +161,7 @@ public class CentralModule {
             RollupLevelService rollupLevelService =
                     new RollupLevelService(repos.getConfigRepository(), clock);
             HttpClient httpClient = new HttpClient(repos.getConfigRepository());
-            AlertingService alertingService = new AlertingService(repos.getConfigRepository(),
+            alertingService = new AlertingService(repos.getConfigRepository(),
                     repos.getTriggeredAlertDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
                     rollupLevelService, new MailService(), httpClient);
             centralAlertingService = new CentralAlertingService(repos.getConfigRepository(),
@@ -256,6 +257,9 @@ public class CentralModule {
             }
             if (centralAlertingService != null) {
                 centralAlertingService.close();
+            }
+            if (alertingService != null) {
+                alertingService.close();
             }
             if (session != null) {
                 session.close();
