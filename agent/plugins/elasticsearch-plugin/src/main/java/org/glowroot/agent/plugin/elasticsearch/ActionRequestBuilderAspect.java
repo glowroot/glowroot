@@ -269,7 +269,19 @@ public class ActionRequestBuilderAspect {
                     sb.append('/');
                 }
             }
-            return sb.toString();
+            Object source =
+                    ((SearchRequestBuilder) actionRequestBuilder).glowroot$getQueryBuilder();
+            if (source == null) {
+                return sb.toString();
+            } else if (source instanceof BytesReference) {
+                sb.append(' ');
+                sb.append(((BytesReference) source).toUtf8());
+                return sb.toString();
+            } else {
+                sb.append(' ');
+                sb.append(source);
+                return sb.toString();
+            }
         } else if (actionRequest == null) {
             return "(action request was null)";
         } else {
@@ -279,15 +291,6 @@ public class ActionRequestBuilderAspect {
 
     private static QueryMessageSupplier getQueryMessageSupplier(
             ActionRequestBuilder actionRequestBuilder) {
-        if (actionRequestBuilder instanceof SearchRequestBuilder) {
-            Object source =
-                    ((SearchRequestBuilder) actionRequestBuilder).glowroot$getQueryBuilder();
-            if (source == null) {
-                return QueryMessageSupplier.create(Constants.QUERY_MESSAGE_PREFIX);
-            } else {
-                return new QueryMessageSupplierWithSource(source);
-            }
-        }
         ActionRequest actionRequest = actionRequestBuilder.glowroot$request();
         if (actionRequest instanceof IndexRequest) {
             return QueryMessageSupplier.create(Constants.QUERY_MESSAGE_PREFIX);
@@ -300,6 +303,8 @@ public class ActionRequestBuilderAspect {
         } else if (actionRequest instanceof DeleteRequest) {
             DeleteRequest request = (DeleteRequest) actionRequest;
             return new QueryMessageSupplierWithId(request.id());
+        } else if (actionRequest instanceof SearchRequest) {
+            return QueryMessageSupplier.create(Constants.QUERY_MESSAGE_PREFIX);
         } else {
             return QueryMessageSupplier.create(Constants.QUERY_MESSAGE_PREFIX);
         }

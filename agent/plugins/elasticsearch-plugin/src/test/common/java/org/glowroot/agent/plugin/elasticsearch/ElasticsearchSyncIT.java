@@ -251,10 +251,9 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SEARCH testindex/testtype");
+                .getFullText()).startsWith("SEARCH testindex/testtype {");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
-        String suffix = entry.getQueryEntryMessage().getSuffix();
-        assertThat(suffix).startsWith(" {");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
     }
