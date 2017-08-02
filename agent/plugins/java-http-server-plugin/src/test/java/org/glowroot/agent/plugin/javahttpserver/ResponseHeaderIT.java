@@ -165,6 +165,24 @@ public class ResponseHeaderIT {
         // basically just testing that it should not generate any errors
     }
 
+    @Test
+    public void testDontMaskResponseHeaders() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
+                "content*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "maskRequestHeaders",
+                "content-Len*");
+
+        // when
+        Trace trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
+
+        // then
+        Map<String, Object> responseHeaders = getResponseHeaders(trace);
+        assertThat(responseHeaders.get("Content-type")).isEqualTo("text/plain;charset=UTF-8");
+        assertThat(responseHeaders.get("Content-length")).isEqualTo("1");
+        assertThat(responseHeaders.get("Extra")).isNull();
+    }
+
     static @Nullable Map<String, Object> getDetailMap(Trace trace, String name) {
         List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
         Trace.DetailEntry found = null;
