@@ -109,6 +109,25 @@ public class RequestHeaderIT {
         assertThat(requestHeaders.get("Three")).isNull();
     }
 
+    @Test
+    public void testMaskRequestHeaders() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
+                "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "maskRequestHeaders",
+                "content-Len*");
+
+        // when
+        Trace trace = container.execute(SetStandardRequestHeaders.class, "Web");
+
+        // then
+        Map<String, Object> requestHeaders =
+                ResponseHeaderIT.getDetailMap(trace, "Request headers");
+        assertThat(requestHeaders.get("Content-type")).isEqualTo("text/plain;charset=UTF-8");
+        assertThat(requestHeaders.get("Content-length")).isEqualTo("****");
+        assertThat(requestHeaders.get("Extra")).isEqualTo("abc");
+    }
+
     public static class SetStandardRequestHeaders extends TestHandler {
         @Override
         protected void before(HttpExchange exchange) {

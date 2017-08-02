@@ -43,7 +43,8 @@ class DetailCapture {
         if (capturePatterns.isEmpty()) {
             return ImmutableMap.of();
         }
-        return captureHeaders(capturePatterns, exchange.glowroot$getRequestHeaders());
+        return captureHeaders(capturePatterns, exchange.glowroot$getRequestHeaders(),
+                JavaHttpServerPluginProperties.maskRequestHeaders());
     }
 
     static ImmutableMap<String, Object> captureResponseHeaders(HttpExchange exchange) {
@@ -52,11 +53,13 @@ class DetailCapture {
         if (capturePatterns.isEmpty()) {
             return ImmutableMap.of();
         }
-        return captureHeaders(capturePatterns, exchange.glowroot$getResponseHeaders());
+        return captureHeaders(capturePatterns, exchange.glowroot$getResponseHeaders(),
+                ImmutableList.<Pattern>of());
     }
 
     private static ImmutableMap<String, Object> captureHeaders(
-            ImmutableList<Pattern> capturePatterns, @Nullable Headers headers) {
+            ImmutableList<Pattern> capturePatterns, @Nullable Headers headers,
+            ImmutableList<Pattern> maskPatterns) {
         if (headers == null) {
             return ImmutableMap.of();
         }
@@ -64,8 +67,7 @@ class DetailCapture {
         if (headerNames == null) {
             return ImmutableMap.of();
         }
-        ImmutableList<Pattern> maskPatterns = JavaHttpServerPluginProperties.maskRequestHeaders();
-        Map<String, Object> requestHeaders = Maps.newHashMap();
+        Map<String, Object> headersMap = Maps.newHashMap();
         for (String name : headerNames) {
             if (name == null) {
                 continue;
@@ -76,15 +78,15 @@ class DetailCapture {
                 continue;
             }
             if (matchesOneOf(keyLowerCase, maskPatterns)) {
-                requestHeaders.put(name, "****");
+                headersMap.put(name, "****");
                 continue;
             }
             List<String> values = headers.get(name);
             if (values != null) {
-                captureHeader(name, values, requestHeaders);
+                captureHeader(name, values, headersMap);
             }
         }
-        return ImmutableMap.copyOf(requestHeaders);
+        return ImmutableMap.copyOf(headersMap);
     }
 
     static @Nullable String captureRequestRemoteAddr(HttpExchange exchange) {
