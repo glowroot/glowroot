@@ -129,12 +129,13 @@
         earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
     </dependency>
     <dependency>
-      <!-- optional dependency of guava, included here to make it not optional, see below -->
-      <groupId>com.google.errorprone</groupId>
-      <artifactId>error_prone_annotations</artifactId>
-      <version>2.0.21</version>
-      <!-- cannot set to optional, all annotation classes must be available on IBM Java 1.6 SR8 and
-        earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+      <!-- error_prone_annotations is an optional dependency of guava, included here to make it not
+        optional due to IBM Java 1.6 SR8 and earlier, however, error_prone_annotations itself is
+        compiled against Java 1.7, which then causes UnsupportedClassVersionError on some other Java
+        1.6 JVMs (in particular when running glowrot-agent-integration-tests in Eclipse) -->
+      <groupId>org.glowroot.build</groupId>
+      <artifactId>glowroot-build-error-prone-jdk6</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

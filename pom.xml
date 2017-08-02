@@ -33,6 +33,7 @@
   <modules>
     <module>build/license-bundle</module>
     <module>build/checker-jdk6</module>
+    <module>build/error-prone-jdk6</module>
     <module>build/multi-lib-tests</module>
     <module>common</module>
     <module>wire-api</module>
