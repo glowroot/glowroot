@@ -80,12 +80,10 @@ public class LazyPlatformMBeanServer {
     }
 
     private LazyPlatformMBeanServer() {
-        String command = AppServerDetection.getCommand();
-        boolean oldJBoss = AppServerDetection.isOldJBoss(command);
-        waitForContainerToCreatePlatformMBeanServer = AppServerDetection.isJBossModules(command)
-                || oldJBoss || AppServerDetection.isGlassfish(command)
-                || AppServerDetection.isWebLogic(command)
-                || AppServerDetection.isWebSphere(command);
+        boolean oldJBoss = AppServerDetection.isOldJBoss();
+        waitForContainerToCreatePlatformMBeanServer =
+                AppServerDetection.isJBossModules() || oldJBoss || AppServerDetection.isGlassfish()
+                        || AppServerDetection.isWebLogic() || AppServerDetection.isWebSphere();
         needsManualPatternMatching = oldJBoss;
     }
 
