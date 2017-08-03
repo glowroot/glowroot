@@ -18,6 +18,7 @@ package org.glowroot.ui;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -34,8 +35,10 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
@@ -66,6 +69,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump.LockInfo;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump.Transaction;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -152,18 +156,45 @@ class JvmJsonService {
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
+
         jg.writeArrayFieldStart("transactions");
-        for (ThreadDump.Transaction transaction : threadDump.getTransactionList()) {
+        List<Transaction> transactions = new TransactionOrderingByTotalTimeDesc()
+                .sortedCopy(threadDump.getTransactionList());
+        for (ThreadDump.Transaction transaction : transactions) {
             writeTransactionThread(transaction, jg);
             allThreads.addAll(transaction.getThreadList());
         }
         jg.writeEndArray();
-        jg.writeArrayFieldStart("unmatchedThreads");
-        for (ThreadDump.Thread thread : threadDump.getUnmatchedThreadList()) {
-            writeThread(thread, jg);
+
+        List<ThreadDump.Thread> unmatchedThreads = new ThreadOrderingByStackTraceSizeDesc()
+                .sortedCopy(threadDump.getUnmatchedThreadList());
+        Multimap<ThreadDump.Thread, ThreadDump.Thread> unmatchedThreadsGroupedByStackTrace =
+                LinkedListMultimap.create();
+        List<ThreadDump.Thread> glowrootThreads = Lists.newArrayList();
+        for (ThreadDump.Thread thread : unmatchedThreads) {
+            if (thread.getName().startsWith("Glowroot-")) {
+                glowrootThreads.add(thread);
+            } else {
+                unmatchedThreadsGroupedByStackTrace.put(getGrouping(thread), thread);
+            }
             allThreads.add(thread);
         }
+        jg.writeArrayFieldStart("unmatchedThreadsByStackTrace");
+        for (Entry<ThreadDump.Thread, Collection<ThreadDump.Thread>> entry : unmatchedThreadsGroupedByStackTrace
+                .asMap().entrySet()) {
+            jg.writeStartArray();
+            for (ThreadDump.Thread thread : entry.getValue()) {
+                writeThread(thread, jg);
+            }
+            jg.writeEndArray();
+        }
+        jg.writeStartArray();
+        for (ThreadDump.Thread thread : glowrootThreads) {
+            writeThread(thread, jg);
+        }
         jg.writeEndArray();
+        jg.writeEndArray();
+
         jg.writeFieldName("threadDumpingThread");
         writeThread(threadDump.getThreadDumpingThread(), jg);
         allThreads.add(threadDump.getThreadDumpingThread());
@@ -472,6 +503,15 @@ class JvmJsonService {
         jg.writeEndObject();
     }
 
+    private static ThreadDump.Thread getGrouping(ThreadDump.Thread thread) {
+        ThreadDump.Thread.Builder builder = ThreadDump.Thread.newBuilder();
+        for (ThreadDump.StackTraceElement stackTraceElement : thread.getStackTraceElementList()) {
+            builder.addStackTraceElement(stackTraceElement.toBuilder()
+                    .clearMonitorInfo());
+        }
+        return builder.build();
+    }
+
     private static void writeThread(ThreadDump.Thread thread, JsonGenerator jg) throws IOException {
         jg.writeStartObject();
         jg.writeStringField("name", thread.getName());
@@ -578,7 +618,7 @@ class JvmJsonService {
                 cycleThread =
                         checkNotNull(blockedThreads.get(cycleThread.getLockOwnerId().getValue()));
             }
-            Collections.sort(cycle, new ThreadOrdering());
+            Collections.sort(cycle, new ThreadOrderingByIdDesc());
             cycles.add(cycle);
         }
         Collections.sort(cycles, new DeadlockedCycleOrdering());
@@ -743,10 +783,26 @@ class JvmJsonService {
         }
     }
 
-    private static class ThreadOrdering extends Ordering<ThreadDump.Thread> {
+    private static class TransactionOrderingByTotalTimeDesc
+            extends Ordering<ThreadDump.Transaction> {
+        @Override
+        public int compare(ThreadDump.Transaction left, ThreadDump.Transaction right) {
+            return Longs.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
+        }
+    }
+
+    private static class ThreadOrderingByIdDesc extends Ordering<ThreadDump.Thread> {
         @Override
         public int compare(ThreadDump.Thread left, ThreadDump.Thread right) {
             return Longs.compare(right.getId(), left.getId());
+        }
+    }
+
+    private static class ThreadOrderingByStackTraceSizeDesc extends Ordering<ThreadDump.Thread> {
+        @Override
+        public int compare(ThreadDump.Thread left, ThreadDump.Thread right) {
+            return Longs.compare(right.getStackTraceElementCount(),
+                    left.getStackTraceElementCount());
         }
     }
 

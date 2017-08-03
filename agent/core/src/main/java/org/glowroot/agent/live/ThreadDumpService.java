@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,8 +29,6 @@ import javax.annotation.Nullable;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,11 +131,6 @@ class ThreadDumpService {
             unmatchedThreads.add(createProtobuf(unmatchedThreadInfo));
         }
 
-        // sort descending by total time
-        Collections.sort(transactions, new TransactionOrdering());
-        // sort descending by thread id (same as jstack)
-        Collections.sort(unmatchedThreads, new UnmatchedThreadOrdering());
-
         ThreadDump.Builder builder = ThreadDump.newBuilder()
                 .addAllTransaction(transactions)
                 .addAllUnmatchedThread(unmatchedThreads);
@@ -184,20 +176,6 @@ class ThreadDumpService {
             builder.addStackTraceElement(stackTraceElement);
         }
         return builder.build();
-    }
-
-    private static class TransactionOrdering extends Ordering<ThreadDump.Transaction> {
-        @Override
-        public int compare(ThreadDump.Transaction left, ThreadDump.Transaction right) {
-            return Longs.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
-        }
-    }
-
-    private static class UnmatchedThreadOrdering extends Ordering<ThreadDump.Thread> {
-        @Override
-        public int compare(ThreadDump.Thread left, ThreadDump.Thread right) {
-            return Longs.compare(right.getId(), left.getId());
-        }
     }
 
     private static class TransactionThreadInfo {

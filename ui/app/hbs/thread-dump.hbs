@@ -11,11 +11,12 @@
 {{/if}}{{#each threads}}"{{name}}" #{{id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#each stackTraceElements}}        {{.}}
-{{/each}}{{/each}}<br>{{/each}}{{/if}}{{#if unmatchedThreads}}<strong><u>Unmatched threads</u></strong> (this may possibly include currently executing transactions that just started or just ended):<br>
-{{#each unmatchedThreads}}"{{name}}" #{{id}}
+{{/each}}{{/each}}<br>{{/each}}{{/if}}{{#if unmatchedThreadsByStackTrace}}<strong><u>Unmatched threads</u></strong> (this may possibly include currently executing transactions that just started or just ended):<br>
+{{#each unmatchedThreadsByStackTrace}}{{#each .}}"{{name}}" #{{id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#each stackTraceElements}}        {{.}}
-{{/each}}<br>{{/each}}{{/if}}{{#if threadDumpingThread}}<strong><u>Thread dumping thread</u></strong> (producing this thread dump):<br>
+{{/each}}<br>{{/each}}{{#unless @last}}----------------------------------------<br>
+{{/unless}}{{/each}}{{/if}}{{#if threadDumpingThread}}<strong><u>Thread dumping thread</u></strong> (producing this thread dump):<br>
 "{{threadDumpingThread/name}}" #{{threadDumpingThread/id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{threadDumpingThread/state}}
 {{#each threadDumpingThread/stackTraceElements}}        {{.}}
