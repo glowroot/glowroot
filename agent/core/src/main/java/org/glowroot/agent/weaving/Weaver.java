@@ -67,7 +67,7 @@ public class Weaver {
     private final TransactionRegistry transactionRegistry;
     private final TimerName timerName;
 
-    private volatile boolean enabled;
+    private volatile boolean weavingTimerEnabled;
 
     public Weaver(Supplier<List<Advice>> advisors, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, AnalyzedWorld analyzedWorld,
@@ -81,7 +81,7 @@ public class Weaver {
         configService.addConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                enabled = configService.getAdvancedConfig().weavingTimer();
+                weavingTimerEnabled = configService.getAdvancedConfig().weavingTimer();
             }
         });
         this.timerName = timerNameCache.getTimerName(OnlyForTheTimerName.class);
@@ -105,7 +105,7 @@ public class Weaver {
     }
 
     private @Nullable TimerImpl startWeavingTimer() {
-        if (!enabled) {
+        if (!weavingTimerEnabled) {
             return null;
         }
         ThreadContextImpl threadContext = transactionRegistry.getCurrentThreadContextHolder().get();
