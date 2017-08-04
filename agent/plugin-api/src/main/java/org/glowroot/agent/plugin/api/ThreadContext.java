@@ -313,15 +313,27 @@ public interface ThreadContext {
      */
     void addErrorEntry(@Nullable String message, Throwable t);
 
+    @Nullable
+    ServletRequestInfo getServletRequestInfo();
+
     /**
-     * Special purpose method, only used by the servlet plugin.
+     * DO NOT USE.
+     * 
+     * This method should only ever be used by the servlet plugin.
      */
+    void setServletRequestInfo(@Nullable ServletRequestInfo servletRequestInfo);
+
+    /**
+     * @deprecated Replaced by {@link #getServletRequestInfo()}.
+     */
+    @Deprecated
     @Nullable
     MessageSupplier getServletMessageSupplier();
 
     /**
-     * Special purpose method, only used by the servlet plugin.
+     * @deprecated Replaced by {@link #setServletRequestInfo(ServletRequestInfo)}.
      */
+    @Deprecated
     void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier);
 
     /**
@@ -352,5 +364,16 @@ public interface ThreadContext {
         // and for setting slow threshold (to zero) for Startup transactions
         // and for setting slow threshold for user-specific profiling
         int CORE_MAX = 1000000;
+    }
+
+    interface ServletRequestInfo {
+        String getMethod();
+        String getContextPath();
+        String getServletPath();
+        // getPathInfo() returns null when the servlet is mapped to "/" (not "/*") and therefore it
+        // is replacing the default servlet and in this case getServletPath() returns the full path
+        @Nullable
+        String getPathInfo();
+        String getUri();
     }
 }

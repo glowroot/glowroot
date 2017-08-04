@@ -44,7 +44,7 @@ public class RequestParameterAspect {
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier == null || messageSupplier.isRequestParametersCaptured()) {
                 return;
             }

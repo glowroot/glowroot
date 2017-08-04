@@ -114,7 +114,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private final Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder;
 
-    private @Nullable MessageSupplier servletMessageSupplier;
+    private @Nullable ServletRequestInfo servletRequestInfo;
 
     private volatile boolean mayHaveChildAuxThreadContext;
 
@@ -135,7 +135,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             boolean limitExceededAuxThreadContext, Ticker ticker,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
-            @Nullable MessageSupplier servletMessageSupplier) {
+            @Nullable ServletRequestInfo servletRequestInfo) {
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
         rootTimer = TimerImpl.createRootTimer(castInitialized(this), (TimerNameImpl) rootTimerName);
@@ -149,7 +149,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.limitExceededAuxThreadContext = limitExceededAuxThreadContext;
         this.ticker = ticker;
         this.threadContextHolder = threadContextHolder;
-        this.servletMessageSupplier = servletMessageSupplier;
+        this.servletRequestInfo = servletRequestInfo;
         this.outerTransactionThreadContext = threadContextHolder.get();
     }
 
@@ -421,13 +421,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (limitExceededAuxThreadContext) {
             // no auxiliary thread context hierarchy after limit exceeded in order to limit the
             // retention of auxiliary thread contexts
-            return new AuxThreadContextImpl(transaction, null, null, servletMessageSupplier,
+            return new AuxThreadContextImpl(transaction, null, null, servletRequestInfo,
                     locationStackTrace, transaction.getTransactionRegistry(),
                     transaction.getTransactionService());
         } else {
             mayHaveChildAuxThreadContext = true;
             return new AuxThreadContextImpl(transaction, traceEntryComponent.getActiveEntry(),
-                    traceEntryComponent.getTailEntry(), servletMessageSupplier, locationStackTrace,
+                    traceEntryComponent.getTailEntry(), servletRequestInfo, locationStackTrace,
                     transaction.getTransactionRegistry(), transaction.getTransactionService());
         }
     }
@@ -933,13 +933,32 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public @Nullable MessageSupplier getServletMessageSupplier() {
-        return servletMessageSupplier;
+    public @Nullable ServletRequestInfo getServletRequestInfo() {
+        return servletRequestInfo;
     }
 
     @Override
+    public void setServletRequestInfo(@Nullable ServletRequestInfo servletRequestInfo) {
+        this.servletRequestInfo = servletRequestInfo;
+    }
+
+    @Override
+    @Deprecated
+    public @Nullable MessageSupplier getServletMessageSupplier() {
+        ServletRequestInfo servletRequestInfo = getServletRequestInfo();
+        if (servletRequestInfo instanceof MessageSupplier) {
+            return (MessageSupplier) servletRequestInfo;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    @Deprecated
     public void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier) {
-        this.servletMessageSupplier = messageSupplier;
+        if (messageSupplier instanceof ServletRequestInfo) {
+            setServletRequestInfo((ServletRequestInfo) messageSupplier);
+        }
     }
 
     @Override

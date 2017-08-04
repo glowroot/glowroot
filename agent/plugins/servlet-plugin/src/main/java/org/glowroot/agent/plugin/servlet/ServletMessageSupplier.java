@@ -29,12 +29,16 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 
 // this class is thread-safe (unlike other MessageSuppliers) since it gets passed around to
 // auxiliary thread contexts for handling async servlets
-class ServletMessageSupplier extends MessageSupplier {
+class ServletMessageSupplier extends MessageSupplier implements ServletRequestInfo {
 
     private final String requestMethod;
+    private final String requestContextPath;
+    private final String requestServletPath;
+    private final @Nullable String requestPathInfo;
     private final String requestUri;
     private final @Nullable String requestQueryString;
 
@@ -57,11 +61,15 @@ class ServletMessageSupplier extends MessageSupplier {
     // ConcurrentHashMap does not allow null values, so need to use Optional values
     private volatile @MonotonicNonNull ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
-    ServletMessageSupplier(String requestMethod, String requestUri,
+    ServletMessageSupplier(String requestMethod, String requestContextPath,
+            String requestServletPath, @Nullable String requestPathInfo, String requestUri,
             @Nullable String requestQueryString, ImmutableMap<String, Object> requestHeaders,
             @Nullable String requestRemoteAddr, @Nullable String requestRemoteHost,
             ImmutableMap<String, String> sessionAttributeMap) {
         this.requestMethod = requestMethod;
+        this.requestContextPath = requestContextPath;
+        this.requestServletPath = requestServletPath;
+        this.requestPathInfo = requestPathInfo;
         this.requestUri = requestUri;
         this.requestQueryString = requestQueryString;
         this.requestHeaders = requestHeaders;
@@ -96,6 +104,31 @@ class ServletMessageSupplier extends MessageSupplier {
         }
         addSessionAttributeDetail(detail);
         return Message.create(requestUri, detail);
+    }
+
+    @Override
+    public String getMethod() {
+        return requestMethod;
+    }
+
+    @Override
+    public String getContextPath() {
+        return requestContextPath;
+    }
+
+    @Override
+    public String getServletPath() {
+        return requestServletPath;
+    }
+
+    @Override
+    public @Nullable String getPathInfo() {
+        return requestPathInfo;
+    }
+
+    @Override
+    public String getUri() {
+        return requestUri;
     }
 
     boolean isRequestParametersCaptured() {

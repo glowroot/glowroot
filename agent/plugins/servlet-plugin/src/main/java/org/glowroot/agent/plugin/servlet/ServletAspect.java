@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
-import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
@@ -59,13 +58,22 @@ public class ServletAspect {
         HttpSession glowroot$getSession(boolean create);
 
         @Nullable
+        String getMethod();
+
+        @Nullable
+        String getContextPath();
+
+        @Nullable
+        String getServletPath();
+
+        @Nullable
+        String getPathInfo();
+
+        @Nullable
         String getRequestURI();
 
         @Nullable
         String getQueryString();
-
-        @Nullable
-        String getMethod();
 
         @Nullable
         Enumeration</*@Nullable*/ String> getHeaderNames();
@@ -135,7 +143,7 @@ public class ServletAspect {
             } else {
                 traceEntry.end();
             }
-            context.setServletMessageSupplier(null);
+            context.setServletRequestInfo(null);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
@@ -146,11 +154,11 @@ public class ServletAspect {
             // ignoring potential sendError since this seems worse
             sendError.set(null);
             traceEntry.endWithError(t);
-            context.setServletMessageSupplier(null);
+            context.setServletRequestInfo(null);
         }
         private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
                 @Nullable Object req, @Nullable String transactionTypeOverride) {
-            if (context.getServletMessageSupplier() != null) {
+            if (context.getServletRequestInfo() != null) {
                 return null;
             }
             if (req == null || !(req instanceof HttpServletRequest)) {
@@ -174,20 +182,24 @@ public class ServletAspect {
             // url ended with ? but nothing after that
             String requestQueryString = request.getQueryString();
             String requestMethod = Strings.nullToEmpty(request.getMethod());
+            String requestContextPath = Strings.nullToEmpty(request.getContextPath());
+            String requestServletPath = Strings.nullToEmpty(request.getServletPath());
+            String requestPathInfo = request.getPathInfo();
             ImmutableMap<String, Object> requestHeaders =
                     DetailCapture.captureRequestHeaders(request);
             String requestRemoteAddr = DetailCapture.captureRequestRemoteAddr(request);
             String requestRemoteHost = DetailCapture.captureRequestRemoteHost(request);
             if (session == null) {
-                messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        requestQueryString, requestHeaders, requestRemoteAddr, requestRemoteHost,
+                messageSupplier = new ServletMessageSupplier(requestMethod, requestContextPath,
+                        requestServletPath, requestPathInfo, requestUri, requestQueryString,
+                        requestHeaders, requestRemoteAddr, requestRemoteHost,
                         ImmutableMap.<String, String>of());
             } else {
                 ImmutableMap<String, String> sessionAttributes =
                         HttpSessions.getSessionAttributes(session);
-                messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        requestQueryString, requestHeaders, requestRemoteAddr, requestRemoteHost,
-                        sessionAttributes);
+                messageSupplier = new ServletMessageSupplier(requestMethod, requestContextPath,
+                        requestServletPath, requestPathInfo, requestUri, requestQueryString,
+                        requestHeaders, requestRemoteAddr, requestRemoteHost, sessionAttributes);
             }
             String user = null;
             if (session != null) {
@@ -217,7 +229,7 @@ public class ServletAspect {
             if (setWithCoreMaxPriority) {
                 context.setTransactionType(transactionType, Priority.CORE_MAX);
             }
-            context.setServletMessageSupplier(messageSupplier);
+            context.setServletRequestInfo(messageSupplier);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
             String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
@@ -368,9 +380,10 @@ public class ServletAspect {
                 context.setTransactionUser(session.getId(), Priority.CORE_PLUGIN);
             }
             if (ServletPluginProperties.captureSessionAttributeNamesContainsId()) {
-                MessageSupplier messageSupplier = context.getServletMessageSupplier();
-                if (messageSupplier instanceof ServletMessageSupplier) {
-                    ((ServletMessageSupplier) messageSupplier).putSessionAttributeChangedValue(
+                ServletMessageSupplier messageSupplier =
+                        (ServletMessageSupplier) context.getServletRequestInfo();
+                if (messageSupplier != null) {
+                    messageSupplier.putSessionAttributeChangedValue(
                             ServletPluginProperties.HTTP_SESSION_ID_ATTR, session.getId());
                 }
             }

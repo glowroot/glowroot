@@ -65,11 +65,12 @@ import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
-import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
+import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.common.util.NotAvailableAware;
@@ -651,7 +652,7 @@ public class Transaction {
     ThreadContextImpl startAuxThreadContext(@Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, TimerName auxTimerName,
             long startTick, Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
-            @Nullable MessageSupplier servletMessageSupplier,
+            @Nullable ServletRequestInfo servletRequestInfo,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         ThreadContextImpl auxThreadContext;
         synchronized (mainThreadContext) {
@@ -673,14 +674,14 @@ public class Transaction {
                         parentThreadContextPriorEntry, AuxThreadRootMessageSupplier.INSTANCE,
                         auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
                         threadAllocatedBytes, false, ticker, threadContextHolder,
-                        servletMessageSupplier);
+                        servletRequestInfo);
                 auxThreadContexts.add(auxThreadContext);
             } else {
                 auxThreadContext = new ThreadContextImpl(this, mainThreadContext.getRootEntry(),
                         mainThreadContext.getTailEntry(), AuxThreadRootMessageSupplier.INSTANCE,
                         auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
                         threadAllocatedBytes, true, ticker, threadContextHolder,
-                        servletMessageSupplier);
+                        servletRequestInfo);
                 if (unmergedLimitExceededAuxThreadContexts == null) {
                     unmergedLimitExceededAuxThreadContexts = Sets.newHashSet();
                 }

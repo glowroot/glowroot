@@ -23,11 +23,12 @@ import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.Transaction.CompletionCallback;
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
-import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
+import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
@@ -100,12 +101,12 @@ public class TransactionServiceImpl implements ConfigListener {
     ThreadContextImpl startAuxThreadContextInternal(Transaction transaction,
             @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry,
-            @Nullable MessageSupplier servletMessageSupplier,
+            @Nullable ServletRequestInfo servletRequestInfo,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
         long startTick = ticker.read();
         TimerName auxThreadTimerName = timerNameCache.getAuxThreadTimerName();
         return transaction.startAuxThreadContext(parentTraceEntry, parentThreadContextPriorEntry,
-                auxThreadTimerName, startTick, threadContextHolder, servletMessageSupplier,
+                auxThreadTimerName, startTick, threadContextHolder, servletRequestInfo,
                 threadAllocatedBytes);
     }
 

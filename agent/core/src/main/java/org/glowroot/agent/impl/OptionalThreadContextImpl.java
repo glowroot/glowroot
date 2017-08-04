@@ -274,17 +274,36 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public @Nullable MessageSupplier getServletMessageSupplier() {
+    public @Nullable ServletRequestInfo getServletRequestInfo() {
         if (threadContext != null) {
-            return threadContext.getServletMessageSupplier();
+            return threadContext.getServletRequestInfo();
         }
         return null;
     }
 
     @Override
-    public void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier) {
+    public void setServletRequestInfo(@Nullable ServletRequestInfo servletRequestInfo) {
         if (threadContext != null) {
-            threadContext.setServletMessageSupplier(messageSupplier);
+            threadContext.setServletRequestInfo(servletRequestInfo);
+        }
+    }
+
+    @Override
+    @Deprecated
+    public @Nullable MessageSupplier getServletMessageSupplier() {
+        ServletRequestInfo servletRequestInfo = getServletRequestInfo();
+        if (servletRequestInfo instanceof MessageSupplier) {
+            return (MessageSupplier) servletRequestInfo;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    @Deprecated
+    public void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier) {
+        if (messageSupplier instanceof ServletRequestInfo) {
+            setServletRequestInfo((ServletRequestInfo) messageSupplier);
         }
     }
 

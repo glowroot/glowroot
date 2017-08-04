@@ -45,7 +45,7 @@ public class SessionAspect {
             // name is non-null per HttpSession.setAttribute() javadoc, but value may be null
             // (which per the javadoc is the same as calling removeAttribute())
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 updateUserIfApplicable(context, name, value, session);
                 updateSessionAttributesIfApplicable(messageSupplier, name, value, session);

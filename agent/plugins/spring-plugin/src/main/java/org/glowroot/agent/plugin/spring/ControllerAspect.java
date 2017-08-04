@@ -25,43 +25,27 @@ import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
+import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 
-// TODO optimize away servletPath thread local, e.g. store servlet path in thread context via
-// servlet plugin and retrieve here
 public class ControllerAspect {
-
-    private static final FastThreadLocal</*@Nullable*/ String> servletPath =
-            new FastThreadLocal</*@Nullable*/ String>();
 
     private static final BooleanProperty useAltTransactionNaming =
             Agent.getConfigService("spring").getBooleanProperty("useAltTransactionNaming");
 
     private static final ConcurrentMap<String, String> normalizedPatterns =
             new ConcurrentHashMap<String, String>();
-
-    @Shim("javax.servlet.http.HttpServletRequest")
-    public interface HttpServletRequest {
-        @Nullable
-        String getContextPath();
-        @Nullable
-        String getServletPath();
-        @Nullable
-        String getPathInfo();
-    }
 
     @Shim("org.springframework.web.servlet.mvc.method.RequestMappingInfo")
     public interface RequestMappingInfo {
@@ -75,46 +59,6 @@ public class ControllerAspect {
     public interface PatternsRequestCondition {
         @Nullable
         Set<String> getPatterns();
-    }
-
-    @Pointcut(className = "javax.servlet.Servlet",
-            subTypeRestriction = "org.springframework.web.servlet.DispatcherServlet",
-            methodName = "service", methodParameterTypes = {"javax.servlet.ServletRequest",
-                    "javax.servlet.ServletResponse"})
-    public static class CaptureServletPathAdvice {
-        @OnBefore
-        public static @Nullable FastThreadLocal.Holder</*@Nullable*/ String> onBefore(
-                @BindParameter @Nullable Object req) {
-            if (req == null || !(req instanceof HttpServletRequest)) {
-                return null;
-            }
-            HttpServletRequest request = (HttpServletRequest) req;
-            String contextPath = request.getContextPath();
-            if (contextPath == null) {
-                contextPath = "";
-            }
-            String pathInfo = request.getPathInfo();
-            String servletPath;
-            if (pathInfo == null) {
-                // pathInfo is null when the dispatcher servlet is mapped to "/" (not "/*") and
-                // therefore it is replacing the default servlet and getServletPath() returns the
-                // full path
-                servletPath = contextPath;
-            } else {
-                servletPath = contextPath + request.getServletPath();
-            }
-            FastThreadLocal.Holder</*@Nullable*/ String> holder =
-                    ControllerAspect.servletPath.getHolder();
-            holder.set(servletPath);
-            return holder;
-        }
-        @OnAfter
-        public static void onAfter(
-                @BindTraveler @Nullable FastThreadLocal.Holder</*@Nullable*/ String> holder) {
-            if (holder != null) {
-                holder.set(null);
-            }
-        }
     }
 
     @Pointcut(className = "org.springframework.web.servlet.handler.AbstractHandlerMethodMapping",
@@ -139,7 +83,7 @@ public class ControllerAspect {
             if (patterns == null || patterns.isEmpty()) {
                 return;
             }
-            String prefix = servletPath.get();
+            String prefix = getServletPath(context.getServletRequestInfo());
             String pattern = patterns.iterator().next();
             if (pattern == null || pattern.isEmpty()) {
                 context.setTransactionName(prefix, Priority.CORE_PLUGIN);
@@ -168,7 +112,7 @@ public class ControllerAspect {
             if (useAltTransactionNaming.value()) {
                 return;
             }
-            String prefix = servletPath.get();
+            String prefix = getServletPath(context.getServletRequestInfo());
             if (bestMatchingPattern == null || bestMatchingPattern.isEmpty()) {
                 context.setTransactionName(prefix, Priority.CORE_PLUGIN);
                 return;
@@ -211,6 +155,19 @@ public class ControllerAspect {
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
             traceEntry.endWithError(t);
+        }
+    }
+
+    private static String getServletPath(@Nullable ServletRequestInfo servletRequestInfo) {
+        if (servletRequestInfo == null) {
+            return "";
+        }
+        if (servletRequestInfo.getPathInfo() == null) {
+            // pathInfo is null when the servlet is mapped to "/" (not "/*") and therefore it is
+            // replacing the default servlet and getServletPath() returns the full path
+            return servletRequestInfo.getContextPath();
+        } else {
+            return servletRequestInfo.getContextPath() + servletRequestInfo.getServletPath();
         }
     }
 }

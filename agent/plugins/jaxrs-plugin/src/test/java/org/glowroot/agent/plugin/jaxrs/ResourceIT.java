@@ -54,6 +54,18 @@ public class ResourceIT {
     }
 
     @Test
+    public void shouldCaptureTransactionNameWithSimpleServletMapping() throws Exception {
+        shouldCaptureTransactionNameWithSimpleServletMapping("", WithSimpleServletMapping.class);
+    }
+
+    @Test
+    public void shouldCaptureTransactionNameWithSimpleServletMappingWithContextPath()
+            throws Exception {
+        shouldCaptureTransactionNameWithSimpleServletMapping("/zzz",
+                WithSimpleServletMappingWithContextPath.class);
+    }
+
+    @Test
     public void shouldCaptureTransactionNameWithNormalServletMapping() throws Exception {
         shouldCaptureTransactionNameWithNormalServletMapping("", WithNormalServletMapping.class);
     }
@@ -147,6 +159,25 @@ public class ResourceIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    private void shouldCaptureTransactionNameWithSimpleServletMapping(String contextPath,
+            Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
+        // when
+        Trace trace = container.execute(appUnderTestClass, "Web");
+
+        // then
+        assertThat(trace.getHeader().getTransactionName())
+                .isEqualTo("GET " + contextPath + "/simple");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$SimpleResource.echo()");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -279,6 +310,21 @@ public class ResourceIT {
         assertThat(i.hasNext()).isFalse();
     }
 
+    public static class WithSimpleServletMapping extends InvokeJaxrsResourceInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "", "/simple");
+        }
+    }
+
+    public static class WithSimpleServletMappingWithContextPath
+            extends InvokeJaxrsResourceInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "/zzz", "/simple");
+        }
+    }
+
     public static class WithNormalServletMapping extends InvokeJaxrsResourceInTomcat {
         @Override
         public void executeApp() throws Exception {
@@ -367,6 +413,14 @@ public class ResourceIT {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp3", "/zzz", "/");
+        }
+    }
+
+    @Path("simple")
+    public static class SimpleResource {
+        @GET
+        public Response echo() {
+            return Response.status(200).entity("hi").build();
         }
     }
 

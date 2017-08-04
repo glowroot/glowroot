@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 messageSupplier.setResponseIntHeader("Content-Length", value);
             }
@@ -67,7 +67,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 messageSupplier.setResponseLongHeader("Content-Length", value);
             }
@@ -94,7 +94,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 if (responseInvoker.hasGetContentTypeMethod()) {
                     String contentType = responseInvoker.getContentType(response);
@@ -121,7 +121,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null && responseInvoker.hasGetContentTypeMethod()) {
                 String contentType = responseInvoker.getContentType(response);
                 messageSupplier.setResponseHeader("Content-Type", contentType);
@@ -151,7 +151,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 if (captureContentLanguage) {
                     messageSupplier.setResponseHeader("Content-Language", locale.toString());
@@ -184,7 +184,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 messageSupplier.setResponseHeader(name, value);
             }
@@ -211,7 +211,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 messageSupplier.setResponseDateHeader(name, value);
             }
@@ -237,7 +237,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 messageSupplier.setResponseIntHeader(name, value);
             }
@@ -264,7 +264,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 messageSupplier.addResponseHeader(name, value);
             }
@@ -291,7 +291,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 messageSupplier.addResponseDateHeader(name, value);
             }
@@ -317,7 +317,7 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletMessageSupplier();
+                    (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 messageSupplier.addResponseIntHeader(name, value);
             }
