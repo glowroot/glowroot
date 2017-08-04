@@ -127,10 +127,10 @@ class HttpServer {
                     bootstrap.bind(new InetSocketAddress(bindAddress, port)).sync().channel();
             onBindSuccess();
         } catch (Exception e) {
-            // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
-            logger.debug(e.getMessage(), e);
+            // note: FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
             startupLogger.error("Error binding to {}:{}, the UI is not available (will keep trying"
                     + " to bind...): {}", bindAddress, port, e.getMessage());
+            logger.debug(e.getMessage(), e);
             ThreadFactory threadFactory = new ThreadFactoryBuilder()
                     .setDaemon(true)
                     .setNameFormat("Glowroot-Init-Bind")
@@ -172,7 +172,7 @@ class HttpServer {
         try {
             serverChannel = bootstrap.bind(localAddress).sync().channel();
         } catch (Exception e) {
-            // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
+            // note: FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
             throw new PortChangeFailedException(e);
         }
         port = newPort;
@@ -245,9 +245,10 @@ class HttpServer {
                     onBindSuccess();
                     return;
                 } catch (Exception e) {
+                    // note: FailedChannelFuture.sync() is using UNSAFE to re-throw checked
+                    // exceptions
                     startupLogger.error("Error binding to {}:{}, the UI is not available (will keep"
                             + " trying to bind...): {}", bindAddress, port, e.getMessage());
-                    // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
                     logger.debug(e.getMessage(), e);
                 }
             }
