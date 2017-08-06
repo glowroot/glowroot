@@ -51,13 +51,13 @@ public class Netty {
         for (int i = 0; i <= 5; i++) {
             runNetty("3.10." + i + ".Final", "netty-3.x");
         }
-        for (int i = 0; i <= 48; i++) {
+        for (int i = 0; i <= 50; i++) {
             runNetty("4.0." + i + ".Final", "netty-4.x");
         }
         for (int i = 1; i <= 7; i++) {
             runNetty("4.1.0.CR" + i, "netty-4.x");
         }
-        for (int i = 0; i <= 12; i++) {
+        for (int i = 0; i <= 14; i++) {
             runNetty("4.1." + i + ".Final", "netty-4.x");
         }
     }

@@ -214,8 +214,8 @@
     <profile>
       <id>async-http-client-2.x</id>
       <properties>
-        <asynchttpclient.version>2.0.9</asynchttpclient.version>
-        <netty.version>4.0.38.Final</netty.version>
+        <asynchttpclient.version>2.0.33</asynchttpclient.version>
+        <netty.version>4.0.48.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
