@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@ package org.glowroot.agent.impl;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
+import org.glowroot.agent.util.IterableWithSelfRemovableEntries;
+import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 import static org.glowroot.agent.util.Checkers.castInitialized;
@@ -27,7 +28,7 @@ import static org.glowroot.agent.util.Checkers.castInitialized;
 public class TransactionRegistry {
 
     // collection of active running transactions
-    private final TransactionCollection transactions = new TransactionCollection();
+    private final IterableWithSelfRemovableEntries<Transaction> transactions = new IterableWithSelfRemovableEntries<Transaction>();
 
     // active thread context being executed by the current thread
     private final FastThreadLocal</*@Nullable*/ ThreadContextImpl> currentThreadContext =
@@ -51,7 +52,7 @@ public class TransactionRegistry {
         return currentThreadContext.getHolder();
     }
 
-    TransactionEntry addTransaction(Transaction transaction) {
+    SelfRemovableEntry addTransaction(Transaction transaction) {
         return transactions.add(transaction);
     }
 

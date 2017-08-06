@@ -22,6 +22,7 @@ import java.util.List;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.Assume;
@@ -1018,7 +1019,7 @@ public class WeaverTest {
                 .thenReturn(new FastThreadLocal<ThreadContextImpl>().getHolder());
         Weaver weaver = new Weaver(advisorsSupplier, ImmutableList.<ShimType>of(),
                 ImmutableList.<MixinType>of(), analyzedWorld, transactionRegistry,
-                new TimerNameCache(), mock(ConfigService.class));
+                Ticker.systemTicker(), new TimerNameCache(), mock(ConfigService.class));
         isolatedWeavingClassLoader.setWeaver(weaver);
         Misc test = isolatedWeavingClassLoader.newInstance(BasicMisc.class, Misc.class);
         // when
@@ -1731,7 +1732,8 @@ public class WeaverTest {
         when(transactionRegistry.getCurrentThreadContextHolder())
                 .thenReturn(new FastThreadLocal<ThreadContextImpl>().getHolder());
         Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
-                transactionRegistry, new TimerNameCache(), mock(ConfigService.class));
+                transactionRegistry, Ticker.systemTicker(), new TimerNameCache(),
+                mock(ConfigService.class));
         isolatedWeavingClassLoader.setWeaver(weaver);
         return isolatedWeavingClassLoader.newInstance(implClass, bridgeClass);
     }
@@ -1770,7 +1772,8 @@ public class WeaverTest {
         when(transactionRegistry.getCurrentThreadContextHolder())
                 .thenReturn(new FastThreadLocal<ThreadContextImpl>().getHolder());
         Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
-                transactionRegistry, new TimerNameCache(), mock(ConfigService.class));
+                transactionRegistry, Ticker.systemTicker(), new TimerNameCache(),
+                mock(ConfigService.class));
         isolatedWeavingClassLoader.setWeaver(weaver);
 
         String className = toBeDefinedImplClass.type().getClassName();

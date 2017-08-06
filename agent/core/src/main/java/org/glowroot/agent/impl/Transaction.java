@@ -53,7 +53,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
 import org.glowroot.agent.model.AsyncTimerImpl;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.ErrorMessage;
@@ -70,6 +69,7 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
+import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.common.util.NotAvailableAware;
@@ -194,7 +194,7 @@ public class Transaction {
 
     private final UserProfileScheduler userProfileScheduler;
 
-    private @Nullable TransactionEntry transactionEntry;
+    private @Nullable SelfRemovableEntry transactionEntry;
 
     @GuardedBy("mainThreadContext")
     private @MonotonicNonNull RootTimerCollectorImpl alreadyMergedAuxThreadTimers;
@@ -639,7 +639,7 @@ public class Transaction {
         partiallyStored = true;
     }
 
-    void setTransactionEntry(TransactionEntry transactionEntry) {
+    void setTransactionEntry(SelfRemovableEntry transactionEntry) {
         this.transactionEntry = transactionEntry;
     }
 

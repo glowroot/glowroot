@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.impl;
+package org.glowroot.agent.util;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -25,21 +25,21 @@ import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class TransactionCollection implements Iterable<Transaction> {
+public class IterableWithSelfRemovableEntries<E> implements Iterable<E> {
 
-    private final ReferenceQueue<Transaction> queue = new ReferenceQueue<Transaction>();
+    private final ReferenceQueue<E> queue = new ReferenceQueue<E>();
 
-    private final TransactionEntry headEntry = new TransactionEntry(null, queue);
+    private final Entry headEntry = new Entry(null, queue);
 
     // tail is non-volatile since only accessed under lock
-    private TransactionEntry tailEntry = headEntry;
+    private Entry tailEntry = headEntry;
 
     // all structural changes are made under lock for simplicity
     // TODO implement lock free structure
     private final Object lock = new Object();
 
-    TransactionEntry add(Transaction transaction) {
-        TransactionEntry newTailEntry = new TransactionEntry(transaction, queue);
+    public SelfRemovableEntry add(E e) {
+        Entry newTailEntry = new Entry(e, queue);
         synchronized (lock) {
             expungeStaleEntries();
             tailEntry.nextEntry = newTailEntry;
@@ -50,55 +50,59 @@ class TransactionCollection implements Iterable<Transaction> {
     }
 
     @Override
-    public Iterator<Transaction> iterator() {
+    public Iterator<E> iterator() {
         synchronized (lock) {
             expungeStaleEntries();
         }
-        return new TransactionIterator();
+        return new ElementIterator();
     }
 
     // requires lock
     private void expungeStaleEntries() {
-        Reference<? extends Transaction> ref = queue.poll();
+        Reference<? extends E> ref = queue.poll();
         if (ref == null) {
             return;
         }
         // drain the queue, since going to loop over and clean up everything anyways
         while (queue.poll() != null) {
         }
-        TransactionEntry currEntry = headEntry.nextEntry;
+        Entry currEntry = headEntry.nextEntry;
         while (currEntry != null) {
-            if (currEntry.getTransaction() == null) {
+            if (currEntry.getElement() == null) {
                 currEntry.remove();
             }
             currEntry = currEntry.nextEntry;
         }
     }
 
-    private class TransactionIterator implements Iterator<Transaction> {
+    public interface SelfRemovableEntry {
+        void remove();
+    }
 
-        private @Nullable TransactionEntry nextEntry;
-        private @Nullable Transaction nextTransaction;
+    private class ElementIterator implements Iterator<E> {
+
+        private @Nullable Entry nextEntry;
+        private @Nullable E nextElement;
 
         @SuppressWarnings("method.invocation.invalid")
-        private TransactionIterator() {
+        private ElementIterator() {
             nextEntry = headEntry;
             advance();
         }
 
         @Override
         public boolean hasNext() {
-            return nextTransaction != null;
+            return nextElement != null;
         }
 
         @Override
-        public Transaction next() {
-            Transaction currTransaction = nextTransaction;
-            if (currTransaction == null) {
+        public E next() {
+            E currElement = nextElement;
+            if (currElement == null) {
                 throw new NoSuchElementException();
             }
             advance();
-            return currTransaction;
+            return currElement;
         }
 
         @Override
@@ -108,7 +112,7 @@ class TransactionCollection implements Iterable<Transaction> {
 
         private void advance() {
             advanceOne();
-            while (nextTransaction == null && nextEntry != null) {
+            while (nextElement == null && nextEntry != null) {
                 advanceOne();
             }
         }
@@ -116,36 +120,36 @@ class TransactionCollection implements Iterable<Transaction> {
         private void advanceOne() {
             checkNotNull(nextEntry);
             nextEntry = nextEntry.nextEntry;
-            nextTransaction = nextEntry == null ? null : nextEntry.getTransaction();
+            nextElement = nextEntry == null ? null : nextEntry.getElement();
         }
     }
 
-    class TransactionEntry {
+    private class Entry implements SelfRemovableEntry {
 
-        private final @Nullable WeakReference<Transaction> transactionRef; // only null for head
+        private final @Nullable WeakReference<E> ref; // only null for head
 
         // prev is non-volatile since only accessed under lock
-        private @Nullable TransactionEntry prevEntry; // only null for head and removed
+        private @Nullable Entry prevEntry; // only null for head and removed
 
         // next is volatile since accessed by iterator outside of lock
-        private volatile @Nullable TransactionEntry nextEntry;
+        private volatile @Nullable Entry nextEntry;
 
-        private TransactionEntry(@Nullable Transaction transaction,
-                ReferenceQueue<Transaction> queue) {
-            if (transaction == null) {
-                transactionRef = null;
+        private Entry(@Nullable E e, ReferenceQueue<E> queue) {
+            if (e == null) {
+                ref = null;
             } else {
-                transactionRef = new WeakReference<Transaction>(transaction, queue);
+                ref = new WeakReference<E>(e, queue);
             }
         }
 
-        void remove() {
+        @Override
+        public void remove() {
             synchronized (lock) {
                 if (prevEntry == null) {
                     // already removed
                     return;
                 }
-                TransactionEntry localPrevEntry = checkNotNull(prevEntry);
+                Entry localPrevEntry = checkNotNull(prevEntry);
                 localPrevEntry.nextEntry = nextEntry;
                 if (nextEntry != null) {
                     nextEntry.prevEntry = localPrevEntry;
@@ -157,11 +161,11 @@ class TransactionCollection implements Iterable<Transaction> {
             }
         }
 
-        private @Nullable Transaction getTransaction() {
-            if (transactionRef == null) {
+        private @Nullable E getElement() {
+            if (ref == null) {
                 return null;
             }
-            return transactionRef.get();
+            return ref.get();
         }
     }
 }

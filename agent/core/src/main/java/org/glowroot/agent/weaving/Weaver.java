@@ -19,7 +19,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.management.LockInfo;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MonitorInfo;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.security.CodeSource;
+import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -27,8 +33,11 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Supplier;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import com.google.common.primitives.Longs;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -48,9 +57,13 @@ import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.util.IterableWithSelfRemovableEntries;
+import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
+import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.objectweb.asm.Opcodes.ASM5;
 
 public class Weaver {
@@ -65,19 +78,26 @@ public class Weaver {
     private final ImmutableList<MixinType> mixinTypes;
     private final AnalyzedWorld analyzedWorld;
     private final TransactionRegistry transactionRegistry;
+    private final Ticker ticker;
     private final TimerName timerName;
 
     private volatile boolean weavingTimerEnabled;
 
+    private volatile boolean weavingDisabledForLoggingDeadlock;
+
+    private final IterableWithSelfRemovableEntries<ActiveWeaving> activeWeavings =
+            new IterableWithSelfRemovableEntries<ActiveWeaving>();
+
     public Weaver(Supplier<List<Advice>> advisors, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, AnalyzedWorld analyzedWorld,
-            TransactionRegistry transactionRegistry, TimerNameCache timerNameCache,
+            TransactionRegistry transactionRegistry, Ticker ticker, TimerNameCache timerNameCache,
             final ConfigService configService) {
         this.advisors = advisors;
         this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.analyzedWorld = analyzedWorld;
         this.transactionRegistry = transactionRegistry;
+        this.ticker = ticker;
         configService.addConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
@@ -87,9 +107,28 @@ public class Weaver {
         this.timerName = timerNameCache.getTimerName(OnlyForTheTimerName.class);
     }
 
+    public void checkForDeadlockedActiveWeaving() {
+        long currTick = ticker.read();
+        List<Long> threadIds = Lists.newArrayList();
+        for (ActiveWeaving activeWeaving : activeWeavings) {
+            if (NANOSECONDS.toSeconds(currTick - activeWeaving.startTick) > 5) {
+                threadIds.add(activeWeaving.threadId);
+            }
+        }
+        if (!threadIds.isEmpty()) {
+            checkForDeadlockedActiveWeaving(threadIds);
+        }
+    }
+
     byte /*@Nullable*/ [] weave(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        TimerImpl weavingTimer = startWeavingTimer();
+        if (weavingDisabledForLoggingDeadlock) {
+            return null;
+        }
+        long startTick = ticker.read();
+        TimerImpl weavingTimer = startWeavingTimer(startTick);
+        SelfRemovableEntry activeWeavingEntry =
+                activeWeavings.add(new ActiveWeaving(Thread.currentThread().getId(), startTick));
         try {
             logger.trace("transform(): className={}", className);
             byte[] transformedBytes = weaveUnderTimer(classBytes, className, codeSource, loader);
@@ -98,13 +137,14 @@ public class Weaver {
             }
             return transformedBytes;
         } finally {
+            activeWeavingEntry.remove();
             if (weavingTimer != null) {
                 weavingTimer.stop();
             }
         }
     }
 
-    private @Nullable TimerImpl startWeavingTimer() {
+    private @Nullable TimerImpl startWeavingTimer(long startTick) {
         if (!weavingTimerEnabled) {
             return null;
         }
@@ -116,7 +156,7 @@ public class Weaver {
         if (currentTimer == null) {
             return null;
         }
-        return currentTimer.startNestedTimer(timerName);
+        return currentTimer.startNestedTimer(timerName, startTick);
     }
 
     private byte /*@Nullable*/ [] weaveUnderTimer(byte[] classBytes, String className,
@@ -189,6 +229,36 @@ public class Weaver {
         return transformedBytes;
     }
 
+    private void checkForDeadlockedActiveWeaving(List<Long> activeWeavingThreadIds) {
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        long /*@Nullable*/ [] deadlockedThreadIds = threadBean.findDeadlockedThreads();
+        if (deadlockedThreadIds == null || Collections.disjoint(Longs.asList(deadlockedThreadIds),
+                activeWeavingThreadIds)) {
+            return;
+        }
+        // need to disable weaving, otherwise getThreadInfo can trigger class loading and itself get
+        // blocked by the deadlocked threads
+        weavingDisabledForLoggingDeadlock = true;
+        try {
+            @Nullable
+            ThreadInfo[] threadInfos = threadBean.getThreadInfo(deadlockedThreadIds,
+                    threadBean.isObjectMonitorUsageSupported(), false);
+            StringBuilder sb = new StringBuilder();
+            for (ThreadInfo threadInfo : threadInfos) {
+                if (threadInfo != null) {
+                    sb.append('\n');
+                    appendThreadInfo(sb, threadInfo);
+                }
+            }
+            logger.error("deadlock detected in class weaving, please report to the Glowroot"
+                    + " project:\n{}", sb);
+            // no need to keep checking for (and logging) deadlocked active weaving
+            throw new TerminateSubsequentExecutionsException();
+        } finally {
+            weavingDisabledForLoggingDeadlock = false;
+        }
+    }
+
     private static void verify(byte[] transformedBytes, @Nullable ClassLoader loader,
             byte[] originalBytes, String className) {
         String originalBytesVerifyError = verify(originalBytes, loader);
@@ -236,6 +306,64 @@ public class Weaver {
             simpleName = className.substring(index + 1);
         }
         return new File(tmpDir, prefix + simpleName + suffix);
+    }
+
+    private static void appendThreadInfo(StringBuilder sb, ThreadInfo threadInfo) {
+        sb.append('"');
+        sb.append(threadInfo.getThreadName());
+        sb.append("\" #");
+        sb.append(threadInfo.getThreadId());
+        sb.append("\n   java.lang.Thread.State: ");
+        sb.append(threadInfo.getThreadState().name());
+        sb.append('\n');
+        LockInfo lockInfo = threadInfo.getLockInfo();
+        StackTraceElement[] stackTrace = threadInfo.getStackTrace();
+        for (int i = 0; i < stackTrace.length; i++) {
+            StackTraceElement stackTraceElement = stackTrace[i];
+            sb.append("        ");
+            sb.append(stackTraceElement);
+            sb.append('\n');
+            if (i == 0 && lockInfo != null) {
+                Thread.State threadState = threadInfo.getThreadState();
+                switch (threadState) {
+                    case BLOCKED:
+                        sb.append("        -  blocked on ");
+                        sb.append(lockInfo);
+                        sb.append('\n');
+                        break;
+                    case WAITING:
+                        sb.append("        -  waiting on ");
+                        sb.append(lockInfo);
+                        sb.append('\n');
+                        break;
+                    case TIMED_WAITING:
+                        sb.append("        -  waiting on ");
+                        sb.append(lockInfo);
+                        sb.append('\n');
+                        break;
+                    default:
+                        break;
+                }
+            }
+            for (MonitorInfo monitorInfo : threadInfo.getLockedMonitors()) {
+                if (monitorInfo.getLockedStackDepth() == i) {
+                    sb.append("        -  locked ");
+                    sb.append(monitorInfo);
+                    sb.append('\n');
+                }
+            }
+        }
+    }
+
+    private static class ActiveWeaving {
+
+        private final long threadId;
+        private final long startTick;
+
+        private ActiveWeaving(long threadId, long startTick) {
+            this.threadId = threadId;
+            this.startTick = startTick;
+        }
     }
 
     private static class JSRInlinerClassVisitor extends ClassVisitor {

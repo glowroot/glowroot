@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.impl;
+package org.glowroot.agent.util;
 
 import java.util.List;
 
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
-import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
+import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-public class TransactionCollectionTest {
+public class IterableWithSelfRemovableEntriesTest {
 
     @Test
     public void test() {
-        TransactionCollection collection = new TransactionCollection();
-        List<TransactionEntry> entries = Lists.newArrayList();
+        IterableWithSelfRemovableEntries<Object> collection =
+                new IterableWithSelfRemovableEntries<Object>();
+        List<SelfRemovableEntry> entries = Lists.newArrayList();
         for (int i = 0; i < 10; i++) {
-            entries.add(collection.add(mock(Transaction.class)));
+            entries.add(collection.add(new Object()));
         }
         for (int i = 0; i < 10; i++) {
             entries.get(9 - i).remove();

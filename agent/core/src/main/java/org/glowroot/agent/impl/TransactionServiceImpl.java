@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@ import com.google.common.base.Ticker;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.Transaction.CompletionCallback;
-import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
+import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
@@ -90,7 +90,7 @@ public class TransactionServiceImpl implements ConfigListener {
                 maxAggregateServiceCallsPerType, threadAllocatedBytes,
                 transactionCompletionCallback, ticker, transactionRegistry, this, configService,
                 userProfileScheduler, threadContextHolder);
-        TransactionEntry transactionEntry = transactionRegistry.addTransaction(transaction);
+        SelfRemovableEntry transactionEntry = transactionRegistry.addTransaction(transaction);
         transaction.setTransactionEntry(transactionEntry);
         threadContextHolder.set(transaction.getMainThreadContext());
         return transaction.getMainThreadContext().getRootEntry();

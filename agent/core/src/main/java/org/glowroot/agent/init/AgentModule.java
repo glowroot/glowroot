@@ -66,10 +66,12 @@ import org.glowroot.agent.weaving.Weaver;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common.util.ScheduledRunnable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class AgentModule {
 
@@ -91,13 +93,16 @@ public class AgentModule {
     private final TransactionRegistry transactionRegistry;
     private final AdviceCache adviceCache;
 
-    private final TransactionCollector transactionCollector;
+    private final DeadlockedActiveWeavingRunnable deadlockedActiveWeavingRunnable;
     private final Aggregator aggregator;
+    private final TransactionCollector transactionCollector;
 
-    private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
+    private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
     private final GaugeCollector gaugeCollector;
     private final StackTraceCollector stackTraceCollector;
+
+    private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
 
     private final boolean jvmRetransformClassesSupported;
 
@@ -105,8 +110,6 @@ public class AgentModule {
     private final LiveAggregateRepositoryImpl liveAggregateRepository;
     private final LiveWeavingServiceImpl liveWeavingService;
     private final LiveJvmServiceImpl liveJvmService;
-
-    private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
     // accepts @Nullable Ticker to deal with shading issues when called from GlowrootModule
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, final PluginCache pluginCache,
@@ -129,9 +132,10 @@ public class AgentModule {
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes());
         final TimerNameCache timerNameCache = new TimerNameCache();
 
-        Weaver weaver = new Weaver(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
-                adviceCache.getMixinTypes(), analyzedWorld, transactionRegistry, timerNameCache,
-                configService);
+        final Weaver weaver =
+                new Weaver(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
+                        adviceCache.getMixinTypes(), analyzedWorld, transactionRegistry, ticker,
+                        timerNameCache, configService);
 
         if (instrumentation == null) {
             // instrumentation is null when debugging with LocalContainer
@@ -155,6 +159,8 @@ public class AgentModule {
 
         // now that instrumentation is set up, it is safe to create scheduled executor
         ScheduledExecutorService backgroundExecutor = backgroundExecutorSupplier.get();
+        deadlockedActiveWeavingRunnable = new DeadlockedActiveWeavingRunnable(weaver);
+        deadlockedActiveWeavingRunnable.scheduleWithFixedDelay(backgroundExecutor, 5, 5, SECONDS);
 
         aggregator = new Aggregator(collector, configService, ROLLUP_0_INTERVAL_MILLIS, clock);
         transactionCollector =
@@ -313,10 +319,25 @@ public class AgentModule {
     @OnlyUsedByTests
     public void close() throws Exception {
         immedateTraceStoreWatcher.cancel();
+        stackTraceCollector.close();
+        gaugeCollector.close();
+        lazyPlatformMBeanServer.close();
         transactionCollector.close();
         aggregator.close();
-        gaugeCollector.close();
-        stackTraceCollector.close();
-        lazyPlatformMBeanServer.close();
+        deadlockedActiveWeavingRunnable.cancel();
+    }
+
+    private static class DeadlockedActiveWeavingRunnable extends ScheduledRunnable {
+
+        private final Weaver weaver;
+
+        private DeadlockedActiveWeavingRunnable(Weaver weaver) {
+            this.weaver = weaver;
+        }
+
+        @Override
+        public void runInternal() {
+            weaver.checkForDeadlockedActiveWeaving();
+        }
     }
 }

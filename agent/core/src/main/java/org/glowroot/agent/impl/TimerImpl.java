@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -244,7 +244,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
     }
 
     // only called by transaction thread
-    TimerImpl startNestedTimer(TimerName timerName, long startTick) {
+    public TimerImpl startNestedTimer(TimerName timerName, long startTick) {
         // timer names are guaranteed one instance per name so pointer equality can be used
         if (this.timerName == timerName) {
             selfNestingLevel++;
