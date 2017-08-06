@@ -103,6 +103,11 @@ Copyright 2010-2013 Coda Hale, Yammer.com
 https://github.com/dropwizard/metrics
 Apache License, Version 2.0
 
+Error Prone (annotations)
+Copyright 2011-2017 Google Inc.
+https://github.com/google/error-prone
+Apache License, Version 2.0
+
 FastClasspathScanner
 Copyright 2015 Luke Hutchison
 https://github.com/lukehutch/fast-classpath-scanner
