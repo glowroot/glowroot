@@ -33,6 +33,8 @@ matrix:
     - jdk: oraclejdk8
       env: TARGET=deploy
     - jdk: oraclejdk8
+      env: TARGET=checker
+    - jdk: oraclejdk8
       env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=local
     - jdk: oraclejdk8
       env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=local
