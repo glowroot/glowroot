@@ -863,8 +863,11 @@ public class SchemaUpgrade {
             }
             AgentConfig agentConfig = upgradeOldAgentConfig(oldAgentConfig);
             boundStatement = insertPS.bind();
-            boundStatement.setString(0, agentRollupId);
-            boundStatement.setBytes(1, ByteBuffer.wrap(agentConfig.toByteArray()));
+            int i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
+            boundStatement.setBool(i++, true);
+            boundStatement.setUUID(i++, UUIDs.random());
             session.execute(boundStatement);
         }
     }
