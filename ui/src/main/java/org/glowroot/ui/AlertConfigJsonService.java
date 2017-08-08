@@ -415,11 +415,11 @@ class AlertConfigJsonService {
             ImmutableMetricConditionDto.Builder builder = ImmutableMetricConditionDto.builder()
                     .metric(condition.getMetric());
             String transactionType = condition.getTransactionType();
-            if (transactionType != null) {
+            if (!transactionType.isEmpty()) {
                 builder.transactionType(transactionType);
             }
             String transactionName = condition.getTransactionName();
-            if (transactionName != null) {
+            if (!transactionName.isEmpty()) {
                 builder.transactionName(transactionName);
             }
             if (condition.hasPercentile()) {
