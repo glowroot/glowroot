@@ -793,7 +793,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     if (remainingVersions.contains(currVersion)) {
                         i.remove();
                         remainingVersions.remove(currVersion);
-                        break;
                     }
                 }
                 if (!remainingVersions.isEmpty()) {
