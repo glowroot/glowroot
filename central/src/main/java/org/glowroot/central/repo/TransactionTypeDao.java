@@ -27,7 +27,6 @@ import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 
@@ -41,7 +40,6 @@ import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.HOURS;
 
 class TransactionTypeDao implements TransactionTypeRepository {
 
@@ -97,7 +95,9 @@ class TransactionTypeDao implements TransactionTypeRepository {
                 int i = 0;
                 boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, transactionType);
-                boundStatement.setInt(i++, getMaxTTL());
+                // intentionally not accounting for rateLimiter in TTL
+                boundStatement.setInt(i++,
+                        configRepository.getCentralStorageConfig().getMaxRollupTTL());
                 future = session.executeAsync(boundStatement);
             } catch (Exception e) {
                 rateLimiter.invalidate(rateLimiterKey);
@@ -111,20 +111,6 @@ class TransactionTypeDao implements TransactionTypeRepository {
             futures.add(chainedFuture);
         }
         return futures;
-    }
-
-    private int getMaxTTL() throws Exception {
-        long maxTTL = 0;
-        for (long expirationHours : configRepository.getCentralStorageConfig()
-                .rollupExpirationHours()) {
-            if (expirationHours == 0) {
-                // zero value expiration/TTL means never expire
-                return 0;
-            }
-            maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
-        }
-        // intentionally not accounting for rateLimiter
-        return Ints.saturatedCast(maxTTL);
     }
 
     @Value.Immutable

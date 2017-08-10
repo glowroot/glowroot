@@ -33,4 +33,8 @@ public interface StorageConfig {
     int traceExpirationHours();
 
     int fullQueryTextExpirationHours();
+
+    int getMaxRollupTTL();
+
+    int getTraceTTL();
 }

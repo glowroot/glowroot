@@ -42,7 +42,6 @@ import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.HOURS;
 
 class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
@@ -97,25 +96,20 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, transactionType);
         boundStatement.setString(i++, traceAttributeName);
-        boundStatement.setInt(i++, getMaxTTL());
+        boundStatement.setInt(i++, getTraceTTL());
         ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
         CompletableFuture<?> chainedFuture = MoreFutures.onFailure(future,
                 () -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY));
         futures.add(chainedFuture);
     }
 
-    private int getMaxTTL() throws Exception {
-        long maxTTL = 0;
-        for (long expirationHours : configRepository.getCentralStorageConfig()
-                .rollupExpirationHours()) {
-            if (expirationHours == 0) {
-                // zero value expiration/TTL means never expire
-                return 0;
-            }
-            maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
+    private int getTraceTTL() throws Exception {
+        int ttl = configRepository.getCentralStorageConfig().getTraceTTL();
+        if (ttl == 0) {
+            return 0;
         }
         // adding 1 day to account for rateLimiter
-        return Ints.saturatedCast(maxTTL + DAYS.toSeconds(1));
+        return Ints.saturatedCast(ttl + DAYS.toSeconds(1));
     }
 
     @Value.Immutable

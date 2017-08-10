@@ -17,9 +17,12 @@ package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Versions;
+
+import static java.util.concurrent.TimeUnit.HOURS;
 
 @Value.Immutable
 public abstract class CentralStorageConfig implements StorageConfig {
@@ -60,5 +63,19 @@ public abstract class CentralStorageConfig implements StorageConfig {
 
     public boolean hasListIssues() {
         return rollupExpirationHours().size() != DEFAULT_ROLLUP_EXPIRATION_HOURS.size();
+    }
+
+    @Override
+    @Value.Derived
+    @JsonIgnore
+    public int getMaxRollupTTL() {
+        return EmbeddedStorageConfig.getMaxRollupExpirationSeconds(this);
+    }
+
+    @Override
+    @Value.Derived
+    @JsonIgnore
+    public int getTraceTTL() {
+        return Ints.saturatedCast(HOURS.toSeconds(traceExpirationHours()));
     }
 }
