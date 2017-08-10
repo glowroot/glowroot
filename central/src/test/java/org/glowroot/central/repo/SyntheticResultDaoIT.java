@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.repo.SyntheticResultRepository.SyntheticResult;
 import org.glowroot.common.util.Clock;
@@ -60,12 +59,6 @@ public class SyntheticResultDaoIT {
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
         ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentRollupDao,
                 agentConfigDao, centralConfigDao, userDao, roleDao, "");
-        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
-        configRepository.updateCentralStorageConfig(
-                ImmutableCentralStorageConfig
-                        .copyOf(storageConfig)
-                        .withRollupExpirationHours(0, 0, 0, 0),
-                storageConfig.version());
         syntheticResultDao = new SyntheticResultDao(session, configRepository, Clock.systemClock());
     }
 
