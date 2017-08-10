@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.util.Styles;
 
@@ -47,7 +46,7 @@ class FullQueryTextDao {
     private static final Logger logger = LoggerFactory.getLogger(FullQueryTextDao.class);
 
     private final Session session;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
 
     private final PreparedStatement insertCheckPS;
     private final PreparedStatement readCheckPS;
@@ -57,7 +56,7 @@ class FullQueryTextDao {
 
     private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(10000);
 
-    FullQueryTextDao(Session session, ConfigRepository configRepository) throws Exception {
+    FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
 
@@ -170,7 +169,7 @@ class FullQueryTextDao {
                 // adding 1 day to account for rateLimiter
                 + DAYS.toSeconds(1)
                 + HOURS.toSeconds(
-                        configRepository.getStorageConfig().fullQueryTextExpirationHours());
+                        configRepository.getCentralStorageConfig().fullQueryTextExpirationHours());
         return Ints.saturatedCast(ttl);
     }
 

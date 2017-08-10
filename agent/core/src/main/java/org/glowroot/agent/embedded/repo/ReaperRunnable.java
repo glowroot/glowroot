@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
  */
 package org.glowroot.agent.embedded.repo;
 
+import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
+import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.StorageConfig;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 
@@ -24,7 +25,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 class ReaperRunnable extends ScheduledRunnable {
 
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
@@ -34,7 +35,7 @@ class ReaperRunnable extends ScheduledRunnable {
     private final IncidentDao incidentDao;
     private final Clock clock;
 
-    ReaperRunnable(ConfigRepository configService, AggregateDao aggregateDao, TraceDao traceDao,
+    ReaperRunnable(ConfigRepositoryImpl configService, AggregateDao aggregateDao, TraceDao traceDao,
             GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
             IncidentDao incidentDao, Clock clock) {
@@ -53,7 +54,7 @@ class ReaperRunnable extends ScheduledRunnable {
     protected void runInternal() throws Exception {
         long minCaptureTime = Long.MAX_VALUE;
         long currentTime = clock.currentTimeMillis();
-        StorageConfig storageConfig = configRepository.getStorageConfig();
+        EmbeddedStorageConfig storageConfig = configRepository.getEmbeddedStorageConfig();
         for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
             int expirationHours = storageConfig.rollupExpirationHours().get(i);
             if (expirationHours == 0) {

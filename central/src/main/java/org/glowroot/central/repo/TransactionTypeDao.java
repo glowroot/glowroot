@@ -35,7 +35,6 @@ import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.util.Styles;
 
@@ -50,7 +49,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
     private static final String SINGLE_CACHE_KEY = "x";
 
     private final Session session;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
@@ -59,7 +58,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
 
     private final Cache<String, Map<String, List<String>>> transactionTypesCache;
 
-    TransactionTypeDao(Session session, ConfigRepository configRepository,
+    TransactionTypeDao(Session session, ConfigRepositoryImpl configRepository,
             ClusterManager clusterManager) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
@@ -107,7 +106,8 @@ class TransactionTypeDao implements TransactionTypeRepository {
 
     private int getMaxTTL() throws Exception {
         long maxTTL = 0;
-        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
+        for (long expirationHours : configRepository.getCentralStorageConfig()
+                .rollupExpirationHours()) {
             if (expirationHours == 0) {
                 // zero value expiration/TTL means never expire
                 return 0;

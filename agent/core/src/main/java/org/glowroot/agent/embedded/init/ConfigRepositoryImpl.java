@@ -74,7 +74,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 
 import static com.google.common.base.Preconditions.checkState;
 
-class ConfigRepositoryImpl implements ConfigRepository {
+public class ConfigRepositoryImpl implements ConfigRepository {
 
     private static final String HEALTHCHECKS_IO_KEY = "healthchecksIo";
 
@@ -97,7 +97,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile PagerDutyConfig pagerDutyConfig;
     private volatile HealthchecksIoConfig healthchecksIoConfig;
 
-    static ConfigRepository create(File confDir, ConfigService configService,
+    static ConfigRepositoryImpl create(File confDir, ConfigService configService,
             PluginCache pluginCache) throws IOException {
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(confDir, configService, pluginCache);

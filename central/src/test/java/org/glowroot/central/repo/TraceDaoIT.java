@@ -28,7 +28,6 @@ import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ImmutableTraceQuery;
 import org.glowroot.common.repo.TraceRepository.TraceQuery;
 import org.glowroot.common.util.Clock;
@@ -58,8 +57,8 @@ public class TraceDaoIT {
         session.execute("use glowroot_unit_tests");
 
         clusterManager = ClusterManager.create();
-        ConfigRepository configRepository = mock(ConfigRepository.class);
-        when(configRepository.getStorageConfig())
+        ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
+        when(configRepository.getCentralStorageConfig())
                 .thenReturn(ImmutableCentralStorageConfig.builder().build());
         traceDao = new TraceDao(session, new AgentRollupDao(session, clusterManager),
                 mock(TransactionTypeDao.class), mock(FullQueryTextDao.class),

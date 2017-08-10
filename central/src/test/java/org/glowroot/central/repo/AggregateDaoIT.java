@@ -52,7 +52,6 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErr
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -96,8 +95,8 @@ public class AggregateDaoIT {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        ConfigRepository configRepository = new ConfigRepositoryImpl(agentRollupDao, agentConfigDao,
-                centralConfigDao, userDao, roleDao, "");
+        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentRollupDao,
+                agentConfigDao, centralConfigDao, userDao, roleDao, "");
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         configRepository.updateCentralStorageConfig(
                 ImmutableCentralStorageConfig

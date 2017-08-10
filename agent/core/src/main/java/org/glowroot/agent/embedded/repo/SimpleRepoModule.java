@@ -26,11 +26,11 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.embedded.util.H2DatabaseStats;
 import org.glowroot.common.config.EmbeddedStorageConfig;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
@@ -59,7 +59,7 @@ public class SimpleRepoModule {
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
     private final IncidentDao incidentDao;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final RepoAdmin repoAdmin;
     private final RollupLevelService rollupLevelService;
     private final AlertingService alertingService;
@@ -67,7 +67,7 @@ public class SimpleRepoModule {
     private final @Nullable ReaperRunnable reaperRunnable;
 
     public SimpleRepoModule(DataSource dataSource, File dataDir, Clock clock, Ticker ticker,
-            ConfigRepository configRepository,
+            ConfigRepositoryImpl configRepository,
             @Nullable ScheduledExecutorService backgroundExecutor) throws Exception {
         if (!dataDir.exists() && !dataDir.mkdir()) {
             throw new IOException("Could not create directory: " + dataDir.getAbsolutePath());
@@ -165,7 +165,7 @@ public class SimpleRepoModule {
         return incidentDao;
     }
 
-    public ConfigRepository getConfigRepository() {
+    public ConfigRepositoryImpl getConfigRepository() {
         return configRepository;
     }
 

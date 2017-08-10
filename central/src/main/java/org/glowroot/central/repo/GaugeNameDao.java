@@ -33,7 +33,6 @@ import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -45,7 +44,7 @@ class GaugeNameDao {
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
@@ -54,7 +53,7 @@ class GaugeNameDao {
 
     private final Cache<String, List<String>> gaugeNamesCache;
 
-    GaugeNameDao(Session session, ConfigRepository configRepository,
+    GaugeNameDao(Session session, ConfigRepositoryImpl configRepository,
             ClusterManager clusterManager) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
@@ -92,7 +91,8 @@ class GaugeNameDao {
 
     private int getMaxTTL() throws Exception {
         long maxTTL = 0;
-        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
+        for (long expirationHours : configRepository.getCentralStorageConfig()
+                .rollupExpirationHours()) {
             if (expirationHours == 0) {
                 // zero value expiration/TTL means never expire
                 return 0;

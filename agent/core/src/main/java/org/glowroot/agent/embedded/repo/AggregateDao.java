@@ -34,6 +34,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
+import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.repo.model.Stored;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
@@ -66,7 +67,6 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySo
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.repo.AggregateRepository;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.MutableAggregate;
 import org.glowroot.common.repo.util.RollupLevelService;
@@ -150,7 +150,7 @@ public class AggregateDao implements AggregateRepository {
 
     private final DataSource dataSource;
     private final List<CappedDatabase> rollupCappedDatabases;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
 
@@ -159,7 +159,7 @@ public class AggregateDao implements AggregateRepository {
     private final Object rollupLock = new Object();
 
     AggregateDao(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
-            ConfigRepository configRepository, TransactionTypeDao transactionTypeDao,
+            ConfigRepositoryImpl configRepository, TransactionTypeDao transactionTypeDao,
             FullQueryTextDao fullQueryTextDao) throws Exception {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;

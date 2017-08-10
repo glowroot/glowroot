@@ -29,7 +29,6 @@ import org.glowroot.agent.embedded.repo.EnvironmentDao;
 import org.glowroot.agent.embedded.repo.GaugeValueDao;
 import org.glowroot.agent.embedded.repo.TraceDao;
 import org.glowroot.common.config.HealthchecksIoConfig;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.HttpClient;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -50,13 +49,13 @@ class CollectorImpl implements Collector {
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final AlertingService alertingService;
     private final HttpClient httpClient;
 
     CollectorImpl(EnvironmentDao environmentDao, AggregateDao aggregateRepository,
             TraceDao traceRepository, GaugeValueDao gaugeValueRepository,
-            ConfigRepository configRepository, AlertingService alertingService,
+            ConfigRepositoryImpl configRepository, AlertingService alertingService,
             HttpClient httpClient) {
         this.environmentDao = environmentDao;
         this.aggregateDao = aggregateRepository;

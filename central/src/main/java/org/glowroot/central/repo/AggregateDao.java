@@ -80,7 +80,6 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySo
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.repo.AggregateRepository;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.MutableAggregate;
 import org.glowroot.common.repo.MutableThreadStats;
@@ -209,7 +208,7 @@ public class AggregateDao implements AggregateRepository {
     private final AgentRollupDao agentRollupDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final Clock clock;
 
     // list index is rollupLevel
@@ -239,7 +238,7 @@ public class AggregateDao implements AggregateRepository {
 
     AggregateDao(Session session, AgentRollupDao agentRollupDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-            ConfigRepository configRepository, Clock clock) throws Exception {
+            ConfigRepositoryImpl configRepository, Clock clock) throws Exception {
         this.session = session;
         this.agentRollupDao = agentRollupDao;
         this.transactionTypeDao = transactionTypeDao;
@@ -249,7 +248,7 @@ public class AggregateDao implements AggregateRepository {
 
         int count = configRepository.getRollupConfigs().size();
         List<Integer> rollupExpirationHours =
-                configRepository.getStorageConfig().rollupExpirationHours();
+                configRepository.getCentralStorageConfig().rollupExpirationHours();
 
         allTables = ImmutableList.of(summaryTable, errorSummaryTable, overviewTable,
                 histogramTable, throughputTable, queryTable, serviceCallTable,
@@ -2004,7 +2003,7 @@ public class AggregateDao implements AggregateRepository {
     private List<Integer> getTTLs() throws Exception {
         List<Integer> ttls = Lists.newArrayList();
         List<Integer> rollupExpirationHours =
-                configRepository.getStorageConfig().rollupExpirationHours();
+                configRepository.getCentralStorageConfig().rollupExpirationHours();
         for (long expirationHours : rollupExpirationHours) {
             ttls.add(Ints.saturatedCast(HOURS.toSeconds(expirationHours)));
         }

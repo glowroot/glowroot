@@ -49,7 +49,6 @@ import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.Utils;
@@ -70,7 +69,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private final Session session;
     private final AgentRollupDao agentRollupDao;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final Clock clock;
 
     private final GaugeNameDao gaugeNameDao;
@@ -89,8 +88,9 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final PreparedStatement readNeedsRollupFromChild;
     private final PreparedStatement deleteNeedsRollupFromChild;
 
-    GaugeValueDao(Session session, AgentRollupDao agentRollupDao, ConfigRepository configRepository,
-            ClusterManager clusterManager, Clock clock) throws Exception {
+    GaugeValueDao(Session session, AgentRollupDao agentRollupDao,
+            ConfigRepositoryImpl configRepository, ClusterManager clusterManager, Clock clock)
+            throws Exception {
         this.session = session;
         this.agentRollupDao = agentRollupDao;
         this.configRepository = configRepository;
@@ -99,7 +99,9 @@ public class GaugeValueDao implements GaugeValueRepository {
         gaugeNameDao = new GaugeNameDao(session, configRepository, clusterManager);
 
         int count = configRepository.getRollupConfigs().size();
-        List<Integer> rollupExpirationHours = getRollupExpirationHours(configRepository);
+        List<Integer> rollupExpirationHours = Lists
+                .newArrayList(configRepository.getCentralStorageConfig().rollupExpirationHours());
+        rollupExpirationHours.add(0, rollupExpirationHours.get(0));
 
         List<PreparedStatement> insertValuePS = Lists.newArrayList();
         List<PreparedStatement> readValuePS = Lists.newArrayList();
@@ -499,8 +501,10 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     private List<Integer> getTTLs() throws Exception {
+        List<Integer> rollupExpirationHours = Lists
+                .newArrayList(configRepository.getCentralStorageConfig().rollupExpirationHours());
+        rollupExpirationHours.add(0, rollupExpirationHours.get(0));
         List<Integer> ttls = Lists.newArrayList();
-        List<Integer> rollupExpirationHours = getRollupExpirationHours(configRepository);
         for (long expirationHours : rollupExpirationHours) {
             ttls.add(Ints.saturatedCast(HOURS.toSeconds(expirationHours)));
         }
@@ -517,13 +521,5 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
         session.execute("truncate gauge_name");
         session.execute("truncate gauge_needs_rollup_from_child");
-    }
-
-    private static List<Integer> getRollupExpirationHours(ConfigRepository configRepository)
-            throws Exception {
-        List<Integer> rollupExpirationHours =
-                Lists.newArrayList(configRepository.getStorageConfig().rollupExpirationHours());
-        rollupExpirationHours.add(0, rollupExpirationHours.get(0));
-        return rollupExpirationHours;
     }
 }

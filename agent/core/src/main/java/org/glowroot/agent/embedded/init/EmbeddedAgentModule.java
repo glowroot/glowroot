@@ -60,7 +60,6 @@ import org.glowroot.common.config.RoleConfig.SimplePermission;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.repo.AgentRollupRepository;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -117,7 +116,7 @@ class EmbeddedAgentModule {
             viewerAgentModule = new ViewerAgentModule(pluginsDir, confDir);
             backgroundExecutor = null;
             agentModule = null;
-            ConfigRepository configRepository = ConfigRepositoryImpl.create(confDir,
+            ConfigRepositoryImpl configRepository = ConfigRepositoryImpl.create(confDir,
                     viewerAgentModule.getConfigService(), pluginCache);
             DataSource dataSource = createDataSource(h2MemDb, dataDir);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
@@ -143,7 +142,7 @@ class EmbeddedAgentModule {
             backgroundExecutor = backgroundExecutorSupplier.get();
 
             PreInitializeStorageShutdownClasses.preInitializeClasses();
-            final ConfigRepository configRepository = ConfigRepositoryImpl.create(confDir,
+            final ConfigRepositoryImpl configRepository = ConfigRepositoryImpl.create(confDir,
                     agentModule.getConfigService(), pluginCache);
             ExecutorService singleUseExecutor =
                     Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-Init-Repo"));
@@ -362,7 +361,7 @@ class EmbeddedAgentModule {
         return false;
     }
 
-    private static void addAlertPermission(ConfigRepository configRepository) throws Exception {
+    private static void addAlertPermission(ConfigRepositoryImpl configRepository) throws Exception {
         for (RoleConfig config : configRepository.getRoleConfigs()) {
             if (config.isPermitted(SimplePermission.create("agent:transaction:overview"))
                     || config.isPermitted(SimplePermission.create("agent:error:overview"))

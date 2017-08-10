@@ -17,9 +17,9 @@ package org.glowroot.agent.embedded.repo;
 
 import java.util.List;
 
+import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
@@ -28,7 +28,7 @@ class RepoAdminImpl implements RepoAdmin {
     private final DataSource dataSource;
     private final List<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final EnvironmentDao agentDao;
     private final GaugeValueDao gaugeValueDao;
     private final GaugeNameDao gaugeNameDao;
@@ -37,7 +37,7 @@ class RepoAdminImpl implements RepoAdmin {
     private final TraceAttributeNameDao traceAttributeNameDao;
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
-            CappedDatabase traceCappedDatabase, ConfigRepository configRepository,
+            CappedDatabase traceCappedDatabase, ConfigRepositoryImpl configRepository,
             EnvironmentDao agentDao, GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
             TraceAttributeNameDao traceAttributeNameDao) {

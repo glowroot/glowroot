@@ -54,7 +54,6 @@ import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ImmutableErrorMessageCount;
 import org.glowroot.common.repo.ImmutableErrorMessagePoint;
 import org.glowroot.common.repo.ImmutableErrorMessageResult;
@@ -81,7 +80,7 @@ public class TraceDao implements TraceRepository {
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final Clock clock;
 
     private final PreparedStatement insertCheck;
@@ -136,7 +135,7 @@ public class TraceDao implements TraceRepository {
 
     TraceDao(Session session, AgentRollupDao agentRollupDao, TransactionTypeDao transactionTypeDao,
             FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
-            ConfigRepository configRepository, Clock clock) throws Exception {
+            ConfigRepositoryImpl configRepository, Clock clock) throws Exception {
         this.session = session;
         this.agentRollupDao = agentRollupDao;
         this.transactionTypeDao = transactionTypeDao;
@@ -145,7 +144,7 @@ public class TraceDao implements TraceRepository {
         this.configRepository = configRepository;
         this.clock = clock;
 
-        int expirationHours = configRepository.getStorageConfig().traceExpirationHours();
+        int expirationHours = configRepository.getCentralStorageConfig().traceExpirationHours();
 
         session.createTableWithTWCS("create table if not exists trace_check (agent_rollup varchar,"
                 + " agent_id varchar, trace_id varchar, primary key ((agent_rollup, agent_id),"
@@ -927,7 +926,7 @@ public class TraceDao implements TraceRepository {
 
     private int getTTL() throws Exception {
         return Ints.saturatedCast(
-                HOURS.toSeconds(configRepository.getStorageConfig().traceExpirationHours()));
+                HOURS.toSeconds(configRepository.getCentralStorageConfig().traceExpirationHours()));
     }
 
     private static void bindSlowPoint(BoundStatement boundStatement, String agentRollupId,

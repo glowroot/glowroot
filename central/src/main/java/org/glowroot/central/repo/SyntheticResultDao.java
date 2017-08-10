@@ -42,7 +42,6 @@ import org.glowroot.central.repo.AggregateDao.NeedsRollup;
 import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.ImmutableSyntheticResult;
 import org.glowroot.common.repo.SyntheticResultRepository;
@@ -60,7 +59,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
     private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final Clock clock;
 
     // index is rollupLevel
@@ -72,7 +71,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
     private final List<PreparedStatement> readNeedsRollup;
     private final List<PreparedStatement> deleteNeedsRollup;
 
-    SyntheticResultDao(Session session, ConfigRepository configRepository, Clock clock)
+    SyntheticResultDao(Session session, ConfigRepositoryImpl configRepository, Clock clock)
             throws Exception {
         this.session = session;
         this.configRepository = configRepository;
@@ -80,7 +79,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
 
         int count = configRepository.getRollupConfigs().size();
         List<Integer> rollupExpirationHours =
-                configRepository.getStorageConfig().rollupExpirationHours();
+                configRepository.getCentralStorageConfig().rollupExpirationHours();
 
         List<PreparedStatement> insertResultPS = Lists.newArrayList();
         List<PreparedStatement> readResultPS = Lists.newArrayList();
@@ -315,7 +314,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
     private List<Integer> getTTLs() throws Exception {
         List<Integer> ttls = Lists.newArrayList();
         List<Integer> rollupExpirationHours =
-                configRepository.getStorageConfig().rollupExpirationHours();
+                configRepository.getCentralStorageConfig().rollupExpirationHours();
         for (long expirationHours : rollupExpirationHours) {
             ttls.add(Ints.saturatedCast(HOURS.toSeconds(expirationHours)));
         }

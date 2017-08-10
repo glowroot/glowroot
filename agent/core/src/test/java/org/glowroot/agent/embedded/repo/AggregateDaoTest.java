@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
+import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.common.live.ImmutableOverallQuery;
@@ -39,7 +40,6 @@ import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
 import org.glowroot.common.repo.AggregateRepository;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.ImmutableRollupConfig;
 import org.glowroot.common.util.Styles;
@@ -73,7 +73,7 @@ public class AggregateDaoTest {
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, Ticker.systemTicker());
-        ConfigRepository configRepository = mock(ConfigRepository.class);
+        ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
         when(configRepository.getAdvancedConfig(AGENT_ID))
                 .thenReturn(AdvancedConfig.getDefaultInstance());
         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.<RollupConfig>of(
