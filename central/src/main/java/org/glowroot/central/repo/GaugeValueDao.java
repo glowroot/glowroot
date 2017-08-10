@@ -20,13 +20,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Future;
 
 import javax.annotation.Nullable;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.HashMultimap;
@@ -180,7 +180,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
         int ttl = getTTLs().get(0);
         long maxCaptureTime = 0;
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         for (GaugeValue gaugeValue : gaugeValues) {
             BoundStatement boundStatement = insertValuePS.get(0).bind();
             String gaugeName = gaugeValue.getGaugeName();

@@ -63,3 +63,10 @@ public class Maps {
     public static <C extends @Nullable Object, K extends C, V extends @Nullable Object>
             TreeMap<K, V> newTreeMap(@Nullable Comparator<C> comparator);
 }
+
+/* ========================================================================== */
+package com.google.common.util.concurrent;
+
+public interface FutureCallback<V> {
+  void onSuccess(V result);
+}

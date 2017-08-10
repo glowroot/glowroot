@@ -18,7 +18,6 @@ package org.glowroot.central.util;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 
-import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -27,11 +26,14 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 
 public class Session {
@@ -61,11 +63,11 @@ public class Session {
         return session.prepare(query);
     }
 
-    public ResultSetFuture executeAsync(Statement statement) throws Exception {
+    public ListenableFuture<ResultSet> executeAsync(Statement statement) throws Exception {
         return throttle(() -> session.executeAsync(statement));
     }
 
-    public ResultSetFuture executeAsync(String query) throws Exception {
+    public ListenableFuture<ResultSet> executeAsync(String query) throws Exception {
         return throttle(() -> session.executeAsync(query));
     }
 
@@ -123,59 +125,54 @@ public class Session {
         //
         // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
         long gcGraceSeconds = DAYS.toSeconds(1);
+
+        // using unchecked_tombstone_compaction=true for better tombstone purging
+        // see http://thelastpickle.com/blog/2016/12/08/TWCS-part1.html
         String term = useAndInsteadOfWith ? "and" : "with";
         try {
             session.execute(createTableQuery + " " + term + " compaction = { 'class' :"
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : '" + windowSizeHours + "' }"
-                    + " and gc_grace_seconds = " + gcGraceSeconds);
+                    + " 'compaction_window_size' : '" + windowSizeHours + "',"
+                    + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
+                    + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
-            session.execute(createTableQuery
-                    + " " + term + " compaction = { 'class' : 'DateTieredCompactionStrategy' }"
-                    + " and gc_grace_seconds = " + gcGraceSeconds);
+            session.execute(createTableQuery + " " + term
+                    + " compaction = { 'class' : 'DateTieredCompactionStrategy',"
+                    + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
+                    + gcGraceSeconds);
         }
     }
 
-    public ResultSetFuture executeAsyncWithOnFailure(BoundStatement boundStatement,
-            Runnable onFailure) {
-        ResultSetFuture future = session.executeAsync(boundStatement);
-        future.addListener(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // TODO report checker framework issue that occurs without checkNotNull
-                    checkNotNull(future).getUninterruptibly();
-                } catch (Exception e) {
-                    logger.debug(e.getMessage(), e);
-                    onFailure.run();
-                }
-            }
-        }, MoreExecutors.directExecutor());
-        return future;
-    }
-
-    private ResultSetFuture throttle(DoUnderThrottle doUnderThrottle) throws Exception {
+    private ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle) throws Exception {
         Semaphore perThreadSemaphore = perThreadSemaphores.get();
         perThreadSemaphore.acquire();
         overallSemaphore.acquire();
-        ResultSetFuture future;
+        SettableFuture<ResultSet> outerFuture = SettableFuture.create();
+        ResultSetFuture innerFuture;
         try {
-            future = doUnderThrottle.execute();
+            innerFuture = doUnderThrottle.execute();
         } catch (Throwable t) {
             overallSemaphore.release();
             perThreadSemaphore.release();
             Throwables.propagateIfPossible(t, Exception.class);
             throw new Exception(t);
         }
-        future.addListener(new Runnable() {
+        Futures.addCallback(innerFuture, new FutureCallback<ResultSet>() {
             @Override
-            public void run() {
+            public void onSuccess(ResultSet result) {
                 overallSemaphore.release();
                 perThreadSemaphore.release();
+                outerFuture.set(result);
+            }
+            @Override
+            public void onFailure(Throwable t) {
+                overallSemaphore.release();
+                perThreadSemaphore.release();
+                outerFuture.setException(t);
             }
         }, MoreExecutors.directExecutor());
-        return future;
+        return outerFuture;
     }
 
     private static void propagateCauseIfPossible(ExecutionException e) throws Exception {

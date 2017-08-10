@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -31,7 +32,6 @@ import javax.annotation.Nullable;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Charsets;
@@ -404,7 +404,7 @@ public class AggregateDao implements AggregateRepository {
         }
         List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
         int adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime, clock);
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
         for (Aggregate.SharedQueryText sharedQueryText : initialSharedQueryTexts) {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
@@ -825,7 +825,7 @@ public class AggregateDao implements AggregateRepository {
             int adjustedTTL = getAdjustedTTL(ttl, captureTime, clock);
             int needsRollupAdjustedTTL = getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
             RollupParams rollupParams = getRollupParams(agentRollupId, rollupLevel, adjustedTTL);
-            List<ResultSetFuture> futures = Lists.newArrayList();
+            List<Future<?>> futures = Lists.newArrayList();
             for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
                     .entrySet()) {
                 String transactionType = entry.getKey();
@@ -873,7 +873,7 @@ public class AggregateDao implements AggregateRepository {
             RollupParams rollupParams = getRollupParams(agentRollupId, rollupLevel, adjustedTTL);
             long from = captureTime - rollupIntervalMillis;
             Set<String> transactionTypes = needsRollup.getKeys();
-            List<ResultSetFuture> futures = Lists.newArrayList();
+            List<Future<?>> futures = Lists.newArrayList();
             for (String transactionType : transactionTypes) {
                 futures.addAll(rollupOne(rollupParams, transactionType, from, captureTime));
             }
@@ -899,7 +899,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private List<ResultSetFuture> rollupOneFromChildren(RollupParams rollup, String transactionType,
+    private List<Future<?>> rollupOneFromChildren(RollupParams rollup, String transactionType,
             Collection<String> childAgentRollups, long captureTime) throws Exception {
 
         ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
@@ -908,7 +908,7 @@ public class AggregateDao implements AggregateRepository {
                 .to(captureTime)
                 .rollupLevel(rollup.rollupLevel()) // rolling up from same level (which is always 0)
                 .build();
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
 
         futures.addAll(rollupOverallSummaryFromChildren(rollup, query, childAgentRollups));
         futures.addAll(rollupErrorSummaryFromChildren(rollup, query, childAgentRollups));
@@ -929,7 +929,7 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> rollupOne(RollupParams rollup, String transactionType, long from,
+    private List<Future<?>> rollupOne(RollupParams rollup, String transactionType, long from,
             long to) throws Exception {
 
         ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
@@ -938,7 +938,7 @@ public class AggregateDao implements AggregateRepository {
                 .to(to)
                 .rollupLevel(rollup.rollupLevel() - 1)
                 .build();
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
 
         futures.addAll(rollupOverallSummary(rollup, query));
         futures.addAll(rollupErrorSummary(rollup, query));
@@ -957,9 +957,9 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> rollupOtherParts(RollupParams rollup, TransactionQuery query,
+    private List<Future<?>> rollupOtherParts(RollupParams rollup, TransactionQuery query,
             ScratchBuffer scratchBuffer) throws Exception {
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         futures.addAll(rollupOverview(rollup, query));
         futures.addAll(rollupHistogram(rollup, query, scratchBuffer));
         futures.addAll(rollupThroughput(rollup, query));
@@ -970,11 +970,11 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> rollupOtherPartsFromChildren(RollupParams rollup,
+    private List<Future<?>> rollupOtherPartsFromChildren(RollupParams rollup,
             TransactionQuery query, Collection<String> childAgentRollups,
             ScratchBuffer scratchBuffer)
             throws Exception {
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         futures.addAll(rollupOverviewFromChildren(rollup, query, childAgentRollups));
         futures.addAll(
                 rollupHistogramFromChildren(rollup, query, childAgentRollups, scratchBuffer));
@@ -988,8 +988,8 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> rollupOverallSummary(RollupParams rollup,
-            TransactionQuery query) throws Exception {
+    private List<Future<?>> rollupOverallSummary(RollupParams rollup, TransactionQuery query)
+            throws Exception {
         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, summaryTable);
         if (results.isExhausted()) {
             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
@@ -1000,7 +1000,7 @@ public class AggregateDao implements AggregateRepository {
         return rollupOverallSummaryFromRows(rollup, query, results);
     }
 
-    private List<ResultSetFuture> rollupOverallSummaryFromChildren(RollupParams rollup,
+    private List<Future<?>> rollupOverallSummaryFromChildren(RollupParams rollup,
             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, summaryTable);
         if (rows.isEmpty()) {
@@ -1012,7 +1012,7 @@ public class AggregateDao implements AggregateRepository {
         return rollupOverallSummaryFromRows(rollup, query, rows);
     }
 
-    private List<ResultSetFuture> rollupOverallSummaryFromRows(RollupParams rollup,
+    private List<Future<?>> rollupOverallSummaryFromRows(RollupParams rollup,
             TransactionQuery query, Iterable<Row> rows) throws Exception {
         double totalDurationNanos = 0;
         long transactionCount = 0;
@@ -1032,7 +1032,7 @@ public class AggregateDao implements AggregateRepository {
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
-    private List<ResultSetFuture> rollupErrorSummary(RollupParams rollup, TransactionQuery query)
+    private List<Future<?>> rollupErrorSummary(RollupParams rollup, TransactionQuery query)
             throws Exception {
         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, errorSummaryTable);
         if (results.isExhausted()) {
@@ -1041,7 +1041,7 @@ public class AggregateDao implements AggregateRepository {
         return rollupErrorSummaryFromRows(rollup, query, results);
     }
 
-    private List<ResultSetFuture> rollupErrorSummaryFromChildren(RollupParams rollup,
+    private List<Future<?>> rollupErrorSummaryFromChildren(RollupParams rollup,
             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, errorSummaryTable);
         if (rows.isEmpty()) {
@@ -1050,8 +1050,8 @@ public class AggregateDao implements AggregateRepository {
         return rollupErrorSummaryFromRows(rollup, query, rows);
     }
 
-    private List<ResultSetFuture> rollupErrorSummaryFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) throws Exception {
+    private List<Future<?>> rollupErrorSummaryFromRows(RollupParams rollup, TransactionQuery query,
+            Iterable<Row> rows) throws Exception {
         long errorCount = 0;
         long transactionCount = 0;
         for (Row row : rows) {
@@ -1071,8 +1071,8 @@ public class AggregateDao implements AggregateRepository {
     }
 
     // transactionNames is passed in empty, and populated by method
-    private List<ResultSetFuture> rollupTransactionSummary(RollupParams rollup,
-            TransactionQuery query, List<String> transactionNames) throws Exception {
+    private List<Future<?>> rollupTransactionSummary(RollupParams rollup, TransactionQuery query,
+            List<String> transactionNames) throws Exception {
         BoundStatement boundStatement = checkNotNull(readTransactionForRollupPS.get(summaryTable))
                 .get(query.rollupLevel()).bind();
         bindQuery(boundStatement, rollup.agentRollupId(), query);
@@ -1087,7 +1087,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     // transactionNames is passed in empty, and populated by method
-    private List<ResultSetFuture> rollupTransactionSummaryFromChildren(RollupParams rollup,
+    private List<Future<?>> rollupTransactionSummaryFromChildren(RollupParams rollup,
             TransactionQuery query, Collection<String> childAgentRollups,
             List<String> transactionNames) throws Exception {
         List<Row> rows =
@@ -1102,7 +1102,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     // transactionNames is passed in empty, and populated by method
-    private List<ResultSetFuture> rollupTransactionSummaryFromRows(RollupParams rollup,
+    private List<Future<?>> rollupTransactionSummaryFromRows(RollupParams rollup,
             TransactionQuery query, Iterable<Row> rows, List<String> transactionNames)
             throws Exception {
         BoundStatement boundStatement;
@@ -1118,7 +1118,7 @@ public class AggregateDao implements AggregateRepository {
             summary.totalDurationNanos += row.getDouble(i++);
             summary.transactionCount += row.getLong(i++);
         }
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         PreparedStatement preparedStatement =
                 getInsertTransactionPS(summaryTable, rollup.rollupLevel());
         for (Entry<String, MutableSummary> entry : summaries.entrySet()) {
@@ -1138,7 +1138,7 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> rollupTransactionErrorSummary(RollupParams rollup,
+    private List<Future<?>> rollupTransactionErrorSummary(RollupParams rollup,
             TransactionQuery query) throws Exception {
         BoundStatement boundStatement =
                 checkNotNull(readTransactionForRollupPS.get(errorSummaryTable))
@@ -1152,7 +1152,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     // transactionNames is passed in empty, and populated by method
-    private List<ResultSetFuture> rollupTransactionErrorSummaryFromChildren(RollupParams rollup,
+    private List<Future<?>> rollupTransactionErrorSummaryFromChildren(RollupParams rollup,
             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
         List<Row> rows =
                 getRowsForSummaryRollupFromChildren(query, childAgentRollups, errorSummaryTable);
@@ -1162,7 +1162,7 @@ public class AggregateDao implements AggregateRepository {
         return rollupTransactionErrorSummaryFromRows(rollup, query, rows);
     }
 
-    private List<ResultSetFuture> rollupTransactionErrorSummaryFromRows(RollupParams rollup,
+    private List<Future<?>> rollupTransactionErrorSummaryFromRows(RollupParams rollup,
             TransactionQuery query, Iterable<Row> rows) throws Exception {
         BoundStatement boundStatement;
         Map<String, MutableErrorSummary> summaries = Maps.newHashMap();
@@ -1179,7 +1179,7 @@ public class AggregateDao implements AggregateRepository {
         }
         PreparedStatement preparedStatement =
                 getInsertTransactionPS(errorSummaryTable, rollup.rollupLevel());
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         for (Entry<String, MutableErrorSummary> entry : summaries.entrySet()) {
             MutableErrorSummary summary = entry.getValue();
             boundStatement = preparedStatement.bind();
@@ -1196,7 +1196,7 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> rollupOverview(RollupParams rollup, TransactionQuery query)
+    private List<Future<?>> rollupOverview(RollupParams rollup, TransactionQuery query)
             throws Exception {
         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, overviewTable);
         if (results.isExhausted()) {
@@ -1208,8 +1208,8 @@ public class AggregateDao implements AggregateRepository {
         return rollupOverviewFromRows(rollup, query, results);
     }
 
-    private List<ResultSetFuture> rollupOverviewFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
+    private List<Future<?>> rollupOverviewFromChildren(RollupParams rollup, TransactionQuery query,
+            Collection<String> childAgentRollups) throws Exception {
         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, overviewTable);
         if (rows.isEmpty()) {
             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
@@ -1220,8 +1220,8 @@ public class AggregateDao implements AggregateRepository {
         return rollupOverviewFromRows(rollup, query, rows);
     }
 
-    private List<ResultSetFuture> rollupOverviewFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) throws Exception {
+    private List<Future<?>> rollupOverviewFromRows(RollupParams rollup, TransactionQuery query,
+            Iterable<Row> rows) throws Exception {
         double totalDurationNanos = 0;
         long transactionCount = 0;
         boolean asyncTransactions = false;
@@ -1289,7 +1289,7 @@ public class AggregateDao implements AggregateRepository {
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
-    private List<ResultSetFuture> rollupHistogram(RollupParams rollup, TransactionQuery query,
+    private List<Future<?>> rollupHistogram(RollupParams rollup, TransactionQuery query,
             ScratchBuffer scratchBuffer) throws Exception {
         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, histogramTable);
         if (results.isExhausted()) {
@@ -1301,10 +1301,8 @@ public class AggregateDao implements AggregateRepository {
         return rollupHistogramFromRows(rollup, query, results, scratchBuffer);
     }
 
-    private List<ResultSetFuture> rollupHistogramFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups,
-            ScratchBuffer scratchBuffer)
-            throws Exception {
+    private List<Future<?>> rollupHistogramFromChildren(RollupParams rollup, TransactionQuery query,
+            Collection<String> childAgentRollups, ScratchBuffer scratchBuffer) throws Exception {
         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, histogramTable);
         if (rows.isEmpty()) {
             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
@@ -1315,9 +1313,8 @@ public class AggregateDao implements AggregateRepository {
         return rollupHistogramFromRows(rollup, query, rows, scratchBuffer);
     }
 
-    private List<ResultSetFuture> rollupHistogramFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows, ScratchBuffer scratchBuffer)
-            throws Exception {
+    private List<Future<?>> rollupHistogramFromRows(RollupParams rollup, TransactionQuery query,
+            Iterable<Row> rows, ScratchBuffer scratchBuffer) throws Exception {
         double totalDurationNanos = 0;
         long transactionCount = 0;
         LazyHistogram durationNanosHistogram = new LazyHistogram();
@@ -1348,7 +1345,7 @@ public class AggregateDao implements AggregateRepository {
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
-    private List<ResultSetFuture> rollupThroughput(RollupParams rollup, TransactionQuery query)
+    private List<Future<?>> rollupThroughput(RollupParams rollup, TransactionQuery query)
             throws Exception {
         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, throughputTable);
         if (results.isExhausted()) {
@@ -1360,7 +1357,7 @@ public class AggregateDao implements AggregateRepository {
         return rollupThroughputFromRows(rollup, query, results);
     }
 
-    private List<ResultSetFuture> rollupThroughputFromChildren(RollupParams rollup,
+    private List<Future<?>> rollupThroughputFromChildren(RollupParams rollup,
             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, throughputTable);
         if (rows.isEmpty()) {
@@ -1372,8 +1369,8 @@ public class AggregateDao implements AggregateRepository {
         return rollupThroughputFromRows(rollup, query, rows);
     }
 
-    private List<ResultSetFuture> rollupThroughputFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) throws Exception {
+    private List<Future<?>> rollupThroughputFromRows(RollupParams rollup, TransactionQuery query,
+            Iterable<Row> rows) throws Exception {
         long transactionCount = 0;
         // error_count is null for data inserted prior to glowroot central 0.9.18
         // rolling up any interval with null error_count should result in null error_count
@@ -1410,7 +1407,7 @@ public class AggregateDao implements AggregateRepository {
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
-    private List<ResultSetFuture> rollupQueries(RollupParams rollup, TransactionQuery query)
+    private List<Future<?>> rollupQueries(RollupParams rollup, TransactionQuery query)
             throws Exception {
         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, queryTable);
         if (results.isExhausted()) {
@@ -1419,7 +1416,7 @@ public class AggregateDao implements AggregateRepository {
         return rollupQueriesFromRows(rollup, query, results, false);
     }
 
-    private List<ResultSetFuture> rollupQueriesFromChildren(RollupParams rollup,
+    private List<Future<?>> rollupQueriesFromChildren(RollupParams rollup,
             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, queryTable);
         if (rows.isEmpty()) {
@@ -1428,7 +1425,7 @@ public class AggregateDao implements AggregateRepository {
         return rollupQueriesFromRows(rollup, query, rows, true);
     }
 
-    private List<ResultSetFuture> rollupQueriesFromRows(RollupParams rollup, TransactionQuery query,
+    private List<Future<?>> rollupQueriesFromRows(RollupParams rollup, TransactionQuery query,
             Iterable<Row> rows, boolean rollupFromChildren) throws Exception {
         QueryCollector collector = new QueryCollector(rollup.maxAggregateQueriesPerType());
         for (Row row : rows) {
@@ -1449,7 +1446,7 @@ public class AggregateDao implements AggregateRepository {
                 query.to(), rollup.adjustedTTL(), rollupFromChildren);
     }
 
-    private List<ResultSetFuture> rollupServiceCalls(RollupParams rollup, TransactionQuery query)
+    private List<Future<?>> rollupServiceCalls(RollupParams rollup, TransactionQuery query)
             throws Exception {
         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, serviceCallTable);
         if (results.isExhausted()) {
@@ -1458,7 +1455,7 @@ public class AggregateDao implements AggregateRepository {
         return rollupServiceCallsFromRows(rollup, query, results);
     }
 
-    private List<ResultSetFuture> rollupServiceCallsFromChildren(RollupParams rollup,
+    private List<Future<?>> rollupServiceCallsFromChildren(RollupParams rollup,
             TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, serviceCallTable);
         if (rows.isEmpty()) {
@@ -1467,8 +1464,8 @@ public class AggregateDao implements AggregateRepository {
         return rollupServiceCallsFromRows(rollup, query, rows);
     }
 
-    private List<ResultSetFuture> rollupServiceCallsFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows) throws Exception {
+    private List<Future<?>> rollupServiceCallsFromRows(RollupParams rollup, TransactionQuery query,
+            Iterable<Row> rows) throws Exception {
         ServiceCallCollector collector =
                 new ServiceCallCollector(rollup.maxAggregateServiceCallsPerType(), 0);
         for (Row row : rows) {
@@ -1484,7 +1481,7 @@ public class AggregateDao implements AggregateRepository {
                 query.transactionType(), query.transactionName(), query.to(), rollup.adjustedTTL());
     }
 
-    private List<ResultSetFuture> rollupThreadProfile(RollupParams rollup, TransactionQuery query,
+    private List<Future<?>> rollupThreadProfile(RollupParams rollup, TransactionQuery query,
             Table table) throws Exception {
         ResultSet results = executeQueryForRollup(rollup.agentRollupId(), query, table);
         if (results.isExhausted()) {
@@ -1493,7 +1490,7 @@ public class AggregateDao implements AggregateRepository {
         return rollupThreadProfileFromRows(rollup, query, results, table);
     }
 
-    private List<ResultSetFuture> rollupThreadProfileFromChildren(RollupParams rollup,
+    private List<Future<?>> rollupThreadProfileFromChildren(RollupParams rollup,
             TransactionQuery query, Collection<String> childAgentRollups, Table table)
             throws Exception {
         List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, table);
@@ -1503,9 +1500,8 @@ public class AggregateDao implements AggregateRepository {
         return rollupThreadProfileFromRows(rollup, query, rows, table);
     }
 
-    private List<ResultSetFuture> rollupThreadProfileFromRows(RollupParams rollup,
-            TransactionQuery query, Iterable<Row> rows, Table table)
-            throws Exception {
+    private List<Future<?>> rollupThreadProfileFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows, Table table) throws Exception {
         MutableProfile profile = new MutableProfile();
         for (Row row : rows) {
             ByteBuffer bytes = checkNotNull(row.getBytes(0));
@@ -1552,13 +1548,13 @@ public class AggregateDao implements AggregateRepository {
         return rows;
     }
 
-    private List<ResultSetFuture> storeOverallAggregate(String agentRollupId,
-            String transactionType, long captureTime, Aggregate aggregate,
-            List<Aggregate.SharedQueryText> sharedQueryTexts, int adjustedTTL) throws Exception {
+    private List<Future<?>> storeOverallAggregate(String agentRollupId, String transactionType,
+            long captureTime, Aggregate aggregate, List<Aggregate.SharedQueryText> sharedQueryTexts,
+            int adjustedTTL) throws Exception {
 
         final int rollupLevel = 0;
 
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         BoundStatement boundStatement = getInsertOverallPS(summaryTable, rollupLevel).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
@@ -1639,13 +1635,13 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> storeTransactionAggregate(String agentRollupId,
-            String transactionType, String transactionName, long captureTime, Aggregate aggregate,
+    private List<Future<?>> storeTransactionAggregate(String agentRollupId, String transactionType,
+            String transactionName, long captureTime, Aggregate aggregate,
             List<Aggregate.SharedQueryText> sharedQueryTexts, int adjustedTTL) throws Exception {
 
         final int rollupLevel = 0;
 
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         BoundStatement boundStatement = getInsertTransactionPS(overviewTable, rollupLevel).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
@@ -1710,13 +1706,13 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> storeTransactionSummary(String agentRollupId,
-            String transactionType, String transactionName, long captureTime, Aggregate aggregate,
-            int adjustedTTL) throws Exception {
+    private List<Future<?>> storeTransactionSummary(String agentRollupId, String transactionType,
+            String transactionName, long captureTime, Aggregate aggregate, int adjustedTTL)
+            throws Exception {
 
         final int rollupLevel = 0;
 
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         BoundStatement boundStatement = getInsertTransactionPS(summaryTable, rollupLevel).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
@@ -1743,11 +1739,11 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> insertQueries(List<Aggregate.QueriesByType> queriesByTypeList,
+    private List<Future<?>> insertQueries(List<Aggregate.QueriesByType> queriesByTypeList,
             List<Aggregate.SharedQueryText> sharedQueryTexts, int rollupLevel, String agentRollupId,
             String transactionType, @Nullable String transactionName, long captureTime,
             int adjustedTTL) throws Exception {
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         for (Aggregate.QueriesByType queriesByType : queriesByTypeList) {
             for (Aggregate.Query query : queriesByType.getQueryList()) {
                 Aggregate.SharedQueryText sharedQueryText =
@@ -1789,11 +1785,10 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> insertQueries(Map<String, List<MutableQuery>> map,
-            int rollupLevel, String agentRollupId, String transactionType,
-            @Nullable String transactionName, long captureTime, int adjustedTTL,
-            boolean rollupFromChildren) throws Exception {
-        List<ResultSetFuture> futures = Lists.newArrayList();
+    private List<Future<?>> insertQueries(Map<String, List<MutableQuery>> map, int rollupLevel,
+            String agentRollupId, String transactionType, @Nullable String transactionName,
+            long captureTime, int adjustedTTL, boolean rollupFromChildren) throws Exception {
+        List<Future<?>> futures = Lists.newArrayList();
         for (Entry<String, List<MutableQuery>> entry : map.entrySet()) {
             for (MutableQuery query : entry.getValue()) {
                 BoundStatement boundStatement;
@@ -1831,11 +1826,11 @@ public class AggregateDao implements AggregateRepository {
         return futures;
     }
 
-    private List<ResultSetFuture> insertServiceCalls(
+    private List<Future<?>> insertServiceCalls(
             List<Aggregate.ServiceCallsByType> serviceCallsByTypeList, int rollupLevel,
             String agentRollupId, String transactionType, @Nullable String transactionName,
             long captureTime, int adjustedTTL) throws Exception {
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         for (Aggregate.ServiceCallsByType serviceCallsByType : serviceCallsByTypeList) {
             for (Aggregate.ServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
                 BoundStatement boundStatement;
@@ -2148,7 +2143,7 @@ public class AggregateDao implements AggregateRepository {
             // intentionally not async, see method-level comment
             session.execute(boundStatement);
         }
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
         for (UUID uniqueness : uniquenessKeysForDeletion) {
             BoundStatement boundStatement = deleteNeedsRollup.bind();
             int i = 0;

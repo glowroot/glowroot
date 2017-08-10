@@ -16,9 +16,14 @@
 package org.glowroot.central.util;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,5 +51,47 @@ public class MoreFutures {
         if (exception != null) {
             throw exception;
         }
+    }
+
+    public static <V> CompletableFuture<?> onFailure(ListenableFuture<V> future,
+            Runnable onFailure) {
+        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
+        Futures.addCallback(future, new FutureCallback<V>() {
+            @Override
+            public void onSuccess(V result) {
+                chainedFuture.complete(null);
+            }
+            @Override
+            public void onFailure(Throwable t) {
+                logger.debug(t.getMessage(), t);
+                onFailure.run();
+                chainedFuture.completeExceptionally(t);
+            }
+        }, MoreExecutors.directExecutor());
+        return chainedFuture;
+    }
+
+    public static CompletableFuture<?> onFailure(CompletableFuture<?> future, Runnable onFailure) {
+        return future.whenComplete((result, t) -> {
+            if (t != null) {
+                onFailure.run();
+            }
+        });
+    }
+
+    public static <V> CompletableFuture<?> toCompletableFuture(ListenableFuture<V> future) {
+        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
+        Futures.addCallback(future, new FutureCallback<V>() {
+            @Override
+            public void onSuccess(V result) {
+                chainedFuture.complete(null);
+            }
+            @Override
+            public void onFailure(Throwable t) {
+                logger.debug(t.getMessage(), t);
+                chainedFuture.completeExceptionally(t);
+            }
+        }, MoreExecutors.directExecutor());
+        return chainedFuture;
     }
 }

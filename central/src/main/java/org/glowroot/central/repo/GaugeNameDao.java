@@ -16,21 +16,23 @@
 package org.glowroot.central.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
@@ -72,7 +74,7 @@ class GaugeNameDao {
         return gaugeNamesCache.get(agentRollupId);
     }
 
-    List<ResultSetFuture> store(String agentRollupId, String gaugeName) throws Exception {
+    List<Future<?>> store(String agentRollupId, String gaugeName) throws Exception {
         GaugeNameKey rateLimiterKey = ImmutableGaugeNameKey.of(agentRollupId, gaugeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
@@ -82,11 +84,10 @@ class GaugeNameDao {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setInt(i++, getMaxTTL());
-        ResultSetFuture future = session.executeAsyncWithOnFailure(boundStatement,
-                () -> rateLimiter.invalidate(rateLimiterKey));
-        future.addListener(() -> gaugeNamesCache.invalidate(agentRollupId),
-                MoreExecutors.directExecutor());
-        return ImmutableList.of(future);
+        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
+        CompletableFuture<?> chainedFuture =
+                MoreFutures.onFailure(future, () -> gaugeNamesCache.invalidate(agentRollupId));
+        return ImmutableList.of(chainedFuture);
     }
 
     private int getMaxTTL() throws Exception {

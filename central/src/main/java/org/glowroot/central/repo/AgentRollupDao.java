@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
@@ -38,6 +37,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -213,7 +213,8 @@ public class AgentRollupDao implements AgentRollupRepository {
         return agentRollupIds;
     }
 
-    ResultSetFuture updateLastCaptureTime(String agentId, long captureTime) throws Exception {
+    ListenableFuture<ResultSet> updateLastCaptureTime(String agentId, long captureTime)
+            throws Exception {
         BoundStatement boundStatement = insertLastCaptureTimePS.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);

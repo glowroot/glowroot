@@ -24,6 +24,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -31,7 +32,6 @@ import javax.annotation.Nullable;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
@@ -397,7 +397,7 @@ public class TraceDao implements TraceRepository {
 
         List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
 
-        List<ResultSetFuture> futures = Lists.newArrayList();
+        List<Future<?>> futures = Lists.newArrayList();
 
         List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
         for (Trace.SharedQueryText sharedQueryText : trace.getSharedQueryTextList()) {
@@ -408,9 +408,8 @@ public class TraceDao implements TraceRepository {
                     fullTextSha1 = SHA_1.hashString(fullText, Charsets.UTF_8).toString();
                     futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
                     for (int i = 1; i < agentRollupIds.size(); i++) {
-                        futures.addAll(
-                                fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i),
-                                        fullTextSha1));
+                        futures.addAll(fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i),
+                                fullTextSha1));
                     }
                     sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
                             .setTruncatedText(

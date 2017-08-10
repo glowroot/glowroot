@@ -17,22 +17,24 @@ package org.glowroot.central.repo;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.TransactionTypeRepository;
@@ -81,25 +83,32 @@ class TransactionTypeDao implements TransactionTypeRepository {
         return transactionTypesCache.get(SINGLE_CACHE_KEY);
     }
 
-    List<ResultSetFuture> store(List<String> agentRollups, String transactionType)
-            throws Exception {
-        List<ResultSetFuture> futures = Lists.newArrayList();
+    List<Future<?>> store(List<String> agentRollups, String transactionType) throws Exception {
+        List<Future<?>> futures = Lists.newArrayList();
         for (String agentRollupId : agentRollups) {
             TransactionTypeKey rateLimiterKey =
                     ImmutableTransactionTypeKey.of(agentRollupId, transactionType);
             if (!rateLimiter.tryAcquire(rateLimiterKey)) {
                 continue;
             }
-            BoundStatement boundStatement = insertPS.bind();
-            int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
-            boundStatement.setInt(i++, getMaxTTL());
-            ResultSetFuture future = session.executeAsyncWithOnFailure(boundStatement,
-                    () -> rateLimiter.invalidate(rateLimiterKey));
-            future.addListener(() -> transactionTypesCache.invalidate(SINGLE_CACHE_KEY),
-                    MoreExecutors.directExecutor());
-            futures.add(future);
+            ListenableFuture<ResultSet> future;
+            try {
+                BoundStatement boundStatement = insertPS.bind();
+                int i = 0;
+                boundStatement.setString(i++, agentRollupId);
+                boundStatement.setString(i++, transactionType);
+                boundStatement.setInt(i++, getMaxTTL());
+                future = session.executeAsync(boundStatement);
+            } catch (Exception e) {
+                rateLimiter.invalidate(rateLimiterKey);
+                transactionTypesCache.invalidate(SINGLE_CACHE_KEY);
+                throw e;
+            }
+            CompletableFuture<?> chainedFuture =
+                    MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
+            chainedFuture = chainedFuture.whenComplete(
+                    (result, t) -> transactionTypesCache.invalidate(SINGLE_CACHE_KEY));
+            futures.add(chainedFuture);
         }
         return futures;
     }

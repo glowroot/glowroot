@@ -19,20 +19,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.repo.TraceAttributeNameRepository;
@@ -84,7 +86,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     }
 
     void store(String agentRollupId, String transactionType, String traceAttributeName,
-            List<ResultSetFuture> futures) throws Exception {
+            List<Future<?>> futures) throws Exception {
         TraceAttributeNameKey rateLimiterKey = ImmutableTraceAttributeNameKey.of(agentRollupId,
                 transactionType, traceAttributeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
@@ -96,12 +98,10 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         boundStatement.setString(i++, transactionType);
         boundStatement.setString(i++, traceAttributeName);
         boundStatement.setInt(i++, getMaxTTL());
-        ResultSetFuture future = session.executeAsyncWithOnFailure(boundStatement,
-                () -> rateLimiter.invalidate(rateLimiterKey));
-        future.addListener(() -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY),
-                MoreExecutors.directExecutor());
-        futures.add(future);
-        traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY);
+        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
+        CompletableFuture<?> chainedFuture = MoreFutures.onFailure(future,
+                () -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY));
+        futures.add(chainedFuture);
     }
 
     private int getMaxTTL() throws Exception {
