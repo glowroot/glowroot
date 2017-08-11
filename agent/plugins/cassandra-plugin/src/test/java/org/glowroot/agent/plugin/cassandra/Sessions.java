@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 
 class Sessions {
 
@@ -35,7 +36,12 @@ class Sessions {
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         session.execute("CREATE TABLE IF NOT EXISTS test.users"
                 + " (id int PRIMARY KEY, fname text, lname text)");
-        session.execute("TRUNCATE test.users");
+        try {
+            session.execute("TRUNCATE test.users");
+        } catch (NoHostAvailableException e) {
+            // sometimes slow, so give it a second chance
+            session.execute("TRUNCATE test.users");
+        }
         for (int i = 0; i < 10; i++) {
             session.execute("INSERT INTO test.users (id, fname, lname) VALUES (" + i + ", 'f" + i
                     + "', 'l" + i + "')");
