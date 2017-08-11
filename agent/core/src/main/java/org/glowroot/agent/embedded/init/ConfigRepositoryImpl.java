@@ -608,7 +608,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
-            checkInstrumentationDoesNotExist(config, configs);
+            if (configs.contains(config)) {
+                throw new IllegalStateException("This exact instrumentation already exists");
+            }
             configs.add(config);
             configService.updateInstrumentationConfigs(configs);
         }
@@ -661,6 +663,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
         }
     }
 
+    // ignores any instrumentation configs that are duplicates of existing instrumentation configs
     @Override
     public void insertInstrumentationConfigs(String agentId,
             List<AgentConfig.InstrumentationConfig> protoConfigs) throws Exception {
@@ -673,8 +676,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
             List<InstrumentationConfig> existingConfigs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
             for (InstrumentationConfig config : configs) {
-                checkInstrumentationDoesNotExist(config, existingConfigs);
-                existingConfigs.add(config);
+                if (!existingConfigs.contains(config)) {
+                    existingConfigs.add(config);
+                }
             }
             configService.updateInstrumentationConfigs(existingConfigs);
         }
@@ -996,16 +1000,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
         configs.put(SMTP_KEY, smtpConfig);
         configs.put(LDAP_KEY, ldapConfig);
         configService.updateAdminConfigs(configs);
-    }
-
-    private static void checkInstrumentationDoesNotExist(
-            InstrumentationConfig instrumentationConfig,
-            List<InstrumentationConfig> instrumentationConfigs) {
-        for (InstrumentationConfig loopInstrumentationConfig : instrumentationConfigs) {
-            if (loopInstrumentationConfig.equals(instrumentationConfig)) {
-                throw new IllegalStateException("This exact instrumentation already exists");
-            }
-        }
     }
 
     private static EmbeddedStorageConfig withCorrectedLists(EmbeddedStorageConfig config) {

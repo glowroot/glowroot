@@ -818,7 +818,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 List<InstrumentationConfig> existingConfigs =
                         Lists.newArrayList(agentConfig.getInstrumentationConfigList());
                 for (InstrumentationConfig config : configs) {
-                    if (!agentConfig.getInstrumentationConfigList().contains(config)) {
+                    if (!existingConfigs.contains(config)) {
                         existingConfigs.add(config);
                     }
                 }
