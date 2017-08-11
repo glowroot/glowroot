@@ -106,6 +106,10 @@ class CentralConnection {
                 .eventLoopGroup(eventLoopGroup)
                 .executor(channelExecutor)
                 .negotiationType(NegotiationType.PLAINTEXT)
+                // aggressive keep alive, shouldn't even be used since gauge data is sent every
+                // 5 seconds and keep alive will only kick in after 30 seconds of not hearing back
+                // from the server
+                .keepAliveTime(30, SECONDS)
                 .build();
         retryExecutor = Executors.newSingleThreadScheduledExecutor(
                 ThreadFactories.create("Glowroot-Collector-Retry"));
