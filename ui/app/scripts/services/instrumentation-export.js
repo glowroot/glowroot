@@ -65,7 +65,7 @@ glowroot.factory('instrumentationExport', [
       if (!config.traceEntryMessageTemplate) {
         delete config.traceEntryMessageTemplate;
       }
-      if (!config.traceEntryStackThresholdMillis) {
+      if (config.traceEntryStackThresholdMillis === null) {
         delete config.traceEntryStackThresholdMillis;
       }
       if (!config.traceEntryCaptureSelfNested) {
