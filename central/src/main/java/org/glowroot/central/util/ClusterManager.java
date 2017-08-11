@@ -218,7 +218,7 @@ public abstract class ClusterManager {
             V value = cache.get(key);
             if (value == null) {
                 value = loader.load(key);
-                cache.put(key, value);
+                cache.putForExternalRead(key, value);
             }
             return value;
         }
