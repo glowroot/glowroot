@@ -227,11 +227,6 @@ public abstract class ClusterManager {
         public void invalidate(K key) {
             cache.remove(key);
         }
-
-        @Override
-        public void evict(K key) {
-            cache.evict(key);
-        }
     }
 
     private static class NonClusterCacheImpl<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object>
@@ -257,11 +252,6 @@ public abstract class ClusterManager {
 
         @Override
         public void invalidate(K key) {
-            cache.remove(key);
-        }
-
-        @Override
-        public void evict(K key) {
             cache.remove(key);
         }
     }

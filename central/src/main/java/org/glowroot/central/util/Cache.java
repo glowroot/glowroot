@@ -24,9 +24,6 @@ public interface Cache<K extends /*@NonNull*/ Serializable, V extends /*@NonNull
     // invalidate globally
     void invalidate(K key);
 
-    // evict locally
-    void evict(K key);
-
     interface CacheLoader<K, V> {
         V load(K key) throws Exception;
     }
