@@ -339,6 +339,11 @@ class SyntheticMonitorService implements Runnable {
                     logger.debug(e.getMessage(), e);
                     return;
                 } catch (ExecutionException e) {
+                    logger.debug(e.getMessage(), e);
+                    if (e.getCause() instanceof InterruptedException) {
+                        // probably shutdown requested
+                        return;
+                    }
                     error = true;
                 }
                 try {
