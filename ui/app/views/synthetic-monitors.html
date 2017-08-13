@@ -31,7 +31,7 @@
             <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
                  that start with '$', because angular silently ignores object keys starting with '$' -->
             <li ng-repeat="agentRollup in layout.agentRollupValues"
-                ng-hide="!agentRollup.permissions.config.view">
+                ng-hide="!agentRollup.permissions.syntheticMonitor">
               <a role="menuitem"
                  tabindex="-1"
                  ng-href="{{agentRollupUrl(agentRollup)}}">
