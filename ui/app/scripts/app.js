@@ -377,6 +377,13 @@ glowroot.run([
       double: /^(0|[1-9][0-9]*)?(\.[0-9]*)?$/
     };
 
+    // don't close dropdown menus on ctrl click (e.g. for ctrl clicking and opening multiple tabs)
+    $(document).on('click', '.gt-header-page-name .dropdown-menu', function (event) {
+      if (event.ctrlKey) {
+        event.stopPropagation();
+      }
+    });
+
     ZeroClipboard.config({
       bubbleEvents: false,
       // cache busting is not required since ZeroClipboard.swf is revved during grunt build
