@@ -148,7 +148,7 @@ body {
 
 .gt-header {
   font-size: 36px;
-  padding: 30px 0 40px;
+  padding: 27px 0 40px;
 }
 
 .gt-header-page-name {
@@ -174,18 +174,22 @@ body {
   background-color: #edeae4;
 }
 
-.bootstrap-select .dropdown-menu {
+.gt-sidebar .bootstrap-select .dropdown-menu {
   // override default dropdown font-size 16px
   font-size: 14px;
 }
 
+.gt-header-page-name .bootstrap-select {
+  width: auto !important;
+}
+
 .gt-header-page-name .dropdown-toggle {
   // 30px matches font size of panel header below it
-  font-size: 30px;
+  font-size: 30px !important;
   font-weight: 600;
   cursor: pointer;
   display: inline-block;
-  padding: 3px 20px 4px;
+  padding: 3px 30px 4px 20px;
   background: #edeae4;
   border-radius: 8px;
   color: inherit;
@@ -197,6 +201,12 @@ body {
   text-decoration: none;
 }
 
+.gt-header-page-name .dropdown-toggle.btn-flat {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .gt-header-page-name .gt-separator {
   font-size: 54px;
   font-weight: 400;
@@ -206,9 +216,30 @@ body {
 }
 
 .gt-header-page-name .dropdown-menu {
-  margin-top: 5px;
+  margin-top: 7px;
   min-width: 100%;
   border-radius: 8px;
+}
+
+.gt-header-page-name .gt-header-smaller-menu .dropdown-menu {
+  margin-top: 3px;
+}
+
+.gt-header-page-name .bootstrap-select .dropdown-menu {
+  margin-top: 1px;
+  padding-top: 3px;
+}
+
+.gt-header-page-name .bootstrap-select .bs-placeholder {
+  // this is to avoid flash of disabled colored text on loading
+  color: inherit !important;
+}
+
+.gt-header-page-name .caret {
+  border-top: 6px solid;
+  border-right: 6px solid transparent;
+  border-left: 6px solid transparent;
+  right: 15px !important;
 }
 
 .navbar-brand {
@@ -316,13 +347,6 @@ body {
   color: #737373;
 }
 
-.gt-large-caret {
-  .caret;
-  border-top: 6px solid;
-  border-right: 6px solid transparent;
-  border-left: 6px solid transparent;
-}
-
 hr.soften {
   height: 1px;
   margin-left: 50px;
@@ -334,7 +358,7 @@ hr.soften {
   border: 0;
 }
 
-.bootstrap-select .selected {
+.gt-sidebar .bootstrap-select .selected {
   display: none;
 }
 

@@ -21,11 +21,12 @@ glowroot.controller('SyntheticMonitorsCtrl', [
   '$location',
   '$filter',
   '$http',
+  '$timeout',
   'locationChanges',
   'charts',
   'queryStrings',
   'httpErrors',
-  function ($scope, $location, $filter, $http, locationChanges, charts, queryStrings, httpErrors) {
+  function ($scope, $location, $filter, $http, $timeout, locationChanges, charts, queryStrings, httpErrors) {
 
     // \u00b7 is &middot;
     document.title = 'Synthetic \u00b7 Glowroot';
@@ -265,5 +266,17 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
     charts.initResize(chartState.plot, $scope);
     charts.startAutoRefresh($scope, 60000);
+
+    $scope.selectedAgentRollup = $scope.agentRollupId;
+
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo'], function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        // need to refresh selectpicker in order to update hrefs of the items
+        $timeout(function () {
+          // timeout is needed so this runs after dom is updated
+          $('#agentRollupDropdown').selectpicker('refresh');
+        });
+      }
+    });
   }
 ]);

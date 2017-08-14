@@ -19,29 +19,23 @@
       Configuration
     </div>
     <div style="margin-top: -16px;" ng-show="layout.central">
+      <!-- negative margin-left is so background doesn't bleed through transparent 1px border when menu is open -->
       <span class="gt-inline-block gt-header-menu"
-            style="margin: 20px 0 8px;">
-        <span class="dropdown">
-          <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
-            {{layout.agentRollups[agentRollupId].display || '&lt;select&gt;'}}
-            <span class="gt-large-caret"></span>
-          </a>
-          <!-- margin-bottom helps when large menu that extends to the bottom of the page -->
-          <ul class="dropdown-menu"
-              role="menu"
-              style="margin-bottom: 100px;">
-            <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
-                 that start with '$', because angular silently ignores object keys starting with '$' -->
-            <li ng-repeat="agentRollup in layout.agentRollupValues"
-                ng-hide="!agentRollup.permissions.config.view">
-              <a role="menuitem"
-                 tabindex="-1"
-                 ng-href="{{agentRollupUrl(agentRollup)}}">
-                {{agentRollup.indentedDisplay}}
-              </a>
-            </li>
-          </ul>
-        </span>
+            style="margin: 20px 0 8px -1px;">
+        <select gt-selectpicker
+                gt-model="selectedAgentRollup"
+                gt-title="layout.agentRollups[agentRollupId].display || '&amp;lt;select&amp;gt;'"
+                data-live-search="true"
+                data-style="btn-flat"
+                id="agentRollupDropdown">
+          <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
+               that start with '$', because angular silently ignores object keys starting with '$' -->
+          <option ng-repeat="agentRollup in layout.agentRollupValues"
+                  data-href="{{agentRollupUrl(agentRollup)}}"
+                  value="{{agentRollup.id}}">
+            {{agentRollup.indentedDisplay}}
+          </option>
+        </select>
       </span>
       <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
            while chrome guesses the placement of the border based on default font and then it moves slightly

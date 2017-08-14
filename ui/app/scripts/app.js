@@ -269,6 +269,7 @@ glowroot.run([
     var glowrootVersion;
 
     $rootScope.initLayout = function () {
+      var priorAgentRollupValues = $rootScope.layout.agentRollupValues;
       // agentRollupValues is needed when using angular ng-repeat over agentRollups in case there are
       // any agent rollup ids that start with '$', because angular silently ignores object keys starting with '$'
       // see https://docs.angularjs.org/api/ng/directive/ngRepeat
@@ -282,6 +283,16 @@ glowroot.run([
         agentRollup.id = agentRollupId;
         $rootScope.layout.agentRollupValues.push(agentRollup);
       });
+      if (!angular.equals($rootScope.layout.agentRollupValues, priorAgentRollupValues)) {
+        // this is kinda hacky
+        var $agentRollupDropdown = $('#agentRollupDropdown');
+        if ($agentRollupDropdown.length) {
+          // need to delay a bit to give a chance for option ng-repeat to be updated
+          $timeout(function () {
+            $agentRollupDropdown.selectpicker('refresh');
+          }, 1000);
+        }
+      }
       if (!$rootScope.layout.central || $rootScope.agentRollupId) {
         var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
         $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;

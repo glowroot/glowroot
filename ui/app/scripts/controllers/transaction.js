@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, moment */
+/* global glowroot, angular, moment, $ */
 
 glowroot.controller('TransactionCtrl', [
   '$scope',
@@ -141,7 +141,7 @@ glowroot.controller('TransactionCtrl', [
     });
     onLocationChangeSuccess();
 
-    $scope.$watchGroup(['range.last', 'range.chartFrom', 'range.chartTo', 'summarySortOrder'],
+    $scope.$watchGroup(['range.last', 'range.chartFrom', 'range.chartTo'],
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
             $location.search($scope.buildQueryObject());
@@ -191,5 +191,17 @@ glowroot.controller('TransactionCtrl', [
     $scope.currentTabUrl = function () {
       return $location.path().substring(1);
     };
+
+    $scope.selectedAgentRollup = $scope.agentRollupId;
+
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo'], function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        // need to refresh selectpicker in order to update hrefs of the items
+        $timeout(function () {
+          // timeout is needed so this runs after dom is updated
+          $('#agentRollupDropdown').selectpicker('refresh');
+        });
+      }
+    });
   }
 ]);

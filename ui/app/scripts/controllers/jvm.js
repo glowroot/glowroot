@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, $ */
 
 glowroot.controller('JvmCtrl', [
   '$scope',
   '$location',
+  '$timeout',
   'queryStrings',
-  function ($scope, $location, queryStrings) {
+  function ($scope, $location, $timeout, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'JVM \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'jvm';
@@ -72,5 +73,19 @@ glowroot.controller('JvmCtrl', [
         }
       }
     });
+
+    $scope.selectedAgentRollup = $scope.agentRollupId;
+
+    $scope.$watch(function () {
+      return $location.search();
+    }, function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        // need to refresh selectpicker in order to update hrefs of the items
+        $timeout(function () {
+          // timeout is needed so this runs after dom is updated
+          $('#agentRollupDropdown').selectpicker('refresh');
+        });
+      }
+    }, true);
   }
 ]);

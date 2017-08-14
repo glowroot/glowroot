@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, $ */
 
 glowroot.controller('ConfigCtrl', [
   '$scope',
   '$location',
+  '$timeout',
   'queryStrings',
-  function ($scope, $location, queryStrings) {
+  function ($scope, $location, $timeout, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'gears';
@@ -101,5 +102,19 @@ glowroot.controller('ConfigCtrl', [
         }
       }
     });
+
+    $scope.selectedAgentRollup = $scope.agentRollupId;
+
+    $scope.$watch(function () {
+      return $location.search();
+    }, function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        // need to refresh selectpicker in order to update hrefs of the items
+        $timeout(function () {
+          // timeout is needed so this runs after dom is updated
+          $('#agentRollupDropdown').selectpicker('refresh');
+        });
+      }
+    }, true);
   }
 ]);

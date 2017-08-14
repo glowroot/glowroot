@@ -8,7 +8,7 @@
     "angular-ui-router": "0.4.2",
     "angular-ui-select": "0.19.8",
     "bootstrap": "3.3.7",
-    "bootstrap-select": "1.12.2",
+    "bootstrap-select": "trask/bootstrap-select#3bb304675178674bf6d1b20b1ed41212ba3c12b9",
     "codemirror": "5.27.2",
     "d3-flame-graph": "1.0.0",
     "eonasdan-bootstrap-datetimepicker": "4.17.47",

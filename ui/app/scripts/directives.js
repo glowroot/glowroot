@@ -414,7 +414,7 @@ glowroot.directive('gtSelectpicker', [
   function ($timeout) {
     return {
       scope: {
-        ngModel: '=',
+        gtModel: '=',
         gtSelectpickerOptions: '&',
         gtTitle: '&'
       },
@@ -424,8 +424,8 @@ glowroot.directive('gtSelectpicker', [
         iElement.attr('title', scope.gtTitle);
         // set style outside of $timeout to avoid style flicker on loading
         iElement.selectpicker(scope.gtSelectpickerOptions());
-        scope.$watch('ngModel', function () {
-          iElement.selectpicker('val', scope.ngModel);
+        scope.$watch('gtModel', function () {
+          iElement.selectpicker('val', scope.gtModel);
         });
         $timeout(function () {
           // refresh only works inside of $timeout

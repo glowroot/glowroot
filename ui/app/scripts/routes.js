@@ -333,7 +333,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('jvm', {
-      url: '/jvm',
+      url: '/jvm?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm.html',
       controller: 'JvmCtrl',
       resolve: {
@@ -341,52 +341,52 @@ glowroot.config([
       }
     });
     $stateProvider.state('jvm.gauges', {
-      url: '/gauges?agent-id&agent-rollup-id',
+      url: '/gauges',
       templateUrl: 'views/jvm/gauge-values.html',
       controller: 'JvmGaugeValuesCtrl'
     });
     $stateProvider.state('jvm.threadDump', {
-      url: '/thread-dump?agent-id&agent-rollup-id',
+      url: '/thread-dump',
       templateUrl: 'views/jvm/thread-dump.html',
       controller: 'JvmThreadDumpCtrl'
     });
     $stateProvider.state('jvm.jstack', {
-      url: '/jstack?agent-id&agent-rollup-id',
+      url: '/jstack',
       templateUrl: 'views/jvm/jstack.html',
       controller: 'JvmJstackCtrl'
     });
     $stateProvider.state('jvm.heapDump', {
-      url: '/heap-dump?agent-id&agent-rollup-id',
+      url: '/heap-dump',
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
     });
     $stateProvider.state('jvm.heapHistogram', {
-      url: '/heap-histogram?agent-id&agent-rollup-id',
+      url: '/heap-histogram',
       templateUrl: 'views/jvm/heap-histogram.html',
       controller: 'JvmHeapHistogramCtrl'
     });
     $stateProvider.state('jvm.gc', {
-      url: '/gc?agent-id&agent-rollup-id',
+      url: '/gc',
       templateUrl: 'views/jvm/gc.html',
       controller: 'JvmGcCtrl'
     });
     $stateProvider.state('jvm.mbeanTree', {
-      url: '/mbean-tree?agent-id&agent-rollup-id',
+      url: '/mbean-tree',
       templateUrl: 'views/jvm/mbean-tree.html',
       controller: 'JvmMBeanTreeCtrl'
     });
     $stateProvider.state('jvm.systemProperties', {
-      url: '/system-properties?agent-id&agent-rollup-id',
+      url: '/system-properties',
       templateUrl: 'views/jvm/system-properties.html',
       controller: 'JvmSystemPropertiesCtrl'
     });
     $stateProvider.state('jvm.environment', {
-      url: '/environment?agent-id&agent-rollup-id',
+      url: '/environment',
       templateUrl: 'views/jvm/environment.html',
       controller: 'JvmEnvironmentCtrl'
     });
     $stateProvider.state('jvm.capabilities', {
-      url: '/capabilities?agent-id&agent-rollup-id',
+      url: '/capabilities',
       templateUrl: 'views/jvm/capabilities.html',
       controller: 'JvmCapabilitiesCtrl'
     });
@@ -420,7 +420,7 @@ glowroot.config([
       controller: 'ReportAdhocCtrl'
     });
     $stateProvider.state('config', {
-      url: '/config',
+      url: '/config?agent-id&agent-rollup-id',
       templateUrl: 'views/config.html',
       controller: 'ConfigCtrl',
       resolve: {
@@ -428,72 +428,72 @@ glowroot.config([
       }
     });
     $stateProvider.state('config.transaction', {
-      url: '/transaction?agent-id',
+      url: '/transaction',
       templateUrl: 'views/config/transaction.html',
       controller: 'ConfigTransactionCtrl'
     });
     $stateProvider.state('config.gaugeList', {
-      url: '/gauge-list?agent-id',
+      url: '/gauge-list',
       templateUrl: 'views/config/gauge-list.html',
       controller: 'ConfigGaugeListCtrl'
     });
     $stateProvider.state('config.gauge', {
-      url: '/gauge?agent-id&v',
+      url: '/gauge?v',
       templateUrl: 'views/config/gauge.html',
       controller: 'ConfigGaugeCtrl'
     });
     $stateProvider.state('config.syntheticMonitorList', {
-      url: '/synthetic-monitor-list?agent-id&agent-rollup-id',
+      url: '/synthetic-monitor-list',
       templateUrl: 'views/config/synthetic-monitor-list.html',
       controller: 'ConfigSyntheticMonitorListCtrl'
     });
     $stateProvider.state('config.syntheticMonitor', {
-      url: '/synthetic-monitor?agent-id&agent-rollup-id&id',
+      url: '/synthetic-monitor?id',
       templateUrl: 'views/config/synthetic-monitor.html',
       controller: 'ConfigSyntheticMonitorCtrl'
     });
     $stateProvider.state('config.alertList', {
-      url: '/alert-list?agent-id&agent-rollup-id',
+      url: '/alert-list',
       templateUrl: 'views/config/alert-list.html',
       controller: 'ConfigAlertListCtrl'
     });
     $stateProvider.state('config.alert', {
-      url: '/alert?agent-id&agent-rollup-id&id',
+      url: '/alert?id',
       templateUrl: 'views/config/alert.html',
       controller: 'ConfigAlertCtrl'
     });
     $stateProvider.state('config.ui', {
-      url: '/ui?agent-id&agent-rollup-id',
+      url: '/ui',
       templateUrl: 'views/config/ui.html',
       controller: 'ConfigUiCtrl'
     });
     $stateProvider.state('config.pluginList', {
-      url: '/plugin-list?agent-id',
+      url: '/plugin-list',
       templateUrl: 'views/config/plugin-list.html',
       controller: 'ConfigPluginListCtrl'
     });
     $stateProvider.state('config.plugin', {
-      url: '/plugin?agent-id&plugin-id',
+      url: '/plugin?plugin-id',
       templateUrl: 'views/config/plugin.html',
       controller: 'ConfigPluginCtrl'
     });
     $stateProvider.state('config.instrumentationList', {
-      url: '/instrumentation-list?agent-id',
+      url: '/instrumentation-list',
       templateUrl: 'views/config/instrumentation-list.html',
       controller: 'ConfigInstrumentationListCtrl'
     });
     $stateProvider.state('config.instrumentation', {
-      url: '/instrumentation?agent-id&v',
+      url: '/instrumentation?v',
       templateUrl: 'views/config/instrumentation.html',
       controller: 'ConfigInstrumentationCtrl'
     });
     $stateProvider.state('config.userRecording', {
-      url: '/user-recording?agent-id',
+      url: '/user-recording',
       templateUrl: 'views/config/user-recording.html',
       controller: 'ConfigUserRecordingCtrl'
     });
     $stateProvider.state('config.advanced', {
-      url: '/advanced?agent-id',
+      url: '/advanced',
       templateUrl: 'views/config/advanced.html',
       controller: 'ConfigAdvancedCtrl'
     });

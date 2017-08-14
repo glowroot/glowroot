@@ -13,17 +13,22 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<!-- negative margin-right is so background doesn't bleed through transparent 1px border when menu is open -->
 <div class="gt-header-page-name"
      ng-form
-     gt-form-with-primary-button>
-    <span class="gt-inline-block gt-header-menu">
+     gt-form-with-primary-button
+     style="margin-right: -1px;">
+    <span class="gt-inline-block gt-header-menu gt-header-smaller-menu">
       <span class="dropdown">
-        <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle" style="font-size: 24px;">
-          <span style="padding-right: 15px; vertical-align: middle; color: #555;">
-            {{timeDisplay()}}
-          </span>
-          <span class="gt-large-caret"></span>
-        </a>
+        <button type="button"
+                    class="btn dropdown-toggle btn-flat"
+                    data-toggle="dropdown"
+                    role="button"
+                    title="Branch2 - SM Nightly - Admin One"
+                    style="font-size: 24px !important; padding-right: 16px;">
+          {{timeDisplay()}}
+          <span class="bs-caret"><span class="caret" style="margin-top: -2px; margin-left: 2px;"></span></span>
+        </button>
         <ul class="dropdown-menu"
             role="menu">
           <li ng-repeat="last in rangeSelections">

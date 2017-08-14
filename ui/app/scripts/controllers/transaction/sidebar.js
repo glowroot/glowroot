@@ -38,6 +38,8 @@ glowroot.controller('TransactionSidebarCtrl', [
 
     $scope.summariesNoSearch = true;
 
+    $scope.showSpinner = 0;
+
     $scope.overallSummaryValue = function () {
       if ($scope.overallSummary) {
         return summaryValueFn($scope.overallSummary, lastSortOrder, $scope.overallSummary, lastDurationMillis);
@@ -63,16 +65,22 @@ glowroot.controller('TransactionSidebarCtrl', [
       updateSummaries(false, true);
     };
 
+    $scope.summarySortQueryString = function (summarySortOrder) {
+      var query = $scope.buildQueryObject();
+      delete query.summarySortOrder;
+      if (summarySortOrder !== $scope.defaultSummarySortOrder) {
+        query['summary-sort-order'] = summarySortOrder;
+      } else {
+        delete query['summary-sort-order'];
+      }
+      return queryStrings.encodeObject(query);
+    };
+
     // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
     // (see https://github.com/angular/angular.js/pull/12643)
     $scope.$watch('[range.chartFrom, range.chartTo, range.chartRefresh, range.chartAutoRefresh, summarySortOrder]',
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
-            if (newValues[4] !== oldValues[4]) {
-              $scope.summariesNoSearch = true;
-              delete $scope.transactionSummaries;
-              delete $scope.moreSummariesAvailable;
-            }
             $timeout(function () {
               // slight delay to de-prioritize summaries data request
               updateSummaries(newValues[3] !== oldValues[3]);
@@ -105,7 +113,7 @@ glowroot.controller('TransactionSidebarCtrl', [
         $scope.summariesNoSearch = true;
         return;
       }
-      $scope.showSpinner = $scope.summariesNoSearch;
+      $scope.showSpinner++;
       var query = {
         agentRollupId: $scope.agentRollupId,
         transactionType: $scope.transactionType,
@@ -131,7 +139,7 @@ glowroot.controller('TransactionSidebarCtrl', [
             if (concurrentUpdateCount) {
               return;
             }
-            $scope.showSpinner = false;
+            $scope.showSpinner--;
             $scope.summariesNoSearch = false;
 
             lastSortOrder = query.sortOrder;
@@ -142,7 +150,7 @@ glowroot.controller('TransactionSidebarCtrl', [
             $scope.transactionSummaries = data.transactions;
             $scope.moreSummariesAvailable = data.moreAvailable;
           }, function (response) {
-            $scope.showSpinner = false;
+            $scope.showSpinner--;
             if (moreLoading) {
               $scope.summariesLoadingMore--;
             }
