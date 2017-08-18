@@ -178,7 +178,7 @@ glowroot.directive('gtFormGroup', [
             mode: 'text/x-java'
           };
           if (scope.gtDisabled()) {
-            scope.codeMirrorOpts.readOnly = 'nocursor';
+            scope.codeMirrorOpts.readOnly = true;
           }
         }
         scope.$watch('gtModel', function (newValue) {
