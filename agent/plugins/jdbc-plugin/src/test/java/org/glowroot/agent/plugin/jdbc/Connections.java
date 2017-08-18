@@ -15,13 +15,19 @@
  */
 package org.glowroot.agent.plugin.jdbc;
 
+import java.lang.reflect.UndeclaredThrowableException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
+import javax.sql.DataSource;
+
+import com.sun.gjc.spi.DMManagedConnectionFactory;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.glassfish.api.jdbc.SQLTraceListener;
+import org.glassfish.api.jdbc.SQLTraceRecord;
 import org.h2.jdbc.JdbcConnection;
 import org.hsqldb.jdbc.JDBCDriver;
 
@@ -39,7 +45,8 @@ public class Connections {
     }
 
     enum ConnectionType {
-        HSQLDB, H2, COMMONS_DBCP_WRAPPED, TOMCAT_JDBC_POOL_WRAPPED, POSTGRES, ORACLE, SQLSERVER
+        HSQLDB, H2, COMMONS_DBCP_WRAPPED, TOMCAT_JDBC_POOL_WRAPPED, GLASSFISH_JDBC_POOL_WRAPPED,
+        POSTGRES, ORACLE, SQLSERVER
     }
 
     static Connection createConnection() throws Exception {
@@ -52,6 +59,8 @@ public class Connections {
                 return createCommonsDbcpWrappedConnection();
             case TOMCAT_JDBC_POOL_WRAPPED:
                 return createTomcatJdbcPoolWrappedConnection();
+            case GLASSFISH_JDBC_POOL_WRAPPED:
+                return createGlassfishJdbcPoolWrappedConnection();
             case POSTGRES:
                 return createPostgresConnection();
             case ORACLE:
@@ -70,7 +79,10 @@ public class Connections {
         } finally {
             statement.close();
         }
-        connection.close();
+        if (connectionType != ConnectionType.GLASSFISH_JDBC_POOL_WRAPPED) {
+            // TODO figure out why glassfish connection throws NullPointerException here
+            connection.close();
+        }
     }
 
     static ConnectionType getConnectionType() {
@@ -109,6 +121,20 @@ public class Connections {
         ds.setUrl("jdbc:hsqldb:mem:test");
         ds.setJdbcInterceptors(
                 "org.apache.tomcat.jdbc.pool.interceptor.StatementDecoratorInterceptor");
+        Connection connection = ds.getConnection();
+        insertRecords(connection);
+        return connection;
+    }
+
+    private static Connection createGlassfishJdbcPoolWrappedConnection() throws SQLException {
+        // set up database
+        DMManagedConnectionFactory connectionFactory = new DMManagedConnectionFactory();
+        connectionFactory.setClassName("org.hsqldb.jdbc.JDBCDriver");
+        connectionFactory.setURL("jdbc:hsqldb:mem:test");
+        connectionFactory.setStatementWrapping("true");
+        connectionFactory.setSqlTraceListeners(
+                "org.glowroot.agent.plugin.jdbc.Connections$GlassfishSQLTraceListener");
+        DataSource ds = (DataSource) connectionFactory.createConnectionFactory();
         Connection connection = ds.getConnection();
         insertRecords(connection);
         return connection;
@@ -178,6 +204,7 @@ public class Connections {
                 // in case of previous failure mid-test
                 statement.execute("drop table employee");
             } catch (SQLException e) {
+            } catch (UndeclaredThrowableException e) {
             }
             statement.execute("create table employee (name varchar(100), misc " + binaryTypeName
                     + ", misc2 " + clobTypeName + ")");
@@ -187,5 +214,10 @@ public class Connections {
         } finally {
             statement.close();
         }
+    }
+
+    public static class GlassfishSQLTraceListener implements SQLTraceListener {
+        @Override
+        public void sqlTrace(SQLTraceRecord record) {}
     }
 }

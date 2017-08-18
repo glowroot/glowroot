@@ -174,7 +174,7 @@ class ClassAnalyzer {
         checkNotNull(methodAdvisors);
         checkNotNull(methodsThatOnlyNowFulfillAdvice);
         if (Modifier.isInterface(thinClass.access())) {
-            return false;
+            return !matchedMixinTypes.isEmpty();
         }
         return !methodAdvisors.isEmpty() || !methodsThatOnlyNowFulfillAdvice.isEmpty()
                 || !matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty();

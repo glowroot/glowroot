@@ -21,6 +21,7 @@
     <postgresql.version>42.1.4.jre6</postgresql.version>
     <commons.dbcp.version>1.4</commons.dbcp.version>
     <tomcat.version>7.0.79</tomcat.version>
+    <glassfish.jdbc.version>4.1.2</glassfish.jdbc.version>
   </properties>
 
   <dependencies>
@@ -86,6 +87,12 @@
       <artifactId>tomcat-jdbc</artifactId>
       <!-- tomcat 8 requires Java 7+ -->
       <version>${tomcat.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.main.jdbc.jdbc-ra.jdbc40</groupId>
+      <artifactId>jdbc40</artifactId>
+      <version>${glassfish.jdbc.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

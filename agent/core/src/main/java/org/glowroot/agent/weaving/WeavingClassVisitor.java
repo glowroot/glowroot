@@ -127,11 +127,13 @@ class WeavingClassVisitor extends ClassVisitor {
         // MethodNode.accept() cannot be called multiple times (at least not across multiple
         // threads) without throwing an occassional NPE
         mixinClassNodes = Lists.newArrayList();
-        for (MixinType mixinType : mixinTypes) {
-            ClassReader cr = new ClassReader(mixinType.implementationBytes());
-            ClassNode cn = new ClassNode();
-            cr.accept(cn, ClassReader.EXPAND_FRAMES);
-            mixinClassNodes.add(cn);
+        if (!analyzedClass.isInterface()) {
+            for (MixinType mixinType : mixinTypes) {
+                ClassReader cr = new ClassReader(mixinType.implementationBytes());
+                ClassNode cn = new ClassNode();
+                cr.accept(cn, ClassReader.EXPAND_FRAMES);
+                mixinClassNodes.add(cn);
+            }
         }
     }
 
@@ -150,6 +152,9 @@ class WeavingClassVisitor extends ClassVisitor {
     @Override
     public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+        if (analyzedClass.isInterface()) {
+            return cw.visitMethod(access, name, desc, signature, exceptions);
+        }
         if (isMixinProxy(name, desc)) {
             return null;
         }
@@ -193,6 +198,10 @@ class WeavingClassVisitor extends ClassVisitor {
     @Override
     public void visitEnd() {
         analyzedWorld.add(analyzedClass, loader);
+        if (analyzedClass.isInterface()) {
+            cw.visitEnd();
+            return;
+        }
         checkNotNull(type); // type is non null if there is something to weave
         for (ShimType shimType : shimTypes) {
             addShim(shimType);

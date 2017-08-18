@@ -25,7 +25,7 @@ public class JDBC {
 
     public static void main(String[] args) throws Exception {
         // TODO run tests against different versions hsqldb, h2, postgresql, commons dbcp (wrapped
-        // connection), tomcat (wrapped connection)
+        // connection), tomcat (wrapped connection), glassfish (wrapped connection)
         Util.log("jdbc plugin");
         Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);
     }

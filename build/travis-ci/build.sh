@@ -94,6 +94,18 @@ case "$1" in
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
                                 --no-snapshot-updates \
                                 -B
+               if [[ "$GLOWROOT_HARNESS" == "javaagent" ]]
+               then
+                 # GLASSFISH_JDBC_POOL_WRAPPED tests only work with javaagent container because they
+                 # depend on weaving bootstrap classes (e.g. java.sql.Statement)
+                 mvn clean verify -pl :glowroot-agent-jdbc-plugin \
+                                  -DargLine="$surefire_jvm_args" \
+                                  $skip_shading_opt \
+                                  -Dglowroot.it.harness=javaagent \
+                                  -Dglowroot.test.jdbcConnectionType=GLASSFISH_JDBC_POOL_WRAPPED \
+                                  --no-snapshot-updates \
+                                  -B
+               fi
                ;;
 
       "test3") if [[ "$java_version" < "1.8" ]]
