@@ -43,6 +43,7 @@ class ServletPluginProperties {
     private static final String SESSION_USER_ATTRIBUTE_PROPERTY_NAME = "sessionUserAttribute";
     private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
             "captureSessionAttributes";
+    private static final String TRACE_ERROR_ON_4XX_RESPONSE_CODE = "traceErrorOn4xxResponseCode";
 
     private static final ConfigService configService = Agent.getConfigService("servlet");
 
@@ -64,6 +65,8 @@ class ServletPluginProperties {
     private static ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
     private static ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
     private static boolean captureSessionAttributeNamesContainsId;
+
+    private static boolean traceErrorOn4xxResponseCode;
 
     static {
         configService.registerConfigListener(new ServletPluginConfigListener());
@@ -121,6 +124,10 @@ class ServletPluginProperties {
         return captureSessionAttributeNamesContainsId;
     }
 
+    static boolean traceErrorOn4xxResponseCode() {
+        return traceErrorOn4xxResponseCode;
+    }
+
     private static class ServletPluginConfigListener implements ConfigListener {
 
         @Override
@@ -148,6 +155,8 @@ class ServletPluginProperties {
             captureSessionAttributeNames = buildCaptureSessionAttributeNames();
             captureSessionAttributeNamesContainsId =
                     captureSessionAttributeNames.contains(HTTP_SESSION_ID_ATTR);
+            traceErrorOn4xxResponseCode =
+                    configService.getBooleanProperty(TRACE_ERROR_ON_4XX_RESPONSE_CODE).value();
         }
 
         private static ImmutableList<Pattern> buildPatternList(String propertyName) {

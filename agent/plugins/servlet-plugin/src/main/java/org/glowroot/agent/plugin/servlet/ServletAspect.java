@@ -328,11 +328,15 @@ public class ServletAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindParameter Integer statusCode) {
             FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder = sendError.getHolder();
-            // only capture 5xx server errors
-            if (statusCode >= 500 && errorMessageHolder.get() == null) {
+            if (captureAsError(statusCode) && errorMessageHolder.get() == null) {
                 context.addErrorEntry("sendError, HTTP status code " + statusCode);
                 errorMessageHolder.set("sendError, HTTP status code " + statusCode);
             }
+        }
+
+        private static boolean captureAsError(int statusCode) {
+            return statusCode >= 500
+                    || ServletPluginProperties.traceErrorOn4xxResponseCode() && statusCode >= 400;
         }
     }
 
@@ -342,7 +346,7 @@ public class ServletAspect {
         // using @IsEnabled like this avoids ThreadContext lookup for common case
         @IsEnabled
         public static boolean isEnabled(@BindParameter Integer statusCode) {
-            return statusCode >= 500;
+            return SendErrorAdvice.captureAsError(statusCode);
         }
         @OnAfter
         public static void onAfter(ThreadContext context, @BindParameter Integer statusCode) {

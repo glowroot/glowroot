@@ -44,6 +44,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ServletPluginIT {
 
+    private static final String PLUGIN_ID = "servlet";
+
     private static Container container;
 
     @BeforeClass
@@ -195,6 +197,77 @@ public class ServletPluginIT {
     }
 
     @Test
+    public void testSend400Error() throws Exception {
+        // when
+        Trace trace = container.execute(Send400Error.class, "Web");
+
+        // then
+        assertThat(trace.getHeader().hasError()).isFalse();
+        assertThat(trace.getEntryList()).isEmpty();
+    }
+
+    @Test
+    public void testSetStatus400Error() throws Exception {
+        // when
+        Trace trace = container.execute(SetStatus400Error.class, "Web");
+
+        // then
+        assertThat(trace.getHeader().hasError()).isFalse();
+        assertThat(trace.getEntryList()).isEmpty();
+    }
+
+    @Test
+    public void testSend400ErrorWithCaptureOn() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "traceErrorOn4xxResponseCode",
+                true);
+
+        // when
+        Trace trace = container.execute(Send400Error.class, "Web");
+
+        // then
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("sendError, HTTP status code 400");
+        assertThat(trace.getHeader().getError().hasException()).isFalse();
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getError().getMessage()).isEqualTo("sendError, HTTP status code 400");
+        assertThat(entry.getError().hasException()).isFalse();
+        assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
+        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
+                .isEqualTo("sendError");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
+    public void testSetStatus400ErrorWithCaptureOn() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "traceErrorOn4xxResponseCode",
+                true);
+
+        // when
+        Trace trace = container.execute(SetStatus400Error.class, "Web");
+
+        // then
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("setStatus, HTTP status code 400");
+        assertThat(trace.getHeader().getError().hasException()).isFalse();
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getError().getMessage()).isEqualTo("setStatus, HTTP status code 400");
+        assertThat(entry.getError().hasException()).isFalse();
+        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
+                .isEqualTo("setStatus");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
     public void testBizzareServletContainer() throws Exception {
         // when
         container.executeNoExpectedTrace(BizzareServletContainer.class);
@@ -320,6 +393,24 @@ public class ServletPluginIT {
         protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 throws IOException {
             response.setStatus(500);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class Send400Error extends TestServlet {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws IOException {
+            response.sendError(400);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetStatus400Error extends TestServlet {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws IOException {
+            response.setStatus(400);
         }
     }
 
