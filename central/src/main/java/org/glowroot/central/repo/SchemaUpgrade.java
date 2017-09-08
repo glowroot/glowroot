@@ -84,7 +84,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 31;
+    private static final int CURR_SCHEMA_VERSION = 32;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -259,6 +259,10 @@ public class SchemaUpgrade {
             // this is needed due to change from triggered_alert to open_incident/resolved_incident
             redoOnTriggeredAlertTable();
             updateSchemaVersion(31);
+        }
+        if (initialSchemaVersion < 32) {
+            redoOnHeartbeatTable();
+            updateSchemaVersion(32);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -974,6 +978,10 @@ public class SchemaUpgrade {
             // remove 'web' config row which has 'smtp' config (old 'web' config row is lost)
             session.execute("delete from central_config where key = 'web'");
         }
+    }
+
+    private void redoOnHeartbeatTable() throws Exception {
+        dropTable("heartbeat");
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

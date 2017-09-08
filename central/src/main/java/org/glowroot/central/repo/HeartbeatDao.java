@@ -30,7 +30,7 @@ public class HeartbeatDao {
 
     static final int EXPIRATION_HOURS = 24;
 
-    private static final int TTL = (int) HOURS.toMillis(EXPIRATION_HOURS);
+    private static final int TTL = (int) HOURS.toSeconds(EXPIRATION_HOURS);
 
     private final Session session;
     private final AgentRollupDao agentRollupDao;
