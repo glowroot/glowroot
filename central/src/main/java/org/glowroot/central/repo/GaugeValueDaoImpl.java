@@ -316,9 +316,9 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
                     .entrySet()) {
                 String gaugeName = entry.getKey();
-                Collection<String> childAgentRollups = entry.getValue();
+                Collection<String> childAgentRollupIds = entry.getValue();
                 futures.add(rollupOneFromChildren(rollupLevel, agentRollupId, gaugeName,
-                        ImmutableList.copyOf(childAgentRollups), captureTime, adjustedTTL));
+                        ImmutableList.copyOf(childAgentRollupIds), captureTime, adjustedTTL));
             }
             // wait for above async work to ensure rollup complete before proceeding
             MoreFutures.waitForAll(futures);
@@ -404,13 +404,13 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     }
 
     private ListenableFuture<ResultSet> rollupOneFromChildren(int rollupLevel, String agentRollupId,
-            String gaugeName, List<String> childAgentRollups, long captureTime, int adjustedTTL)
+            String gaugeName, List<String> childAgentRollupIds, long captureTime, int adjustedTTL)
             throws Exception {
         List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
-        for (String childAgentRollup : childAgentRollups) {
+        for (String childAgentRollupId : childAgentRollupIds) {
             BoundStatement boundStatement = readValueForRollupFromChildPS.bind();
             int i = 0;
-            boundStatement.setString(i++, childAgentRollup);
+            boundStatement.setString(i++, childAgentRollupId);
             boundStatement.setString(i++, gaugeName);
             boundStatement.setTimestamp(i++, new Date(captureTime));
             futures.add(session.executeAsync(boundStatement));
@@ -431,7 +431,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                                 logger.warn(
                                         "no gauge value table records found for agentRollupId={},"
                                                 + " gaugeName={}, captureTime={}, level={}",
-                                        childAgentRollups.get(i), gaugeName, captureTime,
+                                        childAgentRollupIds.get(i), gaugeName, captureTime,
                                         rollupLevel);
                             } else {
                                 rows.add(row);

@@ -849,9 +849,9 @@ public class AggregateDaoImpl implements AggregateDao {
             for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
                     .entrySet()) {
                 String transactionType = entry.getKey();
-                Collection<String> childAgentRollups = entry.getValue();
+                Collection<String> childAgentRollupIds = entry.getValue();
                 futures.addAll(rollupOneFromChildren(rollupParams, transactionType,
-                        childAgentRollups, captureTime));
+                        childAgentRollupIds, captureTime));
             }
             // wait for above async work to ensure rollup complete before proceeding
             MoreFutures.waitForAll(futures);
@@ -923,7 +923,7 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupOneFromChildren(RollupParams rollup, String transactionType,
-            Collection<String> childAgentRollups, long captureTime) throws Exception {
+            Collection<String> childAgentRollupIds, long captureTime) throws Exception {
 
         ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
                 .transactionType(transactionType)
@@ -933,21 +933,23 @@ public class AggregateDaoImpl implements AggregateDao {
                 .build();
         List<Future<?>> futures = Lists.newArrayList();
 
-        futures.addAll(rollupOverallSummaryFromChildren(rollup, query, childAgentRollups));
-        futures.addAll(rollupErrorSummaryFromChildren(rollup, query, childAgentRollups));
+        futures.addAll(rollupOverallSummaryFromChildren(rollup, query, childAgentRollupIds));
+        futures.addAll(rollupErrorSummaryFromChildren(rollup, query, childAgentRollupIds));
 
         List<String> transactionNames = Lists.newArrayList();
-        futures.addAll(rollupTransactionSummaryFromChildren(rollup, query, childAgentRollups,
+        futures.addAll(rollupTransactionSummaryFromChildren(rollup, query, childAgentRollupIds,
                 transactionNames));
-        futures.addAll(rollupTransactionErrorSummaryFromChildren(rollup, query, childAgentRollups));
+        futures.addAll(
+                rollupTransactionErrorSummaryFromChildren(rollup, query, childAgentRollupIds));
 
         ScratchBuffer scratchBuffer = new ScratchBuffer();
         futures.addAll(
-                rollupOtherPartsFromChildren(rollup, query, childAgentRollups, scratchBuffer));
+                rollupOtherPartsFromChildren(rollup, query, childAgentRollupIds, scratchBuffer));
 
         for (String transactionName : transactionNames) {
             futures.addAll(rollupOtherPartsFromChildren(rollup,
-                    query.withTransactionName(transactionName), childAgentRollups, scratchBuffer));
+                    query.withTransactionName(transactionName), childAgentRollupIds,
+                    scratchBuffer));
         }
         return futures;
     }
@@ -994,19 +996,19 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupOtherPartsFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups,
+            TransactionQuery query, Collection<String> childAgentRollupIds,
             ScratchBuffer scratchBuffer)
             throws Exception {
         List<Future<?>> futures = Lists.newArrayList();
-        futures.addAll(rollupOverviewFromChildren(rollup, query, childAgentRollups));
+        futures.addAll(rollupOverviewFromChildren(rollup, query, childAgentRollupIds));
         futures.addAll(
-                rollupHistogramFromChildren(rollup, query, childAgentRollups, scratchBuffer));
-        futures.addAll(rollupThroughputFromChildren(rollup, query, childAgentRollups));
-        futures.addAll(rollupQueriesFromChildren(rollup, query, childAgentRollups));
-        futures.addAll(rollupServiceCallsFromChildren(rollup, query, childAgentRollups));
-        futures.addAll(rollupThreadProfileFromChildren(rollup, query, childAgentRollups,
+                rollupHistogramFromChildren(rollup, query, childAgentRollupIds, scratchBuffer));
+        futures.addAll(rollupThroughputFromChildren(rollup, query, childAgentRollupIds));
+        futures.addAll(rollupQueriesFromChildren(rollup, query, childAgentRollupIds));
+        futures.addAll(rollupServiceCallsFromChildren(rollup, query, childAgentRollupIds));
+        futures.addAll(rollupThreadProfileFromChildren(rollup, query, childAgentRollupIds,
                 mainThreadProfileTable));
-        futures.addAll(rollupThreadProfileFromChildren(rollup, query, childAgentRollups,
+        futures.addAll(rollupThreadProfileFromChildren(rollup, query, childAgentRollupIds,
                 auxThreadProfileTable));
         return futures;
     }
@@ -1024,8 +1026,8 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupOverallSummaryFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
-        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, summaryTable);
+            TransactionQuery query, Collection<String> childAgentRollupIds) throws Exception {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollupIds, summaryTable);
         if (rows.isEmpty()) {
             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
             logger.warn("no summary table records found for agentRollupId={}, query={}",
@@ -1065,8 +1067,9 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupErrorSummaryFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
-        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, errorSummaryTable);
+            TransactionQuery query, Collection<String> childAgentRollupIds) throws Exception {
+        List<Row> rows =
+                getRowsForRollupFromChildren(query, childAgentRollupIds, errorSummaryTable);
         if (rows.isEmpty()) {
             return ImmutableList.of();
         }
@@ -1111,10 +1114,10 @@ public class AggregateDaoImpl implements AggregateDao {
 
     // transactionNames is passed in empty, and populated by method
     private List<Future<?>> rollupTransactionSummaryFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups,
+            TransactionQuery query, Collection<String> childAgentRollupIds,
             List<String> transactionNames) throws Exception {
         List<Row> rows =
-                getRowsForSummaryRollupFromChildren(query, childAgentRollups, summaryTable);
+                getRowsForSummaryRollupFromChildren(query, childAgentRollupIds, summaryTable);
         if (rows.isEmpty()) {
             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
             logger.warn("no summary table records found for agentRollupId={}, query={}",
@@ -1176,9 +1179,9 @@ public class AggregateDaoImpl implements AggregateDao {
 
     // transactionNames is passed in empty, and populated by method
     private List<Future<?>> rollupTransactionErrorSummaryFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
+            TransactionQuery query, Collection<String> childAgentRollupIds) throws Exception {
         List<Row> rows =
-                getRowsForSummaryRollupFromChildren(query, childAgentRollups, errorSummaryTable);
+                getRowsForSummaryRollupFromChildren(query, childAgentRollupIds, errorSummaryTable);
         if (rows.isEmpty()) {
             return ImmutableList.of();
         }
@@ -1232,8 +1235,8 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupOverviewFromChildren(RollupParams rollup, TransactionQuery query,
-            Collection<String> childAgentRollups) throws Exception {
-        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, overviewTable);
+            Collection<String> childAgentRollupIds) throws Exception {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollupIds, overviewTable);
         if (rows.isEmpty()) {
             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
             logger.warn("no overview table records found for agentRollupId={}, query={}",
@@ -1337,8 +1340,8 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupHistogramFromChildren(RollupParams rollup, TransactionQuery query,
-            Collection<String> childAgentRollups, ScratchBuffer scratchBuffer) throws Exception {
-        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, histogramTable);
+            Collection<String> childAgentRollupIds, ScratchBuffer scratchBuffer) throws Exception {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollupIds, histogramTable);
         if (rows.isEmpty()) {
             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
             logger.warn("no histogram table records found for agentRollupId={}, query={}",
@@ -1393,8 +1396,8 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupThroughputFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
-        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, throughputTable);
+            TransactionQuery query, Collection<String> childAgentRollupIds) throws Exception {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollupIds, throughputTable);
         if (rows.isEmpty()) {
             // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
             logger.warn("no throughput table records found for agentRollupId={}, query={}",
@@ -1452,8 +1455,8 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupQueriesFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
-        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, queryTable);
+            TransactionQuery query, Collection<String> childAgentRollupIds) throws Exception {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollupIds, queryTable);
         if (rows.isEmpty()) {
             return ImmutableList.of();
         }
@@ -1491,8 +1494,8 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupServiceCallsFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups) throws Exception {
-        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, serviceCallTable);
+            TransactionQuery query, Collection<String> childAgentRollupIds) throws Exception {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollupIds, serviceCallTable);
         if (rows.isEmpty()) {
             return ImmutableList.of();
         }
@@ -1526,9 +1529,9 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Future<?>> rollupThreadProfileFromChildren(RollupParams rollup,
-            TransactionQuery query, Collection<String> childAgentRollups, Table table)
+            TransactionQuery query, Collection<String> childAgentRollupIds, Table table)
             throws Exception {
-        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, table);
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollupIds, table);
         if (rows.isEmpty()) {
             return ImmutableList.of();
         }
@@ -1561,12 +1564,12 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Row> getRowsForSummaryRollupFromChildren(TransactionQuery query,
-            Collection<String> childAgentRollups, Table table) throws Exception {
+            Collection<String> childAgentRollupIds, Table table) throws Exception {
         List<Row> rows = Lists.newArrayList();
-        for (String childAgentRollup : childAgentRollups) {
+        for (String childAgentRollupId : childAgentRollupIds) {
             BoundStatement boundStatement =
                     checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
-            bindQueryForRollupFromChild(boundStatement, childAgentRollup, query);
+            bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
             for (Row row : session.execute(boundStatement)) {
                 rows.add(row);
             }
@@ -1575,10 +1578,10 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<Row> getRowsForRollupFromChildren(TransactionQuery query,
-            Collection<String> childAgentRollups, Table table) throws Exception {
+            Collection<String> childAgentRollupIds, Table table) throws Exception {
         List<Row> rows = Lists.newArrayList();
-        for (String childAgentRollup : childAgentRollups) {
-            rows.addAll(executeQueryForRollupFromChild(childAgentRollup, query, table));
+        for (String childAgentRollupId : childAgentRollupIds) {
+            rows.addAll(executeQueryForRollupFromChild(childAgentRollupId, query, table));
         }
         return rows;
     }
@@ -1932,7 +1935,7 @@ public class AggregateDaoImpl implements AggregateDao {
         return session.execute(boundStatement);
     }
 
-    private List<Row> executeQueryForRollupFromChild(String childAgentRollup,
+    private List<Row> executeQueryForRollupFromChild(String childAgentRollupId,
             TransactionQuery query, Table table) throws Exception {
         BoundStatement boundStatement;
         if (query.transactionName() == null) {
@@ -1940,7 +1943,7 @@ public class AggregateDaoImpl implements AggregateDao {
         } else {
             boundStatement = checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
         }
-        bindQueryForRollupFromChild(boundStatement, childAgentRollup, query);
+        bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
         return session.execute(boundStatement).all();
     }
 

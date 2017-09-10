@@ -125,7 +125,7 @@ class Common {
             int i = 0;
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             UUID uniqueness = row.getUUID(i++);
-            String childAgentRollup = checkNotNull(row.getString(i++));
+            String childAgentRollupId = checkNotNull(row.getString(i++));
             Set<String> keys = checkNotNull(row.getSet(i++, String.class));
             NeedsRollupFromChildren needsRollup = needsRollupFromChildrenMap.get(captureTime);
             if (needsRollup == null) {
@@ -133,7 +133,7 @@ class Common {
                 needsRollupFromChildrenMap.put(captureTime, needsRollup);
             }
             for (String key : keys) {
-                needsRollup.keys.put(key, childAgentRollup);
+                needsRollup.keys.put(key, childAgentRollupId);
             }
             needsRollup.uniquenessKeysForDeletion.add(uniqueness);
         }
@@ -203,7 +203,7 @@ class Common {
 
         private final long captureTime;
         // map keys are transaction types or gauge names
-        // map values are childAgentRollups
+        // map values are childAgentRollupIds
         private final Multimap<String, String> keys = HashMultimap.create();
         private final Set<UUID> uniquenessKeysForDeletion = Sets.newHashSet();
 
