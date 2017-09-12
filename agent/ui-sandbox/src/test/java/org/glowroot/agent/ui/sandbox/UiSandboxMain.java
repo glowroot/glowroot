@@ -58,7 +58,7 @@ public class UiSandboxMain {
         } else if (useGlowrootCentral) {
             container = new LocalContainer(testDir, false,
                     ImmutableMap.of("glowroot.agent.id", "UI Sandbox",
-                            "glowroot.collector.address", "localhost:8184,localhost:8185"));
+                            "glowroot.collector.address", "localhost:8181"));
         } else {
             container = new LocalContainer(testDir, true, ImmutableMap.<String, String>of());
         }
