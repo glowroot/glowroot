@@ -64,7 +64,8 @@ public class WebDriverSetup {
     protected static final boolean useCentral =
             Boolean.getBoolean("glowroot.internal.webdriver.useCentral");
 
-    private static final boolean USE_FIREFOX = false;
+    // travis build is currently failing with jbrowser driver
+    private static final boolean USE_JBROWSER_DRIVER = false;
 
     private static final String GECKO_DRIVER_VERSION = "0.16.1";
 
@@ -205,13 +206,13 @@ public class WebDriverSetup {
         } else {
             // single webdriver instance for much better performance
             WebDriver driver;
-            if (USE_FIREFOX) {
+            if (USE_JBROWSER_DRIVER) {
+                driver = new JBrowserDriver();
+            } else {
                 File geckoDriverExecutable = downloadGeckoDriverIfNeeded();
                 System.setProperty("webdriver.gecko.driver",
                         geckoDriverExecutable.getAbsolutePath());
                 driver = new FirefoxDriver();
-            } else {
-                driver = new JBrowserDriver();
             }
             // 768 is bootstrap media query breakpoint for screen-sm-min
             // 992 is bootstrap media query breakpoint for screen-md-min

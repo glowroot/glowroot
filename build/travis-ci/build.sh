@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+# see https://github.com/travis-ci/travis-ci/issues/8408
+_JAVA_OPTIONS=
+
 # java.security.egd is needed for low-entropy docker containers
 # /dev/./urandom (as opposed to simply /dev/urandom) is needed prior to Java 8
 # (see https://docs.oracle.com/javase/8/docs/technotes/guides/security/enhancements-8.html)
