@@ -45,7 +45,7 @@
         since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
         methods still return com.google.common.base.Function, which only extends
         java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>22.0</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>23.0</version> <!-- $NO-MVN-MAN-VER$ -->
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
@@ -59,12 +59,12 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.0.3.Final</version>
+      <version>9.1.1.Final</version>
     </dependency>
     <dependency>
       <groupId>org.jgroups</groupId>
       <artifactId>jgroups</artifactId>
-      <version>4.0.4.Final</version>
+      <version>4.0.6.Final</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -75,17 +75,17 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
-      <version>3.4.0</version>
+      <version>3.5.3</version>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
-      <version>3.4.0</version>
+      <version>3.5.3</version>
     </dependency>
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>0.17.8</version>
+      <version>0.17.9</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->

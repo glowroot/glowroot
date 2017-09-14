@@ -18,7 +18,7 @@ package org.glowroot.central;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import io.grpc.internal.ServerImpl;
+import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ class GrpcServer {
 
     private final DownstreamServiceImpl downstreamService;
 
-    private final ServerImpl server;
+    private final Server server;
 
     GrpcServer(String bindAddress, int port, AgentRollupDao agentRollupDao,
             AgentConfigDao agentConfigDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,

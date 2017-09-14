@@ -82,10 +82,15 @@ public class Log4j2xAspect {
             if (LoggerPlugin.markTraceAsError(lvl <= ERROR, lvl <= WARN, t != null)) {
                 context.setTransactionError(formattedMessage, t);
             }
-            String loggerName = LoggerPlugin.getAbbreviatedLoggerName(logger.getName());
+            // not using LoggerPlugin.getAbbreviatedLoggerName() because log4j2 2.9.0+ uses
+            // canonical class name instead of class name for the logger name (see
+            // https://issues.apache.org/jira/browse/LOG4J2-2023) and this causes
+            // LoggerPlugin.getAbbreviatedLoggerName() to abbreviate outer class names, e.g. a
+            // logger for org.example.Outer$Inner has logger name org.example.Outer.Inner and would
+            // then be abbreviated as org.example.O.Inner, which seems not ideal
             TraceEntry traceEntry =
                     context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
-                            getLevelStr(lvl), loggerName, formattedMessage), timerName);
+                            getLevelStr(lvl), logger.getName(), formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
 

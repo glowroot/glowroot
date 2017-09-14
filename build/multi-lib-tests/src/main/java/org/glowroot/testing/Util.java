@@ -129,6 +129,7 @@ class Util {
         }
         command.add("-Dglowroot.it.harness=javaagent");
         command.add("-Denforcer.skip");
+        command.add("-Dglowroot-build-multi-lib-tests");
         String sourceOfRandomness = System.getProperty("java.security.egd");
         if (sourceOfRandomness != null) {
             command.add("-Djava.security.egd=" + sourceOfRandomness);

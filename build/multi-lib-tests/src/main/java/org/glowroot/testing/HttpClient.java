@@ -175,7 +175,7 @@ public class HttpClient {
             updateLibVersion("cxf.version", "2.5." + i);
             run(test, "cxf-2.x");
         }
-        for (int i = 0; i <= 16; i++) {
+        for (int i = 0; i <= 17; i++) {
             updateLibVersion("cxf.version", "2.6." + i);
             run(test, "cxf-2.x");
         }
@@ -183,14 +183,16 @@ public class HttpClient {
             updateLibVersion("cxf.version", "2.7." + i);
             run(test, "cxf-2.x");
         }
-        for (int i = 0; i <= 8; i++) {
+        for (int i = 0; i <= 15; i++) {
             updateLibVersion("cxf.version", "3.0." + i);
             run(test);
         }
-        for (int i = 0; i <= 12; i++) {
+        for (int i = 0; i <= 13; i++) {
             updateLibVersion("cxf.version", "3.1." + i);
             runJava7(test);
         }
+        updateLibVersion("cxf.version", "3.2.0");
+        runJava7(test);
     }
 
     private static void httpUrlConnection() throws Exception {

@@ -39,22 +39,30 @@ public class Elasticsearch {
             run2x("2.4." + i);
         }
 
-        run5x("5.0.0", "4.1.5.Final", "2.6.2");
-        run5x("5.0.1", "4.1.5.Final", "2.6.2");
-        run5x("5.0.2", "4.1.5.Final", "2.6.2");
+        // for log4j version, see e.g.
+        // https://www.elastic.co/guide/en/elasticsearch/client/java-api/5.6/_log4j_2_logger.html
+        run5x("5.0.0", "4.1.5.Final", "2.7");
+        run5x("5.0.1", "4.1.5.Final", "2.7");
+        run5x("5.0.2", "4.1.5.Final", "2.7");
         // there is no 5.1.0 in maven central
-        run5x("5.1.1", "4.1.6.Final", "2.8.2");
-        run5x("5.1.2", "4.1.6.Final", "2.8.2");
-        run5x("5.2.0", "4.1.7.Final", "2.8.2");
-        run5x("5.2.1", "4.1.7.Final", "2.8.2");
-        run5x("5.2.2", "4.1.7.Final", "2.8.2");
-        run5x("5.3.0", "4.1.7.Final", "2.8.2");
-        run5x("5.3.1", "4.1.7.Final", "2.8.2");
-        run5x("5.3.2", "4.1.7.Final", "2.8.2");
+        run5x("5.1.1", "4.1.6.Final", "2.7");
+        run5x("5.1.2", "4.1.6.Final", "2.7");
+        run5x("5.2.0", "4.1.7.Final", "2.7");
+        run5x("5.2.1", "4.1.7.Final", "2.7");
+        run5x("5.2.2", "4.1.7.Final", "2.7");
+        run5x("5.3.0", "4.1.7.Final", "2.7");
+        run5x("5.3.1", "4.1.7.Final", "2.7");
+        run5x("5.3.2", "4.1.7.Final", "2.7");
         run5x("5.3.3", "4.1.7.Final", "2.7");
         run5x("5.4.0", "4.1.9.Final", "2.8.2");
         run5x("5.4.1", "4.1.11.Final", "2.8.2");
         run5x("5.4.2", "4.1.11.Final", "2.8.2");
+        run5x("5.4.3", "4.1.11.Final", "2.8.2");
+        run5x("5.5.0", "4.1.11.Final", "2.8.2");
+        run5x("5.5.1", "4.1.11.Final", "2.8.2");
+        run5x("5.5.2", "4.1.11.Final", "2.8.2");
+        run5x("5.5.3", "4.1.11.Final", "2.8.2");
+        run5x("5.6.0", "4.1.13.Final", "2.9.0");
     }
 
     private static void run2x(String version) throws Exception {

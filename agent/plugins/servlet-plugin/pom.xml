@@ -93,7 +93,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>4.3.9.RELEASE</version>
+      <version>4.3.11.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -101,13 +101,13 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>4.3.9.RELEASE</version>
+      <version>4.3.11.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <!-- jetty 9 requires Java 7+ -->
+      <!-- jetty 9 uses Servlet API 3.1.0 which conflicts with Tomcat 7 (which uses 3.0) -->
       <version>8.1.22.v20160922</version>
       <scope>test</scope>
     </dependency>

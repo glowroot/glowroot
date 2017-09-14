@@ -378,6 +378,7 @@ public class JavaagentContainer implements Container {
             } else if (name.matches("asm-.*\\.jar")
                     || name.matches("compress-lzf-.*\\.jar")
                     || name.matches("grpc-.*\\.jar")
+                    || name.matches("opencensus-.*\\.jar")
                     || name.matches("guava-.*\\.jar")
                     || name.matches("h2-.*\\.jar")
                     || name.matches("HdrHistogram-.*\\.jar")

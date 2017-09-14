@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,12 +71,12 @@ public class Log4j2xMarkerIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("log warn: o.g.a.p.l.Log4j2xMarkerIT$ShouldLog - def");
+                .isEqualTo("log warn: " + ShouldLog.logger.getName() + " - def");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("log error: o.g.a.p.l.Log4j2xMarkerIT$ShouldLog - efg");
+                .isEqualTo("log error: " + ShouldLog.logger.getName() + " - efg");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -98,7 +98,7 @@ public class Log4j2xMarkerIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("log warn: o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithThrowable - def_t");
+                .isEqualTo("log warn: " + ShouldLogWithThrowable.logger.getName() + " - def_t");
         assertThat(entry.getError().getMessage()).isEqualTo("456");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
@@ -107,7 +107,7 @@ public class Log4j2xMarkerIT {
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("log error: o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithThrowable - efg_t");
+                .isEqualTo("log error: " + ShouldLogWithThrowable.logger.getName() + " - efg_t");
         assertThat(entry.getError().getMessage()).isEqualTo("567");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
@@ -133,13 +133,13 @@ public class Log4j2xMarkerIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
-                "log warn: o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithNullThrowable - def_tnull");
+                "log warn: " + ShouldLogWithNullThrowable.logger.getName() + " - def_tnull");
         assertThat(entry.getError().getMessage()).isEqualTo("def_tnull");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
-                "log error: o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithNullThrowable - efg_tnull");
+                "log error: " + ShouldLogWithNullThrowable.logger.getName() + " - efg_tnull");
         assertThat(entry.getError().getMessage()).isEqualTo("efg_tnull");
 
         assertThat(i.hasNext()).isFalse();
@@ -156,12 +156,12 @@ public class Log4j2xMarkerIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
-                "log warn: o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithOneParameter - def_1 d");
+                "log warn: " + ShouldLogWithOneParameter.logger.getName() + " - def_1 d");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
-                "log error: o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithOneParameter - efg_1 e");
+                "log error: " + ShouldLogWithOneParameter.logger.getName() + " - efg_1 e");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -178,8 +178,8 @@ public class Log4j2xMarkerIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log warn:"
-                + " o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithOneParameterAndThrowable - def_1_t d");
+        assertThat(entry.getMessage()).isEqualTo("log warn: "
+                + ShouldLogWithOneParameterAndThrowable.logger.getName() + " - def_1_t d");
         assertThat(entry.getError().getMessage()).isEqualTo("456");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
@@ -187,8 +187,8 @@ public class Log4j2xMarkerIT {
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log error:"
-                + " o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithOneParameterAndThrowable - efg_1_t e");
+        assertThat(entry.getMessage()).isEqualTo("log error: "
+                + ShouldLogWithOneParameterAndThrowable.logger.getName() + " - efg_1_t e");
         assertThat(entry.getError().getMessage()).isEqualTo("567");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
@@ -208,12 +208,12 @@ public class Log4j2xMarkerIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
-                "log warn: o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithTwoParameters - def_2 d e");
+                "log warn: " + ShouldLogWithTwoParameters.logger.getName() + " - def_2 d e");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
-                "log error: o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithTwoParameters - efg_2 e f");
+                "log error: " + ShouldLogWithTwoParameters.logger.getName() + " - efg_2 e f");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -228,13 +228,13 @@ public class Log4j2xMarkerIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log warn:"
-                + " o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithMoreThanTwoParameters - def_3 d e f");
+        assertThat(entry.getMessage()).isEqualTo("log warn: "
+                + ShouldLogWithMoreThanTwoParameters.logger.getName() + " - def_3 d e f");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log error:"
-                + " o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithMoreThanTwoParameters - efg_3 e f g");
+        assertThat(entry.getMessage()).isEqualTo("log error: "
+                + ShouldLogWithMoreThanTwoParameters.logger.getName() + " - efg_3 e f g");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -249,8 +249,8 @@ public class Log4j2xMarkerIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log warn:"
-                + " o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithParametersAndThrowable - def_3_t d e f");
+        assertThat(entry.getMessage()).isEqualTo("log warn: "
+                + ShouldLogWithParametersAndThrowable.logger.getName() + " - def_3_t d e f");
         assertThat(entry.getError().getMessage()).isEqualTo("456");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
@@ -258,8 +258,8 @@ public class Log4j2xMarkerIT {
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("log error:"
-                + " o.g.a.p.l.Log4j2xMarkerIT$ShouldLogWithParametersAndThrowable - efg_3_t e f g");
+        assertThat(entry.getMessage()).isEqualTo("log error: "
+                + ShouldLogWithParametersAndThrowable.logger.getName() + " - efg_3_t e f g");
         assertThat(entry.getError().getMessage()).isEqualTo("567");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())

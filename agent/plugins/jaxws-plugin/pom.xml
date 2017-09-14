@@ -17,7 +17,12 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <cxf.version>3.1.12</cxf.version>
+    <!-- cxf 3.2.0+ requires Java 8+, which would prevent any jaxws plugin tests from being able to
+      run when building with Java 7 -->
+    <cxf.version>3.1.13</cxf.version>
+    <!-- need to use a spring version that is supported by cxf.version version above
+      (see cxf-parent pom.xml for supported spring version range) -->
+    <spring.version>4.3.11.RELEASE</spring.version>
   </properties>
 
   <dependencies>
@@ -105,7 +110,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>4.1.9.RELEASE</version>
+      <version>${spring.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

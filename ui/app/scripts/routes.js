@@ -131,39 +131,39 @@ glowroot.config([
       views: {
         sidebar: {
           templateUrl: 'views/transaction/sidebar.html',
-          controller: 'TransactionSidebarCtrl',
-          resolve: {
-            summarySortOrders: function () {
-              return {
-                'total-time': 'By percent of total time',
-                'average-time': 'By average time',
-                'throughput': 'By throughput (per min)'
-              };
-            },
-            summaryValueFn: [
-              '$filter',
-              function ($filter) {
-                return function (summary, sortOrder, overallSummary, durationMillis) {
-                  if (sortOrder === 'total-time') {
-                    return (100 * summary.totalDurationNanos / overallSummary.totalDurationNanos).toFixed(1) + ' %';
-                  } else if (sortOrder === 'average-time') {
-                    return $filter('gtMillis')(summary.totalDurationNanos / (1000000 * summary.transactionCount))
-                        + ' ms';
-                  } else if (sortOrder === 'throughput') {
-                    return (60 * 1000 * summary.transactionCount / durationMillis).toFixed(1) + '/min';
-                  } else {
-                    // unexpected sort order
-                    return '';
-                  }
-                };
-              }
-            ]
-          }
+          controller: 'TransactionSidebarCtrl'
         },
         tabs: {
           templateUrl: 'views/transaction/tabs.html',
           controller: 'TransactionTabCtrl'
         }
+      },
+      resolve: {
+        summarySortOrders: function () {
+          return {
+            'total-time': 'By percent of total time',
+            'average-time': 'By average time',
+            'throughput': 'By throughput (per min)'
+          };
+        },
+        summaryValueFn: [
+          '$filter',
+          function ($filter) {
+            return function (summary, sortOrder, overallSummary, durationMillis) {
+              if (sortOrder === 'total-time') {
+                return (100 * summary.totalDurationNanos / overallSummary.totalDurationNanos).toFixed(1) + ' %';
+              } else if (sortOrder === 'average-time') {
+                return $filter('gtMillis')(summary.totalDurationNanos / (1000000 * summary.transactionCount))
+                    + ' ms';
+              } else if (sortOrder === 'throughput') {
+                return (60 * 1000 * summary.transactionCount / durationMillis).toFixed(1) + '/min';
+              } else {
+                // unexpected sort order
+                return '';
+              }
+            };
+          }
+        ]
       }
     });
     $stateProvider.state('transaction.detail.average', {
@@ -198,12 +198,12 @@ glowroot.config([
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/traces.html',
-          controller: 'TracesCtrl',
-          resolve: {
-            traceKind: function () {
-              return 'transaction';
-            }
-          }
+          controller: 'TracesCtrl'
+        }
+      },
+      resolve: {
+        traceKind: function () {
+          return 'transaction';
         }
       }
     });
@@ -280,32 +280,32 @@ glowroot.config([
       views: {
         sidebar: {
           templateUrl: 'views/transaction/sidebar.html',
-          controller: 'TransactionSidebarCtrl',
-          resolve: {
-            summarySortOrders: function () {
-              return {
-                'error-count': 'By error count',
-                'error-rate': 'By error rate'
-              };
-            },
-            summaryValueFn: function () {
-              return function (summary, sortOrder) {
-                if (sortOrder === 'error-count') {
-                  return summary.errorCount;
-                } else if (sortOrder === 'error-rate') {
-                  return (100 * summary.errorCount / summary.transactionCount).toFixed(1) + ' %';
-                } else {
-                  // unexpected sort order
-                  return '';
-                }
-              };
-            }
-          }
+          controller: 'TransactionSidebarCtrl'
         },
         tabs: {
           // same controller, just different html
           templateUrl: 'views/transaction/error-tabs.html',
           controller: 'TransactionTabCtrl'
+        }
+      },
+      resolve: {
+        summarySortOrders: function () {
+          return {
+            'error-count': 'By error count',
+            'error-rate': 'By error rate'
+          };
+        },
+        summaryValueFn: function () {
+          return function (summary, sortOrder) {
+            if (sortOrder === 'error-count') {
+              return summary.errorCount;
+            } else if (sortOrder === 'error-rate') {
+              return (100 * summary.errorCount / summary.transactionCount).toFixed(1) + ' %';
+            } else {
+              // unexpected sort order
+              return '';
+            }
+          };
         }
       }
     });
@@ -323,12 +323,12 @@ glowroot.config([
       views: {
         'main@error': {
           templateUrl: 'views/transaction/traces.html',
-          controller: 'TracesCtrl',
-          resolve: {
-            traceKind: function () {
-              return 'error';
-            }
-          }
+          controller: 'TracesCtrl'
+        }
+      },
+      resolve: {
+        traceKind: function () {
+          return 'error';
         }
       }
     });

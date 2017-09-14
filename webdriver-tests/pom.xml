@@ -16,8 +16,8 @@
   <description>Glowroot WebDriver Tests</description>
 
   <properties>
-    <selenium.version>3.4.0</selenium.version>
-    <jetty.version>9.4.6.v20170531</jetty.version>
+    <selenium.version>3.5.3</selenium.version>
+    <jetty.version>9.4.7.v20170914</jetty.version>
   </properties>
 
   <dependencies>
@@ -39,7 +39,7 @@
         since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
         methods still return com.google.common.base.Function, which only extends
         java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>22.0</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>23.0</version> <!-- $NO-MVN-MAN-VER$ -->
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -86,7 +86,7 @@
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>0.17.8</version>
+      <version>0.17.9</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->
@@ -139,7 +139,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>4.3.9.RELEASE</version>
+      <version>4.3.11.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -147,7 +147,7 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>4.3.9.RELEASE</version>
+      <version>4.3.11.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -250,6 +250,20 @@
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${jetty.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+      <version>${jetty.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
       <version>3.1.0</version>
@@ -259,7 +273,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>io.grpc</groupId>
       <artifactId>grpc-context</artifactId>
-      <version>1.4.0</version>
+      <version>1.6.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -44,6 +44,8 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.util.Styles;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castUntainted;
 
@@ -290,18 +292,17 @@ public class Schemas {
     }
 
     @Value.Immutable
-    public abstract static class Column {
-        @Value.Parameter
-        abstract String name();
-        @Value.Parameter
-        abstract ColumnType type();
+    @Styles.AllParameters
+    public interface Column {
+        String name();
+        ColumnType type();
     }
 
     @Value.Immutable
-    public abstract static class Index {
-        @Value.Parameter
-        abstract @Untainted String name();
-        @Value.Parameter
-        abstract ImmutableList</*@Untainted*/ String> columns();
+    @Styles.AllParameters
+    public interface Index {
+        @Untainted
+        String name();
+        ImmutableList</*@Untainted*/ String> columns();
     }
 }
