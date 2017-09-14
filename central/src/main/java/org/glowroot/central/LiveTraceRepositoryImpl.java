@@ -60,8 +60,7 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     @Override
     public @Nullable Profile getAuxThreadProfile(String agentRollupId, String agentId,
-            String traceId)
-            throws Exception {
+            String traceId) throws Exception {
         checkValidAgentIdForRequest(agentRollupId, agentId);
         return downstreamService.getAuxThreadProfile(agentId, traceId);
     }

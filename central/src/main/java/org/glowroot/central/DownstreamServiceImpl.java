@@ -68,6 +68,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpResponse;
@@ -322,7 +323,12 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 .setHeaderRequest(HeaderRequest.newBuilder()
                         .setTraceId(traceId))
                 .build());
-        return responseWrapper.getHeaderResponse().getHeader();
+        HeaderResponse response = responseWrapper.getHeaderResponse();
+        if (response.hasHeader()) {
+            return response.getHeader();
+        } else {
+            return null;
+        }
     }
 
     @Nullable

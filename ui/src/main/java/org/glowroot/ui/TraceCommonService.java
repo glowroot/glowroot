@@ -30,6 +30,7 @@ import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
+import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
@@ -63,7 +64,12 @@ class TraceCommonService {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            Trace.Header header = liveTraceRepository.getHeader(agentRollupId, agentId, traceId);
+            Trace.Header header;
+            try {
+                header = liveTraceRepository.getHeader(agentRollupId, agentId, traceId);
+            } catch (AgentNotConnectedException e) {
+                header = null;
+            }
             if (header != null) {
                 return toJsonLiveHeader(agentId, header);
             }
@@ -85,7 +91,12 @@ class TraceCommonService {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            Entries entries = liveTraceRepository.getEntries(agentRollupId, agentId, traceId);
+            Entries entries;
+            try {
+                entries = liveTraceRepository.getEntries(agentRollupId, agentId, traceId);
+            } catch (AgentNotConnectedException e) {
+                entries = null;
+            }
             if (entries != null) {
                 return toJson(entries);
             }
@@ -102,8 +113,12 @@ class TraceCommonService {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            Profile profile =
-                    liveTraceRepository.getMainThreadProfile(agentRollupId, agentId, traceId);
+            Profile profile;
+            try {
+                profile = liveTraceRepository.getMainThreadProfile(agentRollupId, agentId, traceId);
+            } catch (AgentNotConnectedException e) {
+                profile = null;
+            }
             if (profile != null) {
                 return toJson(profile);
             }
@@ -120,8 +135,12 @@ class TraceCommonService {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            Profile profile =
-                    liveTraceRepository.getAuxThreadProfile(agentRollupId, agentId, traceId);
+            Profile profile;
+            try {
+                profile = liveTraceRepository.getAuxThreadProfile(agentRollupId, agentId, traceId);
+            } catch (AgentNotConnectedException e) {
+                profile = null;
+            }
             if (profile != null) {
                 return toJson(profile);
             }
@@ -136,7 +155,12 @@ class TraceCommonService {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            Trace trace = liveTraceRepository.getFullTrace(agentRollupId, agentId, traceId);
+            Trace trace;
+            try {
+                trace = liveTraceRepository.getFullTrace(agentRollupId, agentId, traceId);
+            } catch (AgentNotConnectedException e) {
+                trace = null;
+            }
             if (trace != null) {
                 Trace.Header header = trace.getHeader();
                 return ImmutableTraceExport.builder()
