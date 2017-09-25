@@ -113,8 +113,11 @@
            gt-col-class1="col-lg-4"
            gt-col-class2="col-lg-8">
         <div class="help-block">
-          Session timeout only applies if login is enabled. Session timeout <code>0</code> means sessions do not time
-          out, except on jvm restart at which time all sessions time out.
+          <span ng-if="layout.adminEdit && !layout.loginEnabled">
+            Session timeout is disabled because there are no users configured.
+          </span>
+          Session timeout <code>0</code> means sessions do not time out, except on jvm restart at which time all
+          sessions time out.
         </div>
       </div>
       <div gt-form-group
@@ -125,9 +128,12 @@
            gt-disabled="!layout.loginEnabled || !layout.adminEdit"
            gt-width="20em"
            gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8">
+           gt-col-class2="col-lg-8"
+           ng-class="{'gt-form-group-without-help-block' : !layout.adminEdit || layout.loginEnabled}">
         <div class="help-block">
-          Session cookie only applies if login is enabled.
+          <span ng-if="layout.adminEdit && !layout.loginEnabled">
+            Session cookie name is disabled because there are no users configured.
+          </span>
         </div>
       </div>
       <div class="form-group gt-form-buttons"
