@@ -213,7 +213,8 @@ class LayoutService {
                 .ldap(authentication.ldap())
                 .redirectToLogin(false)
                 .defaultTimeZoneId(TimeZone.getDefault().getID())
-                .addAllTimeZoneIds(Arrays.asList(TimeZone.getAvailableIDs()))
+                .addAllTimeZoneIds(new TimeZoneIdComparator()
+                        .sortedCopy(Arrays.asList(TimeZone.getAvailableIDs())))
                 .build();
     }
 
@@ -412,6 +413,36 @@ class LayoutService {
                         showNavbarReport, showNavbarConfig);
             } else {
                 return createNoAccessLayout(authentication);
+            }
+        }
+    }
+
+    private static class TimeZoneIdComparator extends Ordering<String> {
+        @Override
+        public int compare(String timeZoneId1, String timeZoneId2) {
+            if (timeZoneId1.startsWith("Etc/GMT") && timeZoneId2.startsWith("Etc/GMT")) {
+                try {
+                    double offset1 = getOffset(timeZoneId1);
+                    double offset2 = getOffset(timeZoneId2);
+                    return Double.compare(offset1, offset2);
+                } catch (NumberFormatException e) {
+                    logger.warn(e.getMessage(), e);
+                }
+            }
+            return timeZoneId1.compareTo(timeZoneId2);
+        }
+
+        private double getOffset(String timeZoneId) {
+            if (timeZoneId.equals("Etc/GMT-0")) {
+                return -0.1;
+            } else if (timeZoneId.equals("Etc/GMT")) {
+                return 0;
+            } else if (timeZoneId.equals("Etc/GMT0")) {
+                return 0.1;
+            } else if (timeZoneId.equals("Etc/GMT+0")) {
+                return 0.2;
+            } else {
+                return Double.parseDouble(timeZoneId.substring("Etc/GMT".length()));
             }
         }
     }
