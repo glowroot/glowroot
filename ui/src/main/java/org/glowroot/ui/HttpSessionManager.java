@@ -302,7 +302,7 @@ class HttpSessionManager {
         }
 
         private boolean isTimedOut(long currentTimeMillis, long timeoutMillis) {
-            return lastRequest() < currentTimeMillis - timeoutMillis;
+            return timeoutMillis != 0 && lastRequest() < currentTimeMillis - timeoutMillis;
         }
     }
 
