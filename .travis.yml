@@ -21,10 +21,6 @@ matrix:
       env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
     - jdk: oraclejdk8
       env: TARGET=test3 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
-    - jdk: oraclejdk7
-      env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
-    - jdk: oraclejdk7
-      env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
     - jdk: openjdk7
       env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
     - jdk: openjdk7
