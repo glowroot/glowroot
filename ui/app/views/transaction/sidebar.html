@@ -29,17 +29,15 @@
 
       <div style="position: relative;">
         <div ng-show="summariesNoData || summariesNoSearch"
-             class="gt-transaction-sidebar-no-data"
              style="display: table; width: 100%; height: 100px;">
           <div ng-show="summariesNoData"
                style="font-weight: 600; display: table-cell; text-align: center; vertical-align: middle;">
             No data for this time period
           </div>
-        </div>
-        <div gt-spinner
-             gt-show="showSpinner"
-             class="gt-transaction-sidebar-no-data"
-             style="display: table; width: 100%; height: 100px;">
+          <div gt-spinner
+               gt-show="showSpinner"
+               style="display: table; width: 100%; height: 100px;">
+          </div>
         </div>
         <div class="gt-panel-overlay"
              ng-show="summariesLoadingMore">
