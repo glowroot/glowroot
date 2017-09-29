@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,8 @@ public class RateLimitedLoggerTest {
     @Test
     public void testEmpty() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         // when
-        Object[] args = rateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {});
+        Object[] args = RateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {}, 0);
         // then
         assertThat(args).containsExactly(0);
     }
@@ -34,9 +33,8 @@ public class RateLimitedLoggerTest {
     @Test
     public void testSingle() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         // when
-        Object[] args = rateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {1});
+        Object[] args = RateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {1}, 0);
         // then
         assertThat(args).containsExactly(1, 0);
     }
@@ -44,11 +42,10 @@ public class RateLimitedLoggerTest {
     @Test
     public void testSingleException() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         Exception exception = new Exception();
         // when
         Object[] args =
-                rateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {exception});
+                RateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {exception}, 0);
         // then
         assertThat(args).containsExactly(0, exception);
     }
@@ -56,9 +53,8 @@ public class RateLimitedLoggerTest {
     @Test
     public void testMultiple() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         // when
-        Object[] args = rateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {1, 2});
+        Object[] args = RateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {1, 2}, 0);
         // then
         assertThat(args).containsExactly(1, 2, 0);
     }
@@ -66,11 +62,10 @@ public class RateLimitedLoggerTest {
     @Test
     public void testMultipleException() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         Exception exception = new Exception();
         // when
         Object[] args =
-                rateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {1, exception});
+                RateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {1, exception}, 0);
         // then
         assertThat(args).containsExactly(1, 0, exception);
     }

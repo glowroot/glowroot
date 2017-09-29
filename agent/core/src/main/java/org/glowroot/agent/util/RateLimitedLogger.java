@@ -44,29 +44,37 @@ public class RateLimitedLogger {
     }
 
     public void warn(String format, /*@Nullable*/ Object... args) {
+        int countSinceLastWarning = 0;
+        boolean logWarning = false;
         synchronized (warningRateLimiter) {
             if (warningRateLimiter.tryAcquire()) {
-                if (willKeepTrying) {
-                    logger.warn(format, args);
-                } else if (countSinceLastWarning == 0) {
-                    logger.warn(format + " (this warning will be logged at most once a minute)",
-                            args);
-                } else {
-                    @Nullable
-                    Object[] argsPlus = newArgsWithCountSinceLastWarning(args);
-                    logger.warn(format + " (this warning will be logged at most once a minute, {}"
-                            + " warnings were suppressed since it was last logged)", argsPlus);
-                }
-                countSinceLastWarning = 0;
+                logWarning = true;
+                countSinceLastWarning = this.countSinceLastWarning;
+                this.countSinceLastWarning = 0;
             } else {
-                countSinceLastWarning++;
+                this.countSinceLastWarning++;
+            }
+        }
+        if (logWarning) {
+            // it is important not to perform logging under the above synchronized lock in order to
+            // eliminate possibility of deadlock
+            if (willKeepTrying) {
+                logger.warn(format, args);
+            } else if (countSinceLastWarning == 0) {
+                logger.warn(format + " (this warning will be logged at most once a minute)",
+                        args);
+            } else {
+                @Nullable
+                Object[] argsPlus = newArgsWithCountSinceLastWarning(args, countSinceLastWarning);
+                logger.warn(format + " (this warning will be logged at most once a minute, {}"
+                        + " warnings were suppressed since it was last logged)", argsPlus);
             }
         }
     }
 
     @VisibleForTesting
-    @Nullable
-    Object[] newArgsWithCountSinceLastWarning(/*@Nullable*/ Object[] args) {
+    static @Nullable Object[] newArgsWithCountSinceLastWarning(/*@Nullable*/ Object[] args,
+            int countSinceLastWarning) {
         if (args.length == 0) {
             return new Object[] {countSinceLastWarning};
         }

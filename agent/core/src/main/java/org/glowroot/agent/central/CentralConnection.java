@@ -80,7 +80,7 @@ class CentralConnection {
             new RateLimitedLogger(CentralConnection.class);
 
     // count does not include init call
-    @GuardedBy("backPressureLogger")
+    @GuardedBy("discardingDataLogger")
     private int pendingRequestCount;
 
     private final RateLimitedLogger initConnectionErrorLogger =
@@ -149,18 +149,25 @@ class CentralConnection {
         if (inConnectionFailure.get()) {
             return;
         }
+        boolean logWarningAndDoNotSend = false;
         synchronized (discardingDataLogger) {
             if (pendingRequestCount >= PENDING_LIMIT) {
-                suppressLogCollector(new Runnable() {
-                    @Override
-                    public void run() {
-                        discardingDataLogger.warn("not sending data to the central collector"
-                                + " because pending request limit ({}) exceeded", PENDING_LIMIT);
-                    }
-                });
-                return;
+                logWarningAndDoNotSend = true;
+            } else {
+                pendingRequestCount++;
             }
-            pendingRequestCount++;
+        }
+        if (logWarningAndDoNotSend) {
+            // it is important not to perform logging under the above synchronized lock in order to
+            // eliminate possibility of deadlock
+            suppressLogCollector(new Runnable() {
+                @Override
+                public void run() {
+                    discardingDataLogger.warn("not sending data to the central collector"
+                            + " because pending request limit ({}) exceeded", PENDING_LIMIT);
+                }
+            });
+            return;
         }
         // TODO revisit retry/backoff after next grpc version
 
