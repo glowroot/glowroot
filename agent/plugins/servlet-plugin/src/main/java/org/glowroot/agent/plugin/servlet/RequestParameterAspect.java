@@ -81,6 +81,13 @@ public class RequestParameterAspect {
             if (parameterMap == null) {
                 return;
             }
+            if (parameterMap.isEmpty()) {
+                // do not call setCaptureRequestParameters(), which will cause
+                // isRequestParametersCaptured() to return true and prevent further capture of
+                // request parameters, e.g. after a multipart/form-data request is wrapped by
+                // org.springframework.web.multipart.support.DefaultMultipartHttpServletRequest
+                return;
+            }
             messageSupplier.setCaptureRequestParameters(
                     DetailCapture.captureRequestParameters(parameterMap));
         }
