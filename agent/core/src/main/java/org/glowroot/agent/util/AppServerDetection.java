@@ -23,13 +23,9 @@ import org.glowroot.common.util.OnlyUsedByTests;
 
 public class AppServerDetection {
 
-    private static final @Nullable String command = makeCommand();
+    private static final @Nullable String MAIN_CLASS = buildMainClass();
 
     private AppServerDetection() {}
-
-    public static @Nullable String getCommand() {
-        return command;
-    }
 
     public static boolean isIbmJvm() {
         String vmName = StandardSystemProperty.JAVA_VM_NAME.value();
@@ -37,33 +33,34 @@ public class AppServerDetection {
     }
 
     public static boolean isJBossModules() {
-        return isJBossModules(command);
+        return isJBossModules(MAIN_CLASS);
     }
 
     static boolean isOldJBoss() {
-        return command != null && command.equals("org.jboss.Main");
+        return MAIN_CLASS != null && MAIN_CLASS.equals("org.jboss.Main");
     }
 
     static boolean isGlassfish() {
-        return command != null && command.equals("com.sun.enterprise.glassfish.bootstrap.ASMain");
+        return MAIN_CLASS != null
+                && MAIN_CLASS.equals("com.sun.enterprise.glassfish.bootstrap.ASMain");
     }
 
     static boolean isWebLogic() {
-        return command != null && command.equals("weblogic.Server");
+        return MAIN_CLASS != null && MAIN_CLASS.equals("weblogic.Server");
     }
 
     static boolean isWebSphere() {
-        return command != null && command.equals("com.ibm.wsspi.bootstrap.WSPreLauncher");
+        return MAIN_CLASS != null && MAIN_CLASS.equals("com.ibm.wsspi.bootstrap.WSPreLauncher");
     }
 
     @OnlyUsedByTests
-    static boolean isJBossModules(@Nullable String command) {
-        return command != null && (command.equals("org.jboss.modules.Main")
-                || command.endsWith("jboss-modules.jar"));
+    static boolean isJBossModules(@Nullable String mainClass) {
+        return mainClass != null && (mainClass.equals("org.jboss.modules.Main")
+                || mainClass.endsWith("jboss-modules.jar"));
     }
 
     @OnlyUsedByTests
-    static @Nullable String makeCommand() {
+    static @Nullable String buildMainClass() {
         String sunJavaCommand = System.getProperty("sun.java.command");
         if (sunJavaCommand == null) {
             return null;

@@ -146,7 +146,8 @@ class CentralAlertingService {
                     try {
                         checkAlert(agentRollupId, agentRollupDisplay, endTime, alertConfig);
                     } catch (InterruptedException e) {
-                        // shutdown requested
+                        // probably shutdown requested (see close method above)
+                        logger.debug(e.getMessage(), e);
                         return;
                     } catch (Throwable t) {
                         logger.error("{} - {}", agentRollupDisplay, t.getMessage(), t);

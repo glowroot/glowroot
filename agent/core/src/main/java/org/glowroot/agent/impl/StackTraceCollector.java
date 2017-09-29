@@ -117,6 +117,7 @@ public class StackTraceCollector {
                     try {
                         Thread.sleep(Long.MAX_VALUE);
                     } catch (InterruptedException e) {
+                        // probably interrupt from config listener (see above)
                         logger.debug(e.getMessage(), e);
                         // re-start loop
                         remainingInInterval = 0;
@@ -127,6 +128,7 @@ public class StackTraceCollector {
                 try {
                     Thread.sleep(remainingInInterval + randomDelayFromIntervalStart);
                 } catch (InterruptedException e) {
+                    // probably interrupt from config listener (see above)
                     logger.debug(e.getMessage(), e);
                     // re-start loop
                     remainingInInterval = 0;

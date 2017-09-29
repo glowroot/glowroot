@@ -363,12 +363,11 @@ class ClasspathCache {
                 } else if (jarFileInsideJarFile != null) {
                     loadClassNamesFromJarFileInsideJarFile(jarFile, jarFileInsideJarFile, location,
                             newClassNameLocations);
-                } else if (directoryInsideJarFile != null) {
+                } else {
+                    // directoryInsideJarFile is not null based on above conditionals
+                    checkNotNull(directoryInsideJarFile);
                     loadClassNamesFromDirectoryInsideJarFile(jarFile, directoryInsideJarFile,
                             location, newClassNameLocations);
-                } else {
-                    throw new IllegalStateException(
-                            "jarFileInsideJarFile and directoryInsideJarFile cannot both be null");
                 }
             } else {
                 throw new AssertionError("Both Location directory() and jarFile() are null");
@@ -615,7 +614,7 @@ class ClasspathCache {
                     .build();
         } else {
             if (!pathInsideJarFile.endsWith("/")) {
-                pathInsideJarFile += '/';
+                pathInsideJarFile += "/";
             }
             return ImmutableLocation.builder()
                     .jarFile(jarFile)
@@ -638,11 +637,10 @@ class ClasspathCache {
                 return getBytesFromJarFile(name, jarFile);
             } else if (jarFileInsideJarFile != null) {
                 return getBytesFromJarFileInsideJarFile(name, jarFile, jarFileInsideJarFile);
-            } else if (directoryInsideJarFile != null) {
-                return getBytesFromDirectoryInsideJarFile(name, jarFile, directoryInsideJarFile);
             } else {
-                throw new IllegalStateException(
-                        "jarFileInsideJarFile and directoryInsideJarFile cannot both be null");
+                // directoryInsideJarFile is not null based on above conditionals
+                checkNotNull(directoryInsideJarFile);
+                return getBytesFromDirectoryInsideJarFile(name, jarFile, directoryInsideJarFile);
             }
         } else {
             throw new AssertionError("Both Location directory() and jarFile() are null");

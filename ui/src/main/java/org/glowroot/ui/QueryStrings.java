@@ -89,8 +89,7 @@ class QueryStrings {
             prefix = pkg.getName() + '.';
         }
         String immutableClassName = prefix + "Immutable" + clazz.getSimpleName();
-        Class<?> immutableClass = Class.forName(immutableClassName, false, clazz.getClassLoader());
-        return immutableClass;
+        return Class.forName(immutableClassName, false, clazz.getClassLoader());
     }
 
     private static @Nullable Object parseString(String str, Class<?> targetClass) {

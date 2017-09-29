@@ -261,13 +261,16 @@ class TraceCommonService {
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeFieldName("entries");
-        writeEntries(jg, entries.entries());
-        jg.writeFieldName("sharedQueryTexts");
-        writeSharedQueryTexts(jg, entries.sharedQueryTexts());
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeFieldName("entries");
+            writeEntries(jg, entries.entries());
+            jg.writeFieldName("sharedQueryTexts");
+            writeSharedQueryTexts(jg, entries.sharedQueryTexts());
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 
@@ -278,8 +281,11 @@ class TraceCommonService {
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        writeEntries(jg, entries);
-        jg.close();
+        try {
+            writeEntries(jg, entries);
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 
@@ -290,8 +296,11 @@ class TraceCommonService {
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        writeSharedQueryTexts(jg, sharedQueryTexts);
-        jg.close();
+        try {
+            writeSharedQueryTexts(jg, sharedQueryTexts);
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 
@@ -365,97 +374,101 @@ class TraceCommonService {
             Existence entriesExistence, Existence profileExistence) throws Exception {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        if (!agentId.isEmpty()) {
-            jg.writeStringField("agent", agentRollupRepository.readAgentRollupDisplay(agentId));
-        }
-        if (active) {
-            jg.writeBooleanField("active", active);
-        }
-        boolean partial = header.getPartial();
-        if (partial) {
-            jg.writeBooleanField("partial", partial);
-        }
-        boolean async = header.getAsync();
-        if (async) {
-            jg.writeBooleanField("async", async);
-        }
-        jg.writeNumberField("startTime", header.getStartTime());
-        jg.writeNumberField("captureTime", header.getCaptureTime());
-        jg.writeNumberField("durationNanos", header.getDurationNanos());
-        jg.writeStringField("transactionType", header.getTransactionType());
-        jg.writeStringField("transactionName", header.getTransactionName());
-        jg.writeStringField("headline", header.getHeadline());
-        jg.writeStringField("user", header.getUser());
-        List<Trace.Attribute> attributes = header.getAttributeList();
-        if (!attributes.isEmpty()) {
-            jg.writeObjectFieldStart("attributes");
-            for (Trace.Attribute attribute : attributes) {
-                jg.writeArrayFieldStart(attribute.getName());
-                for (String value : attribute.getValueList()) {
-                    jg.writeString(value);
-                }
-                jg.writeEndArray();
+        try {
+            jg.writeStartObject();
+            if (!agentId.isEmpty()) {
+                jg.writeStringField("agent", agentRollupRepository.readAgentRollupDisplay(agentId));
             }
+            if (active) {
+                jg.writeBooleanField("active", active);
+            }
+            boolean partial = header.getPartial();
+            if (partial) {
+                jg.writeBooleanField("partial", partial);
+            }
+            boolean async = header.getAsync();
+            if (async) {
+                jg.writeBooleanField("async", async);
+            }
+            jg.writeNumberField("startTime", header.getStartTime());
+            jg.writeNumberField("captureTime", header.getCaptureTime());
+            jg.writeNumberField("durationNanos", header.getDurationNanos());
+            jg.writeStringField("transactionType", header.getTransactionType());
+            jg.writeStringField("transactionName", header.getTransactionName());
+            jg.writeStringField("headline", header.getHeadline());
+            jg.writeStringField("user", header.getUser());
+            List<Trace.Attribute> attributes = header.getAttributeList();
+            if (!attributes.isEmpty()) {
+                jg.writeObjectFieldStart("attributes");
+                for (Trace.Attribute attribute : attributes) {
+                    jg.writeArrayFieldStart(attribute.getName());
+                    for (String value : attribute.getValueList()) {
+                        jg.writeString(value);
+                    }
+                    jg.writeEndArray();
+                }
+                jg.writeEndObject();
+            }
+            List<Trace.DetailEntry> detailEntries = header.getDetailEntryList();
+            if (!detailEntries.isEmpty()) {
+                jg.writeFieldName("detail");
+                writeDetailEntries(detailEntries, jg);
+            }
+            if (header.hasError()) {
+                jg.writeFieldName("error");
+                writeError(header.getError(), jg);
+            }
+            if (header.hasMainThreadRootTimer()) {
+                jg.writeFieldName("mainThreadRootTimer");
+                writeTimer(header.getMainThreadRootTimer(), jg);
+            }
+            jg.writeArrayFieldStart("auxThreadRootTimers");
+            for (Trace.Timer rootTimer : header.getAuxThreadRootTimerList()) {
+                writeTimer(rootTimer, jg);
+            }
+            jg.writeEndArray();
+            jg.writeArrayFieldStart("asyncTimers");
+            for (Trace.Timer asyncTimer : header.getAsyncTimerList()) {
+                writeTimer(asyncTimer, jg);
+            }
+            jg.writeEndArray();
+            if (header.hasMainThreadStats()) {
+                jg.writeFieldName("mainThreadStats");
+                writeThreadStats(header.getMainThreadStats(), jg);
+            }
+            if (header.hasAuxThreadStats()) {
+                jg.writeFieldName("auxThreadStats");
+                writeThreadStats(header.getAuxThreadStats(), jg);
+            }
+            jg.writeNumberField("entryCount", header.getEntryCount());
+            boolean entryLimitExceeded = header.getEntryLimitExceeded();
+            if (entryLimitExceeded) {
+                jg.writeBooleanField("entryLimitExceeded", entryLimitExceeded);
+            }
+            jg.writeNumberField("mainThreadProfileSampleCount",
+                    header.getMainThreadProfileSampleCount());
+            boolean mainThreadProfileSampleLimitExceeded =
+                    header.getMainThreadProfileSampleLimitExceeded();
+            if (mainThreadProfileSampleLimitExceeded) {
+                jg.writeBooleanField("mainThreadProfileSampleLimitExceeded",
+                        mainThreadProfileSampleLimitExceeded);
+            }
+            jg.writeNumberField("auxThreadProfileSampleCount",
+                    header.getAuxThreadProfileSampleCount());
+            boolean auxThreadProfileSampleLimitExceeded =
+                    header.getAuxThreadProfileSampleLimitExceeded();
+            if (auxThreadProfileSampleLimitExceeded) {
+                jg.writeBooleanField("auxThreadProfileSampleLimitExceeded",
+                        auxThreadProfileSampleLimitExceeded);
+            }
+            jg.writeStringField("entriesExistence",
+                    entriesExistence.name().toLowerCase(Locale.ENGLISH));
+            jg.writeStringField("profileExistence",
+                    profileExistence.name().toLowerCase(Locale.ENGLISH));
             jg.writeEndObject();
+        } finally {
+            jg.close();
         }
-        List<Trace.DetailEntry> detailEntries = header.getDetailEntryList();
-        if (!detailEntries.isEmpty()) {
-            jg.writeFieldName("detail");
-            writeDetailEntries(detailEntries, jg);
-        }
-        if (header.hasError()) {
-            jg.writeFieldName("error");
-            writeError(header.getError(), jg);
-        }
-        if (header.hasMainThreadRootTimer()) {
-            jg.writeFieldName("mainThreadRootTimer");
-            writeTimer(header.getMainThreadRootTimer(), jg);
-        }
-        jg.writeArrayFieldStart("auxThreadRootTimers");
-        for (Trace.Timer rootTimer : header.getAuxThreadRootTimerList()) {
-            writeTimer(rootTimer, jg);
-        }
-        jg.writeEndArray();
-        jg.writeArrayFieldStart("asyncTimers");
-        for (Trace.Timer asyncTimer : header.getAsyncTimerList()) {
-            writeTimer(asyncTimer, jg);
-        }
-        jg.writeEndArray();
-        if (header.hasMainThreadStats()) {
-            jg.writeFieldName("mainThreadStats");
-            writeThreadStats(header.getMainThreadStats(), jg);
-        }
-        if (header.hasAuxThreadStats()) {
-            jg.writeFieldName("auxThreadStats");
-            writeThreadStats(header.getAuxThreadStats(), jg);
-        }
-        jg.writeNumberField("entryCount", header.getEntryCount());
-        boolean entryLimitExceeded = header.getEntryLimitExceeded();
-        if (entryLimitExceeded) {
-            jg.writeBooleanField("entryLimitExceeded", entryLimitExceeded);
-        }
-        jg.writeNumberField("mainThreadProfileSampleCount",
-                header.getMainThreadProfileSampleCount());
-        boolean mainThreadProfileSampleLimitExceeded =
-                header.getMainThreadProfileSampleLimitExceeded();
-        if (mainThreadProfileSampleLimitExceeded) {
-            jg.writeBooleanField("mainThreadProfileSampleLimitExceeded",
-                    mainThreadProfileSampleLimitExceeded);
-        }
-        jg.writeNumberField("auxThreadProfileSampleCount", header.getAuxThreadProfileSampleCount());
-        boolean auxThreadProfileSampleLimitExceeded =
-                header.getAuxThreadProfileSampleLimitExceeded();
-        if (auxThreadProfileSampleLimitExceeded) {
-            jg.writeBooleanField("auxThreadProfileSampleLimitExceeded",
-                    auxThreadProfileSampleLimitExceeded);
-        }
-        jg.writeStringField("entriesExistence",
-                entriesExistence.name().toLowerCase(Locale.ENGLISH));
-        jg.writeStringField("profileExistence",
-                profileExistence.name().toLowerCase(Locale.ENGLISH));
-        jg.writeEndObject();
-        jg.close();
         return sb.toString();
     }
 

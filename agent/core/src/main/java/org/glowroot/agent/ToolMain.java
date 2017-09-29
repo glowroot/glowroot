@@ -67,7 +67,7 @@ public class ToolMain {
             maskCentralData(directories.getDataDir());
             return;
         }
-        System.err.println("unexpected args, exiting");
+        startupLogger.error("unexpected args, exiting");
     }
 
     @VisibleForTesting

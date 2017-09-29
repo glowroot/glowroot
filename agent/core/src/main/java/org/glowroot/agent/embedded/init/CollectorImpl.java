@@ -83,7 +83,7 @@ class CollectorImpl implements Collector {
                     alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
                             alertCondition.getMetricCondition(), aggregateReader.captureTime());
                 } catch (InterruptedException e) {
-                    // shutdown request
+                    // probably shutdown requested
                     throw e;
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
@@ -112,7 +112,7 @@ class CollectorImpl implements Collector {
                     alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
                             alertCondition.getMetricCondition(), maxCaptureTime);
                 } catch (InterruptedException e) {
-                    // shutdown request
+                    // probably shutdown requested
                     throw e;
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);

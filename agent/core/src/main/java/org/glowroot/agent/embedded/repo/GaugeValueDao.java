@@ -197,7 +197,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         Joiner joiner = Joiner.on(", ");
         String selectClause = castUntainted(joiner.join(columnNames));
         long[] lastRollupTimes = dataSource.query(new LastRollupTimesQuery(selectClause));
-        if (lastRollupTimes == null) {
+        if (lastRollupTimes.length == 0) {
             long[] values = new long[rollupConfigs.size()];
             String valueClause = castUntainted(joiner.join(Longs.asList(values)));
             dataSource.update("insert into gauge_value_last_rollup_times (" + selectClause
@@ -237,7 +237,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
     }
 
-    private static class LastRollupTimesQuery implements JdbcQuery<long /*@Nullable*/ []> {
+    private static class LastRollupTimesQuery implements JdbcQuery<long[]> {
 
         private final @Untainted String selectClause;
 
@@ -254,9 +254,9 @@ public class GaugeValueDao implements GaugeValueRepository {
         public void bind(PreparedStatement preparedStatement) throws Exception {}
 
         @Override
-        public long /*@Nullable*/ [] processResultSet(ResultSet resultSet) throws Exception {
+        public long[] processResultSet(ResultSet resultSet) throws Exception {
             if (!resultSet.next()) {
-                return null;
+                return new long[0];
             }
             int columns = resultSet.getMetaData().getColumnCount();
             long[] values = new long[columns];
@@ -267,8 +267,8 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
 
         @Override
-        public long /*@Nullable*/ [] valueIfDataSourceClosed() {
-            return null;
+        public long[] valueIfDataSourceClosed() {
+            return new long[0];
         }
     }
 

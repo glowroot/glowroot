@@ -143,9 +143,9 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                     builder.setAuxThreadProfile(auxThreadProfile);
                 }
                 return builder.setHeader(checkNotNull(traceVisitor.header))
-                        .addAllEntry(((CollectingEntryVisitor) traceVisitor).entries)
-                        .addAllSharedQueryText(TraceCreator
-                                .toProto(((CollectingEntryVisitor) traceVisitor).sharedQueryTexts))
+                        .addAllEntry(traceVisitor.getEntries())
+                        .addAllSharedQueryText(
+                                TraceCreator.toProto(traceVisitor.getSharedQueryTexts()))
                         .build();
             }
         }
@@ -246,7 +246,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         }
     }
 
-    private TraceReader createTraceReader(Transaction transaction) throws Exception {
+    private TraceReader createTraceReader(Transaction transaction) {
         if (transaction.isCompleted()) {
             return TraceCreator.createTraceReaderForCompleted(transaction, true);
         } else {
@@ -306,6 +306,14 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         @Override
         public void visitEntry(Trace.Entry entry) {
             entries.add(entry);
+        }
+
+        List<Trace.Entry> getEntries() {
+            return entries;
+        }
+
+        List<String> getSharedQueryTexts() {
+            return sharedQueryTexts;
         }
     }
 

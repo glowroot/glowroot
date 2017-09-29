@@ -332,10 +332,6 @@ public class Weaver {
                         sb.append('\n');
                         break;
                     case WAITING:
-                        sb.append("        -  waiting on ");
-                        sb.append(lockInfo);
-                        sb.append('\n');
-                        break;
                     case TIMED_WAITING:
                         sb.append("        -  waiting on ");
                         sb.append(lockInfo);

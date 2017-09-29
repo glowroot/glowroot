@@ -45,7 +45,7 @@ public class AppServerDetectionTest {
         String previous = System.getProperty("sun.java.command");
         setJavaSunCommand(javaSunCommand);
         try {
-            assertThat(AppServerDetection.isJBossModules(AppServerDetection.makeCommand()))
+            assertThat(AppServerDetection.isJBossModules(AppServerDetection.buildMainClass()))
                     .isEqualTo(jbossModules);
         } finally {
             setJavaSunCommand(previous);

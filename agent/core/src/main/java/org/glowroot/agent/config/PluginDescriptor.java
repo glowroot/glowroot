@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,16 +55,19 @@ public abstract class PluginDescriptor {
     public static String writeValue(List<PluginDescriptor> pluginDescriptors) throws IOException {
         ObjectMapper mapper = ObjectMappers.create();
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
-                .setPrettyPrinter(ObjectMappers.getPrettyPrinter());
-        jg.writeStartArray();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            ObjectNode objectNode = mapper.valueToTree(pluginDescriptor);
-            ObjectMappers.stripEmptyContainerNodes(objectNode);
-            jg.writeTree(objectNode);
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        try {
+            jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
+            jg.writeStartArray();
+            for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+                ObjectNode objectNode = mapper.valueToTree(pluginDescriptor);
+                ObjectMappers.stripEmptyContainerNodes(objectNode);
+                jg.writeTree(objectNode);
+            }
+            jg.writeEndArray();
+        } finally {
+            jg.close();
         }
-        jg.writeEndArray();
-        jg.close();
         // newline is not required, just a personal preference
         sb.append(ObjectMappers.NEWLINE);
         return sb.toString();

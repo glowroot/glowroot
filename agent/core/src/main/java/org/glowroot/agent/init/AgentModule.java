@@ -136,10 +136,9 @@ public class AgentModule {
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes());
         final TimerNameCache timerNameCache = new TimerNameCache();
 
-        final Weaver weaver =
-                new Weaver(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
-                        adviceCache.getMixinTypes(), analyzedWorld, transactionRegistry, ticker,
-                        timerNameCache, configService);
+        final Weaver weaver = new Weaver(adviceCache.getAdvisorsSupplier(),
+                adviceCache.getShimTypes(), adviceCache.getMixinTypes(), analyzedWorld,
+                transactionRegistry, ticker, timerNameCache, configService);
 
         if (instrumentation == null) {
             // instrumentation is null when debugging with LocalContainer
@@ -176,9 +175,9 @@ public class AgentModule {
         UserProfileScheduler userProfileScheduler =
                 new UserProfileScheduler(backgroundExecutor, configService, random);
         GlowrootService glowrootService = new GlowrootServiceImpl(transactionRegistry);
-        TransactionServiceImpl.create(transactionRegistry, transactionCollector, configService,
-                timerNameCache, threadAllocatedBytes.getService(), userProfileScheduler, ticker,
-                clock);
+        TransactionServiceImpl.createSingleton(transactionRegistry, transactionCollector,
+                configService, timerNameCache, threadAllocatedBytes.getService(),
+                userProfileScheduler, ticker, clock);
         ConfigServiceFactory configServiceFactory = new ConfigServiceFactory() {
             @Override
             public org.glowroot.agent.plugin.api.config.ConfigService create(String pluginId) {

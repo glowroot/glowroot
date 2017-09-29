@@ -28,7 +28,8 @@ import static org.glowroot.agent.util.Checkers.castInitialized;
 public class TransactionRegistry {
 
     // collection of active running transactions
-    private final IterableWithSelfRemovableEntries<Transaction> transactions = new IterableWithSelfRemovableEntries<Transaction>();
+    private final IterableWithSelfRemovableEntries<Transaction> transactions =
+            new IterableWithSelfRemovableEntries<Transaction>();
 
     // active thread context being executed by the current thread
     private final FastThreadLocal</*@Nullable*/ ThreadContextImpl> currentThreadContext =

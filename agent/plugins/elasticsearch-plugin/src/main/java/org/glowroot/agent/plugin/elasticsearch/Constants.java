@@ -16,5 +16,8 @@
 package org.glowroot.agent.plugin.elasticsearch;
 
 class Constants {
+
     static final String QUERY_MESSAGE_PREFIX = "elasticsearch execution: ";
+
+    private Constants() {}
 }

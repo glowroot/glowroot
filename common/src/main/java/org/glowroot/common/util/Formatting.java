@@ -61,7 +61,7 @@ public class Formatting {
         }
         String[] units = new String[] {"bytes", "KB", "MB", "GB", "TB", "PB"};
         int number = (int) Math.floor(Math.log(bytes) / Math.log(1024));
-        double num = bytes / Math.pow(1024, Math.floor(number));
+        double num = bytes / Math.pow(1024, number);
         if (number == 0) {
             return Math.round(num) + " bytes";
         } else {

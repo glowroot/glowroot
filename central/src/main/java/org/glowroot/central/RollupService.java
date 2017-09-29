@@ -70,6 +70,8 @@ class RollupService implements Runnable {
                 Thread.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
                 runInternal();
             } catch (InterruptedException e) {
+                // probably shutdown requested (see close method below)
+                logger.debug(e.getMessage(), e);
                 continue;
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
@@ -116,7 +118,7 @@ class RollupService implements Runnable {
             aggregateDao.rollup(agentRollup.id(), parentAgentRollupId,
                     agentRollup.children().isEmpty());
         } catch (InterruptedException e) {
-            // shutdown requested
+            // probably shutdown requested (see close method above)
             throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
@@ -144,7 +146,7 @@ class RollupService implements Runnable {
                     agentRollup.children().isEmpty());
             return true;
         } catch (InterruptedException e) {
-            // shutdown requested
+            // probably shutdown requested (see close method above)
             throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
@@ -159,7 +161,7 @@ class RollupService implements Runnable {
         try {
             syntheticResultDao.rollup(agentRollup.id());
         } catch (InterruptedException e) {
-            // shutdown requested
+            // probably shutdown requested (see close method above)
             throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);

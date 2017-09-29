@@ -177,7 +177,7 @@ public class AdviceCache {
         return advisors;
     }
 
-    private static List<ShimType> getShimTypes(Class<?> aspectClass) throws IOException {
+    private static List<ShimType> getShimTypes(Class<?> aspectClass) {
         List<ShimType> shimTypes = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
             Shim shim = memberClass.getAnnotation(Shim.class);

@@ -235,10 +235,13 @@ class AdminJsonService {
                     logger.debug(e.getMessage(), e);
                     StringWriter sw = new StringWriter();
                     JsonGenerator jg = mapper.getFactory().createGenerator(sw);
-                    jg.writeStartObject();
-                    jg.writeStringField("httpsValidationError", e.getMessage());
-                    jg.writeEndObject();
-                    jg.close();
+                    try {
+                        jg.writeStartObject();
+                        jg.writeStringField("httpsValidationError", e.getMessage());
+                        jg.writeEndObject();
+                    } finally {
+                        jg.close();
+                    }
                     return sw.toString();
                 }
             }
@@ -403,10 +406,13 @@ class AdminJsonService {
         }
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
-        jg.writeStartObject();
-        jg.writeStringField("content", responseContent);
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeStringField("content", responseContent);
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sw.toString();
     }
 
@@ -443,11 +449,14 @@ class AdminJsonService {
         Set<String> glowrootRoles = LdapAuthentication.getGlowrootRoles(ldapGroupDns, config);
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
-        jg.writeStartObject();
-        jg.writeObjectField("ldapGroupDns", ldapGroupDns);
-        jg.writeObjectField("glowrootRoles", glowrootRoles);
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeObjectField("ldapGroupDns", ldapGroupDns);
+            jg.writeObjectField("glowrootRoles", glowrootRoles);
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sw.toString();
     }
 
@@ -535,11 +544,14 @@ class AdminJsonService {
     private static String createErrorResponse(@Nullable String message) throws IOException {
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
-        jg.writeStartObject();
-        jg.writeBooleanField("error", true);
-        jg.writeStringField("message", message);
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeBooleanField("error", true);
+            jg.writeStringField("message", message);
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sw.toString();
     }
 

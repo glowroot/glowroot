@@ -101,8 +101,7 @@ public class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
         EmbeddedAgentModule embeddedAgentModule = checkNotNull(this.embeddedAgentModule);
         AgentModule agentModule = embeddedAgentModule.getAgentModule();
         agentModule.getConfigService().resetConfig();
-        ((ConfigRepositoryImpl) embeddedAgentModule.getSimpleRepoModule().getConfigRepository())
-                .resetAdminConfig();
+        embeddedAgentModule.getSimpleRepoModule().getConfigRepository().resetAdminConfig();
         agentModule.getLiveWeavingService().reweave("");
     }
 

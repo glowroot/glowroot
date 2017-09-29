@@ -140,13 +140,16 @@ class ErrorJsonService {
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("dataSeries", dataSeries);
-        jg.writeObjectField("dataSeriesExtra", dataSeriesExtra);
-        jg.writeObjectField("errorMessages", records);
-        jg.writeBooleanField("moreErrorMessagesAvailable", moreAvailable);
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeObjectField("dataSeries", dataSeries);
+            jg.writeObjectField("dataSeriesExtra", dataSeriesExtra);
+            jg.writeObjectField("errorMessages", records);
+            jg.writeBooleanField("moreErrorMessagesAvailable", moreAvailable);
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 
@@ -168,12 +171,15 @@ class ErrorJsonService {
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("overall", overallSummary);
-        jg.writeObjectField("transactions", queryResult.records());
-        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeObjectField("overall", overallSummary);
+            jg.writeObjectField("transactions", queryResult.records());
+            jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 

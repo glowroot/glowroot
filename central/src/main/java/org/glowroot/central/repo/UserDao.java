@@ -152,16 +152,6 @@ class UserDao {
         boundStatement.setSet(i++, userConfig.roles());
     }
 
-    private static ImmutableUserConfig buildUser(Row row) {
-        int i = 0;
-        return ImmutableUserConfig.builder()
-                .username(checkNotNull(row.getString(i++)))
-                .ldap(row.getBool(i++))
-                .passwordHash(checkNotNull(row.getString(i++)))
-                .roles(row.getSet(i++, String.class))
-                .build();
-    }
-
     private class AllUsersCacheLoader implements CacheLoader<String, List<UserConfig>> {
         @Override
         public List<UserConfig> load(String dummy) throws Exception {
@@ -171,6 +161,16 @@ class UserDao {
                 users.add(buildUser(row));
             }
             return users;
+        }
+
+        private ImmutableUserConfig buildUser(Row row) {
+            int i = 0;
+            return ImmutableUserConfig.builder()
+                    .username(checkNotNull(row.getString(i++)))
+                    .ldap(row.getBool(i++))
+                    .passwordHash(checkNotNull(row.getString(i++)))
+                    .roles(row.getSet(i++, String.class))
+                    .build();
         }
     }
 }

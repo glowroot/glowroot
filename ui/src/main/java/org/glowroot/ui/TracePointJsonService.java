@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -264,39 +264,42 @@ class TracePointJsonService {
                 boolean limitExceeded, boolean expired) throws Exception {
             StringBuilder sb = new StringBuilder();
             JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-            jg.writeStartObject();
-            jg.writeArrayFieldStart("normalPoints");
-            for (TracePoint point : points) {
-                if (!point.error() && !point.partial()) {
-                    writePoint(point, jg);
+            try {
+                jg.writeStartObject();
+                jg.writeArrayFieldStart("normalPoints");
+                for (TracePoint point : points) {
+                    if (!point.error() && !point.partial()) {
+                        writePoint(point, jg);
+                    }
                 }
-            }
-            jg.writeEndArray();
-            jg.writeArrayFieldStart("errorPoints");
-            for (TracePoint point : points) {
-                if (point.error() && !point.partial()) {
-                    writePoint(point, jg);
+                jg.writeEndArray();
+                jg.writeArrayFieldStart("errorPoints");
+                for (TracePoint point : points) {
+                    if (point.error() && !point.partial()) {
+                        writePoint(point, jg);
+                    }
                 }
-            }
-            jg.writeEndArray();
-            jg.writeArrayFieldStart("partialPoints");
-            for (TracePoint point : points) {
-                if (point.partial()) {
-                    writePoint(point, jg);
+                jg.writeEndArray();
+                jg.writeArrayFieldStart("partialPoints");
+                for (TracePoint point : points) {
+                    if (point.partial()) {
+                        writePoint(point, jg);
+                    }
                 }
+                for (TracePoint activePoint : activePoints) {
+                    writePoint(activePoint, jg);
+                }
+                jg.writeEndArray();
+                if (limitExceeded) {
+                    jg.writeBooleanField("limitExceeded", true);
+                }
+                if (expired) {
+                    jg.writeBooleanField("expired", true);
+                }
+                jg.writeEndObject();
+            } finally {
+                jg.close();
             }
-            for (TracePoint activePoint : activePoints) {
-                writePoint(activePoint, jg);
-            }
-            jg.writeEndArray();
-            if (limitExceeded) {
-                jg.writeBooleanField("limitExceeded", true);
-            }
-            if (expired) {
-                jg.writeBooleanField("expired", true);
-            }
-            jg.writeEndObject();
-            jg.close();
             return sb.toString();
         }
 

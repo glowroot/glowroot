@@ -226,21 +226,24 @@ public class MutableProfile {
     public String toFlameGraphJson() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeNumberField("totalSampleCount", getSampleCount());
-        jg.writeArrayFieldStart("rootNodes");
-        int height = 0;
-        for (ProfileNode rootNode : rootNodes) {
-            if (rootNode.sampleCount > rootNode.ellipsedSampleCount) {
-                FlameGraphWriter flameGraphWriter = new FlameGraphWriter(rootNode, jg);
-                flameGraphWriter.traverse();
-                height = Math.max(height, flameGraphWriter.height);
+        try {
+            jg.writeStartObject();
+            jg.writeNumberField("totalSampleCount", getSampleCount());
+            jg.writeArrayFieldStart("rootNodes");
+            int height = 0;
+            for (ProfileNode rootNode : rootNodes) {
+                if (rootNode.sampleCount > rootNode.ellipsedSampleCount) {
+                    FlameGraphWriter flameGraphWriter = new FlameGraphWriter(rootNode, jg);
+                    flameGraphWriter.traverse();
+                    height = Math.max(height, flameGraphWriter.height);
+                }
             }
+            jg.writeEndArray();
+            jg.writeNumberField("height", height);
+            jg.writeEndObject();
+        } finally {
+            jg.close();
         }
-        jg.writeEndArray();
-        jg.writeNumberField("height", height);
-        jg.writeEndObject();
-        jg.close();
         return sb.toString();
     }
 

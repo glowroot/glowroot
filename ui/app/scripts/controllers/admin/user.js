@@ -32,8 +32,8 @@ glowroot.controller('AdminUserCtrl', [
     $scope.username = $location.search().username;
 
     function onNewData(data) {
-      // need to sort role names to keep hasChanges() consistent
       if (data.config.roles) {
+        // need to sort roles to keep hasChanges() consistent
         data.config.roles.sort(function (a, b) {
           return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
         });
@@ -113,7 +113,7 @@ glowroot.controller('AdminUserCtrl', [
             $scope.config.roles.push(role.name);
           }
         });
-        // need to sort role names to keep hasChanges() consistent
+        // need to sort roles to preserve original (sorted) ordering and avoid hasChanges()
         $scope.config.roles.sort(function (a, b) {
           return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
         });

@@ -167,6 +167,8 @@ class SyntheticMonitorService implements Runnable {
                 Thread.sleep(60000);
                 runInternal();
             } catch (InterruptedException e) {
+                // probably shutdown requested (see close method below)
+                logger.debug(e.getMessage(), e);
                 continue;
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
@@ -249,7 +251,7 @@ class SyntheticMonitorService implements Runnable {
                                         + syntheticMonitorConfig.getKind());
                         }
                     } catch (InterruptedException e) {
-                        // probably shutdown requested
+                        // probably shutdown requested (see close method above)
                         logger.debug(e.getMessage(), e);
                     } catch (Exception e) {
                         logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
@@ -335,13 +337,13 @@ class SyntheticMonitorService implements Runnable {
                 try {
                     future.get();
                 } catch (InterruptedException e) {
-                    // probably shutdown requested
+                    // probably shutdown requested (see close method above)
                     logger.debug(e.getMessage(), e);
                     return;
                 } catch (ExecutionException e) {
                     logger.debug(e.getMessage(), e);
                     if (e.getCause() instanceof InterruptedException) {
-                        // probably shutdown requested
+                        // probably shutdown requested (see close method above)
                         return;
                     }
                     error = true;
@@ -350,7 +352,7 @@ class SyntheticMonitorService implements Runnable {
                     syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
                             captureTime, durationNanos, error);
                 } catch (InterruptedException e) {
-                    // probably shutdown requested
+                    // probably shutdown requested (see close method above)
                     logger.debug(e.getMessage(), e);
                     return;
                 } catch (Exception e) {
@@ -453,7 +455,7 @@ class SyntheticMonitorService implements Runnable {
             @Nullable String errorMessage) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
-        if (!agentRollupDisplay.equals("")) {
+        if (!agentRollupDisplay.isEmpty()) {
             subject += " - " + agentRollupDisplay;
         }
         subject += " - " + syntheticMonitorConfig.getDisplay();

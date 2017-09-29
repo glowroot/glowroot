@@ -59,8 +59,8 @@ import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.ImmutableTimerImplSnapshot;
 import org.glowroot.agent.model.MutableAggregateTimer;
 import org.glowroot.agent.model.MutableTraceTimer;
-import org.glowroot.agent.model.Profile;
 import org.glowroot.agent.model.QueryCollector;
+import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.plugin.api.Message;
@@ -136,8 +136,8 @@ public class Transaction {
     private final ConfigService configService;
 
     // stack trace data constructed from profiling
-    private volatile @MonotonicNonNull Profile mainThreadProfile;
-    private volatile @MonotonicNonNull Profile auxThreadProfile;
+    private volatile @MonotonicNonNull ThreadProfile mainThreadProfile;
+    private volatile @MonotonicNonNull ThreadProfile auxThreadProfile;
 
     // overrides general store threshold
     // -1 means don't override the general store threshold
@@ -487,7 +487,7 @@ public class Transaction {
     }
 
     @Nullable
-    Profile getMainThreadProfile() {
+    ThreadProfile getMainThreadProfile() {
         return mainThreadProfile;
     }
 
@@ -512,7 +512,7 @@ public class Transaction {
     }
 
     @Nullable
-    Profile getAuxThreadProfile() {
+    ThreadProfile getAuxThreadProfile() {
         return auxThreadProfile;
     }
 
@@ -761,7 +761,7 @@ public class Transaction {
         if (completed) {
             return;
         }
-        Profile profile;
+        ThreadProfile profile;
         if (auxiliary) {
             profile = auxThreadProfile;
         } else {
@@ -775,7 +775,7 @@ public class Transaction {
             // profile is constructed and first stack trace is added prior to setting the
             // transaction profile field, so that it is not possible to read a profile that doesn't
             // have at least one stack trace
-            profile = new Profile();
+            profile = new ThreadProfile();
             profile.addStackTrace(threadInfo, limit);
             if (auxiliary) {
                 auxThreadProfile = profile;
@@ -897,7 +897,7 @@ public class Transaction {
         return true;
     }
 
-    private static <T extends Exception> void addProtobufChildEntries(TraceEntryImpl entry,
+    private static void addProtobufChildEntries(TraceEntryImpl entry,
             ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
             long captureTick, int depth, EntryVisitor entryVisitor, boolean removeSingleAuxEntry)
             throws Exception {

@@ -450,7 +450,7 @@ class TransactionCommonService {
 
     static List<PercentileAggregate> rollUpPercentileAggregates(
             List<PercentileAggregate> orderedNonRolledUpPercentileAggregates,
-            Function<Long, Long> rollupCaptureTimeFn) throws Exception {
+            Function<Long, Long> rollupCaptureTimeFn) {
         List<PercentileAggregate> rolledUpPercentileAggregates = Lists.newArrayList();
         MutableAggregate currMergedAggregate = new MutableAggregate(0, 0);
         long currRollupCaptureTime = Long.MIN_VALUE;

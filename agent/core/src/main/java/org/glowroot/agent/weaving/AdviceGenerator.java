@@ -109,7 +109,7 @@ class AdviceGenerator {
         }
     }
 
-    private LazyDefinedClass generate() throws Exception {
+    private LazyDefinedClass generate() {
         LazyDefinedClass methodMetaClass = null;
         if (methodMetaInternalName != null) {
             methodMetaClass = generateMethodMetaClass(config);

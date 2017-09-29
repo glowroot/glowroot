@@ -23,59 +23,63 @@ import javax.annotation.Nullable;
 @SuppressWarnings("serial")
 public class SQLException extends Exception implements Iterable<Throwable> {
 
-    private @Nullable String SQLState;
+    private final @Nullable String sqlState;
 
-    private int errorCode;
+    private final int errorCode;
 
     private volatile @Nullable SQLException next;
 
-    public SQLException(String message, @Nullable String SQLState, int errorCode) {
+    public SQLException(String message, @Nullable String sqlState, int errorCode) {
         super(message);
-        this.SQLState = SQLState;
+        this.sqlState = sqlState;
         this.errorCode = errorCode;
     }
 
-    public SQLException(String message, @Nullable String SQLState) {
+    public SQLException(String message, @Nullable String sqlState) {
         super(message);
-        this.SQLState = SQLState;
+        this.sqlState = sqlState;
         this.errorCode = 0;
     }
 
     public SQLException(String message) {
         super(message);
-        this.SQLState = null;
+        this.sqlState = null;
         this.errorCode = 0;
     }
 
     public SQLException() {
         super();
-        this.SQLState = null;
+        this.sqlState = null;
         this.errorCode = 0;
     }
 
     public SQLException(@Nullable Throwable cause) {
         super(cause);
+        this.sqlState = null;
+        this.errorCode = 0;
     }
 
     public SQLException(String message, @Nullable Throwable cause) {
         super(message, cause);
+        this.sqlState = null;
+        this.errorCode = 0;
     }
 
     public SQLException(String message, @Nullable String sqlState, @Nullable Throwable cause) {
         super(message, cause);
-        this.SQLState = sqlState;
+        this.sqlState = sqlState;
         this.errorCode = 0;
     }
 
     public SQLException(String message, @Nullable String sqlState, int errorCode,
             @Nullable Throwable cause) {
         super(message, cause);
-        this.SQLState = sqlState;
+        this.sqlState = sqlState;
         this.errorCode = errorCode;
     }
 
     public @Nullable String getSQLState() {
-        return SQLState;
+        return sqlState;
     }
 
     public int getErrorCode() {

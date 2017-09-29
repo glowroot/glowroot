@@ -163,10 +163,13 @@ class ReportJsonService {
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 

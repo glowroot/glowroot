@@ -107,12 +107,15 @@ class TransactionJsonService {
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeObjectField("transactionCounts", transactionCounts);
-        jg.writeObjectField("mergedAggregate", mergedAggregate);
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeObjectField("transactionCounts", transactionCounts);
+            jg.writeObjectField("mergedAggregate", mergedAggregate);
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 
@@ -130,12 +133,15 @@ class TransactionJsonService {
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("dataSeries", percentileData.dataSeriesList());
-        jg.writeObjectField("transactionCounts", transactionCounts);
-        jg.writeObjectField("mergedAggregate", percentileData.mergedAggregate());
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeObjectField("dataSeries", percentileData.dataSeriesList());
+            jg.writeObjectField("transactionCounts", transactionCounts);
+            jg.writeObjectField("mergedAggregate", percentileData.mergedAggregate());
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 
@@ -160,13 +166,16 @@ class TransactionJsonService {
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeNumberField("transactionCount", transactionCount);
-        jg.writeNumberField("transactionsPerMin",
-                60000.0 * transactionCount / (request.to() - request.from()));
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeNumberField("transactionCount", transactionCount);
+            jg.writeNumberField("transactionsPerMin",
+                    60000.0 * transactionCount / (request.to() - request.from()));
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 
@@ -194,8 +203,11 @@ class TransactionJsonService {
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeObject(queryList);
-        jg.close();
+        try {
+            jg.writeObject(queryList);
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 
@@ -206,14 +218,17 @@ class TransactionJsonService {
                 transactionCommonService.readFullQueryText(agentRollupId, request.fullTextSha1());
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        if (fullQueryText == null) {
-            jg.writeBooleanField("expired", true);
-        } else {
-            jg.writeStringField("fullText", fullQueryText);
+        try {
+            jg.writeStartObject();
+            if (fullQueryText == null) {
+                jg.writeBooleanField("expired", true);
+            } else {
+                jg.writeStringField("fullText", fullQueryText);
+            }
+            jg.writeEndObject();
+        } finally {
+            jg.close();
         }
-        jg.writeEndObject();
-        jg.close();
         return sb.toString();
     }
 
@@ -247,8 +262,11 @@ class TransactionJsonService {
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeObject(serviceCallList);
-        jg.close();
+        try {
+            jg.writeObject(serviceCallList);
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 
@@ -280,17 +298,20 @@ class TransactionJsonService {
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeBooleanField("hasUnfilteredMainThreadProfile", hasUnfilteredMainThreadProfile);
-        jg.writeBooleanField("hasUnfilteredAuxThreadProfile", hasUnfilteredAuxThreadProfile);
-        if (profile.getUnfilteredSampleCount() == 0
-                && isProfileOverwritten(request, agentRollupId, query)) {
-            jg.writeBooleanField("overwritten", true);
+        try {
+            jg.writeStartObject();
+            jg.writeBooleanField("hasUnfilteredMainThreadProfile", hasUnfilteredMainThreadProfile);
+            jg.writeBooleanField("hasUnfilteredAuxThreadProfile", hasUnfilteredAuxThreadProfile);
+            if (profile.getUnfilteredSampleCount() == 0
+                    && isProfileOverwritten(request, agentRollupId, query)) {
+                jg.writeBooleanField("overwritten", true);
+            }
+            jg.writeFieldName("profile");
+            profile.writeJson(jg);
+            jg.writeEndObject();
+        } finally {
+            jg.close();
         }
-        jg.writeFieldName("profile");
-        profile.writeJson(jg);
-        jg.writeEndObject();
-        jg.close();
         return sb.toString();
     }
 
@@ -312,12 +333,15 @@ class TransactionJsonService {
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("overall", overallSummary);
-        jg.writeObjectField("transactions", queryResult.records());
-        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
-        jg.writeEndObject();
-        jg.close();
+        try {
+            jg.writeStartObject();
+            jg.writeObjectField("overall", overallSummary);
+            jg.writeObjectField("transactions", queryResult.records());
+            jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
         return sb.toString();
     }
 

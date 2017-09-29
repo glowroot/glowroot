@@ -59,7 +59,8 @@ class SocketHeartbeat implements Runnable {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                // probably shutdown request (see close method above)
+                // probably shutdown requested (see close method above)
+                logger.debug(e.getMessage(), e);
             }
         }
         try {

@@ -226,7 +226,7 @@ public class CommonHandler {
     private CommonResponse handleHttpService(CommonRequest request, HttpService httpService,
             Authentication authentication) throws Exception {
         String permission = httpService.getPermission();
-        if (permission.equals("")) {
+        if (permission.isEmpty()) {
             // service does not require any permission
             return httpService.handleRequest(request, authentication);
         }
@@ -454,31 +454,24 @@ public class CommonHandler {
     }
 
     private static CommonResponse newHttpResponseWithMessage(HttpResponseStatus status,
-            @Nullable String message) {
+            @Nullable String message) throws IOException {
         // this is an "expected" exception, no need to send back stack trace
         StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
-            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
             jg.writeStringField("message", message);
             jg.writeEndObject();
+        } finally {
             jg.close();
-        } catch (IOException f) {
-            logger.error(f.getMessage(), f);
-            return new CommonResponse(INTERNAL_SERVER_ERROR);
         }
         return new CommonResponse(status, MediaType.JSON_UTF_8, sb.toString());
     }
 
     static CommonResponse newHttpResponseWithStackTrace(Exception e,
-            HttpResponseStatus status, @Nullable String simplifiedMessage) {
-        try {
-            return new CommonResponse(status, MediaType.JSON_UTF_8,
-                    getHttpResponseWithStackTrace(e, simplifiedMessage));
-        } catch (IOException f) {
-            logger.error(f.getMessage(), f);
-            return new CommonResponse(INTERNAL_SERVER_ERROR);
-        }
+            HttpResponseStatus status, @Nullable String simplifiedMessage) throws IOException {
+        return new CommonResponse(status, MediaType.JSON_UTF_8,
+                getHttpResponseWithStackTrace(e, simplifiedMessage));
     }
 
     private static String getHttpResponseWithStackTrace(Exception e,
@@ -487,23 +480,26 @@ public class CommonHandler {
         e.printStackTrace(new PrintWriter(sw));
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        String message;
-        if (simplifiedMessage == null) {
-            Throwable cause = e;
-            Throwable childCause = cause.getCause();
-            while (childCause != null) {
-                cause = childCause;
-                childCause = cause.getCause();
+        try {
+            jg.writeStartObject();
+            String message;
+            if (simplifiedMessage == null) {
+                Throwable cause = e;
+                Throwable childCause = cause.getCause();
+                while (childCause != null) {
+                    cause = childCause;
+                    childCause = cause.getCause();
+                }
+                message = cause.getMessage();
+            } else {
+                message = simplifiedMessage;
             }
-            message = cause.getMessage();
-        } else {
-            message = simplifiedMessage;
+            jg.writeStringField("message", message);
+            jg.writeStringField("stackTrace", sw.toString());
+            jg.writeEndObject();
+        } finally {
+            jg.close();
         }
-        jg.writeStringField("message", message);
-        jg.writeStringField("stackTrace", sw.toString());
-        jg.writeEndObject();
-        jg.close();
         return sb.toString();
     }
 

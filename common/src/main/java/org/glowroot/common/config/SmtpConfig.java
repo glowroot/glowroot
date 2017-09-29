@@ -76,7 +76,7 @@ public abstract class SmtpConfig {
         return Versions.getJsonVersion(this);
     }
 
-    public static enum ConnectionSecurity {
+    public enum ConnectionSecurity {
         SSL_TLS, STARTTLS;
     }
 }

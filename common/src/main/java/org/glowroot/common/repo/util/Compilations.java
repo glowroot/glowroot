@@ -94,7 +94,7 @@ public class Compilations {
                 }
                 throw new CompilationException(compilationErrors);
             }
-            if (className.equals("")) {
+            if (className.isEmpty()) {
                 throw new CompilationException(ImmutableList.of("Class must be public"));
             }
             return isolatedClassLoader.loadClass(className);

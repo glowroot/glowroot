@@ -15,15 +15,17 @@
  */
 package org.glowroot.common.config;
 
-public interface ConfigDefaults {
+public final class ConfigDefaults {
 
-    String DEFAULT_DISPLAYED_TRANSACTION_TYPE = "Web";
+    public static final String DEFAULT_DISPLAYED_TRANSACTION_TYPE = "Web";
 
-    double DEFAULT_DISPLAYED_PERCENTILE_1 = 50.0;
-    double DEFAULT_DISPLAYED_PERCENTILE_2 = 95.0;
-    double DEFAULT_DISPLAYED_PERCENTILE_3 = 99.0;
+    public static final double DEFAULT_DISPLAYED_PERCENTILE_1 = 50.0;
+    public static final double DEFAULT_DISPLAYED_PERCENTILE_2 = 95.0;
+    public static final double DEFAULT_DISPLAYED_PERCENTILE_3 = 99.0;
 
-    int MAX_AGGREGATE_TRANSACTIONS_PER_TYPE = 500;
-    int MAX_AGGREGATE_QUERIES_PER_TYPE = 500;
-    int MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE = 500;
+    public static final int MAX_AGGREGATE_TRANSACTIONS_PER_TYPE = 500;
+    public static final int MAX_AGGREGATE_QUERIES_PER_TYPE = 500;
+    public static final int MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE = 500;
+
+    private ConfigDefaults() {}
 }

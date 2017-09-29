@@ -30,7 +30,7 @@ glowroot.controller('AdminRoleCtrl', [
     $scope.name = $location.search().name;
 
     function onNewData(data) {
-      // need to sort to avoid hasChanges()
+      // need to sort to keep hasChanges() consistent
       data.config.permissions.sort();
       var i;
       var permissionBlock;
@@ -360,7 +360,6 @@ glowroot.controller('AdminRoleCtrl', [
         };
         cascadeInsidePermissionsObj(permissionBlock);
         configPermissionBlock.permissions = permissionsObjToList(permissionBlock);
-        // need to sort to preserve original (sorted) ordering and avoid hasChanges()
         configPermissionBlock.agentRollupIds.sort();
         configPermissionBlock.permissions.sort();
         $scope.config.permissionBlocks.push(configPermissionBlock);

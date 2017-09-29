@@ -254,7 +254,7 @@ public class AlertingService {
             boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
-        if (!agentRollupDisplay.equals("")) {
+        if (!agentRollupId.isEmpty()) {
             subject += " - " + agentRollupDisplay;
         }
         subject += " - Heartbeat";
@@ -296,59 +296,10 @@ public class AlertingService {
 
     private void sendPagerDutyWithRetry(String agentRollupId, String agentRollupDisplay,
             AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification,
-            long endTime, String subject, String messageText, boolean ok) throws Exception {
+            long endTime, String subject, String messageText, boolean ok) {
         SendPagerDuty sendPagerDuty = new SendPagerDuty(agentRollupId, agentRollupDisplay,
                 alertConfig, pagerDutyNotification, endTime, subject, messageText, ok);
         sendPagerDuty.run();
-    }
-
-    private void sendPagerDuty(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification, long endTime,
-            String subject, String messageText, boolean ok) throws Exception {
-        AlertCondition alertCondition = alertConfig.getCondition();
-        String dedupKey = getPagerDutyDedupKey(agentRollupId, alertCondition);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        JsonGenerator jg = ObjectMappers.create().getFactory().createGenerator(baos);
-        jg.writeStartObject();
-        jg.writeStringField("routing_key", pagerDutyNotification.getPagerDutyIntegrationKey());
-        jg.writeStringField("dedup_key", dedupKey);
-        if (ok) {
-            jg.writeStringField("event_action", "resolve");
-        } else {
-            jg.writeStringField("event_action", "trigger");
-            jg.writeStringField("client", "Glowroot");
-            jg.writeObjectFieldStart("payload");
-            jg.writeStringField("summary", subject + "\n\n" + messageText);
-            if (agentRollupId.isEmpty()) {
-                jg.writeStringField("source", InetAddress.getLocalHost().getHostName());
-            } else {
-                jg.writeStringField("source", agentRollupDisplay);
-            }
-            jg.writeStringField("severity", getPagerDutySeverity(alertConfig.getSeverity()));
-            jg.writeStringField("timestamp", formatAsIso8601(endTime));
-            switch (alertCondition.getValCase()) {
-                case METRIC_CONDITION:
-                    jg.writeStringField("class",
-                            "metric: " + alertCondition.getMetricCondition().getMetric());
-                    break;
-                case SYNTHETIC_MONITOR_CONDITION:
-                    jg.writeStringField("class", "synthetic monitor");
-                    break;
-                case HEARTBEAT_CONDITION:
-                    jg.writeStringField("class", "heartbeat");
-                    break;
-                default:
-                    logger.warn(
-                            "unexpected alert condition: " + alertCondition.getValCase().name());
-                    jg.writeStringField("class", "unknown: " + alertCondition.getValCase().name());
-                    break;
-            }
-            jg.writeEndObject();
-        }
-        jg.writeEndObject();
-        jg.close();
-        httpClient.post("https://events.pagerduty.com/v2/enqueue", baos.toByteArray(),
-                "application/json");
     }
 
     // optional passwordOverride can be passed in to test SMTP from
@@ -417,33 +368,6 @@ public class AlertingService {
         }
     }
 
-    private static String getPagerDutyDedupKey(String agentRollupId, AlertCondition alertCondition)
-            throws UnknownHostException {
-        String dedupKey;
-        if (agentRollupId.isEmpty()) {
-            dedupKey = InetAddress.getLocalHost().getHostName();
-        } else {
-            dedupKey = agentRollupId;
-        }
-        dedupKey = escapeDedupKeyPart(dedupKey) + ":" + Versions.getVersion(alertCondition);
-        return dedupKey;
-    }
-
-    private static String getPagerDutySeverity(AlertSeverity severity) {
-        switch (severity) {
-            case CRITICAL:
-                return "critical";
-            case HIGH:
-                return "error";
-            case MEDIUM:
-                return "warning";
-            case LOW:
-                return "info";
-            default:
-                throw new IllegalStateException("Unknown alert severity: " + severity);
-        }
-    }
-
     // optional newPlainPassword can be passed in to test SMTP from
     // AdminJsonService.sentTestEmail() without possibility of throwing
     // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
@@ -491,16 +415,6 @@ public class AlertingService {
             return "";
         }
         return Encryption.decrypt(password, lazySecretKey);
-    }
-
-    private static String escapeDedupKeyPart(String agentRollupId) {
-        return agentRollupId.replace("\\", "\\\\").replace(":", "\\:");
-    }
-
-    private static String formatAsIso8601(long endTime) {
-        Calendar end = Calendar.getInstance();
-        end.setTimeInMillis(endTime);
-        return DatatypeConverter.printDateTime(end);
     }
 
     private class SendPagerDuty implements Runnable {
@@ -566,6 +480,98 @@ public class AlertingService {
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
             }
+        }
+
+        private void sendPagerDuty(String agentRollupId, String agentRollupDisplay,
+                AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification, long endTime,
+                String subject, String messageText, boolean ok) throws Exception {
+            AlertCondition alertCondition = alertConfig.getCondition();
+            String dedupKey = getPagerDutyDedupKey(agentRollupId, alertCondition);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            JsonGenerator jg = ObjectMappers.create().getFactory().createGenerator(baos);
+            try {
+                jg.writeStartObject();
+                jg.writeStringField("routing_key",
+                        pagerDutyNotification.getPagerDutyIntegrationKey());
+                jg.writeStringField("dedup_key", dedupKey);
+                if (ok) {
+                    jg.writeStringField("event_action", "resolve");
+                } else {
+                    jg.writeStringField("event_action", "trigger");
+                    jg.writeStringField("client", "Glowroot");
+                    jg.writeObjectFieldStart("payload");
+                    jg.writeStringField("summary", subject + "\n\n" + messageText);
+                    if (agentRollupId.isEmpty()) {
+                        jg.writeStringField("source", InetAddress.getLocalHost().getHostName());
+                    } else {
+                        jg.writeStringField("source", agentRollupDisplay);
+                    }
+                    jg.writeStringField("severity",
+                            getPagerDutySeverity(alertConfig.getSeverity()));
+                    jg.writeStringField("timestamp", formatAsIso8601(endTime));
+                    switch (alertCondition.getValCase()) {
+                        case METRIC_CONDITION:
+                            jg.writeStringField("class",
+                                    "metric: " + alertCondition.getMetricCondition().getMetric());
+                            break;
+                        case SYNTHETIC_MONITOR_CONDITION:
+                            jg.writeStringField("class", "synthetic monitor");
+                            break;
+                        case HEARTBEAT_CONDITION:
+                            jg.writeStringField("class", "heartbeat");
+                            break;
+                        default:
+                            logger.warn("unexpected alert condition: "
+                                    + alertCondition.getValCase().name());
+                            jg.writeStringField("class",
+                                    "unknown: " + alertCondition.getValCase().name());
+                            break;
+                    }
+                    jg.writeEndObject();
+                }
+                jg.writeEndObject();
+            } finally {
+                jg.close();
+            }
+            httpClient.post("https://events.pagerduty.com/v2/enqueue", baos.toByteArray(),
+                    "application/json");
+        }
+
+        private String getPagerDutyDedupKey(String agentRollupId, AlertCondition alertCondition)
+                throws UnknownHostException {
+            String dedupKey;
+            if (agentRollupId.isEmpty()) {
+                dedupKey = InetAddress.getLocalHost().getHostName();
+            } else {
+                dedupKey = agentRollupId;
+            }
+            dedupKey = escapeDedupKeyPart(dedupKey) + ":" + Versions.getVersion(alertCondition);
+            return dedupKey;
+        }
+
+        private String getPagerDutySeverity(AlertSeverity severity) {
+            switch (severity) {
+                case CRITICAL:
+                    return "critical";
+                case HIGH:
+                    return "error";
+                case MEDIUM:
+                    return "warning";
+                case LOW:
+                    return "info";
+                default:
+                    throw new IllegalStateException("Unknown alert severity: " + severity);
+            }
+        }
+
+        private String formatAsIso8601(long endTime) {
+            Calendar end = Calendar.getInstance();
+            end.setTimeInMillis(endTime);
+            return DatatypeConverter.printDateTime(end);
+        }
+
+        private String escapeDedupKeyPart(String agentRollupId) {
+            return agentRollupId.replace("\\", "\\\\").replace(":", "\\:");
         }
     }
 }

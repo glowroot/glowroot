@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.impl;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -28,7 +27,7 @@ import org.glowroot.agent.impl.Transaction.RootTimerCollector;
 import org.glowroot.agent.impl.Transaction.ThreadStatsCollector;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.MutableAggregateTimer;
-import org.glowroot.agent.model.Profile;
+import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
 import org.glowroot.agent.model.ThreadStats;
@@ -117,14 +116,14 @@ class AggregateCollector {
         return asyncTimers;
     }
 
-    void mergeMainThreadProfile(Profile toBeMergedProfile) {
+    void mergeMainThreadProfile(ThreadProfile toBeMergedProfile) {
         if (mainThreadProfile == null) {
             mainThreadProfile = new MutableProfile();
         }
         toBeMergedProfile.mergeInto(mainThreadProfile);
     }
 
-    void mergeAuxThreadProfile(Profile toBeMergedProfile) {
+    void mergeAuxThreadProfile(ThreadProfile toBeMergedProfile) {
         if (auxThreadProfile == null) {
             auxThreadProfile = new MutableProfile();
         }
@@ -254,7 +253,7 @@ class AggregateCollector {
         }
     }
 
-    void mergeServiceCallsInto(ServiceCallCollector collector) throws IOException {
+    void mergeServiceCallsInto(ServiceCallCollector collector) {
         if (serviceCalls != null) {
             collector.mergeServiceCalls(serviceCalls.toProto());
         }

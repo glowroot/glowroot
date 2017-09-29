@@ -151,24 +151,25 @@ class SyntheticMonitorConfigJsonService {
     private @Nullable String validate(SyntheticMonitorConfig config) throws Exception {
         if (config.getKind() == SyntheticMonitorKind.JAVA) {
             // only used by central
+            Class<?> javaSource;
             try {
-                Class<?> javaSource = Compilations.compile(config.getJavaSource());
-                try {
-                    javaSource.getConstructor();
-                } catch (NoSuchMethodException e) {
-                    return buildCompilationErrorResponse(
-                            ImmutableList.of("Class must have a public default constructor"));
-                }
-                // since synthetic monitors are only used in central, this class is present
-                Class<?> webDriverClass = Class.forName("org.openqa.selenium.WebDriver");
-                try {
-                    javaSource.getMethod("test", webDriverClass);
-                } catch (NoSuchMethodException e) {
-                    return buildCompilationErrorResponse(ImmutableList.of("Class must have a"
-                            + " \"public void test(WebDriver driver) { ... }\" method"));
-                }
+                javaSource = Compilations.compile(config.getJavaSource());
             } catch (CompilationException e) {
                 return buildCompilationErrorResponse(e.getCompilationErrors());
+            }
+            try {
+                javaSource.getConstructor();
+            } catch (NoSuchMethodException e) {
+                return buildCompilationErrorResponse(
+                        ImmutableList.of("Class must have a public default constructor"));
+            }
+            // since synthetic monitors are only used in central, this class is present
+            Class<?> webDriverClass = Class.forName("org.openqa.selenium.WebDriver");
+            try {
+                javaSource.getMethod("test", webDriverClass);
+            } catch (NoSuchMethodException e) {
+                return buildCompilationErrorResponse(ImmutableList.of("Class must have a"
+                        + " \"public void test(WebDriver driver) { ... }\" method"));
             }
         }
         return null;
@@ -178,14 +179,17 @@ class SyntheticMonitorConfigJsonService {
             throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeArrayFieldStart("javaSourceCompilationErrors");
-        for (String compilationError : compilationErrors) {
-            jg.writeString(compilationError);
+        try {
+            jg.writeStartObject();
+            jg.writeArrayFieldStart("javaSourceCompilationErrors");
+            for (String compilationError : compilationErrors) {
+                jg.writeString(compilationError);
+            }
+            jg.writeEndArray();
+            jg.writeEndObject();
+        } finally {
+            jg.close();
         }
-        jg.writeEndArray();
-        jg.writeEndObject();
-        jg.close();
         return sb.toString();
     }
 

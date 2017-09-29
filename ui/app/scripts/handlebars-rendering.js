@@ -1303,7 +1303,7 @@ HandlebarsRendering = (function () {
     }
     var units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
     var number = Math.floor(Math.log(bytes) / Math.log(1024));
-    var num = bytes / Math.pow(1024, Math.floor(number));
+    var num = bytes / Math.pow(1024, number);
     if (number === 0) {
       return num.toFixed(0) + ' bytes';
     } else {

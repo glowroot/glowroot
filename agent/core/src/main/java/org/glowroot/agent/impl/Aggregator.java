@@ -119,12 +119,12 @@ public class Aggregator {
                         + " backlog of {} transactions already waiting to be aggregated",
                         TRANSACTION_PENDING_LIMIT);
                 transaction.removeFromActiveTransactions();
-                return captureTime;
+            } else {
+                newTail.captureTime = captureTime;
+                tail.next = newTail;
+                tail = newTail;
+                queueLength++;
             }
-            newTail.captureTime = captureTime;
-            tail.next = newTail;
-            tail = newTail;
-            queueLength++;
         }
         return captureTime;
     }

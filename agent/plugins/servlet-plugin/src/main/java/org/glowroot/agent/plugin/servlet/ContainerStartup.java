@@ -33,6 +33,8 @@ public class ContainerStartup {
 
     private static final Logger logger = Agent.getLogger(Beans.class);
 
+    private ContainerStartup() {}
+
     static TraceEntry onBeforeCommon(OptionalThreadContext context, @Nullable String path,
             TimerName timerName) {
         initPlatformMBeanServer();

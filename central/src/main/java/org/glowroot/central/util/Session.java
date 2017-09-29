@@ -42,7 +42,7 @@ public class Session {
 
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
 
-    private final com.datastax.driver.core.Session session;
+    private final com.datastax.driver.core.Session wrappedSession;
 
     private final Semaphore overallSemaphore = new Semaphore(MAX_CONCURRENT_QUERIES);
 
@@ -55,20 +55,20 @@ public class Session {
         }
     };
 
-    public Session(com.datastax.driver.core.Session session) {
-        this.session = session;
+    public Session(com.datastax.driver.core.Session wrappedSession) {
+        this.wrappedSession = wrappedSession;
     }
 
     public PreparedStatement prepare(String query) {
-        return session.prepare(query);
+        return wrappedSession.prepare(query);
     }
 
     public ListenableFuture<ResultSet> executeAsync(Statement statement) throws Exception {
-        return throttle(() -> session.executeAsync(statement));
+        return throttle(() -> wrappedSession.executeAsync(statement));
     }
 
     public ListenableFuture<ResultSet> executeAsync(String query) throws Exception {
-        return throttle(() -> session.executeAsync(query));
+        return throttle(() -> wrappedSession.executeAsync(query));
     }
 
     public ResultSet execute(Statement statement) throws Exception {
@@ -94,24 +94,24 @@ public class Session {
     }
 
     public Cluster getCluster() {
-        return session.getCluster();
+        return wrappedSession.getCluster();
     }
 
     public void close() {
-        session.close();
+        wrappedSession.close();
     }
 
-    public void createKeyspaceIfNotExists(String keyspace) throws Exception {
-        session.execute("create keyspace if not exists " + keyspace + " with replication"
+    public void createKeyspaceIfNotExists(String keyspace) {
+        wrappedSession.execute("create keyspace if not exists " + keyspace + " with replication"
                 + " = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
     }
 
-    public void createTableWithTWCS(String createTableQuery, int expirationHours) throws Exception {
+    public void createTableWithTWCS(String createTableQuery, int expirationHours) {
         createTableWithTWCS(createTableQuery, expirationHours, false);
     }
 
     public void createTableWithTWCS(String createTableQuery, int expirationHours,
-            boolean useAndInsteadOfWith) throws Exception {
+            boolean useAndInsteadOfWith) {
         // "Ideally, operators should select a compaction_window_unit and compaction_window_size
         // pair that produces approximately 20-30 windows"
         // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
@@ -130,14 +130,14 @@ public class Session {
         // see http://thelastpickle.com/blog/2016/12/08/TWCS-part1.html
         String term = useAndInsteadOfWith ? "and" : "with";
         try {
-            session.execute(createTableQuery + " " + term + " compaction = { 'class' :"
+            wrappedSession.execute(createTableQuery + " " + term + " compaction = { 'class' :"
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
                     + " 'compaction_window_size' : '" + windowSizeHours + "',"
                     + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
                     + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
-            session.execute(createTableQuery + " " + term
+            wrappedSession.execute(createTableQuery + " " + term
                     + " compaction = { 'class' : 'DateTieredCompactionStrategy',"
                     + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
                     + gcGraceSeconds);

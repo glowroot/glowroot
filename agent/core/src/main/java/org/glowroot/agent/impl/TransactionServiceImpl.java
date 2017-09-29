@@ -53,7 +53,7 @@ public class TransactionServiceImpl implements ConfigListener {
     private int maxAggregateServiceCallsPerType;
     private int maxTraceEntriesPerTransaction;
 
-    public static TransactionServiceImpl create(TransactionRegistry transactionRegistry,
+    public static void createSingleton(TransactionRegistry transactionRegistry,
             TransactionCollector transactionCollector, ConfigService configService,
             TimerNameCache timerNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock) {
@@ -62,7 +62,6 @@ public class TransactionServiceImpl implements ConfigListener {
                         timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker, clock);
         configService.addConfigListener(transactionServiceImpl);
         TransactionServiceHolder.transactionService = transactionServiceImpl;
-        return transactionServiceImpl;
     }
 
     private TransactionServiceImpl(TransactionRegistry transactionRegistry,

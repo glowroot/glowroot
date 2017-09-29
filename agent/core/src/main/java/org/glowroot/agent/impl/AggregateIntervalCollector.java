@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.impl;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -27,8 +26,8 @@ import com.google.common.collect.Maps;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
-import org.glowroot.agent.model.Profile;
 import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
+import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
@@ -182,7 +181,7 @@ public class AggregateIntervalCollector {
     }
 
     public void mergeQueriesInto(QueryCollector collector, String transactionType,
-            @Nullable String transactionName) throws IOException {
+            @Nullable String transactionName) {
         synchronized (lock) {
             AggregateCollector aggregateCollector =
                     getAggregateCollector(transactionType, transactionName);
@@ -194,7 +193,7 @@ public class AggregateIntervalCollector {
     }
 
     public void mergeServiceCallsInto(ServiceCallCollector collector, String transactionType,
-            @Nullable String transactionName) throws IOException {
+            @Nullable String transactionName) {
         synchronized (lock) {
             AggregateCollector aggregateCollector =
                     getAggregateCollector(transactionType, transactionName);
@@ -308,11 +307,11 @@ public class AggregateIntervalCollector {
             transaction.mergeAsyncTimersInto(aggregateCollector.getAsyncTimers());
             transaction.mergeQueriesInto(aggregateCollector.getQueryCollector());
             transaction.mergeServiceCallsInto(aggregateCollector.getServiceCallCollector());
-            Profile mainThreadProfile = transaction.getMainThreadProfile();
+            ThreadProfile mainThreadProfile = transaction.getMainThreadProfile();
             if (mainThreadProfile != null) {
                 aggregateCollector.mergeMainThreadProfile(mainThreadProfile);
             }
-            Profile auxThreadProfile = transaction.getAuxThreadProfile();
+            ThreadProfile auxThreadProfile = transaction.getAuxThreadProfile();
             if (auxThreadProfile != null) {
                 aggregateCollector.mergeAuxThreadProfile(auxThreadProfile);
             }

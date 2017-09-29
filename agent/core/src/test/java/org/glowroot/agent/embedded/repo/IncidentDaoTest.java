@@ -22,8 +22,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.agent.embedded.util.DataSource;
-import org.glowroot.common.repo.IncidentRepository.ResolvedIncident;
 import org.glowroot.common.repo.IncidentRepository.OpenIncident;
+import org.glowroot.common.repo.IncidentRepository.ResolvedIncident;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;

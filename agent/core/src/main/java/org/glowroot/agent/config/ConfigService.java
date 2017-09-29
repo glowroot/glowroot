@@ -50,6 +50,7 @@ public class ConfigService {
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
     private final ConfigFile configFile;
+    private final AdminFile adminFile;
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
 
@@ -82,8 +83,8 @@ public class ConfigService {
     }
 
     private ConfigService(File confDir, List<PluginDescriptor> pluginDescriptors) {
-        configFile =
-                new ConfigFile(new File(confDir, "config.json"), new File(confDir, "admin.json"));
+        configFile = new ConfigFile(new File(confDir, "config.json"));
+        adminFile = new AdminFile(new File(confDir, "admin.json"));
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         TransactionConfig transactionConfig =
                 configFile.getConfigNode("transactions", ImmutableTransactionConfig.class, mapper);
@@ -293,20 +294,20 @@ public class ConfigService {
 
     public <T extends /*@NonNull*/ Object> /*@Nullable*/ T getAdminConfig(String key,
             Class<T> clazz) {
-        return configFile.getAdminNode(key, clazz, mapper);
+        return adminFile.getAdminNode(key, clazz, mapper);
     }
 
     public <T extends /*@NonNull*/ Object> /*@Nullable*/ T getAdminConfig(String key,
             TypeReference<T> typeReference) {
-        return configFile.getAdminNode(key, typeReference, mapper);
+        return adminFile.getAdminNode(key, typeReference, mapper);
     }
 
     public void updateAdminConfig(String key, Object config) throws IOException {
-        configFile.writeAdmin(key, config, mapper);
+        adminFile.writeAdmin(key, config, mapper);
     }
 
     public void updateAdminConfigs(Map<String, Object> configs) throws IOException {
-        configFile.writeAdmin(configs, mapper);
+        adminFile.writeAdmin(configs, mapper);
     }
 
     public boolean readMemoryBarrier() {

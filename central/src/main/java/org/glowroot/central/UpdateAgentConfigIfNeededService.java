@@ -63,6 +63,8 @@ class UpdateAgentConfigIfNeededService implements Runnable {
                 Thread.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
                 runInternal();
             } catch (InterruptedException e) {
+                // probably shutdown requested (see close method below)
+                logger.debug(e.getMessage(), e);
                 continue;
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
@@ -106,7 +108,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
         try {
             agentConfigUpdate = agentConfigDao.readForUpdate(agentId);
         } catch (InterruptedException e) {
-            // shutdown requested
+            // probably shutdown requested (see close method above)
             throw e;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -122,7 +124,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
                 agentConfigDao.markUpdated(agentId, agentConfigUpdate.configUpdateToken());
             }
         } catch (InterruptedException e) {
-            // shutdown requested
+            // probably shutdown requested (see close method above)
             throw e;
         } catch (Exception e) {
             logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
@@ -133,7 +135,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
         try {
             return agentRollupDao.readAgentRollupDisplay(agentRollupId);
         } catch (InterruptedException e) {
-            // shutdown requested
+            // probably shutdown requested (see close method above)
             throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollupId, e.getMessage(), e);

@@ -28,8 +28,8 @@ glowroot.controller('ConfigGaugeCtrl', [
     var version = $location.search().v;
 
     function onNewData(data) {
-      // need to sort attribute names to keep hasChanges() consistent
       if (data.config.mbeanAttributes) {
+        // need to sort attributes to keep hasChanges() consistent
         data.config.mbeanAttributes.sort(function (a, b) {
           return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
         });
@@ -115,7 +115,7 @@ glowroot.controller('ConfigGaugeCtrl', [
             });
           }
         });
-        // need to sort attribute names to keep hasChanges() consistent
+        // need to sort attributes to keep hasChanges() consistent
         $scope.config.mbeanAttributes.sort(function (a, b) {
           return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
         });
