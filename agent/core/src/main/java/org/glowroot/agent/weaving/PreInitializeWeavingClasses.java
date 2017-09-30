@@ -410,6 +410,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Label");
         types.add("org.objectweb.asm.MethodVisitor");
         types.add("org.objectweb.asm.MethodWriter");
+        types.add("org.objectweb.asm.ModuleVisitor");
+        types.add("org.objectweb.asm.ModuleWriter");
         types.add("org.objectweb.asm.Opcodes");
         types.add("org.objectweb.asm.Type");
         types.add("org.objectweb.asm.TypePath");
@@ -460,6 +462,11 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.tree.MethodInsnNode");
         types.add("org.objectweb.asm.tree.MethodNode");
         types.add("org.objectweb.asm.tree.MethodNode$1");
+        types.add("org.objectweb.asm.tree.ModuleExportNode");
+        types.add("org.objectweb.asm.tree.ModuleNode");
+        types.add("org.objectweb.asm.tree.ModuleOpenNode");
+        types.add("org.objectweb.asm.tree.ModuleProvideNode");
+        types.add("org.objectweb.asm.tree.ModuleRequireNode");
         types.add("org.objectweb.asm.tree.MultiANewArrayInsnNode");
         types.add("org.objectweb.asm.tree.ParameterNode");
         types.add("org.objectweb.asm.tree.TableSwitchInsnNode");
@@ -472,6 +479,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.util.CheckFieldAdapter");
         types.add("org.objectweb.asm.util.CheckMethodAdapter");
         types.add("org.objectweb.asm.util.CheckMethodAdapter$1");
+        types.add("org.objectweb.asm.util.CheckModuleAdapter");
         types.add("org.objectweb.asm.util.Printer");
         types.add("org.objectweb.asm.util.Textifiable");
         types.add("org.objectweb.asm.util.Textifier");

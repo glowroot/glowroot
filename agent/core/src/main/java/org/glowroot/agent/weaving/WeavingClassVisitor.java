@@ -183,8 +183,6 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private boolean isMixinProxy(String name, String desc) {
         for (ClassNode cn : mixinClassNodes) {
-            // SuppressWarnings because generics are explicitly removed from asm binaries
-            @SuppressWarnings("unchecked")
             List<MethodNode> methodNodes = cn.methods;
             for (MethodNode mn : methodNodes) {
                 if (!mn.name.equals("<init>") && mn.name.equals(name) && mn.desc.equals(desc)) {
@@ -502,22 +500,15 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @RequiresNonNull("type")
     private void addMixin(ClassNode mixinClassNode) {
-        // SuppressWarnings because generics are explicitly removed from asm binaries
-        // see http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=316377
-        @SuppressWarnings("unchecked")
         List<FieldNode> fieldNodes = mixinClassNode.fields;
         for (FieldNode fieldNode : fieldNodes) {
             fieldNode.accept(this);
         }
-        // SuppressWarnings because generics are explicitly removed from asm binaries
-        @SuppressWarnings("unchecked")
         List<MethodNode> methodNodes = mixinClassNode.methods;
         for (MethodNode mn : methodNodes) {
             if (mn.name.equals("<init>")) {
                 continue;
             }
-            // SuppressWarnings because generics are explicitly removed from asm binaries
-            @SuppressWarnings("unchecked")
             String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
             MethodVisitor mv =
                     cw.visitMethod(mn.access, mn.name, mn.desc, mn.signature, exceptions);

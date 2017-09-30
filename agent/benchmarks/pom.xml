@@ -35,6 +35,7 @@
       <!-- this jar file is used by WeavingBenchmark -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
+      <!-- Spring 5+ requires Java 8+ -->
       <version>4.3.11.RELEASE</version>
     </dependency>
     <dependency>

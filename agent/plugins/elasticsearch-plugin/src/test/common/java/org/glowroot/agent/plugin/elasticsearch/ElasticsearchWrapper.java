@@ -54,7 +54,7 @@ class ElasticsearchWrapper {
             elasticsearch5x = false;
         }
         if (elasticsearch5x) {
-            ELASTICSEARCH_VERSION = "5.6.0";
+            ELASTICSEARCH_VERSION = "5.6.2";
         } else {
             ELASTICSEARCH_VERSION = "2.4.6";
         }

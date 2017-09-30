@@ -126,25 +126,48 @@ public class JsfRenderIT {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
             Response response = asyncHttpClient
                     .prepareGet("http://localhost:" + port + "/hello.xhtml").execute().get();
+            int statusCode = response.getStatusCode();
+            if (statusCode != 200) {
+                asyncHttpClient.close();
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
             String body = response.getResponseBody();
             Matcher matcher =
                     Pattern.compile("action=\"/hello.xhtml;jsessionid=([0-9A-F]+)\"").matcher(body);
             matcher.find();
             String jsessionId = matcher.group(1);
-            matcher = Pattern.compile("id=\"j_id1:javax.faces.ViewState:0\" value=\"([^\"]+)\"")
+            StringBuilder sb = new StringBuilder();
+            matcher = Pattern
+                    .compile("<input type=\"hidden\" name=\"([^\"]+)\" value=\"([^\"]+)\" />")
                     .matcher(body);
             matcher.find();
-            String viewState = matcher.group(1).replace(":", "%3A");
-            String postBody =
-                    "j_idt4=j_idt4&j_idt4%3Aj_idt5=Hello&javax.faces.ViewState=" + viewState;
-            int statusCode = asyncHttpClient
+            sb.append(matcher.group(1));
+            sb.append("=");
+            sb.append(matcher.group(2));
+            matcher = Pattern
+                    .compile("<input type=\"submit\" name=\"([^\"]+)\" value=\"([^\"]+)\" />")
+                    .matcher(body);
+            matcher.find();
+            sb.append("&");
+            sb.append(matcher.group(1));
+            sb.append("=");
+            sb.append(matcher.group(2));
+            matcher = Pattern.compile("name=\"([^\"]+)\" id=\"[^\"]+\" value=\"([^\"]+)\"")
+                    .matcher(body);
+            matcher.find();
+            sb.append("&");
+            sb.append(matcher.group(1));
+            sb.append("=");
+            sb.append(matcher.group(2));
+            String postBody = sb.toString().replace(":", "%3A");
+            response = asyncHttpClient
                     .preparePost(
                             "http://localhost:" + port + "/hello.xhtml;jsessionid=" + jsessionId)
                     .setHeader("Content-Type", "application/x-www-form-urlencoded")
                     .setBody(postBody)
                     .execute()
-                    .get()
-                    .getStatusCode();
+                    .get();
+            statusCode = response.getStatusCode();
             asyncHttpClient.close();
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);

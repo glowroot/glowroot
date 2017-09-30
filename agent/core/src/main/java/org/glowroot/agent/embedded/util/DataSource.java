@@ -68,12 +68,14 @@ public class DataSource {
     private Connection connection;
     private volatile boolean closed;
 
-    private final Map</*@Untainted*/String, ImmutableList<Column>> tables = Maps.newConcurrentMap();
-    private final Map</*@Untainted*/String, ImmutableList<Index>> indexes = Maps.newConcurrentMap();
+    private final Map</*@Untainted*/ String, ImmutableList<Column>> tables =
+            Maps.newConcurrentMap();
+    private final Map</*@Untainted*/ String, ImmutableList<Index>> indexes =
+            Maps.newConcurrentMap();
 
     private final LoadingCache</*@Untainted*/ String, PreparedStatement> preparedStatementCache =
             CacheBuilder.newBuilder().weakValues()
-                    .build(new CacheLoader</*@Untainted*/String, PreparedStatement>() {
+                    .build(new CacheLoader</*@Untainted*/ String, PreparedStatement>() {
                         @Override
                         public PreparedStatement load(@Untainted String sql) throws SQLException {
                             return connection.prepareStatement(sql);
@@ -121,10 +123,10 @@ public class DataSource {
             preparedStatementCache.invalidateAll();
             boolean success = dbFile.delete();
             connection = createConnection(dbFile);
-            for (Entry</*@Untainted*/String, ImmutableList<Column>> entry : tables.entrySet()) {
+            for (Entry</*@Untainted*/ String, ImmutableList<Column>> entry : tables.entrySet()) {
                 syncTable(entry.getKey(), entry.getValue());
             }
-            for (Entry</*@Untainted*/String, ImmutableList<Index>> entry : indexes.entrySet()) {
+            for (Entry</*@Untainted*/ String, ImmutableList<Index>> entry : indexes.entrySet()) {
                 syncIndexes(entry.getKey(), entry.getValue());
             }
             if (!success) {

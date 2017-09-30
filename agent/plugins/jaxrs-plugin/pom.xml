@@ -195,6 +195,17 @@
       </build>
     </profile>
     <profile>
+      <id>jersey-2.26</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.glassfish.jersey.inject</groupId>
+          <artifactId>jersey-hk2</artifactId>
+          <version>${jersey.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
       <id>force-java6</id>
       <build>
         <pluginManagement>

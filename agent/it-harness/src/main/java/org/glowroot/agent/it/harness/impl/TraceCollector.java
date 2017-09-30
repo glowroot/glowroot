@@ -123,6 +123,13 @@ class TraceCollector {
         if (isExpected(logEvent)) {
             return;
         }
+        if (logEvent.getLoggerName().equals("org.apache.catalina.loader.WebappClassLoaderBase")
+                && logEvent.getMessage().matches(
+                        "The web application \\[.*\\] appears to have started a thread named"
+                                + " \\[.*\\] but has failed to stop it\\. This is very likely to"
+                                + " create a memory leak\\.")) {
+            return;
+        }
         if (logEvent.getLevel().ordinal() >= LogEvent.Level.WARN_VALUE) {
             unexpectedMessages.add(logEvent);
         }

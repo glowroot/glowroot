@@ -11,4 +11,6 @@
   </root>
   <!-- this is needed to deal with a sporadic error message -->
   <logger name="org.eclipse.jetty.util.thread.QueuedThreadPool" level="error" />
+  <!-- this is needed to suppress a harmless warning message -->
+  <logger name="org.apache.catalina.util.SessionIdGeneratorBase" level="error" />
 </configuration>

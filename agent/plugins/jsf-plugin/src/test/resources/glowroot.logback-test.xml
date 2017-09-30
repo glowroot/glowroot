@@ -9,4 +9,6 @@
   <root level="warn">
     <appender-ref ref="CONSOLE" />
   </root>
+  <!-- this is needed to suppress a harmless warning message -->
+  <logger name="org.apache.catalina.util.SessionIdGeneratorBase" level="error" />
 </configuration>

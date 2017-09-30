@@ -45,14 +45,13 @@ test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-r
 case "$1" in
 
       "test1") # excluding :glowroot-agent-ui-sandbox and :glowroot-agent since they depend on plugins which are being excluded
-               exclude_modules="-pl $test1_excluded_plugin_modules,!:glowroot-agent-ui-sandbox,!:glowroot-agent"
+               exclude_modules="$test1_excluded_plugin_modules,!:glowroot-agent-ui-sandbox,!:glowroot-agent"
                if [[ "$java_version" > "1.8" ]]
                then
                  # these modules are only part of build under Java 8+
                  exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
                fi
-               mvn clean install $exclude_modules \
-                                 $extra_profiles \
+               mvn clean install -pl $exclude_modules \
                                  -DargLine="$surefire_jvm_args" \
                                  $skip_shading_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
@@ -65,13 +64,22 @@ case "$1" in
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
 
-               if [[ "$java_version" > "1.8" && "$SKIP_SHADING" != "true" ]]
+               activate_profiles="netty-4.x"
+               if [[ "$SKIP_SHADING" != "true" ]]
                then
-                 # async-http-client, elasticsearch and play tests all require Java 8 and shading
-                 extra_profiles="-P async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x"
+                 # async-http-client, elasticsearch and play tests all require shading
+                 if [[ "$java_version" > "1.8" ]]
+                 then
+                   # latest versions of async-http-client, elasticsearch and play all require Java 8
+                   activate_profiles="$activate_profiles,async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x"
+                 else
+                   activate_profiles="$activate_profiles,async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
+                 fi
                fi
+               # enforcer.skip is needed for async-http-client, elasticsearch and play
                mvn clean install -pl ${test1_excluded_plugin_modules//!:/:} \
-                                 $extra_profiles \
+                                 -P $activate_profiles \
+                                 -Denforcer.skip \
                                  -DargLine="$surefire_jvm_args" \
                                  $skip_shading_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
@@ -265,9 +273,19 @@ case "$1" in
                                       -Dit.test=LogbackIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
+                 # netty 4.x
+                 mvn $common_mvn_args -pl agent/plugins/netty-plugin \
+                                      -P netty-4.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -B
                  # netty 3.x
                  mvn $common_mvn_args -pl agent/plugins/netty-plugin \
                                       -P netty-3.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -B
+                 # play 2.4.x
+                 mvn $common_mvn_args -pl agent/plugins/play-plugin \
+                                      -P play-2.4.x,play-2.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # play 2.2.x
@@ -306,11 +324,10 @@ case "$1" in
                fi
                set -e
 
-               find -name *.java -print0 | xargs -0 sed -i 's|/\*>>>@UnknownInitialization|/*>>>@org.checkerframework.checker.initialization.qual.UnknownInitialization|g'
-               find -name *.java -print0 | xargs -0 sed -i 's|/\*@UnderInitialization\*/|/*@org.checkerframework.checker.initialization.qual.UnderInitialization*/|g'
-               find -name *.java -print0 | xargs -0 sed -i 's|/\*@Initialized\*/|/*@org.checkerframework.checker.initialization.qual.Initialized*/|g'
-               find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|/*@org.checkerframework.checker.tainting.qual.Untainted*/|g'
-               find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|/*@org.checkerframework.checker.nullness.qual.\1*/|g'
+               find -name *.java -print0 | xargs -0 sed -i 's|/\*@UnderInitialization\*/|@org.checkerframework.checker.initialization.qual.UnderInitialization|g'
+               find -name *.java -print0 | xargs -0 sed -i 's|/\*@Initialized\*/|@org.checkerframework.checker.initialization.qual.Initialized|g'
+               find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|@org.checkerframework.checker.tainting.qual.Untainted|g'
+               find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|@org.checkerframework.checker.nullness.qual.\1|g'
 
                # omitting wire-api from checker framework validation since it contains large protobuf generated code which does not pass
                # and even when using -AskipDefs, checker framework still runs on the code (even though it does not report errors)

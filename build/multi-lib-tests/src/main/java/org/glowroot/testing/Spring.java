@@ -48,9 +48,10 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.2." + i + ".RELEASE");
         }
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= 11; i++) {
             run("4.3." + i + ".RELEASE");
         }
+        runJava8("5.0.0.RELEASE");
     }
 
     private static void run(String version, String... profiles) throws Exception {
@@ -61,5 +62,10 @@ public class Spring {
     private static void runNotJava8(String version, String... profiles) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "spring.version", version);
         Util.runTests(MODULE_PATH, profiles, JAVA6, JAVA7);
+    }
+
+    private static void runJava8(String version, String... profiles) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "spring.version", version);
+        Util.runTests(MODULE_PATH, profiles, JAVA8);
     }
 }

@@ -61,8 +61,6 @@ public class Play {
 
     private static void play2x() throws Exception {
 
-        runPlay2x("2.0", "2.9.3", "3.3.0.Final", "2.2.2");
-        runPlay2x("2.0.1", "2.9.3", "3.3.0.Final", "2.2.2");
         runPlay2x("2.0.2", "2.9.3", "3.3.0.Final", "2.2.2");
         runPlay2x("2.0.3", "2.9.3", "3.5.0.Final", "2.2.2");
         runPlay2x("2.0.4", "2.9.3", "3.5.0.Final", "2.2.2");

@@ -521,10 +521,9 @@ public class CommonHandler {
                 if (bindRequest == String.class) {
                     parameters.add(content);
                 } else {
-                    // TODO report checker framework issue that occurs without this suppression
-                    @SuppressWarnings("argument.type.incompatible")
-                    Object param = checkNotNull(
-                            mapper.readValue(content, QueryStrings.getImmutableClass(bindRequest)));
+                    Object param =
+                            mapper.readValue(content, QueryStrings.getImmutableClass(bindRequest));
+                    checkNotNull(param);
                     parameters.add(param);
                 }
             }

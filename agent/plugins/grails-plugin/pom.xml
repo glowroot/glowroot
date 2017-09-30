@@ -17,7 +17,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <grails.version>3.2.11</grails.version>
+    <grails.version>3.3.1</grails.version>
   </properties>
 
   <dependencies>
@@ -97,54 +97,10 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- normally grails-plugin-* dependencies are pulled in by using
-        org.grails:grails-dependencies, but there is no grails-dependencies 3.1.9 in maven central
-        so just embedding grails-plugin-* dependencies directly -->
       <groupId>org.grails</groupId>
-      <artifactId>grails-plugin-rest</artifactId>
+      <artifactId>grails-dependencies</artifactId>
       <version>${grails.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.grails</groupId>
-      <artifactId>grails-plugin-databinding</artifactId>
-      <version>${grails.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.grails</groupId>
-      <artifactId>grails-plugin-i18n</artifactId>
-      <version>${grails.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.grails</groupId>
-      <artifactId>grails-plugin-gsp</artifactId>
-      <version>${grails.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.grails</groupId>
-      <artifactId>grails-plugin-services</artifactId>
-      <version>${grails.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.grails</groupId>
-      <artifactId>grails-plugin-url-mappings</artifactId>
-      <version>${grails.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.grails</groupId>
-      <artifactId>grails-plugin-interceptors</artifactId>
-      <version>${grails.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.grails</groupId>
-      <artifactId>grails-plugin-async</artifactId>
-      <version>${grails.version}</version>
+      <type>pom</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -158,13 +114,14 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.aspectj</groupId>
       <artifactId>aspectjweaver</artifactId>
-      <version>1.8.10</version>
+      <version>1.8.11</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
+      <!-- Spring 5+ requires Java 8+ -->
       <version>4.3.11.RELEASE</version>
       <scope>test</scope>
     </dependency>
@@ -172,6 +129,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
+      <!-- Spring 5+ requires Java 8+ -->
       <version>4.3.11.RELEASE</version>
       <scope>test</scope>
     </dependency>
@@ -183,6 +141,14 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <repositories>
+    <repository>
+      <!-- this is needed for some versions of grails that are not in central -->
+      <id>grails</id>
+      <url>https://repo.grails.org/grails/core</url>
+    </repository>
+  </repositories>
 
   <build>
     <plugins>
@@ -275,45 +241,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>grails-3.2.0</id>
-      <!-- this is needed for grails 3.2.0 because grails-plugin-rest 3.2.0 has a dependency on
-        versions 6.0.0.RELEASE of the below artifacts which do not exist in maven central -->
-      <dependencyManagement>
-        <dependencies>
-          <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-datastore-core</artifactId>
-            <version>6.0.1.RELEASE</version>
-            <scope>test</scope>
-          </dependency>
-          <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-datastore-simple</artifactId>
-            <version>6.0.1.RELEASE</version>
-            <scope>test</scope>
-          </dependency>
-          <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-datastore-gorm</artifactId>
-            <version>6.0.1.RELEASE</version>
-            <scope>test</scope>
-          </dependency>
-          <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-datastore-gorm-support</artifactId>
-            <version>6.0.1.RELEASE</version>
-            <scope>test</scope>
-          </dependency>
-          <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-datastore-gorm-validation</artifactId>
-            <version>6.0.1.RELEASE</version>
-            <scope>test</scope>
-          </dependency>
-        </dependencies>
-      </dependencyManagement>
     </profile>
   </profiles>
 </project>

@@ -152,6 +152,7 @@ public class OkHttpClientPluginIT {
                 throw new IllegalStateException(
                         "Unexpected response status code: " + response.code());
             }
+            response.body().close();
         }
     }
 
@@ -170,6 +171,7 @@ public class OkHttpClientPluginIT {
                 throw new IllegalStateException(
                         "Unexpected response status code: " + response.code());
             }
+            response.body().close();
         }
     }
 
@@ -184,9 +186,10 @@ public class OkHttpClientPluginIT {
             final AtomicInteger responseStatusCode = new AtomicInteger();
             client.newCall(request).enqueue(new Callback() {
                 @Override
-                public void onResponse(Response response) {
+                public void onResponse(Response response) throws IOException {
                     new CreateTraceEntry().traceEntryMarker();
                     responseStatusCode.set(response.code());
+                    response.body().close();
                     latch.countDown();
                 }
                 @Override
@@ -219,9 +222,10 @@ public class OkHttpClientPluginIT {
             final AtomicInteger responseStatusCode = new AtomicInteger();
             client.newCall(request).enqueue(new Callback() {
                 @Override
-                public void onResponse(Response response) {
+                public void onResponse(Response response) throws IOException {
                     new CreateTraceEntry().traceEntryMarker();
                     responseStatusCode.set(response.code());
+                    response.body().close();
                     latch.countDown();
                 }
                 @Override

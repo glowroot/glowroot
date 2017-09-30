@@ -68,7 +68,7 @@ public class JAXRS {
         runJava7("2.24.1");
         runJava7("2.25");
         runJava7("2.25.1");
-        runJava7("2.26");
+        runJava8("2.26", "jersey-2.26");
     }
 
     private static void run(String version) throws Exception {
@@ -79,5 +79,10 @@ public class JAXRS {
     private static void runJava7(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "jersey.version", version);
         Util.runTests(MODULE_PATH, JAVA7, JAVA8);
+    }
+
+    private static void runJava8(String version, String profile) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "jersey.version", version);
+        Util.runTests(MODULE_PATH, profile, JAVA8);
     }
 }

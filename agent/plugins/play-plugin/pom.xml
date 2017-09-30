@@ -119,15 +119,6 @@
     </profile>
     <profile>
       <id>play-2.x</id>
-      <properties>
-        <play.version>2.5.10</play.version>
-        <scala.major.version>2.11</scala.major.version>
-        <scala.version>2.11.8</scala.version>
-        <netty.version>4.0.41.Final</netty.version>
-        <jackson.version>2.7.8</jackson.version>
-        <test.app.version>2.5.x</test.app.version>
-        <test.app.language>scala</test.app.language>
-      </properties>
       <dependencies>
         <dependency>
           <!-- netty plugin is required for play 2.x -->
@@ -236,6 +227,15 @@
     </profile>
     <profile>
       <id>play-2.4.x</id>
+      <properties>
+        <play.version>2.5.10</play.version>
+        <scala.major.version>2.11</scala.major.version>
+        <scala.version>2.11.8</scala.version>
+        <netty.version>4.0.41.Final</netty.version>
+        <jackson.version>2.7.8</jackson.version>
+        <test.app.version>2.5.x</test.app.version>
+        <test.app.language>scala</test.app.language>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>com.typesafe.play</groupId>
@@ -271,6 +271,15 @@
     </profile>
     <profile>
       <id>play-2.2.x</id>
+      <properties>
+        <play.version>2.3.10</play.version>
+        <scala.major.version>2.11</scala.major.version>
+        <scala.version>2.11.8</scala.version>
+        <netty.version>3.9.9.Final</netty.version>
+        <jackson.version>2.3.2</jackson.version>
+        <test.app.version>2.3.x</test.app.version>
+        <test.app.language>scala</test.app.language>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>com.typesafe.play</groupId>
@@ -288,6 +297,15 @@
     </profile>
     <profile>
       <id>play-2.1.x</id>
+      <properties>
+        <play.version>2.1.5</play.version>
+        <scala.major.version>2.10</scala.major.version>
+        <scala.version>2.10.3</scala.version>
+        <netty.version>3.6.3.Final</netty.version>
+        <jackson.version>2.2.2</jackson.version>
+        <test.app.version>2.1.x</test.app.version>
+        <test.app.language>scala</test.app.language>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>play</groupId>
@@ -305,6 +323,15 @@
     </profile>
     <profile>
       <id>play-2.0.x</id>
+      <properties>
+        <play.version>2.0.8</play.version>
+        <scala.major.version>2.9</scala.major.version>
+        <scala.version>2.9.3</scala.version>
+        <netty.version>3.5.0.Final</netty.version>
+        <jackson.version>2.2.2</jackson.version>
+        <test.app.version>2.0.x</test.app.version>
+        <test.app.language>scala</test.app.language>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>play</groupId>
@@ -317,11 +344,6 @@
           <artifactId>play-test_2.9.1</artifactId>
           <version>${play.version}</version>
           <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>com.github.scala-incubator.io</groupId>
-          <artifactId>scala-io-core_2.9.1</artifactId>
-          <version>0.2.0</version>
         </dependency>
       </dependencies>
       <build>

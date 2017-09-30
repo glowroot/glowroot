@@ -178,8 +178,8 @@ public class CappedDatabase {
         }
     }
 
-    public <T extends /*@NonNull*/MessageLite> List<T> readMessages(long cappedId, Parser<T> parser)
-            throws IOException {
+    public <T extends /*@NonNull*/ MessageLite> List<T> readMessages(long cappedId,
+            Parser<T> parser) throws IOException {
         boolean overwritten;
         boolean inTheFuture;
         synchronized (lock) {

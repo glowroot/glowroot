@@ -24,6 +24,7 @@
     <okhttpclient.version>2.7.5</okhttpclient.version>
     <!-- CXF 3.2.0+ requires Java 8+ -->
     <cxf.version>3.1.13</cxf.version>
+    <!-- Spring 5+ requires Java 8+ -->
     <spring.version>4.3.11.RELEASE</spring.version>
   </properties>
 
@@ -112,13 +113,10 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec-http</artifactId>
+      <!-- don't use netty based http server for testing b/c then potential version conflicts -->
+      <groupId>org.nanohttpd</groupId>
+      <artifactId>nanohttpd</artifactId>
+      <version>2.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -132,7 +130,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>5.2</version>
+      <version>6.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -215,8 +213,9 @@
     <profile>
       <id>async-http-client-2.x</id>
       <properties>
-        <asynchttpclient.version>2.0.33</asynchttpclient.version>
-        <netty.version>4.0.48.Final</netty.version>
+        <asynchttpclient.version>2.0.37</asynchttpclient.version>
+        <!-- this is needed because netty version is dependency managed in the parent pom -->
+        <netty.version>4.0.52.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
@@ -258,8 +257,7 @@
     <profile>
       <id>async-http-client-1.x</id>
       <properties>
-        <asynchttpclient.version>1.9.36</asynchttpclient.version>
-        <netty.version>4.0.38.Final</netty.version>
+        <asynchttpclient.version>1.9.40</asynchttpclient.version>
       </properties>
       <dependencies>
         <dependency>

@@ -187,8 +187,7 @@ class GrpcServerWrapper {
                 private List<Trace.Entry> entries = Lists.newArrayList();
                 private @MonotonicNonNull Profile mainThreadProfile;
                 private @MonotonicNonNull Profile auxThreadProfile;
-                // TODO report checker framework issue that occurs with normal annotation placement
-                private Trace./*@MonotonicNonNull*/Header header;
+                private Trace. /*@MonotonicNonNull*/ Header header;
 
                 @Override
                 public void onNext(TraceStreamMessage value) {

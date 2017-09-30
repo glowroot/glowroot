@@ -75,11 +75,15 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
+      <!-- cannot upgrade to 3.6.0 due to
+        https://github.com/MachinePublishers/jBrowserDriver/pull/298 -->
       <version>3.5.3</version>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
+      <!-- cannot upgrade to 3.6.0 due to
+        https://github.com/MachinePublishers/jBrowserDriver/pull/298 -->
       <version>3.5.3</version>
     </dependency>
     <dependency>
@@ -220,26 +224,19 @@
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <forceCreation>true</forceCreation>
-              <archive>
-                <manifest>
-                  <addClasspath>true</addClasspath>
-                  <classpathPrefix>lib</classpathPrefix>
-                </manifest>
-                <manifestEntries>
-                  <Build-Time>${maven.build.timestamp}</Build-Time>
-                  <Main-Class>org.glowroot.central.Main</Main-Class>
-                </manifestEntries>
-              </archive>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <forceCreation>true</forceCreation>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib</classpathPrefix>
+            </manifest>
+            <manifestEntries>
+              <Build-Time>${maven.build.timestamp}</Build-Time>
+              <Main-Class>org.glowroot.central.Main</Main-Class>
+            </manifestEntries>
+          </archive>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>

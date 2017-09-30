@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,16 @@ public class JSF {
     private static final String MODULE_PATH = "agent/plugins/jsf-plugin";
 
     public static void main(String[] args) throws Exception {
-        for (int i = 0; i <= 11; i++) {
+        // 2.0.0 fails to deploy on tomcat (https://github.com/javaserverfaces/mojarra/issues/1377)
+        for (int i = 1; i <= 11; i++) {
             if (i == 4 || i == 5) {
                 // there is no 2.0.4 or 2.0.5 in maven central
                 continue;
             }
             run("2.0." + i);
         }
-        for (int i = 0; i <= 29; i++) {
+        // 2.1.0 fails to deploy on tomcat (https://github.com/javaserverfaces/mojarra/issues/1941)
+        for (int i = 1; i <= 29; i++) {
             if (i == 1) {
                 // there is no 2.1.1 in maven central
                 continue;
