@@ -20,6 +20,7 @@ import java.util.Enumeration;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
@@ -104,9 +105,8 @@ public class Log4jAspect {
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
                 context.setTransactionError(messageText, t);
             }
-            String loggerName = LoggerPlugin.getAbbreviatedLoggerName(logger.getName());
-            return context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
-                    getLevelStr(lvl), loggerName, messageText), timerName);
+            return context.startTraceEntry(
+                    new LogMessageSupplier(lvl, logger.getName(), messageText), timerName);
         }
 
         @OnAfter
@@ -127,6 +127,25 @@ public class Log4jAspect {
             } else {
                 traceEntry.end();
             }
+        }
+    }
+
+    private static class LogMessageSupplier extends MessageSupplier {
+
+        private final int level;
+        private final @Nullable String loggerName;
+        private final String messageText;
+
+        private LogMessageSupplier(int level, @Nullable String loggerName, String messageText) {
+            this.level = level;
+            this.loggerName = loggerName;
+            this.messageText = messageText;
+        }
+
+        @Override
+        public Message get() {
+            return Message.create("log {}: {} - {}", getLevelStr(level),
+                    LoggerPlugin.getAbbreviatedLoggerName(loggerName), messageText);
         }
 
         private static String getLevelStr(int lvl) {

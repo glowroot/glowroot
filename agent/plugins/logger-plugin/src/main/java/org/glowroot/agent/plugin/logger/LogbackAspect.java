@@ -18,6 +18,7 @@ package org.glowroot.agent.plugin.logger;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
@@ -100,9 +101,9 @@ public class LogbackAspect {
                 context.setTransactionError(formattedMessage, t);
             }
             TraceEntry traceEntry;
-            String loggerName = LoggerPlugin.getAbbreviatedLoggerName(loggingEvent.getLoggerName());
-            traceEntry = context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
-                    getLevelStr(lvl), loggerName, formattedMessage), timerName);
+            traceEntry = context.startTraceEntry(
+                    new LogMessageSupplier(lvl, loggingEvent.getLoggerName(), formattedMessage),
+                    timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
 
@@ -152,11 +153,9 @@ public class LogbackAspect {
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
                 context.setTransactionError(formattedMessage, t);
             }
-            String loggerName =
-                    LoggerPlugin.getAbbreviatedLoggerName(invoker.getLoggerName(logger));
-            TraceEntry traceEntry =
-                    context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
-                            getLevelStr(lvl), loggerName, formattedMessage), timerName);
+            TraceEntry traceEntry = context.startTraceEntry(
+                    new LogMessageSupplier(lvl, invoker.getLoggerName(logger), formattedMessage),
+                    timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
 
@@ -181,27 +180,6 @@ public class LogbackAspect {
         }
     }
 
-    private static String getLevelStr(int lvl) {
-        switch (lvl) {
-            case ALL_INT:
-                return "all";
-            case TRACE_INT:
-                return "trace";
-            case DEBUG_INT:
-                return "debug";
-            case INFO_INT:
-                return "info";
-            case WARN_INT:
-                return "warn";
-            case ERROR_INT:
-                return "error";
-            case OFF_INT:
-                return "off";
-            default:
-                return "unknown (" + lvl + ")";
-        }
-    }
-
     private static class LogAdviceTraveler {
 
         private final TraceEntry traceEntry;
@@ -215,6 +193,46 @@ public class LogbackAspect {
             this.level = level;
             this.formattedMessage = formattedMessage;
             this.throwable = throwable;
+        }
+    }
+
+    private static class LogMessageSupplier extends MessageSupplier {
+
+        private final int level;
+        private final @Nullable String loggerName;
+        private final String messageText;
+
+        private LogMessageSupplier(int level, @Nullable String loggerName, String messageText) {
+            this.level = level;
+            this.loggerName = loggerName;
+            this.messageText = messageText;
+        }
+
+        @Override
+        public Message get() {
+            return Message.create("log {}: {} - {}", getLevelStr(level),
+                    LoggerPlugin.getAbbreviatedLoggerName(loggerName), messageText);
+        }
+
+        private static String getLevelStr(int lvl) {
+            switch (lvl) {
+                case ALL_INT:
+                    return "all";
+                case TRACE_INT:
+                    return "trace";
+                case DEBUG_INT:
+                    return "debug";
+                case INFO_INT:
+                    return "info";
+                case WARN_INT:
+                    return "warn";
+                case ERROR_INT:
+                    return "error";
+                case OFF_INT:
+                    return "off";
+                default:
+                    return "unknown (" + lvl + ")";
+            }
         }
     }
 }

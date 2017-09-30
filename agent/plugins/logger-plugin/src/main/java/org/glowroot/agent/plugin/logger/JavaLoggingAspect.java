@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
@@ -71,11 +72,9 @@ public class JavaLoggingAspect {
                     lvl >= Level.WARNING.intValue(), t != null)) {
                 context.setTransactionError(formattedMessage, t);
             }
-            String loggerName = LoggerPlugin.getAbbreviatedLoggerName(record.getLoggerName());
-            TraceEntry traceEntry = context.startTraceEntry(
-                    MessageSupplier.create("log {}: {} - {}", level.getName().toLowerCase(),
-                            loggerName, formattedMessage),
-                    timerName);
+            TraceEntry traceEntry =
+                    context.startTraceEntry(new LogMessageSupplier(level.getName().toLowerCase(),
+                            record.getLoggerName(), formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
 
@@ -125,6 +124,25 @@ public class JavaLoggingAspect {
         @Override
         public String format(LogRecord record) {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class LogMessageSupplier extends MessageSupplier {
+
+        private final String level;
+        private final String loggerName;
+        private final String messageText;
+
+        private LogMessageSupplier(String level, String loggerName, String messageText) {
+            this.level = level;
+            this.loggerName = loggerName;
+            this.messageText = messageText;
+        }
+
+        @Override
+        public Message get() {
+            return Message.create("log {}: {} - {}", level,
+                    LoggerPlugin.getAbbreviatedLoggerName(loggerName), messageText);
         }
     }
 }
