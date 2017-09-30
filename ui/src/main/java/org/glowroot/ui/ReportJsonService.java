@@ -51,6 +51,7 @@ import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common.repo.Utils;
+import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.ui.HttpSessionManager.Authentication;
@@ -71,13 +72,15 @@ class ReportJsonService {
     private final AggregateRepository aggregateRepository;
     private final AgentRollupRepository agentRollupRepository;
     private final GaugeValueRepository gaugeValueRepository;
+    private final RollupLevelService rollupLevelService;
 
     ReportJsonService(AggregateRepository aggregateRepository,
-            AgentRollupRepository agentRollupRepository,
-            GaugeValueRepository gaugeValueRepository) {
+            AgentRollupRepository agentRollupRepository, GaugeValueRepository gaugeValueRepository,
+            RollupLevelService rollupLevelService) {
         this.aggregateRepository = aggregateRepository;
         this.agentRollupRepository = agentRollupRepository;
         this.gaugeValueRepository = gaugeValueRepository;
+        this.rollupLevelService = rollupLevelService;
     }
 
     // permission is checked based on agentRollupIds in the request
@@ -147,9 +150,10 @@ class ReportJsonService {
             String gaugeName = metric.substring("gauge:".length());
             dataSeriesList = Lists.newArrayList();
             for (String agentRollupId : request.agentRollupIds()) {
-                // FIXME, rollup level 2 is nice since 30 min intervals
-                // but need level 3 for long time periods
-                int rollupLevel = 2;
+                int rollupLevel =
+                        rollupLevelService.getGaugeRollupLevelForView(from.getTime(), to.getTime());
+                // level 3 (30 min intervals) is the minimum level needed
+                rollupLevel = Math.max(rollupLevel, 3);
                 dataSeriesList.add(getDataSeriesForGauge(agentRollupId, gaugeName, from, to,
                         rollupLevel, rollupCaptureTimeFn, request.rollup(), timeZone, gapMillis));
             }
@@ -169,6 +173,10 @@ class ReportJsonService {
     private List<DataSeries> getTransactionReport(ReportRequest request, TimeZone timeZone,
             Date from, Date to, RollupCaptureTimeFn rollupCaptureTimeFn, double gapMillis)
             throws Exception {
+        int rollupLevel =
+                rollupLevelService.getRollupLevelForView(from.getTime(), to.getTime());
+        // level 2 (30 min intervals) is the minimum level needed
+        rollupLevel = Math.max(rollupLevel, 2);
         TransactionQuery query = ImmutableTransactionQuery.builder()
                 .transactionType(checkNotNull(request.transactionType()))
                 .transactionName(Strings.emptyToNull(checkNotNull(request.transactionName())))
@@ -176,8 +184,7 @@ class ReportJsonService {
                 // time range
                 .from(from.getTime() + 1)
                 .to(to.getTime())
-                .rollupLevel(2) // FIXME, level 2 is nice since 30 min intervals
-                                // but need level 3 for long time periods
+                .rollupLevel(rollupLevel)
                 .build();
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         String metric = request.metric();

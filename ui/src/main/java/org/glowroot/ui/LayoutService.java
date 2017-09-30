@@ -15,7 +15,6 @@
  */
 package org.glowroot.ui;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -213,8 +212,7 @@ class LayoutService {
                 .ldap(authentication.ldap())
                 .redirectToLogin(false)
                 .defaultTimeZoneId(TimeZone.getDefault().getID())
-                .addAllTimeZoneIds(new TimeZoneIdComparator()
-                        .sortedCopy(Arrays.asList(TimeZone.getAvailableIDs())))
+                .addAllTimeZoneIds(getAllTimeZoneIds())
                 .build();
     }
 
@@ -317,6 +315,18 @@ class LayoutService {
                 .build();
     }
 
+    private static List<String> getAllTimeZoneIds() {
+        List<String> allTimeZoneIds = Lists.newArrayList();
+        // remove administrative zones which are just asking for confusion (e.g. Etc/GMT+8 is
+        // 8 hours _behind_ GMT, see https://en.wikipedia.org/wiki/Tz_database#Area)
+        for (String timeZoneId : TimeZone.getAvailableIDs()) {
+            if (!timeZoneId.startsWith("Etc/")) {
+                allTimeZoneIds.add(timeZoneId);
+            }
+        }
+        return allTimeZoneIds;
+    }
+
     private class CentralLayoutBuilder {
 
         // linked hash map to preserve ordering
@@ -413,36 +423,6 @@ class LayoutService {
                         showNavbarReport, showNavbarConfig);
             } else {
                 return createNoAccessLayout(authentication);
-            }
-        }
-    }
-
-    private static class TimeZoneIdComparator extends Ordering<String> {
-        @Override
-        public int compare(String timeZoneId1, String timeZoneId2) {
-            if (timeZoneId1.startsWith("Etc/GMT") && timeZoneId2.startsWith("Etc/GMT")) {
-                try {
-                    double offset1 = getOffset(timeZoneId1);
-                    double offset2 = getOffset(timeZoneId2);
-                    return Double.compare(offset1, offset2);
-                } catch (NumberFormatException e) {
-                    logger.warn(e.getMessage(), e);
-                }
-            }
-            return timeZoneId1.compareTo(timeZoneId2);
-        }
-
-        private double getOffset(String timeZoneId) {
-            if (timeZoneId.equals("Etc/GMT-0")) {
-                return -0.1;
-            } else if (timeZoneId.equals("Etc/GMT")) {
-                return 0;
-            } else if (timeZoneId.equals("Etc/GMT0")) {
-                return 0.1;
-            } else if (timeZoneId.equals("Etc/GMT+0")) {
-                return 0.2;
-            } else {
-                return Double.parseDouble(timeZoneId.substring("Etc/GMT".length()));
             }
         }
     }

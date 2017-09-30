@@ -125,7 +125,7 @@ public class UiModule {
         jsonServices.add(new IncidentJsonService(incidentRepository,
                 configRepository, clock));
         jsonServices.add(new ReportJsonService(aggregateRepository, agentRollupRepository,
-                gaugeValueRepository));
+                gaugeValueRepository, rollupLevelService));
         jsonServices.add(new ConfigJsonService(agentRollupRepository, gaugeValueRepository,
                 configRepository));
         jsonServices

@@ -114,13 +114,6 @@ glowroot.controller('ReportAdhocCtrl', [
       disabled: true
     });
 
-    $scope.rollups = [
-      'Hourly',
-      'Daily',
-      'Weekly',
-      'Monthly'
-    ];
-
     $scope.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
 
     $scope.currentTabUrl = function () {
@@ -134,6 +127,19 @@ glowroot.controller('ReportAdhocCtrl', [
     $scope.allTransactionTypes = [];
 
     $scope.agentRollups = [];
+
+    if (!moment.tz.zone('GMT-12:00')) {
+      moment.tz.add([
+        'GMT-12:00|-12|c0|0|',
+        'GMT-8:00|-08|80|0|',
+        'GMT-4:00|-04|40|0|',
+        'GMT+4:00|+04|-40|0|',
+        'GMT+8:00|+08|-80|0|',
+        'GMT+12:00|+12|-c0|0|',
+        // GMT+16:00 is needed, e.g. Pacific/Kiritimati
+        'GMT+16:00|+16|-g0|0|'
+      ]);
+    }
 
     angular.forEach($scope.layout.agentRollupValues, function (agentRollup) {
       // for now (for simplicity) reporting requires permission for ALL reportable metrics
@@ -355,6 +361,55 @@ glowroot.controller('ReportAdhocCtrl', [
       }
     });
 
+    $scope.$watchGroup(['report.fromDate', 'report.toDate'], function (newValue) {
+      $scope.useFourHourAggregates = newValue[0] < new Date().getTime() - $scope.layout.rollupExpirationMillis[2]
+          && $scope.layout.rollupExpirationMillis[3] > $scope.layout.rollupExpirationMillis[2];
+      if ($scope.useFourHourAggregates) {
+        $scope.rollups = [
+          'Daily',
+          'Weekly',
+          'Monthly'
+        ];
+        if ($scope.report.rollup === 'hourly') {
+          $scope.report.rollup = 'daily';
+        }
+        $scope.timeZoneIds = [
+          'GMT-12:00',
+          'GMT-8:00',
+          'GMT-4:00',
+          'GMT',
+          'GMT+4:00',
+          'GMT+8:00',
+          'GMT+12:00',
+          // GMT+16:00 is needed, e.g. Pacific/Kiritimati
+          'GMT+16:00'
+        ];
+        if ($scope.timeZoneIds.indexOf($scope.report.timeZoneId) === -1) {
+          var offset = -moment.tz.zone($scope.report.timeZoneId).offset(Date.now());
+          var nearestGreaterOffset = 4 * Math.ceil(Math.floor(offset / 60) / 4);
+          if (nearestGreaterOffset === 0) {
+            $scope.report.timeZoneId = 'GMT';
+          } else if (nearestGreaterOffset > 0) {
+            $scope.report.timeZoneId = 'GMT+' + nearestGreaterOffset + ':00';
+          } else {
+            $scope.report.timeZoneId = 'GMT' + nearestGreaterOffset + ':00';
+          }
+        }
+      } else {
+        $scope.rollups = [
+          'Hourly',
+          'Daily',
+          'Weekly',
+          'Monthly'
+        ];
+        $scope.timeZoneIds = $scope.layout.timeZoneIds;
+        if ($scope.timeZoneIds.indexOf($scope.report.timeZoneId) === -1) {
+          // e.g. switching back from GMT-4:00
+          $scope.report.timeZoneId = browserTimeZone;
+        }
+      }
+    });
+
     $scope.$watch('report', function () {
       // clear button error message if any
       var $buttonMessage = $('.gt-form-buttons .gt-button-message');
@@ -520,6 +575,7 @@ glowroot.controller('ReportAdhocCtrl', [
               };
               plotData.push(plotDataItem);
             });
+
             function doWithPlot() {
               if (query.metric === 'transaction:x-percentile' || query.metric === 'transaction:average') {
                 plot.getAxes().yaxis.options.label = 'milliseconds';

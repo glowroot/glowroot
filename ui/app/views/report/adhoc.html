@@ -156,11 +156,15 @@
         </label>
         <div class="col-lg-9">
           <select ng-model="report.timeZoneId"
-                  ng-options="timeZoneId for timeZoneId in layout.timeZoneIds"
+                  ng-options="timeZoneId for timeZoneId in timeZoneIds"
                   class="form-control"
                   id="reportTimeZone"
                   style="width: 100%; width: auto;">
           </select>
+          <div class="help-block" ng-if="useFourHourAggregates">
+            Time zone selection is limited because the time range exceeds the configured retention for 30-minute
+            interval data and so 4-hour interval data must be used instead.
+          </div>
         </div>
       </div>
       <div class="form-group gt-form-buttons">
