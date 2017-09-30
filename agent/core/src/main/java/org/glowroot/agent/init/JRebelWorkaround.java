@@ -15,17 +15,9 @@
  */
 package org.glowroot.agent.init;
 
-import java.lang.management.ManagementFactory;
-import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.agent.util.ThreadFactories;
 
 // this is needed for JRebel 6.5.0+
 // otherwise get JsonMappingException: "No serializer found for class
@@ -37,14 +29,15 @@ public class JRebelWorkaround {
 
     private JRebelWorkaround() {}
 
-    public static void performWorkaroundIfNeeded() {
-        if (!isJrebel()) {
-            return;
-        }
+    public static void perform() {
         try {
-            ExecutorService singleUseExecutor = Executors.newSingleThreadExecutor(
-                    ThreadFactories.create("Glowroot-Init-JRebel-Workaround"));
-            Future<?> future = singleUseExecutor.submit(new Runnable() {
+            // cannot check ManagementFactory.getRuntimeMXBean().getInputArguments() here because
+            // that can trigger java.util.logging.Logger to be loaded (e.g. on WebSphere 8.5) before
+            // weaving is put in place (preventing the logger plugin from weaving JUL Logger)
+            //
+            // also cannot use ExecutorService here before weaving is put in place (preventing the
+            // executor plugin from weaving ExecutorService)
+            Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     boolean shouldBeTrue;
@@ -60,20 +53,11 @@ public class JRebelWorkaround {
                     }
                 }
             });
-            future.get();
-            singleUseExecutor.shutdown();
+            thread.setName("Glowroot-Init-JRebel-Workaround");
+            thread.start();
+            thread.join();
         } catch (Exception e) {
             startupLogger.error(e.getMessage(), e);
         }
-    }
-
-    private static boolean isJrebel() {
-        for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
-            if (jvmArg.startsWith("-agentpath:")
-                    && jvmArg.toLowerCase(Locale.ENGLISH).contains("jrebel")) {
-                return true;
-            }
-        }
-        return false;
     }
 }

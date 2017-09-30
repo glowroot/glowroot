@@ -18,6 +18,7 @@ package org.glowroot.agent.plugin.logger;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 
@@ -32,16 +33,10 @@ import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class JavaLoggingAspect {
 
     private static final String TIMER_NAME = "logging";
-
-    @Shim("java.util.logging.Logger")
-    public interface Logger {
-        boolean isLoggable(Level level);
-    }
 
     @Pointcut(className = "java.util.logging.Logger", methodName = "log",
             methodParameterTypes = {"java.util.logging.LogRecord"}, nestingGroup = "logging",
@@ -52,14 +47,17 @@ public class JavaLoggingAspect {
 
         private static final Formatter formatter = new DummyFormatter();
 
+        // cannot use java.util.logging.Logger in the signature of this method because that triggers
+        // java.util.logging.Logger to be loaded before weaving is put in place (from inside
+        // org.glowroot.agent.weaving.AdviceBuilder)
         @OnBefore
         public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
-                @BindParameter @Nullable LogRecord record, @BindReceiver Logger logger) {
+                @BindParameter @Nullable LogRecord record, @BindReceiver Object logger) {
             if (record == null) {
                 return null;
             }
             Level level = record.getLevel();
-            if (!logger.isLoggable(level)) {
+            if (!((Logger) logger).isLoggable(level)) {
                 // Logger.log(LogRecord) was called directly
                 return null;
             }

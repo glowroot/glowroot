@@ -84,6 +84,10 @@ public class AgentModule {
     private static final long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", MINUTES.toMillis(1));
 
+    // java.util.logging is shaded to org.glowroot.agent.jul
+    private static final String SHADE_PROOF_JUL_LOGGER_CLASS_NAME =
+            "_java.util.logging.Logger".substring(1);
+
     @OnlyUsedByTests
     public static final ThreadLocal</*@Nullable*/ IsolatedWeavingClassLoader> isolatedWeavingClassLoader =
             new ThreadLocal</*@Nullable*/ IsolatedWeavingClassLoader>();
@@ -154,7 +158,7 @@ public class AgentModule {
                 instrumentation.addTransformer(transformer);
                 jvmRetransformClassesSupported = false;
             }
-            logRunnableCallableClassWarningIfNeeded(instrumentation);
+            logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation);
         }
 
         // now that instrumentation is set up, it is safe to create scheduled executor
@@ -255,22 +259,33 @@ public class AgentModule {
         return liveJvmService;
     }
 
-    private static void logRunnableCallableClassWarningIfNeeded(Instrumentation instrumentation) {
+    private static void logJavaClassAlreadyLoadedWarningIfNeeded(Instrumentation instrumentation) {
         List<String> runnableCallableClasses = Lists.newArrayList();
+        boolean julLoggerLoaded = false;
         for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
             if (clazz.isInterface()) {
                 continue;
             }
-            if (!clazz.getName().startsWith("java.util.concurrent.")) {
-                continue;
-            }
-            if (Runnable.class.isAssignableFrom(clazz) || Callable.class.isAssignableFrom(clazz)) {
+            String className = clazz.getName();
+            if (className.startsWith("java.util.concurrent.")
+                    && (Runnable.class.isAssignableFrom(clazz)
+                            || Callable.class.isAssignableFrom(clazz))) {
                 runnableCallableClasses.add(clazz.getName());
             }
+            if (className.equals(SHADE_PROOF_JUL_LOGGER_CLASS_NAME)) {
+                julLoggerLoaded = true;
+            }
         }
-        if (runnableCallableClasses.isEmpty()) {
-            return;
+        if (!runnableCallableClasses.isEmpty()) {
+            logRunnableCallableClassWarning(runnableCallableClasses);
         }
+        if (julLoggerLoaded && isShaded()) {
+            logger.warn("java.util.logging.Logger was loaded before Glowroot instrumentation could"
+                    + " be applied to it. This may prevent Glowroot from capturing JUL logging.");
+        }
+    }
+
+    private static void logRunnableCallableClassWarning(List<String> runnableCallableClasses) {
         List<String> nonGlowrootAgents = Lists.newArrayList();
         for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
             if (jvmArg.startsWith("-javaagent:") && !jvmArg.endsWith("glowroot.jar")
@@ -313,6 +328,17 @@ public class AgentModule {
                     logger.debug(e.getMessage(), e);
                 }
             }
+        }
+    }
+
+    private static boolean isShaded() {
+        try {
+            Class.forName("org.glowroot.agent.shaded.slf4j.Logger");
+            return true;
+        } catch (ClassNotFoundException e) {
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
+            return false;
         }
     }
 

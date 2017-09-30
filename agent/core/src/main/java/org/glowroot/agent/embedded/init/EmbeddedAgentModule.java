@@ -110,7 +110,7 @@ class EmbeddedAgentModule {
         final boolean h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
 
         // need to perform jrebel workaround prior to loading any jackson classes
-        JRebelWorkaround.performWorkaroundIfNeeded();
+        JRebelWorkaround.perform();
         PluginCache pluginCache = PluginCache.create(pluginsDir, false);
         if (offline) {
             viewerAgentModule = new ViewerAgentModule(pluginsDir, confDir);

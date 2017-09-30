@@ -76,7 +76,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
         Clock clock = Clock.systemClock();
 
         // need to perform jrebel workaround prior to loading any jackson classes
-        JRebelWorkaround.performWorkaroundIfNeeded();
+        JRebelWorkaround.perform();
         final PluginCache pluginCache = PluginCache.create(pluginsDir, false);
         final ConfigService configService =
                 ConfigService.create(confDir, pluginCache.pluginDescriptors());
