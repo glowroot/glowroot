@@ -333,7 +333,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       instrumentationExport.clean(config);
       $scope.jsonExport = JSON.stringify(config, null, 2);
 
-      gtClipboard('#jsonExportModal .fa-clipboard', function () {
+      gtClipboard('#jsonExportModal .fa-clipboard', '#jsonExportModal', function () {
         return document.getElementById('jsonExport');
       }, function () {
         return $scope.jsonExport;

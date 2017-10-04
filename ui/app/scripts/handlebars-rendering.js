@@ -865,16 +865,16 @@ HandlebarsRendering = (function () {
 
     if (expanded.hasClass('hide') && !expanded.data('gtExpandedPreviously')) {
       var $clipboardIcon = expanded.find('.fa-clipboard');
-      // mouseenter and mouseleave events are to deal with hover style being removed from expanded div
-      // see https://github.com/zeroclipboard/zeroclipboard/issues/536
-      $clipboardIcon.on('mouseenter', function () {
-        expanded.css('background-color', '#ddd');
-      });
-      expanded.on('mouseleave', function () {
-        expanded.css('background-color', '');
-      });
       var clipTextNode = expanded.find('.gt-clip-text');
-      gtClipboard($clipboardIcon, function () {
+      var clipboardContainer;
+      if ($('#headerJson').length === 0) {
+        // .modal-dialog is used instead of .modal for the clipboard (tooltip) container
+        // so that the tooltip scrolls (briefly) with the page (until it hides when hover is lost)
+        clipboardContainer = '#traceModal .modal-dialog';
+      } else {
+        clipboardContainer = 'body';
+      }
+      gtClipboard($clipboardIcon, clipboardContainer, function () {
         return clipTextNode[0];
       }, function () {
         var text = clipTextNode.text();

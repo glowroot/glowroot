@@ -229,7 +229,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
         $('#importModal').modal('hide');
       }
       if ($location.search().export) {
-        gtClipboard('#exportModal .fa-clipboard', function () {
+        gtClipboard('#exportModal .fa-clipboard', '#exportModal', function () {
           return document.getElementById('jsonExport');
         }, function () {
           return $scope.jsonExport;

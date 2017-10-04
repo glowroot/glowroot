@@ -43,6 +43,9 @@
   <script src="scripts/clipboard.js"></script>
   <script src="scripts/parser.js"></script>
   <script src="scripts/generated/handlebars-templates.js"></script>
+  <!-- clipboard.js needs to be at the end, otherwise somehow gets mangled by minification
+    and trace export html page will not display -->
+  <script src="bower_components/clipboard/dist/clipboard.js"></script>
   <!-- endbuild -->
 
   <!-- placeholders that are dynamically replaced at runtime -->

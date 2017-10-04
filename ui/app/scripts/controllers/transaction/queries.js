@@ -204,7 +204,7 @@ glowroot.controller('TransactionQueriesCtrl', [
         $unformattedQuery.show();
         $formattedQuery.hide();
 
-        gtClipboard($clipboardIcon, function () {
+        gtClipboard($clipboardIcon, '#queryModal', function () {
           return $scope.showFormatted ? $formattedQuery[0] : $unformattedQuery[0];
         }, function () {
           return $scope.showFormatted ? $scope.formattedQuery : $scope.unformattedQuery;
