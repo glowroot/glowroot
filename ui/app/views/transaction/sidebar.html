@@ -30,7 +30,7 @@
       <div style="position: relative;">
         <div ng-show="summariesNoData || summariesNoSearch"
              style="display: table; width: 100%; height: 100px;">
-          <div ng-show="summariesNoData"
+          <div ng-show="summariesNoData && !showSpinner"
                style="font-weight: 600; display: table-cell; text-align: center; vertical-align: middle;">
             No data for this time period
           </div>
