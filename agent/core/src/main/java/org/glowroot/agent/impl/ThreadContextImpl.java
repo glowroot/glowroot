@@ -960,24 +960,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
     }
 
-    @Override
-    @Deprecated
-    public void setAsyncTransaction() {
-        setTransactionAsync();
-    }
-
-    @Override
-    @Deprecated
-    public void completeAsyncTransaction() {
-        setTransactionAsyncComplete();
-    }
-
-    @Override
-    @Deprecated
-    public void setOuterTransaction() {
-        setTransactionOuter();
-    }
-
     boolean hasTraceEntries() {
         return !traceEntryComponent.isEmpty();
     }
@@ -1139,15 +1121,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
         @Override
         public void endWithInfo(Throwable t) {
-            endInternal(ticker.read());
-        }
-
-        @Override
-        @Deprecated
-        public void endWithStackTrace(long threshold, TimeUnit unit) {
-            if (threshold < 0) {
-                logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
-            }
             endInternal(ticker.read());
         }
 

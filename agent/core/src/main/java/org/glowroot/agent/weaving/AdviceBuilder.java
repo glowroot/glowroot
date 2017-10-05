@@ -115,7 +115,6 @@ class AdviceBuilder {
         builder.reweavable(reweavable);
     }
 
-    @SuppressWarnings("deprecation")
     Advice build() throws Exception {
         Class<?> adviceClass = this.adviceClass;
         if (adviceClass == null) {
@@ -133,11 +132,6 @@ class AdviceBuilder {
         }
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
         checkNotNull(pointcut, "Class has no @Pointcut annotation");
-        if (!pointcut.methodDeclaringClassName().isEmpty()) {
-            throw new AdviceConstructionException("Pointcuts with methodDeclaringClassName are no"
-                    + " longer supported, use subTypeRestriction or superTypeRestriction depending"
-                    + " on the need");
-        }
         builder.pointcut(pointcut);
         builder.adviceType(Type.getType(adviceClass));
         builder.pointcutClassNamePattern(buildPattern(pointcut.className()));

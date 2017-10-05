@@ -127,10 +127,4 @@ public interface TraceEntry {
      */
     @Nullable
     Object getMessageSupplier();
-
-    /**
-     * @deprecated Replaced by {@link #endWithLocationStackTrace(long, TimeUnit)}.
-     */
-    @Deprecated
-    void endWithStackTrace(long threshold, TimeUnit unit);
 }

@@ -281,17 +281,6 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         }
     }
 
-    @Override
-    @Deprecated
-    public void endWithStackTrace(long threshold, TimeUnit unit) {
-        if (threshold < 0) {
-            logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
-            end();
-            return;
-        }
-        endWithLocationStackTraceInternal(threshold, unit);
-    }
-
     boolean hasLocationStackTrace() {
         return locationStackTrace != null;
     }

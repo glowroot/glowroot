@@ -220,13 +220,11 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             }
             if (name.equals("transactionType")) {
                 transactionType = (String) value;
-            } else if (name.equals("transactionName") || name.equals("transactionNameTemplate")) {
-                // second condition above is supporting deprecated transactionNameTemplate
+            } else if (name.equals("transactionName")) {
                 transactionNameTemplate = (String) value;
             } else if (name.equals("traceHeadline")) {
                 traceHeadline = (String) value;
-            } else if (name.equals("timer") || name.equals("timerName")) {
-                // second condition above is supporting deprecated timerName
+            } else if (name.equals("timer")) {
                 timerName = (String) value;
             }
         }
@@ -246,11 +244,9 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             if (name == null) {
                 return;
             }
-            if (name.equals("message") || name.equals("messageTemplate")) {
-                // second condition above is supporting deprecated messageTemplate
+            if (name.equals("message")) {
                 messageTemplate = (String) value;
-            } else if (name.equals("timer") || name.equals("timerName")) {
-                // second condition above is supporting deprecated timerName
+            } else if (name.equals("timer")) {
                 timerName = (String) value;
             }
         }

@@ -141,9 +141,7 @@ public class AnalyzedWorld {
 
     List<Advice> mergeInstrumentationAnnotations(List<Advice> advisors, byte[] classBytes,
             @Nullable ClassLoader loader, String className) {
-        // TODO after removing deprecated @Instrument, change marker to
-        // "Lorg/glowroot/agent/api/Instrumentation$"
-        byte[] marker = "Lorg/glowroot/agent/api/Instrument".getBytes(Charsets.UTF_8);
+        byte[] marker = "Lorg/glowroot/agent/api/Instrumentation$".getBytes(Charsets.UTF_8);
         if (Bytes.indexOf(classBytes, marker) == -1) {
             return advisors;
         }

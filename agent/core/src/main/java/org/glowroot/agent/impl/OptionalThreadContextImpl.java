@@ -307,24 +307,6 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    @Deprecated
-    public void setAsyncTransaction() {
-        setTransactionAsync();
-    }
-
-    @Override
-    @Deprecated
-    public void completeAsyncTransaction() {
-        setTransactionAsyncComplete();
-    }
-
-    @Override
-    @Deprecated
-    public void setOuterTransaction() {
-        setTransactionOuter();
-    }
-
-    @Override
     public int getCurrentNestingGroupId() {
         if (threadContext == null) {
             return 0;

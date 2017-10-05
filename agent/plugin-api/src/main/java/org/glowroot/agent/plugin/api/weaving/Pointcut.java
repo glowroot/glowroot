@@ -63,12 +63,6 @@ public @interface Pointcut {
     String superTypeRestriction() default "";
 
     /**
-     * Use case replaced by subTypeRestriction and superTypeRestriction.
-     */
-    @Deprecated
-    String methodDeclaringClassName() default "";
-
-    /**
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
      * starting and ending methodName with /.
      */

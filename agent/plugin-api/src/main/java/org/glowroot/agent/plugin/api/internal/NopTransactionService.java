@@ -88,10 +88,6 @@ public class NopTransactionService {
         public Timer extendSyncTimer(ThreadContext currThreadContext) {
             return NopTimer.INSTANCE;
         }
-
-        @Override
-        @Deprecated
-        public void endWithStackTrace(long threshold, TimeUnit unit) {}
     }
 
     public static class NopAuxThreadContext implements AuxThreadContext {

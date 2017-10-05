@@ -336,36 +336,6 @@ public interface ThreadContext {
     @Deprecated
     void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier);
 
-    /**
-     * @deprecated Replaced by {@link #setTransactionAsync()}.
-     */
-    @Deprecated
-    void setAsyncTransaction();
-
-    /**
-     * @deprecated Replaced by {@link #setTransactionAsyncComplete()}.
-     */
-    @Deprecated
-    void completeAsyncTransaction();
-
-    /**
-     * @deprecated Replaced by {@link #setTransactionOuter()}.
-     */
-    @Deprecated
-    void setOuterTransaction();
-
-    interface Priority {
-        int CORE_PLUGIN = -100;
-        int USER_PLUGIN = 100;
-        int USER_API = 1000;
-        int USER_CONFIG = 10000;
-        // this is used for very special circumstances, currently only
-        // when setting transaction name from HTTP header "Glowroot-Transaction-Type"
-        // and for setting slow threshold (to zero) for Startup transactions
-        // and for setting slow threshold for user-specific profiling
-        int CORE_MAX = 1000000;
-    }
-
     interface ServletRequestInfo {
         String getMethod();
         String getContextPath();
@@ -375,5 +345,20 @@ public interface ThreadContext {
         @Nullable
         String getPathInfo();
         String getUri();
+    }
+
+    public final class Priority {
+
+        public static final int CORE_PLUGIN = -100;
+        public static final int USER_PLUGIN = 100;
+        public static final int USER_API = 1000;
+        public static final int USER_CONFIG = 10000;
+        // this is used for very special circumstances, currently only
+        // when setting transaction name from HTTP header "Glowroot-Transaction-Type"
+        // and for setting slow threshold (to zero) for Startup transactions
+        // and for setting slow threshold for user-specific profiling
+        public static final int CORE_MAX = 1000000;
+
+        private Priority() {}
     }
 }
