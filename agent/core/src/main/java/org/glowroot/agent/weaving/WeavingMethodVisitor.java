@@ -377,9 +377,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
         // need to load ThreadContext
         if (!nestingGroup.isEmpty() || !suppressibleUsingKey.isEmpty() || !suppressionKey.isEmpty()
                 || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext())) {
-            Label disabledLabel = new Label();
+            Label disabledLabel = null;
             if (enabledLocal != null) {
                 loadLocal(enabledLocal);
+                if (disabledLabel == null) {
+                    disabledLabel = new Label();
+                }
                 visitJumpInsn(IFEQ, disabledLabel);
             } else {
                 enabledLocal = newLocal(Type.BOOLEAN_TYPE);
@@ -398,6 +401,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
             checkNotNull(threadContextLocal);
             storeLocal(threadContextLocal);
             if (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext()) {
+                if (disabledLabel == null) {
+                    disabledLabel = new Label();
+                }
                 visitJumpInsn(IFNULL, disabledLabel);
                 if (!suppressibleUsingKey.isEmpty()) {
                     checkSuppressibleUsingKey(suppressibleUsingKey, disabledLabel);
@@ -413,6 +419,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 }
             } else {
                 if (!suppressibleUsingKey.isEmpty()) {
+                    if (disabledLabel == null) {
+                        disabledLabel = new Label();
+                    }
                     Label enabledLabel = new Label();
                     // if thread context == null, then not suppressible
                     visitJumpInsn(IFNULL, enabledLabel);
@@ -420,6 +429,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     visitLabel(enabledLabel);
                 }
                 if (!nestingGroup.isEmpty()) {
+                    if (disabledLabel == null) {
+                        disabledLabel = new Label();
+                    }
                     Label enabledLabel = new Label();
                     // if thread context == null, then not in nesting group
                     visitJumpInsn(IFNULL, enabledLabel);
@@ -438,11 +450,13 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 }
             }
             visitInsn(ICONST_1);
-            Label endLabel = new Label();
-            goTo(endLabel);
-            visitLabel(disabledLabel);
-            visitInsn(ICONST_0);
-            visitLabel(endLabel);
+            if (disabledLabel != null) {
+                Label endLabel = new Label();
+                goTo(endLabel);
+                visitLabel(disabledLabel);
+                visitInsn(ICONST_0);
+                visitLabel(endLabel);
+            }
             storeLocal(enabledLocal);
         }
     }
