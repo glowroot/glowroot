@@ -546,7 +546,10 @@ class WeavingMethodVisitor extends AdviceAdapter {
             storeLocal(travelerLocal);
         }
         String nestingGroup = advice.pointcut().nestingGroup();
-        if (advice.hasBindOptionalThreadContext() && !nestingGroup.isEmpty()) {
+        String suppressionKey = advice.pointcut().suppressionKey();
+        boolean firstBlock = advice.hasBindOptionalThreadContext() && !nestingGroup.isEmpty();
+        boolean secondBlock = advice.hasBindOptionalThreadContext() && !suppressionKey.isEmpty();
+        if (firstBlock) {
             // need to check if transaction was just started in @OnBefore and update its
             // currentNestingGroupId
 
@@ -554,8 +557,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
             checkNotNull(prevNestingGroupIdLocal);
             loadLocal(prevNestingGroupIdLocal);
             visitIntInsn(BIPUSH, -1);
-            Label label = new Label();
-            visitJumpInsn(IF_ICMPNE, label);
+            Label label = null;
+            if (onBeforeBlockEnd == null || secondBlock) {
+                label = new Label();
+                visitJumpInsn(IF_ICMPNE, label);
+            } else {
+                // reuse onBeforeBlockEnd label
+                visitJumpInsn(IF_ICMPNE, onBeforeBlockEnd);
+            }
             // the only reason prevNestingGroupId is -1 here is because no thread context at the
             // start of the method
             checkNotNull(threadContextLocal);
@@ -568,10 +577,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
             mv.visitLdcInsn(nestingGroupId);
             visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                     "setCurrentNestingGroupId", "(I)V", true);
-            visitLabel(label);
+            if (label != null) {
+                visitLabel(label);
+            }
         }
-        String suppressionKey = advice.pointcut().suppressionKey();
-        if (advice.hasBindOptionalThreadContext() && !suppressionKey.isEmpty()) {
+        if (secondBlock) {
             // need to check if transaction was just started in @OnBefore and update its
             // currentSuppressionKeyId
 
@@ -579,8 +589,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
             checkNotNull(prevSuppressionKeyIdLocal);
             loadLocal(prevSuppressionKeyIdLocal);
             visitIntInsn(BIPUSH, -1);
-            Label label = new Label();
-            visitJumpInsn(IF_ICMPNE, label);
+            Label label = null;
+            if (onBeforeBlockEnd == null) {
+                label = new Label();
+                visitJumpInsn(IF_ICMPNE, label);
+            } else {
+                // reuse onBeforeBlockEnd label
+                visitJumpInsn(IF_ICMPNE, onBeforeBlockEnd);
+            }
             // the only reason prevSuppressionKeyId is -1 here is because no thread context at the
             // start of the method
             checkNotNull(threadContextLocal);
@@ -593,7 +609,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
             mv.visitLdcInsn(suppressionKeyId);
             visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                     "setCurrentSuppressionKeyId", "(I)V", true);
-            visitLabel(label);
+            if (label != null) {
+                visitLabel(label);
+            }
         }
         if (onBeforeBlockEnd != null) {
             visitLabel(onBeforeBlockEnd);
