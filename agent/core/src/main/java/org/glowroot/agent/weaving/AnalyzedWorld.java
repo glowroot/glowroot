@@ -139,11 +139,6 @@ public class AnalyzedWorld {
         return getSuperClasses(className, loader, parseContext);
     }
 
-    AnalyzedClass getAnalyzedClass(String className, @Nullable ClassLoader loader)
-            throws ClassNotFoundException, IOException {
-        return getOrCreateAnalyzedClass(className, loader);
-    }
-
     List<Advice> mergeInstrumentationAnnotations(List<Advice> advisors, byte[] classBytes,
             @Nullable ClassLoader loader, String className) {
         // TODO after removing deprecated @Instrument, change marker to

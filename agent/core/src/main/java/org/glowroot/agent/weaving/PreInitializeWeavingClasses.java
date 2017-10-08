@@ -326,6 +326,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ClassLoaders");
         types.add("org.glowroot.agent.weaving.ClassLoaders$LazyDefinedClass");
         types.add("org.glowroot.agent.weaving.ClassNames");
+        types.add("org.glowroot.agent.weaving.FrameDeduppingMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$ActiveWeaving");
         types.add("org.glowroot.agent.weaving.Weaver$FelixOsgiHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$FelixOsgiHackMethodVisitor");
@@ -373,7 +374,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinClass");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinMethod");
         types.add("org.glowroot.agent.weaving.Weaver");
-        types.add("org.glowroot.agent.weaving.Weaver$ComputeFramesClassWriter");
         types.add("org.glowroot.agent.weaving.Weaver$JSRInlinerClassVisitor");
         types.add("org.glowroot.agent.weaving.WeavingClassFileTransformer");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor");
@@ -415,7 +415,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Opcodes");
         types.add("org.objectweb.asm.Type");
         types.add("org.objectweb.asm.TypePath");
-        types.add("org.objectweb.asm.TypeReference");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
         types.add("org.objectweb.asm.commons.AnnotationRemapper");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
@@ -430,16 +429,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.signature.SignatureReader");
         types.add("org.objectweb.asm.signature.SignatureVisitor");
         types.add("org.objectweb.asm.signature.SignatureWriter");
-        types.add("org.objectweb.asm.tree.analysis.Analyzer");
-        types.add("org.objectweb.asm.tree.analysis.AnalyzerException");
-        types.add("org.objectweb.asm.tree.analysis.BasicInterpreter");
-        types.add("org.objectweb.asm.tree.analysis.BasicValue");
-        types.add("org.objectweb.asm.tree.analysis.BasicVerifier");
-        types.add("org.objectweb.asm.tree.analysis.Frame");
-        types.add("org.objectweb.asm.tree.analysis.Interpreter");
-        types.add("org.objectweb.asm.tree.analysis.SimpleVerifier");
-        types.add("org.objectweb.asm.tree.analysis.Subroutine");
-        types.add("org.objectweb.asm.tree.analysis.Value");
         types.add("org.objectweb.asm.tree.AbstractInsnNode");
         types.add("org.objectweb.asm.tree.AnnotationNode");
         types.add("org.objectweb.asm.tree.ClassNode");
@@ -474,18 +463,14 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.tree.TypeAnnotationNode");
         types.add("org.objectweb.asm.tree.TypeInsnNode");
         types.add("org.objectweb.asm.tree.VarInsnNode");
-        types.add("org.objectweb.asm.util.CheckAnnotationAdapter");
-        types.add("org.objectweb.asm.util.CheckClassAdapter");
-        types.add("org.objectweb.asm.util.CheckFieldAdapter");
-        types.add("org.objectweb.asm.util.CheckMethodAdapter");
-        types.add("org.objectweb.asm.util.CheckMethodAdapter$1");
-        types.add("org.objectweb.asm.util.CheckModuleAdapter");
+        types.add("org.objectweb.asm.util.ASMifiable");
+        types.add("org.objectweb.asm.util.ASMifier");
         types.add("org.objectweb.asm.util.Printer");
-        types.add("org.objectweb.asm.util.Textifiable");
-        types.add("org.objectweb.asm.util.Textifier");
         types.add("org.objectweb.asm.util.TraceAnnotationVisitor");
+        types.add("org.objectweb.asm.util.TraceClassVisitor");
+        types.add("org.objectweb.asm.util.TraceFieldVisitor");
         types.add("org.objectweb.asm.util.TraceMethodVisitor");
-        types.add("org.objectweb.asm.util.TraceSignatureVisitor");
+        types.add("org.objectweb.asm.util.TraceModuleVisitor");
         return types;
     }
 

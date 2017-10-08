@@ -56,7 +56,6 @@ public class JSRInlinerAdapter {
 /* ========================================================================== */
 package org.objectweb.asm.util;
 
-public class CheckClassAdapter {
-    public static void verify(ClassReader cr, @Nullable ClassLoader loader, boolean dump,
-            PrintWriter pw);
+public class TraceClassVisitor {
+    public TraceClassVisitor(@Nullable ClassVisitor cv, Printer p, PrintWriter pw);
 }

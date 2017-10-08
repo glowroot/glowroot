@@ -30,7 +30,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
@@ -45,7 +44,8 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
-import org.objectweb.asm.util.CheckClassAdapter;
+import org.objectweb.asm.util.ASMifier;
+import org.objectweb.asm.util.TraceClassVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +59,6 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
-import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -71,7 +70,8 @@ public class Weaver {
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 
     // useful for debugging java.lang.VerifyErrors
-    private static final boolean VERIFY_WEAVING = Boolean.getBoolean("glowroot.weaving.verify");
+    private static final @Nullable String DEBUG_CLASS_NAME =
+            System.getProperty("glowroot.weaving.debugClassName");
 
     private final Supplier<List<Advice>> advisors;
     private final ImmutableList<ShimType> shimTypes;
@@ -167,18 +167,16 @@ public class Weaver {
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         byte[] maybeProcessedBytes = null;
         if (className.equals("org/apache/felix/framework/BundleWiringImpl")) {
-            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
-                    loader, codeSource, className);
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals("org/jboss/system/server/ServerImpl")) {
-            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
-                    loader, codeSource, className);
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBoss4HackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
@@ -188,20 +186,7 @@ public class Weaver {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
             return maybeProcessedBytes;
         }
-        // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
-        //
-        // "Classfiles with version number 51 are exclusively verified using the type-checking
-        // verifier, and thus the methods must have StackMapTable attributes when appropriate.
-        // For classfiles with version 50, the Hotspot JVM would (and continues to) failover to
-        // the type-inferencing verifier if the stackmaps in the file were missing or incorrect.
-        // This failover behavior does not occur for classfiles with version 51 (the default
-        // version for Java SE 7).
-        // Any tool that modifies bytecode in a version 51 classfile must be sure to update the
-        // stackmap information to be consistent with the bytecode in order to pass
-        // verification."
-        //
-        ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
-                loader, codeSource, className);
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         WeavingClassVisitor cv =
                 new WeavingClassVisitor(cw, loader, classAnalyzer.getAnalyzedClass(),
                         classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(),
@@ -210,7 +195,7 @@ public class Weaver {
         ClassReader cr =
                 new ClassReader(maybeProcessedBytes == null ? classBytes : maybeProcessedBytes);
         try {
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
         } catch (RuntimeException e) {
             logger.error("unable to weave {}: {}", className, e.getMessage(), e);
             try {
@@ -223,10 +208,34 @@ public class Weaver {
             return null;
         }
         byte[] transformedBytes = cw.toByteArray();
-        if (VERIFY_WEAVING) {
-            verify(transformedBytes, loader, classBytes, className);
+        if (className.equals(DEBUG_CLASS_NAME)) {
+            try {
+                File tempFile = File.createTempFile("glowroot-transformed-", ".class");
+                Files.write(transformedBytes, tempFile);
+                logger.info("class file for {} (transformed) written to: {}", className,
+                        tempFile.getAbsolutePath());
+            } catch (IOException e) {
+                logger.warn(e.getMessage(), e);
+            }
+            logger.info("ASM for {} (transformed):\n{}", className, toASM(transformedBytes));
+
+            ClassReader cr2 = new ClassReader(transformedBytes);
+            ClassWriter cw2 = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+            cr2.accept(cw2, ClassReader.SKIP_FRAMES);
+            logger.info("ASM for {} (transformed + COMPUTE_FRAMES):\n{}", className,
+                    toASM(cw2.toByteArray()));
         }
         return transformedBytes;
+    }
+
+    private String toASM(byte[] transformedBytes) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ClassReader cr = new ClassReader(transformedBytes);
+        TraceClassVisitor tcv = new TraceClassVisitor(null, new ASMifier(), pw);
+        cr.accept(tcv, ClassReader.EXPAND_FRAMES);
+        pw.close();
+        return sw.toString();
     }
 
     private void checkForDeadlockedActiveWeaving(List<Long> activeWeavingThreadIds) {
@@ -257,42 +266,6 @@ public class Weaver {
         } finally {
             weavingDisabledForLoggingDeadlock = false;
         }
-    }
-
-    private static void verify(byte[] transformedBytes, @Nullable ClassLoader loader,
-            byte[] originalBytes, String className) {
-        String originalBytesVerifyError = verify(originalBytes, loader);
-        if (!originalBytesVerifyError.isEmpty()) {
-            // not much to do if original byte code fails to verify
-            logger.debug("class verify error for original bytecode\n{}", originalBytesVerifyError);
-            return;
-        }
-        String transformedBytesVerifyError = verify(transformedBytes, loader);
-        if (!transformedBytesVerifyError.isEmpty()) {
-            logger.error("class verify error for transformed bytecode\n:{}",
-                    transformedBytesVerifyError);
-            try {
-                File originalBytesFile =
-                        getTempFile(className, "glowroot-verify-error-", "-original.class");
-                Files.write(originalBytes, originalBytesFile);
-                logger.error("wrote original bytecode to: {}", originalBytesFile.getAbsolutePath());
-                File transformedBytesFile =
-                        getTempFile(className, "glowroot-verify-error-", "-transformed.class");
-                Files.write(transformedBytes, transformedBytesFile);
-                logger.error("wrote transformed bytecode to: {}",
-                        transformedBytesFile.getAbsolutePath());
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    private static String verify(byte[] bytes, @Nullable ClassLoader loader) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        CheckClassAdapter.verify(new ClassReader(bytes), loader, false, pw);
-        pw.close();
-        return sw.toString();
     }
 
     private static File getTempFile(String className, String prefix, String suffix) {
@@ -374,146 +347,6 @@ public class Weaver {
             MethodVisitor mv =
                     checkNotNull(cv).visitMethod(access, name, desc, signature, exceptions);
             return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
-        }
-    }
-
-    @VisibleForTesting
-    static class ComputeFramesClassWriter extends ClassWriter {
-
-        private final AnalyzedWorld analyzedWorld;
-        private final @Nullable ClassLoader loader;
-        private final ParseContext parseContext;
-
-        public ComputeFramesClassWriter(int flags, AnalyzedWorld analyzedWorld,
-                @Nullable ClassLoader loader, @Nullable CodeSource codeSource, String className) {
-            super(flags);
-            this.analyzedWorld = analyzedWorld;
-            this.loader = loader;
-            this.parseContext = ImmutableParseContext.of(className, codeSource);
-        }
-
-        // implements logic similar to org.objectweb.asm.ClassWriter.getCommonSuperClass()
-        @Override
-        protected String getCommonSuperClass(String type1, String type2) {
-            if (type1.equals("java/lang/Object") || type2.equals("java/lang/Object")) {
-                return "java/lang/Object";
-            }
-            try {
-                return getCommonSuperClassInternal(type1, type2);
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                return "java/lang/Object";
-            }
-        }
-
-        private String getCommonSuperClassInternal(String type1, String type2) throws IOException {
-            AnalyzedClass analyzedClass1;
-            try {
-                analyzedClass1 =
-                        analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type1), loader);
-            } catch (ClassNotFoundException e) {
-                // log at debug level only since this code will fail anyways if it is actually used
-                // at runtime since type doesn't exist
-                logger.debug("type {} not found while parsing type {}", type1, parseContext, e);
-                return "java/lang/Object";
-            }
-            AnalyzedClass analyzedClass2;
-            try {
-                analyzedClass2 =
-                        analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type2), loader);
-            } catch (ClassNotFoundException e) {
-                // log at debug level only since this code will fail anyways if it is actually used
-                // at runtime since type doesn't exist
-                logger.debug("type {} not found while parsing type {}", type2, parseContext, e);
-                return "java/lang/Object";
-            }
-            return getCommonSuperClass(analyzedClass1, analyzedClass2, type1, type2);
-        }
-
-        private String getCommonSuperClass(AnalyzedClass analyzedClass1,
-                AnalyzedClass analyzedClass2, String type1, String type2) throws IOException {
-            if (isAssignableFrom(analyzedClass1.name(), analyzedClass2)) {
-                return type1;
-            }
-            if (isAssignableFrom(analyzedClass2.name(), analyzedClass1)) {
-                return type2;
-            }
-            if (analyzedClass1.isInterface() || analyzedClass2.isInterface()) {
-                return "java/lang/Object";
-            }
-            return getCommonSuperClass(analyzedClass1, analyzedClass2);
-        }
-
-        private String getCommonSuperClass(AnalyzedClass analyzedClass1,
-                AnalyzedClass analyzedClass2) throws IOException {
-            // climb analyzedClass1 super class hierarchy and check if any of them are assignable
-            // from analyzedClass2
-            String superName = analyzedClass1.superName();
-            while (superName != null) {
-                if (isAssignableFrom(superName, analyzedClass2)) {
-                    return ClassNames.toInternalName(superName);
-                }
-                try {
-                    AnalyzedClass superAnalyzedClass =
-                            analyzedWorld.getAnalyzedClass(superName, loader);
-                    superName = superAnalyzedClass.superName();
-                } catch (ClassNotFoundException e) {
-                    // log at debug level only since this code must not be getting used anyways, as
-                    // it would fail on execution since the type doesn't exist
-                    logger.debug("type {} not found while parsing type {}", superName, parseContext,
-                            e);
-                    return "java/lang/Object";
-                }
-            }
-            return "java/lang/Object";
-        }
-
-        private boolean isAssignableFrom(String possibleSuperClassName, AnalyzedClass analyzedClass)
-                throws IOException {
-            if (analyzedClass.name().equals(possibleSuperClassName)) {
-                return true;
-            }
-            if (isAssignableFromInterfaces(possibleSuperClassName, analyzedClass)) {
-                return true;
-            }
-            String superName = analyzedClass.superName();
-            if (superName == null) {
-                return false;
-            }
-            return isAssignableFromSuperClass(possibleSuperClassName, superName);
-        }
-
-        private boolean isAssignableFromInterfaces(String possibleSuperClassName,
-                AnalyzedClass analyzedClass) throws IOException {
-            for (String interfaceName : analyzedClass.interfaceNames()) {
-                try {
-                    AnalyzedClass interfaceAnalyzedClass =
-                            analyzedWorld.getAnalyzedClass(interfaceName, loader);
-                    if (isAssignableFrom(possibleSuperClassName, interfaceAnalyzedClass)) {
-                        return true;
-                    }
-                } catch (ClassNotFoundException e) {
-                    // log at debug level only since this code must not be getting used anyways, as
-                    // it would fail on execution since the type doesn't exist
-                    logger.debug("type {} not found while parsing type {}", interfaceName,
-                            parseContext, e);
-                }
-            }
-            return false;
-        }
-
-        private boolean isAssignableFromSuperClass(String possibleSuperClassName, String superName)
-                throws IOException {
-            try {
-                AnalyzedClass superAnalyzedClass =
-                        analyzedWorld.getAnalyzedClass(superName, loader);
-                return isAssignableFrom(possibleSuperClassName, superAnalyzedClass);
-            } catch (ClassNotFoundException e) {
-                // log at debug level only since this code must not be getting used anyways, as it
-                // would fail on execution since the type doesn't exist
-                logger.debug("type {} not found while parsing type {}", superName, parseContext, e);
-                return false;
-            }
         }
     }
 
