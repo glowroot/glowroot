@@ -893,12 +893,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void loadMethodName() {
-        if (name.contains("$glowroot$timer$")) {
-            // strip off internal timer identifier from method name
-            visitLdcInsn(name.substring(0, name.indexOf("$glowroot$timer$")));
-        } else {
-            visitLdcInsn(name);
-        }
+        visitLdcInsn(name);
     }
 
     private void loadTraveler(@Nullable Integer travelerLocal, Type adviceType,
