@@ -36,7 +36,6 @@ import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAuxThreadContext;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -48,16 +47,16 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     private @MonotonicNonNull ThreadContextImpl threadContext;
 
     private final TransactionServiceImpl transactionService;
-    private final Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder;
+    private final ThreadContextThreadLocal.Holder threadContextHolder;
 
     @UsedByGeneratedBytecode
     public static OptionalThreadContextImpl create(TransactionServiceImpl transactionService,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder) {
         return new OptionalThreadContextImpl(transactionService, threadContextHolder);
     }
 
     private OptionalThreadContextImpl(TransactionServiceImpl transactionService,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder) {
         this.transactionService = transactionService;
         this.threadContextHolder = threadContextHolder;
     }

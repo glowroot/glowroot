@@ -25,7 +25,6 @@ import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 
 import static org.glowroot.agent.util.Checkers.castInitialized;
 
@@ -88,7 +87,7 @@ class AuxThreadContextImpl implements AuxThreadContext {
     }
 
     private TraceEntry start(boolean completeAsyncTransaction) {
-        Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder =
+        ThreadContextThreadLocal.Holder threadContextHolder =
                 transactionRegistry.getCurrentThreadContextHolder();
         ThreadContextImpl context = threadContextHolder.get();
         if (context != null) {

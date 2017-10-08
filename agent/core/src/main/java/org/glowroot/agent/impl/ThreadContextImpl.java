@@ -53,7 +53,6 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.model.ServiceCallCollector;
@@ -112,7 +111,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private final Ticker ticker;
 
-    private final Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder;
+    private final ThreadContextThreadLocal.Holder threadContextHolder;
 
     private @Nullable ServletRequestInfo servletRequestInfo;
 
@@ -134,7 +133,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             TimerName rootTimerName, long startTick, boolean captureThreadStats,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             boolean limitExceededAuxThreadContext, Ticker ticker,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
+            ThreadContextThreadLocal.Holder threadContextHolder,
             @Nullable ServletRequestInfo servletRequestInfo) {
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;

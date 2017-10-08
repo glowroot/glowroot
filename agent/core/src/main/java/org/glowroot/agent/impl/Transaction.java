@@ -68,7 +68,6 @@ import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.model.ServiceCallCollector;
@@ -212,7 +211,7 @@ public class Transaction {
             CompletionCallback completionCallback, Ticker ticker,
             TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService,
             ConfigService configService, UserProfileScheduler userProfileScheduler,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder) {
         this.startTime = startTime;
         this.startTick = startTick;
         this.transactionType = transactionType;
@@ -651,7 +650,7 @@ public class Transaction {
     @Nullable
     ThreadContextImpl startAuxThreadContext(@Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, TimerName auxTimerName,
-            long startTick, Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
+            long startTick, ThreadContextThreadLocal.Holder threadContextHolder,
             @Nullable ServletRequestInfo servletRequestInfo,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         ThreadContextImpl auxThreadContext;
@@ -748,7 +747,7 @@ public class Transaction {
 
     TraceEntryImpl startInnerTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder) {
         return transactionService.startTransaction(transactionType, transactionName,
                 messageSupplier, timerName, threadContextHolder);
     }

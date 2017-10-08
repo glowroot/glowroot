@@ -17,8 +17,6 @@ package org.glowroot.agent.impl;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.agent.plugin.api.util.FastThreadLocal;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
@@ -32,8 +30,8 @@ public class TransactionRegistry {
             new IterableWithSelfRemovableEntries<Transaction>();
 
     // active thread context being executed by the current thread
-    private final FastThreadLocal</*@Nullable*/ ThreadContextImpl> currentThreadContext =
-            new FastThreadLocal</*@Nullable*/ ThreadContextImpl>();
+    private final ThreadContextThreadLocal currentThreadContext =
+            new ThreadContextThreadLocal();
 
     public TransactionRegistry() {
         TransactionRegistryHolder.transactionRegistry = castInitialized(this);
@@ -49,7 +47,7 @@ public class TransactionRegistry {
     }
 
     @UsedByGeneratedBytecode
-    public Holder</*@Nullable*/ ThreadContextImpl> getCurrentThreadContextHolder() {
+    public ThreadContextThreadLocal.Holder getCurrentThreadContextHolder() {
         return currentThreadContext.getHolder();
     }
 

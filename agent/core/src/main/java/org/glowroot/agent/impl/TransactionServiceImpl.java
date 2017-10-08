@@ -26,7 +26,6 @@ import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.util.Clock;
@@ -80,7 +79,7 @@ public class TransactionServiceImpl implements ConfigListener {
 
     TraceEntryImpl startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder) {
         // ensure visibility of recent configuration updates
         configService.readMemoryBarrier();
         long startTick = ticker.read();
@@ -101,7 +100,7 @@ public class TransactionServiceImpl implements ConfigListener {
             @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable ServletRequestInfo servletRequestInfo,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder) {
         long startTick = ticker.read();
         TimerName auxThreadTimerName = timerNameCache.getAuxThreadTimerName();
         return transaction.startAuxThreadContext(parentTraceEntry, parentThreadContextPriorEntry,

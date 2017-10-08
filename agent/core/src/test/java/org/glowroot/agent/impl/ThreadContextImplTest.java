@@ -24,7 +24,6 @@ import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,8 +43,8 @@ public class ThreadContextImplTest {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerNameImpl rootTimerName = mock(TimerNameImpl.class);
         Ticker ticker = mock(Ticker.class);
-        @SuppressWarnings("unchecked")
-        Holder<ThreadContextImpl> threadContextHolder = mock(Holder.class);
+        ThreadContextThreadLocal.Holder threadContextHolder =
+                mock(ThreadContextThreadLocal.Holder.class);
         threadContext = new ThreadContextImpl(transaction, null, null, messageSupplier,
                 rootTimerName, 0, false, null, false, ticker, threadContextHolder, null);
     }

@@ -38,6 +38,7 @@ import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.impl.OptionalThreadContextImpl;
 import org.glowroot.agent.impl.ServiceRegistryImpl;
 import org.glowroot.agent.impl.ThreadContextImpl;
+import org.glowroot.agent.impl.ThreadContextThreadLocal;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionServiceImpl;
 import org.glowroot.agent.model.ThreadContextPlus;
@@ -202,7 +203,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         // this is needed to prevent these thread locals retaining the IsolatedWeavingClassLoader
         // and causing PermGen OOM during maven test
         if (name.equals(FastThreadLocal.class.getName())
-                || name.equals(FastThreadLocal.class.getName() + "$Holder")) {
+                || name.equals(FastThreadLocal.class.getName() + "$Holder")
+                || name.equals(ThreadContextThreadLocal.class.getName())
+                || name.equals(ThreadContextThreadLocal.class.getName() + "$Holder")) {
             return true;
         }
         if (name.equals(Glowroot.class.getName())) {

@@ -41,12 +41,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.impl.OptionalThreadContextImpl;
+import org.glowroot.agent.impl.ThreadContextImpl;
+import org.glowroot.agent.impl.ThreadContextThreadLocal;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionRegistry.TransactionRegistryHolder;
 import org.glowroot.agent.impl.TransactionServiceImpl;
 import org.glowroot.agent.impl.TransactionServiceImpl.TransactionServiceHolder;
 import org.glowroot.agent.model.ThreadContextPlus;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
@@ -69,15 +70,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private static final Type transactionRegistryHolderType =
             Type.getType(TransactionRegistryHolder.class);
     private static final Type transactionRegistryType = Type.getType(TransactionRegistry.class);
-    private static final Type fastThreadLocalHolderType =
-            Type.getType(FastThreadLocal.Holder.class);
+    private static final Type fastThreadContextThreadLocalHolderType =
+            Type.getType(ThreadContextThreadLocal.Holder.class);
     private static final Type transactionServiceHolderType =
             Type.getType(TransactionServiceHolder.class);
     private static final Type transactionServiceImplType =
             Type.getType(TransactionServiceImpl.class);
+    private static final Type threadContextImplType = Type.getType(ThreadContextImpl.class);
     private static final Type optionalThreadContextImplType =
             Type.getType(OptionalThreadContextImpl.class);
-
     private static final Type threadContextPlusType = Type.getType(ThreadContextPlus.class);
 
     // starts at 1 since 0 is used for "no nesting group"
@@ -349,7 +350,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 && threadContextHolderLocal == null) {
             // need to define thread context local var outside of any branches,
             // but also don't want to load ThreadContext if enabledLocal exists and is false
-            threadContextHolderLocal = newLocal(fastThreadLocalHolderType);
+            threadContextHolderLocal = newLocal(fastThreadContextThreadLocalHolderType);
             visitInsn(ACONST_NULL);
             storeLocal(threadContextHolderLocal);
             threadContextLocal = newLocal(threadContextPlusType);
@@ -395,8 +396,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
             dup();
             checkNotNull(threadContextHolderLocal);
             storeLocal(threadContextHolderLocal);
-            visitMethodInsn(INVOKEVIRTUAL, fastThreadLocalHolderType.getInternalName(), "get",
-                    "()" + objectType.getDescriptor(), false);
+            visitMethodInsn(INVOKEVIRTUAL, fastThreadContextThreadLocalHolderType.getInternalName(),
+                    "get", "()" + threadContextImplType.getDescriptor(), false);
             dup();
             checkNotNull(threadContextLocal);
             storeLocal(threadContextLocal);
@@ -466,8 +467,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
         visitMethodInsn(INVOKESTATIC, transactionRegistryHolderType.getInternalName(),
                 "getTransactionRegistry", "()" + transactionRegistryType.getDescriptor(), false);
         visitMethodInsn(INVOKEVIRTUAL, transactionRegistryType.getInternalName(),
-                "getCurrentThreadContextHolder", "()" + fastThreadLocalHolderType.getDescriptor(),
-                false);
+                "getCurrentThreadContextHolder",
+                "()" + fastThreadContextThreadLocalHolderType.getDescriptor(), false);
     }
 
     @RequiresNonNull("threadContextLocal")
@@ -985,8 +986,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
         storeLocal(threadContextHolderLocal);
         visitLabel(label);
         loadLocal(threadContextHolderLocal);
-        visitMethodInsn(INVOKEVIRTUAL, fastThreadLocalHolderType.getInternalName(), "get",
-                "()" + objectType.getDescriptor(), false);
+        visitMethodInsn(INVOKEVIRTUAL, fastThreadContextThreadLocalHolderType.getInternalName(),
+                "get", "()" + threadContextImplType.getDescriptor(), false);
         dup();
         storeLocal(threadContextLocal);
         Label label2 = new Label();
@@ -996,7 +997,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         loadLocal(threadContextHolderLocal);
         visitMethodInsn(INVOKESTATIC, optionalThreadContextImplType.getInternalName(), "create",
                 "(" + transactionServiceImplType.getDescriptor()
-                        + fastThreadLocalHolderType.getDescriptor() + ")"
+                        + fastThreadContextThreadLocalHolderType.getDescriptor() + ")"
                         + optionalThreadContextImplType.getDescriptor(),
                 false);
         storeLocal(threadContextLocal);

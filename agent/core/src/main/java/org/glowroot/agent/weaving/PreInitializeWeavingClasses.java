@@ -260,6 +260,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.impl.OptionalThreadContextImpl");
         types.add("org.glowroot.agent.impl.NestedTimerMap");
         types.add("org.glowroot.agent.impl.ThreadContextImpl");
+        types.add("org.glowroot.agent.impl.ThreadContextThreadLocal");
+        types.add("org.glowroot.agent.impl.ThreadContextThreadLocal$Holder");
         types.add("org.glowroot.agent.impl.TimerImpl");
         types.add("org.glowroot.agent.impl.TransactionRegistry");
         types.add("org.glowroot.agent.impl.TransactionRegistry$TransactionRegistryHolder");
@@ -275,8 +277,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.plugin.api.Timer");
         types.add("org.glowroot.agent.plugin.api.TimerName");
         types.add("org.glowroot.agent.plugin.api.config.ConfigListener");
-        types.add("org.glowroot.agent.plugin.api.util.FastThreadLocal");
-        types.add("org.glowroot.agent.plugin.api.util.FastThreadLocal$Holder");
         types.add("org.glowroot.agent.plugin.api.weaving.BindClassMeta");
         types.add("org.glowroot.agent.plugin.api.weaving.BindMethodMeta");
         types.add("org.glowroot.agent.plugin.api.weaving.BindMethodName");

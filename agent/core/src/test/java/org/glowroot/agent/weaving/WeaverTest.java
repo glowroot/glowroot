@@ -30,10 +30,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.impl.ThreadContextImpl;
+import org.glowroot.agent.impl.ThreadContextThreadLocal;
 import org.glowroot.agent.impl.TimerNameCache;
 import org.glowroot.agent.impl.TransactionRegistry;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.OptionalReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -1016,7 +1015,7 @@ public class WeaverTest {
                 ImmutableList.<ShimType>of(), ImmutableList.<MixinType>of());
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
         when(transactionRegistry.getCurrentThreadContextHolder())
-                .thenReturn(new FastThreadLocal<ThreadContextImpl>().getHolder());
+                .thenReturn(new ThreadContextThreadLocal().getHolder());
         Weaver weaver = new Weaver(advisorsSupplier, ImmutableList.<ShimType>of(),
                 ImmutableList.<MixinType>of(), analyzedWorld, transactionRegistry,
                 Ticker.systemTicker(), new TimerNameCache(), mock(ConfigService.class));
@@ -1730,7 +1729,7 @@ public class WeaverTest {
         AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes);
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
         when(transactionRegistry.getCurrentThreadContextHolder())
-                .thenReturn(new FastThreadLocal<ThreadContextImpl>().getHolder());
+                .thenReturn(new ThreadContextThreadLocal().getHolder());
         Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
                 transactionRegistry, Ticker.systemTicker(), new TimerNameCache(),
                 mock(ConfigService.class));
@@ -1770,7 +1769,7 @@ public class WeaverTest {
                 new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes);
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
         when(transactionRegistry.getCurrentThreadContextHolder())
-                .thenReturn(new FastThreadLocal<ThreadContextImpl>().getHolder());
+                .thenReturn(new ThreadContextThreadLocal().getHolder());
         Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
                 transactionRegistry, Ticker.systemTicker(), new TimerNameCache(),
                 mock(ConfigService.class));
