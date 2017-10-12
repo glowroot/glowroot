@@ -5,7 +5,7 @@
 
   <groupId>org.glowroot</groupId>
   <artifactId>glowroot-parent</artifactId>
-  <version>0.9.25</version>
+  <version>0.9.26-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Glowroot Parent Project</name>
