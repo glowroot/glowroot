@@ -88,14 +88,6 @@ glowroot.controller('TransactionTabCtrl', [
 
     var initialStateChangeSuccess = true;
     $scope.$on('$stateChangeSuccess', function () {
-      // don't let the active tab selection get out of sync (which can happen after using the back button)
-      var activeElement = document.activeElement;
-      if (activeElement && $(activeElement).closest('.gt-transaction-tabs').length) {
-        var ngHref = activeElement.getAttribute('ng-href');
-        if (ngHref && ngHref !== $location.url().substring(1)) {
-          activeElement.blur();
-        }
-      }
       if ($scope.range.last && !initialStateChangeSuccess) {
         $timeout(function () {
           // slight delay to de-prioritize summaries data request

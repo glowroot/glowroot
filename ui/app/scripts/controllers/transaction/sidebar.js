@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $ */
+/* global glowroot, angular */
 
 glowroot.controller('TransactionSidebarCtrl', [
   '$scope',
@@ -90,14 +90,6 @@ glowroot.controller('TransactionSidebarCtrl', [
 
     var initialStateChangeSuccess = true;
     $scope.$on('$stateChangeSuccess', function () {
-      // don't let the active sidebar selection get out of sync (which can happen after using the back button)
-      var activeElement = document.activeElement;
-      if (activeElement && $(activeElement).closest('.gt-sidebar').length) {
-        var gtUrl = activeElement.getAttribute('gt-url');
-        if (gtUrl && gtUrl !== $location.url()) {
-          activeElement.blur();
-        }
-      }
       if ($scope.range.last && !initialStateChangeSuccess) {
         // refresh on tab change
         $timeout(function () {
