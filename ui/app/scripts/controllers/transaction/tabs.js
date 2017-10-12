@@ -79,7 +79,7 @@ glowroot.controller('TransactionTabCtrl', [
     };
 
     var initialStateChangeSuccess = true;
-    $scope.$on('$stateChangeSuccess', function () {
+    $scope.$on('gtStateChangeSuccess', function () {
       if ($scope.range.last && !initialStateChangeSuccess) {
         $timeout(function () {
           // slight delay to de-prioritize summaries data request

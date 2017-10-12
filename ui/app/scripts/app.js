@@ -56,7 +56,7 @@ glowroot.config([
                     if (response.data.message) {
                       $rootScope.navbarErrorMessage += ': ' + response.data.message;
                     }
-                    var unregisterListener = $rootScope.$on('$stateChangeSuccess', function () {
+                    var unregisterListener = $rootScope.$on('gtStateChangeSuccess', function () {
                       $rootScope.navbarErrorMessage = '';
                       unregisterListener();
                     });
@@ -105,12 +105,13 @@ glowroot.run([
   '$rootScope',
   '$http',
   '$location',
+  '$transitions',
   '$window',
   '$state',
   '$timeout',
   'login',
   'queryStrings',
-  function ($rootScope, $http, $location, $window, $state, $timeout, login, queryStrings) {
+  function ($rootScope, $http, $location, $transitions, $window, $state, $timeout, login, queryStrings) {
 
     $rootScope.agentId = '';
 
@@ -126,6 +127,10 @@ glowroot.run([
           delete $rootScope.agentPermissions;
         }
       }
+    });
+
+    $transitions.onSuccess({}, function () {
+      $rootScope.$broadcast('gtStateChangeSuccess');
     });
 
     $rootScope.agentQueryString = function () {
@@ -222,7 +227,7 @@ glowroot.run([
             if (response.data.message) {
               $rootScope.navbarErrorMessage += ': ' + response.data.message;
             }
-            var unregisterListener = $rootScope.$on('$stateChangeSuccess', function () {
+            var unregisterListener = $rootScope.$on('gtStateChangeSuccess', function () {
               $rootScope.navbarErrorMessage = '';
               unregisterListener();
             });
@@ -352,14 +357,14 @@ glowroot.run([
             if (response.data.message) {
               $rootScope.navbarErrorMessage += ': ' + response.data.message;
             }
-            var unregisterListener = $rootScope.$on('$stateChangeSuccess', function () {
+            var unregisterListener = $rootScope.$on('gtStateChangeSuccess', function () {
               $rootScope.navbarErrorMessage = '';
               unregisterListener();
             });
           });
     }
 
-    $rootScope.$on('$stateChangeSuccess', function () {
+    $transitions.onSuccess({}, function () {
       // google analytics is enabled on https://demo.glowroot.org using the
       // system property glowroot.internal.googleAnalyticsTrackingId
       if (window.ga) {

@@ -89,7 +89,7 @@ glowroot.controller('TransactionSidebarCtrl', [
         });
 
     var initialStateChangeSuccess = true;
-    $scope.$on('$stateChangeSuccess', function () {
+    $scope.$on('gtStateChangeSuccess', function () {
       if ($scope.range.last && !initialStateChangeSuccess) {
         // refresh on tab change
         $timeout(function () {
