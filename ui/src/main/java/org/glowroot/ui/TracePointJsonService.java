@@ -203,6 +203,9 @@ class TracePointJsonService {
             for (TracePoint pendingPoint : matchingPendingPoints) {
                 insertIntoOrderedPoints(pendingPoint, orderedPoints);
             }
+            if (limit != 0 && orderedPoints.size() > limit) {
+                orderedPoints = orderedPoints.subList(0, limit);
+            }
             return new Result<TracePoint>(orderedPoints, queryResult.moreAvailable());
         }
 
