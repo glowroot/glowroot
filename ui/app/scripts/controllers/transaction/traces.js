@@ -144,26 +144,12 @@ glowroot.controller('TracesCtrl', [
             if (highlightedTraceId) {
               highlight();
             }
-            broadcastTraceTabCount();
           }, function (response) {
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
             httpErrors.handle(response, $scope);
           });
-    }
-
-    function broadcastTraceTabCount() {
-      var data = plot.getData();
-      var traceCount = data[0].data.length + data[1].data.length + data[2].data.length;
-      // parent scope can be null if user has moved on to another controller by the time http get returns
-      if ($scope.$parent) {
-        if ($scope.chartLimitExceeded) {
-          $scope.$parent.$broadcast('updateTraceTabCount', undefined);
-        } else {
-          $scope.$parent.$broadcast('updateTraceTabCount', traceCount);
-        }
-      }
     }
 
     $scope.refresh = function () {
@@ -216,7 +202,6 @@ glowroot.controller('TracesCtrl', [
           plot.setData(data);
           plot.setupGrid();
           plot.draw();
-          broadcastTraceTabCount();
           updateLocation();
         }
       });
@@ -244,7 +229,6 @@ glowroot.controller('TracesCtrl', [
           // setupGrid needs to be after setData
           plot.setupGrid();
           plot.draw();
-          broadcastTraceTabCount();
           updateLocation();
         }
       });

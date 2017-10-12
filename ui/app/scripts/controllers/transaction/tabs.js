@@ -27,7 +27,6 @@ glowroot.controller('TransactionTabCtrl', [
   'shortName',
   function ($scope, $location, $http, $timeout, $filter, queryStrings, httpErrors, shortName) {
 
-    var filteredTraceTabCount;
     var concurrentUpdateCount = 0;
 
     // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
@@ -42,16 +41,9 @@ glowroot.controller('TransactionTabCtrl', [
           }
         });
 
-    $scope.$on('updateTraceTabCount', function (event, traceCount) {
-      filteredTraceTabCount = traceCount;
-    });
-
     $scope.traceCountDisplay = function () {
       if ($scope.traceCount === undefined) {
         return '...';
-      }
-      if (filteredTraceTabCount !== undefined) {
-        return $filter('number')(filteredTraceTabCount);
       }
       return $filter('number')($scope.traceCount);
     };
@@ -121,9 +113,6 @@ glowroot.controller('TransactionTabCtrl', [
             concurrentUpdateCount--;
             if (concurrentUpdateCount) {
               return;
-            }
-            if ($scope.activeTabItem !== 'traces') {
-              filteredTraceTabCount = undefined;
             }
             $scope.traceCount = response.data;
           }, function (response) {
