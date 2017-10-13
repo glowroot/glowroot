@@ -82,9 +82,8 @@ class GrpcServer {
         // time for agents to reconnect to a new central cluster node, and for the UI to retry
         // for a few seconds if it receives a "shutting-down" response
 
-        // shutdown to prevent new grpc requests
-        server.shutdown();
-        // wait for existing grpc requests to complete
+        // TODO shutdownNow() has been needed to interrupt grpc threads since grpc-java 1.7.0
+        server.shutdownNow();
         if (!server.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Timed out waiting for grpc server to terminate");
         }

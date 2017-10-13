@@ -52,6 +52,13 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
+      <groupId>org.immutables</groupId>
+      <artifactId>android-stub</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
       <version>${asm.version}</version>

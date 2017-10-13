@@ -36,6 +36,13 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
+      <groupId>org.immutables</groupId>
+      <artifactId>android-stub</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
@@ -209,6 +216,10 @@
                 <relocation>
                   <pattern>io.grpc</pattern>
                   <shadedPattern>org.glowroot.agent.it.harness.shaded.grpc</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>io.opencensus</pattern>
+                  <shadedPattern>org.glowroot.agent.it.harness.shaded.opencensus</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>com.google.instrumentation</pattern>

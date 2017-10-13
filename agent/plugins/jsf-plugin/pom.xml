@@ -17,7 +17,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <faces.version>2.2.14</faces.version>
+    <faces.version>2.2.15</faces.version>
   </properties>
 
   <dependencies>

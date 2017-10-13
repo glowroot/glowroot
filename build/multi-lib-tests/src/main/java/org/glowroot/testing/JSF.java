@@ -96,6 +96,7 @@ public class JSF {
         run("2.2.12");
         run("2.2.13");
         run("2.2.14");
+        run("2.2.15");
     }
 
     private static void run(String version) throws Exception {

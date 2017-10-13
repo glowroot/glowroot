@@ -3,7 +3,7 @@
   "dependencies": {
     "angular": "1.6.6",
     "angular-sanitize": "1.6.6",
-    "angular-ui-bootstrap": "2.5.0",
+    "angular-ui-bootstrap": "2.5.1",
     "angular-ui-codemirror": "0.3.0",
     "angular-ui-router": "1.0.6",
     "angular-ui-select": "0.19.8",
@@ -18,7 +18,7 @@
     "fontawesome": "4.7.0",
     "handlebars": "4.0.10",
     "jquery": "3.2.1",
-    "moment": "2.18.1",
+    "moment": "2.19.1",
     "moment-timezone": "0.5.13",
     "sequeljs": "trask/sequeljs#glowroot-0.9.8",
     "spinjs": "2.3.2"

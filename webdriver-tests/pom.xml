@@ -16,8 +16,6 @@
   <description>Glowroot WebDriver Tests</description>
 
   <properties>
-    <!-- cannot upgrade to 3.6.0 due to
-      https://github.com/MachinePublishers/jBrowserDriver/pull/298 -->
     <selenium.version>3.5.3</selenium.version>
     <jetty.version>9.4.7.v20170914</jetty.version>
   </properties>
@@ -88,7 +86,7 @@
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>0.17.9</version>
+      <version>0.17.10</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->
@@ -271,13 +269,6 @@
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
       <version>3.1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-context</artifactId>
-      <version>1.6.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -55,6 +55,13 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
+      <groupId>org.immutables</groupId>
+      <artifactId>android-stub</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-buffer</artifactId>
     </dependency>

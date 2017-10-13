@@ -120,7 +120,8 @@ class GrpcServerWrapper {
             Thread.sleep(10);
         }
         checkState(downstreamService.closedByAgent);
-        server.shutdown();
+        // TODO shutdownNow() has been needed to interrupt grpc threads since grpc-java 1.7.0
+        server.shutdownNow();
         if (!server.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate channel");
         }

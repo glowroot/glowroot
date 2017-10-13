@@ -77,17 +77,16 @@
   </scm>
 
   <properties>
-    <grpc.version>1.6.1</grpc.version>
+    <grpc.version>1.7.0</grpc.version>
     <protobuf.version>3.4.0</protobuf.version>
     <protoc.version>3.4.0</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
-    <netty.version>4.1.14.Final</netty.version>
+    <netty.version>4.1.16.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <!-- immutables 2.5.5 and 2.5.6 introduce dependency on Java 7's java.util.Objects -->
-    <immutables.version>2.5.4</immutables.version>
+    <immutables.version>2.5.6</immutables.version>
     <jmh.version>1.19</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -108,6 +107,12 @@
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>builder</artifactId>
+        <version>${immutables.version}</version>
+      </dependency>
+      <dependency>
+        <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
+        <groupId>org.immutables</groupId>
+        <artifactId>android-stub</artifactId>
         <version>${immutables.version}</version>
       </dependency>
       <dependency>

@@ -64,7 +64,7 @@
     <dependency>
       <groupId>org.jgroups</groupId>
       <artifactId>jgroups</artifactId>
-      <version>4.0.6.Final</version>
+      <version>4.0.7.Final</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -75,21 +75,17 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
-      <!-- cannot upgrade to 3.6.0 due to
-        https://github.com/MachinePublishers/jBrowserDriver/pull/298 -->
       <version>3.5.3</version>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
-      <!-- cannot upgrade to 3.6.0 due to
-        https://github.com/MachinePublishers/jBrowserDriver/pull/298 -->
       <version>3.5.3</version>
     </dependency>
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>0.17.9</version>
+      <version>0.17.10</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->
@@ -108,6 +104,13 @@
       <groupId>org.immutables</groupId>
       <artifactId>serial</artifactId>
       <version>${immutables.version}</version>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
+      <groupId>org.immutables</groupId>
+      <artifactId>android-stub</artifactId>
       <!-- immutables is only needed at compile time -->
       <scope>provided</scope>
     </dependency>
