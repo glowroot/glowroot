@@ -142,13 +142,14 @@ class HttpServer {
     @RequiresNonNull("serverChannel")
     private void onBindSuccess() {
         port = ((InetSocketAddress) serverChannel.localAddress()).getPort();
+        String optionalHttps = sslContext == null ? "" : " (HTTPS)";
         if (bindAddress.equals("127.0.0.1")) {
-            startupLogger.info("UI listening on {}:{} (to access the UI from remote machines,"
+            startupLogger.info("UI listening on {}:{}{} (to access the UI from remote machines,"
                     + " change the bind address to 0.0.0.0, either in the Glowroot UI under"
                     + " Configuration > Web or directly in the admin.json file, and then restart"
-                    + " JVM to take effect)", bindAddress, port);
+                    + " JVM to take effect)", bindAddress, port, optionalHttps);
         } else {
-            startupLogger.info("UI listening on {}:{}", bindAddress, port);
+            startupLogger.info("UI listening on {}:{}{}", bindAddress, port, optionalHttps);
         }
     }
 
