@@ -1230,11 +1230,11 @@ public class SchemaUpgrade {
             sb.append("\n");
             sb.append("# default is to serve the UI over http\n");
             sb.append("# set this to \"true\" to serve the UI over https\n");
-            sb.append("# the SSL certificate and private key to be used must be placed in the same"
-                    + " directory as this\n");
+            sb.append("# the TLS/SSL certificate and private key to be used must be placed in the"
+                    + " same directory as this\n");
             sb.append("# properties file, with filenames \"certificate.pem\" and \"private.pem\","
                     + " and the private key must not\n");
-            sb.append("# have a passphrase.\n");
+            sb.append("# have a passphrase\n");
             sb.append("# (for example, a self signed certificate can be generated at the command"
                     + " line using\n");
             sb.append("# \"openssl req -new -x509 -nodes -days 365 -out certificate.pem -keyout"

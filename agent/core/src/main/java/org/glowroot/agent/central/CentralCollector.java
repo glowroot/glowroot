@@ -80,6 +80,7 @@ public class CentralCollector implements Collector {
     private volatile int nextAggregateDelayMillis;
 
     public CentralCollector(Map<String, String> properties, String collectorAddress,
+            @Nullable String collectorAuthority, File confDir, @Nullable File sharedConfDir,
             LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
             LiveTraceRepositoryImpl liveTraceRepository, AgentConfigUpdater agentConfigUpdater)
             throws Exception {
@@ -99,7 +100,8 @@ public class CentralCollector implements Collector {
         }
 
         AtomicBoolean inConnectionFailure = new AtomicBoolean();
-        centralConnection = new CentralConnection(collectorAddress, inConnectionFailure);
+        centralConnection = new CentralConnection(collectorAddress, collectorAuthority, confDir,
+                sharedConfDir, inConnectionFailure);
         collectorServiceStub = CollectorServiceGrpc.newStub(centralConnection.getChannel())
                 .withCompression("gzip");
         downstreamServiceObserver = new DownstreamServiceObserver(centralConnection,

@@ -186,7 +186,9 @@ public class MainEntryPoint {
             if (customCollector != null) {
                 startupLogger.info("using collector: {}", customCollector.getClass().getName());
             }
-            glowrootAgentInit = new NonEmbeddedGlowrootAgentInit(collectorAddress, customCollector);
+            String collectorAuthority = properties.get("glowroot.collector.authority");
+            glowrootAgentInit = new NonEmbeddedGlowrootAgentInit(collectorAddress,
+                    collectorAuthority, customCollector);
         }
         glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDir(),
                 directories.getSharedConfDir(), directories.getLogDir(), directories.getTmpDir(),

@@ -81,6 +81,11 @@
     <protobuf.version>3.4.0</protobuf.version>
     <protoc.version>3.4.0</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
+    <!-- when upgrading to netty 4.1.17.Final or later, remove workaround for
+      https://github.com/netty/netty/pull/7345 (see patched version of
+      io.netty.util.internal.NativeLibraryLoader in glowroot-agent-core, and related shading in the
+      glowroot-agent-core pom.xml, and null checker skipping of patched
+      io.netty.util.internal.NativeLibraryLoader at the bottom of this file) -->
     <netty.version>4.1.16.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
@@ -806,7 +811,7 @@
                 <!-- checker.stubs.dir needs to be absolute path since relative path will be
                   interpreted from each module directory -->
                 <arg>-Astubs=${checker.stubs.dir}</arg>
-                <arg>-AskipDefs=^org\.glowroot\.agent\.embedded\.repo\.model\.|^org\.glowroot\.agent\.it\.harness\.grpc\.|^org\.glowroot\.central\.repo\.model\.</arg>
+                <arg>-AskipDefs=^org\.glowroot\.agent\.embedded\.repo\.model\.|^org\.glowroot\.agent\.it\.harness\.grpc\.|^org\.glowroot\.central\.repo\.model\.|^io\.netty\.util\.internal\.NativeLibraryLoader</arg>
               </compilerArgs>
             </configuration>
           </plugin>

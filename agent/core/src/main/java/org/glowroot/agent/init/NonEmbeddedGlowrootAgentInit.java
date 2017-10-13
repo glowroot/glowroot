@@ -50,6 +50,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
     private final @Nullable String collectorAddress;
+    private final @Nullable String collectorAuthority;
     private final @Nullable Collector customCollector;
 
     private @MonotonicNonNull AgentModule agentModule;
@@ -60,8 +61,10 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     private @MonotonicNonNull Closeable agentDirsLockingCloseable;
 
     public NonEmbeddedGlowrootAgentInit(@Nullable String collectorAddress,
+            @Nullable String collectorAuthority,
             @Nullable Collector customCollector) {
         this.collectorAddress = collectorAddress;
+        this.collectorAuthority = collectorAuthority;
         this.customCollector = customCollector;
     }
 
@@ -108,7 +111,8 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 Collector collector;
                 if (customCollector == null) {
                     centralCollector = new CentralCollector(properties,
-                            checkNotNull(collectorAddress), agentModule.getLiveJvmService(),
+                            checkNotNull(collectorAddress), collectorAuthority, confDir,
+                            sharedConfDir, agentModule.getLiveJvmService(),
                             agentModule.getLiveWeavingService(),
                             agentModule.getLiveTraceRepository(), agentConfigUpdater);
                     collector = centralCollector;

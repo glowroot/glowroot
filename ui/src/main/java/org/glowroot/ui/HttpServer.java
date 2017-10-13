@@ -208,17 +208,16 @@ class HttpServer {
             return confFile;
         }
         if (sharedConfDir == null) {
-            throw new FileNotFoundException("https is enabled, but " + fileName
+            throw new FileNotFoundException("HTTPS is enabled, but " + fileName
                     + " was not found under '" + confDir.getAbsolutePath() + "'");
-        } else {
-            File sharedConfFile = new File(sharedConfDir, fileName);
-            if (sharedConfFile.exists()) {
-                return sharedConfFile;
-            }
-            throw new FileNotFoundException("https is enabled, but " + fileName
-                    + " was not found under either '" + confDir.getAbsolutePath() + "' or '"
-                    + sharedConfFile.getAbsolutePath() + "'");
         }
+        File sharedConfFile = new File(sharedConfDir, fileName);
+        if (sharedConfFile.exists()) {
+            return sharedConfFile;
+        }
+        throw new FileNotFoundException("HTTPS is enabled, but " + fileName
+                + " was not found under either '" + confDir.getAbsolutePath() + "' or '"
+                + sharedConfFile.getAbsolutePath() + "'");
     }
 
     private class BindEventually implements Runnable {

@@ -169,9 +169,10 @@ public class CentralModule {
                     repos.getHeartbeatDao(), alertingService);
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
-                    repos.getAgentRollupDao(), repos.getAgentConfigDao(), repos.getAggregateDao(),
-                    repos.getGaugeValueDao(), repos.getEnvironmentDao(), repos.getHeartbeatDao(),
-                    repos.getTraceDao(), centralAlertingService, clusterManager, clock, version);
+                    centralConfig.grpcTlsPort(), centralDir, repos.getAgentRollupDao(),
+                    repos.getAgentConfigDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
+                    repos.getEnvironmentDao(), repos.getHeartbeatDao(), repos.getTraceDao(),
+                    centralAlertingService, clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
                     repos.getAgentRollupDao(), repos.getAgentConfigDao(), downstreamService, clock);
@@ -548,6 +549,10 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(grpcPortText)) {
             builder.grpcPort(Integer.parseInt(grpcPortText));
         }
+        String grpcTlsPortText = props.getProperty("grpc.tlsPort");
+        if (!Strings.isNullOrEmpty(grpcTlsPortText)) {
+            builder.grpcTlsPort(Integer.parseInt(grpcTlsPortText));
+        }
         String uiBindAddress = props.getProperty("ui.bindAddress");
         if (!Strings.isNullOrEmpty(uiBindAddress)) {
             builder.uiBindAddress(uiBindAddress);
@@ -752,6 +757,11 @@ public class CentralModule {
         @Value.Default
         int grpcPort() {
             return 8181;
+        }
+
+        @Value.Default
+        int grpcTlsPort() {
+            return -1;
         }
 
         @Value.Default

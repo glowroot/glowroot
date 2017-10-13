@@ -119,6 +119,11 @@
       <artifactId>grpc-netty</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-tcnative-boringssl-static</artifactId>
+      <version>2.0.7.Final</version>
+    </dependency>
+    <dependency>
       <groupId>com.ning</groupId>
       <artifactId>compress-lzf</artifactId>
       <version>1.0.4</version>
@@ -303,6 +308,25 @@
             </configuration>
           </plugin>
           <plugin>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>io.netty</groupId>
+                      <artifactId>netty-tcnative-boringssl-static</artifactId>
+                    </artifactItem>
+                  </artifactItems>
+                  <includes>META-INF/native/*</includes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
             <artifactId>maven-shade-plugin</artifactId>
             <configuration>
               <dependencyReducedPomLocation>
@@ -335,6 +359,15 @@
                   <artifact>io.netty:netty-*</artifact>
                   <excludes>
                     <exclude>META-INF/io.netty.versions.properties</exclude>
+                    <exclude>io/netty/util/internal/NativeLibraryLoader.class</exclude>
+                    <exclude>io/netty/util/internal/NativeLibraryLoader$*.class</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>io.netty:netty-tcnative-boringssl-static</artifact>
+                  <excludes>
+                    <!-- these files need to be renamed so are pulled in below via transformers -->
+                    <exclude>META-INF/native/*</exclude>
                   </excludes>
                 </filter>
                 <filter>
@@ -608,6 +641,18 @@
               </relocations>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                  <resource>META-INF/native/liborg_glowroot_agent_shaded_netty_tcnative_linux_x86_64.so</resource>
+                  <file>${project.build.directory}/dependency/META-INF/native/libnetty_tcnative_linux_x86_64.so</file>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                  <resource>META-INF/native/liborg_glowroot_agent_shaded_netty_tcnative_osx_x86_64.jnilib</resource>
+                  <file>${project.build.directory}/dependency/META-INF/native/libnetty_tcnative_osx_x86_64.jnilib</file>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                  <resource>META-INF/native/org_glowroot_agent_shaded_netty_tcnative_windows_x86_64.dll</resource>
+                  <file>${project.build.directory}/dependency/META-INF/native/netty_tcnative_windows_x86_64.dll</file>
+                </transformer>
               </transformers>
             </configuration>
             <executions>
@@ -684,6 +729,8 @@
                   public static ** valueOf(java.lang.String);
                   }
                 </option>
+                <!-- keep all netty-tcnative classes which are used via native library -->
+                <option>-keep class org.glowroot.agent.shaded.io.netty.internal.tcnative.** { *; }</option>
               </options>
             </configuration>
             <dependencies>

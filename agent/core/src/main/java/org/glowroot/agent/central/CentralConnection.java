@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.central;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
+import javax.net.ssl.SSLException;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
@@ -36,11 +38,13 @@ import io.grpc.Attributes;
 import io.grpc.EquivalentAddressGroup;
 import io.grpc.ManagedChannel;
 import io.grpc.NameResolver;
+import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.util.RoundRobinLoadBalancerFactory;
 import io.netty.channel.EventLoopGroup;
+import io.netty.handler.ssl.SslContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +58,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 class CentralConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralConnection.class);
+
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     // back pressure on connection to the central collector
     private static final int PENDING_LIMIT = 100;
@@ -94,23 +101,40 @@ class CentralConnection {
     private volatile boolean initCallSucceeded;
     private volatile boolean closed;
 
-    CentralConnection(String collectorAddress, AtomicBoolean inConnectionFailure) {
-        List<SocketAddress> collectorAddresses = toSocketAddresses(collectorAddress);
+    CentralConnection(String collectorAddress, @Nullable String collectorAuthority, File confDir,
+            @Nullable File sharedConfDir, AtomicBoolean inConnectionFailure) throws SSLException {
+        List<InetSocketAddress> collectorAddresses = toSocketAddresses(collectorAddress);
         eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         channelExecutor =
                 Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-GRPC-Executor"));
-        channel = NettyChannelBuilder
-                .forTarget("dummy")
-                .nameResolverFactory(new SimpleNameResolverFactory(collectorAddresses))
+        NettyChannelBuilder builder = NettyChannelBuilder
+                .forTarget("dummy-target")
+                .nameResolverFactory(
+                        new SimpleNameResolverFactory(collectorAddresses, collectorAuthority))
                 .loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
                 .eventLoopGroup(eventLoopGroup)
                 .executor(channelExecutor)
-                .negotiationType(NegotiationType.PLAINTEXT)
                 // aggressive keep alive, shouldn't even be used since gauge data is sent every
                 // 5 seconds and keep alive will only kick in after 30 seconds of not hearing back
                 // from the server
-                .keepAliveTime(30, SECONDS)
-                .build();
+                .keepAliveTime(30, SECONDS);
+        File certificateFile = getCertificateFile(confDir, sharedConfDir);
+        if (certificateFile == null) {
+            channel = builder.negotiationType(NegotiationType.PLAINTEXT)
+                    .build();
+        } else {
+            startupLogger.info("using TLS");
+            if (collectorAddresses.size() > 1 && collectorAuthority == null) {
+                throw new IllegalStateException("collector.authority is required when using client"
+                        + " side load balancing to connect to a glowroot central cluster over TLS");
+            }
+            SslContext sslContext = GrpcSslContexts.forClient()
+                    .trustManager(certificateFile)
+                    .build();
+            channel = builder.sslContext(sslContext)
+                    .negotiationType(NegotiationType.TLS)
+                    .build();
+        }
         retryExecutor = Executors.newSingleThreadScheduledExecutor(
                 ThreadFactories.create("Glowroot-Collector-Retry"));
         this.inConnectionFailure = inConnectionFailure;
@@ -238,8 +262,8 @@ class CentralConnection {
         }
     }
 
-    private static List<SocketAddress> toSocketAddresses(String collectorAddress) {
-        List<SocketAddress> collectorAddresses = Lists.newArrayList();
+    private static List<InetSocketAddress> toSocketAddresses(String collectorAddress) {
+        List<InetSocketAddress> collectorAddresses = Lists.newArrayList();
         for (String addr : Splitter.on(',').trimResults().omitEmptyStrings()
                 .split(collectorAddress)) {
             int index = addr.indexOf(':');
@@ -259,6 +283,21 @@ class CentralConnection {
             collectorAddresses.add(new InetSocketAddress(host, port));
         }
         return collectorAddresses;
+    }
+
+    private static @Nullable File getCertificateFile(File confDir, @Nullable File sharedConfDir) {
+        File confFile = new File(confDir, "certificate.pem");
+        if (confFile.exists()) {
+            return confFile;
+        }
+        if (sharedConfDir == null) {
+            return null;
+        }
+        File sharedConfFile = new File(sharedConfDir, "certificate.pem");
+        if (sharedConfFile.exists()) {
+            return sharedConfFile;
+        }
+        return null;
     }
 
     private static @Nullable String getRootCauseMessage(Throwable t) {
@@ -386,15 +425,18 @@ class CentralConnection {
 
     private static class SimpleNameResolverFactory extends NameResolver.Factory {
 
-        private final List<SocketAddress> collectorAddresses;
+        private final List<InetSocketAddress> collectorAddresses;
+        private final @Nullable String collectorAuthority;
 
-        private SimpleNameResolverFactory(List<SocketAddress> collectorAddresses) {
+        private SimpleNameResolverFactory(List<InetSocketAddress> collectorAddresses,
+                @Nullable String collectorAuthority) {
             this.collectorAddresses = collectorAddresses;
+            this.collectorAuthority = collectorAuthority;
         }
 
         @Override
         public NameResolver newNameResolver(URI targetUri, Attributes params) {
-            return new SimpleNameResolver(collectorAddresses);
+            return new SimpleNameResolver(collectorAddresses, collectorAuthority);
         }
 
         @Override
@@ -405,15 +447,26 @@ class CentralConnection {
 
     private static class SimpleNameResolver extends NameResolver {
 
-        private final List<SocketAddress> collectorAddresses;
+        private final List<InetSocketAddress> collectorAddresses;
+        private final @Nullable String collectorAuthority;
 
-        private SimpleNameResolver(List<SocketAddress> collectorAddresses) {
+        private SimpleNameResolver(List<InetSocketAddress> collectorAddresses,
+                @Nullable String collectorAuthority) {
             this.collectorAddresses = collectorAddresses;
+            this.collectorAuthority = collectorAuthority;
         }
 
         @Override
         public String getServiceAuthority() {
-            return "dummy-service-authority";
+            if (collectorAuthority != null) {
+                return collectorAuthority;
+            } else if (collectorAddresses.size() == 1) {
+                return collectorAddresses.get(0).getHostName();
+            } else {
+                // this should have been thrown already above in CentralConnection constructor
+                throw new IllegalStateException("collector.authority is required when using client"
+                        + " side load balancing to connect to a glowroot central cluster");
+            }
         }
 
         @Override
