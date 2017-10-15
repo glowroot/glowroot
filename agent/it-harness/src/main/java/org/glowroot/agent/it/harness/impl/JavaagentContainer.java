@@ -163,11 +163,11 @@ public class JavaagentContainer implements Container {
         consolePipeExecutor.submit(consoleOutputPipe);
         this.process = process;
 
-        eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
+        eventLoopGroup = EventLoopGroups.create("Glowroot-IT-Harness*-GRPC-Worker-ELG");
         executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
-                        .setNameFormat("Glowroot-GRPC-Executor-%d")
+                        .setNameFormat("Glowroot-IT-Harness*-GRPC-Executor-%d")
                         .build());
         channel = NettyChannelBuilder.forAddress("localhost", javaagentServicePort)
                 .eventLoopGroup(eventLoopGroup)

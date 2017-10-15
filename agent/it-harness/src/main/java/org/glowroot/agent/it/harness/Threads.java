@@ -144,7 +144,7 @@ public class Threads {
         currentThreads.removeAll(preExistingThreads);
         for (Iterator<Thread> i = currentThreads.iterator(); i.hasNext();) {
             String threadName = i.next().getName();
-            if (threadName.startsWith("Glowroot-GRPC-")) {
+            if (threadName.startsWith("Glowroot-IT-Harness*-GRPC-")) {
                 i.remove();
             }
             if (threadName.equals("grpc-shared-destroyer-0")) {
