@@ -6,13 +6,13 @@
     keeping the same file name (glowroot.logback.xml), and glowroot will find it and use it instead
     of the glowroot.logback.xml configuration file that is inside glowroot.jar -->
 
-  <appender name="CONSOLE" class="org.glowroot.agent.shaded.qos.logback.core.ConsoleAppender">
+  <appender name="CONSOLE" class="org.glowroot.agent.shaded.ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
-  <appender name="FILE" class="org.glowroot.agent.shaded.qos.logback.core.rolling.RollingFileAppender">
-    <rollingPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.TimeBasedRollingPolicy">
+  <appender name="FILE" class="org.glowroot.agent.shaded.ch.qos.logback.core.rolling.RollingFileAppender">
+    <rollingPolicy class="org.glowroot.agent.shaded.ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>${glowroot.log.dir}/glowroot.%d{yyyy-MM-dd}.log</fileNamePattern>
       <maxHistory>7</maxHistory>
     </rollingPolicy>
@@ -26,7 +26,7 @@
   <logger name="org.glowroot.agent.shaded" level="warn" />
   <!-- this is to deal with "Sending GOAWAY failed" that occur when connection to central fails
     (which is already logged more nicely by DownstreamServiceObserver) -->
-  <logger name="org.glowroot.agent.shaded.netty.handler.codec.http2.Http2ConnectionHandler"
+  <logger name="org.glowroot.agent.shaded.io.netty.handler.codec.http2.Http2ConnectionHandler"
     level="off" />
   <root level="info">
     <appender-ref ref="CONSOLE" />
@@ -42,8 +42,8 @@
 
   <!-- to enable auditing (step 2 of 2): uncomment the lines below -->
 
-  <!--appender name="AUDIT" class="org.glowroot.agent.shaded.qos.logback.core.rolling.RollingFileAppender">
-    <rollingPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.TimeBasedRollingPolicy">
+  <!--appender name="AUDIT" class="org.glowroot.agent.shaded.ch.qos.logback.core.rolling.RollingFileAppender">
+    <rollingPolicy class="org.glowroot.agent.shaded.ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>${glowroot.log.dir}/glowroot-audit.%d{yyyy-MM-dd}.log</fileNamePattern>
       <maxHistory>30</maxHistory>
     </rollingPolicy>

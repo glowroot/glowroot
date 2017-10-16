@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 // this is needed for JRebel 6.5.0+
 // otherwise get JsonMappingException: "No serializer found for class
-// org.glowroot.agent.shaded.glowroot.common.repo.MutableTimer"
+// org.glowroot.agent.shaded.org.glowroot.common.repo.MutableTimer"
 // when viewing response time (average) page in the UI
 public class JRebelWorkaround {
 

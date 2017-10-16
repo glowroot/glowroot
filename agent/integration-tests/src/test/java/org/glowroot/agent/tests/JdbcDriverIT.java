@@ -62,7 +62,7 @@ public class JdbcDriverIT {
 
     private static boolean isShaded() {
         try {
-            Class.forName("org.glowroot.agent.shaded.slf4j.Logger");
+            Class.forName("org.glowroot.agent.shaded.org.slf4j.Logger");
             return true;
         } catch (ClassNotFoundException e) {
             return false;

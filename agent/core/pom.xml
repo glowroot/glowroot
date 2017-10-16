@@ -407,19 +407,19 @@
                   conflict, while central itself is being monitored by glowroot-agent -->
                 <relocation>
                   <pattern>org.glowroot.common</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.glowroot.common</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.org.glowroot.common</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>org.glowroot.wire.api</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.glowroot.wire.api</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.org.glowroot.wire.api</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>org.glowroot.ui</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.glowroot.ui</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.org.glowroot.ui</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>org.objectweb.asm</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.objectweb.asm</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.org.objectweb.asm</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>com.google</pattern>
@@ -427,7 +427,7 @@
                 </relocation>
                 <relocation>
                   <pattern>io.grpc</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.grpc</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.io.grpc</shadedPattern>
                 </relocation>
                 <relocation>
                   <!-- environment variable checked in io.grpc.netty.NettyChannelBuilder -->
@@ -437,27 +437,27 @@
                 </relocation>
                 <relocation>
                   <pattern>io.opencensus</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.opencensus</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.io.opencensus</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>org.HdrHistogram</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.HdrHistogram</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.org.HdrHistogram</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>com.fasterxml.jackson</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.fasterxml.jackson</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.com.fasterxml.jackson</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>io.netty</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.netty</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.io.netty</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>org.apache.commons</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.apache.commons</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.org.apache.commons</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>org.slf4j</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.slf4j</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.org.slf4j</shadedPattern>
                 </relocation>
                 <relocation>
                   <!-- this shades guava's internal use of java util logging which is needed to
@@ -473,7 +473,7 @@
                 </relocation>
                 <relocation>
                   <pattern>ch.qos.logback</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.qos.logback</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.ch.qos.logback</shadedPattern>
                 </relocation>
                 <relocation>
                   <!-- logback internal constant, see
@@ -517,7 +517,7 @@
                 </relocation>
                 <relocation>
                   <pattern>org.h2</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.h2</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.org.h2</shadedPattern>
                   <excludes>
                     <!-- these resource files are actually read from org/h2/util/data.zip whose
                       internals do not get shaded -->
@@ -557,17 +557,17 @@
                 </relocation>
                 <relocation>
                   <pattern>com.ning.compress</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.ning.compress</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.com.ning.compress</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>com.jcraft.jzlib</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.jcraft.jzlib</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.com.jcraft.jzlib</shadedPattern>
                 </relocation>
                 <relocation>
                   <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due
                     to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
                   <pattern>org.checkerframework.checker</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.checkerframework.checker</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.org.checkerframework.checker</shadedPattern>
                 </relocation>
                 <relocation>
                   <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due
@@ -581,7 +581,7 @@
                 </relocation>
                 <relocation>
                   <pattern>com.sun.mail</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.sun.mail</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.shaded.com.sun.mail</shadedPattern>
                 </relocation>
                 <relocation>
                   <rawString>true</rawString>
@@ -657,15 +657,15 @@
                 <option>-keep class org.glowroot.agent.sql.** { *; }</option>
                 <option>-keep class org.glowroot.agent.util.** { *; }</option>
                 <option>-keep class org.glowroot.agent.weaving.** { *; }</option>
-                <option>-keep class org.glowroot.agent.shaded.glowroot.common.** { *; }</option>
-                <option>-keep class org.glowroot.agent.shaded.glowroot.ui.** { *; }</option>
-                <option>-keep class org.glowroot.agent.shaded.sun.mail.smtp.** { *; }</option>
+                <option>-keep class org.glowroot.agent.shaded.org.glowroot.common.** { *; }</option>
+                <option>-keep class org.glowroot.agent.shaded.org.glowroot.ui.** { *; }</option>
+                <option>-keep class org.glowroot.agent.shaded.com.sun.mail.smtp.** { *; }</option>
                 <!-- keep all guava classes so that plugins can use them -->
                 <option>-keep class org.glowroot.agent.shaded.google.common.** { *; }</option>
                 <!-- keep all checkerframework classes so that plugins can use them (all annotation
                   classes must be available on IBM Java 1.6 SR8 and earlier due to
                   http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354) -->
-                <option>-keep class org.glowroot.agent.shaded.checkerframework.** { *; }</option>
+                <option>-keep class org.glowroot.agent.shaded.org.checkerframework.** { *; }</option>
                 <!-- keep all jsr305 classes so that plugins can use them (all annotation classes
                   must be available on IBM Java 1.6 SR8 and earlier due to
                   http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354) -->
@@ -674,7 +674,7 @@
                 <option>-keep class org.glowroot.agent.shaded.google.common.** { *; }</option>
                 <!-- keep all logback appenders -->
                 <option>
-                  -keep class * extends org.glowroot.agent.shaded.qos.logback.** { *; }
+                  -keep class * extends org.glowroot.agent.shaded.ch.qos.logback.** { *; }
                 </option>
                 <!-- keep special enumeration methods (see "Processing enumeration classes" section
                   at http://proguard.sourceforge.net/manual/examples.html) -->
