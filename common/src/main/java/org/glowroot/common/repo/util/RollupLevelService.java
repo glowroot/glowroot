@@ -50,6 +50,20 @@ public class RollupLevelService {
         return rollupConfigs.size() - 1;
     }
 
+    public int getRollupLevelForReport(long from) throws Exception {
+        long timeAgoMillis = clock.currentTimeMillis() - from;
+        List<Integer> rollupExpirationHours =
+                configRepository.getStorageConfig().rollupExpirationHours();
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        for (int i = 0; i < rollupConfigs.size() - 1; i++) {
+            int expirationHours = rollupExpirationHours.get(i);
+            if (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis) {
+                return i;
+            }
+        }
+        return rollupConfigs.size() - 1;
+    }
+
     public int getGaugeRollupLevelForView(long from, long to) throws Exception {
         long millis = to - from;
         long timeAgoMillis = clock.currentTimeMillis() - from;
@@ -68,6 +82,25 @@ public class RollupLevelService {
             expirationHours = rollupExpirationHours.get(i);
             if (millis < viewThresholdMillis * ConfigRepository.GAUGE_VIEW_THRESHOLD_MULTIPLIER
                     && (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis)) {
+                return i + 1;
+            }
+        }
+        return rollupConfigs.size();
+    }
+
+    public int getGaugeRollupLevelForReport(long from) throws Exception {
+        long timeAgoMillis = clock.currentTimeMillis() - from;
+        List<Integer> rollupExpirationHours =
+                configRepository.getStorageConfig().rollupExpirationHours();
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        // gauge point rollup level 0 shares rollup level 1's expiration
+        int expirationHours = rollupExpirationHours.get(0);
+        if (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis) {
+            return 0;
+        }
+        for (int i = 0; i < rollupConfigs.size() - 1; i++) {
+            expirationHours = rollupExpirationHours.get(i);
+            if (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis) {
                 return i + 1;
             }
         }

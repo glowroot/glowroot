@@ -150,8 +150,7 @@ class ReportJsonService {
             String gaugeName = metric.substring("gauge:".length());
             dataSeriesList = Lists.newArrayList();
             for (String agentRollupId : request.agentRollupIds()) {
-                int rollupLevel =
-                        rollupLevelService.getGaugeRollupLevelForView(from.getTime(), to.getTime());
+                int rollupLevel = rollupLevelService.getGaugeRollupLevelForReport(from.getTime());
                 // level 3 (30 min intervals) is the minimum level needed
                 rollupLevel = Math.max(rollupLevel, 3);
                 dataSeriesList.add(getDataSeriesForGauge(agentRollupId, gaugeName, from, to,
@@ -176,8 +175,7 @@ class ReportJsonService {
     private List<DataSeries> getTransactionReport(ReportRequest request, TimeZone timeZone,
             Date from, Date to, RollupCaptureTimeFn rollupCaptureTimeFn, double gapMillis)
             throws Exception {
-        int rollupLevel =
-                rollupLevelService.getRollupLevelForView(from.getTime(), to.getTime());
+        int rollupLevel = rollupLevelService.getRollupLevelForReport(from.getTime());
         // level 2 (30 min intervals) is the minimum level needed
         rollupLevel = Math.max(rollupLevel, 2);
         TransactionQuery query = ImmutableTransactionQuery.builder()
