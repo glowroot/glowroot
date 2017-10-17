@@ -153,6 +153,9 @@ class ReportJsonService {
                 int rollupLevel = rollupLevelService.getGaugeRollupLevelForReport(from.getTime());
                 // level 3 (30 min intervals) is the minimum level needed
                 rollupLevel = Math.max(rollupLevel, 3);
+                if (rollupLevel == 4) {
+                    verifyFourHourAggregateTimeZone(timeZone);
+                }
                 dataSeriesList.add(getDataSeriesForGauge(agentRollupId, gaugeName, from, to,
                         rollupLevel, rollupCaptureTimeFn, request.rollup(), timeZone, gapMillis));
             }
@@ -178,6 +181,9 @@ class ReportJsonService {
         int rollupLevel = rollupLevelService.getRollupLevelForReport(from.getTime());
         // level 2 (30 min intervals) is the minimum level needed
         rollupLevel = Math.max(rollupLevel, 2);
+        if (rollupLevel == 3) {
+            verifyFourHourAggregateTimeZone(timeZone);
+        }
         TransactionQuery query = ImmutableTransactionQuery.builder()
                 .transactionType(checkNotNull(request.transactionType()))
                 .transactionName(Strings.emptyToNull(checkNotNull(request.transactionName())))
@@ -400,6 +406,16 @@ class ReportJsonService {
             if (!authentication.isAgentPermitted(agentRollupId, permission)) {
                 throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
             }
+        }
+    }
+
+    private static void verifyFourHourAggregateTimeZone(TimeZone timeZone) {
+        boolean gmt = timeZone.getID().equals("GMT") || timeZone.getID().startsWith("GMT-")
+                || timeZone.getID().startsWith("GMT+");
+        if (!gmt || timeZone.getRawOffset() % (4 * 3600000) != 0) {
+            throw new IllegalStateException("The selected time zone is not supported because the"
+                    + " time range exceeds the configured retention for 30-minute interval data and"
+                    + " so 4-hour interval data must be used instead");
         }
     }
 

@@ -362,8 +362,7 @@ glowroot.controller('ReportAdhocCtrl', [
     });
 
     $scope.$watchGroup(['report.fromDate', 'report.toDate'], function (newValue) {
-      $scope.useFourHourAggregates = newValue[0] < new Date().getTime() - $scope.layout.rollupExpirationMillis[2]
-          && $scope.layout.rollupExpirationMillis[3] > $scope.layout.rollupExpirationMillis[2];
+      $scope.useFourHourAggregates = newValue[0] < new Date().getTime() - $scope.layout.rollupExpirationMillis[2];
       if ($scope.useFourHourAggregates) {
         $scope.rollups = [
           'Daily',
