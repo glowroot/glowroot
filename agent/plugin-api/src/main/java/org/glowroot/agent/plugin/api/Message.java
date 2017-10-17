@@ -41,8 +41,8 @@ import org.glowroot.agent.plugin.api.internal.ReadableMessage;
  * both of which can have multiple values for the same key.
  * 
  * As an extra bonus, detail map can also contain
- * org.glowroot.agent.shaded.google.common.base.Optional values which is useful for Maps that do not
- * accept null values, e.g. org.glowroot.agent.shaded.google.common.collect.ImmutableMap.
+ * org.glowroot.agent.shaded.org.google.common.base.Optional values which is useful for Maps that do
+ * not accept null values, e.g. org.glowroot.agent.shaded.org.google.common.collect.ImmutableMap.
  * 
  * The detail map does not need to be thread safe as long as it is only instantiated in response to
  * either MessageSupplier.get() or Message.getDetail() which are called by the thread that needs the

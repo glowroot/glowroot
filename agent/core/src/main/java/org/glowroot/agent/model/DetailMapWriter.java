@@ -42,8 +42,9 @@ public class DetailMapWriter {
 
     static {
         String className = Optional.class.getName();
-        if (className.startsWith("org.glowroot.agent.shaded")) {
-            className = className.replace("org.glowroot.agent.shaded", "com");
+        String shadingPrefix = "org.glowroot.agent.shaded.";
+        if (className.startsWith(shadingPrefix)) {
+            className = className.substring(shadingPrefix.length());
         }
         UNSHADED_GUAVA_OPTIONAL_CLASS_NAME = className;
     }

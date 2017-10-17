@@ -102,7 +102,7 @@
                   <relocations>
                     <relocation>
                       <pattern>com.google.common</pattern>
-                      <shadedPattern>org.glowroot.agent.shaded.google.common</shadedPattern>
+                      <shadedPattern>org.glowroot.agent.shaded.com.google.common</shadedPattern>
                     </relocation>
                     <relocation>
                       <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier

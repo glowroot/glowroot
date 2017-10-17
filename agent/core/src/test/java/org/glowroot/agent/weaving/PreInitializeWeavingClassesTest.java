@@ -61,8 +61,8 @@ public class PreInitializeWeavingClassesTest {
 
     private static String getGuavaSupplierInternalName() {
         try {
-            Class.forName("org.glowroot.agent.shaded.google.common.base.Supplier");
-            return "org/glowroot/agent/shaded/google/common/base/Supplier";
+            Class.forName("org.glowroot.agent.shaded.com.google.common.base.Supplier");
+            return "org/glowroot/agent/shaded/com/google/common/base/Supplier";
         } catch (ClassNotFoundException e) {
             return "com/google/common/base/Supplier";
         }
