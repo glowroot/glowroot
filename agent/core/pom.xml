@@ -325,15 +325,6 @@
                   </excludes>
                 </filter>
                 <filter>
-                  <!-- this filter is needed until https://issues.apache.org/jira/browse/MSHADE-221
-                    or https://issues.apache.org/jira/browse/MSHADE-229, at which time can delete
-                    src/main/shaded-resource/META-INF/services/org.glowroot.agent.shaded.grpc.NameResolverProvider -->
-                  <artifact>io.grpc:grpc-core</artifact>
-                  <excludes>
-                    <exclude>META-INF/services/io.grpc.NameResolverProvider</exclude>
-                  </excludes>
-                </filter>
-                <filter>
                   <artifact>io.grpc:grpc-netty</artifact>
                   <excludes>
                     <exclude>META-INF/services/io.grpc.ManagedChannelProvider</exclude>
@@ -603,6 +594,9 @@
                   <shadedPattern>META-INF/glowroot.javamail.providers</shadedPattern>
                 </relocation>
               </relocations>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+              </transformers>
             </configuration>
             <executions>
               <execution>
