@@ -75,10 +75,21 @@ public class MethodHandleRelatedCrashIT {
 
     @Test
     public void shouldNotCrashJvm() throws Exception {
-        container.executeNoExpectedTrace(shouldNotCrashJvm.class);
+        container.executeNoExpectedTrace(ShouldNotCrashJvm.class);
     }
 
-    public static class shouldNotCrashJvm implements AppUnderTest {
+    private static void assumeNotJdk6() {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+    }
+
+    private static int getAvailablePort() throws Exception {
+        ServerSocket serverSocket = new ServerSocket(0);
+        int port = serverSocket.getLocalPort();
+        serverSocket.close();
+        return port;
+    }
+
+    public static class ShouldNotCrashJvm implements AppUnderTest {
         @Override
         public void executeApp() throws Exception {
             ScriptEngineManager manager = new ScriptEngineManager();
@@ -95,16 +106,5 @@ public class MethodHandleRelatedCrashIT {
                 throw e;
             }
         }
-    }
-
-    private static void assumeNotJdk6() {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
-    }
-
-    private static int getAvailablePort() throws Exception {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
     }
 }
