@@ -1,3 +1,0 @@
-# JavaMail SMTP provider Oracle
-protocol=smtp; type=transport; class=org.glowroot.fat.shaded.sun.mail.smtp.SMTPTransport; vendor=Oracle;
-protocol=smtps; type=transport; class=org.glowroot.fat.shaded.sun.mail.smtp.SMTPSSLTransport; vendor=Oracle;

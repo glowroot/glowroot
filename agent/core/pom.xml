@@ -585,10 +585,22 @@
                 </relocation>
                 <relocation>
                   <rawString>true</rawString>
+                  <pattern>^/META-INF/javamail.default.address.map$</pattern>
+                  <shadedPattern>/META-INF/glowroot.javamail.default.address.map</shadedPattern>
+                </relocation>
+                <relocation>
+                  <rawString>true</rawString>
+                  <pattern>^/META-INF/javamail.default.providers$</pattern>
+                  <shadedPattern>/META-INF/glowroot.javamail.default.providers</shadedPattern>
+                </relocation>
+                <relocation>
+                  <!-- shade to non-existent file so it doesn't pick up file from monitored app -->
+                  <rawString>true</rawString>
                   <pattern>^META-INF/javamail.address.map$</pattern>
                   <shadedPattern>META-INF/glowroot.javamail.address.map</shadedPattern>
                 </relocation>
                 <relocation>
+                  <!-- shade to non-existent file so it doesn't pick up file from monitored app -->
                   <rawString>true</rawString>
                   <pattern>^META-INF/javamail.providers$</pattern>
                   <shadedPattern>META-INF/glowroot.javamail.providers</shadedPattern>
