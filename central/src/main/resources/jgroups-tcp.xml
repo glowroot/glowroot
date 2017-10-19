@@ -31,8 +31,7 @@
         client_callback_handler_class="org.glowroot.central.SaslCallbackHandler"
         server_callback_handler_class="org.glowroot.central.SaslCallbackHandler" />
   <pbcast.GMS print_local_addr="false"
-              join_timeout="${jgroups.joinTimeout:2000}"
-              view_bundling="true" />
+              join_timeout="${jgroups.joinTimeout:2000}" />
   <MFC max_credits="2M"
        min_threshold="0.4" />
   <FRAG2 frag_size="60K" />
