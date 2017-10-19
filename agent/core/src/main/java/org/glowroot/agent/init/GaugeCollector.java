@@ -168,6 +168,9 @@ class GaugeCollector extends ScheduledRunnable {
             logFirstTimeMBeanNotMatchedOrFound(mbeanObjectName);
             return ImmutableList.of();
         }
+        // remove from pendingLoggedMBeanGauges so if it is later not found, it will be logged
+        // normally and not with "waited ... seconds after jvm startup before logging this" message
+        pendingLoggedMBeanGauges.remove(mbeanObjectName);
         List<GaugeValue> gaugeValues = Lists.newArrayList();
         for (ObjectName matchingObjectName : matchingObjectNames) {
             gaugeValues.addAll(collectGaugeValues(matchingObjectName, gaugeConfig.mbeanAttributes(),
