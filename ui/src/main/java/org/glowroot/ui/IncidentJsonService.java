@@ -21,6 +21,7 @@ import java.util.Locale;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
 import org.glowroot.common.repo.ConfigRepository;
@@ -37,14 +38,18 @@ import static java.util.concurrent.TimeUnit.DAYS;
 @JsonService
 class IncidentJsonService {
 
+    private static final String EMBEDDED_AGENT_ID = "";
+
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private final boolean central;
     private final IncidentRepository incidentRepository;
     private final ConfigRepository configRepository;
     private final Clock clock;
 
-    IncidentJsonService(IncidentRepository incidentRepository,
+    IncidentJsonService(boolean central, IncidentRepository incidentRepository,
             ConfigRepository configRepository, Clock clock) {
+        this.central = central;
         this.incidentRepository = incidentRepository;
         this.configRepository = configRepository;
         this.clock = clock;
@@ -52,6 +57,9 @@ class IncidentJsonService {
 
     @GET(path = "/backend/incidents", permission = "")
     String getIncidents(@BindAuthentication Authentication authentication) throws Exception {
+        if (!central && !authentication.isPermitted(EMBEDDED_AGENT_ID, "agent:incident")) {
+            throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
+        }
         ImmutableIncidentResponse.Builder response = ImmutableIncidentResponse.builder();
         // seems better to read all incidents and then filter by permission, instead of reading
         // individually for every agentRollupId that user has permission to read
