@@ -215,8 +215,9 @@
           </div>
         </div>
       </div>
+      <!-- margin-right is to align better with right hand edge of chart -->
       <table class="table"
-             style="margin-top: 50px;"
+             style="margin-top: 50px; margin-right: 15px;"
              ng-if="seriesLabels && !chartNoData">
         <thead>
         <tr>
@@ -265,6 +266,11 @@
         </tr>
         </tbody>
       </table>
+      <button class="btn btn-default"
+              ng-click="exportAsCsv()"
+              ng-if="!chartNoData">
+        Export as text
+      </button>
     </div>
   </div>
 </div>

@@ -460,6 +460,31 @@ glowroot.controller('ReportAdhocCtrl', [
       refreshData(deferred);
     };
 
+    $scope.exportAsCsv = function () {
+      var csv = '<strong>';
+      if ($scope.layout.central) {
+        csv += 'Agent,';
+      }
+      angular.forEach($scope.allXvals, function (xval) {
+        csv += $scope.exportColumnHeader(xval) + ',';
+      });
+      csv += 'Overall</strong><br>';
+      angular.forEach($scope.tableRows, function (tableRow) {
+        if ($scope.layout.central) {
+          csv += tableRow.label + ',';
+        }
+        angular.forEach($scope.allXvals, function (xval) {
+          if (tableRow[xval] !== Number.NEGATIVE_INFINITY) {
+            csv += tableRow[xval];
+          }
+          csv += ',';
+        });
+        csv += tableRow.overall;
+      });
+      var csvWindow = window.open();
+      $(csvWindow.document.body).html('<pre style="white-space: pre-wrap;">' + csv + '</pre>');
+    };
+
     function updateYvalMap(label, points) {
       var map = {};
       var i;
@@ -672,13 +697,23 @@ glowroot.controller('ReportAdhocCtrl', [
         return from.format('ddd L');
       } else if (appliedReport.rollup === 'weekly') {
         to.subtract(1, 'days');
-        return moment(from).format('ddd L') + ' through ' + moment(to).format('ddd L');
+        return from.format('ddd L') + ' through ' + to.format('ddd L');
       } else if (appliedReport.rollup === 'monthly') {
         to.subtract(1, 'days');
-        return moment(from).format('L') + ' through ' + moment(to).format('L');
+        return from.format('L') + ' through ' + to.format('L');
       } else {
         // unexpected rollup
         return '';
+      }
+    };
+
+    $scope.exportColumnHeader = function (xval) {
+      var fromTo = getFromTo(xval);
+      var from = fromTo[0];
+      if (appliedReport.rollup === 'hourly') {
+        return from.format('L') + ' ' + from.format('LT');
+      } else {
+        return from.format('L');
       }
     };
 
