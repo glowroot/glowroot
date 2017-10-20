@@ -160,6 +160,15 @@ public class AgentModule {
             logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation);
         }
 
+        // need to initialize some classes while still single threaded in order to prevent possible
+        // deadlock later on
+        try {
+            Class.forName("sun.net.www.protocol.ftp.Handler");
+            Class.forName("sun.net.www.protocol.ftp.FtpURLConnection");
+        } catch (ClassNotFoundException e) {
+            logger.debug(e.getMessage(), e);
+        }
+
         // now that instrumentation is set up, it is safe to create scheduled executor
         ScheduledExecutorService backgroundExecutor = backgroundExecutorSupplier.get();
         deadlockedActiveWeavingRunnable = new DeadlockedActiveWeavingRunnable(weaver);
