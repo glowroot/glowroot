@@ -124,6 +124,7 @@ glowroot.controller('TransactionSidebarCtrl', [
       concurrentUpdateCount++;
       $http.get('backend/' + $scope.shortName + '/summaries' + queryStrings.encodeObject(query))
           .then(function (response) {
+            $scope.showSpinner--;
             if (moreLoading) {
               $scope.summariesLoadingMore--;
             }
@@ -131,7 +132,6 @@ glowroot.controller('TransactionSidebarCtrl', [
             if (concurrentUpdateCount) {
               return;
             }
-            $scope.showSpinner--;
             $scope.summariesNoSearch = false;
 
             lastSortOrder = query.sortOrder;
