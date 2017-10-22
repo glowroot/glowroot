@@ -38,7 +38,8 @@
         </div>
         <div style="margin: 20px 60px 0 0;" ng-if="dirty">
           <strong>Restart the JVM to apply changes.</strong>
-          <span style="font-style: italic;" ng-if="jvmRetransformClassesSupported">
+          <span style="font-style: italic;" ng-if="jvmRetransformClassesSupported"
+                ng-if="agentPermissions.config.edit.instrumentation">
             Feeling lucky? Try the red button.
           </span>
         </div>
