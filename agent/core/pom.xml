@@ -220,7 +220,7 @@
       <plugin>
         <groupId>com.github.os72</groupId>
         <artifactId>protoc-jar-maven-plugin</artifactId>
-        <version>3.4.0</version>
+        <version>3.4.0.1</version>
         <configuration>
           <protocVersion>${protoc.version}</protocVersion>
           <outputTargets>

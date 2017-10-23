@@ -28,9 +28,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Request;
-import com.ning.http.client.Response;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -48,31 +45,19 @@ import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class BasicSmokeIT extends WebDriverIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-        Request request = asyncHttpClient
-                .prepareGet("http://localhost:" + getUiPort()
-                        + "/backend/config/transaction?agent-id=" + agentId)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        JsonNode responseNode = new ObjectMapper().readTree(response.getResponseBody());
+        String content = httpGet("http://localhost:" + getUiPort()
+                + "/backend/config/transaction?agent-id=" + agentId);
+        JsonNode responseNode = new ObjectMapper().readTree(content);
         String version = responseNode.get("version").asText();
-        request = asyncHttpClient
-                .preparePost("http://localhost:" + getUiPort()
-                        + "/backend/config/transaction?agent-id=" + agentId)
-                .setBody("{\"slowThresholdMillis\":0,\"profilingIntervalMillis\":10,"
-                        + "\"captureThreadStats\":false,\"version\":\"" + version + "\"}")
-                .build();
-        int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-        if (statusCode != 200) {
-            asyncHttpClient.close();
-            throw new AssertionError("Unexpected status code: " + statusCode);
-        }
+        httpPost("http://localhost:" + getUiPort()
+                + "/backend/config/transaction?agent-id=" + agentId,
+                "{\"slowThresholdMillis\":0,\"profilingIntervalMillis\":10,"
+                        + "\"captureThreadStats\":false,\"version\":\"" + version + "\"}");
         for (int i = 0; i < 3; i++) {
             container.executeNoExpectedTrace(JdbcServlet.class);
             container.executeNoExpectedTrace(ErrorServlet.class);
@@ -83,14 +68,11 @@ public class BasicSmokeIT extends WebDriverIT {
         while (stopwatch.elapsed(SECONDS) < 30) {
             long from = System.currentTimeMillis() - HOURS.toMillis(2);
             long to = from + HOURS.toMillis(4);
-            request = asyncHttpClient
-                    .prepareGet("http://localhost:" + getUiPort()
-                            + "/backend/transaction/summaries?agent-rollup-id=" + agentId
-                            + "&transaction-type=Web&from=" + from + "&to=" + to
-                            + "&sort-order=total-time&limit=10")
-                    .build();
-            response = asyncHttpClient.executeRequest(request).get();
-            responseNode = new ObjectMapper().readTree(response.getResponseBody());
+            content = httpGet("http://localhost:" + getUiPort()
+                    + "/backend/transaction/summaries?agent-rollup-id=" + agentId
+                    + "&transaction-type=Web&from=" + from + "&to=" + to
+                    + "&sort-order=total-time&limit=10");
+            responseNode = new ObjectMapper().readTree(content);
             for (JsonNode transactionNode : responseNode.get("transactions")) {
                 transactionNames.add(transactionNode.get("transactionName").asText());
             }
@@ -100,7 +82,6 @@ public class BasicSmokeIT extends WebDriverIT {
             }
             Thread.sleep(10);
         }
-        asyncHttpClient.close();
         if (!transactionNames.contains("/jdbcservlet")
                 || !transactionNames.contains("/errorservlet")) {
             throw new AssertionError("Timed out waiting for /jdbcservlet and /errorservlet to both"
@@ -191,12 +172,8 @@ public class BasicSmokeIT extends WebDriverIT {
                 + "&limit=500"
                 + "&agent-rollup-id=" + agentId;
 
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-        Request request = asyncHttpClient
-                .prepareGet(url)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        JsonNode responseNode = new ObjectMapper().readTree(response.getResponseBody());
+        String content = httpGet(url);
+        JsonNode responseNode = new ObjectMapper().readTree(content);
         ArrayNode pointsNode = (ArrayNode) responseNode.get("normalPoints");
         String traceId = ((ArrayNode) pointsNode.get(0)).get(3).asText();
         if (WebDriverSetup.useCentral) {
@@ -207,7 +184,6 @@ public class BasicSmokeIT extends WebDriverIT {
             driver.get(app.getBaseUrl() + "/transaction/traces?transaction-type=Web&modal-trace-id="
                     + traceId);
         }
-        asyncHttpClient.close();
         clickAroundInTraceModal(traceId, false);
     }
 
@@ -322,14 +298,7 @@ public class BasicSmokeIT extends WebDriverIT {
 
     @Test
     public void shouldCheckLogPage() throws Exception {
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-        Request request = asyncHttpClient
-                .prepareGet("http://localhost:" + getUiPort() + "/log")
-                .setFollowRedirects(true)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        assertThat(response.getStatusCode()).isEqualTo(200);
-        asyncHttpClient.close();
+        httpGet("http://localhost:" + getUiPort() + "/log");
     }
 
     private void clickAroundInTraceModal(String traceId, boolean active) throws Exception {
@@ -350,12 +319,6 @@ public class BasicSmokeIT extends WebDriverIT {
             download = "http://localhost:" + getUiPort() + "/export/trace?trace-id=" + traceId
                     + urlSuffix;
         }
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-        Request request = asyncHttpClient
-                .prepareGet(download)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        assertThat(response.getStatusCode()).isEqualTo(200);
-        asyncHttpClient.close();
+        httpGet(download);
     }
 }

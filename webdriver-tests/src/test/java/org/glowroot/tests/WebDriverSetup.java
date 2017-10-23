@@ -31,14 +31,18 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Request;
 import com.saucelabs.common.SauceOnDemandAuthentication;
 import com.saucelabs.common.SauceOnDemandSessionIdProvider;
 import com.saucelabs.junit.SauceOnDemandTestWatcher;
 import kr.motd.maven.os.Detector;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultRedirectStrategy;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.rules.TestWatcher;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
@@ -232,22 +236,23 @@ public class WebDriverSetup {
             container = new LocalContainer(testDir, true, ImmutableMap.of());
         }
         // wait for UI to be available (UI starts asynchronously in order to not block startup)
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+        CloseableHttpClient httpClient = HttpClients.custom()
+                .setRedirectStrategy(new DefaultRedirectStrategy())
+                .build();
         Stopwatch stopwatch = Stopwatch.createStarted();
         Exception lastException = null;
         while (stopwatch.elapsed(SECONDS) < 10) {
-            Request request = asyncHttpClient
-                    .prepareGet("http://localhost:" + uiPort)
-                    .build();
-            try {
-                asyncHttpClient.executeRequest(request).get();
+            HttpGet request = new HttpGet("http://localhost:" + uiPort);
+            try (CloseableHttpResponse response = httpClient.execute(request);
+                    InputStream content = response.getEntity().getContent()) {
+                ByteStreams.exhaust(content);
                 lastException = null;
                 break;
             } catch (Exception e) {
                 lastException = e;
             }
         }
-        asyncHttpClient.close();
+        httpClient.close();
         if (lastException != null) {
             throw new IllegalStateException("Timed out waiting for Glowroot UI", lastException);
         }

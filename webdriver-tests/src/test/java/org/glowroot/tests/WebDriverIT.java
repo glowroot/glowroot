@@ -16,6 +16,8 @@
 package org.glowroot.tests;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -23,9 +25,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Request;
-import com.ning.http.client.Response;
+import com.google.common.base.Charsets;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.CharStreams;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultRedirectStrategy;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -62,7 +71,7 @@ public abstract class WebDriverIT {
     protected static Container container;
     protected static WebDriver driver;
 
-    private static AsyncHttpClient asyncHttpClient;
+    private static CloseableHttpClient httpClient;
 
     @Rule
     public TestName testName = new TestName();
@@ -74,12 +83,14 @@ public abstract class WebDriverIT {
     public static void setUpBase() throws Exception {
         setup = WebDriverSetup.create();
         container = setup.getContainer();
-        asyncHttpClient = new AsyncHttpClient();
+        httpClient = HttpClients.custom()
+                .setRedirectStrategy(new DefaultRedirectStrategy())
+                .build();
     }
 
     @AfterClass
     public static void tearDownBase() throws Exception {
-        asyncHttpClient.close();
+        httpClient.close();
         setup.close();
     }
 
@@ -113,6 +124,32 @@ public abstract class WebDriverIT {
 
     protected static int getUiPort() throws Exception {
         return setup.getUiPort();
+    }
+
+    static String httpGet(String url) throws Exception {
+        try (CloseableHttpResponse response = httpClient.execute(new HttpGet(url));
+                InputStream responseContent = response.getEntity().getContent()) {
+            String content =
+                    CharStreams.toString(new InputStreamReader(responseContent, Charsets.UTF_8));
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200) {
+                throw new AssertionError("Unexpected status code: " + statusCode);
+            }
+            return content;
+        }
+    }
+
+    static void httpPost(String url, String content) throws Exception {
+        HttpPost request = new HttpPost(url);
+        request.setEntity(new StringEntity(content));
+        try (CloseableHttpResponse response = httpClient.execute(request);
+                InputStream responseContent = response.getEntity().getContent()) {
+            ByteStreams.exhaust(responseContent);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200) {
+                throw new AssertionError("Unexpected status code: " + statusCode);
+            }
+        }
     }
 
     private static void resetAllCentralConfig() throws Exception {
@@ -161,30 +198,17 @@ public abstract class WebDriverIT {
         }
         url += "-id=" + agentId;
 
-        Request request = asyncHttpClient
-                .prepareGet(url)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        String version = getVersion(response.getResponseBody());
+        String content = httpGet(url);
+        String version = getVersion(content);
         ObjectNode json = new ObjectMapper().valueToTree(config);
         json.put("version", version);
-        request = asyncHttpClient
-                .preparePost(url)
-                .setBody(json.toString())
-                .build();
-        int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-        if (statusCode != 200) {
-            throw new AssertionError("Unexpected status code: " + statusCode);
-        }
+        httpPost(url, json.toString());
     }
 
     private static void deleteAllGauges() throws Exception {
-        Request request = asyncHttpClient
-                .prepareGet("http://localhost:" + getUiPort()
-                        + "/backend/config/gauges?agent-id=" + agentId)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        ArrayNode gauges = (ArrayNode) new ObjectMapper().readTree(response.getResponseBody());
+        String content = httpGet(
+                "http://localhost:" + getUiPort() + "/backend/config/gauges?agent-id=" + agentId);
+        ArrayNode gauges = (ArrayNode) new ObjectMapper().readTree(content);
         for (JsonNode gauge : gauges) {
             String name = gauge.get("config").get("mbeanObjectName").asText();
             if (name.equals("java.lang:type=Memory")
@@ -194,122 +218,70 @@ public abstract class WebDriverIT {
                 continue;
             }
             String version = gauge.get("config").get("version").asText();
-            request = asyncHttpClient
-                    .preparePost("http://localhost:" + getUiPort()
-                            + "/backend/config/gauges/remove?agent-id=" + agentId)
-                    .setBody("{\"version\":\"" + version + "\"}")
-                    .build();
-            int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-            if (statusCode != 200) {
-                throw new AssertionError("Unexpected status code: " + statusCode);
-            }
+            httpPost("http://localhost:" + getUiPort() + "/backend/config/gauges/remove?agent-id="
+                    + agentId, "{\"version\":\"" + version + "\"}");
         }
     }
 
     private static void deleteAllAlerts() throws Exception {
-        Request request = asyncHttpClient
-                .prepareGet("http://localhost:" + getUiPort()
-                        + "/backend/config/alerts?agent-rollup-id=" + agentId)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        ArrayNode alerts = (ArrayNode) new ObjectMapper().readTree(response.getResponseBody());
+        String content = httpGet("http://localhost:" + getUiPort()
+                + "/backend/config/alerts?agent-rollup-id=" + agentId);
+        ArrayNode alerts = (ArrayNode) new ObjectMapper().readTree(content);
         for (JsonNode alert : alerts) {
             String version = alert.get("version").asText();
-            request = asyncHttpClient
-                    .preparePost("http://localhost:" + getUiPort()
-                            + "/backend/config/alerts/remove?agent-rollup-id=" + agentId)
-                    .setBody("{\"version\":\"" + version + "\"}")
-                    .build();
-            int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-            if (statusCode != 200) {
-                throw new AssertionError("Unexpected status code: " + statusCode);
-            }
+            httpPost(
+                    "http://localhost:" + getUiPort()
+                            + "/backend/config/alerts/remove?agent-rollup-id=" + agentId,
+                    "{\"version\":\"" + version + "\"}");
         }
     }
 
     private static void deleteAllInstrumentation() throws Exception {
-        Request request = asyncHttpClient
-                .prepareGet("http://localhost:" + getUiPort()
-                        + "/backend/config/instrumentation?agent-id=" + agentId)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
+        String content = httpGet("http://localhost:" + getUiPort()
+                + "/backend/config/instrumentation?agent-id=" + agentId);
         ArrayNode instrumentations =
-                (ArrayNode) new ObjectMapper().readTree(response.getResponseBody()).get("configs");
+                (ArrayNode) new ObjectMapper().readTree(content).get("configs");
         for (JsonNode instrumentation : instrumentations) {
             String version = instrumentation.get("version").asText();
-            request = asyncHttpClient
-                    .preparePost("http://localhost:" + getUiPort()
-                            + "/backend/config/instrumentation/remove?agent-id=" + agentId)
-                    .setBody("{\"versions\":[\"" + version + "\"]}")
-                    .build();
-            int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-            if (statusCode != 200) {
-                throw new AssertionError("Unexpected status code: " + statusCode);
-            }
+            httpPost("http://localhost:" + getUiPort()
+                    + "/backend/config/instrumentation/remove?agent-id=" + agentId,
+                    "{\"versions\":[\"" + version + "\"]}");
         }
     }
 
     private static void resetUsers() throws Exception {
-        Request request = asyncHttpClient
-                .prepareGet("http://localhost:" + getUiPort() + "/backend/admin/users")
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        ArrayNode users = (ArrayNode) new ObjectMapper().readTree(response.getResponseBody());
+        String content = httpGet("http://localhost:" + getUiPort() + "/backend/admin/users");
+        ArrayNode users = (ArrayNode) new ObjectMapper().readTree(content);
         for (JsonNode user : users) {
             String username = user.get("username").asText();
             if (username.equalsIgnoreCase("anonymous")) {
                 continue;
             }
-            request = asyncHttpClient
-                    .preparePost("http://localhost:" + getUiPort() + "/backend/admin/users/remove")
-                    .setBody("{\"username\":\"" + username + "\"}")
-                    .build();
-            int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-            if (statusCode != 200) {
-                throw new AssertionError("Unexpected status code: " + statusCode);
-            }
+            httpPost("http://localhost:" + getUiPort() + "/backend/admin/users/remove",
+                    "{\"username\":\"" + username + "\"}");
         }
     }
 
     private static void resetRoles() throws Exception {
-        Request request = asyncHttpClient
-                .prepareGet("http://localhost:" + getUiPort() + "/backend/admin/roles")
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        ArrayNode roles = (ArrayNode) new ObjectMapper().readTree(response.getResponseBody());
+        String content = httpGet("http://localhost:" + getUiPort() + "/backend/admin/roles");
+        ArrayNode roles = (ArrayNode) new ObjectMapper().readTree(content);
         for (JsonNode role : roles) {
             String name = role.get("name").asText();
             if (name.equalsIgnoreCase("Administrator")) {
                 continue;
             }
-            request = asyncHttpClient
-                    .preparePost("http://localhost:" + getUiPort() + "/backend/admin/roles/remove")
-                    .setBody("{\"name\":\"" + name + "\"}")
-                    .build();
-            int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-            if (statusCode != 200) {
-                throw new AssertionError("Unexpected status code: " + statusCode);
-            }
+            httpPost("http://localhost:" + getUiPort() + "/backend/admin/roles/remove",
+                    "{\"name\":\"" + name + "\"}");
         }
     }
 
     private static void resetCentralConfigAdmin(String type, String template)
             throws Exception {
         String url = "http://localhost:" + getUiPort() + "/backend/admin/" + type;
-        Request request = asyncHttpClient
-                .prepareGet(url)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        String version = getVersion(response.getResponseBody());
-        String content = template.replace("$version", version);
-        request = asyncHttpClient
-                .preparePost(url)
-                .setBody(content)
-                .build();
-        int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-        if (statusCode != 200) {
-            throw new AssertionError("Unexpected status code: " + statusCode);
-        }
+        String content = httpGet(url);
+        String version = getVersion(content);
+        String postContent = template.replace("$version", version);
+        httpPost(url, postContent);
     }
 
     private static String getVersion(String content) throws IOException {

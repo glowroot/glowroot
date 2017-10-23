@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,6 @@ package org.glowroot.tests;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Request;
-import com.ning.http.client.Response;
 import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -48,26 +45,16 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
         configSidebar.getStorageLink().click();
         storageConfigPage.clickDeleteAllButton();
 
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-        Request request = asyncHttpClient
-                .prepareGet("http://localhost:" + getUiPort()
-                        + "/backend/config/transaction?agent-id=" + agentId)
-                .build();
-        Response response = asyncHttpClient.executeRequest(request).get();
-        JsonNode responseNode = new ObjectMapper().readTree(response.getResponseBody());
+        String content = httpGet("http://localhost:" + getUiPort()
+                + "/backend/config/transaction?agent-id=" + agentId);
+        JsonNode responseNode = new ObjectMapper().readTree(content);
         String version = responseNode.get("version").asText();
-        request = asyncHttpClient
-                .preparePost("http://localhost:" + getUiPort()
-                        + "/backend/config/transaction?agent-id=" + agentId)
-                .setBody("{\"slowThresholdMillis\":" + Integer.MAX_VALUE
+        httpPost(
+                "http://localhost:" + getUiPort() + "/backend/config/transaction?agent-id="
+                        + agentId,
+                "{\"slowThresholdMillis\":" + Integer.MAX_VALUE
                         + ",\"profilingIntervalMillis\":0,\"captureThreadStats\":false,"
-                        + "\"version\":\"" + version + "\"}")
-                .build();
-        int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
-        asyncHttpClient.close();
-        if (statusCode != 200) {
-            throw new AssertionError("Unexpected status code: " + statusCode);
-        }
+                        + "\"version\":\"" + version + "\"}");
         container.executeNoExpectedTrace(JdbcServlet.class);
         // give time for aggregates to be collected
         Thread.sleep(5000);
