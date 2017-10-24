@@ -321,7 +321,9 @@ class SyntheticMonitorService implements Runnable {
         boolean success;
         String errorMessage;
         try {
-            future.get(timeoutMillis, MILLISECONDS);
+            // wait an extra second to make sure no edge case where TimeoutException occurs with
+            // stopwatch.elapsed(MILLISECONDS) < timeoutMillis
+            future.get(timeoutMillis + 1000L, MILLISECONDS);
             success = true;
             errorMessage = null;
         } catch (TimeoutException e) {
