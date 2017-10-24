@@ -53,13 +53,13 @@ public class MoreFutures {
         }
     }
 
-    public static <V> CompletableFuture<?> onFailure(ListenableFuture<V> future,
+    public static <V> CompletableFuture<V> onFailure(ListenableFuture<V> future,
             Runnable onFailure) {
-        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
+        CompletableFuture<V> chainedFuture = new CompletableFuture<>();
         Futures.addCallback(future, new FutureCallback<V>() {
             @Override
             public void onSuccess(V result) {
-                chainedFuture.complete(null);
+                chainedFuture.complete(result);
             }
             @Override
             public void onFailure(Throwable t) {
@@ -71,7 +71,8 @@ public class MoreFutures {
         return chainedFuture;
     }
 
-    public static CompletableFuture<?> onFailure(CompletableFuture<?> future, Runnable onFailure) {
+    public static <V> CompletableFuture<V> onFailure(CompletableFuture<V> future,
+            Runnable onFailure) {
         return future.whenComplete((result, t) -> {
             if (t != null) {
                 onFailure.run();
@@ -79,12 +80,12 @@ public class MoreFutures {
         });
     }
 
-    public static <V> CompletableFuture<?> toCompletableFuture(ListenableFuture<V> future) {
-        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
+    public static <V> CompletableFuture<V> toCompletableFuture(ListenableFuture<V> future) {
+        CompletableFuture<V> chainedFuture = new CompletableFuture<>();
         Futures.addCallback(future, new FutureCallback<V>() {
             @Override
             public void onSuccess(V result) {
-                chainedFuture.complete(null);
+                chainedFuture.complete(result);
             }
             @Override
             public void onFailure(Throwable t) {
