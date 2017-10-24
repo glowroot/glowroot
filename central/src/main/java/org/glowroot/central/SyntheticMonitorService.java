@@ -417,7 +417,7 @@ class SyntheticMonitorService implements Runnable {
         StringBuilder sb = new StringBuilder();
         sb.append(syntheticMonitorConfig.getDisplay());
         if (errorMessage == null) {
-            sb.append(" time ");
+            sb.append(" time");
             sb.append(AlertingService.getPreUpperBoundText(ok));
             sb.append(AlertingService.getWithUnit(condition.getThresholdMillis(), "millisecond"));
             sb.append(".");
