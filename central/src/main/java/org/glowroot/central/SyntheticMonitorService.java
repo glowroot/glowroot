@@ -17,15 +17,16 @@ package org.glowroot.central;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,41 +35,17 @@ import javax.annotation.Nullable;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.machinepublishers.jbrowserdriver.RequestHeaders;
 import com.machinepublishers.jbrowserdriver.Settings;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
-import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObject;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.util.CharsetUtil;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.impl.client.DefaultRedirectStrategy;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.immutables.value.Value;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -81,6 +58,7 @@ import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common.repo.util.AlertingService;
@@ -133,6 +111,8 @@ class SyntheticMonitorService implements Runnable {
     private final Ticker ticker;
     private final Clock clock;
 
+    private final CloseableHttpAsyncClient httpClient;
+
     private final ExecutorService checkExecutor;
     private final ExecutorService mainLoopExecutor;
 
@@ -154,6 +134,10 @@ class SyntheticMonitorService implements Runnable {
         this.syntheticResponseDao = syntheticResponseDao;
         this.ticker = ticker;
         this.clock = clock;
+        httpClient = HttpAsyncClients.custom()
+                .setRedirectStrategy(new DefaultRedirectStrategy())
+                .build();
+        httpClient.start();
         checkExecutor = Executors.newCachedThreadPool();
         mainLoopExecutor = Executors.newSingleThreadExecutor();
         mainLoopExecutor.execute(castInitialized(this));
@@ -176,7 +160,7 @@ class SyntheticMonitorService implements Runnable {
         }
     }
 
-    void close() throws InterruptedException {
+    void close() throws Exception {
         closed = true;
         // shutdownNow() is needed here to send interrupt to SyntheticMonitorService check threads
         checkExecutor.shutdownNow();
@@ -190,6 +174,7 @@ class SyntheticMonitorService implements Runnable {
             throw new IllegalStateException(
                     "Timed out waiting for synthetic monitor loop thread to terminate");
         }
+        httpClient.close();
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
@@ -267,12 +252,7 @@ class SyntheticMonitorService implements Runnable {
     private void runPing(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
             List<AlertConfig> alertConfigs) throws Exception {
         runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,
-                new Callable<ListenableFuture<?>>() {
-                    @Override
-                    public ListenableFuture<?> call() throws Exception {
-                        return runPing(syntheticMonitorConfig.getPingUrl());
-                    }
-                });
+                runPing(syntheticMonitorConfig.getPingUrl()));
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
@@ -290,17 +270,12 @@ class SyntheticMonitorService implements Runnable {
         }
         matcher.appendTail(sb);
         runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,
-                new Callable<ListenableFuture<?>>() {
-                    @Override
-                    public ListenableFuture<?> call() throws Exception {
-                        return runJava(sb.toString());
-                    }
-                });
+                runJava(sb.toString()));
     }
 
     private void runSyntheticMonitor(AgentRollup agentRollup,
             SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
-            Callable<ListenableFuture<?>> callable) throws Exception {
+            CompletableFuture<?> future) throws Exception {
         final SyntheticMonitorUniqueKey uniqueKey =
                 ImmutableSyntheticMonitorUniqueKey.of(agentRollup.id(),
                         syntheticMonitorConfig.getId());
@@ -309,43 +284,21 @@ class SyntheticMonitorService implements Runnable {
         }
         long startTime = ticker.read();
         Stopwatch stopwatch = Stopwatch.createStarted();
-        final ListenableFuture<?> future;
-        try {
-            future = callable.call();
-        } catch (InterruptedException e) {
-            activeSyntheticMonitors.remove(uniqueKey);
-            throw e;
-        } catch (Exception e) {
-            logger.debug(e.getMessage(), e);
-            activeSyntheticMonitors.remove(uniqueKey);
-            long durationNanos = ticker.read() - startTime;
-            long captureTime = clock.currentTimeMillis();
-            syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
-                    captureTime, durationNanos, true);
-            sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
-                    e.getMessage(), captureTime);
-            return;
-        }
-        future.addListener(new Runnable() {
+        future.whenComplete(new BiConsumer</*@Nullable*/ Object, /*@Nullable*/ Throwable>() {
             @Override
-            public void run() {
+            public void accept(@Nullable Object v, @Nullable Throwable t) {
                 // remove "lock" after completion, not just after possible timeout
                 activeSyntheticMonitors.remove(uniqueKey);
                 long durationNanos = ticker.read() - startTime;
                 long captureTime = clock.currentTimeMillis();
-                boolean error = false;
-                try {
-                    future.get();
-                } catch (InterruptedException e) {
+                if (t instanceof InterruptedException) {
                     // probably shutdown requested (see close method above)
-                    logger.debug(e.getMessage(), e);
+                    logger.debug(t.getMessage(), t);
                     return;
-                } catch (ExecutionException e) {
-                    logger.debug(e.getMessage(), e);
-                    if (e.getCause() instanceof InterruptedException) {
-                        // probably shutdown requested (see close method above)
-                        return;
-                    }
+                }
+                boolean error = false;
+                if (t != null) {
+                    logger.debug(t.getMessage(), t);
                     error = true;
                 }
                 try {
@@ -359,7 +312,7 @@ class SyntheticMonitorService implements Runnable {
                     logger.error(e.getMessage(), e);
                 }
             }
-        }, MoreExecutors.directExecutor());
+        });
         int timeoutMillis = Integer.MAX_VALUE;
         for (AlertConfig alertConfig : alertConfigs) {
             timeoutMillis = Math.max(timeoutMillis,
@@ -428,8 +381,8 @@ class SyntheticMonitorService implements Runnable {
         }
     }
 
-    private ListenableFuture<?> runJava(final String javaSource) {
-        return syntheticUserTestExecutor.submit(new Callable</*@Nullable*/ Void>() {
+    private CompletableFuture<?> runJava(String javaSource) {
+        return MoreFutures.submitAsync(new Callable</*@Nullable*/ Void>() {
             @Override
             public @Nullable Void call() throws Exception {
                 Class<?> syntheticUserTestClass = Compilations.compile(javaSource);
@@ -446,7 +399,7 @@ class SyntheticMonitorService implements Runnable {
                 }
                 return null;
             }
-        });
+        }, syntheticUserTestExecutor);
     }
 
     private void sendAlert(String agentRollupId, String agentRollupDisplay,
@@ -488,75 +441,21 @@ class SyntheticMonitorService implements Runnable {
         return obj;
     }
 
-    private static ListenableFuture<HttpResponseStatus> runPing(String url) throws Exception {
-        URI uri = new URI(url);
-        String scheme = uri.getScheme();
-        if (scheme == null) {
-            throw new IllegalStateException("URI missing scheme");
-        }
-        final boolean ssl = uri.getScheme().equalsIgnoreCase("https");
-        final String host = uri.getHost();
-        if (host == null) {
-            throw new IllegalStateException("URI missing host");
-        }
-        final int port;
-        if (uri.getPort() == -1) {
-            port = ssl ? 443 : 80;
-        } else {
-            port = uri.getPort();
-        }
-        final EventLoopGroup group = new NioEventLoopGroup();
-        final HttpClientHandler httpClientHandler = new HttpClientHandler();
-        Bootstrap bootstrap = new Bootstrap();
-        bootstrap.group(group)
-                .channel(NioSocketChannel.class)
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel ch) throws Exception {
-                        ChannelPipeline p = ch.pipeline();
-                        if (ssl) {
-                            SslContext sslContext = SslContextBuilder.forClient().build();
-                            p.addLast(sslContext.newHandler(ch.alloc(), host, port));
-                        }
-                        p.addLast(new HttpClientCodec());
-                        p.addLast(new HttpObjectAggregator(1048576));
-                        p.addLast(httpClientHandler);
-                    }
-                });
-        final HttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET,
-                uri.getRawPath());
-        request.headers().set(HttpHeaderNames.HOST, host);
-        request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-        request.headers().set("Glowroot-Transaction-Type", "Synthetic");
-        ChannelFuture future = bootstrap.connect(host, port);
-        final SettableFuture<HttpResponseStatus> settableFuture = SettableFuture.create();
-        future.addListener(new ChannelFutureListener() {
+    private CompletableFuture<?> runPing(String url) {
+        CompletableFuture</*@Nullable*/ Void> future = new CompletableFuture<>();
+        syntheticUserTestExecutor.execute(new Runnable() {
             @Override
-            public void operationComplete(ChannelFuture future) {
-                Channel ch = future.channel();
-                if (future.isSuccess()) {
-                    ch.writeAndFlush(request);
+            public void run() {
+                try {
+                    HttpGet httpGet = new HttpGet(url);
+                    httpGet.setHeader("Glowroot-Transaction-Type", "Synthetic");
+                    httpClient.execute(httpGet, new CompletingFutureCallback(future));
+                } catch (Throwable t) {
+                    future.completeExceptionally(t);
                 }
-                ch.closeFuture().addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) {
-                        if (future.isSuccess()) {
-                            HttpResponseStatus responseStatus = httpClientHandler.responseStatus;
-                            if (HttpResponseStatus.OK.equals(responseStatus)) {
-                                settableFuture.set(responseStatus);
-                            } else {
-                                settableFuture.setException(new Exception(
-                                        "Unexpected http response status: " + responseStatus));
-                            }
-                        } else {
-                            settableFuture.setException(future.cause());
-                        }
-                        group.shutdownGracefully();
-                    }
-                });
             }
         });
-        return settableFuture;
+        return future;
     }
 
     @Value.Immutable
@@ -566,30 +465,33 @@ class SyntheticMonitorService implements Runnable {
         String syntheticMonitorId();
     }
 
-    private static class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> {
+    private static class CompletingFutureCallback implements FutureCallback<HttpResponse> {
 
-        private volatile @MonotonicNonNull HttpResponseStatus responseStatus;
+        private final CompletableFuture</*@Nullable*/ Void> future;
+
+        private CompletingFutureCallback(CompletableFuture</*@Nullable*/ Void> future) {
+            this.future = future;
+        }
 
         @Override
-        public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
-            if (msg instanceof HttpResponse && msg instanceof HttpContent) {
-                HttpResponse response = (HttpResponse) msg;
-                responseStatus = response.status();
-                if (!responseStatus.equals(HttpResponseStatus.OK) && logger.isDebugEnabled()) {
-                    HttpContent httpContent = (HttpContent) msg;
-                    String content = httpContent.content().toString(CharsetUtil.UTF_8);
-                    logger.debug("unexpected response status: {}, content: {}", responseStatus,
-                            content);
-                }
+        public void completed(HttpResponse response) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode < 400) {
+                future.complete(null);
             } else {
-                logger.error("unexpected response: {}", msg);
+                future.completeExceptionally(
+                        new RuntimeException("Unexpected response status code: " + statusCode));
             }
         }
 
         @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            logger.error(cause.getMessage(), cause);
-            ctx.close();
+        public void failed(Exception ex) {
+            future.completeExceptionally(ex);
+        }
+
+        @Override
+        public void cancelled() {
+            future.completeExceptionally(new RuntimeException("Unexpected cancellation"));
         }
     }
 }

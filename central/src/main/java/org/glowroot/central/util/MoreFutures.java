@@ -16,8 +16,10 @@
 package org.glowroot.central.util;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import com.google.common.util.concurrent.FutureCallback;
@@ -94,5 +96,21 @@ public class MoreFutures {
             }
         }, MoreExecutors.directExecutor());
         return chainedFuture;
+    }
+
+    public static <V> CompletableFuture<V> submitAsync(Callable<V> callable,
+            ExecutorService executor) {
+        CompletableFuture<V> future = new CompletableFuture<>();
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    future.complete(callable.call());
+                } catch (Throwable t) {
+                    future.completeExceptionally(t);
+                }
+            }
+        });
+        return future;
     }
 }
