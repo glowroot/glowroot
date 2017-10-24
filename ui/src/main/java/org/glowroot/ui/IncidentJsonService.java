@@ -71,7 +71,7 @@ class IncidentJsonService {
             }
         }
         List<ResolvedIncident> resolvedIncidents = incidentRepository
-                .readResolvedIncidents(clock.currentTimeMillis() - DAYS.toMillis(7));
+                .readResolvedIncidents(clock.currentTimeMillis() - DAYS.toMillis(30));
         for (ResolvedIncident resolvedIncident : resolvedIncidents) {
             if (authentication.isAgentPermitted(resolvedIncident.agentRollupId(),
                     "agent:incident")) {
