@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -39,11 +40,17 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AggregateDao.NeedsRollup;
+import org.glowroot.central.repo.model.Stored;
 import org.glowroot.central.util.DummyResultSet;
+import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
+import org.glowroot.common.model.ErrorIntervalCollector;
+import org.glowroot.common.model.ImmutableErrorInterval;
+import org.glowroot.common.model.ImmutableSyntheticResult;
+import org.glowroot.common.model.SyntheticResult;
+import org.glowroot.common.model.SyntheticResult.ErrorInterval;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
-import org.glowroot.common.repo.ImmutableSyntheticResult;
 import org.glowroot.common.repo.SyntheticResultRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Clock;
@@ -85,20 +92,22 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         List<PreparedStatement> readResultPS = Lists.newArrayList();
         List<PreparedStatement> readResultForRollupPS = Lists.newArrayList();
         for (int i = 0; i < count; i++) {
+            // total_duration_nanos and execution_count only represent successful results
             session.createTableWithTWCS("create table if not exists synthetic_result_rollup_" + i
                     + " (agent_rollup_id varchar, synthetic_config_id varchar,"
                     + " capture_time timestamp, total_duration_nanos double,"
-                    + " execution_count bigint, error_count bigint, primary key ((agent_rollup_id,"
-                    + " synthetic_config_id), capture_time))", rollupExpirationHours.get(i));
+                    + " execution_count bigint, error_intervals blob, primary key"
+                    + " ((agent_rollup_id, synthetic_config_id), capture_time))",
+                    rollupExpirationHours.get(i));
             insertResultPS.add(session.prepare("insert into synthetic_result_rollup_" + i
                     + " (agent_rollup_id, synthetic_config_id, capture_time, total_duration_nanos,"
-                    + " execution_count, error_count) values (?, ?, ?, ?, ?, ?) using ttl ?"));
+                    + " execution_count, error_intervals) values (?, ?, ?, ?, ?, ?) using ttl ?"));
             readResultPS.add(session.prepare("select capture_time, total_duration_nanos,"
-                    + " execution_count, error_count from synthetic_result_rollup_" + i
+                    + " execution_count, error_intervals from synthetic_result_rollup_" + i
                     + " where agent_rollup_id = ? and synthetic_config_id = ? and capture_time >= ?"
                     + " and capture_time <= ?"));
             readResultForRollupPS.add(session.prepare("select total_duration_nanos,"
-                    + " execution_count, error_count from synthetic_result_rollup_" + i
+                    + " execution_count, error_intervals from synthetic_result_rollup_" + i
                     + " where agent_rollup_id = ? and synthetic_config_id = ? and capture_time > ?"
                     + " and capture_time <= ?"));
         }
@@ -138,7 +147,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
     }
 
     public void store(String agentId, String syntheticMonitorId, long captureTime,
-            long durationNanos, boolean error) throws Exception {
+            long durationNanos, @Nullable String errorMessage) throws Exception {
         int ttl = getTTLs().get(0);
         long maxCaptureTime = 0;
         BoundStatement boundStatement = insertResultPS.get(0).bind();
@@ -150,7 +159,19 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         boundStatement.setTimestamp(i++, new Date(captureTime));
         boundStatement.setDouble(i++, durationNanos);
         boundStatement.setLong(i++, 1);
-        boundStatement.setLong(i++, error ? 1 : 0);
+        if (errorMessage == null) {
+            boundStatement.setToNull(i++);
+        } else {
+            Stored.ErrorInterval errorInterval = Stored.ErrorInterval.newBuilder()
+                    .setFrom(captureTime)
+                    .setTo(captureTime)
+                    .setCount(1)
+                    .setMessage(errorMessage)
+                    .setDoNotMergeToTheLeft(false)
+                    .setDoNotMergeToTheRight(false)
+                    .build();
+            boundStatement.setBytes(i++, Messages.toByteBuffer(ImmutableList.of(errorInterval)));
+        }
         boundStatement.setInt(i++, adjustedTTL);
         // wait for success before inserting "needs rollup" records
         session.execute(boundStatement);
@@ -185,11 +206,30 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         List<SyntheticResult> syntheticResults = Lists.newArrayList();
         for (Row row : results) {
             i = 0;
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            double totalDurationNanos = row.getDouble(i++);
+            long executionCount = row.getLong(i++);
+            ByteBuffer errorIntervalsBytes = row.getBytes(i++);
+            List<ErrorInterval> errorIntervals = Lists.newArrayList();
+            if (errorIntervalsBytes != null) {
+                List<Stored.ErrorInterval> storedErrorIntervals = Messages
+                        .parseDelimitedFrom(errorIntervalsBytes, Stored.ErrorInterval.parser());
+                for (Stored.ErrorInterval storedErrorInterval : storedErrorIntervals) {
+                    errorIntervals.add(ImmutableErrorInterval.builder()
+                            .from(storedErrorInterval.getFrom())
+                            .to(storedErrorInterval.getTo())
+                            .count(storedErrorInterval.getCount())
+                            .message(storedErrorInterval.getMessage())
+                            .doNotMergeToTheLeft(storedErrorInterval.getDoNotMergeToTheLeft())
+                            .doNotMergeToTheRight(storedErrorInterval.getDoNotMergeToTheRight())
+                            .build());
+                }
+            }
             syntheticResults.add(ImmutableSyntheticResult.builder()
-                    .captureTime(checkNotNull(row.getTimestamp(i++)).getTime())
-                    .totalDurationNanos(row.getDouble(i++))
-                    .executionCount(row.getLong(i++))
-                    .errorCount(row.getLong(i++))
+                    .captureTime(captureTime)
+                    .totalDurationNanos(totalDurationNanos)
+                    .executionCount(executionCount)
+                    .addAllErrorIntervals(errorIntervals)
                     .build());
         }
         return syntheticResults;
@@ -292,12 +332,19 @@ public class SyntheticResultDao implements SyntheticResultRepository {
             throws Exception {
         double totalDurationNanos = 0;
         long executionCount = 0;
-        long errorCount = 0;
+        ErrorIntervalCollector errorIntervalCollector = new ErrorIntervalCollector();
         for (Row row : rows) {
             int i = 0;
             totalDurationNanos += row.getDouble(i++);
             executionCount += row.getLong(i++);
-            errorCount += row.getLong(i++);
+            ByteBuffer errorIntervalsBytes = row.getBytes(i++);
+            if (errorIntervalsBytes == null) {
+                errorIntervalCollector.addGap();
+            } else {
+                List<Stored.ErrorInterval> errorIntervals = Messages
+                        .parseDelimitedFrom(errorIntervalsBytes, Stored.ErrorInterval.parser());
+                errorIntervalCollector.addErrorIntervals(fromProto(errorIntervals));
+            }
         }
         BoundStatement boundStatement = insertResultPS.get(rollupLevel).bind();
         int i = 0;
@@ -306,7 +353,13 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         boundStatement.setTimestamp(i++, new Date(to));
         boundStatement.setDouble(i++, totalDurationNanos);
         boundStatement.setLong(i++, executionCount);
-        boundStatement.setLong(i++, errorCount);
+        List<ErrorInterval> mergedErrorIntervals =
+                errorIntervalCollector.getMergedErrorIntervals();
+        if (mergedErrorIntervals.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(toProto(mergedErrorIntervals)));
+        }
         boundStatement.setInt(i++, adjustedTTL);
         return session.executeAsync(boundStatement);
     }
@@ -329,5 +382,35 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         for (int i = 1; i < configRepository.getRollupConfigs().size(); i++) {
             session.execute("truncate synthetic_needs_rollup_" + i);
         }
+    }
+
+    private List<ErrorInterval> fromProto(List<Stored.ErrorInterval> storedErrorIntervals) {
+        List<ErrorInterval> errorIntervals = Lists.newArrayList();
+        for (Stored.ErrorInterval storedErrorInterval : storedErrorIntervals) {
+            errorIntervals.add(ImmutableErrorInterval.builder()
+                    .from(storedErrorInterval.getFrom())
+                    .to(storedErrorInterval.getTo())
+                    .count(storedErrorInterval.getCount())
+                    .message(storedErrorInterval.getMessage())
+                    .doNotMergeToTheLeft(storedErrorInterval.getDoNotMergeToTheLeft())
+                    .doNotMergeToTheRight(storedErrorInterval.getDoNotMergeToTheRight())
+                    .build());
+        }
+        return errorIntervals;
+    }
+
+    private List<Stored.ErrorInterval> toProto(List<ErrorInterval> errorIntervals) {
+        List<Stored.ErrorInterval> storedErrorIntervals = Lists.newArrayList();
+        for (ErrorInterval errorInterval : errorIntervals) {
+            storedErrorIntervals.add(Stored.ErrorInterval.newBuilder()
+                    .setFrom(errorInterval.from())
+                    .setTo(errorInterval.to())
+                    .setCount(errorInterval.count())
+                    .setMessage(errorInterval.message())
+                    .setDoNotMergeToTheLeft(errorInterval.doNotMergeToTheLeft())
+                    .setDoNotMergeToTheRight(errorInterval.doNotMergeToTheRight())
+                    .build());
+        }
+        return storedErrorIntervals;
     }
 }

@@ -36,6 +36,8 @@ glowroot.controller('SyntheticMonitorsCtrl', [
 
     var yvalMaps = {};
 
+    var executionCounts = {};
+
     $scope.chartNoData = true;
 
     // this is needed by nested controller chart-range.js
@@ -99,7 +101,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     }
 
     function onRefreshData(data) {
-      $scope.transactionCounts = data.transactionCounts;
+      executionCounts = data.executionCounts;
       yvalMaps = {};
       var i;
       var dataSeries;
@@ -255,9 +257,55 @@ glowroot.controller('SyntheticMonitorsCtrl', [
                 if (yval === undefined) {
                   return 'no data';
                 }
-                return $filter('gtMillis')(yval) + ' milliseconds';
+                return $filter('gtMillis')(yval) + ' milliseconds over ' + executionCounts[flotItem.seriesIndex][xval]
+                    + ' executions';
               }, ' (average value over this interval)', true);
 
+        },
+        markingContent: function (marking) {
+
+          function smartFormat(millis) {
+            var date = moment(millis);
+            if (date.valueOf() % 60000 === 0) {
+              return date.format('LT');
+            } else {
+              return date.format('LTS');
+            }
+          }
+
+          function getDisplay(syntheticMonitorId) {
+            var display;
+            angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
+              if (syntheticMonitor.id === syntheticMonitorId) {
+                display = syntheticMonitor.display;
+              }
+            });
+            if (display === undefined) {
+              display = syntheticMonitorId;
+            }
+            return display;
+          }
+
+          var data = marking.data;
+          var html = '<table class="gt-chart-tooltip"><thead><tr><td colspan="2" style="font-weight: 600;">'
+              + smartFormat(data.from) + ' to ' + smartFormat(data.to) + '</td></tr></thead><tbody>';
+
+          angular.forEach(data.intervals, function (intervals, syntheticMonitorId) {
+            if ($scope.syntheticMonitorIds.length > 1) {
+              html += '<tr><td colspan="2">' + getDisplay(syntheticMonitorId) + '</td></tr>';
+            }
+            if ($scope.syntheticMonitorIds.length === 1 && intervals.length === 1) {
+              html += '<tr><td colspan="2">' + intervals[0].message + ' (' + intervals[0].count + ' results)</td></tr>';
+            } else {
+              angular.forEach(intervals, function (interval) {
+                html += '<tr><td style="padding-right: 10px;">' + smartFormat(interval.from) + ' to '
+                    + smartFormat(interval.to) + '</td><td><span style="font-weight: 600;">' + interval.message
+                    + '</span> (' + interval.count + ' results)</td></tr>';
+              });
+            }
+          });
+          html += '</tbody></table>';
+          return html;
         }
       }
     };

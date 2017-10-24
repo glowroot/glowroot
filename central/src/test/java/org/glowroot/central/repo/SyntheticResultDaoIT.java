@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
-import org.glowroot.common.repo.SyntheticResultRepository.SyntheticResult;
+import org.glowroot.common.model.SyntheticResult;
 import org.glowroot.common.util.Clock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -73,9 +73,9 @@ public class SyntheticResultDaoIT {
     @Test
     public void shouldRollup() throws Exception {
         syntheticResultDao.truncateAll();
-        syntheticResultDao.store("one", "11223344", 60001, SECONDS.toNanos(1), false);
-        syntheticResultDao.store("one", "11223344", 120002, SECONDS.toNanos(3), false);
-        syntheticResultDao.store("one", "11223344", 360000, SECONDS.toNanos(7), false);
+        syntheticResultDao.store("one", "11223344", 60001, SECONDS.toNanos(1), null);
+        syntheticResultDao.store("one", "11223344", 120002, SECONDS.toNanos(3), null);
+        syntheticResultDao.store("one", "11223344", 360000, SECONDS.toNanos(7), null);
 
         // check non-rolled up data
         List<SyntheticResult> syntheticResults =
@@ -86,11 +86,11 @@ public class SyntheticResultDaoIT {
         assertThat(result1.captureTime()).isEqualTo(60001);
         assertThat(result1.totalDurationNanos()).isEqualTo(SECONDS.toNanos(1));
         assertThat(result1.executionCount()).isEqualTo(1);
-        assertThat(result1.errorCount()).isEqualTo(0);
+        assertThat(result1.errorIntervals()).isEmpty();
         assertThat(result2.captureTime()).isEqualTo(120002);
         assertThat(result2.totalDurationNanos()).isEqualTo(SECONDS.toNanos(3));
         assertThat(result2.executionCount()).isEqualTo(1);
-        assertThat(result2.errorCount()).isEqualTo(0);
+        assertThat(result2.errorIntervals()).isEmpty();
 
         // rollup
         List<Integer> rollupExpirationHours = Lists.newArrayList(
@@ -107,6 +107,6 @@ public class SyntheticResultDaoIT {
         assertThat(result1.captureTime()).isEqualTo(300000);
         assertThat(result1.totalDurationNanos()).isEqualTo(SECONDS.toNanos(4));
         assertThat(result1.executionCount()).isEqualTo(2);
-        assertThat(result1.errorCount()).isEqualTo(0);
+        assertThat(result1.errorIntervals()).isEmpty();
     }
 }

@@ -335,6 +335,17 @@ glowroot.factory('charts', [
             } else {
               chartState.plot.setData([[]]);
             }
+            if (data.markings) {
+              var markings = [];
+              angular.forEach(data.markings, function (marking) {
+                markings.push({
+                  xaxis: {from: marking.from, to: marking.to},
+                  color: '#ffcccc',
+                  data: marking
+                });
+              });
+              chartState.plot.getOptions().grid.markings = markings;
+            }
             chartState.plot.setupGrid();
             chartState.plot.draw();
             updateLegend(chartState, $scope);

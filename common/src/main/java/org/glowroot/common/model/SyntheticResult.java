@@ -13,15 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.common.repo;
+package org.glowroot.common.model;
 
 import java.util.List;
 
-import org.glowroot.common.model.SyntheticResult;
+import org.immutables.value.Value;
 
-public interface SyntheticResultRepository {
+@Value.Immutable
+public interface SyntheticResult {
 
-    // from is INCLUSIVE
-    public List<SyntheticResult> readSyntheticResults(String agentRollupId,
-            String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception;
+    long captureTime();
+    double totalDurationNanos();
+    long executionCount();
+    List<ErrorInterval> errorIntervals();
+
+    @Value.Immutable
+    public interface ErrorInterval {
+
+        long from();
+        long to();
+        int count();
+        String message();
+        boolean doNotMergeToTheLeft();
+        boolean doNotMergeToTheRight();
+    }
 }

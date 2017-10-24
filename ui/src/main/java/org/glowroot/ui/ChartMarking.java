@@ -13,15 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.common.repo;
+package org.glowroot.ui;
 
 import java.util.List;
+import java.util.Map;
 
-import org.glowroot.common.model.SyntheticResult;
+import org.immutables.value.Value;
 
-public interface SyntheticResultRepository {
+@Value.Immutable
+interface ChartMarking {
 
-    // from is INCLUSIVE
-    public List<SyntheticResult> readSyntheticResults(String agentRollupId,
-            String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception;
+    long from();
+    long to();
+    Map<String, List<ChartMarkingInterval>> intervals();
+
+    @Value.Immutable
+    public interface ChartMarkingInterval {
+
+        long from();
+        long to();
+        int count();
+        String message();
+    }
 }

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package org_glowroot_central_repo_model;
+
+option java_package = "org.glowroot.central.repo.model";
+
+option java_outer_classname = "Stored";
+
+message ErrorInterval {
+  int64 from = 1;
+  int64 to = 2;
+  int32 count = 3;
+  string message = 4;
+  bool do_not_merge_to_the_left = 5; // used during rollup and rendering chart markings
+  bool do_not_merge_to_the_right = 6; // used during rollup and rendering chart markings
+}

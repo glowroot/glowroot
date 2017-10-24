@@ -84,7 +84,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 32;
+    private static final int CURR_SCHEMA_VERSION = 33;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -263,6 +263,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 32) {
             redoOnHeartbeatTable();
             updateSchemaVersion(32);
+        }
+        // 0.9.26 to 0.9.27
+        if (initialSchemaVersion < 33) {
+            addSyntheticResultErrorIntervalsColumn();
+            updateSchemaVersion(33);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -982,6 +987,13 @@ public class SchemaUpgrade {
 
     private void redoOnHeartbeatTable() throws Exception {
         dropTable("heartbeat");
+    }
+
+    private void addSyntheticResultErrorIntervalsColumn() throws Exception {
+        addColumnIfNotExists("synthetic_result_rollup_0", "error_intervals", "blob");
+        addColumnIfNotExists("synthetic_result_rollup_1", "error_intervals", "blob");
+        addColumnIfNotExists("synthetic_result_rollup_2", "error_intervals", "blob");
+        addColumnIfNotExists("synthetic_result_rollup_3", "error_intervals", "blob");
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

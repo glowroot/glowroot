@@ -29,14 +29,19 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
+import org.glowroot.common.model.ErrorIntervalCollector;
+import org.glowroot.common.model.ImmutableSyntheticResult;
+import org.glowroot.common.model.SyntheticResult;
+import org.glowroot.common.model.SyntheticResult.ErrorInterval;
 import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ImmutableSyntheticResult;
 import org.glowroot.common.repo.SyntheticResultRepository;
-import org.glowroot.common.repo.SyntheticResultRepository.SyntheticResult;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
+import org.glowroot.ui.ChartMarking.ChartMarkingInterval;
+import org.glowroot.ui.MultiErrorIntervalCollector.MultiErrorInterval;
+import org.glowroot.ui.MultiErrorIntervalMerger.GroupedMultiErrorInterval;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -77,6 +82,8 @@ class SyntheticResultJsonService {
             syncManualRollupCaptureTimes(map, rollupLevel);
         }
         List<DataSeries> dataSeriesList = Lists.newArrayList();
+        List<Map<Long, Long>> executionCountsList = Lists.newArrayList();
+        List<List<MultiErrorInterval>> multiErrorIntervalsList = Lists.newArrayList();
         for (Entry<String, List<SyntheticResult>> entry : map.entrySet()) {
             String syntheticMonitorId = entry.getKey();
             SyntheticMonitorConfig config =
@@ -85,14 +92,39 @@ class SyntheticResultJsonService {
                 throw new IllegalStateException(
                         "Synthetic monitor not found: " + syntheticMonitorId);
             }
+            List<SyntheticResult> syntheticResults = entry.getValue();
             dataSeriesList.add(
-                    convertToDataSeriesWithGaps(config.getDisplay(), entry.getValue(), gapMillis));
+                    convertToDataSeriesWithGaps(config.getDisplay(), syntheticResults, gapMillis));
+            Map<Long, Long> executionCounts = Maps.newHashMap();
+            executionCountsList.add(executionCounts);
+            for (SyntheticResult syntheticResult : syntheticResults) {
+                executionCounts.put(syntheticResult.captureTime(),
+                        syntheticResult.executionCount());
+            }
+            ErrorIntervalCollector errorIntervalCollector = new ErrorIntervalCollector();
+            for (SyntheticResult syntheticResult : syntheticResults) {
+                List<ErrorInterval> errorIntervals = syntheticResult.errorIntervals();
+                if (errorIntervals.isEmpty()) {
+                    errorIntervalCollector.addGap();
+                } else {
+                    errorIntervalCollector.addErrorIntervals(errorIntervals);
+                }
+            }
+            MultiErrorIntervalCollector multiErrorIntervalCollector =
+                    new MultiErrorIntervalCollector();
+            multiErrorIntervalCollector
+                    .addErrorIntervals(errorIntervalCollector.getMergedErrorIntervals());
+            multiErrorIntervalsList.add(multiErrorIntervalCollector.getMergedMultiErrorIntervals());
         }
+        List<ChartMarking> markings =
+                toChartMarkings(multiErrorIntervalsList, request.syntheticMonitorId());
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeObjectField("executionCounts", executionCountsList);
+            jg.writeObjectField("markings", markings);
             jg.writeEndObject();
         } finally {
             jg.close();
@@ -141,7 +173,7 @@ class SyntheticResultJsonService {
     private <K> void syncManualRollupCaptureTimes(Map<K, List<SyntheticResult>> map,
             int rollupLevel) {
         long fixedIntervalMillis =
-                configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
+                configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         Map<K, Long> manualRollupCaptureTimes = Maps.newHashMap();
         long maxCaptureTime = Long.MIN_VALUE;
         for (Entry<K, List<SyntheticResult>> entry : map.entrySet()) {
@@ -191,7 +223,7 @@ class SyntheticResultJsonService {
         List<SyntheticResult> rolledUpSyntheticResults = Lists.newArrayList();
         double totalDurationNanos = 0;
         long executionCount = 0;
-        long errorCount = 0;
+        ErrorIntervalCollector errorIntervalCollector = new ErrorIntervalCollector();
         long currRollupCaptureTime = Long.MIN_VALUE;
         for (SyntheticResult nonRolledUpSyntheticResult : orderedNonRolledUpSyntheticResults) {
             long captureTime = nonRolledUpSyntheticResult.captureTime();
@@ -201,16 +233,21 @@ class SyntheticResultJsonService {
                         .captureTime(currRollupCaptureTime)
                         .totalDurationNanos(totalDurationNanos)
                         .executionCount(executionCount)
-                        .errorCount(errorCount)
+                        .errorIntervals(errorIntervalCollector.getMergedErrorIntervals())
                         .build());
                 totalDurationNanos = 0;
                 executionCount = 0;
-                errorCount = 0;
+                errorIntervalCollector = new ErrorIntervalCollector();
             }
             currRollupCaptureTime = rollupCaptureTime;
             totalDurationNanos += nonRolledUpSyntheticResult.totalDurationNanos();
             executionCount += nonRolledUpSyntheticResult.executionCount();
-            errorCount += nonRolledUpSyntheticResult.errorCount();
+            List<ErrorInterval> errorIntervals = nonRolledUpSyntheticResult.errorIntervals();
+            if (errorIntervals.isEmpty()) {
+                errorIntervalCollector.addGap();
+            } else {
+                errorIntervalCollector.addErrorIntervals(errorIntervals);
+            }
         }
         if (executionCount > 0) {
             // roll up final one
@@ -220,7 +257,7 @@ class SyntheticResultJsonService {
                     .captureTime(lastCaptureTime)
                     .totalDurationNanos(totalDurationNanos)
                     .executionCount(executionCount)
-                    .errorCount(errorCount)
+                    .errorIntervals(errorIntervalCollector.getMergedErrorIntervals())
                     .build());
         }
         return rolledUpSyntheticResults;
@@ -231,9 +268,12 @@ class SyntheticResultJsonService {
         DataSeries dataSeries = new DataSeries(dataSeriesName);
         SyntheticResult lastSyntheticResult = null;
         for (SyntheticResult syntheticResult : syntheticResults) {
-            if (lastSyntheticResult != null
-                    && syntheticResult.captureTime()
-                            - lastSyntheticResult.captureTime() > gapMillis) {
+            if (syntheticResult.executionCount() == 0) {
+                // only errors captured in this aggregate
+                continue;
+            }
+            if (lastSyntheticResult != null && syntheticResult.captureTime()
+                    - lastSyntheticResult.captureTime() > gapMillis) {
                 dataSeries.addNull();
             }
             dataSeries.add(syntheticResult.captureTime(),
@@ -242,6 +282,47 @@ class SyntheticResultJsonService {
             lastSyntheticResult = syntheticResult;
         }
         return dataSeries;
+    }
+
+    private static List<ChartMarking> toChartMarkings(
+            List<List<MultiErrorInterval>> multiErrorIntervalsList,
+            List<String> syntheticMonitorIds) {
+        MultiErrorIntervalMerger multiErrorIntervalMerger = new MultiErrorIntervalMerger();
+        for (int i = 0; i < multiErrorIntervalsList.size(); i++) {
+            List<MultiErrorInterval> multiErrorIntervals = multiErrorIntervalsList.get(i);
+            String syntheticMonitorId = syntheticMonitorIds.get(i);
+            multiErrorIntervalMerger.addMultiErrorIntervals(syntheticMonitorId,
+                    multiErrorIntervals);
+        }
+        List<ChartMarking> chartMarkings = Lists.newArrayList();
+        for (GroupedMultiErrorInterval groupedMultiErrorInterval : multiErrorIntervalMerger
+                .getGroupedMultiErrorIntervals()) {
+            ImmutableChartMarking.Builder chartMarking = ImmutableChartMarking.builder()
+                    .from(groupedMultiErrorInterval.from())
+                    .to(groupedMultiErrorInterval.to());
+            for (Entry<String, List<ErrorInterval>> entry : groupedMultiErrorInterval
+                    .errorIntervals().entrySet()) {
+                chartMarking.putIntervals(entry.getKey(),
+                        toChartMarkingIntervals(entry.getValue()));
+            }
+            chartMarkings.add(chartMarking.build());
+        }
+        return chartMarkings;
+    }
+
+    private static List<ChartMarkingInterval> toChartMarkingIntervals(
+            List<ErrorInterval> errorIntervals) {
+        List<ChartMarkingInterval> chartMarkingIntervals =
+                Lists.newArrayListWithCapacity(errorIntervals.size());
+        for (ErrorInterval errorInterval : errorIntervals) {
+            chartMarkingIntervals.add(ImmutableChartMarkingInterval.builder()
+                    .from(errorInterval.from())
+                    .to(errorInterval.to())
+                    .count(errorInterval.count())
+                    .message(errorInterval.message())
+                    .build());
+        }
+        return chartMarkingIntervals;
     }
 
     @Value.Immutable
