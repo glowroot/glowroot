@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package org_glowroot_agent_fat_storage_model;
+package org_glowroot_agent_embedded_repo_model;
 
 option java_package = "org.glowroot.agent.embedded.repo.model";
 
