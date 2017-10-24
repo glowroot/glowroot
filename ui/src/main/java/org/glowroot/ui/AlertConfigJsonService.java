@@ -276,6 +276,7 @@ class AlertConfigJsonService {
         }
         sb.append(" exceeds ");
         sb.append(AlertingService.getWithUnit(condition.getThresholdMillis(), "millisecond"));
+        sb.append(" or results in error");
         return sb.toString();
     }
 
