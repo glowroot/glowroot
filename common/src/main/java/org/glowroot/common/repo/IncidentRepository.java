@@ -21,7 +21,6 @@ import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
 
-import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
@@ -45,7 +44,6 @@ public interface IncidentRepository {
     List<ResolvedIncident> readResolvedIncidents(long from) throws Exception;
 
     @Value.Immutable
-    @Styles.AllParameters
     interface OpenIncident {
         String agentRollupId();
         long openTime();
@@ -55,7 +53,6 @@ public interface IncidentRepository {
     }
 
     @Value.Immutable
-    @Styles.AllParameters
     interface ResolvedIncident {
         String agentRollupId();
         long openTime();
