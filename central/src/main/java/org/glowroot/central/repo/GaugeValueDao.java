@@ -200,6 +200,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             }
         }
 
+        futures.add(agentRollupDao.updateLastCaptureTime(agentId, maxCaptureTime));
         // wait for success before inserting "needs rollup" records
         MoreFutures.waitForAll(futures);
         futures.clear();
