@@ -1271,12 +1271,24 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setDouble(i++, totalDurationNanos);
         boundStatement.setLong(i++, transactionCount);
         boundStatement.setBool(i++, asyncTransactions);
-        boundStatement.setBytes(i++,
-                Messages.toByteBuffer(MutableAggregate.toProto(mainThreadRootTimers)));
-        boundStatement.setBytes(i++,
-                Messages.toByteBuffer(MutableAggregate.toProto(auxThreadRootTimers)));
-        boundStatement.setBytes(i++,
-                Messages.toByteBuffer(MutableAggregate.toProto(asyncTimers)));
+        if (mainThreadRootTimers.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++,
+                    Messages.toByteBuffer(MutableAggregate.toProto(mainThreadRootTimers)));
+        }
+        if (auxThreadRootTimers.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++,
+                    Messages.toByteBuffer(MutableAggregate.toProto(auxThreadRootTimers)));
+        }
+        if (asyncTimers.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++,
+                    Messages.toByteBuffer(MutableAggregate.toProto(asyncTimers)));
+        }
         boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos());
         boundStatement.setDouble(i++, mainThreadStats.getTotalBlockedNanos());
         boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos());
