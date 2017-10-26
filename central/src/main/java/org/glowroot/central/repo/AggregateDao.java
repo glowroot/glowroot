@@ -1872,22 +1872,22 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setLong(i++, aggregate.getTransactionCount());
         boundStatement.setBool(i++, aggregate.getAsyncTransactions());
         List<Aggregate.Timer> mainThreadRootTimers = aggregate.getMainThreadRootTimerList();
-        if (!mainThreadRootTimers.isEmpty()) {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(mainThreadRootTimers));
-        } else {
+        if (mainThreadRootTimers.isEmpty()) {
             boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(mainThreadRootTimers));
         }
         List<Aggregate.Timer> auxThreadRootTimers = aggregate.getAuxThreadRootTimerList();
-        if (!auxThreadRootTimers.isEmpty()) {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(auxThreadRootTimers));
-        } else {
+        if (auxThreadRootTimers.isEmpty()) {
             boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(auxThreadRootTimers));
         }
         List<Aggregate.Timer> asyncTimers = aggregate.getAsyncTimerList();
-        if (!asyncTimers.isEmpty()) {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
-        } else {
+        if (asyncTimers.isEmpty()) {
             boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
         }
         Aggregate.ThreadStats mainThreadStats = aggregate.getMainThreadStats();
         if (mainThreadStats.hasTotalCpuNanos()) {

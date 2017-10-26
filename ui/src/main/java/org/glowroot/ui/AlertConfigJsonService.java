@@ -184,8 +184,7 @@ class AlertConfigJsonService {
                 SyntheticMonitorConfig syntheticMonitorConfig =
                         configRepository.getSyntheticMonitorConfig(agentRollupId,
                                 condition.getSyntheticMonitorId());
-                return getConditionDisplay(condition,
-                        syntheticMonitorConfig);
+                return getConditionDisplay(condition, syntheticMonitorConfig);
             case HEARTBEAT_CONDITION:
                 return getConditionDisplay(alertCondition.getHeartbeatCondition());
             default:
