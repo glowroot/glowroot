@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,12 @@ public class Play2xIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("play render: index");
 
+        if (i.hasNext()) {
+            entry = i.next();
+            throw new AssertionError("Unexpected entry: depth=" + entry.getDepth() + ", message="
+                    + entry.getMessage());
+        }
+
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -119,6 +125,12 @@ public class Play2xIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("play render: index");
 
+        if (i.hasNext()) {
+            entry = i.next();
+            throw new AssertionError("Unexpected entry: depth=" + entry.getDepth() + ", message="
+                    + entry.getMessage());
+        }
+
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -141,6 +153,12 @@ public class Play2xIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
 
+        if (i.hasNext()) {
+            entry = i.next();
+            throw new AssertionError("Unexpected entry: depth=" + entry.getDepth() + ", message="
+                    + entry.getMessage());
+        }
+
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -162,6 +180,12 @@ public class Play2xIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        if (i.hasNext()) {
+            entry = i.next();
+            throw new AssertionError("Unexpected entry: depth=" + entry.getDepth() + ", message="
+                    + entry.getMessage());
+        }
 
         assertThat(i.hasNext()).isFalse();
     }
