@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
@@ -40,13 +41,23 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.machinepublishers.jbrowserdriver.RequestHeaders;
 import com.machinepublishers.jbrowserdriver.Settings;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.AUTH;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.message.BasicHeader;
 import org.immutables.value.Value;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -60,6 +71,7 @@ import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.util.MoreFutures;
+import org.glowroot.common.config.HttpProxyConfig;
 import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common.repo.util.AlertingService;
@@ -309,13 +321,20 @@ class SyntheticMonitorService implements Runnable {
                 try {
                     HttpGet httpGet = new HttpGet(url);
                     httpGet.setHeader("Glowroot-Transaction-Type", "Synthetic");
-                    httpGet.setConfig(RequestConfig.custom()
+                    RequestConfig.Builder config = RequestConfig.custom()
                             // wait an extra second to make sure no edge case where
                             // SocketTimeoutException occurs with elapsed time < PING_TIMEOUT_MILLIS
-                            .setSocketTimeout(PING_TIMEOUT_MILLIS + 1000)
-                            .build());
-                    httpClient.execute(httpGet, new CompletingFutureCallback(future));
+                            .setSocketTimeout(PING_TIMEOUT_MILLIS + 1000);
+                    HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+                    if (!httpProxyConfig.host().isEmpty()) {
+                        int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
+                        config.setProxy(new HttpHost(httpProxyConfig.host(), proxyPort));
+                    }
+                    httpGet.setConfig(config.build());
+                    httpClient.execute(httpGet, getHttpClientContext(),
+                            new CompletingFutureCallback(future));
                 } catch (Throwable t) {
+                    logger.debug(t.getMessage(), t);
                     future.completeExceptionally(t);
                 }
             }
@@ -468,6 +487,35 @@ class SyntheticMonitorService implements Runnable {
         }
         alertingService.sendNotification(agentRollupId, agentRollupDisplay, alertConfig, endTime,
                 subject, sb.toString(), ok);
+    }
+
+    private HttpClientContext getHttpClientContext() throws Exception {
+        HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+        if (httpProxyConfig.host().isEmpty() || httpProxyConfig.username().isEmpty()) {
+            return HttpClientContext.create();
+        }
+
+        // perform preemptive proxy authentication
+
+        int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
+        HttpHost proxyHost = new HttpHost(httpProxyConfig.host(), proxyPort);
+
+        BasicScheme basicScheme = new BasicScheme();
+        basicScheme.processChallenge(new BasicHeader(AUTH.PROXY_AUTH, "BASIC realm="));
+        BasicAuthCache authCache = new BasicAuthCache();
+        authCache.put(proxyHost, basicScheme);
+
+        String password = httpProxyConfig.password();
+        if (!password.isEmpty()) {
+            password = Encryption.decrypt(password, configRepository.getLazySecretKey());
+        }
+        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(new AuthScope(proxyHost),
+                new UsernamePasswordCredentials(httpProxyConfig.username(), password));
+        HttpClientContext context = HttpClientContext.create();
+        context.setAuthCache(authCache);
+        context.setCredentialsProvider(credentialsProvider);
+        return context;
     }
 
     private static Throwable getRootCause(Throwable t) {
