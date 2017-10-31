@@ -145,7 +145,7 @@
           <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
           <groupId>commons-codec</groupId>
           <artifactId>commons-codec</artifactId>
-          <version>1.10</version>
+          <version>1.11</version>
           <scope>test</scope>
         </dependency>
         <dependency>
@@ -206,7 +206,7 @@
           <plugin>
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
-            <version>3.2.2</version>
+            <version>3.3.1</version>
             <configuration>
               <scalaVersion>${scala.version}</scalaVersion>
               <testSourceDir>

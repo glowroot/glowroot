@@ -59,12 +59,12 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.1.1.Final</version>
+      <version>9.1.2.Final</version>
     </dependency>
     <dependency>
       <groupId>org.jgroups</groupId>
       <artifactId>jgroups</artifactId>
-      <version>4.0.7.Final</version>
+      <version>4.0.8.Final</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -82,12 +82,12 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
-      <version>3.5.3</version>
+      <version>3.6.0</version>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
-      <version>3.5.3</version>
+      <version>3.6.0</version>
     </dependency>
     <dependency>
       <groupId>com.machinepublishers</groupId>
@@ -148,6 +148,12 @@
       <artifactId>jsr305</artifactId>
       <!-- don't need this dependency at runtime since only annotations -->
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>1.7.9</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

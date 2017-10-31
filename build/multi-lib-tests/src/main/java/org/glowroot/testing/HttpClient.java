@@ -226,6 +226,8 @@ public class HttpClient {
         }
         updateLibVersion("cxf.version", "3.2.0");
         runJava8(test);
+        updateLibVersion("cxf.version", "3.2.1");
+        runJava8(test);
     }
 
     private static void httpUrlConnection() throws Exception {
@@ -287,6 +289,7 @@ public class HttpClient {
             run(test);
         }
         updateLibVersion("spring.version", "5.0.0.RELEASE");
+        updateLibVersion("spring.version", "5.0.1.RELEASE");
     }
 
     private static void runAsyncHttpClient1x(String asyncHttpClientVersion) throws Exception {

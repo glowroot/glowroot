@@ -44,6 +44,15 @@
     if (typeof contextPath !== 'undefined' && contextPath !== '/' && location.pathname === contextPath) {
       location.pathname += '/';
     }
+    if (typeof console === 'undefined') {
+      // angular-ui-router doesn't protect calls to console.log and console.error
+      window.console = {
+        log: function () {
+        },
+        error: function () {
+        }
+      }
+    }
   </script>
   <![endif]-->
 

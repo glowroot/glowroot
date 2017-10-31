@@ -52,6 +52,7 @@ public class Spring {
             run("4.3." + i + ".RELEASE");
         }
         runJava8("5.0.0.RELEASE");
+        runJava8("5.0.1.RELEASE");
     }
 
     private static void run(String version, String... profiles) throws Exception {

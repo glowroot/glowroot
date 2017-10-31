@@ -114,7 +114,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.aspectj</groupId>
       <artifactId>aspectjweaver</artifactId>
-      <version>1.8.11</version>
+      <version>1.8.12</version>
       <scope>test</scope>
     </dependency>
     <dependency>

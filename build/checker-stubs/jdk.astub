@@ -12,7 +12,7 @@ public class ClassLoader {
 }
 
 public class String {
-    public @PolyTainted String toLowerCase(Locale locale) @PolyTainted;
+    public @PolyTainted String toLowerCase(@PolyTainted String this, Locale locale);
 }
 
 public class Class<T> {

@@ -53,6 +53,7 @@ public class JAXWS {
             runJava7("3.1." + i, "4.3.11.RELEASE");
         }
         runJava8("3.2.0", "4.3.11.RELEASE");
+        runJava8("3.2.1", "4.3.12.RELEASE");
     }
 
     private static void run2x(String cxfVersion, String springVersion) throws Exception {
