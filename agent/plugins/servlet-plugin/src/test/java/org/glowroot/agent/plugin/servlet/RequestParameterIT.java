@@ -77,6 +77,26 @@ public class RequestParameterIT {
         @SuppressWarnings("unchecked")
         List<String> multi = (List<String>) requestParameters.get("multi");
         assertThat(multi).containsExactly("m1", "m2");
+        String queryString = ResponseHeaderIT.getDetailValue(trace, "Request query string");
+        assertThat(queryString).isEqualTo("xYz=aBc&jpassword1=****&multi=m1&multi=m2");
+    }
+
+    @Test
+    public void testRequestParametersWithoutMaskedQueryString() throws Exception {
+        // when
+        Trace trace = container.execute(GetParameterWithoutMaskedQueryString.class, "Web");
+
+        // then
+        Map<String, Object> requestParameters =
+                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+        assertThat(requestParameters).hasSize(3);
+        assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
+        assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
+        @SuppressWarnings("unchecked")
+        List<String> multi = (List<String>) requestParameters.get("multi");
+        assertThat(multi).containsExactly("m1", "m2");
+        String queryString = ResponseHeaderIT.getDetailValue(trace, "Request query string");
+        assertThat(queryString).isEqualTo("xYz=aBc&multi=m1&multi=m2");
     }
 
     @Test
@@ -86,9 +106,11 @@ public class RequestParameterIT {
         // when
         Trace trace = container.execute(GetParameter.class, "Web");
         // then
-        assertThat(trace.getHeader().getDetailEntryList()).hasSize(1);
+        assertThat(trace.getHeader().getDetailEntryList()).hasSize(2);
         assertThat(trace.getHeader().getDetailEntryList().get(0).getName())
                 .isEqualTo("Request http method");
+        assertThat(trace.getHeader().getDetailEntryList().get(1).getName())
+                .isEqualTo("Request query string");
     }
 
     @Test
@@ -150,6 +172,23 @@ public class RequestParameterIT {
             ((MockHttpServletRequest) request).setParameter("xYz", "aBc");
             ((MockHttpServletRequest) request).setParameter("jpassword1", "mask me");
             ((MockHttpServletRequest) request).setParameter("multi", new String[] {"m1", "m2"});
+            ((MockHttpServletRequest) request)
+                    .setQueryString("xYz=aBc&jpassword1=mask%20me&multi=m1&multi=m2");
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getParameter("xYz");
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class GetParameterWithoutMaskedQueryString extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setParameter("xYz", "aBc");
+            ((MockHttpServletRequest) request).setParameter("jpassword1", "mask me");
+            ((MockHttpServletRequest) request).setParameter("multi", new String[] {"m1", "m2"});
+            ((MockHttpServletRequest) request).setQueryString("xYz=aBc&multi=m1&multi=m2");
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {

@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,6 +24,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -37,6 +39,8 @@ import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
 // this class is thread-safe (unlike other MessageSuppliers) since it gets passed around to
 // auxiliary thread contexts for handling async servlets
 class ServletMessageSupplier extends MessageSupplier implements ServletRequestInfo {
+
+    private static final String MASK_TEXT = "****";
 
     private final String requestMethod;
     private final String requestContextPath;
@@ -83,13 +87,16 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
 
     @Override
     public Message get() {
-        Map<String, Object> detail = Maps.newHashMap();
+        ImmutableList<Pattern> maskPatterns = ServletPluginProperties.maskRequestParameters();
+        Map<String, Object> detail = Maps.newLinkedHashMap();
         detail.put("Request http method", requestMethod);
-        if (requestQueryString != null) {
+        String maskedRequestQueryString = maskRequestQueryString(requestQueryString, maskPatterns);
+        if (maskedRequestQueryString != null) {
             // including empty query string since that means request ended with ?
-            detail.put("Request query string", requestQueryString);
+            detail.put("Request query string", maskedRequestQueryString);
         }
-        Map<String, Object> maskedRequestParameters = maskRequestParameters(requestParameters);
+        Map<String, Object> maskedRequestParameters =
+                maskRequestParameters(requestParameters, maskPatterns);
         if (maskedRequestParameters != null && !maskedRequestParameters.isEmpty()) {
             detail.put("Request parameters", maskedRequestParameters);
         }
@@ -216,19 +223,76 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
                 sessionAttributeUpdatedValueMap);
     }
 
+    @VisibleForTesting
+    static @Nullable String maskRequestQueryString(@Nullable String requestQueryString,
+            List<Pattern> maskPatterns) {
+        if (requestQueryString == null) {
+            return null;
+        }
+        if (maskPatterns.isEmpty()) {
+            return requestQueryString;
+        }
+        StringBuilder sb = new StringBuilder(requestQueryString.length());
+        boolean existMaskedParameters = false;
+        int keyStartIndex = 0;
+        boolean inMaskedValue = false;
+        for (int i = 0; i < requestQueryString.length(); i++) {
+            char c = requestQueryString.charAt(i);
+            switch (c) {
+                case '&':
+                    sb.append('&');
+                    keyStartIndex = sb.length();
+                    inMaskedValue = false;
+                    break;
+                case '=':
+                    if (keyStartIndex == -1) {
+                        // not in key
+                        if (!inMaskedValue) {
+                            sb.append(c);
+                        }
+                    } else {
+                        String key = sb.substring(keyStartIndex, sb.length());
+                        sb.append('=');
+                        // converted to lower case for case-insensitive matching
+                        // (patterns are lower case)
+                        String keyLowerCase = key.toLowerCase(Locale.ENGLISH);
+                        if (DetailCapture.matchesOneOf(keyLowerCase, maskPatterns)) {
+                            inMaskedValue = true;
+                            sb.append(MASK_TEXT);
+                            existMaskedParameters = true;
+                        }
+                        keyStartIndex = -1;
+                    }
+                    break;
+                default:
+                    if (!inMaskedValue) {
+                        sb.append(c);
+                    }
+            }
+        }
+        if (existMaskedParameters) {
+            return sb.toString();
+        } else {
+            // save the expense of toString() in common case
+            return requestQueryString;
+        }
+    }
+
     private static @Nullable Map<String, Object> maskRequestParameters(
-            @Nullable Map<String, Object> requestParameters) {
+            @Nullable Map<String, Object> requestParameters, List<Pattern> maskPatterns) {
         if (requestParameters == null) {
             return null;
         }
-        ImmutableList<Pattern> maskPatterns = ServletPluginProperties.maskRequestParameters();
+        if (maskPatterns.isEmpty()) {
+            return requestParameters;
+        }
         Map<String, Object> maskedRequestParameters = Maps.newLinkedHashMap();
         for (Entry<String, Object> entry : requestParameters.entrySet()) {
             String name = entry.getKey();
             // converted to lower case for case-insensitive matching (patterns are lower case)
             String keyLowerCase = name.toLowerCase(Locale.ENGLISH);
             if (DetailCapture.matchesOneOf(keyLowerCase, maskPatterns)) {
-                maskedRequestParameters.put(name, "****");
+                maskedRequestParameters.put(name, MASK_TEXT);
             } else {
                 maskedRequestParameters.put(name, entry.getValue());
             }

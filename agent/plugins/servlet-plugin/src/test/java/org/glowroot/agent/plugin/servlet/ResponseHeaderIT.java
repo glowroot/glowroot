@@ -211,19 +211,12 @@ public class ResponseHeaderIT {
     }
 
     static @Nullable Map<String, Object> getDetailMap(Trace trace, String name) {
-        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
-        Trace.DetailEntry found = null;
-        for (Trace.DetailEntry detail : details) {
-            if (detail.getName().equals(name)) {
-                found = detail;
-                break;
-            }
-        }
-        if (found == null) {
+        Trace.DetailEntry detailEntry = getDetailEntry(trace, name);
+        if (detailEntry == null) {
             return null;
         }
         Map<String, Object> responseHeaders = Maps.newLinkedHashMap();
-        for (Trace.DetailEntry detail : found.getChildEntryList()) {
+        for (Trace.DetailEntry detail : detailEntry.getChildEntryList()) {
             List<Trace.DetailValue> values = detail.getValueList();
             if (values.size() == 1) {
                 responseHeaders.put(detail.getName(), values.get(0).getString());
@@ -238,8 +231,25 @@ public class ResponseHeaderIT {
         return responseHeaders;
     }
 
+    static @Nullable String getDetailValue(Trace trace, String name) {
+        Trace.DetailEntry detailEntry = getDetailEntry(trace, name);
+        return detailEntry == null ? null : detailEntry.getValue(0).getString();
+    }
+
     private static @Nullable Map<String, Object> getResponseHeaders(Trace trace) {
         return getDetailMap(trace, "Response headers");
+    }
+
+    private static Trace.DetailEntry getDetailEntry(Trace trace, String name) {
+        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
+        Trace.DetailEntry found = null;
+        for (Trace.DetailEntry detail : details) {
+            if (detail.getName().equals(name)) {
+                found = detail;
+                break;
+            }
+        }
+        return found;
     }
 
     @SuppressWarnings("serial")
