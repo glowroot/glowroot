@@ -119,6 +119,7 @@ public class AsyncHttpClientAspect {
 
     @Pointcut(className = "org.asynchttpclient.AsyncHttpClient", methodName = "executeRequest",
             methodParameterTypes = {"org.asynchttpclient.Request", ".."},
+            methodReturnType = "org.asynchttpclient.ListenableFuture",
             nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteRequestAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteRequestAdvice.class);
@@ -195,6 +196,7 @@ public class AsyncHttpClientAspect {
 
     @Pointcut(className = "com.ning.http.client.AsyncHttpClient", methodName = "executeRequest",
             methodParameterTypes = {"com.ning.http.client.Request", ".."},
+            methodReturnType = "com.ning.http.client.ListenableFuture",
             nestingGroup = "http-client", timerName = "http client request")
     public static class OldExecuteRequestAdvice {
         private static final TimerName timerName =

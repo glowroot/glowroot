@@ -134,18 +134,17 @@ public class HttpClient {
     }
 
     private static void asyncHttpClient() throws Exception {
-        final String test = "AsyncHttpClientPluginIT";
-        for (int i = 1; i <= 24; i++) {
-            updateLibVersion("asynchttpclient.version", "1.7." + i);
-            run(test, "async-http-client-1.x");
+        for (int i = 1; i <= 5; i++) {
+            runAsyncHttpClient1x("1.6." + i);
+        }
+        for (int i = 0; i <= 24; i++) {
+            runAsyncHttpClient1x("1.7." + i);
         }
         for (int i = 0; i <= 17; i++) {
-            updateLibVersion("asynchttpclient.version", "1.8." + i);
-            run(test, "async-http-client-1.x");
+            runAsyncHttpClient1x("1.8." + i);
         }
         for (int i = 0; i <= 40; i++) {
-            updateLibVersion("asynchttpclient.version", "1.9." + i);
-            runJava7(test, "async-http-client-1.x");
+            runAsyncHttpClient1x("1.9." + i);
         }
         runAsyncHttpClient2x("2.0.0", "4.0.36.Final");
         runAsyncHttpClient2x("2.0.1", "4.0.36.Final");
@@ -288,6 +287,16 @@ public class HttpClient {
             run(test);
         }
         updateLibVersion("spring.version", "5.0.0.RELEASE");
+    }
+
+    private static void runAsyncHttpClient1x(String asyncHttpClientVersion) throws Exception {
+        final String test = "AsyncHttpClientPluginIT";
+        updateLibVersion("asynchttpclient.version", asyncHttpClientVersion);
+        if (asyncHttpClientVersion.startsWith("1.9")) {
+            runJava7(test, "async-http-client-1.x");
+        } else {
+            run(test, "async-http-client-1.x");
+        }
     }
 
     private static void runAsyncHttpClient2x(String asyncHttpClientVersion, String nettyVersion)
