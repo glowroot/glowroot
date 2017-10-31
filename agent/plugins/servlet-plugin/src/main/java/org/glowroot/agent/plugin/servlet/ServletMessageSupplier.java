@@ -15,13 +15,16 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -86,8 +89,9 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
             // including empty query string since that means request ended with ?
             detail.put("Request query string", requestQueryString);
         }
-        if (requestParameters != null && !requestParameters.isEmpty()) {
-            detail.put("Request parameters", requestParameters);
+        Map<String, Object> maskedRequestParameters = maskRequestParameters(requestParameters);
+        if (maskedRequestParameters != null && !maskedRequestParameters.isEmpty()) {
+            detail.put("Request parameters", maskedRequestParameters);
         }
         if (!requestHeaders.isEmpty()) {
             detail.put("Request headers", requestHeaders);
@@ -210,5 +214,25 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
                 sessionAttributeInitialValuePlusMap);
         detail.put("Session attributes (updated during this request)",
                 sessionAttributeUpdatedValueMap);
+    }
+
+    private static @Nullable Map<String, Object> maskRequestParameters(
+            @Nullable Map<String, Object> requestParameters) {
+        if (requestParameters == null) {
+            return null;
+        }
+        ImmutableList<Pattern> maskPatterns = ServletPluginProperties.maskRequestParameters();
+        Map<String, Object> maskedRequestParameters = Maps.newLinkedHashMap();
+        for (Entry<String, Object> entry : requestParameters.entrySet()) {
+            String name = entry.getKey();
+            // converted to lower case for case-insensitive matching (patterns are lower case)
+            String keyLowerCase = name.toLowerCase(Locale.ENGLISH);
+            if (DetailCapture.matchesOneOf(keyLowerCase, maskPatterns)) {
+                maskedRequestParameters.put(name, "****");
+            } else {
+                maskedRequestParameters.put(name, entry.getValue());
+            }
+        }
+        return maskedRequestParameters;
     }
 }

@@ -48,7 +48,6 @@ class DetailCapture {
     static ImmutableMap<String, Object> captureRequestParameters(
             Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> requestParameters) {
         ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();
-        ImmutableList<Pattern> maskPatterns = ServletPluginProperties.maskRequestParameters();
         ImmutableMap.Builder<String, Object> map = ImmutableMap.builder();
         for (Entry</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> entry : requestParameters
                 .entrySet()) {
@@ -59,10 +58,6 @@ class DetailCapture {
             // converted to lower case for case-insensitive matching (patterns are lower case)
             String keyLowerCase = name.toLowerCase(Locale.ENGLISH);
             if (!matchesOneOf(keyLowerCase, capturePatterns)) {
-                continue;
-            }
-            if (matchesOneOf(keyLowerCase, maskPatterns)) {
-                map.put(name, "****");
                 continue;
             }
             @Nullable
