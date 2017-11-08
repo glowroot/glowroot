@@ -138,11 +138,15 @@ glowroot.controller('TransactionPercentilesCtrl', [
       },
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
+          var transactionCount = $scope.transactionCounts[xval];
+          if (transactionCount === undefined) {
+            return 'No data';
+          }
           var from = xval - chartState.dataPointIntervalMillis;
           // this math is to deal with live aggregate
           from = Math.ceil(from / chartState.dataPointIntervalMillis) * chartState.dataPointIntervalMillis;
           var to = xval;
-          return charts.renderTooltipHtml(from, to, $scope.transactionCounts[xval], flotItem.dataIndex,
+          return charts.renderTooltipHtml(from, to, transactionCount, flotItem.dataIndex,
               flotItem.seriesIndex, chartState.plot, function (value) {
                 return $filter('gtMillis')(value) + ' milliseconds';
               });
