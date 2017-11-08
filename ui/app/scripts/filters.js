@@ -35,17 +35,24 @@ glowroot.filter('gtDuration', function () {
     }
     var duration = moment.duration(input);
     var parts = [];
-    if (duration.days() >= 1) {
-      parts.push(Math.floor(duration.days()) + 'd');
+    var days = duration.days();
+    if (days >= 1) {
+      parts.push(Math.floor(days) + 'd');
     }
-    if (duration.hours() >= 1) {
-      parts.push(Math.floor(duration.hours()) + 'h');
+    var hours = duration.hours();
+    if (parts.length || hours >= 1) {
+      parts.push(Math.floor(hours) + 'h');
     }
-    if (duration.minutes() >= 1) {
-      parts.push(Math.floor(duration.minutes()) + 'm');
+    var minutes = duration.minutes();
+    if (parts.length || minutes >= 1) {
+      parts.push(Math.floor(minutes) + 'm');
     }
-    if (duration.seconds() >= 1) {
-      parts.push(Math.floor(duration.seconds()) + 's');
+    var seconds = duration.seconds();
+    if (parts.length || seconds >= 1) {
+      parts.push(Math.floor(seconds) + 's');
+    }
+    if (!parts.length) {
+      return input + 'ms';
     }
     return parts.join(' ');
   };
