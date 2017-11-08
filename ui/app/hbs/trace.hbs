@@ -34,10 +34,16 @@
     <strong>{{agent}}</strong>
   </div>
 {{/if}}
-<div class="gt-trace-attr-name">Transaction type:&nbsp;</div>
-<div class="gt-trace-attr-value">{{transactionType}}</div>
-<div class="gt-trace-attr-name">Transaction name:&nbsp;</div>
-<div class="gt-trace-attr-value">{{transactionName}}</div>
+<div>
+  <!-- note: surrounding div is for nicer copy paste result -->
+  <div class="gt-trace-attr-name">Transaction type:&nbsp;</div>
+  <div class="gt-trace-attr-value">{{transactionType}}</div>
+</div>
+<div>
+  <!-- note: surrounding div is for nicer copy paste result -->
+  <div class="gt-trace-attr-name">Transaction name:&nbsp;</div>
+  <div class="gt-trace-attr-value">{{transactionName}}</div>
+</div>
 {{#if error}}
   <div class="gt-trace-attr-name">Error:&nbsp;</div>
   <div class="gt-trace-attr-value">{{error.message}}</div>
@@ -67,12 +73,17 @@
 --></div>
 </div>
 {{#if user}}
-  <div class="gt-trace-attr-name">User:&nbsp;</div>
-  <div class="gt-trace-attr-value">{{user}}</div>
+  <div>
+    <div class="gt-trace-attr-name">User:&nbsp;</div>
+    <div class="gt-trace-attr-value">{{user}}</div>
+  </div>
 {{/if}}
 {{#eachKeyValuePair attributes}}
-  <div class="gt-trace-attr-name">{{key}}:&nbsp;</div>
-  <div class="gt-trace-attr-value">{{value}}</div>
+  <div>
+    <!-- note: surrounding div is for nicer copy paste result -->
+    <div class="gt-trace-attr-name">{{key}}:&nbsp;</div>
+    <div class="gt-trace-attr-value">{{value}}</div>
+  </div>
 {{/eachKeyValuePair}}
 {{#if detail}}
   {{{headerDetailHtml detail}}}
@@ -94,7 +105,7 @@
         {{#each mainBreakdown.flattenedTimers}}
           <tr class="align-top" id="mft{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
-              <div class="gt-indent2 gt-break-word gt-break-word-plus gt-second-line-indent">
+              <div class="gt-indent2 gt-break-word gt-second-line-indent">
                 {{name}}
               </div>
             </td>
@@ -151,7 +162,7 @@
           <tr class="align-top" id="mtt{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
               <div class="gt-indent2">
-                <div class="gt-break-word gt-break-word-plus gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
+                <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
                   {{name}}{{#if extended}} (extended){{/if}}
                 </div>
               </div>
@@ -211,7 +222,7 @@
         {{#each auxBreakdown.flattenedTimers}}
           <tr class="align-top" id="aft{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
-              <div class="gt-indent2 gt-break-word gt-break-word-plus gt-second-line-indent">
+              <div class="gt-indent2 gt-break-word gt-second-line-indent">
                 {{name}}
               </div>
             </td>
@@ -267,7 +278,7 @@
           <tr class="align-top" id="att{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
               <div class="gt-indent2">
-                <div class="gt-break-word gt-break-word-plus gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
+                <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
                   {{name}}{{#if extended}} (extended){{/if}}
                 </div>
               </div>
@@ -327,7 +338,7 @@
         {{#each asyncTimers}}
           <tr class="align-top">
             <td style="text-align: left;">
-              <div class="gt-indent2 gt-break-word gt-break-word-plus gt-second-line-indent">
+              <div class="gt-indent2 gt-break-word gt-second-line-indent">
                 {{name}}
               </div>
             </td>

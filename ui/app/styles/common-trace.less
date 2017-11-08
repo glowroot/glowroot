@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,11 +147,8 @@
 }
 
 .gt-break-word {
-  word-wrap: break-word;
-}
-
-.gt-break-word-plus {
-  word-break: break-word; // this is non-standard, but breaks long drools-based timer names nicely in chrome
+  word-break: break-all;
+  word-break: break-word; // this is non-standard, but breaks at words if possible in chrome
 }
 
 .gt-pre-wrap {
@@ -173,6 +170,11 @@
 }
 
 .gt-trace-attr-value {
+  // using table-cell so that copy pasting from attributes sections
+  // will not put newline in between attribute names/values
+  // (IE 9 and 10 will still use default display 'block' since this is applied to divs
+  // which looks the same but copy pasting will have the newline oh well)
+  display: table-cell;
   overflow: hidden;
   .gt-break-word;
   .gt-pre-wrap;
