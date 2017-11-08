@@ -162,7 +162,7 @@
                gt-number="true"
                gt-pattern="{{ config.condition.metric === 'error:rate' ? 'pattern.percentage' : 'pattern.double' }}"
                gt-disabled="!agentPermissions.config.edit.alert"
-               gt-required="true"
+               gt-required="loaded"
                gt-width="7em"
                gt-addon="{{unit()}}">
             <div class="help-block">
@@ -282,7 +282,7 @@
                     class="form-control"
                     id="severity"
                     name="severity"
-                    ng-required="true"
+                    ng-required="loaded"
                     ng-disabled="!agentPermissions.config.edit.alert"
                     style="width: auto;">
               <option value="" ng-if="!config.severity"></option>
