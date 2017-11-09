@@ -85,11 +85,12 @@ public class CentralModule {
     private final ClusterManager clusterManager;
     private final Cluster cluster;
     private final Session session;
+    private final AlertingService alertingService;
     private final CentralAlertingService centralAlertingService;
-    private final RollupService rollupService;
-    private final SyntheticMonitorService syntheticMonitorService;
     private final GrpcServer grpcServer;
     private final UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService;
+    private final RollupService rollupService;
+    private final SyntheticMonitorService syntheticMonitorService;
     private final UiModule uiModule;
 
     public static CentralModule create() throws Exception {
@@ -106,10 +107,10 @@ public class CentralModule {
         Session session = null;
         AlertingService alertingService = null;
         CentralAlertingService centralAlertingService = null;
-        RollupService rollupService = null;
-        SyntheticMonitorService syntheticMonitorService = null;
         GrpcServer grpcServer = null;
         UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService = null;
+        RollupService rollupService = null;
+        SyntheticMonitorService syntheticMonitorService = null;
         UiModule uiModule = null;
         try {
             // init logger as early as possible
@@ -243,17 +244,17 @@ public class CentralModule {
             if (uiModule != null) {
                 uiModule.close();
             }
-            if (updateAgentConfigIfNeededService != null) {
-                updateAgentConfigIfNeededService.close();
-            }
-            if (grpcServer != null) {
-                grpcServer.close();
-            }
             if (syntheticMonitorService != null) {
                 syntheticMonitorService.close();
             }
             if (rollupService != null) {
                 rollupService.close();
+            }
+            if (updateAgentConfigIfNeededService != null) {
+                updateAgentConfigIfNeededService.close();
+            }
+            if (grpcServer != null) {
+                grpcServer.close();
             }
             if (centralAlertingService != null) {
                 centralAlertingService.close();
@@ -275,11 +276,12 @@ public class CentralModule {
         this.clusterManager = clusterManager;
         this.cluster = cluster;
         this.session = session;
+        this.alertingService = alertingService;
         this.centralAlertingService = centralAlertingService;
-        this.rollupService = rollupService;
-        this.syntheticMonitorService = syntheticMonitorService;
         this.grpcServer = grpcServer;
         this.updateAgentConfigIfNeededService = updateAgentConfigIfNeededService;
+        this.rollupService = rollupService;
+        this.syntheticMonitorService = syntheticMonitorService;
         this.uiModule = uiModule;
     }
 
@@ -294,13 +296,14 @@ public class CentralModule {
         try {
             // close down external inputs first (ui and grpc)
             uiModule.close();
+            syntheticMonitorService.close();
+            rollupService.close();
             // updateAgentConfigIfNeededService depends on grpc downstream, so must be shutdown
             // before grpc
             updateAgentConfigIfNeededService.close();
             grpcServer.close();
-            syntheticMonitorService.close();
-            rollupService.close();
             centralAlertingService.close();
+            alertingService.close();
             session.close();
             cluster.close();
             clusterManager.close();
