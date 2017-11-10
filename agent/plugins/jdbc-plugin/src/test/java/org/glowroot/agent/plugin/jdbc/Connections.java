@@ -192,8 +192,8 @@ public class Connections {
             } catch (SQLException e) {
             } catch (UndeclaredThrowableException e) {
             }
-            statement.execute("create table employee (name varchar(100), misc " + binaryTypeName
-                    + ", misc2 " + clobTypeName + ")");
+            statement.execute("create table employee (id integer identity, name varchar(100), misc "
+                    + binaryTypeName + ", misc2 " + clobTypeName + ")");
             statement.execute("insert into employee (name) values ('john doe')");
             statement.execute("insert into employee (name) values ('jane doe')");
             statement.execute("insert into employee (name) values ('sally doe')");

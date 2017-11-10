@@ -576,9 +576,9 @@ public class StatementAspect {
 
     // ================== Additional ResultSet Tracking ==================
 
-    @Pointcut(className = "java.sql.Statement", methodName = "getResultSet|getGeneratedKeys",
+    @Pointcut(className = "java.sql.Statement", methodName = "getResultSet",
             methodParameterTypes = {".."}, methodReturnType = "java.sql.ResultSet")
-    public static class StatementReturnResultSetAdvice {
+    public static class StatementGetResultSetAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.glowroot$hasStatementMirror();

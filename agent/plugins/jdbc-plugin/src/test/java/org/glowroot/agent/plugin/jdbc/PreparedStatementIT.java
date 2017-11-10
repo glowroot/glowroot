@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.util.Iterator;
 import java.util.List;
@@ -120,6 +121,27 @@ public class PreparedStatementIT {
                 .getFullText()).isEqualTo("update employee set name = ?");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['nobody'] => 3 rows");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
+    public void testPreparedStatementInsertWithGeneratedKeys() throws Exception {
+        // when
+        Trace trace = container.execute(ExecutePreparedStatementInsertWithGeneratedKeys.class);
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['nobody'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -496,6 +518,35 @@ public class PreparedStatementIT {
             try {
                 preparedStatement.setString(1, "nobody");
                 preparedStatement.executeUpdate();
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecutePreparedStatementInsertWithGeneratedKeys
+            implements AppUnderTest, TransactionMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                transactionMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void transactionMarker() throws Exception {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "insert into employee (name) values (?)", Statement.RETURN_GENERATED_KEYS);
+            try {
+                preparedStatement.setString(1, "nobody");
+                preparedStatement.executeUpdate();
+                ResultSet rs = preparedStatement.getGeneratedKeys();
+                while (rs.next()) {
+                    rs.getString(1);
+                }
             } finally {
                 preparedStatement.close();
             }
