@@ -66,11 +66,11 @@ public class StatementMirror {
         return lastQueryEntry;
     }
 
-    void setLastQuery(QueryEntry lastQueryEntry) {
+    void setLastQueryEntry(QueryEntry lastQueryEntry) {
         this.lastQueryEntry = lastQueryEntry;
     }
 
-    void clearLastQuery() {
+    void clearLastQueryEntry() {
         lastQueryEntry = null;
     }
 }

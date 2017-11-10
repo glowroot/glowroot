@@ -297,7 +297,7 @@ public class StatementAspect {
             }
             QueryEntry query = context.startQueryEntry(QUERY_TYPE, sql,
                     QueryMessageSupplier.create("jdbc execution: "), timerName);
-            mirror.setLastQuery(query);
+            mirror.setLastQueryEntry(query);
             return query;
         }
         @OnReturn
@@ -411,7 +411,7 @@ public class StatementAspect {
             }
             QueryEntry queryEntry =
                     context.startQueryEntry(QUERY_TYPE, queryText, queryMessageSupplier, timerName);
-            mirror.setLastQuery(queryEntry);
+            mirror.setLastQueryEntry(queryEntry);
             return queryEntry;
         }
         @OnReturn
@@ -545,7 +545,7 @@ public class StatementAspect {
             }
             QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, queryText, batchSize,
                     queryMessageSupplier, timerName);
-            mirror.setLastQuery(queryEntry);
+            mirror.setLastQueryEntry(queryEntry);
             mirror.clearBatch();
             return queryEntry;
         }
@@ -568,7 +568,7 @@ public class StatementAspect {
             }
             QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, concatenated,
                     QueryMessageSupplier.create("jdbc execution: "), timerName);
-            mirror.setLastQuery(queryEntry);
+            mirror.setLastQueryEntry(queryEntry);
             mirror.clearBatch();
             return queryEntry;
         }
@@ -610,7 +610,7 @@ public class StatementAspect {
             StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (mirror != null) {
                 // this should always be true since just checked hasGlowrootStatementMirror() above
-                mirror.clearLastQuery();
+                mirror.clearLastQueryEntry();
             }
             if (captureStatementClose.value()) {
                 return context.startTimer(timerName);
