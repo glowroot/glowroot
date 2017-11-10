@@ -46,7 +46,7 @@ public class Connections {
 
     enum ConnectionType {
         HSQLDB, H2, COMMONS_DBCP_WRAPPED, TOMCAT_JDBC_POOL_WRAPPED, GLASSFISH_JDBC_POOL_WRAPPED,
-        POSTGRES, ORACLE, SQLSERVER
+        POSTGRES, ORACLE, MSSQL
     }
 
     static Connection createConnection() throws Exception {
@@ -65,8 +65,8 @@ public class Connections {
                 return createPostgresConnection();
             case ORACLE:
                 return createOracleConnection();
-            case SQLSERVER:
-                return createSqlServerConnection();
+            case MSSQL:
+                return createMssqlConnection();
             default:
                 throw new IllegalStateException("Unexpected connection type: " + connectionType);
         }
@@ -169,21 +169,7 @@ public class Connections {
         return connection;
     }
 
-    // need to add the sqlserver driver to the path in order to use this, e.g. install into local
-    // repo:
-    //
-    // mvn install:install-file -Dfile=sqljdbc.jar -DgroupId=com.microsoft -DartifactId=sqljdbc
-    // -Dversion=4.0 -Dpackaging=jar -DgeneratePom=true
-    //
-    // then add to pom.xml
-    //
-    // <dependency>
-    // <groupId>com.microsoft</groupId>
-    // <artifactId>sqljdbc</artifactId>
-    // <version>4.0</version>
-    // <scope>test</scope>
-    // </dependency>
-    private static Connection createSqlServerConnection() throws Exception {
+    private static Connection createMssqlConnection() throws Exception {
         // set up database
         Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
         Connection connection =
