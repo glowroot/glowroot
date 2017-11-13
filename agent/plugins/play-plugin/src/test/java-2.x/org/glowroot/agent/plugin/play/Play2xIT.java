@@ -376,8 +376,4 @@ public class Play2xIT {
             return port;
         }
     }
-
-    public static void main(String[] args) throws Exception {
-        Class.forName("views.html.index$");
-    }
 }
