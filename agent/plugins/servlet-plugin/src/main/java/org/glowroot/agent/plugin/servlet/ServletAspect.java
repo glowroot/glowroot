@@ -214,7 +214,7 @@ public class ServletAspect {
             String transactionType;
             boolean setWithCoreMaxPriority = false;
             String transactionTypeHeader = request.getHeader("Glowroot-Transaction-Type");
-            if (transactionTypeHeader != null && transactionTypeHeader.equals("Synthetic")) {
+            if ("Synthetic".equals(transactionTypeHeader)) {
                 // Glowroot-Transaction-Type header currently only accepts "Synthetic", in order to
                 // prevent spamming of transaction types, which could cause some issues
                 transactionType = transactionTypeHeader;
