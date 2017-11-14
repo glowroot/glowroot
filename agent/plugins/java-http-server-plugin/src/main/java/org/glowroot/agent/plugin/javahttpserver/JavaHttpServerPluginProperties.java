@@ -36,6 +36,7 @@ class JavaHttpServerPluginProperties {
     private static final String CAPTURE_REQUEST_REMOTE_HOST_PROPERTY_NAME =
             "captureRequestRemoteHost";
     private static final String CAPTURE_RESPONSE_HEADER_PROPERTY_NAME = "captureResponseHeaders";
+    private static final String TRACE_ERROR_ON_4XX_RESPONSE_CODE = "traceErrorOn4xxResponseCode";
 
     private static final ConfigService configService = Agent.getConfigService("java-http-server");
 
@@ -48,6 +49,8 @@ class JavaHttpServerPluginProperties {
     private static boolean captureRequestRemoteHost;
 
     private static ImmutableList<Pattern> captureResponseHeaders = ImmutableList.of();
+
+    private static boolean traceErrorOn4xxResponseCode;
 
     static {
         configService.registerConfigListener(new JavaHttpServerPluginConfigListener());
@@ -75,6 +78,10 @@ class JavaHttpServerPluginProperties {
         return captureResponseHeaders;
     }
 
+    static boolean traceErrorOn4xxResponseCode() {
+        return traceErrorOn4xxResponseCode;
+    }
+
     private static class JavaHttpServerPluginConfigListener implements ConfigListener {
 
         @Override
@@ -90,6 +97,8 @@ class JavaHttpServerPluginProperties {
             captureRequestRemoteHost = configService
                     .getBooleanProperty(CAPTURE_REQUEST_REMOTE_HOST_PROPERTY_NAME).value();
             captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
+            traceErrorOn4xxResponseCode =
+                    configService.getBooleanProperty(TRACE_ERROR_ON_4XX_RESPONSE_CODE).value();
         }
 
         private static ImmutableList<Pattern> buildPatternList(String propertyName) {

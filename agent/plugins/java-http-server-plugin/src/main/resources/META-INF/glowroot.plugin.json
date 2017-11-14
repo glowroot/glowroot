@@ -32,6 +32,13 @@
       "type": "string",
       "label": "Capture response headers",
       "description": "Comma-separated list of response headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
+    },
+    {
+      "name": "traceErrorOn4xxResponseCode",
+      "type": "boolean",
+      "label": "Error on 4xx",
+      "checkboxLabel": "Mark trace as error on 4xx response code",
+      "description": "Mark the trace as an error when a 4xx response code is returned."
     }
   ],
   "aspects": [
