@@ -88,7 +88,7 @@ public class HttpHandlerAspect {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable HttpExchange exchange) {
-            return onBeforeCommon(context, exchange, null);
+            return onBeforeCommon(context, exchange);
         }
 
         @OnReturn
@@ -130,7 +130,7 @@ public class HttpHandlerAspect {
         }
 
         private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
-                @Nullable HttpExchange exchange, @Nullable String transactionTypeOverride) {
+                @Nullable HttpExchange exchange) {
             if (exchange == null) {
                 // seems nothing sensible to do here other than ignore
                 return null;
@@ -155,8 +155,6 @@ public class HttpHandlerAspect {
                     // to prevent spamming of transaction types, which could cause some issues
                     transactionType = transactionTypeHeader;
                     setWithCoreMaxPriority = true;
-                } else if (transactionTypeOverride != null) {
-                    transactionType = transactionTypeOverride;
                 }
             }
             TraceEntry traceEntry = context.startTransaction(transactionType, requestUri,
@@ -201,7 +199,7 @@ public class HttpHandlerAspect {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable HttpExchange exchange) {
-            return HandleAdvice.onBeforeCommon(context, exchange, null);
+            return HandleAdvice.onBeforeCommon(context, exchange);
         }
 
         @OnReturn
