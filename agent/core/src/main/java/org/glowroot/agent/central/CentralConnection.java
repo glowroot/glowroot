@@ -107,10 +107,21 @@ class CentralConnection {
         eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         channelExecutor =
                 Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-GRPC-Executor"));
+        File certificateFile = getCertificateFile(confDir, sharedConfDir);
+        String authority;
+        if (collectorAuthority != null) {
+            authority = collectorAuthority;
+        } else if (collectorAddresses.size() == 1) {
+            authority = collectorAddresses.get(0).getHostName();
+        } else if (certificateFile == null) {
+            authority = "dummy-service-authority";
+        } else {
+            throw new IllegalStateException("collector.authority is required when using client"
+                    + " side load balancing to connect to a glowroot central cluster over TLS");
+        }
         NettyChannelBuilder builder = NettyChannelBuilder
                 .forTarget("dummy-target")
-                .nameResolverFactory(
-                        new SimpleNameResolverFactory(collectorAddresses, collectorAuthority))
+                .nameResolverFactory(new SimpleNameResolverFactory(collectorAddresses, authority))
                 .loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
                 .eventLoopGroup(eventLoopGroup)
                 .executor(channelExecutor)
@@ -118,16 +129,11 @@ class CentralConnection {
                 // 5 seconds and keep alive will only kick in after 30 seconds of not hearing back
                 // from the server
                 .keepAliveTime(30, SECONDS);
-        File certificateFile = getCertificateFile(confDir, sharedConfDir);
         if (certificateFile == null) {
             channel = builder.negotiationType(NegotiationType.PLAINTEXT)
                     .build();
         } else {
-            startupLogger.info("using TLS");
-            if (collectorAddresses.size() > 1 && collectorAuthority == null) {
-                throw new IllegalStateException("collector.authority is required when using client"
-                        + " side load balancing to connect to a glowroot central cluster over TLS");
-            }
+            startupLogger.info("using TLS to central collector");
             SslContext sslContext = GrpcSslContexts.forClient()
                     .trustManager(certificateFile)
                     .build();
@@ -426,10 +432,10 @@ class CentralConnection {
     private static class SimpleNameResolverFactory extends NameResolver.Factory {
 
         private final List<InetSocketAddress> collectorAddresses;
-        private final @Nullable String collectorAuthority;
+        private final String collectorAuthority;
 
         private SimpleNameResolverFactory(List<InetSocketAddress> collectorAddresses,
-                @Nullable String collectorAuthority) {
+                String collectorAuthority) {
             this.collectorAddresses = collectorAddresses;
             this.collectorAuthority = collectorAuthority;
         }
@@ -448,25 +454,17 @@ class CentralConnection {
     private static class SimpleNameResolver extends NameResolver {
 
         private final List<InetSocketAddress> collectorAddresses;
-        private final @Nullable String collectorAuthority;
+        private final String collectorAuthority;
 
         private SimpleNameResolver(List<InetSocketAddress> collectorAddresses,
-                @Nullable String collectorAuthority) {
+                String collectorAuthority) {
             this.collectorAddresses = collectorAddresses;
             this.collectorAuthority = collectorAuthority;
         }
 
         @Override
         public String getServiceAuthority() {
-            if (collectorAuthority != null) {
-                return collectorAuthority;
-            } else if (collectorAddresses.size() == 1) {
-                return collectorAddresses.get(0).getHostName();
-            } else {
-                // this should have been thrown already above in CentralConnection constructor
-                throw new IllegalStateException("collector.authority is required when using client"
-                        + " side load balancing to connect to a glowroot central cluster");
-            }
+            return collectorAuthority;
         }
 
         @Override
