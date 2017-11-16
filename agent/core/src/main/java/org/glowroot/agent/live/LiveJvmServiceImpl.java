@@ -33,13 +33,13 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.TabularData;
@@ -603,10 +603,14 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 logger.debug(e.getMessage(), e);
             }
         } else if (attributeType.equals(CompositeData.class.getName())) {
-            Descriptor descriptor = attribute.getDescriptor();
-            Object descriptorFieldValue = descriptor.getFieldValue("openType");
-            if (descriptorFieldValue instanceof CompositeType) {
-                CompositeType compositeType = (CompositeType) descriptorFieldValue;
+            Object openType = attribute.getDescriptor().getFieldValue("openType");
+            CompositeType compositeType = null;
+            if (openType instanceof CompositeType) {
+                compositeType = (CompositeType) openType;
+            } else if (openType == null && value instanceof CompositeDataSupport) {
+                compositeType = ((CompositeDataSupport) value).getCompositeType();
+            }
+            if (compositeType != null) {
                 attributeNames
                         .addAll(getCompositeTypeAttributeNames(attribute, value, compositeType));
             }
