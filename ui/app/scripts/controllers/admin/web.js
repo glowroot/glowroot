@@ -63,8 +63,8 @@ glowroot.controller('AdminWebCtrl', [
             .then(function (response) {
               var data = response.data;
               if (data.httpsRequiredFilesDoNotExist) {
-                deferred.reject('The SSL certificate and private key to be used must be placed in the glowroot directory'
-                    + ' with filenames certificate.pem and private.pem before enabling HTTPS');
+                deferred.reject('The certificate and private key to be used must be placed in the glowroot directory'
+                    + ' with filenames ui-cert.pem and ui-key.pem before enabling HTTPS');
                 return;
               }
               if (data.httpsValidationError) {

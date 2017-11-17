@@ -17,6 +17,7 @@ package org.glowroot.ui;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -69,7 +70,7 @@ class HttpServer {
 
     HttpServer(String bindAddress, boolean https, Supplier<String> contextPathSupplier,
             int numWorkerThreads, CommonHandler commonHandler, File confDir,
-            @Nullable File sharedConfDir) throws Exception {
+            @Nullable File sharedConfDir, boolean central) throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -87,9 +88,24 @@ class HttpServer {
         final HttpServerHandler handler = new HttpServerHandler(contextPathSupplier, commonHandler);
 
         if (https) {
-            sslContext = SslContextBuilder
-                    .forServer(getHttpsConfFile(confDir, sharedConfDir, "certificate.pem"),
-                            getHttpsConfFile(confDir, sharedConfDir, "private.pem"))
+            // upgrade from 0.9.26 to 0.9.27
+            renameHttpsConfFileIfNeeded(confDir, sharedConfDir, "certificate.pem", "ui-cert.pem",
+                    "certificate");
+            renameHttpsConfFileIfNeeded(confDir, sharedConfDir, "private.pem", "ui-key.pem",
+                    "private key");
+
+            File certificateFile;
+            File privateKeyFile;
+            if (central) {
+                certificateFile =
+                        getRequiredHttpsConfFile(confDir, "ui-cert.pem", "cert.pem", "certificate");
+                privateKeyFile =
+                        getRequiredHttpsConfFile(confDir, "ui-key.pem", "key.pem", "private key");
+            } else {
+                certificateFile = getRequiredHttpsConfFile(confDir, sharedConfDir, "ui-cert.pem");
+                privateKeyFile = getRequiredHttpsConfFile(confDir, sharedConfDir, "ui-key.pem");
+            }
+            sslContext = SslContextBuilder.forServer(certificateFile, privateKeyFile)
                     .build();
         }
         this.confDir = confDir;
@@ -184,8 +200,8 @@ class HttpServer {
     void changeProtocol(boolean https) throws Exception {
         if (https) {
             sslContext = SslContextBuilder
-                    .forServer(getHttpsConfFile(confDir, sharedConfDir, "certificate.pem"),
-                            getHttpsConfFile(confDir, sharedConfDir, "private.pem"))
+                    .forServer(getRequiredHttpsConfFile(confDir, sharedConfDir, "ui-cert.pem"),
+                            getRequiredHttpsConfFile(confDir, sharedConfDir, "ui-key.pem"))
                     .build();
         } else {
             sslContext = null;
@@ -201,23 +217,85 @@ class HttpServer {
         logger.debug("close(): http server stopped");
     }
 
-    private static File getHttpsConfFile(File confDir, @Nullable File sharedConfDir,
+    // used by embedded agent
+    private static File getRequiredHttpsConfFile(File confDir, @Nullable File sharedConfDir,
             String fileName) throws FileNotFoundException {
+        File confFile = getHttpsConfFile(confDir, sharedConfDir, fileName);
+        if (confFile == null) {
+            throw new FileNotFoundException("HTTPS is enabled, but " + fileName
+                    + " was not found under '" + confDir.getAbsolutePath() + "'");
+        } else {
+            return confFile;
+        }
+    }
+
+    // used by central
+    private static File getRequiredHttpsConfFile(File confDir, String fileName, String altFileName,
+            String display) throws FileNotFoundException {
+        File confFile = new File(confDir, fileName);
+        if (confFile.exists()) {
+            return confFile;
+        }
+        if (altFileName == null) {
+            throw new FileNotFoundException("HTTPS is enabled, but " + fileName
+                    + " was not found under '" + confDir.getAbsolutePath() + "'");
+        }
+        File altConfFile = new File(confDir, altFileName);
+        if (altConfFile.exists()) {
+            return altConfFile;
+        }
+        throw new FileNotFoundException("HTTPS is enabled, but " + fileName + " (or "
+                + altFileName + " if using the same " + display + " for both ui and"
+                + " grpc) was not found under '" + confDir.getAbsolutePath() + "'");
+    }
+
+    private static @Nullable File getHttpsConfFile(File confDir, @Nullable File sharedConfDir,
+            String fileName) {
         File confFile = new File(confDir, fileName);
         if (confFile.exists()) {
             return confFile;
         }
         if (sharedConfDir == null) {
-            throw new FileNotFoundException("HTTPS is enabled, but " + fileName
-                    + " was not found under '" + confDir.getAbsolutePath() + "'");
+            return null;
         }
         File sharedConfFile = new File(sharedConfDir, fileName);
         if (sharedConfFile.exists()) {
             return sharedConfFile;
         }
-        throw new FileNotFoundException("HTTPS is enabled, but " + fileName
-                + " was not found under either '" + confDir.getAbsolutePath() + "' or '"
-                + sharedConfFile.getAbsolutePath() + "'");
+        return null;
+    }
+
+    private static void renameHttpsConfFileIfNeeded(File confDir, @Nullable File sharedConfDir,
+            String oldFileName, String newFileName, String display) throws IOException {
+        File newConfFile = new File(confDir, newFileName);
+        if (newConfFile.exists()) {
+            return;
+        }
+        if (sharedConfDir == null) {
+            File oldConfFile = new File(confDir, oldFileName);
+            if (oldConfFile.exists()) {
+                rename(oldConfFile, newConfFile, display);
+                return;
+            }
+        }
+        File newSharedConfFile = new File(sharedConfDir, newFileName);
+        if (newSharedConfFile.exists()) {
+            return;
+        }
+        File oldSharedConfFile = new File(sharedConfDir, oldFileName);
+        if (oldSharedConfFile.exists()) {
+            rename(oldSharedConfFile, newSharedConfFile, display);
+            return;
+        }
+    }
+
+    private static void rename(File oldConfFile, File newConfFile, String display)
+            throws IOException {
+        if (oldConfFile.renameTo(newConfFile)) {
+            throw new IOException("Unable to rename " + display + " file from '"
+                    + oldConfFile.getAbsolutePath() + "' to '" + newConfFile.getAbsolutePath()
+                    + "' as part of upgrade to 0.9.27 or later");
+        }
     }
 
     private class BindEventually implements Runnable {

@@ -169,7 +169,7 @@ public class CentralModule {
                     repos.getHeartbeatDao(), alertingService);
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
-                    centralConfig.grpcTlsPort(), centralDir, repos.getAgentRollupDao(),
+                    centralConfig.grpcHttps(), centralDir, repos.getAgentRollupDao(),
                     repos.getAgentConfigDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
                     repos.getEnvironmentDao(), repos.getHeartbeatDao(), repos.getTraceDao(),
                     centralAlertingService, clusterManager, clock, version);
@@ -549,9 +549,9 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(grpcPortText)) {
             builder.grpcPort(Integer.parseInt(grpcPortText));
         }
-        String grpcTlsPortText = props.getProperty("grpc.tlsPort");
-        if (!Strings.isNullOrEmpty(grpcTlsPortText)) {
-            builder.grpcTlsPort(Integer.parseInt(grpcTlsPortText));
+        String grpcHttpsText = props.getProperty("grpc.https");
+        if (!Strings.isNullOrEmpty(grpcHttpsText)) {
+            builder.grpcHttps(Boolean.parseBoolean(grpcHttpsText));
         }
         String uiBindAddress = props.getProperty("ui.bindAddress");
         if (!Strings.isNullOrEmpty(uiBindAddress)) {
@@ -760,8 +760,8 @@ public class CentralModule {
         }
 
         @Value.Default
-        int grpcTlsPort() {
-            return -1;
+        boolean grpcHttps() {
+            return false;
         }
 
         @Value.Default

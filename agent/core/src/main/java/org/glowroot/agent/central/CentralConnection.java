@@ -44,7 +44,8 @@ import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.util.RoundRobinLoadBalancerFactory;
 import io.netty.channel.EventLoopGroup;
-import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +59,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 class CentralConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralConnection.class);
-
-    // log startup messages using logger name "org.glowroot"
-    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     // back pressure on connection to the central collector
     private static final int PENDING_LIMIT = 100;
@@ -103,25 +101,25 @@ class CentralConnection {
 
     CentralConnection(String collectorAddress, @Nullable String collectorAuthority, File confDir,
             @Nullable File sharedConfDir, AtomicBoolean inConnectionFailure) throws SSLException {
-        List<InetSocketAddress> collectorAddresses = toSocketAddresses(collectorAddress);
+        ParsedCollectorAddress parsedCollectorAddress = parseCollectorAddress(collectorAddress);
         eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         channelExecutor =
                 Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-GRPC-Executor"));
-        File certificateFile = getCertificateFile(confDir, sharedConfDir);
         String authority;
         if (collectorAuthority != null) {
             authority = collectorAuthority;
-        } else if (collectorAddresses.size() == 1) {
-            authority = collectorAddresses.get(0).getHostName();
-        } else if (certificateFile == null) {
+        } else if (parsedCollectorAddress.addresses().size() == 1) {
+            authority = parsedCollectorAddress.addresses().get(0).getHostName();
+        } else if (!parsedCollectorAddress.https()) {
             authority = "dummy-service-authority";
         } else {
             throw new IllegalStateException("collector.authority is required when using client"
-                    + " side load balancing to connect to a glowroot central cluster over TLS");
+                    + " side load balancing to connect to a glowroot central cluster over HTTPS");
         }
         NettyChannelBuilder builder = NettyChannelBuilder
                 .forTarget("dummy-target")
-                .nameResolverFactory(new SimpleNameResolverFactory(collectorAddresses, authority))
+                .nameResolverFactory(new SimpleNameResolverFactory(
+                        parsedCollectorAddress.addresses(), authority))
                 .loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
                 .eventLoopGroup(eventLoopGroup)
                 .executor(channelExecutor)
@@ -129,16 +127,17 @@ class CentralConnection {
                 // 5 seconds and keep alive will only kick in after 30 seconds of not hearing back
                 // from the server
                 .keepAliveTime(30, SECONDS);
-        if (certificateFile == null) {
-            channel = builder.negotiationType(NegotiationType.PLAINTEXT)
+        if (parsedCollectorAddress.https()) {
+            SslContextBuilder sslContext = GrpcSslContexts.forClient();
+            File trustCertCollectionFile = getTrustCertCollectionFile(confDir, sharedConfDir);
+            if (trustCertCollectionFile != null) {
+                sslContext.trustManager(trustCertCollectionFile);
+            }
+            channel = builder.sslContext(sslContext.build())
+                    .negotiationType(NegotiationType.TLS)
                     .build();
         } else {
-            startupLogger.info("using TLS to central collector");
-            SslContext sslContext = GrpcSslContexts.forClient()
-                    .trustManager(certificateFile)
-                    .build();
-            channel = builder.sslContext(sslContext)
-                    .negotiationType(NegotiationType.TLS)
+            channel = builder.negotiationType(NegotiationType.PLAINTEXT)
                     .build();
         }
         retryExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -268,10 +267,27 @@ class CentralConnection {
         }
     }
 
-    private static List<InetSocketAddress> toSocketAddresses(String collectorAddress) {
+    private static ParsedCollectorAddress parseCollectorAddress(String collectorAddress) {
+        boolean https = false;
         List<InetSocketAddress> collectorAddresses = Lists.newArrayList();
         for (String addr : Splitter.on(',').trimResults().omitEmptyStrings()
                 .split(collectorAddress)) {
+            if (addr.startsWith("https://")) {
+                if (!collectorAddresses.isEmpty() && !https) {
+                    throw new IllegalStateException("Cannot mix http and https addresses when using"
+                            + " client side load balancing: " + collectorAddress);
+                }
+                addr = addr.substring("https://".length());
+                https = true;
+            } else {
+                if (https) {
+                    throw new IllegalStateException("Cannot mix http and https addresses when using"
+                            + " client side load balancing: " + collectorAddress);
+                }
+                if (addr.startsWith("http://")) {
+                    addr = addr.substring("http://".length());
+                }
+            }
             int index = addr.indexOf(':');
             if (index == -1) {
                 throw new IllegalStateException(
@@ -288,18 +304,22 @@ class CentralConnection {
             }
             collectorAddresses.add(new InetSocketAddress(host, port));
         }
-        return collectorAddresses;
+        return ImmutableParsedCollectorAddress.builder()
+                .https(https)
+                .addAllAddresses(collectorAddresses)
+                .build();
     }
 
-    private static @Nullable File getCertificateFile(File confDir, @Nullable File sharedConfDir) {
-        File confFile = new File(confDir, "certificate.pem");
+    private static @Nullable File getTrustCertCollectionFile(File confDir,
+            @Nullable File sharedConfDir) {
+        File confFile = new File(confDir, "grpc-trusted-root-certs.pem");
         if (confFile.exists()) {
             return confFile;
         }
         if (sharedConfDir == null) {
             return null;
         }
-        File sharedConfFile = new File(sharedConfDir, "certificate.pem");
+        File sharedConfFile = new File(sharedConfDir, "grpc-trusted-root-certs.pem");
         if (sharedConfFile.exists()) {
             return sharedConfFile;
         }
@@ -313,6 +333,12 @@ class CentralConnection {
         } else {
             return getRootCauseMessage(cause);
         }
+    }
+
+    @Value.Immutable
+    interface ParsedCollectorAddress {
+        boolean https();
+        List<InetSocketAddress> addresses();
     }
 
     abstract static class GrpcCall<T extends /*@NonNull*/ Object> {

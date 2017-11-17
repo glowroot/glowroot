@@ -221,11 +221,17 @@ class AdminJsonService {
             EmbeddedWebConfig config = configDto.convert();
             if (config.https() && !httpServer.getHttps()) {
                 // validate certificate and private key exist and are valid
-                File certificateFile = getConfFile("certificate.pem");
+                File certificateFile = getConfFile("ui-cert.pem");
+                if (certificateFile == null && central) {
+                    certificateFile = getConfFile("cert.pem");
+                }
                 if (certificateFile == null) {
                     return "{\"httpsRequiredFilesDoNotExist\":true}";
                 }
-                File privateKeyFile = getConfFile("private.pem");
+                File privateKeyFile = getConfFile("ui-key.pem");
+                if (privateKeyFile == null && central) {
+                    privateKeyFile = getConfFile("key.pem");
+                }
                 if (privateKeyFile == null) {
                     return "{\"httpsRequiredFilesDoNotExist\":true}";
                 }

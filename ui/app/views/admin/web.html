@@ -80,11 +80,12 @@
                style="padding-bottom: 5px;">
             Active value is <code>{{activeHttps}}</code>.
           </div>
-          Serve the user interface over HTTPS. The SSL certificate and private key to be used must be placed in the
-          {{certificateDir}} directory with filenames <em>certificate.pem</em> and
-          <em>private.pem</em> before enabling HTTPS. The private key should not have a passphrase.
-          E.g. a self signed certificate can be generated at the command line using
-          <em>openssl req -new -x509 -nodes -days 365 -out certificate.pem -keyout private.pem</em>
+          Serve the user interface over HTTPS. The certificate and private key to be used must be placed in the
+          {{certificateDir}} directory with filenames <em>ui-cert.pem</em> and <em>ui-key.pem</em> before enabling
+          HTTPS, where ui-cert.pem is an X.509 certificate chain file in PEM format, and ui-key.pem is a PKCS#8 private
+          key file in PEM format without a passphrase.
+          (for example, a self signed certificate can be generated at the command line meeting the above requirements
+          using: <em>openssl req -new -x509 -nodes -days 365 -out ui-cert.pem -keyout ui-key.pem</em>)
         </div>
       </div>
       <div gt-form-group

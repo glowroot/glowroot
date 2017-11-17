@@ -197,7 +197,7 @@ public class UiModule {
             if (central) {
                 httpServer = new HttpServer(checkNotNull(bindAddress), checkNotNull(https),
                         Suppliers.ofInstance(checkNotNull(contextPath)), numWorkerThreads,
-                        commonHandler, confDir, sharedConfDir);
+                        commonHandler, confDir, sharedConfDir, central);
                 initialPort = checkNotNull(port);
             } else {
                 final EmbeddedWebConfig initialWebConfig = configRepository.getEmbeddedWebConfig();
@@ -214,7 +214,7 @@ public class UiModule {
                 };
                 httpServer = new HttpServer(initialWebConfig.bindAddress(),
                         initialWebConfig.https(), contextPathSupplier, numWorkerThreads,
-                        commonHandler, confDir, sharedConfDir);
+                        commonHandler, confDir, sharedConfDir, central);
                 initialPort = initialWebConfig.port();
             }
             adminJsonService.setHttpServer(httpServer);

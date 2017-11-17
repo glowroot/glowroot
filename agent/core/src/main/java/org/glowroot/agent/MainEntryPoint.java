@@ -35,7 +35,9 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
@@ -224,6 +226,8 @@ public class MainEntryPoint {
                 ImmutableMap.of("agent.rollup=", "agent.rollup.id="));
         // upgrade from 0.9.13 to 0.9.14
         upgradeToCollectorAddressIfNeeded(propFile);
+        // upgrade from 0.9.26 to 0.9.27
+        addSchemeToCollectorAddressIfNeeded(propFile);
         Properties props = PropertiesFiles.load(propFile);
         for (String key : props.stringPropertyNames()) {
             String value = props.getProperty(key);
@@ -351,6 +355,54 @@ public class MainEntryPoint {
             port = "8181";
         }
         newLines.add(indexForAddress, "collector.address=" + host + ":" + port);
+        return newLines;
+    }
+
+    private static void addSchemeToCollectorAddressIfNeeded(File propFile) throws IOException {
+        // properties files must be ISO_8859_1
+        List<String> lines = Files.readLines(propFile, Charsets.ISO_8859_1);
+        List<String> newLines = addSchemeToCollectorAddressIfNeeded(lines);
+        if (!newLines.equals(lines)) {
+            // properties files must be ISO_8859_1
+            PrintWriter out = new PrintWriter(Files.newWriter(propFile, Charsets.ISO_8859_1));
+            try {
+                for (String newLine : newLines) {
+                    out.println(newLine);
+                }
+            } finally {
+                out.close();
+            }
+        }
+    }
+
+    private static List<String> addSchemeToCollectorAddressIfNeeded(List<String> lines) {
+        List<String> newLines = Lists.newArrayList();
+        for (String line : lines) {
+            if (line.startsWith("collector.address=")) {
+                String collectorAddress = line.substring("collector.address=".length());
+                List<String> addrs = Lists.newArrayList();
+                boolean modified = false;
+                for (String addr : Splitter.on(',').trimResults().omitEmptyStrings()
+                        .split(collectorAddress)) {
+                    // need to check for "http\://" and "https\://" since those are allowed and
+                    // interpreted by Properties.load() as "http://" and "https://"
+                    if (addr.startsWith("http://") || addr.startsWith("https://")
+                            || addr.startsWith("http\\://") || addr.startsWith("https\\://")) {
+                        addrs.add(addr);
+                    } else {
+                        addrs.add("http://" + addr);
+                        modified = true;
+                    }
+                }
+                if (modified) {
+                    newLines.add("collector.address=" + Joiner.on(',').join(addrs));
+                } else {
+                    newLines.add(line);
+                }
+            } else {
+                newLines.add(line);
+            }
+        }
         return newLines;
     }
 

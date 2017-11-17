@@ -20,8 +20,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import javax.annotation.Nullable;
-
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import org.slf4j.Logger;
@@ -46,10 +44,9 @@ class GrpcServer {
 
     private final DownstreamServiceImpl downstreamService;
 
-    private final @Nullable Server server;
-    private final @Nullable Server tlsServer;
+    private final Server server;
 
-    GrpcServer(String bindAddress, int port, int tlsPort, File centralDir,
+    GrpcServer(String bindAddress, int port, boolean https, File centralDir,
             AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao, AggregateDao aggregateDao,
             GaugeValueDao gaugeValueDao, EnvironmentDao environmentDao, HeartbeatDao heartbeatDao,
             TraceDao traceDao, CentralAlertingService centralAlertingService,
@@ -61,30 +58,21 @@ class GrpcServer {
                 agentConfigDao, environmentDao, aggregateDao, gaugeValueDao, heartbeatDao, traceDao,
                 centralAlertingService, clock, version);
 
-        Server server = null;
-        Server tlsServer = null;
-        if (port != -1) {
-            server = startServer(bindAddress, port, null, downstreamService, collectorService);
-            startupLogger.info("gRPC listening on {}:{}", bindAddress, port);
-        }
-        if (tlsPort != -1) {
-            tlsServer = startServer(bindAddress, tlsPort, centralDir, downstreamService,
-                    collectorService);
-            startupLogger.info("gRPC listening on {}:{} (TLS)", bindAddress, tlsPort);
-        }
+        Server server = startServer(bindAddress, port, https, centralDir, downstreamService,
+                collectorService);
+        startupLogger.info("gRPC listening on {}:{}{}", bindAddress, port, https ? " (HTTPS)" : "");
         this.server = server;
-        this.tlsServer = tlsServer;
     }
 
-    // passing non-null centralDir starts a TLS server
-    private static Server startServer(String bindAddress, int port, @Nullable File centralDir,
-            DownstreamServiceImpl downstreamService, CollectorServiceImpl collectorService)
-            throws IOException {
+    private static Server startServer(String bindAddress, int port, boolean https,
+            File centralDir, DownstreamServiceImpl downstreamService,
+            CollectorServiceImpl collectorService) throws IOException {
         NettyServerBuilder builder =
                 NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port));
-        if (centralDir != null) {
-            builder.useTransportSecurity(getTlsConfFile(centralDir, "certificate.pem"),
-                    getTlsConfFile(centralDir, "private.pem"));
+        if (https) {
+            builder.useTransportSecurity(
+                    getHttpsConfFile(centralDir, "grpc-cert.pem", "cert.pem", "certificate"),
+                    getHttpsConfFile(centralDir, "grpc-key.pem", "key.pem", "private key"));
         }
         return builder.addService(collectorService.bindService())
                 .addService(downstreamService.bindService())
@@ -110,21 +98,23 @@ class GrpcServer {
         // for a few seconds if it receives a "shutting-down" response
 
         // shutdown to prevent new grpc requests
-        if (server != null) {
-            shutdown(server);
-        }
-        if (tlsServer != null) {
-            shutdown(tlsServer);
-        }
+        shutdown(server);
     }
 
-    private static File getTlsConfFile(File confDir, String fileName) throws FileNotFoundException {
+    private static File getHttpsConfFile(File confDir, String fileName, String sharedFileName,
+            String display) throws FileNotFoundException {
         File confFile = new File(confDir, fileName);
         if (confFile.exists()) {
             return confFile;
         } else {
-            throw new FileNotFoundException("TLS is enabled, but " + fileName
-                    + " was not found under '" + confDir.getAbsolutePath() + "'");
+            File sharedConfFile = new File(confDir, sharedFileName);
+            if (sharedConfFile.exists()) {
+                return sharedConfFile;
+            } else {
+                throw new FileNotFoundException("HTTPS is enabled, but " + fileName + " (or "
+                        + sharedFileName + " if using the same " + display + " for both grpc and"
+                        + " ui) was not found under '" + confDir.getAbsolutePath() + "'");
+            }
         }
     }
 
