@@ -269,7 +269,17 @@ public class WebDriverSetup {
         props.println("grpc.port=" + grpcPort);
         props.println("ui.port=" + uiPort);
         props.close();
-        return CentralModule.create();
+        String prior = System.getProperty("glowroot.log.dir");
+        try {
+            System.setProperty("glowroot.log.dir", ".");
+            return CentralModule.create();
+        } finally {
+            if (prior == null) {
+                System.clearProperty("glowroot.log.dir");
+            } else {
+                System.setProperty("glowroot.log.dir", prior);
+            }
+        }
     }
 
     private static Container createContainerReportingToCentral(int grpcPort, File testDir)

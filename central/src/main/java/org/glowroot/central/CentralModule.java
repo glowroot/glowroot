@@ -114,7 +114,8 @@ public class CentralModule {
         UiModule uiModule = null;
         try {
             // init logger as early as possible
-            initLogging(centralDir);
+            File logDir = getLogDir(centralDir);
+            initLogging(centralDir, logDir);
             Clock clock = Clock.systemClock();
             Ticker ticker = Ticker.systemTicker();
             String version = Version.getVersion(CentralModule.class);
@@ -203,7 +204,7 @@ public class CentralModule {
                     .https(centralConfig.uiHttps())
                     .contextPath(centralConfig.uiContextPath())
                     .confDir(centralDir)
-                    .logDir(centralDir)
+                    .logDir(logDir)
                     .logFileNamePattern(Pattern.compile("glowroot-central.*\\.log"))
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
@@ -322,7 +323,8 @@ public class CentralModule {
 
     static void createSchema() throws Exception {
         File centralDir = new File(".");
-        initLogging(centralDir);
+        File logDir = getLogDir(centralDir);
+        initLogging(centralDir, logDir);
         String version = Version.getVersion(CentralModule.class);
         startupLogger.info("running create-schema command");
         startupLogger.info("Glowroot version: {}", version);
@@ -364,7 +366,8 @@ public class CentralModule {
 
     static void runCommand(String commandName, List<String> args) throws Exception {
         File centralDir = new File(".");
-        initLogging(centralDir);
+        File logDir = getLogDir(centralDir);
+        initLogging(centralDir, logDir);
         Command command;
         if (commandName.equals("setup-admin-user")) {
             if (args.size() != 2) {
@@ -688,32 +691,37 @@ public class CentralModule {
     // TODO report checker framework issue that occurs without this suppression
     @EnsuresNonNull("startupLogger")
     @SuppressWarnings("contracts.postcondition.not.satisfied")
-    private static void initLogging(File centralDir) throws IOException {
-        File logbackXmlOverride = new File(centralDir, "logback.xml");
+    private static void initLogging(File confDir, File logDir) {
+        File logbackXmlOverride = new File(confDir, "logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("logback.configurationFile", logbackXmlOverride.getAbsolutePath());
         }
-        String explicitLogDirPath = System.getProperty("glowroot.log.dir");
+        String prior = System.getProperty("glowroot.log.dir");
+        System.setProperty("glowroot.log.dir", logDir.getPath());
         try {
-            if (Strings.isNullOrEmpty(explicitLogDirPath)) {
-                System.setProperty("glowroot.log.dir", centralDir.getPath());
-            } else {
-                File explicitLogDir = new File(explicitLogDirPath);
-                explicitLogDir.mkdirs();
-                if (!explicitLogDir.isDirectory()) {
-                    throw new IOException(
-                            "Could not create log directory: " + explicitLogDir.getAbsolutePath());
-                }
-            }
             startupLogger = LoggerFactory.getLogger("org.glowroot");
         } finally {
             System.clearProperty("logback.configurationFile");
-            if (explicitLogDirPath == null) {
+            if (prior == null) {
                 System.clearProperty("glowroot.log.dir");
-            } else if (explicitLogDirPath.isEmpty()) {
-                System.setProperty("glowroot.log.dir", "");
+            } else {
+                System.setProperty("glowroot.log.dir", prior);
             }
         }
+    }
+
+    private static File getLogDir(File centralDir) throws IOException {
+        String explicitLogDirPath = System.getProperty("glowroot.log.dir");
+        if (Strings.isNullOrEmpty(explicitLogDirPath)) {
+            return new File(centralDir, "logs");
+        }
+        File explicitLogDir = new File(explicitLogDirPath);
+        explicitLogDir.mkdirs();
+        if (!explicitLogDir.isDirectory()) {
+            throw new IOException(
+                    "Could not create log directory: " + explicitLogDir.getAbsolutePath());
+        }
+        return explicitLogDir;
     }
 
     @Value.Immutable

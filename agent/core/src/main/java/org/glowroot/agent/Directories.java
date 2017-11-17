@@ -78,7 +78,7 @@ class Directories {
         }
         File logDir = getAgentDir("log", props, agentId);
         if (logDir == null) {
-            logDir = lazyDefaultBaseDir.get();
+            logDir = lazyDefaultBaseDir.getSubDir("logs");
         }
         File tmpDir = getAgentDir("tmp", props, agentId);
         if (tmpDir == null) {
