@@ -26,6 +26,9 @@ import org.slf4j.LoggerFactory;
 
 public class WeavingClassFileTransformer implements ClassFileTransformer {
 
+    private static final boolean ALLOW_WEAVING_AGENT_CLASSES =
+            Boolean.getBoolean("glowroot.internal.allowWeavingAgentClasses");
+
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassFileTransformer.class);
 
     private final Weaver weaver;
@@ -87,7 +90,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     }
 
     private static boolean ignoreClass(String className) {
-        if (isGlowrootAgentClass(className)) {
+        if (!ALLOW_WEAVING_AGENT_CLASSES && isGlowrootAgentClass(className)) {
             // don't weave glowroot core classes, including shaded classes like h2 jdbc driver
             return true;
         }
