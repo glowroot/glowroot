@@ -408,7 +408,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
 
         @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
-                traceHeadline = "Collect aggregates: {{this.header.agentId}}", timer = "aggregates")
+                traceHeadline = "Collect aggregates: {{this.streamHeader.agentId}}",
+                timer = "aggregates")
         @Override
         public void onCompleted() {
             checkNotNull(streamHeader);
