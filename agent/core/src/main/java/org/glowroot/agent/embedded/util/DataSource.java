@@ -119,9 +119,13 @@ public class DataSource {
             if (closed) {
                 return;
             }
+            List<String> schemaVersionRows =
+                    queryForStringList("select schema_version from schema_version");
             connection.close();
             preparedStatementCache.invalidateAll();
-            boolean success = dbFile.delete();
+            if (!dbFile.delete()) {
+                throw new SQLException("Could not delete file: " + dbFile.getAbsolutePath());
+            }
             connection = createConnection(dbFile);
             for (Entry</*@Untainted*/ String, ImmutableList<Column>> entry : tables.entrySet()) {
                 syncTable(entry.getKey(), entry.getValue());
@@ -129,8 +133,8 @@ public class DataSource {
             for (Entry</*@Untainted*/ String, ImmutableList<Index>> entry : indexes.entrySet()) {
                 syncIndexes(entry.getKey(), entry.getValue());
             }
-            if (!success) {
-                throw new SQLException("Could not delete file: " + dbFile.getAbsolutePath());
+            for (String schemaVersionRow : schemaVersionRows) {
+                update("insert into schema_version (schema_version) values (?)", schemaVersionRow);
             }
         }
     }
