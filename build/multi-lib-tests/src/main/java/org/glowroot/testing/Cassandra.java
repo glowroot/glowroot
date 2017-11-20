@@ -47,6 +47,7 @@ public class Cassandra {
         }
         run("3.2.0");
         run("3.3.0");
+        run("3.3.1");
     }
 
     private static void run(String version, String... profiles) throws Exception {

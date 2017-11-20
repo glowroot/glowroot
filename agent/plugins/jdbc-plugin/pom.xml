@@ -21,7 +21,7 @@
     <postgresql.version>42.1.4.jre6</postgresql.version>
     <mssql.version>6.2.2.jre7</mssql.version>
     <commons.dbcp.version>1.4</commons.dbcp.version>
-    <tomcat.version>7.0.81</tomcat.version>
+    <tomcat.version>7.0.82</tomcat.version>
     <glassfish.jdbc.version>4.1.2</glassfish.jdbc.version>
   </properties>
 
