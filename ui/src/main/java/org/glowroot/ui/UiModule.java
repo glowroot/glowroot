@@ -135,8 +135,8 @@ public class UiModule {
         jsonServices
                 .add(new RoleConfigJsonService(central, configRepository, agentRollupRepository));
         jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
-        jsonServices.add(new InstrumentationConfigJsonService(configRepository, liveWeavingService,
-                liveJvmService));
+        jsonServices.add(new InstrumentationConfigJsonService(central, configRepository,
+                liveWeavingService, liveJvmService));
         jsonServices.add(adminJsonService);
 
         if (central) {

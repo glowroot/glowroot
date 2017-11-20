@@ -61,13 +61,15 @@ class InstrumentationConfigJsonService {
     private static final Ordering<InstrumentationConfig> ordering =
             new InstrumentationConfigOrdering();
 
+    private final boolean central;
     private final ConfigRepository configRepository;
     private final @Nullable LiveWeavingService liveWeavingService;
     private final @Nullable LiveJvmService liveJvmService;
 
-    InstrumentationConfigJsonService(ConfigRepository configRepository,
+    InstrumentationConfigJsonService(boolean central, ConfigRepository configRepository,
             @Nullable LiveWeavingService liveWeavingService,
             @Nullable LiveJvmService liveJvmService) {
+        this.central = central;
         this.configRepository = configRepository;
         this.liveWeavingService = liveWeavingService;
         this.liveJvmService = liveJvmService;
@@ -106,30 +108,34 @@ class InstrumentationConfigJsonService {
 
     @GET(path = "/backend/config/preload-classpath-cache",
             permission = "agent:config:view:instrumentation")
-    void preloadClasspathCache(final @BindAgentId String agentId) {
+    void preloadClasspathCache(final @BindAgentId String agentId) throws Exception {
         if (liveWeavingService == null) {
             return;
         }
-        // HttpServer is configured with a very small thread pool to keep number of threads down
-        // (currently only a single thread), so spawn a background thread to perform the preloading
-        // so it doesn't block other http requests
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // TODO report checker framework issue that occurs without checkNotNull
-                    checkNotNull(liveWeavingService);
-                    liveWeavingService.preloadClasspathCache(agentId);
-                } catch (AgentNotConnectedException e) {
-                    logger.debug(e.getMessage(), e);
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+        if (central) {
+            liveWeavingService.preloadClasspathCache(agentId);
+        } else {
+            // HttpServer is configured with a very small thread pool to keep number of threads down
+            // (currently only a single thread), so spawn a background thread to perform the
+            // preloading so it doesn't block other http requests
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // TODO report checker framework issue that occurs without checkNotNull
+                        checkNotNull(liveWeavingService);
+                        liveWeavingService.preloadClasspathCache(agentId);
+                    } catch (AgentNotConnectedException e) {
+                        logger.debug(e.getMessage(), e);
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
                 }
-            }
-        });
-        thread.setDaemon(true);
-        thread.setName("Glowroot-Temporary-Thread");
-        thread.start();
+            });
+            thread.setDaemon(true);
+            thread.setName("Glowroot-Temporary-Thread");
+            thread.start();
+        }
     }
 
     @GET(path = "/backend/config/new-instrumentation-check-agent-connected",
