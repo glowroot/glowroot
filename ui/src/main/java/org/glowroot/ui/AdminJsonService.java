@@ -466,15 +466,20 @@ class AdminJsonService {
         return sw.toString();
     }
 
+    @POST(path = "/backend/admin/defrag-h2-data", permission = "admin:edit:storage")
+    void defragH2Data() throws Exception {
+        repoAdmin.defragH2Data();
+    }
+
+    @POST(path = "/backend/admin/compact-h2-data", permission = "admin:edit:storage")
+    void compactH2Data() throws Exception {
+        repoAdmin.compactH2Data();
+    }
+
     @POST(path = "/backend/admin/delete-all-stored-data", permission = "admin:edit:storage")
     void deleteAllData() throws Exception {
         repoAdmin.deleteAllData();
         liveAggregateRepository.clearInMemoryAggregate();
-    }
-
-    @POST(path = "/backend/admin/defrag-data", permission = "admin:edit:storage")
-    void defragData() throws Exception {
-        repoAdmin.defrag();
     }
 
     private @Nullable File getConfFile(String fileName) {

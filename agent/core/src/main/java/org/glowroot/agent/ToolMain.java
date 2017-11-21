@@ -29,6 +29,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.h2.tools.Console;
 import org.h2.tools.Recover;
 import org.h2.tools.RunScript;
+import org.h2.tools.Script;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,15 +53,19 @@ public class ToolMain {
             return;
         }
         String command = args[0];
-        if (command.equals("h2") && args.length == 1) {
-            h2(directories.getDataDir());
-            return;
-        }
-        if (command.equals("recover") && args.length == 1) {
-            recover(directories.getDataDir());
-            return;
-        }
-        if (command.equals("mask-central-data") && args.length == 1) {
+        if (command.equals("h2")) {
+            String subcommand = args[1];
+            if (subcommand.equals("console") && args.length == 2) {
+                console(directories.getDataDir());
+                return;
+            } else if (subcommand.equals("recreate") && args.length == 2) {
+                recreate(directories.getDataDir());
+                return;
+            } else if (subcommand.equals("recover") && args.length == 2) {
+                recover(directories.getDataDir());
+                return;
+            }
+        } else if (command.equals("mask-central-data") && args.length == 1) {
             // this is for monitoring glowroot central with glowroot agent, and then masking the
             // data captured from glowroot central so that it can be shared for debugging issues
             // within glowroot central
@@ -83,9 +88,41 @@ public class ToolMain {
         return null;
     }
 
-    private static void h2(File dataDir) throws Exception {
+    private static void console(File dataDir) throws Exception {
         Console.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
                 "sa");
+    }
+
+    @RequiresNonNull("startupLogger")
+    private static void recreate(File dataDir) throws Exception {
+        File backupFile = new File(dataDir, "backup.sql");
+        if (backupFile.exists() && !backupFile.delete()) {
+            startupLogger.warn("recreate failed: cannot delete existing backup.sql");
+        }
+        Script.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user", "sa",
+                "-script", backupFile.getPath());
+        File dbFile = new File(dataDir, "data.h2.db");
+        File dbBakFile = new File(dataDir, "data.h2.db.bak");
+        if (dbBakFile.exists() && !dbBakFile.delete()) {
+            startupLogger.warn("recreate failed, cannot delete existing file: {}",
+                    dbBakFile.getPath());
+        }
+        if (!dbFile.renameTo(dbBakFile)) {
+            startupLogger.warn("recreate failed, cannot rename {} to {}", dbFile.getPath(),
+                    dbBakFile.getPath());
+            return;
+        }
+        RunScript.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-script",
+                backupFile.getPath());
+        startupLogger.info("recreate succeeded");
+
+        // clean up
+        if (!dbBakFile.delete()) {
+            startupLogger.info("failed to clean-up, cannot delete file: {}", dbBakFile.getPath());
+        }
+        if (!backupFile.delete()) {
+            startupLogger.info("failed to clean-up, cannot delete file: {}", backupFile.getPath());
+        }
     }
 
     @RequiresNonNull("startupLogger")

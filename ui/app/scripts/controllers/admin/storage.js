@@ -77,9 +77,27 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.deleteAllStoredData = function (deferred) {
-      $http.post('backend/admin/delete-all-stored-data', {agentRollupId: $scope.agentRollupId})
+      $http.post('backend/admin/delete-all-stored-data', {})
           .then(function () {
             deferred.resolve('Deleted');
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
+    };
+
+    $scope.defragH2Data = function (deferred) {
+      $http.post('backend/admin/defrag-h2-data', {})
+          .then(function () {
+            deferred.resolve('Defragmented');
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
+    };
+
+    $scope.compactH2Data = function (deferred) {
+      $http.post('backend/admin/compact-h2-data', {})
+          .then(function () {
+            deferred.resolve('Compacted');
           }, function (response) {
             httpErrors.handle(response, $scope, deferred);
           });

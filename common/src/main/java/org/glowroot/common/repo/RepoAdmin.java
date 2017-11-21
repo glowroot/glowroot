@@ -17,7 +17,9 @@ package org.glowroot.common.repo;
 
 public interface RepoAdmin {
 
-    void defrag() throws Exception;
+    void defragH2Data() throws Exception;
+
+    void compactH2Data() throws Exception;
 
     void deleteAllData() throws Exception;
 

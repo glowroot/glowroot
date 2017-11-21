@@ -797,9 +797,11 @@ public class CentralModule {
 
     private static class NopRepoAdmin implements RepoAdmin {
         @Override
-        public void deleteAllData() throws Exception {}
+        public void defragH2Data() throws Exception {}
         @Override
-        public void defrag() throws Exception {}
+        public void compactH2Data() throws Exception {}
+        @Override
+        public void deleteAllData() throws Exception {}
         @Override
         public void resizeIfNeeded() throws Exception {}
     }

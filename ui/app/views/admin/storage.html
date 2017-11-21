@@ -318,6 +318,26 @@
                  class="gt-inline-block">
             </div>
             <div gt-button
+                 gt-label="Defrag H2 data"
+                 gt-click="defragH2Data(deferred)"
+                 gt-btn-class="btn-warning"
+                 gt-dont-validate-form="true"
+                 gt-confirm-header="Defrag H2 data?"
+                 gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
+                 ng-show="!layout.central"
+                 class="gt-inline-block">
+            </div>
+            <div gt-button
+                 gt-label="Compact H2 data"
+                 gt-click="compactH2Data(deferred)"
+                 gt-btn-class="btn-warning"
+                 gt-dont-validate-form="true"
+                 gt-confirm-header="Compact H2 data?"
+                 gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
+                 ng-show="!layout.central"
+                 class="gt-inline-block">
+            </div>
+            <div gt-button
                  gt-label="Delete all data"
                  gt-click="deleteAllStoredData(deferred)"
                  gt-btn-class="btn-danger"

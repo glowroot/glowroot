@@ -69,8 +69,13 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
-    public void defrag() throws Exception {
+    public void defragH2Data() throws Exception {
         dataSource.defrag();
+    }
+
+    @Override
+    public void compactH2Data() throws Exception {
+        dataSource.compact();
     }
 
     @Override

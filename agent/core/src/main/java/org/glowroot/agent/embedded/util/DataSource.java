@@ -111,6 +111,20 @@ public class DataSource {
         }
     }
 
+    public void compact() throws SQLException {
+        if (dbFile == null) {
+            return;
+        }
+        synchronized (lock) {
+            if (closed) {
+                return;
+            }
+            execute("shutdown compact");
+            preparedStatementCache.invalidateAll();
+            connection = createConnection(dbFile);
+        }
+    }
+
     public void deleteAll() throws SQLException {
         if (dbFile == null) {
             return;
