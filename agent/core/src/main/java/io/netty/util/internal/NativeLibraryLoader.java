@@ -182,7 +182,7 @@ public final class NativeLibraryLoader {
         } catch (UnsatisfiedLinkError e) {
             try {
                 if (tmpFile != null && tmpFile.isFile() && tmpFile.canRead() &&
-                        !NoexecVolumeDetector.canExecuteExecutable(tmpFile)) {
+                        !NoexecVolumeDetector.canExecuteExecutable()) {
                     logger.info(
                             "{} exists but cannot be executed even when execute permissions set; " +
                                     "check volume for \"noexec\" flag; use -Dio.netty.native.workdir=[path] "
@@ -368,8 +368,9 @@ public final class NativeLibraryLoader {
 
     private static final class NoexecVolumeDetector {
 
-        private static boolean canExecuteExecutable(@SuppressWarnings("unused") File file)
-                throws IOException {
+        private NoexecVolumeDetector() {}
+
+        private static boolean canExecuteExecutable() {
             // Pre-JDK7, the Java API did not directly support POSIX permissions; instead of
             // implementing a custom work-around, assume true, which disables the check.
             return true;

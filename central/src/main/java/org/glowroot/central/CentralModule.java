@@ -656,8 +656,7 @@ public class CentralModule {
                         centralConfig.cassandraContactPoint().toArray(new String[0]))
                 // aggressive reconnect policy seems ok since not many clients
                 .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
-                // let driver know that only idempotent queries are used so it will retry on
-                // timeout
+                // let driver know that only idempotent queries are used so it will retry on timeout
                 .withQueryOptions(new QueryOptions()
                         .setDefaultIdempotence(true)
                         .setConsistencyLevel(centralConfig.cassandraConsistencyLevel()))

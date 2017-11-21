@@ -448,12 +448,11 @@ class ClasspathCache {
             InputStream in = uri.toURL().openStream();
             JarInputStream jarIn;
             try {
-                jarIn = new JarInputStream(in);
+                jarIn = closer.register(new JarInputStream(in));
             } catch (IOException e) {
                 in.close();
                 throw e;
             }
-            closer.register(jarIn);
             loadClassNamesFromJarInputStream(jarIn, "", location, newClassNameLocations);
         } catch (Throwable t) {
             throw closer.rethrow(t);
@@ -466,8 +465,14 @@ class ClasspathCache {
             String directoryInsideJarFile, Location location,
             Multimap<String, Location> newClassNameLocations) throws IOException {
         Closer closer = Closer.create();
-        InputStream s = new FileInputStream(jarFile);
-        JarInputStream jarIn = closer.register(new JarInputStream(s));
+        InputStream in = new FileInputStream(jarFile);
+        JarInputStream jarIn;
+        try {
+            jarIn = closer.register(new JarInputStream(in));
+        } catch (IOException e) {
+            in.close();
+            throw e;
+        }
         try {
             loadClassNamesFromJarInputStream(jarIn, directoryInsideJarFile, location,
                     newClassNameLocations);
