@@ -14,7 +14,7 @@
     "d3-flame-graph": "1.0.11",
     "eonasdan-bootstrap-datetimepicker": "4.17.47",
     "flot": "trask/flot#glowroot-0.9.9",
-    "flot.tooltip": "trask/flot.tooltip#db75603b3c0c76199d450ab085d3b90930857ca4",
+    "flot.tooltip": "trask/flot.tooltip#glowroot-0.9.27",
     "fontawesome": "4.7.0",
     "handlebars": "4.0.11",
     "jquery": "3.2.1",
