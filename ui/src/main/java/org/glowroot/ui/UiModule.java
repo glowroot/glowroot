@@ -146,10 +146,8 @@ public class UiModule {
             jsonServices.add(new SyntheticMonitorConfigJsonService(configRepository));
         }
 
-        LayoutService layoutService =
-                new LayoutService(central, servlet, offline, version, configRepository,
-                        agentRollupRepository, transactionTypeRepository,
-                        traceAttributeNameRepository);
+        LayoutService layoutService = new LayoutService(central, offline, version, configRepository,
+                agentRollupRepository, transactionTypeRepository, traceAttributeNameRepository);
         HttpSessionManager httpSessionManager = new HttpSessionManager(central, offline,
                 configRepository, clock, layoutService, sessionMapFactory);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
