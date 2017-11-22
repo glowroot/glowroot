@@ -35,7 +35,7 @@ glowroot.filter('gtDuration', function () {
     }
     var duration = moment.duration(input);
     var parts = [];
-    var days = duration.days();
+    var days = duration.asDays();
     if (days >= 1) {
       parts.push(Math.floor(days) + 'd');
     }
