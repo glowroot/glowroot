@@ -478,7 +478,7 @@ glowroot.controller('ReportAdhocCtrl', [
           }
           csv += ',';
         });
-        csv += tableRow.overall;
+        csv += tableRow.overall + '\n';
       });
       var csvWindow = window.open();
       $(csvWindow.document.body).html('<pre style="white-space: pre-wrap;">' + csv + '</pre>');
