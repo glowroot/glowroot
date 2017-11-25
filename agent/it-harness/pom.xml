@@ -212,19 +212,19 @@
               <relocations>
                 <relocation>
                   <pattern>io.netty</pattern>
-                  <shadedPattern>org.glowroot.agent.it.harness.shaded.netty</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.it.harness.shaded.io.netty</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>io.grpc</pattern>
-                  <shadedPattern>org.glowroot.agent.it.harness.shaded.grpc</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.it.harness.shaded.io.grpc</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>io.opencensus</pattern>
-                  <shadedPattern>org.glowroot.agent.it.harness.shaded.opencensus</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.it.harness.shaded.io.opencensus</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>com.google.instrumentation</pattern>
-                  <shadedPattern>org.glowroot.agent.it.harness.shaded.google.instrumentation</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.it.harness.shaded.com.google.instrumentation</shadedPattern>
                 </relocation>
                 <!-- not relocating glowroot-wire-api since it-harness api exposes glowroot-wire-api
                   unshaded for use by plugin integration tests -->
