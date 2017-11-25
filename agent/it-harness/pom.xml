@@ -202,6 +202,7 @@
                   <include>io.grpc:*</include>
                   <!-- need to shade opencensus-api so it uses shaded grpc -->
                   <include>io.opencensus:opencensus-api</include>
+                  <include>io.opencensus:opencensus-contrib-grpc-metrics</include>
                   <!-- need to shade instrumentation-api so it uses shaded grpc -->
                   <include>com.google.instrumentation:instrumentation-api</include>
                   <!-- need to shade glowroot-wire-api so it uses shaded grpc -->

@@ -48,7 +48,7 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.2." + i + ".RELEASE");
         }
-        for (int i = 0; i <= 11; i++) {
+        for (int i = 0; i <= 12; i++) {
             run("4.3." + i + ".RELEASE");
         }
         runJava8("5.0.0.RELEASE");

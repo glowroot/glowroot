@@ -17,7 +17,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <grails.version>3.3.1</grails.version>
+    <grails.version>3.3.2</grails.version>
   </properties>
 
   <dependencies>
@@ -122,7 +122,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.11.RELEASE</version>
+      <version>4.3.12.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -130,7 +130,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.11.RELEASE</version>
+      <version>4.3.12.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>

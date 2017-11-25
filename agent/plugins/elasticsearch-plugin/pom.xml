@@ -113,16 +113,10 @@
     <profile>
       <id>elasticsearch-5.x</id>
       <properties>
-        <!-- elasticsearch 5.6.2 depends on log4j 2.9.1 which then causes mvn enforcer to fail due
-         to log4j being restriced to 2.9.0 below -->
-        <elasticsearch.version>5.6.1</elasticsearch.version>
+        <elasticsearch.version>5.6.4</elasticsearch.version>
         <!-- need to use netty version that is used by elasticsearch.version version above -->
         <netty.version>4.1.13.Final</netty.version>
-        <!-- log4j version used depends a bit on elasticsearch version, see e.g.
-          https://www.elastic.co/guide/en/elasticsearch/client/java-api/5.6/_log4j_2_logger.html -->
-        <!-- log4j 2.9.1 only works under javaagent container due to
-          https://issues.apache.org/jira/browse/LOG4J2-2055 -->
-        <log4j.version>2.9.0</log4j.version>
+        <log4j.version>2.10.0</log4j.version>
       </properties>
       <dependencies>
         <dependency>

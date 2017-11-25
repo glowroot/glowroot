@@ -39,7 +39,7 @@
         since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
         methods still return com.google.common.base.Function, which only extends
         java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>23.0</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>23.5-jre</version> <!-- $NO-MVN-MAN-VER$ -->
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -143,7 +143,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.11.RELEASE</version>
+      <version>4.3.12.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -152,7 +152,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.11.RELEASE</version>
+      <version>4.3.12.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -194,7 +194,7 @@
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
-      <version>3.3.1</version>
+      <version>3.3.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
