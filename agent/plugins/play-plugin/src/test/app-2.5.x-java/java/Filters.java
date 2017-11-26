@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,24 +24,15 @@ import filters.ExampleFilter;
 @Singleton
 public class Filters implements HttpFilters {
 
-    private final Environment env;
     private final EssentialFilter exampleFilter;
 
     @Inject
-    public Filters(Environment env, ExampleFilter exampleFilter) {
-        this.env = env;
+    public Filters(ExampleFilter exampleFilter) {
         this.exampleFilter = exampleFilter;
     }
 
     @Override
     public EssentialFilter[] filters() {
-        // Use the example filter if we're running development mode. If
-        // we're running in production or test mode then don't use any
-        // filters at all.
-        if (env.mode().equals(Mode.DEV)) {
-            return new EssentialFilter[] {exampleFilter};
-        } else {
-            return new EssentialFilter[] {};
-        }
+        return new EssentialFilter[] {exampleFilter};
     }
 }
