@@ -30,6 +30,7 @@ import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
+import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
@@ -206,8 +207,8 @@ public class NettyAspect {
             return channel != null && channel.glowroot$getCompleteAsyncTransaction();
         }
 
-        @OnBefore
-        public static void onBefore(ThreadContext context,
+        @OnAfter
+        public static void onAfter(ThreadContext context,
                 @BindParameter @Nullable ChannelHandlerContext channelHandlerContext,
                 @BindParameter @Nullable Object msg) {
             if (channelHandlerContext == null) {
