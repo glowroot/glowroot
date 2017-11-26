@@ -176,14 +176,6 @@
         </property>
       </activation>
       <build>
-        <resources>
-          <resource>
-            <directory>src/main/resources</directory>
-          </resource>
-          <resource>
-            <directory>src/main/shaded-resources</directory>
-          </resource>
-        </resources>
         <plugins>
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
@@ -229,6 +221,9 @@
                 <!-- not relocating glowroot-wire-api since it-harness api exposes glowroot-wire-api
                   unshaded for use by plugin integration tests -->
               </relocations>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+              </transformers>
             </configuration>
             <executions>
               <execution>
