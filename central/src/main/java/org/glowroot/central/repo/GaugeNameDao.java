@@ -85,7 +85,9 @@ class GaugeNameDao {
         boundStatement.setInt(i++, configRepository.getCentralStorageConfig().getMaxRollupTTL());
         ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
         CompletableFuture<?> chainedFuture =
-                MoreFutures.onFailure(future, () -> gaugeNamesCache.invalidate(agentRollupId));
+                MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
+        chainedFuture = chainedFuture
+                .whenComplete((result, t) -> gaugeNamesCache.invalidate(agentRollupId));
         return ImmutableList.of(chainedFuture);
     }
 

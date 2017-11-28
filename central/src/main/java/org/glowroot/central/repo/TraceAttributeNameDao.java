@@ -98,8 +98,10 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         boundStatement.setString(i++, traceAttributeName);
         boundStatement.setInt(i++, getTraceTTL());
         ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
-        CompletableFuture<?> chainedFuture = MoreFutures.onFailure(future,
-                () -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY));
+        CompletableFuture<?> chainedFuture =
+                MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
+        chainedFuture = chainedFuture
+                .whenComplete((result, t) -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY));
         futures.add(chainedFuture);
     }
 
