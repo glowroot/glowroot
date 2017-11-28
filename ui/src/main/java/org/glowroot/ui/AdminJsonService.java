@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.net.MediaType;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -91,6 +92,7 @@ class AdminJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final boolean central;
+    private final boolean offline;
     private final File confDir;
     private final @Nullable File sharedConfDir;
     private final ConfigRepository configRepository;
@@ -102,11 +104,12 @@ class AdminJsonService {
     // null when running in servlet container
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    AdminJsonService(boolean central, File confDir, @Nullable File sharedConfDir,
+    AdminJsonService(boolean central, boolean offline, File confDir, @Nullable File sharedConfDir,
             ConfigRepository configRepository, RepoAdmin repoAdmin,
             LiveAggregateRepository liveAggregateRepository, MailService mailService,
             HttpClient httpClient) {
         this.central = central;
+        this.offline = offline;
         this.confDir = confDir;
         this.sharedConfDir = sharedConfDir;
         this.configRepository = configRepository;
@@ -466,13 +469,19 @@ class AdminJsonService {
         return sw.toString();
     }
 
-    @POST(path = "/backend/admin/defrag-h2-data", permission = "admin:edit:storage")
-    void defragH2Data() throws Exception {
+    @POST(path = "/backend/admin/defrag-h2-data", permission = "")
+    void defragH2Data(@BindAuthentication Authentication authentication) throws Exception {
+        if (!offline && !authentication.isAdminPermitted("admin:edit:storage")) {
+            throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
+        }
         repoAdmin.defragH2Data();
     }
 
-    @POST(path = "/backend/admin/compact-h2-data", permission = "admin:edit:storage")
-    void compactH2Data() throws Exception {
+    @POST(path = "/backend/admin/compact-h2-data", permission = "")
+    void compactH2Data(@BindAuthentication Authentication authentication) throws Exception {
+        if (!offline && !authentication.isAdminPermitted("admin:edit:storage")) {
+            throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
+        }
         repoAdmin.compactH2Data();
     }
 

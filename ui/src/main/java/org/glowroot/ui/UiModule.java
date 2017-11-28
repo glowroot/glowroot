@@ -108,8 +108,9 @@ public class UiModule {
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         MailService mailService = new MailService();
 
-        AdminJsonService adminJsonService = new AdminJsonService(central, confDir, sharedConfDir,
-                configRepository, repoAdmin, liveAggregateRepository, mailService, httpClient);
+        AdminJsonService adminJsonService =
+                new AdminJsonService(central, offline, confDir, sharedConfDir, configRepository,
+                        repoAdmin, liveAggregateRepository, mailService, httpClient);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(new TransactionJsonService(transactionCommonService, aggregateRepository,

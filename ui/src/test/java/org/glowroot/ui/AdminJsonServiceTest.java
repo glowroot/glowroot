@@ -43,7 +43,7 @@ public class AdminJsonServiceTest {
     public void beforeEachTest() {
         mailService = new MockMailService();
         httpClient = mock(HttpClient.class);
-        adminJsonService = new AdminJsonService(false, new File("."), null,
+        adminJsonService = new AdminJsonService(false, false, new File("."), null,
                 mock(ConfigRepository.class), mock(RepoAdmin.class),
                 mock(LiveAggregateRepository.class), mailService, httpClient);
     }

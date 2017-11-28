@@ -308,13 +308,14 @@
         </div>
       </div>
       <div class="form-group gt-form-buttons"
-           ng-if="layout.adminEdit">
+           ng-if="layout.adminEdit || layout.offline">
         <div class="col-lg-offset-4 col-lg-8 gt-sometimes-legend-padding-storage">
           <div gt-button-group>
             <div gt-button
                  gt-label="Save changes"
                  gt-click="save(deferred)"
                  gt-disabled="formCtrl.$invalid"
+                 ng-if="layout.adminEdit"
                  class="gt-inline-block">
             </div>
             <div gt-button
@@ -324,7 +325,7 @@
                  gt-dont-validate-form="true"
                  gt-confirm-header="Defrag H2 data?"
                  gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
-                 ng-show="!layout.central"
+                 ng-if="layout.adminEdit && !layout.central"
                  class="gt-inline-block">
             </div>
             <div gt-button
@@ -334,7 +335,7 @@
                  gt-dont-validate-form="true"
                  gt-confirm-header="Compact H2 data?"
                  gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
-                 ng-show="!layout.central"
+                 ng-if="layout.adminEdit && !layout.central"
                  class="gt-inline-block">
             </div>
             <div gt-button
@@ -344,7 +345,21 @@
                  gt-dont-validate-form="true"
                  gt-confirm-header="Delete all data?"
                  gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
-                 ng-show="!layout.central"
+                 ng-if="layout.adminEdit && !layout.central"
+                 class="gt-inline-block">
+            </div>
+            <div gt-button
+                 gt-label="Defrag H2 data"
+                 gt-click="defragH2Data(deferred)"
+                 gt-btn-class="btn-default"
+                 ng-if="layout.offline"
+                 class="gt-inline-block">
+            </div>
+            <div gt-button
+                 gt-label="Compact H2 data"
+                 gt-click="compactH2Data(deferred)"
+                 gt-btn-class="btn-default"
+                 ng-if="layout.offline"
                  class="gt-inline-block">
             </div>
           </div>
