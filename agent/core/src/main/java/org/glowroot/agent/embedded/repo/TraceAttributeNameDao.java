@@ -102,11 +102,9 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     }
 
     void deleteBefore(long captureTime) throws Exception {
-        synchronized (lock) {
-            // subtracting 1 day to account for rate limiting of updates
-            dataSource.update("delete from trace_attribute_name where last_capture_time < ?",
-                    captureTime - DAYS.toMillis(1));
-        }
+        // subtracting 1 day to account for rate limiting of updates
+        dataSource.deleteBeforeUsingLock("trace_attribute_name", "last_capture_time",
+                captureTime - DAYS.toMillis(1), lock);
     }
 
     void invalidateCache() {

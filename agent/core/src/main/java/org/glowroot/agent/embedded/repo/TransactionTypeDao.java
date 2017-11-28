@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,11 +83,9 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     void deleteBefore(long captureTime) throws Exception {
-        synchronized (lock) {
-            // subtracting 1 day to account for rate limiting of updates
-            dataSource.update("delete from transaction_types where last_capture_time < ?",
-                    captureTime - DAYS.toMillis(1));
-        }
+        // subtracting 1 day to account for rate limiting of updates
+        dataSource.deleteBeforeUsingLock("transaction_types", "last_capture_time",
+                captureTime - DAYS.toMillis(1), lock);
     }
 
     void invalidateCache() {

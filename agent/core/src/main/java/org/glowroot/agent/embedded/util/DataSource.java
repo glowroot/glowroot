@@ -361,6 +361,20 @@ public class DataSource {
         } while (deleted > 0);
     }
 
+    public void deleteBeforeUsingLock(@Untainted String tableName, @Untainted String columnName,
+            long captureTime, Object lock) throws SQLException {
+        // delete 100 at a time, which is both faster than deleting all at once, and doesn't
+        // lock the single jdbc connection for one large chunk of time
+        int deleted;
+        do {
+            synchronized (lock) {
+                deleted = update(
+                        "delete from " + tableName + " where " + columnName + " < ? limit 100",
+                        captureTime);
+            }
+        } while (deleted > 0);
+    }
+
     public void syncTable(@Untainted String tableName, List<Column> columns) throws SQLException {
         synchronized (lock) {
             if (closed) {
