@@ -49,6 +49,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.proxy.HttpProxyHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.resolver.NoopAddressResolverGroup;
 import io.netty.util.CharsetUtil;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
@@ -118,6 +119,11 @@ public class HttpClient {
                             p.addLast(handler);
                         }
                     });
+            if (!httpProxyConfig.host().isEmpty()) {
+                // name resolution should be performed by the proxy server in case some proxy rules
+                // depend on the remote hostname
+                bootstrap.resolver(NoopAddressResolverGroup.INSTANCE);
+            }
             HttpRequest request;
             if (content == null) {
                 request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET,
