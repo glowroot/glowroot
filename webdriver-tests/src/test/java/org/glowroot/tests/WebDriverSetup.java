@@ -266,7 +266,7 @@ public class WebDriverSetup {
         new SecureRandom().nextBytes(bytes);
         props.println("cassandra.symmetricEncryptionKey="
                 + BaseEncoding.base16().lowerCase().encode(bytes));
-        props.println("grpc.port=" + grpcPort);
+        props.println("grpc.httpPort=" + grpcPort);
         props.println("ui.port=" + uiPort);
         props.close();
         String prior = System.getProperty("glowroot.log.dir");
