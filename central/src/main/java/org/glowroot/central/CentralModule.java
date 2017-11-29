@@ -25,6 +25,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -169,11 +171,11 @@ public class CentralModule {
             centralAlertingService = new CentralAlertingService(repos.getConfigRepository(),
                     repos.getHeartbeatDao(), alertingService);
 
-            grpcServer = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
-                    centralConfig.grpcHttps(), centralDir, repos.getAgentRollupDao(),
-                    repos.getAgentConfigDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
-                    repos.getEnvironmentDao(), repos.getHeartbeatDao(), repos.getTraceDao(),
-                    centralAlertingService, clusterManager, clock, version);
+            grpcServer = new GrpcServer(centralConfig.grpcBindAddress(),
+                    centralConfig.grpcHttpPort(), centralConfig.grpcHttpsPort(), centralDir,
+                    repos.getAgentRollupDao(), repos.getAgentConfigDao(), repos.getAggregateDao(),
+                    repos.getGaugeValueDao(), repos.getEnvironmentDao(), repos.getHeartbeatDao(),
+                    repos.getTraceDao(), centralAlertingService, clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
                     repos.getAgentRollupDao(), repos.getAgentConfigDao(), downstreamService, clock);
@@ -548,13 +550,21 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(grpcBindAddress)) {
             builder.grpcBindAddress(grpcBindAddress);
         }
-        String grpcPortText = props.getProperty("grpc.port");
-        if (!Strings.isNullOrEmpty(grpcPortText)) {
-            builder.grpcPort(Integer.parseInt(grpcPortText));
+        String grpcHttpPortText = props.getProperty("grpc.httpPort");
+        if (!Strings.isNullOrEmpty(grpcHttpPortText)) {
+            if (grpcHttpPortText.trim().equalsIgnoreCase("none")) {
+                builder.grpcHttpPort(null);
+            } else {
+                builder.grpcHttpPort(Integer.parseInt(grpcHttpPortText));
+            }
         }
-        String grpcHttpsText = props.getProperty("grpc.https");
-        if (!Strings.isNullOrEmpty(grpcHttpsText)) {
-            builder.grpcHttps(Boolean.parseBoolean(grpcHttpsText));
+        String grpcHttpsPortText = props.getProperty("grpc.httpsPort");
+        if (!Strings.isNullOrEmpty(grpcHttpsPortText)) {
+            if (grpcHttpsPortText.trim().equalsIgnoreCase("none")) {
+                builder.grpcHttpsPort(null);
+            } else {
+                builder.grpcHttpsPort(Integer.parseInt(grpcHttpsPortText));
+            }
         }
         String uiBindAddress = props.getProperty("ui.bindAddress");
         if (!Strings.isNullOrEmpty(uiBindAddress)) {
@@ -762,13 +772,15 @@ public class CentralModule {
         }
 
         @Value.Default
-        int grpcPort() {
+        @Nullable
+        Integer grpcHttpPort() {
             return 8181;
         }
 
         @Value.Default
-        boolean grpcHttps() {
-            return false;
+        @Nullable
+        Integer grpcHttpsPort() {
+            return null;
         }
 
         @Value.Default

@@ -20,6 +20,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import javax.annotation.Nullable;
+
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import org.slf4j.Logger;
@@ -44,13 +46,15 @@ class GrpcServer {
 
     private final DownstreamServiceImpl downstreamService;
 
-    private final Server server;
+    private final @Nullable Server httpServer;
+    private final @Nullable Server httpsServer;
 
-    GrpcServer(String bindAddress, int port, boolean https, File centralDir,
-            AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao, AggregateDao aggregateDao,
-            GaugeValueDao gaugeValueDao, EnvironmentDao environmentDao, HeartbeatDao heartbeatDao,
-            TraceDao traceDao, CentralAlertingService centralAlertingService,
-            ClusterManager clusterManager, Clock clock, String version) throws IOException {
+    GrpcServer(String bindAddress, @Nullable Integer httpPort, @Nullable Integer httpsPort,
+            File centralDir, AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao,
+            AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, EnvironmentDao environmentDao,
+            HeartbeatDao heartbeatDao, TraceDao traceDao,
+            CentralAlertingService centralAlertingService, ClusterManager clusterManager,
+            Clock clock, String version) throws IOException {
 
         downstreamService = new DownstreamServiceImpl(agentRollupDao, clusterManager);
 
@@ -58,15 +62,29 @@ class GrpcServer {
                 agentConfigDao, environmentDao, aggregateDao, gaugeValueDao, heartbeatDao, traceDao,
                 centralAlertingService, clock, version);
 
-        Server server = startServer(bindAddress, port, https, centralDir, downstreamService,
-                collectorService);
-        startupLogger.info("gRPC listening on {}:{}{}", bindAddress, port, https ? " (HTTPS)" : "");
-        this.server = server;
+        if (httpPort == null) {
+            httpServer = null;
+        } else {
+            httpServer = startServer(bindAddress, httpPort, false, centralDir, downstreamService,
+                    collectorService);
+            if (httpsPort == null) {
+                startupLogger.info("gRPC listening on {}:{}", bindAddress, httpPort);
+            } else {
+                startupLogger.info("gRPC listening on {}:{} (HTTP)", bindAddress, httpPort);
+            }
+        }
+        if (httpsPort == null) {
+            httpsServer = null;
+        } else {
+            httpsServer = startServer(bindAddress, httpsPort, true, centralDir, downstreamService,
+                    collectorService);
+            startupLogger.info("gRPC listening on {}:{} (HTTPS)", bindAddress, httpsPort);
+        }
     }
 
-    private static Server startServer(String bindAddress, int port, boolean https,
-            File centralDir, DownstreamServiceImpl downstreamService,
-            CollectorServiceImpl collectorService) throws IOException {
+    private static Server startServer(String bindAddress, int port, boolean https, File centralDir,
+            DownstreamServiceImpl downstreamService, CollectorServiceImpl collectorService)
+            throws IOException {
         NettyServerBuilder builder =
                 NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port));
         if (https) {
@@ -98,7 +116,12 @@ class GrpcServer {
         // for a few seconds if it receives a "shutting-down" response
 
         // shutdown to prevent new grpc requests
-        shutdown(server);
+        if (httpsServer != null) {
+            shutdown(httpsServer);
+        }
+        if (httpServer != null) {
+            shutdown(httpServer);
+        }
     }
 
     private static File getHttpsConfFile(File confDir, String fileName, String sharedFileName,
