@@ -279,6 +279,7 @@
                   <include>io.netty:*</include>
                   <include>io.grpc:*</include>
                   <include>io.opencensus:opencensus-api</include>
+                  <include>io.opencensus:opencensus-contrib-grpc-metrics</include>
                   <include>com.google.instrumentation:instrumentation-api</include>
                   <include>org.glowroot:glowroot-wire-api</include>
                   <include>org.glowroot:glowroot-agent-core</include>
