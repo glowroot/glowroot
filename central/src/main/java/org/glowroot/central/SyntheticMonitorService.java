@@ -54,7 +54,6 @@ import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.message.BasicHeader;
@@ -152,7 +151,6 @@ class SyntheticMonitorService implements Runnable {
         this.ticker = ticker;
         this.clock = clock;
         httpClient = HttpAsyncClients.custom()
-                .setRedirectStrategy(new DefaultRedirectStrategy())
                 .setMaxConnPerRoute(10) // increasing from default 2
                 .setMaxConnTotal(100) // increasing from default 20
                 .build();
