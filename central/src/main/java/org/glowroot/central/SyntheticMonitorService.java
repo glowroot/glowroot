@@ -374,7 +374,7 @@ class SyntheticMonitorService implements Runnable {
                     // using Throwable.toString() to include the exception class name
                     // because sometimes hard to know what message means without this context
                     // e.g. java.net.UnknownHostException: google.com
-                    errorMessage = t.toString();
+                    errorMessage = getRootCause(t).toString();
                     if (errorMessage == null) {
                         errorMessage = t.getClass().getName();
                     }
