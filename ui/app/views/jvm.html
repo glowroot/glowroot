@@ -62,37 +62,37 @@
            gt-display="Thread dump"
            gt-url="jvm/thread-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/thread-dump' || currentUrl() === 'jvm/jstack'"
-           ng-if="agentPermissions.jvm.threadDump && !layout.offline">
+           ng-if="agentPermissions.jvm.threadDump && !isAgentRollup() && !layout.offline">
       </div>
       <div gt-sidebar-item
            gt-display="Heap dump"
            gt-url="jvm/heap-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/heap-dump'"
-           ng-if="agentPermissions.jvm.heapDump && !layout.offline">
+           ng-if="agentPermissions.jvm.heapDump && !isAgentRollup() && !layout.offline">
       </div>
       <div gt-sidebar-item
            gt-display="Heap histogram"
            gt-url="jvm/heap-histogram{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/heap-histogram'"
-           ng-if="agentPermissions.jvm.heapHistogram && !layout.offline">
+           ng-if="agentPermissions.jvm.heapHistogram && !isAgentRollup() && !layout.offline">
       </div>
       <div gt-sidebar-item
            gt-display="MBean tree"
            gt-url="jvm/mbean-tree{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/mbean-tree'"
-           ng-if="agentPermissions.jvm.mbeanTree && !layout.offline">
+           ng-if="agentPermissions.jvm.mbeanTree && !isAgentRollup() && !layout.offline">
       </div>
       <div gt-sidebar-item
            gt-display="System properties"
            gt-url="jvm/system-properties{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/system-properties'"
-           ng-if="agentPermissions.jvm.systemProperties && !layout.offline">
+           ng-if="agentPermissions.jvm.systemProperties && !isAgentRollup() && !layout.offline">
       </div>
       <div gt-sidebar-item
            gt-display="Environment"
            gt-url="jvm/environment{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/environment'"
-           ng-if="agentPermissions.jvm.environment">
+           ng-if="agentPermissions.jvm.environment && !isAgentRollup()">
       </div>
     </ul>
   </div>
