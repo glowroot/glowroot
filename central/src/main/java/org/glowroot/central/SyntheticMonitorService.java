@@ -152,7 +152,7 @@ class SyntheticMonitorService implements Runnable {
         this.clock = clock;
         httpClient = HttpAsyncClients.custom()
                 .setMaxConnPerRoute(10) // increasing from default 2
-                .setMaxConnTotal(100) // increasing from default 20
+                .setMaxConnTotal(1000) // increasing from default 20
                 .build();
         httpClient.start();
         checkExecutor = Executors.newCachedThreadPool();
