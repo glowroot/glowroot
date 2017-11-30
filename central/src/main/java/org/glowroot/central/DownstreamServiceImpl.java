@@ -536,9 +536,20 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 synchronized (requestObserver) {
                     requestObserver.onNext(request);
                 }
-                int timeoutSeconds = 60;
-                if (request.getMessageCase() == CentralRequest.MessageCase.HEAP_DUMP_REQUEST) {
-                    timeoutSeconds = 180;
+                int timeoutSeconds;
+                switch (request.getMessageCase()) {
+                    case HEADER_REQUEST:
+                    case ENTRIES_REQUEST:
+                    case MAIN_THREAD_PROFILE_REQUEST:
+                    case AUX_THREAD_PROFILE_REQUEST:
+                    case FULL_TRACE_REQUEST:
+                        timeoutSeconds = 5;
+                        break;
+                    case HEAP_DUMP_REQUEST:
+                        timeoutSeconds = 180;
+                        break;
+                    default:
+                        timeoutSeconds = 60;
                 }
                 // timeout is in case agent never responds
                 // passing AgentResponse.getDefaultInstance() is just dummy (non-null) value

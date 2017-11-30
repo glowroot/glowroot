@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
@@ -69,6 +70,8 @@ class TraceCommonService {
                 header = liveTraceRepository.getHeader(agentRollupId, agentId, traceId);
             } catch (AgentNotConnectedException e) {
                 header = null;
+            } catch (TimeoutException e) {
+                header = null;
             }
             if (header != null) {
                 return toJsonLiveHeader(agentId, header);
@@ -96,6 +99,8 @@ class TraceCommonService {
                 entries = liveTraceRepository.getEntries(agentRollupId, agentId, traceId);
             } catch (AgentNotConnectedException e) {
                 entries = null;
+            } catch (TimeoutException e) {
+                entries = null;
             }
             if (entries != null) {
                 return toJson(entries);
@@ -117,6 +122,8 @@ class TraceCommonService {
             try {
                 profile = liveTraceRepository.getMainThreadProfile(agentRollupId, agentId, traceId);
             } catch (AgentNotConnectedException e) {
+                profile = null;
+            } catch (TimeoutException e) {
                 profile = null;
             }
             if (profile != null) {
@@ -140,6 +147,8 @@ class TraceCommonService {
                 profile = liveTraceRepository.getAuxThreadProfile(agentRollupId, agentId, traceId);
             } catch (AgentNotConnectedException e) {
                 profile = null;
+            } catch (TimeoutException e) {
+                profile = null;
             }
             if (profile != null) {
                 return toJson(profile);
@@ -159,6 +168,8 @@ class TraceCommonService {
             try {
                 trace = liveTraceRepository.getFullTrace(agentRollupId, agentId, traceId);
             } catch (AgentNotConnectedException e) {
+                trace = null;
+            } catch (TimeoutException e) {
                 trace = null;
             }
             if (trace != null) {
