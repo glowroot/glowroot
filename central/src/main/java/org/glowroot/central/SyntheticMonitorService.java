@@ -39,6 +39,7 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
+import com.machinepublishers.jbrowserdriver.ProxyConfig;
 import com.machinepublishers.jbrowserdriver.RequestHeaders;
 import com.machinepublishers.jbrowserdriver.Settings;
 import org.apache.http.HttpHost;
@@ -298,9 +299,15 @@ class SyntheticMonitorService implements Runnable {
                 // validation for default constructor and test method occurs on save
                 Constructor<?> defaultConstructor = syntheticUserTestClass.getConstructor();
                 Method method = syntheticUserTestClass.getMethod("test", WebDriver.class);
-                JBrowserDriver driver = new JBrowserDriver(Settings.builder()
-                        .requestHeaders(REQUEST_HEADERS)
-                        .build());
+                Settings.Builder settings = Settings.builder()
+                        .requestHeaders(REQUEST_HEADERS);
+                HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+                if (!httpProxyConfig.host().isEmpty()) {
+                    int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
+                    settings.proxy(new ProxyConfig(ProxyConfig.Type.HTTP, httpProxyConfig.host(),
+                            proxyPort, httpProxyConfig.username(), httpProxyConfig.password()));
+                }
+                JBrowserDriver driver = new JBrowserDriver(settings.build());
                 try {
                     method.invoke(defaultConstructor.newInstance(), driver);
                 } finally {
