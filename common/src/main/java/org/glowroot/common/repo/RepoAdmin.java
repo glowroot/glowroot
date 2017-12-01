@@ -15,13 +15,26 @@
  */
 package org.glowroot.common.repo;
 
+import java.util.List;
+
+import org.immutables.value.Value;
+
 public interface RepoAdmin {
 
     void defragH2Data() throws Exception;
 
     void compactH2Data() throws Exception;
 
+    List<H2Table> analyzeH2DiskSpace() throws Exception;
+
     void deleteAllData() throws Exception;
 
     void resizeIfNeeded() throws Exception;
+
+    @Value.Immutable
+    interface H2Table {
+        String name();
+        long bytes();
+        long rows();
+    }
 }

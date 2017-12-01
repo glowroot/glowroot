@@ -339,6 +339,16 @@
                  class="gt-inline-block">
             </div>
             <div gt-button
+                 gt-label="Analyze H2 disk space"
+                 gt-click="analyzeH2DiskSpace(deferred)"
+                 gt-btn-class="btn-warning"
+                 gt-dont-validate-form="true"
+                 gt-confirm-header="Analyze H2 disk space?"
+                 gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
+                 ng-if="layout.adminEdit && !layout.central"
+                 class="gt-inline-block">
+            </div>
+            <div gt-button
                  gt-label="Delete all data"
                  gt-click="deleteAllStoredData(deferred)"
                  gt-btn-class="btn-danger"
@@ -362,6 +372,13 @@
                  ng-if="layout.offline"
                  class="gt-inline-block">
             </div>
+            <div gt-button
+                 gt-label="Analyze H2 disk space"
+                 gt-click="analyzeH2DiskSpace(deferred)"
+                 gt-btn-class="btn-default"
+                 ng-if="layout.offline"
+                 class="gt-inline-block">
+            </div>
           </div>
           <div class="help-block" ng-if="layout.central">
             Updated expiration settings only apply to data collected from this point forward. Existing data is still
@@ -371,6 +388,36 @@
           </div>
         </div>
       </div>
+      <table ng-if="analyzedH2Tables"
+             class="table"
+             style="table-layout: fixed;">
+        <thead>
+        <tr>
+          <th>
+            Table name
+          </th>
+          <th>
+            Total bytes
+          </th>
+          <th>
+            Row count
+          </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="analyzedH2Table in analyzedH2Tables">
+          <td>
+            {{analyzedH2Table.name}}
+          </td>
+          <td>
+            {{analyzedH2Table.bytes | number}}
+          </td>
+          <td>
+            {{analyzedH2Table.rows | number}}
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

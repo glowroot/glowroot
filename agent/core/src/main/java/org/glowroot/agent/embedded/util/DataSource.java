@@ -46,9 +46,12 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.Index;
+import org.glowroot.common.repo.ImmutableH2Table;
+import org.glowroot.common.repo.RepoAdmin.H2Table;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.glowroot.agent.util.Checkers.castUntainted;
 
 public class DataSource {
 
@@ -123,6 +126,42 @@ public class DataSource {
             preparedStatementCache.invalidateAll();
             connection = createConnection(dbFile);
         }
+    }
+
+    public List<H2Table> analyzeH2DiskSpace() throws SQLException {
+        if (dbFile == null) {
+            return ImmutableList.of();
+        }
+        List</*@Untainted*/ String> tableNames;
+        synchronized (lock) {
+            if (closed) {
+                return ImmutableList.of();
+            }
+            tableNames = getAllTableNamesUnderLock();
+        }
+        List<H2Table> tables = Lists.newArrayList();
+        for (String tableName : tableNames) {
+            long bytes;
+            synchronized (lock) {
+                if (closed) {
+                    return tables;
+                }
+                bytes = getTableBytesUnderLock(tableName);
+            }
+            long rows;
+            synchronized (lock) {
+                if (closed) {
+                    return tables;
+                }
+                rows = getTableRowsUnderLock(tableName);
+            }
+            tables.add(ImmutableH2Table.builder()
+                    .name(tableName)
+                    .bytes(bytes)
+                    .rows(rows)
+                    .build());
+        }
+        return tables;
     }
 
     public void deleteAll() throws SQLException {
@@ -460,6 +499,65 @@ public class DataSource {
             closer.close();
         }
         // don't need to close statement since they are all cached and used under lock
+    }
+
+    // lock must be acquired prior to calling this method
+    private long getTableBytesUnderLock(String tableName) throws SQLException {
+        PreparedStatement preparedStatement = prepareStatement("call disk_space_used (?)", 0);
+        preparedStatement.setString(1, tableName);
+        ResultSet resultSet = preparedStatement.executeQuery();
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
+        try {
+            if (!resultSet.next()) {
+                throw new IllegalStateException("No results for call disk_space_used");
+            }
+            return resultSet.getLong(1);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
+        // don't need to close statement since they are all cached and used under lock
+    }
+
+    // lock must be acquired prior to calling this method
+    private long getTableRowsUnderLock(@Untainted String tableName) throws SQLException {
+        PreparedStatement preparedStatement =
+                prepareStatement("select count(*) from " + tableName, 0);
+        ResultSet resultSet = preparedStatement.executeQuery();
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
+        try {
+            if (!resultSet.next()) {
+                throw new IllegalStateException("No results for call disk_space_used");
+            }
+            return resultSet.getLong(1);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
+        // don't need to close statement since they are all cached and used under lock
+    }
+
+    // lock must be acquired prior to calling this method
+    private List</*@Untainted*/ String> getAllTableNamesUnderLock() throws SQLException {
+        ResultSet resultSet = connection.getMetaData().getTables(null, null, null, null);
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
+        try {
+            List</*@Untainted*/ String> tableNames = Lists.newArrayList();
+            while (resultSet.next()) {
+                String tableType = checkNotNull(resultSet.getString(4));
+                if (tableType.equals("TABLE")) {
+                    String tableName = checkNotNull(resultSet.getString(3));
+                    tableNames.add(castUntainted(tableName));
+                }
+            }
+            return tableNames;
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
     }
 
     private PreparedStatement prepareStatement(@Untainted String sql, int queryTimeoutSeconds)

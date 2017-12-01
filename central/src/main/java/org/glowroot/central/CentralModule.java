@@ -812,6 +812,10 @@ public class CentralModule {
         @Override
         public void compactH2Data() throws Exception {}
         @Override
+        public List<H2Table> analyzeH2DiskSpace() throws Exception {
+            return ImmutableList.of();
+        }
+        @Override
         public void deleteAllData() throws Exception {}
         @Override
         public void resizeIfNeeded() throws Exception {}

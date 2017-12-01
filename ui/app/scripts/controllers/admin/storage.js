@@ -67,6 +67,7 @@ glowroot.controller('AdminStorageCtrl', [
     }
 
     $scope.save = function (deferred) {
+      $scope.analyzedH2Tables = undefined;
       $http.post('backend/admin/storage', $scope.config)
           .then(function (response) {
             onNewData(response.data);
@@ -77,6 +78,7 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.deleteAllStoredData = function (deferred) {
+      $scope.analyzedH2Tables = undefined;
       $http.post('backend/admin/delete-all-stored-data', {})
           .then(function () {
             deferred.resolve('Deleted');
@@ -86,6 +88,7 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.defragH2Data = function (deferred) {
+      $scope.analyzedH2Tables = undefined;
       $http.post('backend/admin/defrag-h2-data', {})
           .then(function () {
             deferred.resolve('Defragmented');
@@ -95,9 +98,21 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.compactH2Data = function (deferred) {
+      $scope.analyzedH2Tables = undefined;
       $http.post('backend/admin/compact-h2-data', {})
           .then(function () {
             deferred.resolve('Compacted');
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
+    };
+
+    $scope.analyzeH2DiskSpace = function (deferred) {
+      $scope.analyzedH2Tables = undefined;
+      $http.post('backend/admin/analyze-h2-disk-space', {})
+          .then(function (data) {
+            $scope.analyzedH2Tables = data.data;
+            deferred.resolve('Analyzed');
           }, function (response) {
             httpErrors.handle(response, $scope, deferred);
           });

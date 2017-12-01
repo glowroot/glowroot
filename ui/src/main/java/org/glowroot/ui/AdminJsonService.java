@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.net.MediaType;
+import com.google.common.primitives.Longs;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -69,6 +70,7 @@ import org.glowroot.common.repo.ConfigRepository.DuplicatePagerDutyIntegrationKe
 import org.glowroot.common.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyException;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.repo.RepoAdmin.H2Table;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.repo.util.HttpClient;
@@ -90,6 +92,13 @@ class AdminJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
+
+    private static final Ordering<H2Table> orderingByBytesDesc = new Ordering<H2Table>() {
+        @Override
+        public int compare(H2Table left, H2Table right) {
+            return Longs.compare(right.bytes(), left.bytes());
+        }
+    };
 
     private final boolean central;
     private final boolean offline;
@@ -483,6 +492,31 @@ class AdminJsonService {
             throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
         }
         repoAdmin.compactH2Data();
+    }
+
+    @POST(path = "/backend/admin/analyze-h2-disk-space", permission = "")
+    String analyzeH2DiskSpace(@BindAuthentication Authentication authentication) throws Exception {
+        if (!offline && !authentication.isAdminPermitted("admin:edit:storage")) {
+            throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
+        }
+        List<H2Table> tables = repoAdmin.analyzeH2DiskSpace();
+
+        StringWriter sw = new StringWriter();
+        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        try {
+            jg.writeStartArray();
+            for (H2Table table : orderingByBytesDesc.sortedCopy(tables)) {
+                jg.writeStartObject();
+                jg.writeStringField("name", table.name());
+                jg.writeNumberField("bytes", table.bytes());
+                jg.writeNumberField("rows", table.rows());
+                jg.writeEndObject();
+            }
+            jg.writeEndArray();
+        } finally {
+            jg.close();
+        }
+        return sw.toString();
     }
 
     @POST(path = "/backend/admin/delete-all-stored-data", permission = "admin:edit:storage")

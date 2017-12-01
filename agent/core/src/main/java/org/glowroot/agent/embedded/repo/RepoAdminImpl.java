@@ -79,6 +79,11 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
+    public List<H2Table> analyzeH2DiskSpace() throws Exception {
+        return dataSource.analyzeH2DiskSpace();
+    }
+
+    @Override
     public void resizeIfNeeded() throws Exception {
         // resize() doesn't do anything if the new and old value are the same
         for (int i = 0; i < rollupCappedDatabases.size(); i++) {
