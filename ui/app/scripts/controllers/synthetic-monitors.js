@@ -65,7 +65,15 @@ glowroot.controller('SyntheticMonitorsCtrl', [
           }
         }
       }
-      query['synthetic-monitor-id'] = $scope.syntheticMonitorIds;
+      var allSyntheticMonitorIds = [];
+      angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
+        allSyntheticMonitorIds.push(syntheticMonitor.id);
+      });
+      if (angular.equals($scope.syntheticMonitorIds, allSyntheticMonitorIds)) {
+        delete query['synthetic-monitor-id'];
+      } else {
+        query['synthetic-monitor-id'] = $scope.syntheticMonitorIds;
+      }
       if (!$scope.range.last) {
         query.from = $scope.range.chartFrom;
         query.to = $scope.range.chartTo;
@@ -180,7 +188,13 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       } else if (!location.last) {
         location.last = 4 * 60 * 60 * 1000;
       }
-      location.syntheticMonitorIds = $location.search()['synthetic-monitor-id'] || [];
+      location.syntheticMonitorIds = $location.search()['synthetic-monitor-id'];
+      if (!location.syntheticMonitorIds) {
+        location.syntheticMonitorIds = [];
+        angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
+          location.syntheticMonitorIds.push(syntheticMonitor.id);
+        });
+      }
       if (!angular.isArray(location.syntheticMonitorIds)) {
         location.syntheticMonitorIds = [location.syntheticMonitorIds];
       }
@@ -199,6 +213,11 @@ glowroot.controller('SyntheticMonitorsCtrl', [
           .then(function (response) {
             $scope.loaded = true;
             $scope.allSyntheticMonitors = response.data;
+            if (!$scope.syntheticMonitorIds.length) {
+              angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
+                $scope.syntheticMonitorIds.push(syntheticMonitor.id);
+              });
+            }
           }, function (response) {
             httpErrors.handle(response, $scope);
           });
