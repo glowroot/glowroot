@@ -58,7 +58,6 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification;
@@ -157,26 +156,6 @@ public class AlertingService {
         }
     }
 
-    // only used by central
-    public void sendHeartbeatAlertIfNeeded(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
-            boolean currentlyTriggered) throws Exception {
-        AlertCondition alertCondition = alertConfig.getCondition();
-        OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
-                alertCondition, alertConfig.getSeverity());
-        if (openIncident != null && !currentlyTriggered) {
-            incidentRepository.resolveIncident(openIncident, endTime);
-            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
-                    endTime, true);
-        } else if (openIncident == null && currentlyTriggered) {
-            // the start time for the incident is the end time of the interval evaluated above
-            incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
-                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
-            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
-                    endTime, false);
-        }
-    }
-
     private void sendMetricAlert(String agentRollupId, String agentRollupDisplay,
             AlertConfig alertConfig, MetricCondition metricCondition, long endTime, boolean ok)
             throws Exception {
@@ -247,27 +226,6 @@ public class AlertingService {
         message.append(".\n\n");
         sendNotification(agentRollupId, agentRollupDisplay, alertConfig, endTime,
                 subject.toString(), message.toString(), ok);
-    }
-
-    private void sendHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
-            boolean ok) throws Exception {
-        // subject is the same between initial and ok messages so they will be threaded by gmail
-        String subject = "Glowroot alert";
-        if (!agentRollupId.isEmpty()) {
-            subject += " - " + agentRollupDisplay;
-        }
-        subject += " - Heartbeat";
-        StringBuilder sb = new StringBuilder();
-        if (ok) {
-            sb.append("Receving heartbeat again.\n\n");
-        } else {
-            sb.append("Heartbeat not received in the last ");
-            sb.append(heartbeatCondition.getTimePeriodSeconds());
-            sb.append(" seconds.\n\n");
-        }
-        sendNotification(agentRollupId, agentRollupDisplay, alertConfig, endTime, subject,
-                sb.toString(), ok);
     }
 
     public void sendNotification(String agentRollupId, String agentRollupDisplay,

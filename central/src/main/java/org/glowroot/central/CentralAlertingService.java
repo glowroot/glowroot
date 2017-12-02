@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
-import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
@@ -41,8 +40,8 @@ class CentralAlertingService {
     private static final Logger logger = LoggerFactory.getLogger(CentralAlertingService.class);
 
     private final ConfigRepositoryImpl configRepository;
-    private final HeartbeatDao heartbeatDao;
     private final AlertingService alertingService;
+    private final HeartbeatAlertingService heartbeatAlertingService;
 
     private final ExecutorService alertCheckingExecutor;
 
@@ -50,11 +49,11 @@ class CentralAlertingService {
 
     private volatile boolean closed;
 
-    CentralAlertingService(ConfigRepositoryImpl configRepository, HeartbeatDao heartbeatDao,
-            AlertingService alertingService) {
+    CentralAlertingService(ConfigRepositoryImpl configRepository, AlertingService alertingService,
+            HeartbeatAlertingService heartbeatAlertingService) {
         this.configRepository = configRepository;
-        this.heartbeatDao = heartbeatDao;
         this.alertingService = alertingService;
+        this.heartbeatAlertingService = heartbeatAlertingService;
         alertCheckingExecutor = Executors.newSingleThreadExecutor();
     }
 
@@ -197,10 +196,8 @@ class CentralAlertingService {
     private void checkHeartbeatAlert(String agentRollupId, String agentDisplay,
             AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime)
             throws Exception {
-        long startTime = endTime - SECONDS.toMillis(heartbeatCondition.getTimePeriodSeconds());
-        boolean currentlyTriggered = !heartbeatDao.exists(agentRollupId, startTime, endTime);
-        alertingService.sendHeartbeatAlertIfNeeded(agentRollupId, agentDisplay, alertConfig,
-                heartbeatCondition, endTime, currentlyTriggered);
+        heartbeatAlertingService.checkHeartbeatAlert(agentRollupId, agentDisplay, alertConfig,
+                heartbeatCondition, endTime);
     }
 
     private static boolean isAggregateMetricCondition(AlertCondition alertCondition) {
