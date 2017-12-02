@@ -18,7 +18,7 @@
     "fontawesome": "4.7.0",
     "handlebars": "4.0.11",
     "jquery": "3.2.1",
-    "moment": "2.19.2",
+    "moment": "2.19.3",
     "moment-timezone": "0.5.14",
     "sequeljs": "trask/sequeljs#glowroot-0.9.8",
     "spinjs": "2.3.2"

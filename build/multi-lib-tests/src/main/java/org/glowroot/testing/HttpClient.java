@@ -89,6 +89,9 @@ public class HttpClient {
         updateLibVersion("apache.httpclient.version", "4.5.3");
         updateLibVersion("apache.httpcore.version", "4.4.6");
         run(test);
+        updateLibVersion("apache.httpclient.version", "4.5.4");
+        updateLibVersion("apache.httpcore.version", "4.4.7");
+        run(test);
     }
 
     private static void apacheHttpAsyncClient() throws Exception {
