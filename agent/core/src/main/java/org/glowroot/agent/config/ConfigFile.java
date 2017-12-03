@@ -17,6 +17,8 @@ package org.glowroot.agent.config;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -29,8 +31,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
+import com.google.common.primitives.Ints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +49,10 @@ class ConfigFile {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
+
+    private static final List<String> keyOrder =
+            ImmutableList.of("transactions", "ui", "userRecording", "advanced", "gauges",
+                    "syntheticMonitors", "alerts", "plugins", "instrumentation");
 
     private final File file;
     private final ObjectNode configRootObjectNode;
@@ -88,14 +98,14 @@ class ConfigFile {
 
     void writeConfig(String key, Object config, ObjectMapper mapper) throws IOException {
         configRootObjectNode.replace(key, mapper.valueToTree(config));
-        writeToFileIfNeeded(file, configRootObjectNode);
+        writeToFileIfNeeded(file, configRootObjectNode, keyOrder);
     }
 
     void writeConfig(Map<String, Object> config, ObjectMapper mapper) throws IOException {
         for (Entry<String, Object> entry : config.entrySet()) {
             configRootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
         }
-        writeToFileIfNeeded(file, configRootObjectNode);
+        writeToFileIfNeeded(file, configRootObjectNode, keyOrder);
     }
 
     @OnlyUsedByTests
@@ -182,8 +192,9 @@ class ConfigFile {
         return rootObjectNode == null ? mapper.createObjectNode() : rootObjectNode;
     }
 
-    static void writeToFileIfNeeded(File file, ObjectNode rootObjectNode) throws IOException {
-        String content = writeConfigAsString(rootObjectNode);
+    static void writeToFileIfNeeded(File file, ObjectNode rootObjectNode, List<String> keyOrder)
+            throws IOException {
+        String content = writeConfigAsString(rootObjectNode, keyOrder);
         if (file.exists()) {
             String existingContent = Files.toString(file, Charsets.UTF_8);
             if (content.equals(existingContent)) {
@@ -195,19 +206,35 @@ class ConfigFile {
         Files.write(content, file, Charsets.UTF_8);
     }
 
-    private static String writeConfigAsString(ObjectNode rootObjectNode) throws IOException {
-        ObjectNode rootObjectNodeCopy = rootObjectNode.deepCopy();
-        ObjectMappers.stripEmptyContainerNodes(rootObjectNodeCopy);
+    private static String writeConfigAsString(ObjectNode rootObjectNode, List<String> keyOrder)
+            throws IOException {
+        ObjectNode orderedRootObjectNode = getOrderedObjectNode(rootObjectNode, keyOrder);
+        ObjectMappers.stripEmptyContainerNodes(orderedRootObjectNode);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
-            jg.writeTree(rootObjectNodeCopy);
+            jg.writeTree(orderedRootObjectNode);
         } finally {
             jg.close();
         }
         // newline is not required, just a personal preference
         return sb.toString() + ObjectMappers.NEWLINE;
+    }
+
+    public static ObjectNode getOrderedObjectNode(ObjectNode objectNode, List<String> keyOrder) {
+        Map<String, JsonNode> map = Maps.newHashMap();
+        Iterator<Entry<String, JsonNode>> i = objectNode.fields();
+        while (i.hasNext()) {
+            Entry<String, JsonNode> entry = i.next();
+            map.put(entry.getKey(), entry.getValue());
+        }
+        ObjectNode orderedObjectNode = mapper.createObjectNode();
+        for (Entry<String, JsonNode> entry : new ExplicitOrdering(keyOrder)
+                .sortedCopy(map.entrySet())) {
+            orderedObjectNode.set(entry.getKey(), entry.getValue());
+        }
+        return orderedObjectNode;
     }
 
     private static void writeBackupFile(File file) {
@@ -219,6 +246,31 @@ class ConfigFile {
         } catch (IOException f) {
             logger.warn("error making a copy of the invalid config file before overwriting it",
                     f);
+        }
+    }
+
+    private static class ExplicitOrdering extends Ordering<Entry<String, JsonNode>> {
+
+        private final List<String> explicitOrdering;
+
+        private ExplicitOrdering(List<String> explicitOrdering) {
+            this.explicitOrdering = explicitOrdering;
+        }
+
+        @Override
+        public int compare(Entry<String, JsonNode> left, Entry<String, JsonNode> right) {
+            String leftKey = left.getKey();
+            String rightKey = right.getKey();
+            int compare = Ints.compare(getIndex(leftKey), getIndex(rightKey));
+            if (compare != 0) {
+                return compare;
+            }
+            return Ordering.natural().compare(leftKey, rightKey);
+        }
+
+        private int getIndex(String key) {
+            int index = explicitOrdering.indexOf(key);
+            return index == -1 ? Integer.MAX_VALUE : index;
         }
     }
 }

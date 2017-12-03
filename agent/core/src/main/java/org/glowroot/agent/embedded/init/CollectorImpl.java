@@ -43,7 +43,6 @@ class CollectorImpl implements Collector {
     private static final Logger logger = LoggerFactory.getLogger(CollectorImpl.class);
 
     private static final String AGENT_ID = "";
-    private static final String AGENT_DISPLAY = "";
 
     private final EnvironmentDao environmentDao;
     private final AggregateDao aggregateDao;
@@ -80,8 +79,10 @@ class CollectorImpl implements Collector {
             AlertCondition alertCondition = alertConfig.getCondition();
             if (isAggregateMetricCondition(alertCondition)) {
                 try {
-                    alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
-                            alertCondition.getMetricCondition(), aggregateReader.captureTime());
+                    alertingService.checkMetricAlert(AGENT_ID,
+                            configRepository.getAdminGeneralConfig().agentDisplayNameOrDefault(),
+                            alertConfig, alertCondition.getMetricCondition(),
+                            aggregateReader.captureTime());
                 } catch (InterruptedException e) {
                     // probably shutdown requested
                     throw e;
@@ -109,8 +110,9 @@ class CollectorImpl implements Collector {
             AlertCondition alertCondition = alertConfig.getCondition();
             if (isGaugeMetricCondition(alertCondition)) {
                 try {
-                    alertingService.checkMetricAlert(AGENT_ID, AGENT_DISPLAY, alertConfig,
-                            alertCondition.getMetricCondition(), maxCaptureTime);
+                    alertingService.checkMetricAlert(AGENT_ID,
+                            configRepository.getAdminGeneralConfig().agentDisplayNameOrDefault(),
+                            alertConfig, alertCondition.getMetricCondition(), maxCaptureTime);
                 } catch (InterruptedException e) {
                     // probably shutdown requested
                     throw e;

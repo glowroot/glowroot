@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.AdminGeneralConfig;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
@@ -116,6 +117,8 @@ public interface ConfigRepository {
 
     @Nullable
     AgentRollupConfig getAgentRollupConfig(String agentRollupId) throws Exception;
+
+    AdminGeneralConfig getAdminGeneralConfig();
 
     List<UserConfig> getUserConfigs() throws Exception;
 
@@ -216,6 +219,8 @@ public interface ConfigRepository {
     void updateAgentRollupConfig(AgentRollupConfig config, String priorVersion) throws Exception;
 
     void deleteAgentRollupConfig(String agentRollupId) throws Exception;
+
+    void updateAdminGeneralConfig(AdminGeneralConfig config, String priorVersion) throws Exception;
 
     void insertUserConfig(UserConfig config) throws Exception;
 

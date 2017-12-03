@@ -1,0 +1,53 @@
+<!--
+  Copyright 2017 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>
+      General
+    </h2>
+  </div>
+  <div class="panel-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div ng-form
+         gt-form-autofocus-on-first-input
+         class="form-horizontal"
+         name="formCtrl"
+         style="padding-top: 15px;">
+      <div gt-form-group
+           gt-label="Agent display name"
+           gt-model="config.agentDisplayName"
+           gt-disabled="!layout.adminEdit"
+           gt-width="40em"
+           gt-placeholder="{{defaultAgentDisplayName}}">
+        <div class="help-block">
+          Display name for this agent.
+        </div>
+      </div>
+      <div class="form-group gt-form-buttons"
+           ng-if="agentPermissions.config.edit.general">
+        <div class="col-lg-offset-3 col-lg-9">
+          <div gt-button
+               gt-label="Save changes"
+               gt-click="save(deferred)"
+               gt-disabled="formCtrl.$invalid"
+               class="gt-inline-block">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -32,6 +32,11 @@
            ng-if="layout.central">
       </div>
       <div gt-sidebar-item
+           gt-display="General"
+           gt-url="admin/general"
+           ng-if="!layout.central">
+      </div>
+      <div gt-sidebar-item
            gt-display="Users"
            gt-url="admin/user-list"
            gt-active="currentUrl() === 'admin/user-list'"

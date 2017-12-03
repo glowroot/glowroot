@@ -162,7 +162,7 @@ public class AlertingService {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         StringBuilder subject = new StringBuilder();
         subject.append("Glowroot alert");
-        if (!agentRollupId.isEmpty()) {
+        if (!agentRollupDisplay.isEmpty()) {
             subject.append(" - ");
             subject.append(agentRollupDisplay);
         }

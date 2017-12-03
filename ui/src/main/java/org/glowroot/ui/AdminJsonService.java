@@ -41,12 +41,14 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.AdminGeneralConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.config.HttpProxyConfig;
+import org.glowroot.common.config.ImmutableAdminGeneralConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
@@ -153,6 +155,15 @@ class AdminJsonService {
         return "";
     }
 
+    @GET(path = "/backend/admin/general", permission = "admin:view:general")
+    String getGeneralConfig() throws Exception {
+        AdminGeneralConfig config = configRepository.getAdminGeneralConfig();
+        return mapper.writeValueAsString(ImmutableAdminGeneralConfigResponse.builder()
+                .config(AdminGeneralConfigDto.create(config))
+                .defaultAgentDisplayName(AdminGeneralConfig.defaultAgentDisplayName())
+                .build());
+    }
+
     @GET(path = "/backend/admin/web", permission = "admin:view:web")
     String getWebConfig() throws Exception {
         if (central) {
@@ -212,6 +223,16 @@ class AdminJsonService {
     String getHealthchecksIoConfig() throws Exception {
         HealthchecksIoConfig config = configRepository.getHealthchecksIoConfig();
         return mapper.writeValueAsString(HealthchecksIoConfigDto.create(config));
+    }
+
+    @POST(path = "/backend/admin/general", permission = "admin:edit:general")
+    String updateGeneralConfig(@BindRequest AdminGeneralConfigDto configDto) throws Exception {
+        try {
+            configRepository.updateAdminGeneralConfig(configDto.convert(), configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getGeneralConfig();
     }
 
     @POST(path = "/backend/admin/web", permission = "admin:edit:web")
@@ -616,6 +637,12 @@ class AdminJsonService {
     }
 
     @Value.Immutable
+    interface AdminGeneralConfigResponse {
+        AdminGeneralConfigDto config();
+        String defaultAgentDisplayName();
+    }
+
+    @Value.Immutable
     interface EmbeddedWebConfigResponse {
         EmbeddedWebConfigDto config();
         int activePort();
@@ -642,6 +669,26 @@ class AdminJsonService {
     interface LdapConfigResponse {
         LdapConfigDto config();
         List<String> allGlowrootRoles();
+    }
+
+    @Value.Immutable
+    abstract static class AdminGeneralConfigDto {
+
+        abstract String agentDisplayName();
+        abstract String version();
+
+        private AdminGeneralConfig convert() {
+            return ImmutableAdminGeneralConfig.builder()
+                    .agentDisplayName(agentDisplayName())
+                    .build();
+        }
+
+        private static AdminGeneralConfigDto create(AdminGeneralConfig config) {
+            return ImmutableAdminGeneralConfigDto.builder()
+                    .agentDisplayName(config.agentDisplayName())
+                    .version(config.version())
+                    .build();
+        }
     }
 
     @Value.Immutable

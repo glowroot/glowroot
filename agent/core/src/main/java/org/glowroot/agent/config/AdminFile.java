@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,9 @@ class AdminFile {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminFile.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
+
+    private static final List<String> keyOrder = ImmutableList.of("general", "users", "roles",
+            "web", "storage", "smtp", "httpProxy", "ldap", "pagerDuty", "healthchecksIo");
 
     private final File file;
     private final ObjectNode adminRootObjectNode;
@@ -87,14 +91,14 @@ class AdminFile {
 
     void writeAdmin(String key, Object config, ObjectMapper mapper) throws IOException {
         adminRootObjectNode.replace(key, mapper.valueToTree(config));
-        ConfigFile.writeToFileIfNeeded(file, adminRootObjectNode);
+        ConfigFile.writeToFileIfNeeded(file, adminRootObjectNode, keyOrder);
     }
 
     void writeAdmin(Map<String, Object> config, ObjectMapper mapper) throws IOException {
         for (Entry<String, Object> entry : config.entrySet()) {
             adminRootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
         }
-        ConfigFile.writeToFileIfNeeded(file, adminRootObjectNode);
+        ConfigFile.writeToFileIfNeeded(file, adminRootObjectNode, keyOrder);
     }
 
     private static void upgradeRolesIfNeeded(ObjectNode adminRootObjectNode) {

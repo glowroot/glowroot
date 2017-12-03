@@ -41,6 +41,7 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.TransactionConfig;
 import org.glowroot.agent.config.UiConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
+import org.glowroot.common.config.AdminGeneralConfig;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
@@ -48,6 +49,7 @@ import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.config.HttpProxyConfig;
+import org.glowroot.common.config.ImmutableAdminGeneralConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableHealthchecksIoConfig;
@@ -76,6 +78,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 public class ConfigRepositoryImpl implements ConfigRepository {
 
+    private static final String ADMIN_GENERAL_KEY = "general";
     private static final String HEALTHCHECKS_IO_KEY = "healthchecksIo";
 
     private final ConfigService configService;
@@ -87,6 +90,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Object writeLock = new Object();
 
+    private volatile AdminGeneralConfig adminGeneralConfig;
     private volatile ImmutableList<UserConfig> userConfigs;
     private volatile ImmutableList<RoleConfig> roleConfigs;
     private volatile EmbeddedWebConfig webConfig;
@@ -114,6 +118,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         lazySecretKey = new LazySecretKeyImpl(new File(confDir, "secret"));
 
+        AdminGeneralConfig adminGeneralConfig =
+                configService.getAdminConfig(ADMIN_GENERAL_KEY, ImmutableAdminGeneralConfig.class);
+        if (adminGeneralConfig == null) {
+            this.adminGeneralConfig = ImmutableAdminGeneralConfig.builder().build();
+        } else {
+            this.adminGeneralConfig = adminGeneralConfig;
+        }
         List<ImmutableUserConfig> userConfigs = configService.getAdminConfig(USERS_KEY,
                 new TypeReference<List<ImmutableUserConfig>>() {});
         if (userConfigs == null) {
@@ -307,6 +318,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public AgentRollupConfig getAgentRollupConfig(String agentRollup) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AdminGeneralConfig getAdminGeneralConfig() {
+        return adminGeneralConfig;
     }
 
     @Override
@@ -719,6 +735,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public void updateAdminGeneralConfig(AdminGeneralConfig config, String priorVersion)
+            throws Exception {
+        synchronized (writeLock) {
+            checkVersionsEqual(adminGeneralConfig.version(), priorVersion);
+            configService.updateAdminConfig(ADMIN_GENERAL_KEY, config);
+            adminGeneralConfig = config;
+        }
+    }
+
+    @Override
     public void insertUserConfig(UserConfig config) throws Exception {
         synchronized (writeLock) {
             List<UserConfig> configs = Lists.newArrayList(userConfigs);
@@ -974,6 +1000,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @OnlyUsedByTests
     public void resetAdminConfig() throws IOException {
+        adminGeneralConfig = ImmutableAdminGeneralConfig.builder().build();
         userConfigs = ImmutableList.<UserConfig>of(ImmutableUserConfig.builder()
                 .username("anonymous")
                 .addRoles("Administrator")
@@ -993,6 +1020,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private void writeAll() throws IOException {
         // linked hash map to preserve ordering when writing to config file
         Map<String, Object> configs = Maps.newLinkedHashMap();
+        configs.put(ADMIN_GENERAL_KEY, adminGeneralConfig);
         configs.put(USERS_KEY, userConfigs);
         configs.put(ROLES_KEY, roleConfigs);
         configs.put(WEB_KEY, webConfig);

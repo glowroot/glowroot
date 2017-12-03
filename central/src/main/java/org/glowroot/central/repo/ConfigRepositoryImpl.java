@@ -34,6 +34,7 @@ import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
 
 import org.glowroot.central.repo.AgentConfigDao.AgentConfigUpdater;
+import org.glowroot.common.config.AdminGeneralConfig;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
@@ -276,6 +277,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public @Nullable AgentRollupConfig getAgentRollupConfig(String agentRollupId) throws Exception {
         return agentRollupDao.readAgentRollupConfig(agentRollupId);
+    }
+
+    @Override
+    public AdminGeneralConfig getAdminGeneralConfig() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -876,6 +882,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void deleteAgentRollupConfig(String agentRollupId) throws Exception {
         agentRollupDao.delete(agentRollupId);
+    }
+
+    @Override
+    public void updateAdminGeneralConfig(AdminGeneralConfig config, String priorVersion) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

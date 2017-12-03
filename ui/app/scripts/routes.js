@@ -100,7 +100,7 @@ glowroot.config([
       } else if ($rootScope.layout.showNavbarConfig) {
         return 'config/transaction';
       } else if ($rootScope.layout.adminView) {
-        return 'admin/agent-list';
+        return $rootScope.layout.central ? 'admin/agent-list' : 'admin/general';
       } else if ($rootScope.layout.loggedIn && !$rootScope.layout.ldap) {
         return 'profile/change-password';
       } else {
@@ -514,6 +514,11 @@ glowroot.config([
       url: '/agent',
       templateUrl: 'views/admin/agent.html',
       controller: 'AdminAgentCtrl'
+    });
+    $stateProvider.state('admin.general', {
+      url: '/general',
+      templateUrl: 'views/admin/general.html',
+      controller: 'AdminGeneralCtrl'
     });
     $stateProvider.state('admin.userList', {
       url: '/user-list',
