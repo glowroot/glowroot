@@ -19,11 +19,10 @@
 glowroot.controller('AdminHttpProxyCtrl', [
   '$scope',
   '$http',
-  'modals',
   'encryptionKeyMessage',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, modals, encryptionKeyMessage, confirmIfHasChanges, httpErrors) {
+  function ($scope, $http, encryptionKeyMessage, confirmIfHasChanges, httpErrors) {
 
     // initialize page binding object
     $scope.page = {};
