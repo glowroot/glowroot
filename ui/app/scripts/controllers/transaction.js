@@ -31,8 +31,8 @@ glowroot.controller('TransactionCtrl', [
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;
 
-    if ($scope.layout.central) {
-      $scope.headerDisplay = $scope.agentRollupId || '<agent>';
+    if ($scope.layout.embeddedAgentDisplayName) {
+      $scope.headerDisplay = $scope.layout.embeddedAgentDisplayName;
     } else {
       $scope.headerDisplay = headerDisplay;
     }
@@ -40,10 +40,6 @@ glowroot.controller('TransactionCtrl', [
     $scope.defaultSummarySortOrder = defaultSummarySortOrder;
 
     $scope.range = {};
-
-    $scope.hideAgentRollupDropdown = function () {
-      return $scope.layout.agentRollups.length === 1 || !$scope.layout.central;
-    };
 
     $scope.hideTransactionTypeDropdown = function () {
       var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];

@@ -13,10 +13,24 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-header" style="margin-bottom: 8px;">
-  <div class="gt-header-page-name"
-       style="margin-bottom: 10px;">
-    Incidents
+<div class="gt-header" style="margin-bottom: 5px;">
+  <div class="gt-header-page-name">
+    <div ng-show="!layout.embeddedAgentDisplayName"
+         style="margin-bottom: 10px;">
+      Incidents
+    </div>
+    <div style="margin-top: -16px;" ng-show="layout.embeddedAgentDisplayName">
+      {{layout.embeddedAgentDisplayName}}
+      <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+           while chrome guesses the placement of the border based on default font and then it moves slightly
+           once font is available -->
+      <span class="gt-inline-block gt-separator">
+        |
+      </span>
+      <span class="gt-inline-block">
+        Incidents
+      </span>
+    </div>
   </div>
 </div>
 
@@ -55,7 +69,9 @@
      ng-if="loaded"
      style="margin-top: 50px;">
   <div class="panel-heading">
-    <h2>Resolved<div style="float: right; padding-top: 10px; font-size: 24px;">(last 30 days)</div></h2>
+    <h2>Resolved
+      <div style="float: right; padding-top: 10px; font-size: 24px;">(last 30 days)</div>
+    </h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>

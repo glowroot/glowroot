@@ -20,7 +20,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -157,6 +160,7 @@ class LayoutService {
                 .central(central)
                 .offline(offline)
                 .glowrootVersion(version)
+                .embeddedAgentDisplayName(getEmbeddedAgentDisplayName())
                 .loginEnabled(true)
                 .gaugeCollectionIntervalMillis(0)
                 .showNavbarTransaction(false)
@@ -188,6 +192,7 @@ class LayoutService {
                 .central(central)
                 .offline(offline)
                 .glowrootVersion(version)
+                .embeddedAgentDisplayName(getEmbeddedAgentDisplayName())
                 .loginEnabled(offline ? false
                         : configRepository.namedUsersExist()
                                 || !configRepository.getLdapConfig().host().isEmpty())
@@ -212,8 +217,16 @@ class LayoutService {
                 .build();
     }
 
+    private @Nullable String getEmbeddedAgentDisplayName() {
+        if (central) {
+            return null;
+        }
+        return Strings
+                .emptyToNull(configRepository.getAdminGeneralConfig().agentDisplayNameOrDefault());
+    }
+
     // need to filter out agent rollups with no access rights, and move children up if needed
-    private List<FilteredAgentRollup> filter(List<AgentRollup> agentRollups,
+    private static List<FilteredAgentRollup> filter(List<AgentRollup> agentRollups,
             Authentication authentication) throws Exception {
         List<FilteredAgentRollup> filtered = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
@@ -438,6 +451,7 @@ class LayoutService {
         abstract boolean central();
         abstract boolean offline();
         abstract String glowrootVersion();
+        abstract @Nullable String embeddedAgentDisplayName();
         abstract boolean loginEnabled();
         abstract ImmutableList<RollupConfig> rollupConfigs();
         abstract ImmutableList<Long> rollupExpirationMillis();
