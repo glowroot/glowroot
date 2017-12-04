@@ -338,8 +338,16 @@ glowroot.factory('charts', [
             if (data.markings) {
               var markings = [];
               angular.forEach(data.markings, function (marking) {
+                var from = marking.from;
+                var to = marking.to;
+                var minMarkingWidth = Math.max((query.to - query.from) / 200, 2000);
+                var padding = minMarkingWidth - (to - from);
+                if (padding > 0) {
+                  from -= padding / 2;
+                  to += padding / 2;
+                }
                 markings.push({
-                  xaxis: {from: marking.from, to: marking.to},
+                  xaxis: {from: from, to: to},
                   color: '#ffcccc',
                   data: marking
                 });
