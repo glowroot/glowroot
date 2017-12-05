@@ -31,6 +31,7 @@ class RepoAdminImpl implements RepoAdmin {
     private final ConfigRepositoryImpl configRepository;
     private final EnvironmentDao agentDao;
     private final GaugeIdDao gaugeIdDao;
+    private final GaugeNameDao gaugeNameDao;
     private final GaugeValueDao gaugeValueDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
@@ -38,15 +39,16 @@ class RepoAdminImpl implements RepoAdmin {
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             CappedDatabase traceCappedDatabase, ConfigRepositoryImpl configRepository,
-            EnvironmentDao agentDao, GaugeIdDao gaugeIdDao, GaugeValueDao gaugeValueDao,
-            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-            TraceAttributeNameDao traceAttributeNameDao) {
+            EnvironmentDao agentDao, GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao,
+            GaugeValueDao gaugeValueDao, TransactionTypeDao transactionTypeDao,
+            FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao) {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
         this.configRepository = configRepository;
         this.agentDao = agentDao;
         this.gaugeIdDao = gaugeIdDao;
+        this.gaugeNameDao = gaugeNameDao;
         this.gaugeValueDao = gaugeValueDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
@@ -59,6 +61,7 @@ class RepoAdminImpl implements RepoAdmin {
         dataSource.deleteAll();
         agentDao.reinitAfterDeletingDatabase();
         gaugeIdDao.invalidateCache();
+        gaugeNameDao.invalidateCache();
         gaugeValueDao.reinitAfterDeletingDatabase();
         transactionTypeDao.invalidateCache();
         fullQueryTextDao.invalidateCache();

@@ -87,6 +87,10 @@ class GaugeNameDao {
         dataSource.deleteBeforeUsingLock("gauge_name", "capture_time", captureTime, lock);
     }
 
+    void invalidateCache() {
+        rowInsertedInThePastDay.invalidateAll();
+    }
+
     @Value.Immutable
     @Styles.AllParameters
     interface GaugeNameRow {
