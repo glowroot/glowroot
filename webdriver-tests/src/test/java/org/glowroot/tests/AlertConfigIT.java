@@ -15,6 +15,10 @@
  */
 package org.glowroot.tests;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Stopwatch;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
@@ -23,11 +27,41 @@ import org.glowroot.tests.config.AlertConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.util.Utils;
 
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.xpath;
 
 public class AlertConfigIT extends WebDriverIT {
+
+    @BeforeClass
+    public static void setUp() throws Exception {
+        // wait for java.lang:type=Memory:HeapMemoryUsage.used gauge to show up in the UI so that
+        // alerts can be set up for it
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        boolean found = false;
+        outer: while (stopwatch.elapsed(SECONDS) < 30) {
+            long from = System.currentTimeMillis() - HOURS.toMillis(2);
+            long to = from + HOURS.toMillis(4);
+            String content = httpGet("http://localhost:" + getUiPort()
+                    + "/backend/jvm/all-gauges?agent-rollup-id=" + agentId
+                    + "&from=" + from + "&to=" + to);
+            JsonNode responseNode = new ObjectMapper().readTree(content);
+            for (JsonNode gaugeNode : responseNode.get("allGauges")) {
+                if (gaugeNode.get("name").asText()
+                        .equals("java.lang:type=Memory:HeapMemoryUsage.used")) {
+                    found = true;
+                    break outer;
+                }
+            }
+            Thread.sleep(10);
+        }
+        if (!found) {
+            throw new AssertionError("Timed out waiting for"
+                    + " java.lang:type=Memory:HeapMemoryUsage.used gauge to show up in the UI");
+        }
+    }
 
     @Test
     public void shouldAddTransactionTimeAlert() throws Exception {
