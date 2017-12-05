@@ -63,16 +63,6 @@
           </div>
         </div>
       </div>
-      <div gt-form-group
-           gt-label="Display name"
-           gt-model="config.display"
-           gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
-           gt-width="40em"
-           gt-required="loaded">
-        <div class="help-block">
-          Display name for this synthetic monitor.
-        </div>
-      </div>
       <div ng-if="config.kind === 'ping'">
         <div gt-form-group
              gt-type="url"
@@ -87,8 +77,28 @@
             The HTTP or HTTPS URL to ping with a simple GET request.
           </div>
         </div>
+        <div gt-form-group
+             gt-label="Display name"
+             gt-model="config.display"
+             gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
+             gt-width="40em"
+             gt-placeholder="Ping {{config.pingUrl ? config.pingUrl : '<url>'}}">
+          <div class="help-block">
+            Display name for this synthetic monitor.
+          </div>
+        </div>
       </div>
       <div ng-if="config.kind === 'java'">
+        <div gt-form-group
+             gt-label="Display name"
+             gt-model="config.display"
+             gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
+             gt-width="40em"
+             gt-required="loaded">
+          <div class="help-block">
+            Display name for this synthetic monitor.
+          </div>
+        </div>
         <!-- the id below is needed for css style (see config.less) -->
         <div gt-form-group
              gt-type="codemirror"

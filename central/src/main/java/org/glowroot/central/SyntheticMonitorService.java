@@ -70,6 +70,7 @@ import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.util.MoreFutures;
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.HttpProxyConfig;
 import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.repo.IncidentRepository.OpenIncident;
@@ -459,9 +460,9 @@ class SyntheticMonitorService implements Runnable {
         if (!agentRollupDisplay.isEmpty()) {
             subject += " - " + agentRollupDisplay;
         }
-        subject += " - " + syntheticMonitorConfig.getDisplay();
+        subject += " - " + ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig);
         StringBuilder sb = new StringBuilder();
-        sb.append(syntheticMonitorConfig.getDisplay());
+        sb.append(ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig));
         if (errorMessage == null) {
             sb.append(" time");
             sb.append(AlertingService.getPreUpperBoundText(ok));

@@ -26,14 +26,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import com.google.common.primitives.Ints;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Compilations.CompilationException;
@@ -59,10 +60,8 @@ class SyntheticMonitorConfigJsonService {
             new Ordering<SyntheticMonitorConfig>() {
                 @Override
                 public int compare(SyntheticMonitorConfig left, SyntheticMonitorConfig right) {
-                    if (left.getKindValue() == right.getKindValue()) {
-                        return left.getDisplay().compareToIgnoreCase(right.getDisplay());
-                    }
-                    return Ints.compare(left.getKindValue(), right.getKindValue());
+                    return ConfigDefaults.getDisplayOrDefault(left)
+                            .compareToIgnoreCase(ConfigDefaults.getDisplayOrDefault(right));
                 }
             };
 
@@ -86,12 +85,12 @@ class SyntheticMonitorConfigJsonService {
             }
             return mapper.writeValueAsString(SyntheticMonitorConfigDto.create(config));
         } else {
-            List<SyntheticMonitorConfigDto> configDtos = Lists.newArrayList();
+            List<SyntheticMonitorConfigListDto> configDtos = Lists.newArrayList();
             List<SyntheticMonitorConfig> configs =
                     configRepository.getSyntheticMonitorConfigs(agentRollupId);
             configs = orderingByDisplay.immutableSortedCopy(configs);
             for (SyntheticMonitorConfig config : configs) {
-                configDtos.add(SyntheticMonitorConfigDto.create(config));
+                configDtos.add(SyntheticMonitorConfigListDto.create(config));
             }
             return mapper.writeValueAsString(configDtos);
         }
@@ -199,10 +198,24 @@ class SyntheticMonitorConfigJsonService {
     }
 
     @Value.Immutable
-    abstract static class SyntheticMonitorConfigDto {
+    abstract static class SyntheticMonitorConfigListDto {
 
         abstract String display();
+        abstract String id();
+
+        private static SyntheticMonitorConfigListDto create(SyntheticMonitorConfig config) {
+            return ImmutableSyntheticMonitorConfigListDto.builder()
+                    .display(ConfigDefaults.getDisplayOrDefault(config))
+                    .id(config.getId())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class SyntheticMonitorConfigDto {
+
         abstract SyntheticMonitorKind kind();
+        abstract @Nullable String display();
         abstract @Nullable String pingUrl();
         abstract @Nullable String javaSource();
         abstract Optional<String> id(); // absent for insert operations
@@ -210,7 +223,7 @@ class SyntheticMonitorConfigJsonService {
 
         private SyntheticMonitorConfig convert(LazySecretKey lazySecretKey) throws Exception {
             SyntheticMonitorConfig.Builder builder = SyntheticMonitorConfig.newBuilder()
-                    .setDisplay(display())
+                    .setDisplay(Strings.nullToEmpty(display()))
                     .setKind(kind());
             String pingUrl = pingUrl();
             if (pingUrl != null) {

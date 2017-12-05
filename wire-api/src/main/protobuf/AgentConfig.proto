@@ -56,8 +56,8 @@ message AgentConfig {
 
   message SyntheticMonitorConfig {
     string id = 1;
-    string display = 2;
     SyntheticMonitorKind kind = 3;
+    string display = 2; // optional for type ping, required for type java
     string ping_url = 4;
     string java_source = 5;
 

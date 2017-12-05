@@ -15,6 +15,9 @@
  */
 package org.glowroot.common.config;
 
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig.SyntheticMonitorKind;
+
 public final class ConfigDefaults {
 
     public static final String DEFAULT_DISPLAYED_TRANSACTION_TYPE = "Web";
@@ -28,4 +31,16 @@ public final class ConfigDefaults {
     public static final int MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE = 500;
 
     private ConfigDefaults() {}
+
+    public static String getDisplayOrDefault(SyntheticMonitorConfig config) {
+        String display = config.getDisplay();
+        if (!display.isEmpty()) {
+            return display;
+        }
+        if (config.getKind() == SyntheticMonitorKind.PING) {
+            return "Ping " + config.getPingUrl();
+        } else {
+            return "<Missing display>";
+        }
+    }
 }

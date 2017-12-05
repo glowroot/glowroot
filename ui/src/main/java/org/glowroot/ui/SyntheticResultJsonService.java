@@ -29,6 +29,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.model.ErrorIntervalCollector;
 import org.glowroot.common.model.ImmutableSyntheticResult;
 import org.glowroot.common.model.SyntheticResult;
@@ -93,8 +94,8 @@ class SyntheticResultJsonService {
                         "Synthetic monitor not found: " + syntheticMonitorId);
             }
             List<SyntheticResult> syntheticResults = entry.getValue();
-            dataSeriesList.add(
-                    convertToDataSeriesWithGaps(config.getDisplay(), syntheticResults, gapMillis));
+            dataSeriesList.add(convertToDataSeriesWithGaps(
+                    ConfigDefaults.getDisplayOrDefault(config), syntheticResults, gapMillis));
             Map<Long, Long> executionCounts = Maps.newHashMap();
             executionCountsList.add(executionCounts);
             for (SyntheticResult syntheticResult : syntheticResults) {
@@ -138,8 +139,8 @@ class SyntheticResultJsonService {
         List<SyntheticMonitorConfig> configs =
                 configRepository.getSyntheticMonitorConfigs(agentRollupId);
         for (SyntheticMonitorConfig config : configs) {
-            syntheticMonitors
-                    .add(ImmutableSyntheticMonitor.of(config.getId(), config.getDisplay()));
+            syntheticMonitors.add(ImmutableSyntheticMonitor.of(config.getId(),
+                    ConfigDefaults.getDisplayOrDefault(config)));
         }
         ImmutableList<SyntheticMonitor> sortedSyntheticMonitors =
                 new SyntheticMonitorOrdering().immutableSortedCopy(syntheticMonitors);

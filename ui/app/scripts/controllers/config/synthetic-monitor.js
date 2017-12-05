@@ -36,6 +36,8 @@ glowroot.controller('ConfigSyntheticMonitorCtrl', [
 
       if (data.display) {
         $scope.heading = data.display;
+      } else if (data.pingUrl) {
+        $scope.heading = 'Ping ' + data.pingUrl;
       } else {
         $scope.heading = '<New>';
       }

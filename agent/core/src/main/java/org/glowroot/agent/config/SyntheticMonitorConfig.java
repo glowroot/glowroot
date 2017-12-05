@@ -26,9 +26,15 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMo
 public abstract class SyntheticMonitorConfig {
 
     public abstract String id();
-    public abstract String display();
 
     public abstract SyntheticMonitorKind kind();
+
+    // optional for type ping, required for type java
+    @Value.Default
+    @JsonInclude(Include.NON_EMPTY)
+    public String display() {
+        return "";
+    }
 
     // === ping synthetic monitors ===
 
@@ -49,8 +55,8 @@ public abstract class SyntheticMonitorConfig {
     public static SyntheticMonitorConfig create(AgentConfig.SyntheticMonitorConfig config) {
         return ImmutableSyntheticMonitorConfig.builder()
                 .id(config.getId())
-                .display(config.getDisplay())
                 .kind(config.getKind())
+                .display(config.getDisplay())
                 .pingUrl(config.getPingUrl())
                 .javaSource(config.getJavaSource())
                 .build();

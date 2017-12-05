@@ -33,6 +33,7 @@ import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
@@ -170,7 +171,8 @@ class AlertConfigJsonService {
         List<SyntheticMonitorItem> items = Lists.newArrayList();
         for (SyntheticMonitorConfig config : configRepository
                 .getSyntheticMonitorConfigs(agentRollupId)) {
-            items.add(ImmutableSyntheticMonitorItem.of(config.getId(), config.getDisplay()));
+            items.add(ImmutableSyntheticMonitorItem.of(config.getId(),
+                    ConfigDefaults.getDisplayOrDefault(config)));
         }
         return items;
     }
@@ -272,7 +274,7 @@ class AlertConfigJsonService {
         if (syntheticMonitorConfig == null) {
             sb.append("<NOT FOUND>");
         } else {
-            sb.append(syntheticMonitorConfig.getDisplay());
+            sb.append(ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig));
         }
         sb.append(" exceeds ");
         sb.append(AlertingService.getWithUnit(condition.getThresholdMillis(), "millisecond"));

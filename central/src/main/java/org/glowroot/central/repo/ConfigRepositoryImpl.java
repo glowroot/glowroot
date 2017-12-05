@@ -37,6 +37,7 @@ import org.glowroot.common.config.AdminGeneralConfig;
 import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
@@ -511,10 +512,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                // check for duplicate name
+                // check for duplicate display
+                String display = ConfigDefaults.getDisplayOrDefault(config);
                 for (SyntheticMonitorConfig loopConfig : agentConfig
                         .getSyntheticMonitorConfigList()) {
-                    if (loopConfig.getDisplay().equals(config.getDisplay())) {
+                    if (ConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
                         throw new DuplicateSyntheticMonitorDisplayException();
                     }
                 }
@@ -539,6 +541,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         Lists.newArrayList(agentConfig.getSyntheticMonitorConfigList());
                 ListIterator<SyntheticMonitorConfig> i = existingConfigs.listIterator();
                 boolean found = false;
+                String display = config.getDisplay();
                 while (i.hasNext()) {
                     SyntheticMonitorConfig loopConfig = i.next();
                     if (loopConfig.getId().equals(config.getId())) {
@@ -547,7 +550,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         }
                         i.set(config);
                         found = true;
-                    } else if (loopConfig.getDisplay().equals(config.getDisplay())) {
+                    } else if (ConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
                         throw new DuplicateSyntheticMonitorDisplayException();
                     }
                 }
