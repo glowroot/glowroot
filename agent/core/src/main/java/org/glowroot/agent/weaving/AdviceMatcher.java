@@ -102,16 +102,6 @@ abstract class AdviceMatcher {
         return parameterTypes.size() == pointcutMethodParameterTypes.size();
     }
 
-    private boolean isMethodParameterTypeMatch(Object pointcutMethodParameterType,
-            Type parameterType) {
-        String className = parameterType.getClassName();
-        if (pointcutMethodParameterType instanceof String) {
-            return pointcutMethodParameterType.equals(className);
-        } else {
-            return ((Pattern) pointcutMethodParameterType).matcher(className).matches();
-        }
-    }
-
     private boolean isMethodReturnMatch(Type returnType) {
         String pointcutMethodReturn = advice().pointcut().methodReturnType();
         return pointcutMethodReturn.isEmpty()
@@ -127,7 +117,17 @@ abstract class AdviceMatcher {
         return true;
     }
 
-    private boolean isMethodModifierMatch(MethodModifier methodModifier, int modifiers) {
+    private static boolean isMethodParameterTypeMatch(Object pointcutMethodParameterType,
+            Type parameterType) {
+        String className = parameterType.getClassName();
+        if (pointcutMethodParameterType instanceof String) {
+            return pointcutMethodParameterType.equals(className);
+        } else {
+            return ((Pattern) pointcutMethodParameterType).matcher(className).matches();
+        }
+    }
+
+    private static boolean isMethodModifierMatch(MethodModifier methodModifier, int modifiers) {
         switch (methodModifier) {
             case PUBLIC:
                 return Modifier.isPublic(modifiers);

@@ -33,7 +33,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClients;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -83,9 +82,7 @@ public abstract class WebDriverIT {
     public static void setUpBase() throws Exception {
         setup = WebDriverSetup.create();
         container = setup.getContainer();
-        httpClient = HttpClients.custom()
-                .setRedirectStrategy(new DefaultRedirectStrategy())
-                .build();
+        httpClient = HttpClients.createDefault();
     }
 
     @AfterClass

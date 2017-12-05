@@ -276,7 +276,19 @@ public class AgentRollupDao implements AgentRollupRepository {
         agentRollupConfigCache.invalidate(agentRollupId);
     }
 
-    private AgentRollup createAgentRollup(AgentRollupRecord agentRollupRecord,
+    static List<String> getAgentRollupIds(String agentRollupId) {
+        List<String> agentRollupIds = Lists.newArrayList();
+        int lastFoundIndex = -1;
+        int nextFoundIndex;
+        while ((nextFoundIndex = agentRollupId.indexOf('/', lastFoundIndex)) != -1) {
+            agentRollupIds.add(agentRollupId.substring(0, nextFoundIndex));
+            lastFoundIndex = nextFoundIndex + 1;
+        }
+        agentRollupIds.add(agentRollupId);
+        return agentRollupIds;
+    }
+
+    private static AgentRollup createAgentRollup(AgentRollupRecord agentRollupRecord,
             Multimap<String, AgentRollupRecord> parentChildMap) {
         Collection<AgentRollupRecord> childAgentRollupRecords =
                 parentChildMap.get(agentRollupRecord.id());
@@ -290,18 +302,6 @@ public class AgentRollupDao implements AgentRollupRepository {
             builder.addChildren(createAgentRollup(childAgentRollupRecord, parentChildMap));
         }
         return builder.build();
-    }
-
-    static List<String> getAgentRollupIds(String agentRollupId) {
-        List<String> agentRollupIds = Lists.newArrayList();
-        int lastFoundIndex = -1;
-        int nextFoundIndex;
-        while ((nextFoundIndex = agentRollupId.indexOf('/', lastFoundIndex)) != -1) {
-            agentRollupIds.add(agentRollupId.substring(0, nextFoundIndex));
-            lastFoundIndex = nextFoundIndex + 1;
-        }
-        agentRollupIds.add(agentRollupId);
-        return agentRollupIds;
     }
 
     private static ImmutableAgentRollupConfig buildAgentRollupConfig(String id,

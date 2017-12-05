@@ -230,18 +230,6 @@ public class AnalyzedWorld {
         return analyzedClass;
     }
 
-    private AnalyzedClass putAnalyzedClass(
-            ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses,
-            AnalyzedClass analyzedClass) {
-        AnalyzedClass existingAnalyzedClass =
-                loaderAnalyzedClasses.putIfAbsent(analyzedClass.name(), analyzedClass);
-        if (existingAnalyzedClass != null) {
-            // (rare) concurrent AnalyzedClass creation, use the one that made it into the map
-            return existingAnalyzedClass;
-        }
-        return analyzedClass;
-    }
-
     private List<Class<?>> getClassesWithReweavableAdvice(@Nullable ClassLoader loader,
             boolean remove) {
         List<Class<?>> classes = Lists.newArrayList();
@@ -261,32 +249,6 @@ public class AnalyzedWorld {
             }
         }
         return classes;
-    }
-
-    private @Nullable ClassLoader getAnalyzedLoader(String className,
-            @Nullable ClassLoader loader) {
-        if (loader == null) {
-            return null;
-        }
-        // can't call Class.forName() since that bypasses ClassFileTransformer.transform() if the
-        // class hasn't already been loaded, so instead, call the package protected
-        // ClassLoader.findLoadClass()
-        Class<?> clazz = null;
-        try {
-            clazz = (Class<?>) findLoadedClassMethod.invoke(loader, className);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-        ClassLoader analyzedLoader = loader;
-        if (clazz != null) {
-            // this class has already been loaded, so the corresponding analyzedClass should already
-            // be in the cache under its class loader
-            //
-            // this helps in cases where the .class files are not available via
-            // ClassLoader.getResource(), as well as being a good optimization in other cases
-            analyzedLoader = clazz.getClassLoader();
-        }
-        return analyzedLoader;
     }
 
     private AnalyzedClass createAnalyzedClass(String className, @Nullable ClassLoader loader)
@@ -402,6 +364,44 @@ public class AnalyzedWorld {
         synchronized (world) {
             return ImmutableList.copyOf(world.values());
         }
+    }
+
+    private static AnalyzedClass putAnalyzedClass(
+            ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses,
+            AnalyzedClass analyzedClass) {
+        AnalyzedClass existingAnalyzedClass =
+                loaderAnalyzedClasses.putIfAbsent(analyzedClass.name(), analyzedClass);
+        if (existingAnalyzedClass != null) {
+            // (rare) concurrent AnalyzedClass creation, use the one that made it into the map
+            return existingAnalyzedClass;
+        }
+        return analyzedClass;
+    }
+
+    private static @Nullable ClassLoader getAnalyzedLoader(String className,
+            @Nullable ClassLoader loader) {
+        if (loader == null) {
+            return null;
+        }
+        // can't call Class.forName() since that bypasses ClassFileTransformer.transform() if the
+        // class hasn't already been loaded, so instead, call the package protected
+        // ClassLoader.findLoadClass()
+        Class<?> clazz = null;
+        try {
+            clazz = (Class<?>) findLoadedClassMethod.invoke(loader, className);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        ClassLoader analyzedLoader = loader;
+        if (clazz != null) {
+            // this class has already been loaded, so the corresponding analyzedClass should already
+            // be in the cache under its class loader
+            //
+            // this helps in cases where the .class files are not available via
+            // ClassLoader.getResource(), as well as being a good optimization in other cases
+            analyzedLoader = clazz.getClassLoader();
+        }
+        return analyzedLoader;
     }
 
     // now that the type has been loaded anyways, build the analyzed class via reflection

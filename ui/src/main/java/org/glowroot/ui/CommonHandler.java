@@ -327,20 +327,6 @@ public class CommonHandler {
         return newHttpResponseWithStackTrace(e, INTERNAL_SERVER_ERROR, null);
     }
 
-    private CommonResponse buildJsonResponse(@Nullable Object responseObject) {
-        if (responseObject == null) {
-            return new CommonResponse(OK, MediaType.JSON_UTF_8, "");
-        } else if (responseObject instanceof CommonResponse) {
-            return (CommonResponse) responseObject;
-        } else if (responseObject instanceof String) {
-            return new CommonResponse(OK, MediaType.JSON_UTF_8, (String) responseObject);
-        } else {
-            logger.warn("unexpected type of json service response: {}",
-                    responseObject.getClass().getName());
-            return new CommonResponse(INTERNAL_SERVER_ERROR);
-        }
-    }
-
     private CommonResponse handleNotAuthorized(CommonRequest request,
             Authentication authentication) throws Exception {
         if (authentication.anonymous()) {
@@ -395,6 +381,20 @@ public class CommonHandler {
             return new Date(clock.currentTimeMillis() + FIVE_MINUTES);
         } else {
             return null;
+        }
+    }
+
+    private static CommonResponse buildJsonResponse(@Nullable Object responseObject) {
+        if (responseObject == null) {
+            return new CommonResponse(OK, MediaType.JSON_UTF_8, "");
+        } else if (responseObject instanceof CommonResponse) {
+            return (CommonResponse) responseObject;
+        } else if (responseObject instanceof String) {
+            return new CommonResponse(OK, MediaType.JSON_UTF_8, (String) responseObject);
+        } else {
+            logger.warn("unexpected type of json service response: {}",
+                    responseObject.getClass().getName());
+            return new CommonResponse(INTERNAL_SERVER_ERROR);
         }
     }
 

@@ -18,8 +18,7 @@
 
 glowroot.controller('ProfileCtrl', [
   '$scope',
-  '$location',
-  function ($scope, $location) {
+  function ($scope) {
     // \u00b7 is &middot;
     document.title = 'Profile \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'gears';

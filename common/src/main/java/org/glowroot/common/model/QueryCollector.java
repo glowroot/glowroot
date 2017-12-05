@@ -95,7 +95,7 @@ public class QueryCollector {
                 hasRows, totalRows, queriesForType);
     }
 
-    private void mergeQuery(String truncatedText, @Nullable String fullTextSha1,
+    private static void mergeQuery(String truncatedText, @Nullable String fullTextSha1,
             double totalDurationNanos, long executionCount, boolean hasRows, long totalRows,
             Map<String, MutableQuery> queriesForType) {
         String queryKey = MoreObjects.firstNonNull(fullTextSha1, truncatedText);

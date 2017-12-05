@@ -148,7 +148,7 @@ class SyntheticMonitorConfigJsonService {
         configRepository.deleteSyntheticMonitorConfig(agentRollupId, request.id().get());
     }
 
-    private @Nullable String validate(SyntheticMonitorConfig config) throws Exception {
+    private static @Nullable String validate(SyntheticMonitorConfig config) throws Exception {
         if (config.getKind() == SyntheticMonitorKind.JAVA) {
             // only used by central
             Class<?> javaSource;
@@ -175,7 +175,7 @@ class SyntheticMonitorConfigJsonService {
         return null;
     }
 
-    private String buildCompilationErrorResponse(List<String> compilationErrors)
+    private static String buildCompilationErrorResponse(List<String> compilationErrors)
             throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));

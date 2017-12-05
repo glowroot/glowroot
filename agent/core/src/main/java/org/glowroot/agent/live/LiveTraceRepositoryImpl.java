@@ -276,11 +276,11 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         }
     }
 
-    private boolean matchesTransactionType(Transaction transaction, String transactionType) {
+    private static boolean matchesTransactionType(Transaction transaction, String transactionType) {
         return transactionType.equals(transaction.getTransactionType());
     }
 
-    private boolean matchesTransactionName(Transaction transaction,
+    private static boolean matchesTransactionName(Transaction transaction,
             @Nullable String transactionName) {
         return transactionName == null || transactionName.equals(transaction.getTransactionName());
     }

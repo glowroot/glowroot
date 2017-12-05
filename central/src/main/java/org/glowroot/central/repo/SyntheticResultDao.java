@@ -384,7 +384,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         }
     }
 
-    private List<ErrorInterval> fromProto(List<Stored.ErrorInterval> storedErrorIntervals) {
+    private static List<ErrorInterval> fromProto(List<Stored.ErrorInterval> storedErrorIntervals) {
         List<ErrorInterval> errorIntervals = Lists.newArrayList();
         for (Stored.ErrorInterval storedErrorInterval : storedErrorIntervals) {
             errorIntervals.add(ImmutableErrorInterval.builder()
@@ -399,7 +399,7 @@ public class SyntheticResultDao implements SyntheticResultRepository {
         return errorIntervals;
     }
 
-    private List<Stored.ErrorInterval> toProto(List<ErrorInterval> errorIntervals) {
+    private static List<Stored.ErrorInterval> toProto(List<ErrorInterval> errorIntervals) {
         List<Stored.ErrorInterval> storedErrorIntervals = Lists.newArrayList();
         for (ErrorInterval errorInterval : errorIntervals) {
             storedErrorIntervals.add(Stored.ErrorInterval.newBuilder()

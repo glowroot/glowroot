@@ -142,7 +142,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void sendResponse(ChannelHandlerContext ctx, FullHttpRequest request,
+    private static void sendResponse(ChannelHandlerContext ctx, FullHttpRequest request,
             CommonResponse response, boolean keepAlive) throws IOException {
         Object content = response.getContent();
         if (content instanceof ByteBuf) {
@@ -172,7 +172,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @SuppressWarnings("argument.type.incompatible")
-    private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
+    private static void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
             FullHttpResponse response, boolean keepAlive) {
         response.headers().add(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
         if (keepAlive && !request.protocolVersion().isKeepAliveDefault()) {

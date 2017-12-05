@@ -431,8 +431,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateTransactionConfig(String agentId,
-            AgentConfig.TransactionConfig protoConfig, String priorVersion) throws Exception {
+    public void updateTransactionConfig(String agentId, AgentConfig.TransactionConfig protoConfig,
+            String priorVersion) throws Exception {
         TransactionConfig config = TransactionConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion =
@@ -991,13 +991,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         throw new IllegalStateException("Could not find plugin descriptor: " + pluginId);
     }
 
-    private void checkVersionsEqual(String version, String priorVersion)
-            throws OptimisticLockException {
-        if (!version.equals(priorVersion)) {
-            throw new OptimisticLockException();
-        }
-    }
-
     @OnlyUsedByTests
     public void resetAdminConfig() throws IOException {
         adminGeneralConfig = ImmutableAdminGeneralConfig.builder().build();
@@ -1028,6 +1021,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         configs.put(SMTP_KEY, smtpConfig);
         configs.put(LDAP_KEY, ldapConfig);
         configService.updateAdminConfigs(configs);
+    }
+
+    private static void checkVersionsEqual(String version, String priorVersion)
+            throws OptimisticLockException {
+        if (!version.equals(priorVersion)) {
+            throw new OptimisticLockException();
+        }
     }
 
     private static EmbeddedStorageConfig withCorrectedLists(EmbeddedStorageConfig config) {

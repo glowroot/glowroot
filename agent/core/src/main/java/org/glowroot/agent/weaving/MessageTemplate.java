@@ -192,7 +192,7 @@ public class MessageTemplate {
             }
         }
 
-        private String valueOf(@Nullable Object value) {
+        private static String valueOf(@Nullable Object value) {
             if (value == null || !value.getClass().isArray()) {
                 // shortcut the common case
                 return String.valueOf(value);

@@ -382,24 +382,6 @@ class TransactionJsonService {
                 .build();
     }
 
-    private Map<Long, Long> getTransactionCounts(List<OverviewAggregate> overviewAggregates) {
-        Map<Long, Long> transactionCounts = Maps.newHashMap();
-        for (OverviewAggregate overviewAggregate : overviewAggregates) {
-            transactionCounts.put(overviewAggregate.captureTime(),
-                    overviewAggregate.transactionCount());
-        }
-        return transactionCounts;
-    }
-
-    private Map<Long, Long> getTransactionCounts2(List<PercentileAggregate> percentileAggregates) {
-        Map<Long, Long> transactionCounts = Maps.newHashMap();
-        for (PercentileAggregate percentileAggregate : percentileAggregates) {
-            transactionCounts.put(percentileAggregate.captureTime(),
-                    percentileAggregate.transactionCount());
-        }
-        return transactionCounts;
-    }
-
     private List<DataSeries> getDataSeriesForTimerChart(TransactionDataRequest request,
             List<OverviewAggregate> aggregates, long liveCaptureTime) throws Exception {
         if (aggregates.isEmpty()) {
@@ -588,6 +570,26 @@ class TransactionJsonService {
             return true;
         }
         return false;
+    }
+
+    private static Map<Long, Long> getTransactionCounts(
+            List<OverviewAggregate> overviewAggregates) {
+        Map<Long, Long> transactionCounts = Maps.newHashMap();
+        for (OverviewAggregate overviewAggregate : overviewAggregates) {
+            transactionCounts.put(overviewAggregate.captureTime(),
+                    overviewAggregate.transactionCount());
+        }
+        return transactionCounts;
+    }
+
+    private static Map<Long, Long> getTransactionCounts2(
+            List<PercentileAggregate> percentileAggregates) {
+        Map<Long, Long> transactionCounts = Maps.newHashMap();
+        for (PercentileAggregate percentileAggregate : percentileAggregates) {
+            transactionCounts.put(percentileAggregate.captureTime(),
+                    percentileAggregate.transactionCount());
+        }
+        return transactionCounts;
     }
 
     // calculate top 5 timers

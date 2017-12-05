@@ -143,18 +143,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 .build();
     }
 
-    private File generateHeapDumpFileName(File dir, String extension) {
-        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
-        File file = new File(dir, "heap-dump-" + timestamp + extension);
-        int i = 1;
-        while (file.exists()) {
-            // this seems unlikely now that timestamp is included in file name
-            i++;
-            file = new File(dir, "heap-dump-" + timestamp + "-" + i + extension);
-        }
-        return file;
-    }
-
     @Override
     public HeapHistogram heapHistogram(String agentId) throws Exception {
         if (AppServerDetection.isIbmJvm()) {
@@ -199,15 +187,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 new Object[] {file.getAbsolutePath(), false},
                 new String[] {"java.lang.String", "boolean"});
         return file;
-    }
-
-    private File ibmHeapDump(File directory) throws Exception {
-        File file = generateHeapDumpFileName(directory, ".phd");
-        Class<?> clazz = Class.forName("com.ibm.jvm.Dump");
-        Method method = clazz.getMethod("heapDumpToFile", String.class);
-        String actualHeapDumpPath =
-                (String) checkNotNull(method.invoke(null, file.getAbsolutePath()));
-        return new File(actualHeapDumpPath);
     }
 
     private List<MBeanDump.MBeanInfo> getAllMBeanInfos(List<String> includeAttrsForObjectNames)
@@ -331,6 +310,27 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         } else {
             return null;
         }
+    }
+
+    private static File ibmHeapDump(File directory) throws Exception {
+        File file = generateHeapDumpFileName(directory, ".phd");
+        Class<?> clazz = Class.forName("com.ibm.jvm.Dump");
+        Method method = clazz.getMethod("heapDumpToFile", String.class);
+        String actualHeapDumpPath =
+                (String) checkNotNull(method.invoke(null, file.getAbsolutePath()));
+        return new File(actualHeapDumpPath);
+    }
+
+    private static File generateHeapDumpFileName(File dir, String extension) {
+        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+        File file = new File(dir, "heap-dump-" + timestamp + extension);
+        int i = 1;
+        while (file.exists()) {
+            // this seems unlikely now that timestamp is included in file name
+            i++;
+            file = new File(dir, "heap-dump-" + timestamp + "-" + i + extension);
+        }
+        return file;
     }
 
     private static Throwable getRootCause(Throwable t) {

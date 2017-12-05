@@ -310,7 +310,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
     }
 
-    private String toString(Proto.Throwable t) {
+    private static String toString(Proto.Throwable t) {
         StringBuilder sb = new StringBuilder();
         sb.append(t.getClassName());
         String message = t.getMessage();
@@ -337,7 +337,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         return sb.toString();
     }
 
-    private void log(Level level, String format, Object... arguments) {
+    private static void log(Level level, String format, Object... arguments) {
         switch (level) {
             case ERROR:
                 logger.error(format, arguments);

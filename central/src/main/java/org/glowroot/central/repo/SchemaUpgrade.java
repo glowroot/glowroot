@@ -746,7 +746,7 @@ public class SchemaUpgrade {
                 try {
                     AgentConfig agentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(0)));
                     AdvancedConfig advancedConfig = agentConfig.getAdvancedConfig();
-                    AgentConfig rollupAgentConfig = AgentConfig.newBuilder()
+                    AgentConfig updatedAgentConfig = AgentConfig.newBuilder()
                             .setUiConfig(agentConfig.getUiConfig())
                             .setAdvancedConfig(AdvancedConfig.newBuilder()
                                     .setMaxAggregateQueriesPerType(
@@ -754,7 +754,7 @@ public class SchemaUpgrade {
                                     .setMaxAggregateServiceCallsPerType(
                                             advancedConfig.getMaxAggregateServiceCallsPerType()))
                             .build();
-                    boundStatement.setBytes(1, ByteBuffer.wrap(rollupAgentConfig.toByteArray()));
+                    boundStatement.setBytes(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
                 } catch (InvalidProtocolBufferException e) {
                     logger.error(e.getMessage(), e);
                     boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));

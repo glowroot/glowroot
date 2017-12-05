@@ -456,21 +456,6 @@ class AdviceGenerator {
         }
     }
 
-    private void addOnAfterMethodTimerOnly(ClassWriter cw) {
-        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
-                "(Lorg/glowroot/agent/plugin/api/Timer;)V", null, null);
-        visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/OnAfter;");
-        mv.visitParameterAnnotation(0, "Lorg/glowroot/agent/plugin/api/weaving/BindTraveler;", true)
-                .visitEnd();
-        mv.visitCode();
-        mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/Timer", "stop", "()V",
-                true);
-        mv.visitInsn(RETURN);
-        mv.visitMaxs(0, 0);
-        mv.visitEnd();
-    }
-
     private void addOnReturnMethod(ClassWriter cw) {
         boolean entryOrTimer = !config.traceEntryEnabledProperty().isEmpty();
         String travelerType =
@@ -698,6 +683,21 @@ class AdviceGenerator {
         mv.visitFieldInsn(GETFIELD, methodMetaInternalName, fieldName,
                 "Lorg/glowroot/agent/weaving/MessageTemplate;");
         mv.visitInsn(ARETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+    }
+
+    private static void addOnAfterMethodTimerOnly(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
+                "(Lorg/glowroot/agent/plugin/api/Timer;)V", null, null);
+        visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/OnAfter;");
+        mv.visitParameterAnnotation(0, "Lorg/glowroot/agent/plugin/api/weaving/BindTraveler;", true)
+                .visitEnd();
+        mv.visitCode();
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/Timer", "stop", "()V",
+                true);
+        mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
     }

@@ -247,16 +247,6 @@ public class Weaver {
         return transformedBytes;
     }
 
-    private String toASM(byte[] transformedBytes) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        ClassReader cr = new ClassReader(transformedBytes);
-        TraceClassVisitor tcv = new TraceClassVisitor(null, new ASMifier(), pw);
-        cr.accept(tcv, ClassReader.EXPAND_FRAMES);
-        pw.close();
-        return sw.toString();
-    }
-
     private void checkForDeadlockedActiveWeaving(List<Long> activeWeavingThreadIds) {
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         long /*@Nullable*/ [] deadlockedThreadIds = threadBean.findDeadlockedThreads();
@@ -285,6 +275,16 @@ public class Weaver {
         } finally {
             weavingDisabledForLoggingDeadlock = false;
         }
+    }
+
+    private static String toASM(byte[] transformedBytes) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ClassReader cr = new ClassReader(transformedBytes);
+        TraceClassVisitor tcv = new TraceClassVisitor(null, new ASMifier(), pw);
+        cr.accept(tcv, ClassReader.EXPAND_FRAMES);
+        pw.close();
+        return sw.toString();
     }
 
     private static File getTempFile(String className, String prefix, String suffix) {

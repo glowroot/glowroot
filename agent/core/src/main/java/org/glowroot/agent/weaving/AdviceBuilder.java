@@ -279,7 +279,7 @@ class AdviceBuilder {
         }
     }
 
-    private List<Object> buildPatterns(String[] maybePatterns) {
+    private static List<Object> buildPatterns(String[] maybePatterns) {
         List<Object> patterns = Lists.newArrayList();
         for (String maybePattern : maybePatterns) {
             Pattern pattern = buildPattern(maybePattern);
@@ -292,7 +292,7 @@ class AdviceBuilder {
         return patterns;
     }
 
-    static @Nullable Pattern buildPattern(String maybePattern) {
+    private static @Nullable Pattern buildPattern(String maybePattern) {
         if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
             // full regex power
             return Pattern.compile(maybePattern.substring(1, maybePattern.length() - 1));

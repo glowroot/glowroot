@@ -479,14 +479,6 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    private void writeAvailability(String fieldName, Availability availability, JsonGenerator jg)
-            throws IOException {
-        jg.writeObjectFieldStart(fieldName);
-        jg.writeBooleanField("available", availability.getAvailable());
-        jg.writeStringField("reason", availability.getReason());
-        jg.writeEndObject();
-    }
-
     private String getAgentUnsupportedOperationResponse(String agentId) throws Exception {
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
@@ -506,6 +498,15 @@ class JvmJsonService {
             return "unknown";
         }
         return environment.getJavaInfo().getGlowrootAgentVersion();
+    }
+
+    private static void writeAvailability(String fieldName, Availability availability,
+            JsonGenerator jg)
+            throws IOException {
+        jg.writeObjectFieldStart(fieldName);
+        jg.writeBooleanField("available", availability.getAvailable());
+        jg.writeStringField("reason", availability.getReason());
+        jg.writeEndObject();
     }
 
     private static void writeTransactionThread(ThreadDump.Transaction transaction, JsonGenerator jg)

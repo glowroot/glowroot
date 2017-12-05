@@ -138,19 +138,16 @@ class CentralAlertingService {
         if (closed) {
             return;
         }
-        alertCheckingExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                for (AlertConfig alertConfig : alertConfigs) {
-                    try {
-                        checkAlert(agentRollupId, agentRollupDisplay, endTime, alertConfig);
-                    } catch (InterruptedException e) {
-                        // probably shutdown requested (see close method above)
-                        logger.debug(e.getMessage(), e);
-                        return;
-                    } catch (Throwable t) {
-                        logger.error("{} - {}", agentRollupDisplay, t.getMessage(), t);
-                    }
+        alertCheckingExecutor.execute(() -> {
+            for (AlertConfig alertConfig : alertConfigs) {
+                try {
+                    checkAlert(agentRollupId, agentRollupDisplay, endTime, alertConfig);
+                } catch (InterruptedException e) {
+                    // probably shutdown requested (see close method above)
+                    logger.debug(e.getMessage(), e);
+                    return;
+                } catch (Throwable t) {
+                    logger.error("{} - {}", agentRollupDisplay, t.getMessage(), t);
                 }
             }
         });

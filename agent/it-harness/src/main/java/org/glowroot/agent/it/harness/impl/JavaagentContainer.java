@@ -40,6 +40,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.io.ByteStreams;
 import com.google.common.reflect.Reflection;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.ManagedChannel;
@@ -153,7 +154,7 @@ public class JavaagentContainer implements Container {
                 javaagentServicePort, this.testDir, extraJvmArgs);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
-        final Process process = processBuilder.start();
+        Process process = processBuilder.start();
         consolePipeExecutor = Executors.newSingleThreadExecutor();
         InputStream in = process.getInputStream();
         // process.getInputStream() only returns null if ProcessBuilder.redirectOutput() is used
@@ -512,15 +513,8 @@ public class JavaagentContainer implements Container {
 
         @Override
         public void run() {
-            byte[] buffer = new byte[100];
             try {
-                while (true) {
-                    int n = in.read(buffer);
-                    if (n == -1) {
-                        break;
-                    }
-                    out.write(buffer, 0, n);
-                }
+                ByteStreams.copy(in, out);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }

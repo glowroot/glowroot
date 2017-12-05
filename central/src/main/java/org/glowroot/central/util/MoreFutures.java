@@ -101,14 +101,11 @@ public class MoreFutures {
     public static <V> CompletableFuture<V> submitAsync(Callable<V> callable,
             ExecutorService executor) {
         CompletableFuture<V> future = new CompletableFuture<>();
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    future.complete(callable.call());
-                } catch (Throwable t) {
-                    future.completeExceptionally(t);
-                }
+        executor.execute(() -> {
+            try {
+                future.complete(callable.call());
+            } catch (Throwable t) {
+                future.completeExceptionally(t);
             }
         });
         return future;

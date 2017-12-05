@@ -179,10 +179,6 @@ class HttpSessionManager {
                 .build();
     }
 
-    private CommonResponse buildIncorrectLoginResponse() {
-        return new CommonResponse(OK, MediaType.JSON_UTF_8, "{\"incorrectLogin\":true}");
-    }
-
     private CommonResponse createSession(String username, Set<String> roles, boolean ldap)
             throws Exception {
         String sessionId = new BigInteger(130, secureRandom).toString(32);
@@ -254,19 +250,23 @@ class HttpSessionManager {
         return LdapAuthentication.getGlowrootRoles(ldapGroupDns, ldapConfig);
     }
 
-    private void auditFailedLogin(String username) {
+    private static CommonResponse buildIncorrectLoginResponse() {
+        return new CommonResponse(OK, MediaType.JSON_UTF_8, "{\"incorrectLogin\":true}");
+    }
+
+    private static void auditFailedLogin(String username) {
         auditLogger.info("{} - failed login", username);
     }
 
-    private void auditSuccessfulLogin(String username) {
+    private static void auditSuccessfulLogin(String username) {
         auditLogger.info("{} - successful login", username);
     }
 
-    private void auditLogout(String username) {
+    private static void auditLogout(String username) {
         auditLogger.info("{} - logout", username);
     }
 
-    private void auditSessionTimeout(String username) {
+    private static void auditSessionTimeout(String username) {
         auditLogger.info("{} - session timeout", username);
     }
 

@@ -766,14 +766,6 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 .build());
     }
 
-    private void sendExceptionResponse(CentralRequest request,
-            StreamObserver<AgentResponse> responseObserver) {
-        responseObserver.onNext(AgentResponse.newBuilder()
-                .setRequestId(request.getRequestId())
-                .setExceptionResponse(ExceptionResponse.getDefaultInstance())
-                .build());
-    }
-
     @OnlyUsedByTests
     void close() throws InterruptedException {
         StreamObserver<AgentResponse> responseObserver = currResponseObserver;
@@ -787,6 +779,14 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             Thread.sleep(10);
         }
         checkState(closedByCentralCollector);
+    }
+
+    private static void sendExceptionResponse(CentralRequest request,
+            StreamObserver<AgentResponse> responseObserver) {
+        responseObserver.onNext(AgentResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setExceptionResponse(ExceptionResponse.getDefaultInstance())
+                .build());
     }
 
     private static @Nullable String getRootCauseMessage(Throwable t) {

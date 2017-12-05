@@ -209,7 +209,8 @@ public class LazyPlatformMBeanServer {
         }
     }
 
-    private void waitForContainerToCreatePlatformMBeanServer(Stopwatch stopwatch) throws Exception {
+    private static void waitForContainerToCreatePlatformMBeanServer(Stopwatch stopwatch)
+            throws Exception {
         String platformMBeanServerFieldName =
                 AppServerDetection.isIbmJvm() ? "platformServer" : "platformMBeanServer";
         Field platformMBeanServerField =

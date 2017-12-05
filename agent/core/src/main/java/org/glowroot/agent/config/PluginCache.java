@@ -174,7 +174,7 @@ public abstract class PluginCache {
             return leftName.compareToIgnoreCase(rightName);
         }
 
-        private String stripEndingIgnoreCase(String original, String ending) {
+        private static String stripEndingIgnoreCase(String original, String ending) {
             if (original.toUpperCase(Locale.ENGLISH).endsWith(ending.toUpperCase(Locale.ENGLISH))) {
                 return original.substring(0, original.length() - ending.length());
             } else {

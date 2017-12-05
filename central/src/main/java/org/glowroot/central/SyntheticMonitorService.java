@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -206,14 +205,6 @@ class SyntheticMonitorService implements Runnable {
         }
     }
 
-    private void consumeAgentRollups(AgentRollup agentRollup,
-            AgentRollupConsumer agentRollupConsumer) throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            consumeAgentRollups(childAgentRollup, agentRollupConsumer);
-        }
-        agentRollupConsumer.accept(agentRollup);
-    }
-
     private void runSyntheticMonitors(AgentRollup agentRollup) throws InterruptedException {
         List<SyntheticMonitorConfig> syntheticMonitorConfigs;
         try {
@@ -238,27 +229,24 @@ class SyntheticMonitorService implements Runnable {
                 logger.error(e.getMessage(), e);
                 continue;
             }
-            checkExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        switch (syntheticMonitorConfig.getKind()) {
-                            case PING:
-                                runPing(agentRollup, syntheticMonitorConfig, alertConfigs);
-                                break;
-                            case JAVA:
-                                runJava(agentRollup, syntheticMonitorConfig, alertConfigs);
-                                break;
-                            default:
-                                throw new IllegalStateException("Unexpected synthetic kind: "
-                                        + syntheticMonitorConfig.getKind());
-                        }
-                    } catch (InterruptedException e) {
-                        // probably shutdown requested (see close method above)
-                        logger.debug(e.getMessage(), e);
-                    } catch (Exception e) {
-                        logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
+            checkExecutor.execute(() -> {
+                try {
+                    switch (syntheticMonitorConfig.getKind()) {
+                        case PING:
+                            runPing(agentRollup, syntheticMonitorConfig, alertConfigs);
+                            break;
+                        case JAVA:
+                            runJava(agentRollup, syntheticMonitorConfig, alertConfigs);
+                            break;
+                        default:
+                            throw new IllegalStateException("Unexpected synthetic kind: "
+                                    + syntheticMonitorConfig.getKind());
                     }
+                } catch (InterruptedException e) {
+                    // probably shutdown requested (see close method above)
+                    logger.debug(e.getMessage(), e);
+                } catch (Exception e) {
+                    logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
                 }
             });
         }
@@ -320,28 +308,25 @@ class SyntheticMonitorService implements Runnable {
 
     private CompletableFuture<?> runPing(String url) {
         CompletableFuture</*@Nullable*/ Void> future = new CompletableFuture<>();
-        syntheticUserTestExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    HttpGet httpGet = new HttpGet(url);
-                    httpGet.setHeader("Glowroot-Transaction-Type", "Synthetic");
-                    RequestConfig.Builder config = RequestConfig.custom()
-                            // wait an extra second to make sure no edge case where
-                            // SocketTimeoutException occurs with elapsed time < PING_TIMEOUT_MILLIS
-                            .setSocketTimeout(PING_TIMEOUT_MILLIS + 1000);
-                    HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
-                    if (!httpProxyConfig.host().isEmpty()) {
-                        int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
-                        config.setProxy(new HttpHost(httpProxyConfig.host(), proxyPort));
-                    }
-                    httpGet.setConfig(config.build());
-                    httpClient.execute(httpGet, getHttpClientContext(),
-                            new CompletingFutureCallback(future));
-                } catch (Throwable t) {
-                    logger.debug(t.getMessage(), t);
-                    future.completeExceptionally(t);
+        syntheticUserTestExecutor.execute(() -> {
+            try {
+                HttpGet httpGet = new HttpGet(url);
+                httpGet.setHeader("Glowroot-Transaction-Type", "Synthetic");
+                RequestConfig.Builder config = RequestConfig.custom()
+                        // wait an extra second to make sure no edge case where
+                        // SocketTimeoutException occurs with elapsed time < PING_TIMEOUT_MILLIS
+                        .setSocketTimeout(PING_TIMEOUT_MILLIS + 1000);
+                HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+                if (!httpProxyConfig.host().isEmpty()) {
+                    int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
+                    config.setProxy(new HttpHost(httpProxyConfig.host(), proxyPort));
                 }
+                httpGet.setConfig(config.build());
+                httpClient.execute(httpGet, getHttpClientContext(),
+                        new CompletingFutureCallback(future));
+            } catch (Throwable t) {
+                logger.debug(t.getMessage(), t);
+                future.completeExceptionally(t);
             }
         });
         return future;
@@ -358,42 +343,39 @@ class SyntheticMonitorService implements Runnable {
         Stopwatch stopwatch = Stopwatch.createStarted();
         long startTime = ticker.read();
         CompletableFuture<?> future = callable.call();
-        future.whenComplete(new BiConsumer</*@Nullable*/ Object, /*@Nullable*/ Throwable>() {
-            @Override
-            public void accept(@Nullable Object v, @Nullable Throwable t) {
-                activeSyntheticMonitors.remove(uniqueKey);
-                long durationNanos = ticker.read() - startTime;
-                long captureTime = clock.currentTimeMillis();
-                if (t instanceof InterruptedException) {
-                    // probably shutdown requested (see close method above)
-                    logger.debug(t.getMessage(), t);
-                    return;
+        future.whenComplete((@Nullable Object v, @Nullable Throwable t) -> {
+            activeSyntheticMonitors.remove(uniqueKey);
+            long durationNanos = ticker.read() - startTime;
+            long captureTime = clock.currentTimeMillis();
+            if (t instanceof InterruptedException) {
+                // probably shutdown requested (see close method above)
+                logger.debug(t.getMessage(), t);
+                return;
+            }
+            String errorMessage = null;
+            if (syntheticMonitorConfig.getKind() == SyntheticMonitorKind.PING
+                    && durationNanos >= PING_TIMEOUT_NANOS) {
+                durationNanos = PING_TIMEOUT_NANOS;
+                errorMessage = "Timeout";
+            } else if (t != null) {
+                logger.debug(t.getMessage(), t);
+                // using Throwable.toString() to include the exception class name
+                // because sometimes hard to know what message means without this context
+                // e.g. java.net.UnknownHostException: google.com
+                errorMessage = getRootCause(t).toString();
+                if (errorMessage == null) {
+                    errorMessage = t.getClass().getName();
                 }
-                String errorMessage = null;
-                if (syntheticMonitorConfig.getKind() == SyntheticMonitorKind.PING
-                        && durationNanos >= PING_TIMEOUT_NANOS) {
-                    durationNanos = PING_TIMEOUT_NANOS;
-                    errorMessage = "Timeout";
-                } else if (t != null) {
-                    logger.debug(t.getMessage(), t);
-                    // using Throwable.toString() to include the exception class name
-                    // because sometimes hard to know what message means without this context
-                    // e.g. java.net.UnknownHostException: google.com
-                    errorMessage = getRootCause(t).toString();
-                    if (errorMessage == null) {
-                        errorMessage = t.getClass().getName();
-                    }
-                }
-                try {
-                    syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
-                            captureTime, durationNanos, errorMessage);
-                } catch (InterruptedException e) {
-                    // probably shutdown requested (see close method above)
-                    logger.debug(e.getMessage(), e);
-                    return;
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                }
+            }
+            try {
+                syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
+                        captureTime, durationNanos, errorMessage);
+            } catch (InterruptedException e) {
+                // probably shutdown requested (see close method above)
+                logger.debug(e.getMessage(), e);
+                return;
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
             }
         });
         if (alertConfigs.isEmpty()) {
@@ -438,9 +420,8 @@ class SyntheticMonitorService implements Runnable {
     }
 
     private void sendAlertOnErrorIfStatusChanged(AgentRollup agentRollup,
-            SyntheticMonitorConfig syntheticMonitorConfig,
-            List<AlertConfig> alertConfigs, @Nullable String errorMessage, long captureTime)
-            throws Exception {
+            SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
+            @Nullable String errorMessage, long captureTime) throws Exception {
         for (AlertConfig alertConfig : alertConfigs) {
             AlertCondition alertCondition = alertConfig.getCondition();
             SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
@@ -521,6 +502,14 @@ class SyntheticMonitorService implements Runnable {
         context.setAuthCache(authCache);
         context.setCredentialsProvider(credentialsProvider);
         return context;
+    }
+
+    private static void consumeAgentRollups(AgentRollup agentRollup,
+            AgentRollupConsumer agentRollupConsumer) throws Exception {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            consumeAgentRollups(childAgentRollup, agentRollupConsumer);
+        }
+        agentRollupConsumer.accept(agentRollup);
     }
 
     private static Throwable getRootCause(Throwable t) {

@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -1094,15 +1093,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private static Map<String, PluginProperty> buildMutablePropertiesMap(
             List<PluginProperty> properties) {
-        // it would be nice to use "PluginProperty::getName", or even
-        // "pluginProperty -> pluginProperty.getName()" as the second argument, but both of these
-        // fail to compile under older Java 8 releases (at least 1.8.0_31)
-        return Maps.newHashMap(Maps.uniqueIndex(properties, new Function<PluginProperty, String>() {
-            @Override
-            public String apply(PluginProperty pluginProperty) {
-                return pluginProperty.getName();
-            }
-        }));
+        return Maps.newHashMap(Maps.uniqueIndex(properties, PluginProperty::getName));
     }
 
     private static boolean isSameType(PluginProperty.Value left, PluginProperty.Value right) {

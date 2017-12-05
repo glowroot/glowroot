@@ -1877,75 +1877,6 @@ public class AggregateDao implements AggregateRepository {
         return checkNotNull(insertTransactionPS.get(table)).get(rollupLevel);
     }
 
-    private void bindAggregate(BoundStatement boundStatement, Aggregate aggregate, int startIndex,
-            int adjustedTTL) throws IOException {
-        int i = startIndex;
-        boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
-        boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setBool(i++, aggregate.getAsyncTransactions());
-        List<Aggregate.Timer> mainThreadRootTimers = aggregate.getMainThreadRootTimerList();
-        if (mainThreadRootTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
-        } else {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(mainThreadRootTimers));
-        }
-        List<Aggregate.Timer> auxThreadRootTimers = aggregate.getAuxThreadRootTimerList();
-        if (auxThreadRootTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
-        } else {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(auxThreadRootTimers));
-        }
-        List<Aggregate.Timer> asyncTimers = aggregate.getAsyncTimerList();
-        if (asyncTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
-        } else {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
-        }
-        Aggregate.ThreadStats mainThreadStats = aggregate.getMainThreadStats();
-        if (mainThreadStats.hasTotalCpuNanos()) {
-            boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        if (mainThreadStats.hasTotalBlockedNanos()) {
-            boundStatement.setDouble(i++, mainThreadStats.getTotalBlockedNanos().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        if (mainThreadStats.hasTotalWaitedNanos()) {
-            boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        if (mainThreadStats.hasTotalAllocatedBytes()) {
-            boundStatement.setDouble(i++, mainThreadStats.getTotalAllocatedBytes().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
-        if (auxThreadStats.hasTotalCpuNanos()) {
-            boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        if (auxThreadStats.hasTotalBlockedNanos()) {
-            boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        if (auxThreadStats.hasTotalWaitedNanos()) {
-            boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        if (auxThreadStats.hasTotalAllocatedBytes()) {
-            boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        boundStatement.setInt(i++, adjustedTTL);
-    }
-
     private ResultSet createBoundStatement(String agentRollupId, OverallQuery query, Table table)
             throws Exception {
         BoundStatement boundStatement =
@@ -2165,6 +2096,75 @@ public class AggregateDao implements AggregateRepository {
             futures.add(session.executeAsync(boundStatement));
         }
         MoreFutures.waitForAll(futures);
+    }
+
+    private static void bindAggregate(BoundStatement boundStatement, Aggregate aggregate,
+            int startIndex, int adjustedTTL) throws IOException {
+        int i = startIndex;
+        boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
+        boundStatement.setLong(i++, aggregate.getTransactionCount());
+        boundStatement.setBool(i++, aggregate.getAsyncTransactions());
+        List<Aggregate.Timer> mainThreadRootTimers = aggregate.getMainThreadRootTimerList();
+        if (mainThreadRootTimers.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(mainThreadRootTimers));
+        }
+        List<Aggregate.Timer> auxThreadRootTimers = aggregate.getAuxThreadRootTimerList();
+        if (auxThreadRootTimers.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(auxThreadRootTimers));
+        }
+        List<Aggregate.Timer> asyncTimers = aggregate.getAsyncTimerList();
+        if (asyncTimers.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
+        }
+        Aggregate.ThreadStats mainThreadStats = aggregate.getMainThreadStats();
+        if (mainThreadStats.hasTotalCpuNanos()) {
+            boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos().getValue());
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        if (mainThreadStats.hasTotalBlockedNanos()) {
+            boundStatement.setDouble(i++, mainThreadStats.getTotalBlockedNanos().getValue());
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        if (mainThreadStats.hasTotalWaitedNanos()) {
+            boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos().getValue());
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        if (mainThreadStats.hasTotalAllocatedBytes()) {
+            boundStatement.setDouble(i++, mainThreadStats.getTotalAllocatedBytes().getValue());
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
+        if (auxThreadStats.hasTotalCpuNanos()) {
+            boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos().getValue());
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        if (auxThreadStats.hasTotalBlockedNanos()) {
+            boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos().getValue());
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        if (auxThreadStats.hasTotalWaitedNanos()) {
+            boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos().getValue());
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        if (auxThreadStats.hasTotalAllocatedBytes()) {
+            boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes().getValue());
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        boundStatement.setInt(i++, adjustedTTL);
     }
 
     private static void bindQuery(BoundStatement boundStatement, String agentRollupId,

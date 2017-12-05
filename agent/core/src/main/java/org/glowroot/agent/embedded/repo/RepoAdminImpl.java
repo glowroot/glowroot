@@ -45,7 +45,7 @@ class RepoAdminImpl implements RepoAdmin {
     private final List<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
     private final ConfigRepositoryImpl configRepository;
-    private final EnvironmentDao agentDao;
+    private final EnvironmentDao environmentDao;
     private final GaugeIdDao gaugeIdDao;
     private final GaugeNameDao gaugeNameDao;
     private final GaugeValueDao gaugeValueDao;
@@ -56,7 +56,7 @@ class RepoAdminImpl implements RepoAdmin {
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             CappedDatabase traceCappedDatabase, ConfigRepositoryImpl configRepository,
-            EnvironmentDao agentDao, GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao,
+            EnvironmentDao environmentDao, GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao,
             GaugeValueDao gaugeValueDao, TransactionTypeDao transactionTypeDao,
             FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
             Clock clock) {
@@ -64,7 +64,7 @@ class RepoAdminImpl implements RepoAdmin {
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
         this.configRepository = configRepository;
-        this.agentDao = agentDao;
+        this.environmentDao = environmentDao;
         this.gaugeIdDao = gaugeIdDao;
         this.gaugeNameDao = gaugeNameDao;
         this.gaugeValueDao = gaugeValueDao;
@@ -76,9 +76,9 @@ class RepoAdminImpl implements RepoAdmin {
 
     @Override
     public void deleteAllData() throws Exception {
-        Environment environment = agentDao.read("");
+        Environment environment = environmentDao.read("");
         dataSource.deleteAll();
-        agentDao.reinitAfterDeletingDatabase();
+        environmentDao.reinitAfterDeletingDatabase();
         gaugeIdDao.invalidateCache();
         gaugeNameDao.invalidateCache();
         gaugeValueDao.reinitAfterDeletingDatabase();
@@ -86,7 +86,7 @@ class RepoAdminImpl implements RepoAdmin {
         fullQueryTextDao.invalidateCache();
         traceAttributeNameDao.invalidateCache();
         if (environment != null) {
-            agentDao.store(environment);
+            environmentDao.store(environment);
         }
     }
 

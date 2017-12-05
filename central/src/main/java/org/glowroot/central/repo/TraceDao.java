@@ -40,7 +40,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Messages;
@@ -68,7 +67,6 @@ import org.glowroot.wire.api.model.Proto.StackTraceElement;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TraceDao implements TraceRepository {
 
@@ -437,7 +435,9 @@ public class TraceDao implements TraceRepository {
         MoreFutures.waitForAll(futures);
         futures.clear();
 
-        int adjustedTTL = AggregateDao.getAdjustedTTL(getTTL(), header.getCaptureTime(), clock);
+        int adjustedTTL = AggregateDao.getAdjustedTTL(
+                configRepository.getCentralStorageConfig().getTraceTTL(), header.getCaptureTime(),
+                clock);
         for (String agentRollupId : agentRollupIds) {
 
             if (!agentRollupId.equals(agentId)) {
@@ -921,11 +921,6 @@ public class TraceDao implements TraceRepository {
             sharedQueryTexts.add(sharedQueryText.build());
         }
         return sharedQueryTexts;
-    }
-
-    private int getTTL() throws Exception {
-        return Ints.saturatedCast(
-                HOURS.toSeconds(configRepository.getCentralStorageConfig().traceExpirationHours()));
     }
 
     private static void bindSlowPoint(BoundStatement boundStatement, String agentRollupId,

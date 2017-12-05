@@ -168,14 +168,6 @@ class RollupService implements Runnable {
         }
     }
 
-    private void consumeAgentRollups(AgentRollup agentRollup,
-            AgentRollupConsumer agentRollupConsumer) throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            consumeAgentRollups(childAgentRollup, agentRollupConsumer);
-        }
-        agentRollupConsumer.accept(agentRollup);
-    }
-
     private void checkForDeletedAlerts(AgentRollup agentRollup) {
         centralAlertingService.checkForDeletedAlerts(agentRollup.id(), agentRollup.display());
     }
@@ -183,6 +175,14 @@ class RollupService implements Runnable {
     private void checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup) {
         centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup.id(),
                 agentRollup.display(), clock.currentTimeMillis());
+    }
+
+    private static void consumeAgentRollups(AgentRollup agentRollup,
+            AgentRollupConsumer agentRollupConsumer) throws Exception {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            consumeAgentRollups(childAgentRollup, agentRollupConsumer);
+        }
+        agentRollupConsumer.accept(agentRollup);
     }
 
     @VisibleForTesting

@@ -539,7 +539,7 @@ public class MutableProfile {
             }
         }
 
-        private boolean hasOnlyMatchedChildren(ProfileNode node) {
+        private static boolean hasOnlyMatchedChildren(ProfileNode node) {
             for (ProfileNode childNode : node.childNodes) {
                 if (!childNode.matched) {
                     return false;
@@ -548,7 +548,7 @@ public class MutableProfile {
             return true;
         }
 
-        private boolean hasNoMatchedChildren(ProfileNode node) {
+        private static boolean hasNoMatchedChildren(ProfileNode node) {
             for (ProfileNode childNode : node.childNodes) {
                 if (childNode.matched) {
                     return false;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,18 +55,6 @@ class NestedTimerMap {
             rehash();
         }
         putWithoutRehashCheck(key, value);
-    }
-
-    private @Nullable TimerImpl getChained(TimerNameImpl key, Object value) {
-        @Nullable
-        Object[] chainedTable = (/*@Nullable*/ Object[]) value;
-        for (int i = 0; i < chainedTable.length; i += 2) {
-            // ok to use "==" because TimerNameImpl instances are always unique
-            if (chainedTable[i] == key) {
-                return (TimerImpl) chainedTable[i + 1];
-            }
-        }
-        return null;
     }
 
     private void putWithoutRehashCheck(TimerNameImpl key, @Nullable Object value) {
@@ -142,5 +130,17 @@ class NestedTimerMap {
             }
             putWithoutRehashCheck((TimerNameImpl) chainedKey, values[j + 1]);
         }
+    }
+
+    private static @Nullable TimerImpl getChained(TimerNameImpl key, Object value) {
+        @Nullable
+        Object[] chainedTable = (/*@Nullable*/ Object[]) value;
+        for (int i = 0; i < chainedTable.length; i += 2) {
+            // ok to use "==" because TimerNameImpl instances are always unique
+            if (chainedTable[i] == key) {
+                return (TimerImpl) chainedTable[i + 1];
+            }
+        }
+        return null;
     }
 }

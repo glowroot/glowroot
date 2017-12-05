@@ -140,7 +140,7 @@ class ThreadDumpService {
         return builder.build();
     }
 
-    private ThreadDump.Thread createProtobuf(ThreadInfo threadInfo) {
+    private static ThreadDump.Thread createProtobuf(ThreadInfo threadInfo) {
         ThreadDump.Thread.Builder builder = ThreadDump.Thread.newBuilder()
                 .setName(threadInfo.getThreadName())
                 .setId(threadInfo.getThreadId())
