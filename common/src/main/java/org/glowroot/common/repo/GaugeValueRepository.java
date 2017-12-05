@@ -24,7 +24,9 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 public interface GaugeValueRepository {
 
-    List<Gauge> getGauges(String agentRollupId) throws Exception;
+    List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception;
+
+    List<Gauge> getGauges(String agentRollupId, long from, long to) throws Exception;
 
     // from is INCLUSIVE
     List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from, long to,

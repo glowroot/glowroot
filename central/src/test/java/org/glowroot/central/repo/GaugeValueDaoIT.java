@@ -58,8 +58,8 @@ public class GaugeValueDaoIT {
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
         ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(agentRollupDao,
                 agentConfigDao, centralConfigDao, userDao, roleDao, "");
-        gaugeValueDao = new GaugeValueDao(session, agentRollupDao, configRepository, clusterManager,
-                Clock.systemClock());
+        gaugeValueDao =
+                new GaugeValueDao(session, agentRollupDao, configRepository, Clock.systemClock());
     }
 
     @AfterClass

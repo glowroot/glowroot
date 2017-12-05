@@ -22,6 +22,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Session;
+import org.glowroot.common.util.Clock;
 
 public class SchemaUpgradeIT {
 
@@ -50,7 +51,7 @@ public class SchemaUpgradeIT {
         KeyspaceMetadata keyspaceMetadata =
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
         // when
-        new SchemaUpgrade(session, keyspaceMetadata, false);
+        new SchemaUpgrade(session, keyspaceMetadata, Clock.systemClock(), false);
         // then don't throw exception
     }
 }

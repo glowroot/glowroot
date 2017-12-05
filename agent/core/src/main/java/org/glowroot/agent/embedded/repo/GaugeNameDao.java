@@ -15,38 +15,44 @@
  */
 package org.glowroot.agent.embedded.repo;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
-
-import javax.annotation.Nullable;
+import java.util.Set;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import org.checkerframework.checker.tainting.qual.Untainted;
+import org.immutables.value.Value;
 
 import org.glowroot.agent.embedded.util.DataSource;
+import org.glowroot.agent.embedded.util.DataSource.JdbcQuery;
 import org.glowroot.agent.embedded.util.ImmutableColumn;
 import org.glowroot.agent.embedded.util.ImmutableIndex;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.agent.embedded.util.Schemas.Index;
+import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.Styles;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 
 class GaugeNameDao {
 
-    private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
-            ImmutableColumn.of("id", ColumnType.AUTO_IDENTITY),
-            ImmutableColumn.of("gauge_name", ColumnType.VARCHAR),
-            ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
+    static final ImmutableList<Column> columns = ImmutableList.<Column>of(
+            ImmutableColumn.of("capture_time", ColumnType.BIGINT),
+            ImmutableColumn.of("gauge_name", ColumnType.VARCHAR));
 
-    private static final ImmutableList<Index> indexes = ImmutableList.<Index>of(
-            ImmutableIndex.of("gauge_name_id_idx", ImmutableList.of("id")),
-            ImmutableIndex.of("gauge_name_gauge_name_idx", ImmutableList.of("gauge_name")));
+    static final ImmutableList<Index> indexes = ImmutableList.<Index>of(
+            ImmutableIndex.of("gauge_idx", ImmutableList.of("capture_time", "gauge_name")));
 
     private final DataSource dataSource;
 
-    private final Cache<String, Long> lastCaptureTimeUpdatedInThePastDay =
+    private final Cache<GaugeNameRow, Boolean> rowInsertedInThePastDay =
             CacheBuilder.newBuilder()
                     .expireAfterWrite(1, DAYS)
                     .maximumSize(10000)
@@ -60,56 +66,70 @@ class GaugeNameDao {
         dataSource.syncIndexes("gauge_name", indexes);
     }
 
-    // warning: returns -1 if data source is closing
-    long updateLastCaptureTime(String gaugeName, long captureTime) throws SQLException {
-        Long gaugeId = lastCaptureTimeUpdatedInThePastDay.getIfPresent(gaugeName);
-        if (gaugeId != null) {
-            return gaugeId;
+    void insert(long captureTime, String gaugeName) throws SQLException {
+        long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, DAYS.toMillis(1));
+        GaugeNameRow key = ImmutableGaugeNameRow.of(rollupCaptureTime, gaugeName);
+        if (rowInsertedInThePastDay.getIfPresent(key) != null) {
+            return;
         }
         synchronized (lock) {
-            gaugeId = dataSource.queryForOptionalLong(
-                    "select id from gauge_name where gauge_name = ?", gaugeName);
-            if (gaugeId == null) {
-                dataSource.update(
-                        "insert into gauge_name (gauge_name, last_capture_time) values (?, ?)",
-                        gaugeName, captureTime);
-                gaugeId = dataSource.queryForOptionalLong(
-                        "select id from gauge_name where gauge_name = ?", gaugeName);
-                if (gaugeId == null) {
-                    // data source is closing
-                    return -1;
-                }
-            } else {
-                dataSource.update("update gauge_name set last_capture_time = ? where id = ?",
-                        captureTime, gaugeId);
-            }
+            dataSource.update("merge into gauge_name (capture_time, gauge_name) key (capture_time,"
+                    + " gauge_name) values (?, ?)", rollupCaptureTime, gaugeName);
         }
-        lastCaptureTimeUpdatedInThePastDay.put(gaugeName, gaugeId);
-        return gaugeId;
+        rowInsertedInThePastDay.put(key, true);
     }
 
-    @Nullable
-    Long getGaugeId(String gaugeName) throws SQLException {
-        Long gaugeId = lastCaptureTimeUpdatedInThePastDay.getIfPresent(gaugeName);
-        if (gaugeId != null) {
-            return gaugeId;
-        }
-        // don't put back into cache, since this is old, and if it expires, will get new gauge id
-        return dataSource.queryForOptionalLong("select id from gauge_name where gauge_name = ?",
-                gaugeName);
-    }
-
-    List<String> readAllGaugeNames() throws SQLException {
-        return dataSource.queryForStringList("select gauge_name from gauge_name");
+    Set<String> readAllGaugeNames(long from, long to) throws Exception {
+        return dataSource.query(new GaugeNameQuery(from, to));
     }
 
     void deleteBefore(long captureTime) throws Exception {
-        // subtracting 1 day to account for rate limiting of updates
-        dataSource.deleteBeforeUsingLock("gauge_name", "last_capture_time",
-                captureTime - DAYS.toMillis(1), lock);
+        dataSource.deleteBeforeUsingLock("gauge_name", "capture_time", captureTime, lock);
     }
 
-    void invalidateCache() {
-        lastCaptureTimeUpdatedInThePastDay.invalidateAll();
+    @Value.Immutable
+    @Styles.AllParameters
+    interface GaugeNameRow {
+        long captureTime();
+        String gaugeName();
+    }
+
+    private static class GaugeNameQuery implements JdbcQuery<Set<String>> {
+
+        private final long from;
+        private final long to;
+
+        private GaugeNameQuery(long from, long to) {
+            this.from = from;
+            this.to = to;
+        }
+
+        @Override
+        public @Untainted String getSql() {
+            return "select gauge_name from gauge_name where capture_time >= ?"
+                    + " and capture_time <= ?";
+        }
+
+        @Override
+        public void bind(PreparedStatement preparedStatement) throws SQLException {
+            long rolledUpFrom = Utils.getRollupCaptureTime(from, DAYS.toMillis(1));
+            long rolledUpTo = Utils.getRollupCaptureTime(to, DAYS.toMillis(1));
+            preparedStatement.setLong(1, rolledUpFrom);
+            preparedStatement.setLong(2, rolledUpTo);
+        }
+
+        @Override
+        public Set<String> processResultSet(ResultSet resultSet) throws Exception {
+            Set<String> gaugeNames = Sets.newHashSet();
+            while (resultSet.next()) {
+                gaugeNames.add(checkNotNull(resultSet.getString(1)));
+            }
+            return gaugeNames;
+        }
+
+        @Override
+        public Set<String> valueIfDataSourceClosed() {
+            return ImmutableSet.of();
+        }
     }
 }

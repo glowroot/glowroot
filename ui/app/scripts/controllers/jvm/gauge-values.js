@@ -90,6 +90,12 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           }
         });
 
+    $scope.$watch('[range.chartFrom, range.chartTo]', function (newValues, oldValues) {
+      if (newValues !== oldValues) {
+        updateGauges();
+      }
+    });
+
     $scope.$watchCollection('gaugeNames', function (newValue, oldValue) {
       if (newValue !== oldValue || newValue.length) {
         watchListener(false);
@@ -220,10 +226,29 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       }
     });
 
-    if (!$scope.hideMainContent()) {
-      $http.get('backend/jvm/all-gauges?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
+    function updateGauges(init) {
+      var query = {
+        agentRollupId: $scope.agentRollupId,
+        from: $scope.range.chartFrom,
+        to: $scope.range.chartTo
+      };
+      $http.get('backend/jvm/all-gauges' + queryStrings.encodeObject(query))
           .then(function (response) {
             $scope.loaded = true;
+            var allGaugeNameHash = {};
+            angular.forEach(response.data.allGauges, function (gauge) {
+              allGaugeNameHash[gauge.name] = true;
+            });
+            angular.forEach($scope.gaugeNames, function (gaugeName) {
+              if (!allGaugeNameHash[gaugeName]) {
+                angular.forEach($scope.allGauges, function (gauge) {
+                  if (gauge.name === gaugeName) {
+                    // need to add back selected gauge that is now missing from gauge list for the given time period
+                    response.data.allGauges.push(gauge);
+                  }
+                });
+              }
+            });
             $scope.allGauges = response.data.allGauges;
             defaultGaugeNames = response.data.defaultGaugeNames;
             createShortDataSeriesNames(response.data.allGauges);
@@ -245,7 +270,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
                 gaugeGrouping[gauge.name] = gauge.name;
               }
             });
-            if (!$scope.gaugeNames.length) {
+            if (init && !$scope.gaugeNames.length) {
               angular.forEach(defaultGaugeNames, function (defaultGaugeName) {
                 if (allGaugeNames.indexOf(defaultGaugeName) !== -1) {
                   $scope.gaugeNames.push(defaultGaugeName);
@@ -255,6 +280,10 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           }, function (response) {
             httpErrors.handle(response, $scope);
           });
+    }
+
+    if (!$scope.hideMainContent()) {
+      updateGauges(true);
     }
 
     // scale will bring max into 0..100 range

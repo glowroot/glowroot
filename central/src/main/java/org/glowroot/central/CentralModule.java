@@ -141,7 +141,8 @@ public class CentralModule {
 
             KeyspaceMetadata keyspaceMetadata =
                     checkNotNull(cluster.getMetadata().getKeyspace(keyspace));
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspaceMetadata, servlet);
+            SchemaUpgrade schemaUpgrade =
+                    new SchemaUpgrade(session, keyspaceMetadata, clock, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating glowroot central schema ...");
@@ -348,7 +349,8 @@ public class CentralModule {
 
             KeyspaceMetadata keyspaceMetadata =
                     checkNotNull(cluster.getMetadata().getKeyspace(keyspace));
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspaceMetadata, false);
+            SchemaUpgrade schemaUpgrade =
+                    new SchemaUpgrade(session, keyspaceMetadata, Clock.systemClock(), false);
             if (schemaUpgrade.getInitialSchemaVersion() != null) {
                 startupLogger.error("glowroot central schema already exists, exiting");
                 return;
@@ -404,7 +406,8 @@ public class CentralModule {
 
             KeyspaceMetadata keyspaceMetadata =
                     checkNotNull(cluster.getMetadata().getKeyspace(keyspace));
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspaceMetadata, false);
+            SchemaUpgrade schemaUpgrade =
+                    new SchemaUpgrade(session, keyspaceMetadata, Clock.systemClock(), false);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating glowroot central schema ...",

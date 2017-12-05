@@ -85,12 +85,13 @@ class ReportJsonService {
 
     // permission is checked based on agentRollupIds in the request
     @GET(path = "/backend/report/all-gauges", permission = "")
-    String getGauges(@BindRequest RequestWithAgentRollupIds request,
+    String getAllGauges(@BindRequest AllGaugesForAgentRollupIdsRequest request,
             @BindAuthentication Authentication authentication) throws Exception {
         checkPermissions(request.agentRollupIds(), "agent:jvm:gauges", authentication);
         Set<Gauge> gauges = Sets.newHashSet();
         for (String agentRollupId : request.agentRollupIds()) {
-            gauges.addAll(gaugeValueRepository.getGauges(agentRollupId));
+            gauges.addAll(
+                    gaugeValueRepository.getGauges(agentRollupId, request.from(), request.to()));
         }
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(sortedGauges);
@@ -450,8 +451,10 @@ class ReportJsonService {
     }
 
     @Value.Immutable
-    interface RequestWithAgentRollupIds {
+    interface AllGaugesForAgentRollupIdsRequest {
         List<String> agentRollupIds();
+        long from();
+        long to();
     }
 
     @Value.Immutable

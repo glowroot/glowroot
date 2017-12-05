@@ -25,6 +25,8 @@ import javax.annotation.Nullable;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.util.CappedDatabase;
@@ -45,7 +47,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class SimpleRepoModule {
 
-    private static final int CURR_SCHEMA_VERSION = 2;
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
 
@@ -85,8 +88,13 @@ public class SimpleRepoModule {
         traceCappedDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
                 storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
 
-        SchemaVersionDao schemaVersionDao = new SchemaVersionDao(dataSource);
-        Integer schemaVersion = schemaVersionDao.getSchemaVersion();
+        SchemaUpgrade schemaUpgrade = new SchemaUpgrade(dataSource);
+        Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
+        if (initialSchemaVersion == null) {
+            startupLogger.info("creating glowroot schema ...");
+        } else {
+            schemaUpgrade.upgrade();
+        }
 
         environmentDao = new EnvironmentDao(dataSource);
         transactionTypeDao = new TransactionTypeDao(dataSource);
@@ -97,16 +105,18 @@ public class SimpleRepoModule {
         traceAttributeNameDao = new TraceAttributeNameDao(dataSource);
         traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao,
                 fullQueryTextDao, traceAttributeNameDao);
+        GaugeIdDao gaugeIdDao = new GaugeIdDao(dataSource);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
-        gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
+        gaugeValueDao = new GaugeValueDao(dataSource, gaugeIdDao, gaugeNameDao, clock);
         incidentDao = new IncidentDao(dataSource);
 
-        if (schemaVersion == null || schemaVersion < CURR_SCHEMA_VERSION) {
-            schemaVersionDao.updateSchemaVersion(CURR_SCHEMA_VERSION);
+        if (initialSchemaVersion == null) {
+            schemaUpgrade.updateSchemaVersionToCurent();
+            startupLogger.info("glowroot schema created");
         }
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
-                configRepository, environmentDao, gaugeValueDao, gaugeNameDao, transactionTypeDao,
+                configRepository, environmentDao, gaugeIdDao, gaugeValueDao, transactionTypeDao,
                 fullQueryTextDao, traceAttributeNameDao);
 
         httpClient = new HttpClient(configRepository);
@@ -116,9 +126,9 @@ public class SimpleRepoModule {
         if (backgroundExecutor == null) {
             reaperRunnable = null;
         } else {
-            reaperRunnable =
-                    new ReaperRunnable(configRepository, aggregateDao, traceDao, gaugeValueDao,
-                            gaugeNameDao, transactionTypeDao, fullQueryTextDao, incidentDao, clock);
+            reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
+                    gaugeIdDao, gaugeNameDao, gaugeValueDao, transactionTypeDao, fullQueryTextDao,
+                    incidentDao, clock);
             reaperRunnable.scheduleWithFixedDelay(backgroundExecutor,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }

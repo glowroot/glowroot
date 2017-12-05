@@ -28,22 +28,24 @@ class ReaperRunnable extends ScheduledRunnable {
     private final ConfigRepositoryImpl configRepository;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
-    private final GaugeValueDao gaugeValueDao;
+    private final GaugeIdDao gaugeIdDao;
     private final GaugeNameDao gaugeNameDao;
+    private final GaugeValueDao gaugeValueDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final IncidentDao incidentDao;
     private final Clock clock;
 
     ReaperRunnable(ConfigRepositoryImpl configService, AggregateDao aggregateDao, TraceDao traceDao,
-            GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
+            GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao, GaugeValueDao gaugeValueDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
             IncidentDao incidentDao, Clock clock) {
         this.configRepository = configService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
-        this.gaugeValueDao = gaugeValueDao;
+        this.gaugeIdDao = gaugeIdDao;
         this.gaugeNameDao = gaugeNameDao;
+        this.gaugeValueDao = gaugeValueDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.incidentDao = incidentDao;
@@ -71,6 +73,7 @@ class ReaperRunnable extends ScheduledRunnable {
             minCaptureTime = Math.min(minCaptureTime, captureTime);
         }
         if (minCaptureTime != 0) {
+            gaugeIdDao.deleteBefore(minCaptureTime);
             gaugeNameDao.deleteBefore(minCaptureTime);
         }
         int traceExpirationHours = storageConfig.traceExpirationHours();

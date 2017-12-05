@@ -64,8 +64,7 @@ public class CentralRepoModule {
                 new TraceAttributeNameDao(session, configRepository, clusterManager);
         traceDao = new TraceDao(session, agentRollupDao, transactionTypeDao, fullQueryTextDao,
                 traceAttributeNameDao, configRepository, clock);
-        gaugeValueDao =
-                new GaugeValueDao(session, agentRollupDao, configRepository, clusterManager, clock);
+        gaugeValueDao = new GaugeValueDao(session, agentRollupDao, configRepository, clock);
         syntheticResultDao = new SyntheticResultDao(session, configRepository, clock);
         environmentDao = new EnvironmentDao(session);
         heartbeatDao = new HeartbeatDao(session, agentRollupDao, clock);

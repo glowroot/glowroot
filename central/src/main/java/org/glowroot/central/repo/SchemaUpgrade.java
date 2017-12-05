@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -43,23 +44,32 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ConfigDefaults;
+import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.PermissionParser;
 import org.glowroot.common.config.StorageConfig;
+import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.PropertiesFiles;
+import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -84,13 +94,14 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 33;
+    private static final int CURR_SCHEMA_VERSION = 34;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
     private final KeyspaceMetadata keyspaceMetadata;
+    private final Clock clock;
     private final boolean servlet;
 
     private final PreparedStatement insertPS;
@@ -98,10 +109,11 @@ public class SchemaUpgrade {
 
     private boolean reloadCentralConfiguration;
 
-    public SchemaUpgrade(Session session, KeyspaceMetadata keyspaceMetadata, boolean servlet)
-            throws Exception {
+    public SchemaUpgrade(Session session, KeyspaceMetadata keyspaceMetadata, Clock clock,
+            boolean servlet) throws Exception {
         this.session = session;
         this.keyspaceMetadata = keyspaceMetadata;
+        this.clock = clock;
         this.servlet = servlet;
 
         session.execute("create table if not exists schema_version (one int,"
@@ -268,6 +280,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 33) {
             addSyntheticResultErrorIntervalsColumn();
             updateSchemaVersion(33);
+        }
+        // 0.9.28 to 0.9.29
+        if (initialSchemaVersion < 34) {
+            populateGaugeNameTable();
+            updateSchemaVersion(34);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -996,6 +1013,57 @@ public class SchemaUpgrade {
         addColumnIfNotExists("synthetic_result_rollup_3", "error_intervals", "blob");
     }
 
+    private void populateGaugeNameTable() throws Exception {
+        logger.info("populating new gauge name history table - this could take several minutes on"
+                + " large data sets ...");
+
+        dropTable("gauge_name");
+
+        int maxRollupTTL = getCentralStorageConfig(session).getMaxRollupTTL();
+        session.createTableWithTWCS("create table if not exists gauge_name (agent_rollup_id"
+                + " varchar, capture_time timestamp, gauge_name varchar, primary key"
+                + " (agent_rollup_id, capture_time, gauge_name))", maxRollupTTL);
+
+        PreparedStatement insertPS = session.prepare("insert into gauge_name (agent_rollup_id,"
+                + " capture_time, gauge_name) values (?, ?, ?) using ttl ?");
+
+        PreparedStatement readPS = session
+                .prepare("select agent_rollup, gauge_name, capture_time from gauge_value_rollup_3");
+
+        Multimap<Long, AgentRollupIdGaugeNamePair> rowsPerCaptureTime = HashMultimap.create();
+
+        BoundStatement boundStatement = readPS.bind();
+        ResultSet results = session.execute(boundStatement);
+        for (Row row : results) {
+            int i = 0;
+            String agentRollupId = checkNotNull(row.getString(i++));
+            String gaugeName = checkNotNull(row.getString(i++));
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long millisPerDay = DAYS.toMillis(1);
+            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, millisPerDay);
+            rowsPerCaptureTime.put(rollupCaptureTime,
+                    ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
+        }
+
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<Long> sortedCaptureTimes =
+                Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
+        for (long captureTime : sortedCaptureTimes) {
+            int adjustedTTL = AggregateDao.getAdjustedTTL(maxRollupTTL, captureTime, clock);
+            for (AgentRollupIdGaugeNamePair row : rowsPerCaptureTime.get(captureTime)) {
+                boundStatement = insertPS.bind();
+                int i = 0;
+                boundStatement.setString(i++, row.agentRollupId());
+                boundStatement.setTimestamp(i++, new Date(captureTime));
+                boundStatement.setString(i++, row.gaugeName());
+                boundStatement.setInt(i++, adjustedTTL);
+                futures.add(session.executeAsync(boundStatement));
+            }
+        }
+        MoreFutures.waitForAll(futures);
+        logger.info("populating new gauge name history table - complete");
+    }
+
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
             throws Exception {
         if (!columnExists(tableName, columnName)) {
@@ -1109,6 +1177,8 @@ public class SchemaUpgrade {
         } else if (tableName.startsWith("aggregate_") || tableName.startsWith("synthetic_")) {
             int rollupLevel = Integer.parseInt(tableName.substring(tableName.lastIndexOf('_') + 1));
             return storageConfig.rollupExpirationHours().get(rollupLevel);
+        } else if (tableName.equals("gauge_name")) {
+            return getMaxRollupExpirationHours(storageConfig);
         } else if (tableName.equals("heartbeat")) {
             return HeartbeatDao.EXPIRATION_HOURS;
         } else if (tableName.equals("resolved_incident")) {
@@ -1117,6 +1187,18 @@ public class SchemaUpgrade {
             logger.warn("unexpected table: {}", tableName);
             return -1;
         }
+    }
+
+    static int getMaxRollupExpirationHours(CentralStorageConfig storageConfig) {
+        int maxRollupExpirationHours = 0;
+        for (int expirationHours : storageConfig.rollupExpirationHours()) {
+            if (expirationHours == 0) {
+                // zero value expiration/TTL means never expire
+                return 0;
+            }
+            maxRollupExpirationHours = Math.max(maxRollupExpirationHours, expirationHours);
+        }
+        return maxRollupExpirationHours;
     }
 
     @VisibleForTesting
@@ -1271,6 +1353,25 @@ public class SchemaUpgrade {
         return true;
     }
 
+    private static CentralStorageConfig getCentralStorageConfig(Session session) throws Exception {
+        ResultSet results =
+                session.execute("select value from central_config where key = 'storage'");
+        Row row = results.one();
+        if (row == null) {
+            return ImmutableCentralStorageConfig.builder().build();
+        }
+        String storageConfigText = row.getString(0);
+        if (storageConfigText == null) {
+            return ImmutableCentralStorageConfig.builder().build();
+        }
+        try {
+            return mapper.readValue(storageConfigText, ImmutableCentralStorageConfig.class);
+        } catch (IOException e) {
+            logger.warn(e.getMessage(), e);
+            return ImmutableCentralStorageConfig.builder().build();
+        }
+    }
+
     private static @Nullable Integer getSchemaVersion(Session session, KeyspaceMetadata keyspace)
             throws Exception {
         ResultSet results =
@@ -1287,5 +1388,12 @@ public class SchemaUpgrade {
         }
         // new installation
         return null;
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface AgentRollupIdGaugeNamePair {
+        String agentRollupId();
+        String gaugeName();
     }
 }

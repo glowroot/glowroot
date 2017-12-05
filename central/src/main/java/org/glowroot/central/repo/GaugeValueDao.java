@@ -45,7 +45,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AggregateDao.NeedsRollup;
 import org.glowroot.central.repo.AggregateDao.NeedsRollupFromChildren;
-import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
@@ -59,6 +58,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class GaugeValueDao implements GaugeValueRepository {
@@ -89,14 +89,13 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final PreparedStatement deleteNeedsRollupFromChild;
 
     GaugeValueDao(Session session, AgentRollupDao agentRollupDao,
-            ConfigRepositoryImpl configRepository, ClusterManager clusterManager, Clock clock)
-            throws Exception {
+            ConfigRepositoryImpl configRepository, Clock clock) throws Exception {
         this.session = session;
         this.agentRollupDao = agentRollupDao;
         this.configRepository = configRepository;
         this.clock = clock;
 
-        gaugeNameDao = new GaugeNameDao(session, configRepository, clusterManager);
+        gaugeNameDao = new GaugeNameDao(session, configRepository, clock);
 
         int count = configRepository.getRollupConfigs().size();
         List<Integer> rollupExpirationHours = Lists
@@ -196,7 +195,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
             for (String agentRollupId : agentRollupIds) {
-                futures.addAll(gaugeNameDao.store(agentRollupId, gaugeName));
+                futures.addAll(gaugeNameDao.insert(agentRollupId, captureTime, gaugeName));
             }
         }
 
@@ -225,9 +224,16 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<Gauge> getGauges(String agentRollupId) throws Exception {
+    public List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception {
+        long now = clock.currentTimeMillis();
+        long from = now - DAYS.toMillis(7);
+        return getGauges(agentRollupId, from, now + DAYS.toMillis(365));
+    }
+
+    @Override
+    public List<Gauge> getGauges(String agentRollupId, long from, long to) throws Exception {
         List<Gauge> gauges = Lists.newArrayList();
-        for (String gaugeName : gaugeNameDao.getGaugeNames(agentRollupId)) {
+        for (String gaugeName : gaugeNameDao.getGaugeNames(agentRollupId, from, to)) {
             gauges.add(Gauges.getGauge(gaugeName));
         }
         return gauges;

@@ -15,8 +15,9 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
@@ -24,91 +25,84 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.collect.Sets;
 import org.immutables.value.Value;
 
-import org.glowroot.central.util.Cache;
-import org.glowroot.central.util.Cache.CacheLoader;
-import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
+import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.DAYS;
 
 class GaugeNameDao {
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
+    private final Clock clock;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    private final RateLimiter<GaugeNameKey> rateLimiter = new RateLimiter<>();
+    private final RateLimiter<GaugeKey> rateLimiter = new RateLimiter<>();
 
-    private final Cache<String, List<String>> gaugeNamesCache;
-
-    GaugeNameDao(Session session, ConfigRepositoryImpl configRepository,
-            ClusterManager clusterManager) throws Exception {
+    GaugeNameDao(Session session, ConfigRepositoryImpl configRepository, Clock clock)
+            throws Exception {
         this.session = session;
         this.configRepository = configRepository;
+        this.clock = clock;
 
-        session.execute("create table if not exists gauge_name (agent_rollup varchar,"
-                + " gauge_name varchar, primary key (agent_rollup, gauge_name)) " + WITH_LCS);
+        int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
+        session.createTableWithTWCS("create table if not exists gauge_name (agent_rollup_id"
+                + " varchar, capture_time timestamp, gauge_name varchar, primary key"
+                + " (agent_rollup_id, capture_time, gauge_name))", maxRollupTTL);
 
-        insertPS = session.prepare("insert into gauge_name (agent_rollup, gauge_name)"
-                + " values (?, ?) using ttl ?");
-        readPS = session.prepare("select gauge_name from gauge_name where agent_rollup = ?");
-
-        gaugeNamesCache = clusterManager.createCache("gaugeNamesCache", new GaugeNameCacheLoader());
+        insertPS = session.prepare("insert into gauge_name (agent_rollup_id, capture_time,"
+                + " gauge_name) values (?, ?, ?) using ttl ?");
+        readPS = session.prepare("select gauge_name from gauge_name where agent_rollup_id = ? and"
+                + " capture_time >= ? and capture_time <= ?");
     }
 
-    List<String> getGaugeNames(String agentRollupId) throws Exception {
-        return gaugeNamesCache.get(agentRollupId);
+    Set<String> getGaugeNames(String agentRollupId, long from, long to) throws Exception {
+        long rolledUpFrom = Utils.getRollupCaptureTime(from, DAYS.toMillis(1));
+        long rolledUpTo = Utils.getRollupCaptureTime(to, DAYS.toMillis(1));
+        BoundStatement boundStatement = readPS.bind();
+        boundStatement.setString(0, agentRollupId);
+        boundStatement.setTimestamp(1, new Date(rolledUpFrom));
+        boundStatement.setTimestamp(2, new Date(rolledUpTo));
+        ResultSet results = session.execute(boundStatement);
+        Set<String> gaugeNames = Sets.newHashSet();
+        for (Row row : results) {
+            gaugeNames.add(checkNotNull(row.getString(0)));
+        }
+        return gaugeNames;
     }
 
-    List<Future<?>> store(String agentRollupId, String gaugeName) throws Exception {
-        GaugeNameKey rateLimiterKey = ImmutableGaugeNameKey.of(agentRollupId, gaugeName);
+    List<Future<?>> insert(String agentRollupId, long captureTime, String gaugeName)
+            throws Exception {
+        long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, DAYS.toMillis(1));
+        GaugeKey rateLimiterKey = ImmutableGaugeKey.of(agentRollupId, rollupCaptureTime, gaugeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
+        boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
         boundStatement.setString(i++, gaugeName);
-        // intentionally not accounting for rateLimiter in TTL
-        boundStatement.setInt(i++, configRepository.getCentralStorageConfig().getMaxRollupTTL());
-        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
-        CompletableFuture<?> chainedFuture =
-                MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
-        chainedFuture = chainedFuture
-                .whenComplete((result, t) -> gaugeNamesCache.invalidate(agentRollupId));
-        return ImmutableList.of(chainedFuture);
+        int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
+        boundStatement.setInt(i++,
+                AggregateDao.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
+        return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
     @Value.Immutable
     @Styles.AllParameters
-    interface GaugeNameKey {
+    interface GaugeKey {
         String agentRollupId();
+        long captureTime();
         String gaugeName();
-    }
-
-    private class GaugeNameCacheLoader implements CacheLoader<String, List<String>> {
-        @Override
-        public List<String> load(String agentRollupId) throws Exception {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, agentRollupId);
-            ResultSet results = session.execute(boundStatement);
-            List<String> gaugeNames = Lists.newArrayList();
-            for (Row row : results) {
-                gaugeNames.add(checkNotNull(row.getString(0)));
-            }
-            return gaugeNames;
-        }
     }
 }

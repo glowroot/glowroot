@@ -156,8 +156,9 @@ class AlertConfigJsonService {
                 .build());
     }
 
-    private List<Gauge> getGaugeDropdownItems(String agentRollupId) throws Exception {
-        List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollupId);
+    private List<Gauge> getGaugeDropdownItems(String agentRollupId)
+            throws Exception {
+        List<Gauge> gauges = gaugeValueRepository.getRecentlyActiveGauges(agentRollupId);
         return new GaugeOrdering().immutableSortedCopy(gauges);
     }
 

@@ -71,7 +71,7 @@ class ConfigJsonService {
     @GET(path = "/backend/config/ui", permission = "agent:config:view:ui")
     String getUiConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         UiConfig config = configRepository.getUiConfig(agentRollupId);
-        List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollupId);
+        List<Gauge> gauges = gaugeValueRepository.getRecentlyActiveGauges(agentRollupId);
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(ImmutableUiConfigResponse.builder()
                 .config(UiConfigDto.create(config))

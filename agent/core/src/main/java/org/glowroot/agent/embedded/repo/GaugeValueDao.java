@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import com.google.common.base.Joiner;
@@ -46,6 +47,7 @@ import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
+import static java.util.concurrent.TimeUnit.DAYS;
 import static org.glowroot.agent.util.Checkers.castUntainted;
 
 public class GaugeValueDao implements GaugeValueRepository {
@@ -59,6 +61,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             // for counters, it is the interval of time that the (averaged) value represents
             ImmutableColumn.of("weight", ColumnType.BIGINT));
 
+    private final GaugeIdDao gaugeIdDao;
     private final GaugeNameDao gaugeNameDao;
     private final DataSource dataSource;
     private final Clock clock;
@@ -69,8 +72,10 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private final Object rollupLock = new Object();
 
-    GaugeValueDao(DataSource dataSource, GaugeNameDao gaugeNameDao, Clock clock) throws Exception {
+    GaugeValueDao(DataSource dataSource, GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao,
+            Clock clock) throws Exception {
         this.dataSource = dataSource;
+        this.gaugeIdDao = gaugeIdDao;
         this.gaugeNameDao = gaugeNameDao;
         this.clock = clock;
         this.rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
@@ -102,8 +107,15 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<Gauge> getGauges(String agentRollupId) throws Exception {
-        List<String> allGaugeNames = gaugeNameDao.readAllGaugeNames();
+    public List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception {
+        long now = clock.currentTimeMillis();
+        long from = now - DAYS.toMillis(7);
+        return getGauges(agentRollupId, from, now + DAYS.toMillis(365));
+    }
+
+    @Override
+    public List<Gauge> getGauges(String agentRollupId, long from, long to) throws Exception {
+        Set<String> allGaugeNames = gaugeNameDao.readAllGaugeNames(from, to);
         List<Gauge> gauges = Lists.newArrayList();
         for (String gaugeName : allGaugeNames) {
             gauges.add(Gauges.getGauge(gaugeName));
@@ -117,14 +129,15 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
         Map<GaugeValue, Long> gaugeValueIdMap = Maps.newLinkedHashMap();
         for (GaugeValue gaugeValue : gaugeValues) {
-            long gaugeId = gaugeNameDao.updateLastCaptureTime(gaugeValue.getGaugeName(),
+            long gaugeId = gaugeIdDao.updateLastCaptureTime(gaugeValue.getGaugeName(),
                     gaugeValue.getCaptureTime());
             if (gaugeId == -1) {
                 // data source is closing and a new gauge id was needed, but could not insert it
-                // --or-- race condition with GaugeNameDao.deleteAll() in which case return is good
+                // --or-- race condition with GaugeIdDao.deleteAll() in which case return is good
                 // option also
                 return;
             }
+            gaugeNameDao.insert(gaugeValue.getCaptureTime(), gaugeValue.getGaugeName());
             gaugeValueIdMap.put(gaugeValue, gaugeId);
         }
         dataSource.batchUpdate(new GaugeValuesBinder(gaugeValueIdMap));
@@ -155,7 +168,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     @Override
     public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
             long to, int rollupLevel) throws Exception {
-        Long gaugeId = gaugeNameDao.getGaugeId(gaugeName);
+        Long gaugeId = gaugeIdDao.getGaugeId(gaugeName);
         if (gaugeId == null) {
             // not necessarily an error, gauge id not created until first store
             return ImmutableList.of();

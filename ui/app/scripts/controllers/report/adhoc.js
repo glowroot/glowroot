@@ -173,7 +173,9 @@ glowroot.controller('ReportAdhocCtrl', [
 
       if ($scope.report.agentRollupIds.length) {
         var query = {
-          agentRollupIds: $scope.report.agentRollupIds
+          agentRollupIds: $scope.report.agentRollupIds,
+          from: $scope.report.fromDate,
+          to: moment($scope.report.toDate).add(1, 'day').valueOf()
         };
         $http.get('backend/report/all-gauges' + queryStrings.encodeObject(query))
             .then(function (response) {

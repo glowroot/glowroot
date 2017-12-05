@@ -30,15 +30,15 @@ class RepoAdminImpl implements RepoAdmin {
     private final CappedDatabase traceCappedDatabase;
     private final ConfigRepositoryImpl configRepository;
     private final EnvironmentDao agentDao;
+    private final GaugeIdDao gaugeIdDao;
     private final GaugeValueDao gaugeValueDao;
-    private final GaugeNameDao gaugeNameDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             CappedDatabase traceCappedDatabase, ConfigRepositoryImpl configRepository,
-            EnvironmentDao agentDao, GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
+            EnvironmentDao agentDao, GaugeIdDao gaugeIdDao, GaugeValueDao gaugeValueDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
             TraceAttributeNameDao traceAttributeNameDao) {
         this.dataSource = dataSource;
@@ -46,8 +46,8 @@ class RepoAdminImpl implements RepoAdmin {
         this.traceCappedDatabase = traceCappedDatabase;
         this.configRepository = configRepository;
         this.agentDao = agentDao;
+        this.gaugeIdDao = gaugeIdDao;
         this.gaugeValueDao = gaugeValueDao;
-        this.gaugeNameDao = gaugeNameDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.traceAttributeNameDao = traceAttributeNameDao;
@@ -58,8 +58,8 @@ class RepoAdminImpl implements RepoAdmin {
         Environment environment = agentDao.read("");
         dataSource.deleteAll();
         agentDao.reinitAfterDeletingDatabase();
+        gaugeIdDao.invalidateCache();
         gaugeValueDao.reinitAfterDeletingDatabase();
-        gaugeNameDao.invalidateCache();
         transactionTypeDao.invalidateCache();
         fullQueryTextDao.invalidateCache();
         traceAttributeNameDao.invalidateCache();

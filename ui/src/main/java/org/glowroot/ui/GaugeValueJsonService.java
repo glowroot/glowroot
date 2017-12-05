@@ -105,8 +105,10 @@ class GaugeValueJsonService {
     }
 
     @GET(path = "/backend/jvm/all-gauges", permission = "agent:jvm:gauges")
-    String getAllGaugeNames(@BindAgentRollupId String agentRollupId) throws Exception {
-        List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollupId);
+    String getAllGauges(@BindAgentRollupId String agentRollupId,
+            @BindRequest AllGaugesRequest request) throws Exception {
+        List<Gauge> gauges =
+                gaugeValueRepository.getGauges(agentRollupId, request.from(), request.to());
         List<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         List<String> defaultGaugeNames =
                 configRepository.getUiConfig(agentRollupId).getDefaultGaugeNameList();
@@ -234,6 +236,12 @@ class GaugeValueJsonService {
             lastGaugeValue = gaugeValue;
         }
         return dataSeries;
+    }
+
+    @Value.Immutable
+    interface AllGaugesRequest {
+        long from();
+        long to();
     }
 
     @Value.Immutable
