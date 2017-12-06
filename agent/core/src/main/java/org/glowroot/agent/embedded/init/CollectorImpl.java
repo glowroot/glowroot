@@ -94,7 +94,11 @@ class CollectorImpl implements Collector {
         HealthchecksIoConfig healthchecksIoConfig = configRepository.getHealthchecksIoConfig();
         String healthchecksIoPingUrl = healthchecksIoConfig.pingUrl();
         if (!healthchecksIoPingUrl.isEmpty()) {
-            httpClient.get(healthchecksIoPingUrl);
+            try {
+                httpClient.get(healthchecksIoPingUrl);
+            } catch (Exception e) {
+                logger.error("error sending ping to healthchecks.io: {}", e.getMessage(), e);
+            }
         }
     }
 
