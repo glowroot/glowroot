@@ -1,0 +1,3 @@
+# JavaMail SMTP provider Oracle
+protocol=smtp; type=transport; class=com.sun.mail.smtp.SMTPTransport; vendor=Oracle;
+protocol=smtps; type=transport; class=com.sun.mail.smtp.SMTPSSLTransport; vendor=Oracle;
