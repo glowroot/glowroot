@@ -27,10 +27,10 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -40,7 +40,6 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
@@ -186,14 +185,14 @@ public class HttpClient {
         return Encryption.decrypt(password, configRepository.getLazySecretKey());
     }
 
-    private static class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> {
+    private static class HttpClientHandler extends ChannelInboundHandlerAdapter {
 
         private volatile @MonotonicNonNull HttpResponseStatus responseStatus;
         private volatile @Nullable String responseContent;
         private volatile @Nullable String unexpectedErrorMessage;
 
         @Override
-        public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
             if (msg instanceof HttpResponse && msg instanceof HttpContent) {
                 responseStatus = ((HttpResponse) msg).status();
                 responseContent = ((HttpContent) msg).content().toString(CharsetUtil.UTF_8);
