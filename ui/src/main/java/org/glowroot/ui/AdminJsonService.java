@@ -405,7 +405,15 @@ class AdminJsonService {
         List<String> emailAddresses =
                 Splitter.on(',').trimResults().splitToList(testEmailRecipient);
         try {
-            AlertingService.sendEmail(emailAddresses, "Test email from Glowroot", "",
+            String subject = "Test email from Glowroot";
+            if (!central) {
+                String agentDisplayName =
+                        configRepository.getAdminGeneralConfig().agentDisplayNameOrDefault();
+                if (!agentDisplayName.isEmpty()) {
+                    subject += " - " + agentDisplayName;
+                }
+            }
+            AlertingService.sendEmail(emailAddresses, subject, "",
                     configDtoWithoutNewPassword.convert(configRepository), passwordOverride,
                     configRepository.getLazySecretKey(), mailService);
         } catch (Exception e) {

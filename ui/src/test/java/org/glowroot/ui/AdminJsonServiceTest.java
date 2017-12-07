@@ -23,6 +23,7 @@ import javax.mail.Message;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.common.config.ImmutableAdminGeneralConfig;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
@@ -32,6 +33,7 @@ import org.glowroot.ui.AdminJsonService.SmtpConfigDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class AdminJsonServiceTest {
 
@@ -43,9 +45,12 @@ public class AdminJsonServiceTest {
     public void beforeEachTest() {
         mailService = new MockMailService();
         httpClient = mock(HttpClient.class);
-        adminJsonService = new AdminJsonService(false, false, new File("."), null,
-                mock(ConfigRepository.class), mock(RepoAdmin.class),
-                mock(LiveAggregateRepository.class), mailService, httpClient);
+        ConfigRepository configRepository = mock(ConfigRepository.class);
+        when(configRepository.getAdminGeneralConfig())
+                .thenReturn(ImmutableAdminGeneralConfig.builder().build());
+        adminJsonService = new AdminJsonService(false, false, new File("."), null, configRepository,
+                mock(RepoAdmin.class), mock(LiveAggregateRepository.class), mailService,
+                httpClient);
     }
 
     @Test
