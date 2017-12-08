@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 
 public class Version {
 
+    public static final String UNKNOWN_VERSION = "unknown";
+
     private static final Logger logger = LoggerFactory.getLogger(Version.class);
 
     private Version() {}
@@ -40,7 +42,7 @@ public class Version {
             manifest = getManifest(baseClass);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
-            return "unknown";
+            return UNKNOWN_VERSION;
         }
         return getVersion(manifest);
     }
@@ -76,14 +78,14 @@ public class Version {
             // manifest is missing when running ui testing and integration tests from inside IDE
             // so only log this at debug level
             logger.debug("could not locate META-INF/MANIFEST.MF file");
-            return "unknown";
+            return UNKNOWN_VERSION;
         }
         Attributes mainAttributes = manifest.getMainAttributes();
         String version = mainAttributes.getValue("Implementation-Version");
         if (version == null) {
             logger.warn("could not find Implementation-Version attribute in META-INF/MANIFEST.MF"
                     + " file");
-            return "unknown";
+            return UNKNOWN_VERSION;
         }
         if (version.endsWith("-SNAPSHOT")) {
             return getSnapshotVersion(version, mainAttributes);

@@ -41,6 +41,8 @@ import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.machinepublishers.jbrowserdriver.ProxyConfig;
 import com.machinepublishers.jbrowserdriver.RequestHeaders;
 import com.machinepublishers.jbrowserdriver.Settings;
+import com.machinepublishers.jbrowserdriver.UserAgent;
+import com.machinepublishers.jbrowserdriver.UserAgent.Family;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AUTH;
@@ -79,6 +81,7 @@ import org.glowroot.common.repo.util.Compilations;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common.util.Version;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
@@ -101,7 +104,7 @@ class SyntheticMonitorService implements Runnable {
     private static final RequestHeaders REQUEST_HEADERS;
 
     static {
-        // this list is from com.machinepublishers.jbrowserdriver.RequestHeaders,
+        // this list is from com.machinepublishers.jbrowserdriver.RequestHeaders.CHROME,
         // with added Glowroot-Transaction-Type header
         LinkedHashMap<String, String> headersTmp = new LinkedHashMap<>();
         headersTmp.put("Host", RequestHeaders.DYNAMIC_HEADER);
@@ -130,6 +133,8 @@ class SyntheticMonitorService implements Runnable {
 
     private final CloseableHttpAsyncClient httpClient;
 
+    private final UserAgent userAgent;
+
     private final ExecutorService checkExecutor;
     private final ExecutorService mainLoopExecutor;
 
@@ -143,7 +148,7 @@ class SyntheticMonitorService implements Runnable {
 
     SyntheticMonitorService(AgentRollupDao agentRollupDao, ConfigRepositoryImpl configRepository,
             IncidentDao incidentDao, AlertingService alertingService,
-            SyntheticResultDao syntheticResponseDao, Ticker ticker, Clock clock) {
+            SyntheticResultDao syntheticResponseDao, Ticker ticker, Clock clock, String version) {
         this.agentRollupDao = agentRollupDao;
         this.configRepository = configRepository;
         this.incidentDao = incidentDao;
@@ -151,11 +156,30 @@ class SyntheticMonitorService implements Runnable {
         this.syntheticResponseDao = syntheticResponseDao;
         this.ticker = ticker;
         this.clock = clock;
+        String shortVersion;
+        if (version.equals(Version.UNKNOWN_VERSION)) {
+            shortVersion = "";
+        } else {
+            int index = version.indexOf(", built ");
+            if (index == -1) {
+                shortVersion = "/" + version;
+            } else {
+                shortVersion = "/" + version.substring(index);
+            }
+        }
         httpClient = HttpAsyncClients.custom()
+                .setUserAgent("GlowrootCentral" + shortVersion)
                 .setMaxConnPerRoute(10) // increasing from default 2
                 .setMaxConnTotal(1000) // increasing from default 20
                 .build();
         httpClient.start();
+        // these parameters are from com.machinepublishers.jbrowserdriver.UserAgent.CHROME
+        // with added GlowrootCentral/<version> for identification purposes
+        userAgent = new UserAgent(Family.WEBKIT, "Google Inc.", "Win32", "Windows NT 6.1",
+                "5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
+                        + " Chrome/45.0.2454.85 Safari/537.36 GlowrootCentral" + shortVersion,
+                "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
+                        + " Chrome/45.0.2454.85 Safari/537.36 GlowrootCentral" + shortVersion);
         checkExecutor = Executors.newCachedThreadPool();
         mainLoopExecutor = Executors.newSingleThreadExecutor();
         mainLoopExecutor.execute(castInitialized(this));
@@ -289,7 +313,8 @@ class SyntheticMonitorService implements Runnable {
                 Constructor<?> defaultConstructor = syntheticUserTestClass.getConstructor();
                 Method method = syntheticUserTestClass.getMethod("test", WebDriver.class);
                 Settings.Builder settings = Settings.builder()
-                        .requestHeaders(REQUEST_HEADERS);
+                        .requestHeaders(REQUEST_HEADERS)
+                        .userAgent(userAgent);
                 HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
                 if (!httpProxyConfig.host().isEmpty()) {
                     int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);

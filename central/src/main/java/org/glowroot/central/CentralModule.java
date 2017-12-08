@@ -198,7 +198,7 @@ public class CentralModule {
                     clock);
             syntheticMonitorService = new SyntheticMonitorService(repos.getAgentRollupDao(),
                     repos.getConfigRepository(), repos.getIncidentDao(), alertingService,
-                    repos.getSyntheticResultDao(), ticker, clock);
+                    repos.getSyntheticResultDao(), ticker, clock, version);
 
             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
             uiModule = new CreateUiModuleBuilder()
