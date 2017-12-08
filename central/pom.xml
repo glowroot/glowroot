@@ -87,12 +87,16 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
-      <version>3.8.1</version>
+      <!-- latest version of jbrowserdriver (0.17.11) uses org.openqa.selenium.security.Credentials,
+        which is no longer present in selenium 3.8.0+ -->
+      <version>3.7.1</version>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
-      <version>3.8.1</version>
+      <!-- latest version of jbrowserdriver (0.17.11) uses org.openqa.selenium.security.Credentials,
+        which is no longer present in selenium 3.8.0+ -->
+      <version>3.7.1</version>
     </dependency>
     <dependency>
       <groupId>com.machinepublishers</groupId>
