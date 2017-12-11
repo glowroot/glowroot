@@ -63,6 +63,7 @@ import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
+import org.glowroot.common.repo.ImmutableTraceTable;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.HttpClient;
@@ -819,6 +820,10 @@ public class CentralModule {
         @Override
         public List<H2Table> analyzeH2DiskSpace() throws Exception {
             return ImmutableList.of();
+        }
+        @Override
+        public TraceTable analyzeTraceData() throws Exception {
+            return ImmutableTraceTable.builder().build();
         }
         @Override
         public void deleteAllData() throws Exception {}

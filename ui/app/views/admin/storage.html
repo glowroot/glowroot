@@ -388,36 +388,103 @@
           </div>
         </div>
       </div>
-      <table ng-if="analyzedH2Tables"
-             class="table"
-             style="table-layout: fixed;">
-        <thead>
-        <tr>
-          <th>
-            Table name
-          </th>
-          <th>
-            Total bytes
-          </th>
-          <th>
-            Row count
-          </th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr ng-repeat="analyzedH2Table in analyzedH2Tables">
-          <td>
-            {{analyzedH2Table.name}}
-          </td>
-          <td>
-            {{analyzedH2Table.bytes | number}}
-          </td>
-          <td>
-            {{analyzedH2Table.rows | number}}
-          </td>
-        </tr>
-        </tbody>
-      </table>
+      <div ng-if="analyzedH2Tables">
+        <table class="table"
+               style="table-layout: fixed; margin-top: 40px;">
+          <thead>
+          <tr>
+            <th>
+              Table name
+            </th>
+            <th>
+              Total bytes
+            </th>
+            <th>
+              Row count
+            </th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr ng-repeat="analyzedH2Table in analyzedH2Tables">
+            <td>
+              {{analyzedH2Table.name}}
+            </td>
+            <td>
+              {{analyzedH2Table.bytes | number}}
+            </td>
+            <td>
+              {{analyzedH2Table.rows | number}}
+            </td>
+          </tr>
+          </tbody>
+        </table>
+        <table class="table"
+               style="table-layout: fixed; margin-top: 40px;">
+          <thead>
+          <tr>
+            <th>
+              TRACE table detail
+            </th>
+            <th>
+            </th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>
+              Traces captured
+            </td>
+            <td>
+              {{analyzedTraceTable.count | number}}
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Traces captured because they were flagged as errors
+            </td>
+            <td>
+              {{analyzedTraceTable.errorCount | number}}
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Traces captured because they exceeded the currently configured slow threshold of
+              {{analyzedTraceTable.slowThresholdMillis1}}&nbsp;milliseconds
+            </td>
+            <td>
+              {{analyzedTraceTable.slowCount1 | number}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-left: 40px;">
+              Traces that would have been captured due to the slow threshold if it was set to
+              {{analyzedTraceTable.slowThresholdMillis2}}&nbsp;milliseconds
+            </td>
+            <td>
+              {{analyzedTraceTable.slowCount2 | number}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-left: 40px;">
+              Traces that would have been captured due to the slow threshold if it was set to
+              {{analyzedTraceTable.slowThresholdMillis3}}&nbsp;milliseconds
+            </td>
+            <td>
+              {{analyzedTraceTable.slowCount3 | number}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-left: 40px;">
+              Traces that would have been captured due to the slow threshold if it was set to
+              {{analyzedTraceTable.slowThresholdMillis4}}&nbsp;milliseconds
+            </td>
+            <td>
+              {{analyzedTraceTable.slowCount4 | number}}
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

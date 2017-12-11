@@ -73,6 +73,7 @@ import org.glowroot.common.repo.ConfigRepository.DuplicatePagerDutyIntegrationKe
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.RepoAdmin.H2Table;
+import org.glowroot.common.repo.RepoAdmin.TraceTable;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.repo.util.HttpClient;
@@ -529,19 +530,15 @@ class AdminJsonService {
             throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
         }
         List<H2Table> tables = repoAdmin.analyzeH2DiskSpace();
+        TraceTable traceTable = repoAdmin.analyzeTraceData();
 
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         try {
-            jg.writeStartArray();
-            for (H2Table table : orderingByBytesDesc.sortedCopy(tables)) {
-                jg.writeStartObject();
-                jg.writeStringField("name", table.name());
-                jg.writeNumberField("bytes", table.bytes());
-                jg.writeNumberField("rows", table.rows());
-                jg.writeEndObject();
-            }
-            jg.writeEndArray();
+            jg.writeStartObject();
+            jg.writeObjectField("tables", orderingByBytesDesc.sortedCopy(tables));
+            jg.writeObjectField("traceTable", traceTable);
+            jg.writeEndObject();
         } finally {
             jg.close();
         }

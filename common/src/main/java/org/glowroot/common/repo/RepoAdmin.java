@@ -27,6 +27,8 @@ public interface RepoAdmin {
 
     List<H2Table> analyzeH2DiskSpace() throws Exception;
 
+    TraceTable analyzeTraceData() throws Exception;
+
     void deleteAllData() throws Exception;
 
     void resizeIfNeeded() throws Exception;
@@ -36,5 +38,20 @@ public interface RepoAdmin {
         String name();
         long bytes();
         long rows();
+    }
+
+    @Value.Immutable
+    interface TraceTable {
+        long count();
+        long errorCount();
+        int slowThresholdMillis1();
+        long slowCount1();
+        int slowThresholdMillis2();
+        long slowCount2();
+        int slowThresholdMillis3();
+        long slowCount3();
+        int slowThresholdMillis4();
+        long slowCount4();
+        List<Long> ageDistribution();
     }
 }

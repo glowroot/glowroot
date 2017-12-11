@@ -111,7 +111,8 @@ glowroot.controller('AdminStorageCtrl', [
       $scope.analyzedH2Tables = undefined;
       $http.post('backend/admin/analyze-h2-disk-space', {})
           .then(function (data) {
-            $scope.analyzedH2Tables = data.data;
+            $scope.analyzedH2Tables = data.data.tables;
+            $scope.analyzedTraceTable = data.data.traceTable;
             deferred.resolve('Analyzed');
           }, function (response) {
             httpErrors.handle(response, $scope, deferred);

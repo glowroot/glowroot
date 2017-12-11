@@ -117,7 +117,7 @@ public class SimpleRepoModule {
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
                 configRepository, environmentDao, gaugeIdDao, gaugeNameDao, gaugeValueDao,
-                transactionTypeDao, fullQueryTextDao, traceAttributeNameDao);
+                transactionTypeDao, fullQueryTextDao, traceAttributeNameDao, clock);
 
         httpClient = new HttpClient(configRepository);
 
