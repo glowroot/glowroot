@@ -15,48 +15,52 @@
  */
 package org.glowroot.agent.util;
 
+import java.io.IOException;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
+
 import javax.annotation.Nullable;
 
 import com.google.common.base.StandardSystemProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.OnlyUsedByTests;
 
 public class AppServerDetection {
+
+    private static final Logger logger = LoggerFactory.getLogger(AppServerDetection.class);
 
     private static final @Nullable String MAIN_CLASS = buildMainClass();
 
     private AppServerDetection() {}
 
     public static boolean isIbmJvm() {
-        String vmName = StandardSystemProperty.JAVA_VM_NAME.value();
-        return vmName != null && vmName.equals("IBM J9 VM");
+        return "IBM J9 VM".equals(StandardSystemProperty.JAVA_VM_NAME.value());
     }
 
     public static boolean isJBossModules() {
-        return isJBossModules(MAIN_CLASS);
+        return "org.jboss.modules.Main".equals(MAIN_CLASS);
+    }
+
+    public static boolean isWildflySwarm() {
+        return "org.wildfly.swarm.bootstrap.Main".equals(MAIN_CLASS);
     }
 
     static boolean isOldJBoss() {
-        return MAIN_CLASS != null && MAIN_CLASS.equals("org.jboss.Main");
+        return "org.jboss.Main".equals(MAIN_CLASS);
     }
 
     static boolean isGlassfish() {
-        return MAIN_CLASS != null
-                && MAIN_CLASS.equals("com.sun.enterprise.glassfish.bootstrap.ASMain");
+        return "com.sun.enterprise.glassfish.bootstrap.ASMain".equals(MAIN_CLASS);
     }
 
     static boolean isWebLogic() {
-        return MAIN_CLASS != null && MAIN_CLASS.equals("weblogic.Server");
+        return "weblogic.Server".equals(MAIN_CLASS);
     }
 
     static boolean isWebSphere() {
-        return MAIN_CLASS != null && MAIN_CLASS.equals("com.ibm.wsspi.bootstrap.WSPreLauncher");
-    }
-
-    @OnlyUsedByTests
-    static boolean isJBossModules(@Nullable String mainClass) {
-        return mainClass != null && (mainClass.equals("org.jboss.modules.Main")
-                || mainClass.endsWith("jboss-modules.jar"));
+        return "com.ibm.wsspi.bootstrap.WSPreLauncher".equals(MAIN_CLASS);
     }
 
     @OnlyUsedByTests
@@ -67,7 +71,7 @@ public class AppServerDetection {
         }
         int index = sunJavaCommand.indexOf(' ');
         if (index == -1) {
-            return sunJavaCommand;
+            return getMainClassFromJarIfNeeded(sunJavaCommand);
         }
         String firstArg = sunJavaCommand.substring(0, index);
         if (firstArg.startsWith("org.tanukisoftware.wrapper.")) {
@@ -77,6 +81,23 @@ public class AppServerDetection {
             }
             return sunJavaCommand.substring(index + 1, nextIndex);
         }
-        return firstArg;
+        return getMainClassFromJarIfNeeded(firstArg);
+    }
+
+    private static @Nullable String getMainClassFromJarIfNeeded(String mainClassOrJarFile) {
+        if (!mainClassOrJarFile.endsWith(".jar")) {
+            return mainClassOrJarFile;
+        }
+        Manifest manifest = null;
+        try {
+            manifest = new JarFile(mainClassOrJarFile).getManifest();
+        } catch (IOException e) {
+            logger.debug(e.getMessage(), e);
+        }
+        if (manifest == null) {
+            return null;
+        } else {
+            return manifest.getMainAttributes().getValue("Main-Class");
+        }
     }
 }
