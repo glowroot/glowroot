@@ -76,16 +76,6 @@ public class MainEntryPoint {
     public static void premain(Instrumentation instrumentation, @Nullable File glowrootJarFile) {
         // DO NOT USE ANY GUAVA CLASSES before initLogging() because they trigger loading of jul
         // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
-        boolean jbossModules = AppServerDetection.isJBossModules();
-        if (jbossModules) {
-            String jbossModulesSystemPkgs = System.getProperty("jboss.modules.system.pkgs");
-            if (jbossModulesSystemPkgs == null || jbossModulesSystemPkgs.isEmpty()) {
-                jbossModulesSystemPkgs = "org.glowroot.agent";
-            } else {
-                jbossModulesSystemPkgs += ",org.glowroot.agent";
-            }
-            System.setProperty("jboss.modules.system.pkgs", jbossModulesSystemPkgs);
-        }
         Directories directories;
         try {
             directories = new Directories(glowrootJarFile);

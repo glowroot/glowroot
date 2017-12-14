@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Array;
 
+import com.google.common.collect.ObjectArrays;
+
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 @UsedByGeneratedBytecode
@@ -30,5 +32,10 @@ public class GeneratedBytecodeUtil {
             return type;
         }
         return getArrayClass(Array.newInstance(type, 0).getClass(), nDimensions - 1);
+    }
+
+    @UsedByGeneratedBytecode
+    public static String[] appendToJBossModulesSystemPkgs(String[] original) {
+        return ObjectArrays.concat(original, "org.glowroot.agent");
     }
 }

@@ -64,6 +64,7 @@ import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsE
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 
 public class Weaver {
 
@@ -166,7 +167,13 @@ public class Weaver {
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         byte[] maybeProcessedBytes = null;
-        if (className.equals("org/apache/felix/framework/BundleWiringImpl")) {
+        if (className.equals("org/jboss/modules/Module")) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new JBossModulesHackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals("org/apache/felix/framework/BundleWiringImpl")) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
@@ -350,6 +357,44 @@ public class Weaver {
         }
     }
 
+    private static class JBossModulesHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        JBossModulesHackClassVisitor(ClassWriter cw) {
+            super(ASM5, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            if (name.equals("<clinit>")) {
+                return new JBossModulesHackMethodVisitor(mv);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class JBossModulesHackMethodVisitor extends MethodVisitor {
+
+        private JBossModulesHackMethodVisitor(MethodVisitor mv) {
+            super(ASM5, mv);
+        }
+
+        @Override
+        public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+            if (name.equals("systemPackages") && desc.equals("[Ljava/lang/String;")) {
+                visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/GeneratedBytecodeUtil",
+                        "appendToJBossModulesSystemPkgs",
+                        "([Ljava/lang/String;)[Ljava/lang/String;", false);
+            }
+            super.visitFieldInsn(opcode, owner, name, desc);
+        }
+    }
+
     private static class FelixOsgiHackClassVisitor extends ClassVisitor {
 
         private final ClassWriter cw;
@@ -388,7 +433,6 @@ public class Weaver {
             mv.visitInsn(ICONST_1);
             mv.visitInsn(IRETURN);
             mv.visitLabel(label);
-
         }
     }
 
