@@ -16,8 +16,11 @@
 package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Type;
+import java.util.Set;
 
 import com.google.common.collect.ObjectArrays;
+import com.google.common.collect.Sets;
 
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
@@ -37,5 +40,34 @@ public class GeneratedBytecodeUtil {
     @UsedByGeneratedBytecode
     public static String[] appendToJBossModulesSystemPkgs(String[] original) {
         return ObjectArrays.concat(original, "org.glowroot.agent");
+    }
+
+    @UsedByGeneratedBytecode
+    public static Set<Type> stripGlowrootTypes(Set<Type> decoratedTypes) {
+        boolean found = false;
+        for (Type decoratedType : decoratedTypes) {
+            if (isGlowrootType(decoratedType)) {
+                found = true;
+            }
+        }
+        if (!found) {
+            // optimization of common case
+            return decoratedTypes;
+        }
+        // linked hash set to preserve ordering
+        Set<Type> stripped = Sets.newLinkedHashSet();
+        for (Type decoratedType : decoratedTypes) {
+            if (decoratedType instanceof Class) {
+                if (!isGlowrootType(decoratedType)) {
+                    stripped.add(decoratedType);
+                }
+            }
+        }
+        return stripped;
+    }
+
+    private static boolean isGlowrootType(Type decoratedType) {
+        return decoratedType instanceof Class
+                && ((Class<?>) decoratedType).getName().startsWith("org.glowroot.agent.");
     }
 }

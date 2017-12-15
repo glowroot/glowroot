@@ -167,7 +167,13 @@ public class Weaver {
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         byte[] maybeProcessedBytes = null;
-        if (className.equals("org/jboss/modules/Module")) {
+        if (className.equals("org/jboss/weld/util/Decorators")) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new JBossWeldHackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals("org/jboss/modules/Module")) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossModulesHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
@@ -354,6 +360,46 @@ public class Weaver {
             MethodVisitor mv =
                     checkNotNull(cv).visitMethod(access, name, desc, signature, exceptions);
             return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
+        }
+    }
+
+    private static class JBossWeldHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        JBossWeldHackClassVisitor(ClassWriter cw) {
+            super(ASM5, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            if (name.equals("checkDelegateType")
+                    && desc.equals("(Ljavax/enterprise/inject/spi/Decorator;)V")) {
+                return new JBossWeldHackMethodVisitor(mv);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class JBossWeldHackMethodVisitor extends MethodVisitor {
+
+        private JBossWeldHackMethodVisitor(MethodVisitor mv) {
+            super(ASM5, mv);
+        }
+
+        @Override
+        public void visitMethodInsn(int opcode, String owner, String name, String desc,
+                boolean itf) {
+            super.visitMethodInsn(opcode, owner, name, desc, itf);
+            if (name.equals("getDecoratedTypes") && desc.equals("()Ljava/util/Set;")) {
+                super.visitMethodInsn(INVOKESTATIC,
+                        "org/glowroot/agent/weaving/GeneratedBytecodeUtil",
+                        "stripGlowrootTypes", "(Ljava/util/Set;)Ljava/util/Set;", false);
+            }
         }
     }
 
