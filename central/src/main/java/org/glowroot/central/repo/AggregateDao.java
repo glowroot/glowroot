@@ -1975,9 +1975,10 @@ public class AggregateDao implements AggregateRepository {
         if (ttl == 0) {
             return 0;
         }
-        int captureTimeAgoSeconds =
-                Ints.saturatedCast(MILLISECONDS.toSeconds(clock.currentTimeMillis() - captureTime));
-        int adjustedTTL = ttl - captureTimeAgoSeconds;
+        long captureTimeAgoSeconds =
+                MILLISECONDS.toSeconds(clock.currentTimeMillis() - captureTime);
+        // need saturated cast because captureTimeAgoSeconds may be negative
+        int adjustedTTL = Ints.saturatedCast(ttl - captureTimeAgoSeconds);
         // max is a safety guard
         return Math.max(adjustedTTL, 60);
     }
