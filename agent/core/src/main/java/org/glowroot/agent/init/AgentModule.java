@@ -21,6 +21,7 @@ import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.jar.JarFile;
@@ -30,6 +31,7 @@ import javax.annotation.Nullable;
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -270,11 +272,20 @@ public class AgentModule {
     private static void logJavaClassAlreadyLoadedWarningIfNeeded(Instrumentation instrumentation) {
         List<String> runnableCallableClasses = Lists.newArrayList();
         boolean julLoggerLoaded = false;
+        Set<String> hackClassNames = ImmutableSet.of(
+                Weaver.JBOSS_WELD_HACK_CLASS_NAME.replace('/', '.'),
+                Weaver.JBOSS_MODULES_HACK_CLASS_NAME.replace('/', '.'),
+                Weaver.FELIX_HACK_CLASS_NAME.replace('/', '.'),
+                Weaver.JBOSS4_HACK_CLASS_NAME.replace('/', '.'));
         for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
+            String className = clazz.getName();
+            if (hackClassNames.contains(className)) {
+                logHackClassWarning(className);
+                // intentionally falling through here
+            }
             if (clazz.isInterface()) {
                 continue;
             }
-            String className = clazz.getName();
             if (className.startsWith("java.util.concurrent.")
                     && (Runnable.class.isAssignableFrom(clazz)
                             || Callable.class.isAssignableFrom(clazz))) {
@@ -293,7 +304,21 @@ public class AgentModule {
         }
     }
 
+    private static void logHackClassWarning(String specialClassName) {
+        logger.warn("{} was loaded before Glowroot instrumentation could be applied to it. {}This"
+                + " will likely prevent Glowroot from functioning properly.", specialClassName,
+                getExtraExplanation());
+    }
+
     private static void logRunnableCallableClassWarning(List<String> runnableCallableClasses) {
+        logger.warn("one or more java.lang.Runnable or java.util.concurrent.Callable"
+                + " implementations were loaded before Glowroot instrumentation could be applied to"
+                + " them: {}. {}This may prevent Glowroot from capturing async requests that span"
+                + " multiple threads.", Joiner.on(", ").join(runnableCallableClasses),
+                getExtraExplanation());
+    }
+
+    private static String getExtraExplanation() {
         List<String> nonGlowrootAgents = Lists.newArrayList();
         for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
             if (jvmArg.startsWith("-javaagent:") && !jvmArg.endsWith("glowroot.jar")
@@ -317,11 +342,7 @@ public class AgentModule {
             }
             extraExplanation += " higher loading precedence. ";
         }
-        logger.warn("one or more java.lang.Runnable or java.util.concurrent.Callable"
-                + " implementations were loaded before Glowroot instrumentation could be applied to"
-                + " them: {}. {}This may prevent Glowroot from capturing async requests that span"
-                + " multiple threads.", Joiner.on(", ").join(runnableCallableClasses),
-                extraExplanation);
+        return extraExplanation;
     }
 
     // now init plugins to give them a chance to do something in their static initializer

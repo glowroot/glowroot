@@ -68,6 +68,12 @@ import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 
 public class Weaver {
 
+    public static final String JBOSS_WELD_HACK_CLASS_NAME = "org/jboss/weld/util/Decorators";
+    public static final String JBOSS_MODULES_HACK_CLASS_NAME = "org/jboss/modules/Module";
+    public static final String FELIX_HACK_CLASS_NAME =
+            "org/apache/felix/framework/BundleWiringImpl";
+    public static final String JBOSS4_HACK_CLASS_NAME = "org/jboss/system/server/ServerImpl";
+
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 
     // useful for debugging java.lang.VerifyErrors
@@ -167,25 +173,25 @@ public class Weaver {
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         byte[] maybeProcessedBytes = null;
-        if (className.equals("org/jboss/weld/util/Decorators")) {
+        if (className.equals(JBOSS_WELD_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossWeldHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals("org/jboss/modules/Module")) {
+        } else if (className.equals(JBOSS_MODULES_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossModulesHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals("org/apache/felix/framework/BundleWiringImpl")) {
+        } else if (className.equals(FELIX_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals("org/jboss/system/server/ServerImpl")) {
+        } else if (className.equals(JBOSS4_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBoss4HackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
