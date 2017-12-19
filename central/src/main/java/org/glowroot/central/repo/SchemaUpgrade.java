@@ -1030,10 +1030,11 @@ public class SchemaUpgrade {
 
         dropTable("gauge_name");
 
-        int maxRollupTTL = getCentralStorageConfig(session).getMaxRollupTTL();
+        CentralStorageConfig storageConfig = getCentralStorageConfig(session);
+        int maxRollupHours = storageConfig.getMaxRollupHours();
         session.createTableWithTWCS("create table if not exists gauge_name (agent_rollup_id"
                 + " varchar, capture_time timestamp, gauge_name varchar, primary key"
-                + " (agent_rollup_id, capture_time, gauge_name))", maxRollupTTL);
+                + " (agent_rollup_id, capture_time, gauge_name))", maxRollupHours);
 
         PreparedStatement insertPS = session.prepare("insert into gauge_name (agent_rollup_id,"
                 + " capture_time, gauge_name) values (?, ?, ?) using ttl ?");
@@ -1056,6 +1057,7 @@ public class SchemaUpgrade {
                     ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
         }
 
+        int maxRollupTTL = storageConfig.getMaxRollupTTL();
         List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());

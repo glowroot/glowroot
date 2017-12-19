@@ -17,12 +17,9 @@ package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Versions;
-
-import static java.util.concurrent.TimeUnit.HOURS;
 
 @Value.Immutable
 public abstract class EmbeddedStorageConfig implements StorageConfig {
@@ -79,32 +76,5 @@ public abstract class EmbeddedStorageConfig implements StorageConfig {
     public boolean hasListIssues() {
         return rollupExpirationHours().size() != DEFAULT_ROLLUP_EXPIRATION_HOURS.size()
                 || rollupCappedDatabaseSizesMb().size() != DEFAULT_CAPPED_DATABASE_SIZES_MB.size();
-    }
-
-    @Override
-    @Value.Derived
-    @JsonIgnore
-    public int getMaxRollupTTL() {
-        return getMaxRollupExpirationSeconds(this);
-    }
-
-    @Override
-    @Value.Derived
-    @JsonIgnore
-    public int getTraceTTL() {
-        return Ints.saturatedCast(HOURS.toSeconds(traceExpirationHours()));
-    }
-
-    static int getMaxRollupExpirationSeconds(StorageConfig storageConfig) {
-        long maxRollupExpirationSeconds = 0;
-        for (long expirationHours : storageConfig.rollupExpirationHours()) {
-            if (expirationHours == 0) {
-                // zero value expiration/TTL means never expire
-                return 0;
-            }
-            maxRollupExpirationSeconds =
-                    Math.max(maxRollupExpirationSeconds, HOURS.toSeconds(expirationHours));
-        }
-        return Ints.saturatedCast(maxRollupExpirationSeconds);
     }
 }

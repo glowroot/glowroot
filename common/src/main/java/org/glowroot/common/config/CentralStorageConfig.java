@@ -65,14 +65,26 @@ public abstract class CentralStorageConfig implements StorageConfig {
         return rollupExpirationHours().size() != DEFAULT_ROLLUP_EXPIRATION_HOURS.size();
     }
 
-    @Override
+    @Value.Derived
+    @JsonIgnore
+    public int getMaxRollupHours() {
+        int maxRollupExpirationHours = 0;
+        for (int expirationHours : rollupExpirationHours()) {
+            if (expirationHours == 0) {
+                // zero value expiration/TTL means never expire
+                return 0;
+            }
+            maxRollupExpirationHours = Math.max(maxRollupExpirationHours, expirationHours);
+        }
+        return maxRollupExpirationHours;
+    }
+
     @Value.Derived
     @JsonIgnore
     public int getMaxRollupTTL() {
-        return EmbeddedStorageConfig.getMaxRollupExpirationSeconds(this);
+        return Ints.saturatedCast(HOURS.toSeconds(getMaxRollupHours()));
     }
 
-    @Override
     @Value.Derived
     @JsonIgnore
     public int getTraceTTL() {
