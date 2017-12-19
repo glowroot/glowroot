@@ -255,10 +255,12 @@ public class SchemaUpgrade {
         }
         // 0.9.21 to 0.9.22
         if (initialSchemaVersion == 28) {
-            // only applies when upgrading from immediately prior schema version (28)
-            // (fix bad upgrade in 28 that inserted 'smtp' config row into 'web' config row)
+            // only applies when upgrading from immediately prior schema version
+            // (to fix bad upgrade in 28 that inserted 'smtp' config row into 'web' config row)
             updateSmtpConfig();
             sortOfFixWebConfig();
+            updateSchemaVersion(29);
+        } else if (initialSchemaVersion < 29) {
             updateSchemaVersion(29);
         }
         // 0.9.22 to 0.9.23
