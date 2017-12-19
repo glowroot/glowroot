@@ -26,7 +26,7 @@ import org.objectweb.asm.MethodVisitor;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
-import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.ASM6;
 
 class ThinClassVisitor extends ClassVisitor {
 
@@ -35,7 +35,7 @@ class ThinClassVisitor extends ClassVisitor {
     private @Nullable ThinClass thinClass;
 
     ThinClassVisitor() {
-        super(ASM5);
+        super(ASM6);
     }
 
     @Override
@@ -106,7 +106,7 @@ class ThinClassVisitor extends ClassVisitor {
         private final ImmutableThinMethod.Builder thinMethodBuilder;
 
         private AnnotationCaptureMethodVisitor(ImmutableThinMethod.Builder thinMethodBuilder) {
-            super(ASM5);
+            super(ASM6);
             this.thinMethodBuilder = thinMethodBuilder;
         }
 

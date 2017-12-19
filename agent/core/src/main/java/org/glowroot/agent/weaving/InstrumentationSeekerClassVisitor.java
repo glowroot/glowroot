@@ -34,7 +34,7 @@ import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.ASM6;
 
 class InstrumentationSeekerClassVisitor extends ClassVisitor {
 
@@ -46,7 +46,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
     private @MonotonicNonNull String owner;
 
     InstrumentationSeekerClassVisitor() {
-        super(ASM5);
+        super(ASM6);
     }
 
     @Override
@@ -76,7 +76,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
         private @MonotonicNonNull TimerAnnotationVisitor timerAnnotationVisitor;
 
         private InstrumentationAnnotationMethodVisitor(String methodName, String desc) {
-            super(ASM5);
+            super(ASM6);
             this.methodName = methodName;
             this.desc = desc;
         }
@@ -210,7 +210,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
         private @Nullable String timerName;
 
         private TransactionAnnotationVisitor() {
-            super(ASM5);
+            super(ASM6);
         }
 
         @Override
@@ -238,7 +238,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
         private @Nullable String timerName;
 
         private TraceEntryAnnotationVisitor() {
-            super(ASM5);
+            super(ASM6);
         }
 
         @Override
@@ -261,7 +261,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
         private @Nullable String timerName;
 
         private TimerAnnotationVisitor() {
-            super(ASM5);
+            super(ASM6);
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,12 @@ import com.google.common.base.StandardSystemProperty;
 public class JavaVersion {
 
     private static final boolean IS_JAVA_6;
+    private static final boolean IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9;
 
     static {
         IS_JAVA_6 = parseIsJava6(StandardSystemProperty.JAVA_VERSION.value());
+        IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9 =
+                parseIsGreaterThanOrEqualToJava9(StandardSystemProperty.JAVA_VERSION.value());
     }
 
     private JavaVersion() {}
@@ -34,8 +37,17 @@ public class JavaVersion {
         return IS_JAVA_6;
     }
 
+    public static boolean isGreaterThanOrEqualToJava9() {
+        return IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9;
+    }
+
     @VisibleForTesting
     static boolean parseIsJava6(@Nullable String javaVersion) {
         return javaVersion != null && javaVersion.startsWith("1.6");
+    }
+
+    @VisibleForTesting
+    static boolean parseIsGreaterThanOrEqualToJava9(@Nullable String javaVersion) {
+        return javaVersion != null && !javaVersion.startsWith("1.");
     }
 }

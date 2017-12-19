@@ -53,11 +53,13 @@ public class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
     @Override
     public void init(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir,
-            File logDir, File tmpDir, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String glowrootVersion) throws Exception {
+            File logDir, File tmpDir, @Nullable File glowrootJarFile,
+            Map<String, String> properties, @Nullable Instrumentation instrumentation,
+            String glowrootVersion) throws Exception {
 
         embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDir, sharedConfDir, logDir,
-                dataDir, tmpDir, properties, instrumentation, glowrootVersion, offline);
+                dataDir, tmpDir, glowrootJarFile, properties, instrumentation, glowrootVersion,
+                offline);
         NettyWorkaround.run(instrumentation, new NettyInit() {
             @Override
             public void execute(boolean alreadyInsideNewThread) throws Exception {

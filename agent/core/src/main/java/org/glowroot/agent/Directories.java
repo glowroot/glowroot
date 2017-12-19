@@ -42,6 +42,7 @@ class Directories {
     private final @Nullable File sharedConfDir;
     private final File logDir;
     private final File tmpDir;
+    private final @Nullable File glowrootJarFile;
 
     // these are needed for getDataDir()
     private final Properties props;
@@ -88,6 +89,7 @@ class Directories {
         this.confDir = confDir;
         this.logDir = logDir;
         this.tmpDir = tmpDir;
+        this.glowrootJarFile = glowrootJarFile;
 
         sharedConfDir = confDir.equals(glowrootDir) ? null : glowrootDir;
     }
@@ -103,6 +105,7 @@ class Directories {
         sharedConfDir = null;
         logDir = testDir;
         tmpDir = lazyDefaultBaseDir.getSubDir("tmp");
+        glowrootJarFile = null;
     }
 
     File getGlowrootDir() {
@@ -129,6 +132,11 @@ class Directories {
 
     File getTmpDir() {
         return tmpDir;
+    }
+
+    @Nullable
+    File getGlowrootJarFile() {
+        return glowrootJarFile;
     }
 
     // only used by embedded agent

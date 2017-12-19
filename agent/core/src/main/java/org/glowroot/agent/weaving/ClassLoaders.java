@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,7 +150,8 @@ class ClassLoaders {
             Object urlClassPath = getBootstrapClassPathMethod.invoke(null);
             addUrlMethod.invoke(urlClassPath, generatedJarFile.toURI().toURL());
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            // NOTE sun.misc.Launcher no longer exists in Java 9
+            logger.debug(e.getMessage(), e);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,10 @@ class InternalNames {
     private InternalNames() {}
 
     static boolean inBootstrapClassLoader(String internalName) {
+        if (internalName.startsWith("java/sql/")) {
+            // this is to mimic Java 9, where java.sql is not in the bootstrap class loader
+            return false;
+        }
         Boolean cached = bootstrapInternalNames.get(internalName);
         if (cached == null) {
             cached = calculateIsBootstrapClass(internalName);

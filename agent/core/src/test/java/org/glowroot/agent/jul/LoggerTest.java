@@ -654,13 +654,53 @@ public class LoggerTest {
         Logger logger = new Logger(slf4jLogger);
 
         // when
-        logger.logrb(Level.SEVERE, null, null, null, "ereves: {0},{1}", "a", "b");
-        logger.logrb(Level.WARNING, null, null, null, "gninraw: {0},{1}", "b", "c");
-        logger.logrb(Level.INFO, null, null, null, "ofni: {0},{1}", "c", "d");
-        logger.logrb(Level.CONFIG, null, null, null, "gifnoc: {0},{1}", "d", "e");
-        logger.logrb(Level.FINE, null, null, null, "enif: {0},{1}", "e", "f");
-        logger.logrb(Level.FINER, null, null, null, "renif: {0},{1}", "f", "g");
-        logger.logrb(Level.FINEST, null, null, null, "tsenif: {0},{1}", "g", "h");
+        logger.logrb(Level.SEVERE, (String) null, null, null, "ereves: {0},{1}", "a", "b");
+        logger.logrb(Level.WARNING, (String) null, null, null, "gninraw: {0},{1}", "b", "c");
+        logger.logrb(Level.INFO, (String) null, null, null, "ofni: {0},{1}", "c", "d");
+        logger.logrb(Level.CONFIG, (String) null, null, null, "gifnoc: {0},{1}", "d", "e");
+        logger.logrb(Level.FINE, (String) null, null, null, "enif: {0},{1}", "e", "f");
+        logger.logrb(Level.FINER, (String) null, null, null, "renif: {0},{1}", "f", "g");
+        logger.logrb(Level.FINEST, (String) null, null, null, "tsenif: {0},{1}", "g", "h");
+
+        // then
+        InOrder inOrder = Mockito.inOrder(slf4jLogger);
+        inOrder.verify(slf4jLogger).isErrorEnabled();
+        inOrder.verify(slf4jLogger).error("ereves: a,b");
+        inOrder.verify(slf4jLogger).isWarnEnabled();
+        inOrder.verify(slf4jLogger).warn("gninraw: b,c");
+        inOrder.verify(slf4jLogger).isInfoEnabled();
+        inOrder.verify(slf4jLogger).info("ofni: c,d");
+        inOrder.verify(slf4jLogger).isInfoEnabled();
+        inOrder.verify(slf4jLogger).info("gifnoc: d,e");
+        inOrder.verify(slf4jLogger).isDebugEnabled();
+        inOrder.verify(slf4jLogger).debug("enif: e,f");
+        inOrder.verify(slf4jLogger).isTraceEnabled();
+        inOrder.verify(slf4jLogger).trace("renif: f,g");
+        inOrder.verify(slf4jLogger).isTraceEnabled();
+        inOrder.verify(slf4jLogger).trace("tsenif: g,h");
+        verifyNoMoreInteractions(slf4jLogger);
+    }
+
+    @Test
+    public void testLogrbParameterizedLevelMethodsWithVarArgsOfParams2() {
+        // given
+        org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
+        when(slf4jLogger.isTraceEnabled()).thenReturn(true);
+        when(slf4jLogger.isDebugEnabled()).thenReturn(true);
+        when(slf4jLogger.isInfoEnabled()).thenReturn(true);
+        when(slf4jLogger.isWarnEnabled()).thenReturn(true);
+        when(slf4jLogger.isErrorEnabled()).thenReturn(true);
+        Logger logger = new Logger(slf4jLogger);
+
+        // when
+        logger.logrb(Level.SEVERE, (ResourceBundle) null, "ereves: {0},{1}", "a", "b");
+        logger.logrb(Level.WARNING, (ResourceBundle) null, "gninraw: {0},{1}", "b",
+                "c");
+        logger.logrb(Level.INFO, (ResourceBundle) null, "ofni: {0},{1}", "c", "d");
+        logger.logrb(Level.CONFIG, (ResourceBundle) null, "gifnoc: {0},{1}", "d", "e");
+        logger.logrb(Level.FINE, (ResourceBundle) null, "enif: {0},{1}", "e", "f");
+        logger.logrb(Level.FINER, (ResourceBundle) null, "renif: {0},{1}", "f", "g");
+        logger.logrb(Level.FINEST, (ResourceBundle) null, "tsenif: {0},{1}", "g", "h");
 
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
@@ -702,6 +742,40 @@ public class LoggerTest {
         logger.logrb(Level.FINE, null, null, (String) null, "enif", e);
         logger.logrb(Level.FINER, null, null, (String) null, "renif", f);
         logger.logrb(Level.FINEST, null, null, (String) null, "tsenif", g);
+
+        // then
+        InOrder inOrder = Mockito.inOrder(slf4jLogger);
+        inOrder.verify(slf4jLogger).error("ereves", a);
+        inOrder.verify(slf4jLogger).warn("gninraw", b);
+        inOrder.verify(slf4jLogger).info("ofni", c);
+        inOrder.verify(slf4jLogger).info("gifnoc", d);
+        inOrder.verify(slf4jLogger).debug("enif", e);
+        inOrder.verify(slf4jLogger).trace("renif", f);
+        inOrder.verify(slf4jLogger).trace("tsenif", g);
+        verifyNoMoreInteractions(slf4jLogger);
+    }
+
+    @Test
+    public void testLogrbParameterizedLevelMethodsWithThrowable2() {
+        // given
+        org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
+        Logger logger = new Logger(slf4jLogger);
+        Throwable a = new Throwable();
+        Throwable b = new Throwable();
+        Throwable c = new Throwable();
+        Throwable d = new Throwable();
+        Throwable e = new Throwable();
+        Throwable f = new Throwable();
+        Throwable g = new Throwable();
+
+        // when
+        logger.logrb(Level.SEVERE, null, null, (ResourceBundle) null, "ereves", a);
+        logger.logrb(Level.WARNING, null, null, (ResourceBundle) null, "gninraw", b);
+        logger.logrb(Level.INFO, null, null, (ResourceBundle) null, "ofni", c);
+        logger.logrb(Level.CONFIG, null, null, (ResourceBundle) null, "gifnoc", d);
+        logger.logrb(Level.FINE, null, null, (ResourceBundle) null, "enif", e);
+        logger.logrb(Level.FINER, null, null, (ResourceBundle) null, "renif", f);
+        logger.logrb(Level.FINEST, null, null, (ResourceBundle) null, "tsenif", g);
 
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);

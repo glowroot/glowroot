@@ -63,7 +63,7 @@ import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
-import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.ASM6;
 import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.DUP;
@@ -113,7 +113,7 @@ class WeavingClassVisitor extends ClassVisitor {
             AnalyzedClass analyzedClass, List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice,
             List<ShimType> shimTypes, List<MixinType> mixinTypes,
             Map<String, List<Advice>> methodAdvisors, AnalyzedWorld analyzedWorld) {
-        super(ASM5, cw);
+        super(ASM6, cw);
         this.cw = cw;
         this.loader = loader;
         this.analyzedClass = analyzedClass;
@@ -583,7 +583,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
         InitMixins(MethodVisitor mv, int access, String name, String desc,
                 List<MixinType> matchedMixinTypes, Type type) {
-            super(ASM5, mv, access, name, desc);
+            super(ASM6, mv, access, name, desc);
             this.matchedMixinTypes = ImmutableList.copyOf(matchedMixinTypes);
             this.type = type;
         }
@@ -632,7 +632,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private static class MethodSignatureVisitor extends SignatureVisitor {
 
         private MethodSignatureVisitor() {
-            super(ASM5);
+            super(ASM6);
         }
 
         @Override
@@ -644,7 +644,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private static class ParamSignatureVisitor extends SignatureVisitor {
 
         private ParamSignatureVisitor() {
-            super(ASM5);
+            super(ASM6);
         }
 
         @Override

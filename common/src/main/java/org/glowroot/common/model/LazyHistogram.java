@@ -15,6 +15,7 @@
  */
 package org.glowroot.common.model;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -68,10 +69,16 @@ public class LazyHistogram {
             }
         } else {
             ByteBuffer buffer = scratchBuffer.getBuffer(histogram.getNeededByteBufferCapacity());
-            buffer.clear();
+            // this cast is needed in order to avoid
+            // java.lang.NoSuchMethodError: java.nio.ByteBuffer.clear()Ljava/nio/ByteBuffer;
+            // when this code is compiled with Java 9 and run with Java 8 or earlier
+            ((Buffer) buffer).clear();
             histogram.encodeIntoByteBuffer(buffer);
             int size = buffer.position();
-            buffer.flip();
+            // this cast is needed in order to avoid
+            // java.lang.NoSuchMethodError: java.nio.ByteBuffer.flip()Ljava/nio/ByteBuffer;
+            // when this code is compiled with Java 9 and run with Java 8 or earlier
+            ((Buffer) buffer).flip();
             builder.setEncodedBytes(ByteString.copyFrom(buffer, size));
         }
         return builder.build();

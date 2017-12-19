@@ -392,7 +392,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitMethodInsn(final int opcode, final String owner, final String name,
             final String desc) {
-        if (api >= Opcodes.ASM5) {
+        if (api >= Opcodes.ASM6) {
             super.visitMethodInsn(opcode, owner, name, desc);
             return;
         }
@@ -402,7 +402,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitMethodInsn(final int opcode, final String owner, final String name,
             final String desc, final boolean itf) {
-        if (api < Opcodes.ASM5) {
+        if (api < Opcodes.ASM6) {
             super.visitMethodInsn(opcode, owner, name, desc, itf);
             return;
         }

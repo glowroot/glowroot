@@ -40,7 +40,8 @@ public class PreInitializeWeavingClassesTest {
         // "call" WeavingClassFileTransformer constructor
         globalCollector.processMethodFailIfNotFound(
                 ReferencedMethod.create("org/glowroot/agent/weaving/WeavingClassFileTransformer",
-                        "<init>", "(Lorg/glowroot/agent/weaving/Weaver;)V"));
+                        "<init>", "(Lorg/glowroot/agent/weaving/Weaver;"
+                                + "Ljava/lang/instrument/Instrumentation;)V"));
         // "call" WeavingClassFileTransformer.transform()
         globalCollector.processMethodFailIfNotFound(
                 ReferencedMethod.create("org/glowroot/agent/weaving/WeavingClassFileTransformer",

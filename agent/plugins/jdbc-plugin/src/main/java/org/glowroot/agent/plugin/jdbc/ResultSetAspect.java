@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 package org.glowroot.agent.plugin.jdbc;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import javax.annotation.Nonnull;
 
@@ -34,12 +31,18 @@ import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.api.weaving.Shim;
 import org.glowroot.agent.plugin.jdbc.StatementAspect.HasStatementMirror;
 
 public class ResultSetAspect {
 
     private static final Logger logger = Agent.getLogger(ResultSetAspect.class);
     private static final ConfigService configService = Agent.getConfigService("jdbc");
+
+    @Shim("java.sql.ResultSet")
+    public interface ResultSet {
+        int getRow();
+    }
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "next", methodParameterTypes = {},
             nestingGroup = "jdbc")
@@ -111,7 +114,7 @@ public class ResultSetAspect {
                     return;
                 }
                 lastQueryEntry.setCurrRow(((ResultSet) resultSet).getRow());
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 logger.warn(e.getMessage(), e);
             }
         }

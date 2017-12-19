@@ -57,6 +57,7 @@ import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.JavaVersion;
+import org.glowroot.agent.weaving.Java9;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
@@ -89,6 +90,30 @@ public class MainEntryPoint {
             t.printStackTrace();
             return;
         }
+        if (JavaVersion.isGreaterThanOrEqualToJava9()) {
+            try {
+                Object baseModule = Java9.getModule(ClassLoader.class);
+                Java9.grantAccessToGlowroot(instrumentation, baseModule);
+                Java9.grantAccess(instrumentation, "org.glowroot.agent.weaving.ClassLoaders",
+                        "java.lang.ClassLoader", false);
+                Java9.grantAccess(instrumentation, "org.glowroot.agent.init.GaugeCollector",
+                        "sun.management.ManagementFactoryHelper", true);
+                Java9.grantAccess(instrumentation, "io.netty.util.internal.ReflectionUtil",
+                        "java.nio.DirectByteBuffer", false);
+                Java9.grantAccess(instrumentation, "io.netty.util.internal.ReflectionUtil",
+                        "sun.nio.ch.SelectorImpl", false);
+                ClassFileTransformer transformer = new Java9HackClassFileTransformer();
+                instrumentation.addTransformer(transformer);
+                Class.forName("org.glowroot.agent.weaving.WeavingClassFileTransformer");
+                instrumentation.removeTransformer(transformer);
+            } catch (Throwable t) {
+                // log error but don't re-throw which would prevent monitored app from starting
+                // also, don't use logger since not initialized yet
+                System.err.println("Glowroot not started: " + t.getMessage());
+                t.printStackTrace();
+                return;
+            }
+        }
         try {
             if (AppServerDetection.isIbmJvm() && JavaVersion.isJava6()) {
                 ClassFileTransformer transformer = new IbmJava6HackClassFileTransformer();
@@ -120,7 +145,8 @@ public class MainEntryPoint {
             new EmbeddedGlowrootAgentInit(directories.getDataDir(), true)
                     .init(directories.getPluginsDir(), directories.getConfDir(),
                             directories.getSharedConfDir(), directories.getLogDir(),
-                            directories.getTmpDir(), properties, null, version);
+                            directories.getTmpDir(), directories.getGlowrootJarFile(), properties,
+                            null, version);
         } catch (AgentDirsLockedException e) {
             logAgentDirsLockedException(directories.getConfDir(), e.getLockFile());
             return;
@@ -184,7 +210,7 @@ public class MainEntryPoint {
         }
         glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDir(),
                 directories.getSharedConfDir(), directories.getLogDir(), directories.getTmpDir(),
-                properties, instrumentation, version);
+                directories.getGlowrootJarFile(), properties, instrumentation, version);
     }
 
     private static ImmutableMap<String, String> getGlowrootProperties(File confDir,

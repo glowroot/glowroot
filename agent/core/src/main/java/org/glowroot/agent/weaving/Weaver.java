@@ -63,7 +63,7 @@ import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsE
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.ASM6;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 
 public class Weaver {
@@ -357,7 +357,7 @@ public class Weaver {
     private static class JSRInlinerClassVisitor extends ClassVisitor {
 
         private JSRInlinerClassVisitor(ClassVisitor cv) {
-            super(ASM5, cv);
+            super(ASM6, cv);
         }
 
         @Override
@@ -374,7 +374,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         JBossWeldHackClassVisitor(ClassWriter cw) {
-            super(ASM5, cw);
+            super(ASM6, cw);
             this.cw = cw;
         }
 
@@ -394,7 +394,7 @@ public class Weaver {
     private static class JBossWeldHackMethodVisitor extends MethodVisitor {
 
         private JBossWeldHackMethodVisitor(MethodVisitor mv) {
-            super(ASM5, mv);
+            super(ASM6, mv);
         }
 
         @Override
@@ -414,7 +414,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         JBossModulesHackClassVisitor(ClassWriter cw) {
-            super(ASM5, cw);
+            super(ASM6, cw);
             this.cw = cw;
         }
 
@@ -433,7 +433,7 @@ public class Weaver {
     private static class JBossModulesHackMethodVisitor extends MethodVisitor {
 
         private JBossModulesHackMethodVisitor(MethodVisitor mv) {
-            super(ASM5, mv);
+            super(ASM6, mv);
         }
 
         @Override
@@ -452,7 +452,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         FelixOsgiHackClassVisitor(ClassWriter cw) {
-            super(ASM5, cw);
+            super(ASM6, cw);
             this.cw = cw;
         }
 
@@ -471,7 +471,7 @@ public class Weaver {
     private static class FelixOsgiHackMethodVisitor extends AdviceAdapter {
 
         private FelixOsgiHackMethodVisitor(MethodVisitor mv, int access, String name, String desc) {
-            super(ASM5, mv, access, name, desc);
+            super(ASM6, mv, access, name, desc);
         }
 
         @Override
@@ -493,7 +493,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         JBoss4HackClassVisitor(ClassWriter cw) {
-            super(ASM5, cw);
+            super(ASM6, cw);
             this.cw = cw;
         }
 
@@ -512,7 +512,7 @@ public class Weaver {
     private static class JBoss4HackMethodVisitor extends AdviceAdapter {
 
         private JBoss4HackMethodVisitor(MethodVisitor mv, int access, String name, String desc) {
-            super(ASM5, mv, access, name, desc);
+            super(ASM6, mv, access, name, desc);
         }
 
         @Override

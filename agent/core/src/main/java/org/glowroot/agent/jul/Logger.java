@@ -271,6 +271,11 @@ public class Logger {
     }
 
     @SuppressWarnings("unused")
+    public void logrb(Level level, ResourceBundle bundle, String msg, Object... params) {
+        log(level, msg, params);
+    }
+
+    @SuppressWarnings("unused")
     public void logrb(Level level, String sourceClass, String sourceMethod, String bundleName,
             String msg, Throwable thrown) {
         log(level, msg, thrown);
@@ -279,6 +284,11 @@ public class Logger {
     @SuppressWarnings("unused")
     public void logrb(Level level, String sourceClass, String sourceMethod, ResourceBundle bundle,
             String msg, Throwable thrown) {
+        log(level, msg, thrown);
+    }
+
+    @SuppressWarnings("unused")
+    public void logrb(Level level, ResourceBundle bundle, String msg, Throwable thrown) {
         log(level, msg, thrown);
     }
 

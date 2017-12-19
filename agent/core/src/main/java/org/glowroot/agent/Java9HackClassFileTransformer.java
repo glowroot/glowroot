@@ -25,19 +25,21 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 
-import static org.objectweb.asm.Opcodes.ACONST_NULL;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ARETURN;
 import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
-public class IbmJava6HackClassFileTransformer implements ClassFileTransformer {
+public class Java9HackClassFileTransformer implements ClassFileTransformer {
 
     @Override
     public byte /*@Nullable*/ [] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
-        if ("com/google/protobuf/UnsafeUtil".equals(className)) {
+        if ("org/glowroot/agent/weaving/WeavingClassFileTransformer".equals(className)) {
             ClassWriter cw = new ClassWriter(0);
-            ClassVisitor cv = new IbmJava6HackClassVisitor(cw);
+            ClassVisitor cv = new Java9HackClassVisitor(cw);
             ClassReader cr = new ClassReader(bytes);
             cr.accept(cv, 0);
             return cw.toByteArray();
@@ -45,11 +47,11 @@ public class IbmJava6HackClassFileTransformer implements ClassFileTransformer {
         return null;
     }
 
-    private static class IbmJava6HackClassVisitor extends ClassVisitor {
+    private static class Java9HackClassVisitor extends ClassVisitor {
 
         private final ClassWriter cw;
 
-        private IbmJava6HackClassVisitor(ClassWriter cw) {
+        private Java9HackClassVisitor(ClassWriter cw) {
             super(ASM6, cw);
             this.cw = cw;
         }
@@ -57,17 +59,31 @@ public class IbmJava6HackClassFileTransformer implements ClassFileTransformer {
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals("getUnsafe")) {
+            if (name.equals("transform")
+                    && desc.equals("(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
+                            + "Ljava/security/ProtectionDomain;[B)[B")) {
+                MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "transform",
+                        "(Ljava/lang/Module;Ljava/lang/ClassLoader;Ljava/lang/String;"
+                                + "Ljava/lang/Class;Ljava/security/ProtectionDomain;[B)[B",
+                        null, null);
                 mv.visitCode();
-                mv.visitInsn(ACONST_NULL);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitVarInsn(ALOAD, 1);
+                mv.visitVarInsn(ALOAD, 2);
+                mv.visitVarInsn(ALOAD, 3);
+                mv.visitVarInsn(ALOAD, 4);
+                mv.visitVarInsn(ALOAD, 5);
+                mv.visitVarInsn(ALOAD, 6);
+                mv.visitMethodInsn(INVOKEVIRTUAL,
+                        "org/glowroot/agent/weaving/WeavingClassFileTransformer", "transformJava9",
+                        "(Ljava/lang/Object;Ljava/lang/ClassLoader;Ljava/lang/String;"
+                                + "Ljava/lang/Class;Ljava/security/ProtectionDomain;[B)[B",
+                        false);
                 mv.visitInsn(ARETURN);
-                mv.visitMaxs(1, 1);
+                mv.visitMaxs(7, 7);
                 mv.visitEnd();
-                return mv;
-            } else {
-                return mv;
             }
+            return cw.visitMethod(access, name, desc, signature, exceptions);
         }
     }
 }

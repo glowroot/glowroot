@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.ASM6;
 
 // from org.objectweb.asm.commons.RemappingClassAdapter
 class MyRemappingClassAdapter extends ClassVisitor {
@@ -31,7 +31,7 @@ class MyRemappingClassAdapter extends ClassVisitor {
     private @Nullable String internalName;
 
     MyRemappingClassAdapter(ClassCollector remapper) {
-        super(ASM5);
+        super(ASM6);
         this.typeCollector = remapper;
     }
 

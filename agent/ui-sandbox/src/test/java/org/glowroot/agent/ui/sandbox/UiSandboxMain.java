@@ -51,7 +51,7 @@ public class UiSandboxMain {
         }
         if (useJavaagent && useGlowrootCentral) {
             container = new JavaagentContainer(testDir, false,
-                    ImmutableList.of("-Dglowroot.agent.id=\"UI Sandbox\"",
+                    ImmutableList.of("-Dglowroot.agent.id=UI Sandbox",
                             "-Dglowroot.collector.address=localhost:8181"));
         } else if (useJavaagent) {
             container = new JavaagentContainer(testDir, true, ImmutableList.<String>of());

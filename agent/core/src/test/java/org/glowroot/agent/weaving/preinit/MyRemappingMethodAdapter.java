@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 
-import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.ASM6;
 
 // from org.objectweb.asm.commons.RemappingMethodAdapter
 class MyRemappingMethodAdapter extends LocalVariablesSorter {
@@ -30,7 +30,7 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
     private final MethodCollector remapper;
 
     MyRemappingMethodAdapter(int access, String desc, MethodCollector remapper) {
-        super(ASM5, access, desc, new MethodVisitor(ASM5) {});
+        super(ASM6, access, desc, new MethodVisitor(ASM6) {});
         this.remapper = remapper;
     }
 

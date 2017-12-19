@@ -131,7 +131,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             Iterable<Advice> advisors, @Nullable String metaHolderInternalName,
             @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader,
             @Nullable MethodVisitor outerMethodVisitor) {
-        super(ASM5, new FrameDeduppingMethodVisitor(mv), access, name, desc);
+        super(ASM6, new FrameDeduppingMethodVisitor(mv), access, name, desc);
         this.access = access;
         this.name = name;
         this.owner = owner;

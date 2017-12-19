@@ -98,8 +98,9 @@ class EmbeddedAgentModule {
 
     EmbeddedAgentModule(@Nullable File pluginsDir, final File confDir,
             final @Nullable File sharedConfDir, File logDir, final File dataDir, File tmpDir,
-            Map<String, String> properties, @Nullable Instrumentation instrumentation,
-            final String glowrootVersion, boolean offline) throws Exception {
+            @Nullable File glowrootJarFile, Map<String, String> properties,
+            @Nullable Instrumentation instrumentation, final String glowrootVersion,
+            boolean offline) throws Exception {
 
         agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
 
@@ -137,7 +138,8 @@ class EmbeddedAgentModule {
                     NonEmbeddedGlowrootAgentInit.createBackgroundExecutorSupplier();
 
             agentModule = new AgentModule(clock, null, pluginCache, configService,
-                    backgroundExecutorSupplier, collectorProxy, instrumentation, tmpDir);
+                    backgroundExecutorSupplier, collectorProxy, instrumentation, tmpDir,
+                    glowrootJarFile);
 
             backgroundExecutor = backgroundExecutorSupplier.get();
 

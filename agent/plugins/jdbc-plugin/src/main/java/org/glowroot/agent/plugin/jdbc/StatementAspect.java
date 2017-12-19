@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.plugin.jdbc;
 
-import java.sql.PreparedStatement;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -41,6 +40,7 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.api.weaving.Shim;
 import org.glowroot.agent.plugin.jdbc.PreparedStatementMirror.ByteArrayParameterValue;
 import org.glowroot.agent.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
 import org.glowroot.agent.plugin.jdbc.message.BatchPreparedStatementMessageSupplier;
@@ -61,6 +61,9 @@ public class StatementAspect {
             configService.getBooleanProperty("captureBindParameters");
     private static final BooleanProperty captureStatementClose =
             configService.getBooleanProperty("captureStatementClose");
+
+    @Shim("java.sql.PreparedStatement")
+    public interface PreparedStatement {}
 
     // ===================== Mixin =====================
 

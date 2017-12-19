@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.util.AppServerDetection;
+import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.ThreadFactories;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -58,7 +59,7 @@ public class NettyWorkaround {
                 }
             }
         }
-        if (instrumentation == null) {
+        if (instrumentation == null || JavaVersion.isGreaterThanOrEqualToJava9()) {
             doNettyInit.execute(false);
         } else {
             // cannot start netty in premain otherwise can crash JVM, at least using Java 1.8.0_25

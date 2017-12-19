@@ -36,16 +36,18 @@ class PreInitializeStorageShutdownClasses {
     static void preInitializeClasses() {
         ClassLoader loader = PreInitializeStorageShutdownClasses.class.getClassLoader();
         for (String type : usedTypes()) {
-            initialize(type, loader);
+            initialize(type, loader, true);
         }
         for (String type : maybeUsedTypes()) {
-            if (exists(type)) {
-                initialize(type, loader);
-            }
+            initialize(type, loader, false);
+        }
+        for (String type : javaUsedTypes()) {
+            initialize(type, loader, true);
         }
     }
 
-    private static void initialize(String type, @Nullable ClassLoader loader) {
+    private static void initialize(String type, @Nullable ClassLoader loader,
+            boolean warnOnNotExists) {
         if (type.equals("org.h2.value.ValueGeometry")) {
             // this type depends on an optional third party library and is not really used
             // (initializing the class throws an error due to the dependency)
@@ -54,7 +56,9 @@ class PreInitializeStorageShutdownClasses {
         try {
             Class.forName(type, true, loader);
         } catch (ClassNotFoundException e) {
-            logger.warn("class not found: {}", type);
+            if (warnOnNotExists) {
+                logger.warn("class not found: {}", type);
+            }
             // log exception at trace level
             logger.trace(e.getMessage(), e);
         }
@@ -65,6 +69,7 @@ class PreInitializeStorageShutdownClasses {
         List<String> types = Lists.newArrayList();
         types.addAll(getGlowrootUsedTypes());
         types.addAll(getH2UsedTypes());
+        types.addAll(javaUsedTypes());
         return types;
     }
 
@@ -83,93 +88,26 @@ class PreInitializeStorageShutdownClasses {
         types.add("org.h2.api.ErrorCode");
         types.add("org.h2.api.JavaObjectSerializer");
         types.add("org.h2.command.CommandInterface");
-        types.add("org.h2.compress.CompressDeflate");
-        types.add("org.h2.compress.CompressLZF");
-        types.add("org.h2.compress.CompressNo");
-        types.add("org.h2.compress.Compressor");
         types.add("org.h2.engine.Constants");
         types.add("org.h2.engine.SessionInterface");
         types.add("org.h2.engine.SysProperties");
-        types.add("org.h2.expression.ParameterInterface");
-        types.add("org.h2.jdbc.JdbcArray");
-        types.add("org.h2.jdbc.JdbcBatchUpdateException");
-        types.add("org.h2.jdbc.JdbcBlob");
-        types.add("org.h2.jdbc.JdbcBlob$1");
-        types.add("org.h2.jdbc.JdbcBlob$2");
-        types.add("org.h2.jdbc.JdbcCallableStatement");
-        types.add("org.h2.jdbc.JdbcClob");
-        types.add("org.h2.jdbc.JdbcClob$1");
-        types.add("org.h2.jdbc.JdbcClob$2");
         types.add("org.h2.jdbc.JdbcConnection");
-        types.add("org.h2.jdbc.JdbcDatabaseMetaData");
-        types.add("org.h2.jdbc.JdbcParameterMetaData");
-        types.add("org.h2.jdbc.JdbcPreparedStatement");
-        types.add("org.h2.jdbc.JdbcResultSet");
-        types.add("org.h2.jdbc.JdbcResultSetMetaData");
         types.add("org.h2.jdbc.JdbcSQLException");
-        types.add("org.h2.jdbc.JdbcSavepoint");
-        types.add("org.h2.jdbc.JdbcStatement");
         types.add("org.h2.message.DbException");
         types.add("org.h2.message.Trace");
         types.add("org.h2.message.TraceObject");
         types.add("org.h2.message.TraceSystem");
         types.add("org.h2.message.TraceWriter");
-        types.add("org.h2.mvstore.DataUtils");
-        types.add("org.h2.result.ResultInterface");
-        types.add("org.h2.result.UpdatableRow");
-        types.add("org.h2.store.Data");
-        types.add("org.h2.store.DataHandler");
-        types.add("org.h2.store.FileStore");
-        types.add("org.h2.store.FileStoreInputStream");
-        types.add("org.h2.store.LobStorageInterface");
         types.add("org.h2.store.fs.FilePath");
         types.add("org.h2.store.fs.FileUtils");
-        types.add("org.h2.tools.CompressTool");
-        types.add("org.h2.tools.SimpleResultSet");
-        types.add("org.h2.tools.SimpleResultSet$Column");
-        types.add("org.h2.tools.SimpleResultSet$SimpleArray");
-        types.add("org.h2.tools.SimpleRowSource");
-        types.add("org.h2.util.BitField");
         types.add("org.h2.util.CloseWatcher");
-        types.add("org.h2.util.DateTimeUtils");
         types.add("org.h2.util.IOUtils");
         types.add("org.h2.util.MathUtils");
         types.add("org.h2.util.New");
         types.add("org.h2.util.SortedProperties");
-        types.add("org.h2.util.StatementBuilder");
         types.add("org.h2.util.StringUtils");
-        types.add("org.h2.util.Task");
         types.add("org.h2.util.Utils");
-        types.add("org.h2.util.Utils$1");
         types.add("org.h2.util.Utils$ClassFactory");
-        types.add("org.h2.value.CompareMode");
-        types.add("org.h2.value.DataType");
-        types.add("org.h2.value.Value");
-        types.add("org.h2.value.Value$ValueBlob");
-        types.add("org.h2.value.Value$ValueClob");
-        types.add("org.h2.value.ValueArray");
-        types.add("org.h2.value.ValueBoolean");
-        types.add("org.h2.value.ValueByte");
-        types.add("org.h2.value.ValueBytes");
-        types.add("org.h2.value.ValueDate");
-        types.add("org.h2.value.ValueDecimal");
-        types.add("org.h2.value.ValueDouble");
-        types.add("org.h2.value.ValueFloat");
-        types.add("org.h2.value.ValueGeometry");
-        types.add("org.h2.value.ValueInt");
-        types.add("org.h2.value.ValueJavaObject");
-        types.add("org.h2.value.ValueJavaObject$NotSerialized");
-        types.add("org.h2.value.ValueLobDb");
-        types.add("org.h2.value.ValueLong");
-        types.add("org.h2.value.ValueNull");
-        types.add("org.h2.value.ValueResultSet");
-        types.add("org.h2.value.ValueShort");
-        types.add("org.h2.value.ValueString");
-        types.add("org.h2.value.ValueStringFixed");
-        types.add("org.h2.value.ValueStringIgnoreCase");
-        types.add("org.h2.value.ValueTime");
-        types.add("org.h2.value.ValueTimestamp");
-        types.add("org.h2.value.ValueUuid");
         return types;
     }
 
@@ -187,17 +125,26 @@ class PreInitializeStorageShutdownClasses {
         // enum switch statements
         // (see http://stackoverflow.com/questions/1834632/java-enum-and-additional-class-files)
         types.add("org.glowroot.core.weaving.AdviceMatcher$1");
+        // used by Java 6-8, but not Java 9
+        types.add("java.sql.Driver");
+        // cannot rely on java anonymous inner class (e.g. when running on IBM JVM)
+        types.add("java.sql.DriverManager$1");
+        types.add("java.sql.DriverManager$2");
+        types.add("java.sql.SQLException$1");
         return types;
     }
 
-    private static boolean exists(String type) {
-        try {
-            Class.forName(type);
-            return true;
-        } catch (ClassNotFoundException e) {
-            // log exception at trace level
-            logger.trace(e.getMessage(), e);
-            return false;
-        }
+    // for the most part, adding used java types is not needed and will just slow down startup
+    // exceptions can be added here
+    private static List<String> javaUsedTypes() {
+        List<String> types = Lists.newArrayList();
+        types.add("java.sql.Connection");
+        types.add("java.sql.DriverManager");
+        types.add("java.sql.SQLException");
+        types.add("java.sql.SQLPermission");
+        types.add("java.sql.SQLWarning");
+        types.add("java.sql.Statement");
+        types.add("java.sql.Wrapper");
+        return types;
     }
 }

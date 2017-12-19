@@ -26,8 +26,8 @@ import org.glowroot.common.util.OnlyUsedByTests;
 public interface GlowrootAgentInit {
 
     void init(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir, File logDir,
-            File tmpDir, Map<String, String> properties, @Nullable Instrumentation instrumentation,
-            String glowrootVersion) throws Exception;
+            File tmpDir, @Nullable File glowrootJarFile, Map<String, String> properties,
+            @Nullable Instrumentation instrumentation, String glowrootVersion) throws Exception;
 
     @OnlyUsedByTests
     void setSlowThresholdToZero() throws Exception;

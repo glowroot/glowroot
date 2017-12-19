@@ -71,8 +71,9 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     @Override
     public void init(@Nullable File pluginsDir, final File confDir,
             final @Nullable File sharedConfDir, File logDir, File tmpDir,
-            final Map<String, String> properties, final @Nullable Instrumentation instrumentation,
-            final String glowrootVersion) throws Exception {
+            @Nullable File glowrootJarFile, final Map<String, String> properties,
+            final @Nullable Instrumentation instrumentation, final String glowrootVersion)
+            throws Exception {
 
         agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
         Ticker ticker = Tickers.getTicker();
@@ -98,7 +99,8 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 createBackgroundExecutorSupplier();
 
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
-                backgroundExecutorSupplier, collectorProxy, instrumentation, tmpDir);
+                backgroundExecutorSupplier, collectorProxy, instrumentation, tmpDir,
+                glowrootJarFile);
 
         final ScheduledExecutorService backgroundExecutor = backgroundExecutorSupplier.get();
 

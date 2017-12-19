@@ -121,7 +121,8 @@ public class AgentModule {
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, final PluginCache pluginCache,
             final ConfigService configService,
             Supplier<ScheduledExecutorService> backgroundExecutorSupplier, Collector collector,
-            @Nullable Instrumentation instrumentation, File tmpDir) throws Exception {
+            @Nullable Instrumentation instrumentation, File tmpDir, @Nullable File glowrootJarFile)
+            throws Exception {
 
         Ticker ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
         this.configService = configService;
@@ -151,7 +152,8 @@ public class AgentModule {
             jvmRetransformClassesSupported = false;
         } else {
             PreInitializeWeavingClasses.preInitializeClasses();
-            ClassFileTransformer transformer = new WeavingClassFileTransformer(weaver);
+            ClassFileTransformer transformer =
+                    new WeavingClassFileTransformer(weaver, instrumentation);
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
                 jvmRetransformClassesSupported = true;
@@ -231,7 +233,7 @@ public class AgentModule {
         liveWeavingService = new LiveWeavingServiceImpl(analyzedWorld, instrumentation,
                 configService, adviceCache, jvmRetransformClassesSupported);
         liveJvmService = new LiveJvmServiceImpl(lazyPlatformMBeanServer, transactionRegistry,
-                transactionCollector, threadAllocatedBytes.getAvailability());
+                transactionCollector, threadAllocatedBytes.getAvailability(), glowrootJarFile);
 
         initPlugins(pluginCache.pluginDescriptors());
 

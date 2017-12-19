@@ -16,8 +16,12 @@
 package org.glowroot.agent.weaving;
 
 import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.Instrumentation;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 import javax.annotation.Nullable;
 
@@ -32,8 +36,15 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassFileTransformer.class);
 
     private final Weaver weaver;
+    private final Instrumentation instrumentation;
 
     private final boolean weaveBootstrapClassLoader;
+
+    // not using the much more convenient (and concurrent) guava CacheBuilder since it uses many
+    // additional classes that must then be pre-initialized since this is called from inside
+    // ClassFileTransformer.transform() (see PreInitializeClasses)
+    private final Set<Object> redefinedModules = Collections
+            .newSetFromMap(Collections.synchronizedMap(new WeakHashMap<Object, Boolean>()));
 
     // because of the crazy pre-initialization of javaagent classes (see
     // org.glowroot.core.weaving.PreInitializeClasses), all inputs into this class should be
@@ -42,13 +53,29 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // hard-coded results in org.glowroot.weaving.PreInitializeWeavingClassesTest)
     // note: an exception is made for WeavingTimerService, see PreInitializeWeavingClassesTest for
     // explanation
-    public WeavingClassFileTransformer(Weaver weaver) {
+    public WeavingClassFileTransformer(Weaver weaver, Instrumentation instrumentation) {
         this.weaver = weaver;
+        this.instrumentation = instrumentation;
         // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
         // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
         // the woven code will not be able to see glowroot classes
         // (e.g. woven code will not be able to see org.glowroot.agent.plugin.api.Agent)
         weaveBootstrapClassLoader = isInBootstrapClassLoader();
+    }
+
+    // this method is called by the Java 9 transform method that passes in a Module
+    // see Java9HackClassFileTransformer
+    public byte /*@Nullable*/ [] transformJava9(Object module, @Nullable ClassLoader loader,
+            @Nullable String className, @Nullable Class<?> classBeingRedefined,
+            @Nullable ProtectionDomain protectionDomain, byte[] bytes) {
+        if (redefinedModules.add(module)) {
+            try {
+                Java9.grantAccessToGlowroot(instrumentation, module);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+        return transform(loader, className, classBeingRedefined, protectionDomain, bytes);
     }
 
     // From the javadoc on ClassFileTransformer.transform():

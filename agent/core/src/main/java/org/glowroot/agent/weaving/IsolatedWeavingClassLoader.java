@@ -17,6 +17,8 @@ package org.glowroot.agent.weaving;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.CodeSigner;
@@ -90,7 +92,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
             throws Exception {
         validateBridgeable(bridgeClass.getName());
-        return bridgeClass.cast(loadClass(implClass.getName()).newInstance());
+        return bridgeClass
+                .cast(loadClass(implClass.getName()).getDeclaredConstructor().newInstance());
     }
 
     @Override
@@ -151,7 +154,28 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         byte[] wovenBytes = weaveClass(name, bytes);
         String packageName = Reflection.getPackageName(name);
         if (!packages.containsKey(packageName)) {
-            Package pkg = definePackage(packageName, null, null, null, null, null, null, null);
+            Method getDefinedPackageMethod;
+            try {
+                getDefinedPackageMethod = getClass().getMethod("getDefinedPackage", String.class);
+            } catch (NoSuchMethodException e) {
+                getDefinedPackageMethod = null;
+            }
+            Package pkg;
+            if (getDefinedPackageMethod == null) {
+                pkg = definePackage(packageName, null, null, null, null, null, null, null);
+            } else {
+                // Java 9
+                try {
+                    pkg = (Package) getDefinedPackageMethod.invoke(this, packageName);
+                    if (pkg == null) {
+                        pkg = definePackage(packageName, null, null, null, null, null, null, null);
+                    }
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                } catch (InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                }
+            }
             packages.put(packageName, pkg);
         }
         if (codeSource == null) {
@@ -198,6 +222,12 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     public static boolean loadWithParentClassLoader(String name) {
         if (isInBootstrapClassLoader(name)) {
+            return true;
+        }
+        if (name.startsWith("java.")) {
+            // in Java 9, some java packages are no longer in the bootstrap class loader, but still
+            // need to load with parent class loader in order to avoid SecurityException "Prohibited
+            // package name"
             return true;
         }
         // this is needed to prevent these thread locals retaining the IsolatedWeavingClassLoader

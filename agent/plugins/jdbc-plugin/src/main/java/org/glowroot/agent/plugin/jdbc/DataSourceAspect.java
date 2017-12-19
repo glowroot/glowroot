@@ -15,9 +15,6 @@
  */
 package org.glowroot.agent.plugin.jdbc;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-
 import javax.annotation.Nullable;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -40,6 +37,7 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.api.weaving.Shim;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -56,6 +54,11 @@ public class DataSourceAspect {
             configService.getBooleanProperty("captureConnectionLifecycleTraceEntries");
     private static final BooleanProperty captureTransactionLifecycleTraceEntries =
             configService.getBooleanProperty("captureTransactionLifecycleTraceEntries");
+
+    @Shim("java.sql.Connection")
+    public interface Connection {
+        boolean getAutoCommit();
+    }
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
             methodParameterTypes = {".."}, nestingGroup = "jdbc", timerName = "jdbc get connection")
@@ -101,7 +104,7 @@ public class DataSourceAspect {
                     String autoCommit;
                     try {
                         autoCommit = Boolean.toString(connection.getAutoCommit());
-                    } catch (SQLException e) {
+                    } catch (Exception e) {
                         logger.warn(e.getMessage(), e);
                         // using toString() instead of getMessage() in order to capture exception
                         // class name
