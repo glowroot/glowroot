@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Pattern;
 
@@ -53,7 +51,6 @@ import org.glowroot.agent.init.EnvironmentCreator;
 import org.glowroot.agent.init.JRebelWorkaround;
 import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
-import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.RoleConfig.SimplePermission;
@@ -146,9 +143,7 @@ class EmbeddedAgentModule {
             PreInitializeStorageShutdownClasses.preInitializeClasses();
             final ConfigRepositoryImpl configRepository = ConfigRepositoryImpl.create(confDir,
                     agentModule.getConfigService(), pluginCache);
-            ExecutorService singleUseExecutor =
-                    Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-Init-Repo"));
-            singleUseExecutor.execute(new Runnable() {
+            Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -188,6 +183,10 @@ class EmbeddedAgentModule {
                     }
                 }
             });
+            thread.setName("Glowroot-Init-Repo");
+            thread.setDaemon(true);
+            thread.start();
+
             // prefer to wait for repo to start up on its own, then no worry about losing collected
             // data due to limits in CollectorProxy, but don't wait too long as first launch after
             // upgrade when adding new columns to large H2 database can take some time

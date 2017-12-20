@@ -16,8 +16,6 @@
 package org.glowroot.agent.init;
 
 import java.lang.instrument.Instrumentation;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
@@ -28,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.JavaVersion;
-import org.glowroot.agent.util.ThreadFactories;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -68,9 +65,7 @@ public class NettyWorkaround {
             // see https://github.com/netty/netty/issues/3233
             // and https://bugs.openjdk.java.net/browse/JDK-8041920
             // also see repro for the issue in MethodHandleRelatedCrashIT.java
-            ExecutorService singleUseExecutor =
-                    Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-Init-UI"));
-            singleUseExecutor.execute(new Runnable() {
+            Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -82,6 +77,9 @@ public class NettyWorkaround {
                     }
                 }
             });
+            thread.setName("Glowroot-Init-UI");
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 

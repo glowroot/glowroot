@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.Nullable;
@@ -147,11 +146,10 @@ class HttpServer {
             startupLogger.error("Error binding to {}:{}, the UI is not available (will keep trying"
                     + " to bind...): {}", bindAddress, port, e.getMessage());
             logger.debug(e.getMessage(), e);
-            ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                    .setDaemon(true)
-                    .setNameFormat("Glowroot-Init-Bind")
-                    .build();
-            Executors.newSingleThreadExecutor(threadFactory).execute(new BindEventually(port));
+            Thread thread = new Thread(new BindEventually(port));
+            thread.setName("Glowroot-Init-Bind");
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 
