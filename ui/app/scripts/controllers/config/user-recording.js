@@ -28,6 +28,10 @@ glowroot.controller('ConfigUserRecordingCtrl', [
     // initialize page binding object
     $scope.page = {};
 
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
     $scope.$watch('page.users', function (newVal) {
       if ($scope.config) {
         var users = [];
