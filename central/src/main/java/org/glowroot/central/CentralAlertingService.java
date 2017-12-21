@@ -67,18 +67,26 @@ class CentralAlertingService {
         }
     }
 
-    void checkForDeletedAlerts(String agentRollupId, String agentRollupDisplay) {
+    void checkForDeletedAlerts(String agentRollupId, String agentRollupDisplay)
+            throws InterruptedException {
         try {
             alertingService.checkForDeletedAlerts(agentRollupId);
+        } catch (InterruptedException e) {
+            // probably shutdown requested
+            throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
         }
     }
 
-    void checkAggregateAlertsAsync(String agentId, String agentDisplay, long endTime) {
+    void checkAggregateAlertsAsync(String agentId, String agentDisplay, long endTime)
+            throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
             alertConfigs = configRepository.getAlertConfigs(agentId);
+        } catch (InterruptedException e) {
+            // probably shutdown requested
+            throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentDisplay, e.getMessage(), e);
             return;
@@ -93,10 +101,14 @@ class CentralAlertingService {
         checkAlertsAsync(agentId, agentDisplay, endTime, aggregateAlertConfigs);
     }
 
-    void checkGaugeAndHeartbeatAlertsAsync(String agentId, String agentDisplay, long endTime) {
+    void checkGaugeAndHeartbeatAlertsAsync(String agentId, String agentDisplay, long endTime)
+            throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
             alertConfigs = configRepository.getAlertConfigs(agentId);
+        } catch (InterruptedException e) {
+            // probably shutdown requested
+            throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentDisplay, e.getMessage(), e);
             return;
@@ -113,10 +125,13 @@ class CentralAlertingService {
     }
 
     void checkAggregateAndGaugeAndHeartbeatAlertsAsync(String agentRollupId,
-            String agentRollupDisplay, long endTime) {
+            String agentRollupDisplay, long endTime) throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
             alertConfigs = configRepository.getAlertConfigs(agentRollupId);
+        } catch (InterruptedException e) {
+            // probably shutdown requested
+            throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
             return;

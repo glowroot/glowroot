@@ -246,8 +246,13 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             responseObserver.onError(e);
             return;
         }
-        centralAlertingService.checkForDeletedAlerts(agentId, agentDisplay);
-        centralAlertingService.checkAggregateAlertsAsync(agentId, agentDisplay, captureTime);
+        try {
+            centralAlertingService.checkForDeletedAlerts(agentId, agentDisplay);
+            centralAlertingService.checkAggregateAlertsAsync(agentId, agentDisplay, captureTime);
+        } catch (InterruptedException e) {
+            // probably shutdown requested
+            logger.debug(e.getMessage(), e);
+        }
         responseObserver.onNext(AggregateResponseMessage.newBuilder()
                 .setNextDelayMillis(getNextDelayMillis())
                 .build());
@@ -283,9 +288,14 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             responseObserver.onError(t);
             return;
         }
-        centralAlertingService.checkForDeletedAlerts(agentId, agentDisplay);
-        centralAlertingService.checkGaugeAndHeartbeatAlertsAsync(agentId, agentDisplay,
-                maxCaptureTime);
+        try {
+            centralAlertingService.checkForDeletedAlerts(agentId, agentDisplay);
+            centralAlertingService.checkGaugeAndHeartbeatAlertsAsync(agentId, agentDisplay,
+                    maxCaptureTime);
+        } catch (InterruptedException e) {
+            // probably shutdown requested
+            logger.debug(e.getMessage(), e);
+        }
         responseObserver.onNext(EmptyMessage.getDefaultInstance());
         responseObserver.onCompleted();
     }
