@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nullable;
@@ -70,6 +71,14 @@ public class DataSource {
     @GuardedBy("lock")
     private Connection connection;
     private volatile boolean closed;
+
+    @SuppressWarnings("nullness:type.argument.type.incompatible")
+    private final ThreadLocal<Boolean> suppressQueryTimeout = new ThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     private final Map</*@Untainted*/ String, ImmutableList<Column>> tables =
             Maps.newConcurrentMap();
@@ -470,6 +479,16 @@ public class DataSource {
         }
     }
 
+    public <V> V suppressQueryTimeout(Callable<V> callable) throws Exception {
+        boolean priorValue = suppressQueryTimeout.get();
+        suppressQueryTimeout.set(true);
+        try {
+            return callable.call();
+        } finally {
+            suppressQueryTimeout.set(priorValue);
+        }
+    }
+
     @OnlyUsedByTests
     public void close() throws SQLException {
         synchronized (lock) {
@@ -565,7 +584,11 @@ public class DataSource {
         try {
             PreparedStatement preparedStatement = preparedStatementCache.get(sql);
             // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(queryTimeoutSeconds);
+            if (suppressQueryTimeout.get()) {
+                preparedStatement.setQueryTimeout(0);
+            } else {
+                preparedStatement.setQueryTimeout(queryTimeoutSeconds);
+            }
             return preparedStatement;
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();

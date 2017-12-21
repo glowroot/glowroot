@@ -20,6 +20,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -107,35 +108,43 @@ class RepoAdminImpl implements RepoAdmin {
 
     @Override
     public TraceTable analyzeTraceData() throws Exception {
-        long captureTime = clock.currentTimeMillis();
-        long count = dataSource.queryForLong("select count(*) from trace where capture_time < ?",
-                captureTime);
-        long errorCount = dataSource.queryForLong(
-                "select count(*) from trace where error = ? and capture_time < ?", true,
-                captureTime);
-        int slowThresholdMillis1 =
-                configRepository.getTransactionConfig("").getSlowThresholdMillis().getValue();
-        int slowThresholdMillis2 = slowThresholdMillis1 == 0 ? 500 : slowThresholdMillis1 * 2;
-        int slowThresholdMillis3 = slowThresholdMillis1 == 0 ? 1000 : slowThresholdMillis1 * 3;
-        int slowThresholdMillis4 = slowThresholdMillis1 == 0 ? 1500 : slowThresholdMillis1 * 4;
-        long slowCount1 = getSlowCount(slowThresholdMillis1, captureTime);
-        long slowCount2 = getSlowCount(slowThresholdMillis2, captureTime);
-        long slowCount3 = getSlowCount(slowThresholdMillis3, captureTime);
-        long slowCount4 = getSlowCount(slowThresholdMillis4, captureTime);
-        List<Long> ageDistribution = dataSource.query(new AgeDistributionQuery());
-        return ImmutableTraceTable.builder()
-                .count(count)
-                .errorCount(errorCount)
-                .slowThresholdMillis1(slowThresholdMillis1)
-                .slowCount1(slowCount1)
-                .slowThresholdMillis2(slowThresholdMillis2)
-                .slowCount2(slowCount2)
-                .slowThresholdMillis3(slowThresholdMillis3)
-                .slowCount3(slowCount3)
-                .slowThresholdMillis4(slowThresholdMillis4)
-                .slowCount4(slowCount4)
-                .ageDistribution(ageDistribution)
-                .build();
+        return dataSource.suppressQueryTimeout(new Callable<TraceTable>() {
+            @Override
+            public TraceTable call() throws Exception {
+                long captureTime = clock.currentTimeMillis();
+                long count = dataSource.queryForLong(
+                        "select count(*) from trace where capture_time < ?", captureTime);
+                long errorCount = dataSource.queryForLong(
+                        "select count(*) from trace where error = ? and capture_time < ?", true,
+                        captureTime);
+                int slowThresholdMillis1 = configRepository.getTransactionConfig("")
+                        .getSlowThresholdMillis().getValue();
+                int slowThresholdMillis2 =
+                        slowThresholdMillis1 == 0 ? 500 : slowThresholdMillis1 * 2;
+                int slowThresholdMillis3 =
+                        slowThresholdMillis1 == 0 ? 1000 : slowThresholdMillis1 * 3;
+                int slowThresholdMillis4 =
+                        slowThresholdMillis1 == 0 ? 1500 : slowThresholdMillis1 * 4;
+                long slowCount1 = getSlowCount(slowThresholdMillis1, captureTime);
+                long slowCount2 = getSlowCount(slowThresholdMillis2, captureTime);
+                long slowCount3 = getSlowCount(slowThresholdMillis3, captureTime);
+                long slowCount4 = getSlowCount(slowThresholdMillis4, captureTime);
+                List<Long> ageDistribution = dataSource.query(new AgeDistributionQuery());
+                return ImmutableTraceTable.builder()
+                        .count(count)
+                        .errorCount(errorCount)
+                        .slowThresholdMillis1(slowThresholdMillis1)
+                        .slowCount1(slowCount1)
+                        .slowThresholdMillis2(slowThresholdMillis2)
+                        .slowCount2(slowCount2)
+                        .slowThresholdMillis3(slowThresholdMillis3)
+                        .slowCount3(slowCount3)
+                        .slowThresholdMillis4(slowThresholdMillis4)
+                        .slowCount4(slowCount4)
+                        .ageDistribution(ageDistribution)
+                        .build();
+            }
+        });
     }
 
     private long getSlowCount(int slowThresholdMillis, long captureTime) throws SQLException {
