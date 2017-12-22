@@ -94,7 +94,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 34;
+    private static final int CURR_SCHEMA_VERSION = 35;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -287,6 +287,15 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 34) {
             populateGaugeNameTable();
             updateSchemaVersion(34);
+        }
+        if (initialSchemaVersion == 34) {
+            // only applies when upgrading from immediately prior schema version
+            // (to fix bad upgrade in 34 that populated the gauge_name table based on
+            // gauge_value_rollup_3 instead of gauge_value_rollup_4)
+            populateGaugeNameTable();
+            updateSchemaVersion(35);
+        } else if (initialSchemaVersion < 35) {
+            updateSchemaVersion(35);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -1030,7 +1039,7 @@ public class SchemaUpgrade {
                 + " capture_time, gauge_name) values (?, ?, ?) using ttl ?");
 
         PreparedStatement readPS = session
-                .prepare("select agent_rollup, gauge_name, capture_time from gauge_value_rollup_3");
+                .prepare("select agent_rollup, gauge_name, capture_time from gauge_value_rollup_4");
 
         Multimap<Long, AgentRollupIdGaugeNamePair> rowsPerCaptureTime = HashMultimap.create();
 

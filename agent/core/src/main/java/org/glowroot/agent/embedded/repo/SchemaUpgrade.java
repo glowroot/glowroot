@@ -37,7 +37,7 @@ class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 4;
+    private static final int CURR_SCHEMA_VERSION = 5;
 
     private static final ImmutableList<Column> columns =
             ImmutableList.<Column>of(ImmutableColumn.of("schema_version", ColumnType.BIGINT));
@@ -78,6 +78,16 @@ class SchemaUpgrade {
             populateNewGaugeNameTable();
             updateSchemaVersion(4);
         }
+        if (initialSchemaVersion == 4) {
+            // only applies when upgrading from immediately prior schema version (4)
+            // (fix bad upgrade that populated gauge_name table based on gauge_value_rollup_3
+            // instead of gauge_value_rollup_4)
+            dataSource.execute("truncate table gauge_name");
+            populateNewGaugeNameTable();
+            updateSchemaVersion(5);
+        } else {
+            updateSchemaVersion(5);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded glowroot schema from version {} to version {}",
@@ -117,8 +127,8 @@ class SchemaUpgrade {
         String captureTimeSql = castUntainted(
                 "ceil(capture_time / " + fixedIntervalMillis + ".0) * " + fixedIntervalMillis);
         dataSource.update("insert into gauge_name (capture_time, gauge_name) select distinct "
-                + captureTimeSql + ", gauge_name from gauge_value_rollup_3, gauge_id where"
-                + " gauge_value_rollup_3.gauge_id = gauge_id.gauge_id");
+                + captureTimeSql + ", gauge_name from gauge_value_rollup_4, gauge_id where"
+                + " gauge_value_rollup_4.gauge_id = gauge_id.gauge_id");
         startupLogger.info("populating new gauge name history table - complete");
     }
 
