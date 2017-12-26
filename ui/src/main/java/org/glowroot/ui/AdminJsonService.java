@@ -25,6 +25,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
@@ -816,7 +817,9 @@ class AdminJsonService {
     abstract static class SmtpConfigDto {
 
         abstract String host();
+        @JsonInclude
         abstract @Nullable Integer port();
+        @JsonInclude
         abstract @Nullable ConnectionSecurity connectionSecurity();
         abstract String username();
         abstract boolean passwordExists();
@@ -873,6 +876,7 @@ class AdminJsonService {
     abstract static class HttpProxyConfigDto {
 
         abstract String host();
+        @JsonInclude
         abstract @Nullable Integer port();
         abstract String username();
         abstract boolean passwordExists();
@@ -918,6 +922,7 @@ class AdminJsonService {
     abstract static class LdapConfigDto {
 
         abstract String host();
+        @JsonInclude
         abstract @Nullable Integer port();
         abstract boolean ssl();
         abstract String username();
