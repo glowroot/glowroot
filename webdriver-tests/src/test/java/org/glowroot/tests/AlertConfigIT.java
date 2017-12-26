@@ -45,7 +45,7 @@ public class AlertConfigIT extends WebDriverIT {
             long from = System.currentTimeMillis() - HOURS.toMillis(2);
             long to = from + HOURS.toMillis(4);
             String content = httpGet(
-                    "http://localhost:" + getUiPort() + "/backend/jvm/all-gauges?agent-rollup-id="
+                    "http://localhost:" + getUiPort() + "/backend/jvm/gauges?agent-rollup-id="
                             + agentId + "&from=" + from + "&to=" + to);
             JsonNode responseNode = new ObjectMapper().readTree(content);
             for (JsonNode gaugeNode : responseNode.get("allGauges")) {

@@ -139,6 +139,7 @@ class LayoutService {
                 .putAllTraceAttributeNames(traceAttributeNames)
                 .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
                 .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
+                .defaultGaugeNames(uiConfig.getDefaultGaugeNameList())
                 .build());
 
         return createLayout(authentication, agentRollups, showNavbarTransaction, showNavbarError,
@@ -398,7 +399,6 @@ class LayoutService {
                     && permissions.error().overview() && permissions.jvm().gauges());
             showNavbarConfig = showNavbarConfig || permissions.config().view();
             String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
-            List<Double> defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
             Set<String> transactionTypes = Sets.newTreeSet();
             List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.id());
             if (storedTransactionTypes != null) {
@@ -419,7 +419,9 @@ class LayoutService {
                             .addAllTransactionTypes(transactionTypes)
                             .putAllTraceAttributeNames(traceAttributeNames)
                             .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
-                            .defaultDisplayedPercentiles(defaultDisplayedPercentiles)
+                            .defaultDisplayedPercentiles(
+                                    uiConfig.getDefaultDisplayedPercentileList())
+                            .defaultGaugeNames(uiConfig.getDefaultGaugeNameList())
                             .build());
             for (FilteredAgentRollup childAgentRollup : agentRollup.children()) {
                 process(childAgentRollup, depth + 1);
@@ -490,6 +492,7 @@ class LayoutService {
         Map<String, List<String>> traceAttributeNames(); // key is transaction type
         String defaultDisplayedTransactionType();
         List<Double> defaultDisplayedPercentiles();
+        List<String> defaultGaugeNames();
     }
 
     @Value.Immutable

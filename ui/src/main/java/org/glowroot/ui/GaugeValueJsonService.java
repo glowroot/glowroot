@@ -92,30 +92,20 @@ class GaugeValueJsonService {
             dataSeriesList
                     .add(convertToDataSeriesWithGaps(entry.getKey(), entry.getValue(), gapMillis));
         }
+        List<Gauge> gauges =
+                gaugeValueRepository.getGauges(agentRollupId, request.from(), request.to());
+        List<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeObjectField("allGauges", sortedGauges);
             jg.writeEndObject();
         } finally {
             jg.close();
         }
         return sb.toString();
-    }
-
-    @GET(path = "/backend/jvm/all-gauges", permission = "agent:jvm:gauges")
-    String getAllGauges(@BindAgentRollupId String agentRollupId,
-            @BindRequest AllGaugesRequest request) throws Exception {
-        List<Gauge> gauges =
-                gaugeValueRepository.getGauges(agentRollupId, request.from(), request.to());
-        List<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
-        List<String> defaultGaugeNames =
-                configRepository.getUiConfig(agentRollupId).getDefaultGaugeNameList();
-        return mapper.writeValueAsString(ImmutableAllGaugeResponse.builder()
-                .addAllAllGauges(sortedGauges)
-                .addAllDefaultGaugeNames(defaultGaugeNames)
-                .build());
     }
 
     private List<GaugeValue> getGaugeValues(String agentRollupId, long from, long to,
@@ -236,12 +226,6 @@ class GaugeValueJsonService {
             lastGaugeValue = gaugeValue;
         }
         return dataSeries;
-    }
-
-    @Value.Immutable
-    interface AllGaugesRequest {
-        long from();
-        long to();
     }
 
     @Value.Immutable

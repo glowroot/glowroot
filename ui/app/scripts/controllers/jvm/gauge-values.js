@@ -90,12 +90,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           }
         });
 
-    $scope.$watch('[range.chartFrom, range.chartTo]', function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        updateGauges();
-      }
-    });
-
     $scope.$watchCollection('gaugeNames', function (newValue, oldValue) {
       if (newValue !== oldValue || newValue.length) {
         watchListener(false);
@@ -167,14 +161,38 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       query.gaugeName = $scope.gaugeNames;
     }
 
+    function updateGauges(allGauges) {
+      $scope.allGauges = allGauges;
+      createShortDataSeriesNames(allGauges);
+      allGaugeNames = [];
+      gaugeShortDisplayMap = {};
+      gaugeUnits = {};
+      gaugeGrouping = {};
+      angular.forEach(allGauges, function (gauge) {
+        allGaugeNames.push(gauge.name);
+        gaugeShortDisplayMap[gauge.name] = gauge.shortDisplay;
+        if (gauge.unit) {
+          gaugeUnits[gauge.name] = ' ' + gauge.unit;
+        } else {
+          gaugeUnits[gauge.name] = '';
+        }
+        if (gauge.grouping) {
+          gaugeGrouping[gauge.name] = gauge.grouping;
+        } else {
+          gaugeGrouping[gauge.name] = gauge.name;
+        }
+      });
+    }
+
     function onRefreshData(data) {
+      updateGauges(data.allGauges);
       var chartYaxisLabel = '';
       var i;
       for (i = 0; i < data.dataSeries.length; i++) {
         data.dataSeries[i].shortLabel = gaugeShortDisplayMap[data.dataSeries[i].name];
         var gaugeUnit = gaugeUnits[data.dataSeries[i].name];
         if (i === 0) {
-          chartYaxisLabel = gaugeUnit;
+          chartYaxisLabel = gaugeUnit || '';
         } else if (gaugeUnit !== chartYaxisLabel) {
           chartYaxisLabel = '';
         }
@@ -226,64 +244,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       }
     });
 
-    function updateGauges(init) {
-      var query = {
-        agentRollupId: $scope.agentRollupId,
-        from: $scope.range.chartFrom,
-        to: $scope.range.chartTo
-      };
-      $http.get('backend/jvm/all-gauges' + queryStrings.encodeObject(query))
-          .then(function (response) {
-            $scope.loaded = true;
-            var allGaugeNameHash = {};
-            angular.forEach(response.data.allGauges, function (gauge) {
-              allGaugeNameHash[gauge.name] = true;
-            });
-            angular.forEach($scope.gaugeNames, function (gaugeName) {
-              if (!allGaugeNameHash[gaugeName]) {
-                angular.forEach($scope.allGauges, function (gauge) {
-                  if (gauge.name === gaugeName) {
-                    // need to add back selected gauge that is now missing from gauge list for the given time period
-                    response.data.allGauges.push(gauge);
-                  }
-                });
-              }
-            });
-            $scope.allGauges = response.data.allGauges;
-            defaultGaugeNames = response.data.defaultGaugeNames;
-            createShortDataSeriesNames(response.data.allGauges);
-            allGaugeNames = [];
-            gaugeShortDisplayMap = {};
-            gaugeUnits = {};
-            gaugeGrouping = {};
-            angular.forEach(response.data.allGauges, function (gauge) {
-              allGaugeNames.push(gauge.name);
-              gaugeShortDisplayMap[gauge.name] = gauge.shortDisplay;
-              if (gauge.unit) {
-                gaugeUnits[gauge.name] = ' ' + gauge.unit;
-              } else {
-                gaugeUnits[gauge.name] = '';
-              }
-              if (gauge.grouping) {
-                gaugeGrouping[gauge.name] = gauge.grouping;
-              } else {
-                gaugeGrouping[gauge.name] = gauge.name;
-              }
-            });
-            if (init && !$scope.gaugeNames.length) {
-              angular.forEach(defaultGaugeNames, function (defaultGaugeName) {
-                if (allGaugeNames.indexOf(defaultGaugeName) !== -1) {
-                  $scope.gaugeNames.push(defaultGaugeName);
-                }
-              });
-            }
-          }, function (response) {
-            httpErrors.handle(response, $scope);
-          });
-    }
-
-    if (!$scope.hideMainContent()) {
-      updateGauges(true);
+    if (!$scope.gaugeNames.length) {
+      var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];
+      $scope.gaugeNames = angular.copy(agentRollup.defaultGaugeNames);
     }
 
     // scale will bring max into 0..100 range
