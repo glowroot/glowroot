@@ -70,7 +70,7 @@ class HeartbeatAlertingService {
             AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
             boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
-        String subject = "Glowroot alert - " + agentRollupDisplay + " - Heartbeat";
+        String subject = "[" + agentRollupDisplay + "] Heartbeat";
         StringBuilder sb = new StringBuilder();
         if (ok) {
             sb.append("Receving heartbeat again.\n\n");

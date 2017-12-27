@@ -481,11 +481,10 @@ class SyntheticMonitorService implements Runnable {
             SyntheticMonitorCondition condition, long endTime, boolean ok,
             @Nullable String errorMessage) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
-        String subject = "Glowroot alert";
+        String subject = ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig);
         if (!agentRollupDisplay.isEmpty()) {
-            subject += " - " + agentRollupDisplay;
+            subject = "[" + agentRollupDisplay + "] " + subject;
         }
-        subject += " - " + ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig);
         StringBuilder sb = new StringBuilder();
         sb.append(ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig));
         if (errorMessage == null) {

@@ -412,7 +412,7 @@ class AdminJsonService {
                 String agentDisplayName =
                         configRepository.getAdminGeneralConfig().agentDisplayNameOrDefault();
                 if (!agentDisplayName.isEmpty()) {
-                    subject += " - " + agentDisplayName;
+                    subject = "[" + agentDisplayName + "] " + subject;
                 }
             }
             AlertingService.sendEmail(emailAddresses, subject, "",
