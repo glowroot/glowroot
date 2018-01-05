@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,8 +117,9 @@ class GaugeValueJsonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<GaugeValue> orderedNonRolledUpGaugeValues = Lists.newArrayList();
+        int lowestLevel = agentRollupId.endsWith("::") ? 1 : 0;
         orderedNonRolledUpGaugeValues.addAll(gaugeValueRepository.readGaugeValues(agentRollupId,
-                gaugeName, nonRolledUpFrom, to, 0));
+                gaugeName, nonRolledUpFrom, to, lowestLevel));
         gaugeValues = Lists.newArrayList(gaugeValues);
         long fixedIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
