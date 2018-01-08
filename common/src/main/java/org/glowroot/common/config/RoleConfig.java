@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,14 +108,35 @@ public abstract class RoleConfig {
         public abstract List<String> parts();
 
         boolean implies(SimplePermission other) {
-            if (!agentIds().contains("*") && !agentIds().containsAll(other.agentIds())) {
+            if (!agentIds().contains("*") && !agentListImplies(agentIds(), other.agentIds())) {
                 return false;
             }
             List<String> otherParts = other.parts();
             return implies(parts(), otherParts);
         }
 
-        static boolean implies(List<String> parts, List<String> otherParts) {
+        private static boolean agentListImplies(List<String> agentIds, List<String> otherAgentIds) {
+            for (String otherAgentId : otherAgentIds) {
+                if (!agentListImplies(agentIds, otherAgentId)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static boolean agentListImplies(List<String> agentIds, String otherAgentId) {
+            for (String agentId : agentIds) {
+                if (agentIds.contains(otherAgentId)) {
+                    return true;
+                }
+                if (agentId.endsWith("::") && otherAgentId.startsWith(agentId)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean implies(List<String> parts, List<String> otherParts) {
             if (otherParts.size() < parts.size()) {
                 return false;
             }
