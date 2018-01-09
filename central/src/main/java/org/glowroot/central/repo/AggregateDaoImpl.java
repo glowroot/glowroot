@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,7 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
+import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.MutableAggregate;
 import org.glowroot.common.repo.MutableThreadStats;
@@ -1969,25 +1970,14 @@ public class AggregateDaoImpl implements AggregateDao {
 
     private RollupParams getRollupParams(String agentRollupId, String agentRollupIdForMeta,
             int rollupLevel, int adjustedTTL) throws Exception {
-        ImmutableRollupParams.Builder rollupInfo = ImmutableRollupParams.builder()
+        return ImmutableRollupParams.builder()
                 .agentRollupId(agentRollupId)
                 .rollupLevel(rollupLevel)
-                .adjustedTTL(adjustedTTL);
-        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollupIdForMeta);
-        if (advancedConfig.hasMaxAggregateQueriesPerType()) {
-            rollupInfo.maxAggregateQueriesPerType(
-                    advancedConfig.getMaxAggregateQueriesPerType().getValue());
-        } else {
-            rollupInfo.maxAggregateQueriesPerType(ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE);
-        }
-        if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
-            rollupInfo.maxAggregateServiceCallsPerType(
-                    advancedConfig.getMaxAggregateServiceCallsPerType().getValue());
-        } else {
-            rollupInfo.maxAggregateServiceCallsPerType(
-                    ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE);
-        }
-        return rollupInfo.build();
+                .adjustedTTL(adjustedTTL)
+                .maxAggregateQueriesPerType(getMaxAggregateQueriesPerType(agentRollupIdForMeta))
+                .maxAggregateServiceCallsPerType(
+                        getMaxAggregateServiceCallsPerType(agentRollupIdForMeta))
+                .build();
     }
 
     private static void bindAggregate(BoundStatement boundStatement, Aggregate aggregate,
@@ -2331,6 +2321,34 @@ public class AggregateDaoImpl implements AggregateDao {
 
     private static ByteBuffer toByteBuffer(AbstractMessage message) {
         return ByteBuffer.wrap(message.toByteArray());
+    }
+
+    private int getMaxAggregateQueriesPerType(String agentRollupId) throws Exception {
+        AdvancedConfig advancedConfig;
+        try {
+            advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
+        } catch (AgentConfigNotFoundException e) {
+            return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE;
+        }
+        if (advancedConfig.hasMaxAggregateQueriesPerType()) {
+            return advancedConfig.getMaxAggregateQueriesPerType().getValue();
+        } else {
+            return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE;
+        }
+    }
+
+    private int getMaxAggregateServiceCallsPerType(String agentRollupId) throws Exception {
+        AdvancedConfig advancedConfig;
+        try {
+            advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
+        } catch (AgentConfigNotFoundException e) {
+            return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+        }
+        if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
+            return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
+        } else {
+            return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+        }
     }
 
     @Value.Immutable

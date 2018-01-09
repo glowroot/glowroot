@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
 import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common.repo.MutableAggregate;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Clock;
@@ -560,7 +561,12 @@ class TransactionCommonService {
     }
 
     private int getMaxAggregateQueriesPerType(String agentRollupId) throws Exception {
-        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
+        AdvancedConfig advancedConfig;
+        try {
+            advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
+        } catch (AgentConfigNotFoundException e) {
+            return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE;
+        }
         if (advancedConfig.hasMaxAggregateQueriesPerType()) {
             return advancedConfig.getMaxAggregateQueriesPerType().getValue();
         } else {
@@ -569,7 +575,12 @@ class TransactionCommonService {
     }
 
     private int getMaxAggregateServiceCallsPerType(String agentRollupId) throws Exception {
-        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
+        AdvancedConfig advancedConfig;
+        try {
+            advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
+        } catch (AgentConfigNotFoundException e) {
+            return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+        }
         if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
             return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
         } else {

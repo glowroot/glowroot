@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public GeneralConfig getGeneralConfig(String agentRollupId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
-            // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentRollupId);
         }
         return agentConfig.getGeneralConfig();
@@ -128,7 +127,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public TransactionConfig getTransactionConfig(String agentId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
-            // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getTransactionConfig();
@@ -138,7 +136,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public JvmConfig getJvmConfig(String agentId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
-            // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getJvmConfig();
@@ -149,7 +146,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public UiConfig getUiConfig(String agentRollupId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
-            // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentRollupId);
         }
         return agentConfig.getUiConfig();
@@ -159,7 +155,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public UserRecordingConfig getUserRecordingConfig(String agentId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
-            // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getUserRecordingConfig();
@@ -171,7 +166,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
-            // for some reason received data from agent, but not initial agent config
             throw new AgentConfigNotFoundException(agentRollupId);
         }
         return agentConfig.getAdvancedConfig();
@@ -181,7 +175,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public List<GaugeConfig> getGaugeConfigs(String agentId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
-            return ImmutableList.of();
+            throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getGaugeConfigList();
     }
@@ -202,7 +196,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
-            return ImmutableList.of();
+            throw new AgentConfigNotFoundException(agentRollupId);
         }
         return agentConfig.getSyntheticMonitorConfigList();
     }
@@ -224,7 +218,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
-            return ImmutableList.of();
+            throw new AgentConfigNotFoundException(agentRollupId);
         }
         return agentConfig.getAlertConfigList();
     }
@@ -260,7 +254,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public List<PluginConfig> getPluginConfigs(String agentId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
-            return ImmutableList.of();
+            throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getPluginConfigList();
     }
@@ -279,7 +273,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public List<InstrumentationConfig> getInstrumentationConfigs(String agentId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
-            return ImmutableList.of();
+            throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getInstrumentationConfigList();
     }

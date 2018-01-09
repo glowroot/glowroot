@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.ObjectMappers;
@@ -140,7 +141,7 @@ class JvmJsonService {
             // data was captured JVM startup
             // (this also provides support in central for agent prior to 0.10.0)
             for (String arg : SystemProperties.maskJvmArgs(javaInfo.getArgList(),
-                    configRepository.getJvmConfig(agentId).getMaskSystemPropertyList())) {
+                    getJvmMaskSystemProperties(agentId))) {
                 jg.writeString(arg);
             }
             jg.writeEndArray();
@@ -435,8 +436,7 @@ class JvmJsonService {
             return getAgentUnsupportedOperationResponse(agentId);
         }
         // mask here to provide support in central for agents prior to 0.10.0
-        List<String> maskSystemProperties =
-                configRepository.getJvmConfig(agentId).getMaskSystemPropertyList();
+        List<String> maskSystemProperties = getJvmMaskSystemProperties(agentId);
         properties = SystemProperties.maskSystemProperties(properties, maskSystemProperties);
 
         StringBuilder sb = new StringBuilder();
@@ -490,6 +490,14 @@ class JvmJsonService {
             jg.close();
         }
         return sw.toString();
+    }
+
+    private List<String> getJvmMaskSystemProperties(String agentId) throws Exception {
+        try {
+            return configRepository.getJvmConfig(agentId).getMaskSystemPropertyList();
+        } catch (AgentConfigNotFoundException e) {
+            return ImmutableList.of();
+        }
     }
 
     private String getAgentUnsupportedOperationResponse(String agentId) throws Exception {

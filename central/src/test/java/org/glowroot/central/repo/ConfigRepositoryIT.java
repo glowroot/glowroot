@@ -110,43 +110,6 @@ public class ConfigRepositoryIT {
     }
 
     @Test
-    public void shouldReadConfigForNonExistentAgentId() throws Exception {
-        String agentId = UUID.randomUUID().toString();
-        assertThat(configRepository.getGaugeConfigs(agentId)).isEmpty();
-        boolean exception = false;
-        try {
-            configRepository.getGaugeConfig(agentId, "dummy");
-        } catch (IllegalStateException e) {
-            exception = true;
-        }
-        assertThat(exception).isTrue();
-        assertThat(configRepository.getAlertConfigs(agentId)).isEmpty();
-        exception = false;
-        try {
-            configRepository.getAlertConfig(agentId, "dummy");
-        } catch (IllegalStateException e) {
-            exception = true;
-        }
-        assertThat(exception).isTrue();
-        assertThat(configRepository.getPluginConfigs(agentId)).isEmpty();
-        exception = false;
-        try {
-            configRepository.getPluginConfig(agentId, "dummy");
-        } catch (IllegalStateException e) {
-            exception = true;
-        }
-        assertThat(exception).isTrue();
-        assertThat(configRepository.getInstrumentationConfigs(agentId)).isEmpty();
-        exception = false;
-        try {
-            configRepository.getInstrumentationConfig(agentId, "dummy");
-        } catch (IllegalStateException e) {
-            exception = true;
-        }
-        assertThat(exception).isTrue();
-    }
-
-    @Test
     public void shouldUpdateTransactionConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();

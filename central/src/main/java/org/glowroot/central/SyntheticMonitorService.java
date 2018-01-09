@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ import org.glowroot.central.util.MoreFutures;
 import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.HttpProxyConfig;
 import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
+import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Compilations;
@@ -236,7 +237,12 @@ class SyntheticMonitorService implements Runnable {
         try {
             syntheticMonitorConfigs = configRepository.getSyntheticMonitorConfigs(agentRollup.id());
         } catch (InterruptedException e) {
+            // probably shutdown requested
             throw e;
+        } catch (AgentConfigNotFoundException e) {
+            // be lenient if agent_config table is messed up
+            logger.debug(e.getMessage(), e);
+            return;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
             return;
@@ -250,7 +256,12 @@ class SyntheticMonitorService implements Runnable {
                 alertConfigs = configRepository.getAlertConfigsForSyntheticMonitorId(
                         agentRollup.id(), syntheticMonitorConfig.getId());
             } catch (InterruptedException e) {
+                // probably shutdown requested
                 throw e;
+            } catch (AgentConfigNotFoundException e) {
+                // be lenient if agent_config table is messed up
+                logger.debug(e.getMessage(), e);
+                return;
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
                 continue;

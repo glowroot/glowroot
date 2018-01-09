@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
@@ -50,7 +49,6 @@ class LayoutService {
 
     private static final String AGENT_ID = "";
 
-    private static final Logger logger = LoggerFactory.getLogger(LayoutService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final boolean central;
@@ -124,9 +122,14 @@ class LayoutService {
         try {
             uiConfig = configRepository.getUiConfig(agentRollup.id());
         } catch (AgentConfigNotFoundException e) {
-            // this shouldn't happen anymore, but just in case, don't want to kill entire ui
-            logger.error(e.getMessage(), e);
-            return null;
+            uiConfig = UiConfig.newBuilder()
+                    .setDefaultDisplayedTransactionType(
+                            ConfigDefaults.DEFAULT_DISPLAYED_TRANSACTION_TYPE)
+                    .addDefaultDisplayedPercentile(ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_1)
+                    .addDefaultDisplayedPercentile(ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_2)
+                    .addDefaultDisplayedPercentile(ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_3)
+                    .addDefaultGaugeName(ConfigDefaults.DEFAULT_DISPLAYED_GAUGE_NAME)
+                    .build();
         }
         Permissions permissions = agentRollup.permissions();
         String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();

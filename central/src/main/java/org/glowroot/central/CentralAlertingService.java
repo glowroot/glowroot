@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
+import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
@@ -74,6 +75,10 @@ class CentralAlertingService {
         } catch (InterruptedException e) {
             // probably shutdown requested
             throw e;
+        } catch (AgentConfigNotFoundException e) {
+            // be lenient if agent_config table is messed up
+            logger.debug(e.getMessage(), e);
+            return;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
         }
@@ -87,6 +92,10 @@ class CentralAlertingService {
         } catch (InterruptedException e) {
             // probably shutdown requested
             throw e;
+        } catch (AgentConfigNotFoundException e) {
+            // be lenient if agent_config table is messed up
+            logger.debug(e.getMessage(), e);
+            return;
         } catch (Exception e) {
             logger.error("{} - {}", agentDisplay, e.getMessage(), e);
             return;
@@ -109,6 +118,10 @@ class CentralAlertingService {
         } catch (InterruptedException e) {
             // probably shutdown requested
             throw e;
+        } catch (AgentConfigNotFoundException e) {
+            // be lenient if agent_config table is messed up
+            logger.debug(e.getMessage(), e);
+            return;
         } catch (Exception e) {
             logger.error("{} - {}", agentDisplay, e.getMessage(), e);
             return;
@@ -132,6 +145,10 @@ class CentralAlertingService {
         } catch (InterruptedException e) {
             // probably shutdown requested
             throw e;
+        } catch (AgentConfigNotFoundException e) {
+            // be lenient if agent_config table is messed up
+            logger.debug(e.getMessage(), e);
+            return;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
             return;
