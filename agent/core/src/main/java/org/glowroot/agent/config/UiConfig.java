@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ public abstract class UiConfig {
 
     @Value.Default
     public ImmutableList<String> defaultGaugeNames() {
-        return ImmutableList.of("java.lang:type=Memory:HeapMemoryUsage.used");
+        return ImmutableList.of(ConfigDefaults.DEFAULT_DISPLAYED_GAUGE_NAME);
     }
 
     public AgentConfig.UiConfig toProto() {

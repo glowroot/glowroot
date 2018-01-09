@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@ public final class ConfigDefaults {
     public static final double DEFAULT_DISPLAYED_PERCENTILE_1 = 50.0;
     public static final double DEFAULT_DISPLAYED_PERCENTILE_2 = 95.0;
     public static final double DEFAULT_DISPLAYED_PERCENTILE_3 = 99.0;
+
+    public static final String DEFAULT_DISPLAYED_GAUGE_NAME =
+            "java.lang:type=Memory:HeapMemoryUsage.used";
 
     public static final int MAX_AGGREGATE_TRANSACTIONS_PER_TYPE = 500;
     public static final int MAX_AGGREGATE_QUERIES_PER_TYPE = 500;
