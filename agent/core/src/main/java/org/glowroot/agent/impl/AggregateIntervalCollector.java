@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class AggregateIntervalCollector {
     private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
     private final long captureTime;
-    private final int maxAggregateTransactionsType;
+    private final int maxAggregateTransactionsPerType;
     private final int maxAggregateQueriesPerType;
     private final int maxAggregateServiceCallsPerType;
     private final Clock clock;
@@ -59,10 +59,10 @@ public class AggregateIntervalCollector {
     private final Object lock = new Object();
 
     AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
-            int maxAggregateTransactionsType, int maxAggregateQueriesPerType,
+            int maxAggregateTransactionsPerType, int maxAggregateQueriesPerType,
             int maxAggregateServiceCallsPerType, Clock clock) {
         captureTime = Utils.getRollupCaptureTime(currentTime, aggregateIntervalMillis);
-        this.maxAggregateTransactionsType = maxAggregateTransactionsType;
+        this.maxAggregateTransactionsPerType = maxAggregateTransactionsPerType;
         this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
         this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
         this.clock = clock;
@@ -277,7 +277,7 @@ public class AggregateIntervalCollector {
             AggregateCollector transactionAggregateCollector =
                     transactionAggregateCollectors.get(transaction.getTransactionName());
             if (transactionAggregateCollector == null) {
-                if (transactionAggregateCollectors.size() < maxAggregateTransactionsType) {
+                if (transactionAggregateCollectors.size() < maxAggregateTransactionsPerType) {
                     transactionAggregateCollector =
                             createTransactionAggregateCollector(transaction.getTransactionName());
                 } else {
