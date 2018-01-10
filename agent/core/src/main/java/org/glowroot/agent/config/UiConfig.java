@@ -25,34 +25,32 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 public abstract class UiConfig {
 
     @Value.Default
-    public String defaultDisplayedTransactionType() {
-        return ConfigDefaults.DEFAULT_DISPLAYED_TRANSACTION_TYPE;
+    public String defaultTransactionType() {
+        return ConfigDefaults.DEFAULT_TRANSACTION_TYPE;
     }
 
     @Value.Default
-    public ImmutableList<Double> defaultDisplayedPercentiles() {
-        return ImmutableList.of(ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_1,
-                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_2,
-                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_3);
+    public ImmutableList<Double> defaultPercentiles() {
+        return ConfigDefaults.DEFAULT_PERCENTILES;
     }
 
     @Value.Default
     public ImmutableList<String> defaultGaugeNames() {
-        return ImmutableList.of(ConfigDefaults.DEFAULT_DISPLAYED_GAUGE_NAME);
+        return ConfigDefaults.DEFAULT_GAUGE_NAMES;
     }
 
     public AgentConfig.UiConfig toProto() {
         return AgentConfig.UiConfig.newBuilder()
-                .setDefaultDisplayedTransactionType(defaultDisplayedTransactionType())
-                .addAllDefaultDisplayedPercentile(defaultDisplayedPercentiles())
+                .setDefaultTransactionType(defaultTransactionType())
+                .addAllDefaultPercentile(defaultPercentiles())
                 .addAllDefaultGaugeName(defaultGaugeNames())
                 .build();
     }
 
     public static UiConfig create(AgentConfig.UiConfig config) {
         return ImmutableUiConfig.builder()
-                .defaultDisplayedTransactionType(config.getDefaultDisplayedTransactionType())
-                .defaultDisplayedPercentiles(config.getDefaultDisplayedPercentileList())
+                .defaultTransactionType(config.getDefaultTransactionType())
+                .defaultPercentiles(config.getDefaultPercentileList())
                 .addAllDefaultGaugeNames(config.getDefaultGaugeNameList())
                 .build();
     }

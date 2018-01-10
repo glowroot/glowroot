@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ class ConfigFile {
         if (file.exists()) {
             configRootObjectNode = getRootObjectNode(file);
             upgradeAlertsIfNeeded(configRootObjectNode);
+            upgradeUiIfNeeded(configRootObjectNode);
         } else {
             configRootObjectNode = mapper.createObjectNode();
         }
@@ -112,6 +113,84 @@ class ConfigFile {
     void delete() throws IOException {
         if (!file.delete()) {
             throw new IOException("Could not delete file: " + file.getCanonicalPath());
+        }
+    }
+
+    static ObjectNode getRootObjectNode(File file) {
+        String content;
+        try {
+            content = Files.toString(file, Charsets.UTF_8);
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return mapper.createObjectNode();
+        }
+        ObjectNode rootObjectNode = null;
+        try {
+            JsonNode rootNode = mapper.readTree(content);
+            if (rootNode instanceof ObjectNode) {
+                rootObjectNode = (ObjectNode) rootNode;
+            }
+        } catch (IOException e) {
+            logger.warn("error processing config file: {}", file.getAbsolutePath(), e);
+            writeBackupFile(file);
+        }
+        return rootObjectNode == null ? mapper.createObjectNode() : rootObjectNode;
+    }
+
+    static void writeToFileIfNeeded(File file, ObjectNode rootObjectNode, List<String> keyOrder)
+            throws IOException {
+        String content = writeConfigAsString(rootObjectNode, keyOrder);
+        if (file.exists()) {
+            String existingContent = Files.toString(file, Charsets.UTF_8);
+            if (content.equals(existingContent)) {
+                // it's nice to preserve the correct modification stamp on the file to track when it
+                // was last really changed
+                return;
+            }
+        }
+        Files.write(content, file, Charsets.UTF_8);
+    }
+
+    private static String writeConfigAsString(ObjectNode rootObjectNode, List<String> keyOrder)
+            throws IOException {
+        ObjectNode orderedRootObjectNode = getOrderedObjectNode(rootObjectNode, keyOrder);
+        ObjectMappers.stripEmptyContainerNodes(orderedRootObjectNode);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        try {
+            jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
+            jg.writeTree(orderedRootObjectNode);
+        } finally {
+            jg.close();
+        }
+        // newline is not required, just a personal preference
+        return sb.toString() + ObjectMappers.NEWLINE;
+    }
+
+    private static ObjectNode getOrderedObjectNode(ObjectNode objectNode, List<String> keyOrder) {
+        Map<String, JsonNode> map = Maps.newHashMap();
+        Iterator<Entry<String, JsonNode>> i = objectNode.fields();
+        while (i.hasNext()) {
+            Entry<String, JsonNode> entry = i.next();
+            map.put(entry.getKey(), entry.getValue());
+        }
+        ObjectNode orderedObjectNode = mapper.createObjectNode();
+        for (Entry<String, JsonNode> entry : new ExplicitOrdering(keyOrder)
+                .sortedCopy(map.entrySet())) {
+            orderedObjectNode.set(entry.getKey(), entry.getValue());
+        }
+        return orderedObjectNode;
+    }
+
+    private static void writeBackupFile(File file) {
+        File backupFile = new File(file.getParentFile(), file.getName() + ".invalid-orig");
+        try {
+            Files.copy(file, backupFile);
+            logger.warn("due to an error in the config file, it has been backed up to extension"
+                    + " '.invalid-orig' and will be overwritten with the default config");
+        } catch (IOException f) {
+            logger.warn("error making a copy of the invalid config file before overwriting it",
+                    f);
         }
     }
 
@@ -171,81 +250,21 @@ class ConfigFile {
         }
     }
 
-    static ObjectNode getRootObjectNode(File file) {
-        String content;
-        try {
-            content = Files.toString(file, Charsets.UTF_8);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            return mapper.createObjectNode();
+    private static void upgradeUiIfNeeded(ObjectNode configRootObjectNode) {
+        JsonNode uiNode = configRootObjectNode.get("ui");
+        if (uiNode == null || !uiNode.isObject()) {
+            return;
         }
-        ObjectNode rootObjectNode = null;
-        try {
-            JsonNode rootNode = mapper.readTree(content);
-            if (rootNode instanceof ObjectNode) {
-                rootObjectNode = (ObjectNode) rootNode;
-            }
-        } catch (IOException e) {
-            logger.warn("error processing config file: {}", file.getAbsolutePath(), e);
-            writeBackupFile(file);
+        ObjectNode uiObjectNode = (ObjectNode) uiNode;
+        if (uiObjectNode.has("defaultDisplayedTransactionType")) {
+            // upgrade from 0.9.28 to 0.10.0
+            uiObjectNode.set("defaultTransactionType",
+                    uiObjectNode.remove("defaultDisplayedTransactionType"));
         }
-        return rootObjectNode == null ? mapper.createObjectNode() : rootObjectNode;
-    }
-
-    static void writeToFileIfNeeded(File file, ObjectNode rootObjectNode, List<String> keyOrder)
-            throws IOException {
-        String content = writeConfigAsString(rootObjectNode, keyOrder);
-        if (file.exists()) {
-            String existingContent = Files.toString(file, Charsets.UTF_8);
-            if (content.equals(existingContent)) {
-                // it's nice to preserve the correct modification stamp on the file to track when it
-                // was last really changed
-                return;
-            }
-        }
-        Files.write(content, file, Charsets.UTF_8);
-    }
-
-    private static String writeConfigAsString(ObjectNode rootObjectNode, List<String> keyOrder)
-            throws IOException {
-        ObjectNode orderedRootObjectNode = getOrderedObjectNode(rootObjectNode, keyOrder);
-        ObjectMappers.stripEmptyContainerNodes(orderedRootObjectNode);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        try {
-            jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
-            jg.writeTree(orderedRootObjectNode);
-        } finally {
-            jg.close();
-        }
-        // newline is not required, just a personal preference
-        return sb.toString() + ObjectMappers.NEWLINE;
-    }
-
-    public static ObjectNode getOrderedObjectNode(ObjectNode objectNode, List<String> keyOrder) {
-        Map<String, JsonNode> map = Maps.newHashMap();
-        Iterator<Entry<String, JsonNode>> i = objectNode.fields();
-        while (i.hasNext()) {
-            Entry<String, JsonNode> entry = i.next();
-            map.put(entry.getKey(), entry.getValue());
-        }
-        ObjectNode orderedObjectNode = mapper.createObjectNode();
-        for (Entry<String, JsonNode> entry : new ExplicitOrdering(keyOrder)
-                .sortedCopy(map.entrySet())) {
-            orderedObjectNode.set(entry.getKey(), entry.getValue());
-        }
-        return orderedObjectNode;
-    }
-
-    private static void writeBackupFile(File file) {
-        File backupFile = new File(file.getParentFile(), file.getName() + ".invalid-orig");
-        try {
-            Files.copy(file, backupFile);
-            logger.warn("due to an error in the config file, it has been backed up to extension"
-                    + " '.invalid-orig' and will be overwritten with the default config");
-        } catch (IOException f) {
-            logger.warn("error making a copy of the invalid config file before overwriting it",
-                    f);
+        if (uiObjectNode.has("defaultDisplayedPercentiles")) {
+            // upgrade from 0.9.28 to 0.10.0
+            uiObjectNode.set("defaultPercentiles",
+                    uiObjectNode.remove("defaultDisplayedPercentiles"));
         }
     }
 

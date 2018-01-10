@@ -804,14 +804,8 @@ public class SchemaUpgrade {
 
         AgentConfig defaultAgentConfig = AgentConfig.newBuilder()
                 .setUiConfig(UiConfig.newBuilder()
-                        .setDefaultDisplayedTransactionType(
-                                ConfigDefaults.DEFAULT_DISPLAYED_TRANSACTION_TYPE)
-                        .addDefaultDisplayedPercentile(
-                                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_1)
-                        .addDefaultDisplayedPercentile(
-                                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_2)
-                        .addDefaultDisplayedPercentile(
-                                ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_3))
+                        .setDefaultTransactionType(ConfigDefaults.DEFAULT_TRANSACTION_TYPE)
+                        .addAllDefaultPercentile(ConfigDefaults.DEFAULT_PERCENTILES))
                 .setAdvancedConfig(AdvancedConfig.newBuilder()
                         .setMaxAggregateQueriesPerType(OptionalInt32.newBuilder()
                                 .setValue(ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE))
@@ -1073,7 +1067,7 @@ public class SchemaUpgrade {
             }
             AgentConfig agentConfig = oldAgentConfig.toBuilder()
                     .setUiConfig(oldAgentConfig.getUiConfig().toBuilder()
-                            .addDefaultGaugeName(ConfigDefaults.DEFAULT_DISPLAYED_GAUGE_NAME))
+                            .addAllDefaultGaugeName(ConfigDefaults.DEFAULT_GAUGE_NAMES))
                     .build();
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;

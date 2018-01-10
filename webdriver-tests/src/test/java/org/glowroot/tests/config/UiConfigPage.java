@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ public class UiConfigPage {
         this.driver = driver;
     }
 
-    public WebElement getDefaultDisplayedPercentilesTextField() {
-        return withWait(xpath("//div[@gt-label='Default displayed percentiles']//input"));
+    public WebElement getDefaultPercentilesTextField() {
+        return withWait(xpath("//div[@gt-label='Default percentiles']//input"));
     }
 
     public void clickSaveButton() {

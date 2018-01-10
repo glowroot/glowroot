@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,8 +110,8 @@ public class ConfigIT extends WebDriverIT {
         configSidebar.getUiLink().click();
 
         // when
-        page.getDefaultDisplayedPercentilesTextField().clear();
-        page.getDefaultDisplayedPercentilesTextField().sendKeys("3,4,5,6");
+        page.getDefaultPercentilesTextField().clear();
+        page.getDefaultPercentilesTextField().sendKeys("3,4,5,6");
         page.clickSaveButton();
         // wait for save to finish
         Thread.sleep(1000);
@@ -120,7 +120,7 @@ public class ConfigIT extends WebDriverIT {
         app.open();
         globalNavbar.getConfigLink().click();
         configSidebar.getUiLink().click();
-        assertThat(page.getDefaultDisplayedPercentilesTextField().getAttribute("value"))
+        assertThat(page.getDefaultPercentilesTextField().getAttribute("value"))
                 .isEqualTo("3, 4, 5, 6");
     }
 

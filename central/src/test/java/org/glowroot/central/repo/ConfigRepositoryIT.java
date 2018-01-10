@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,10 +158,10 @@ public class ConfigRepositoryIT {
         agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
         UiConfig config = configRepository.getUiConfig(agentId);
         UiConfig updatedConfig = UiConfig.newBuilder()
-                .setDefaultDisplayedTransactionType("xyz")
-                .addDefaultDisplayedPercentile(99.0)
-                .addDefaultDisplayedPercentile(99.9)
-                .addDefaultDisplayedPercentile(99.99)
+                .setDefaultTransactionType("xyz")
+                .addDefaultPercentile(99.0)
+                .addDefaultPercentile(99.9)
+                .addDefaultPercentile(99.99)
                 .build();
 
         // when

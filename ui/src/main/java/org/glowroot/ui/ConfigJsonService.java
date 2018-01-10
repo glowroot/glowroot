@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -510,25 +510,25 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class UiConfigDto {
 
-        abstract String defaultDisplayedTransactionType();
-        abstract List<Double> defaultDisplayedPercentiles();
+        abstract String defaultTransactionType();
+        abstract List<Double> defaultPercentiles();
         abstract List<String> defaultGaugeNames();
         abstract String version();
 
         private UiConfig convert() throws Exception {
             return UiConfig.newBuilder()
-                    .setDefaultDisplayedTransactionType(defaultDisplayedTransactionType())
-                    .addAllDefaultDisplayedPercentile(
-                            Ordering.natural().immutableSortedCopy(defaultDisplayedPercentiles()))
+                    .setDefaultTransactionType(defaultTransactionType())
+                    .addAllDefaultPercentile(
+                            Ordering.natural().immutableSortedCopy(defaultPercentiles()))
                     .addAllDefaultGaugeName(defaultGaugeNames())
                     .build();
         }
 
         private static ImmutableUiConfigDto create(UiConfig config) {
             return ImmutableUiConfigDto.builder()
-                    .defaultDisplayedTransactionType(config.getDefaultDisplayedTransactionType())
-                    .defaultDisplayedPercentiles(Ordering.natural()
-                            .immutableSortedCopy(config.getDefaultDisplayedPercentileList()))
+                    .defaultTransactionType(config.getDefaultTransactionType())
+                    .defaultPercentiles(Ordering.natural()
+                            .immutableSortedCopy(config.getDefaultPercentileList()))
                     .defaultGaugeNames(config.getDefaultGaugeNameList())
                     .version(Versions.getVersion(config))
                     .build();

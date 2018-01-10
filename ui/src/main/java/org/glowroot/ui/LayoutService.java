@@ -123,22 +123,19 @@ class LayoutService {
             uiConfig = configRepository.getUiConfig(agentRollup.id());
         } catch (AgentConfigNotFoundException e) {
             uiConfig = UiConfig.newBuilder()
-                    .setDefaultDisplayedTransactionType(
-                            ConfigDefaults.DEFAULT_DISPLAYED_TRANSACTION_TYPE)
-                    .addDefaultDisplayedPercentile(ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_1)
-                    .addDefaultDisplayedPercentile(ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_2)
-                    .addDefaultDisplayedPercentile(ConfigDefaults.DEFAULT_DISPLAYED_PERCENTILE_3)
-                    .addDefaultGaugeName(ConfigDefaults.DEFAULT_DISPLAYED_GAUGE_NAME)
+                    .setDefaultTransactionType(ConfigDefaults.DEFAULT_TRANSACTION_TYPE)
+                    .addAllDefaultPercentile(ConfigDefaults.DEFAULT_PERCENTILES)
+                    .addAllDefaultGaugeName(ConfigDefaults.DEFAULT_GAUGE_NAMES)
                     .build();
         }
         Permissions permissions = agentRollup.permissions();
-        String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
+        String defaultTransactionType = uiConfig.getDefaultTransactionType();
         Set<String> transactionTypes = Sets.newTreeSet();
         List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.id());
         if (storedTransactionTypes != null) {
             transactionTypes.addAll(storedTransactionTypes);
         }
-        transactionTypes.add(defaultDisplayedTransactionType);
+        transactionTypes.add(defaultTransactionType);
         Map<String, List<String>> traceAttributeNames =
                 traceAttributeNamesMap.get(agentRollup.id());
         if (traceAttributeNames == null) {
@@ -150,8 +147,8 @@ class LayoutService {
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypes)
                 .putAllTraceAttributeNames(traceAttributeNames)
-                .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
-                .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
+                .defaultTransactionType(defaultTransactionType)
+                .defaultPercentiles(uiConfig.getDefaultPercentileList())
                 .defaultGaugeNames(uiConfig.getDefaultGaugeNameList())
                 .build();
     }
@@ -183,13 +180,13 @@ class LayoutService {
         boolean showNavbarConfig = permissions.config().view();
         // a couple of special cases for embedded ui
         UiConfig uiConfig = configRepository.getUiConfig(AGENT_ID);
-        String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
+        String defaultTransactionType = uiConfig.getDefaultTransactionType();
         Set<String> transactionTypes = Sets.newTreeSet();
         List<String> storedTransactionTypes = transactionTypeRepository.read().get(AGENT_ID);
         if (storedTransactionTypes != null) {
             transactionTypes.addAll(storedTransactionTypes);
         }
-        transactionTypes.add(defaultDisplayedTransactionType);
+        transactionTypes.add(defaultTransactionType);
 
         Map<String, List<String>> traceAttributeNames =
                 traceAttributeNameRepository.read().get(AGENT_ID);
@@ -203,8 +200,8 @@ class LayoutService {
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypes)
                 .putAllTraceAttributeNames(traceAttributeNames)
-                .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
-                .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
+                .defaultTransactionType(defaultTransactionType)
+                .defaultPercentiles(uiConfig.getDefaultPercentileList())
                 .defaultGaugeNames(uiConfig.getDefaultGaugeNameList())
                 .build();
 
@@ -446,8 +443,8 @@ class LayoutService {
         abstract Permissions permissions();
         abstract List<String> transactionTypes();
         abstract Map<String, List<String>> traceAttributeNames(); // key is transaction type
-        abstract String defaultDisplayedTransactionType();
-        abstract List<Double> defaultDisplayedPercentiles();
+        abstract String defaultTransactionType();
+        abstract List<Double> defaultPercentiles();
         abstract List<String> defaultGaugeNames();
 
         @Value.Derived

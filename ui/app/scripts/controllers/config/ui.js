@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ glowroot.controller('ConfigUiCtrl', [
       return;
     }
 
-    $scope.$watch('page.defaultDisplayedPercentiles', function (newVal) {
+    $scope.$watch('page.defaultPercentiles', function (newVal) {
       if ($scope.config) {
         var percentiles = [];
         if (newVal) {
@@ -43,7 +43,7 @@ glowroot.controller('ConfigUiCtrl', [
             }
           });
         }
-        $scope.config.defaultDisplayedPercentiles = percentiles;
+        $scope.config.defaultPercentiles = percentiles;
       }
     });
 
@@ -72,8 +72,8 @@ glowroot.controller('ConfigUiCtrl', [
         }
       });
 
-      if ($scope.config.defaultDisplayedPercentiles) {
-        $scope.page.defaultDisplayedPercentiles = $scope.config.defaultDisplayedPercentiles.join(', ');
+      if ($scope.config.defaultPercentiles) {
+        $scope.page.defaultPercentiles = $scope.config.defaultPercentiles.join(', ');
       }
     }
 

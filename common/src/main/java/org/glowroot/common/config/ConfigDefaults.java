@@ -16,20 +16,20 @@
 package org.glowroot.common.config;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig.SyntheticMonitorKind;
 
 public final class ConfigDefaults {
 
-    public static final String DEFAULT_DISPLAYED_TRANSACTION_TYPE = "Web";
+    public static final String DEFAULT_TRANSACTION_TYPE = "Web";
 
-    public static final double DEFAULT_DISPLAYED_PERCENTILE_1 = 50.0;
-    public static final double DEFAULT_DISPLAYED_PERCENTILE_2 = 95.0;
-    public static final double DEFAULT_DISPLAYED_PERCENTILE_3 = 99.0;
+    public static final ImmutableList<Double> DEFAULT_PERCENTILES =
+            ImmutableList.of(50.0, 95.0, 99.0);
 
-    public static final String DEFAULT_DISPLAYED_GAUGE_NAME =
-            "java.lang:type=Memory:HeapMemoryUsage.used";
+    public static final ImmutableList<String> DEFAULT_GAUGE_NAMES =
+            ImmutableList.of("java.lang:type=Memory:HeapMemoryUsage.used");
 
     public static final int MAX_AGGREGATE_TRANSACTIONS_PER_TYPE = 500;
     public static final int MAX_AGGREGATE_QUERIES_PER_TYPE = 500;

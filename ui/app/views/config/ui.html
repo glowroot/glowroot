@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2017 the original author or authors.
+  Copyright 2013-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@
            name="formCtrl"
            style="padding-top: 15px;">
         <div gt-form-group
-             gt-label="Default displayed transaction type"
-             gt-model="config.defaultDisplayedTransactionType"
+             gt-label="Default transaction type"
+             gt-model="config.defaultTransactionType"
              gt-required="loaded"
              gt-disabled="!agentRollup.permissions.config.edit.ui"
              gt-width="20em"
@@ -39,8 +39,8 @@
           </div>
         </div>
         <div gt-form-group
-             gt-label="Default displayed percentiles"
-             gt-model="page.defaultDisplayedPercentiles"
+             gt-label="Default percentiles"
+             gt-model="page.defaultPercentiles"
              gt-pattern="pattern.percentageList"
              gt-required="loaded"
              gt-disabled="!agentRollup.permissions.config.edit.ui"
