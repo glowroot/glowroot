@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,7 +165,8 @@ class MetricService {
 
     private @Nullable Double getGaugeValue(String agentRollupId, String gaugeName,
             long startTime, long endTime) throws Exception {
-        int rollupLevel = rollupLevelService.getGaugeRollupLevelForView(startTime, endTime);
+        int rollupLevel = rollupLevelService.getGaugeRollupLevelForView(startTime, endTime,
+                agentRollupId.endsWith("::"));
         // startTime + 1 in order to not include the gauge value at startTime
         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
                 gaugeName, startTime + 1, endTime, rollupLevel);

@@ -58,12 +58,8 @@ class GaugeValueJsonService {
     @GET(path = "/backend/jvm/gauges", permission = "agent:jvm:gauges")
     String getGaugeValues(@BindAgentRollupId String agentRollupId,
             @BindRequest GaugeValueRequest request) throws Exception {
-        int rollupLevel =
-                rollupLevelService.getGaugeRollupLevelForView(request.from(), request.to());
-        if (rollupLevel == 0 && agentRollupId.endsWith("::")) {
-            // agent rollups from children do not have level-0 data
-            rollupLevel = 1;
-        }
+        int rollupLevel = rollupLevelService.getGaugeRollupLevelForView(request.from(),
+                request.to(), agentRollupId.endsWith("::"));
         long intervalMillis;
         if (rollupLevel == 0) {
             intervalMillis = configRepository.getGaugeCollectionIntervalMillis();

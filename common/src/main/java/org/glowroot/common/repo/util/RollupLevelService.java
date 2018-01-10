@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,8 @@ public class RollupLevelService {
         return rollupConfigs.size() - 1;
     }
 
-    public int getGaugeRollupLevelForView(long from, long to) throws Exception {
+    public int getGaugeRollupLevelForView(long from, long to, boolean agentRollup)
+            throws Exception {
         long millis = to - from;
         long timeAgoMillis = clock.currentTimeMillis() - from;
         List<Integer> rollupExpirationHours =
@@ -75,7 +76,8 @@ public class RollupLevelService {
         int expirationHours = rollupExpirationHours.get(0);
         if (millis < viewThresholdMillis * ConfigRepository.GAUGE_VIEW_THRESHOLD_MULTIPLIER
                 && (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis)) {
-            return 0;
+            // agent rollups from children do not have level-0 data
+            return agentRollup ? 1 : 0;
         }
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
             viewThresholdMillis = rollupConfigs.get(i + 1).viewThresholdMillis();
