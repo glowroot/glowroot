@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -52,6 +53,7 @@ import org.glowroot.common.repo.RepoAdmin.H2Table;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.glowroot.agent.util.Checkers.castUntainted;
 
 public class DataSource {
@@ -137,7 +139,11 @@ public class DataSource {
         }
     }
 
-    public List<H2Table> analyzeH2DiskSpace() throws SQLException {
+    public long getH2DataFileSize() {
+        return dbFile == null ? 0 : dbFile.length();
+    }
+
+    public List<H2Table> analyzeH2DiskSpace() throws Exception {
         if (dbFile == null) {
             return ImmutableList.of();
         }
@@ -151,12 +157,16 @@ public class DataSource {
         List<H2Table> tables = Lists.newArrayList();
         for (String tableName : tableNames) {
             long bytes;
+            Stopwatch stopwatch = Stopwatch.createStarted();
             synchronized (lock) {
                 if (closed) {
                     return tables;
                 }
                 bytes = getTableBytesUnderLock(tableName);
             }
+            // sleep a bit to allow some other threads to use the data source
+            Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
+            stopwatch.reset().start();
             long rows;
             synchronized (lock) {
                 if (closed) {
@@ -164,6 +174,8 @@ public class DataSource {
                 }
                 rows = getTableRowsUnderLock(tableName);
             }
+            // sleep a bit to allow some other threads to use the data source
+            Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
             tables.add(ImmutableH2Table.builder()
                     .name(tableName)
                     .bytes(bytes)

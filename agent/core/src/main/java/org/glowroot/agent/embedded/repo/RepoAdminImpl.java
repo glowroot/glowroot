@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -102,6 +103,11 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
+    public long getH2DataFileSize() {
+        return dataSource.getH2DataFileSize();
+    }
+
+    @Override
     public List<H2Table> analyzeH2DiskSpace() throws Exception {
         return dataSource.analyzeH2DiskSpace();
     }
@@ -112,11 +118,17 @@ class RepoAdminImpl implements RepoAdmin {
             @Override
             public TraceTable call() throws Exception {
                 long captureTime = clock.currentTimeMillis();
+                Stopwatch stopwatch = Stopwatch.createStarted();
                 long count = dataSource.queryForLong(
                         "select count(*) from trace where capture_time < ?", captureTime);
+                // sleep a bit to allow some other threads to use the data source
+                Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
+                stopwatch.reset().start();
                 long errorCount = dataSource.queryForLong(
                         "select count(*) from trace where error = ? and capture_time < ?", true,
                         captureTime);
+                // sleep a bit to allow some other threads to use the data source
+                Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
                 int slowThresholdMillis1 = configRepository.getTransactionConfig("")
                         .getSlowThresholdMillis().getValue();
                 int slowThresholdMillis2 =

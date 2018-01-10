@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,6 @@ import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
-import org.glowroot.common.repo.ImmutableTraceTable;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.HttpClient;
@@ -815,21 +814,33 @@ public class CentralModule {
 
     private static class NopRepoAdmin implements RepoAdmin {
         @Override
-        public void defragH2Data() throws Exception {}
-        @Override
-        public void compactH2Data() throws Exception {}
-        @Override
-        public List<H2Table> analyzeH2DiskSpace() throws Exception {
-            return ImmutableList.of();
+        public void defragH2Data() {
+            throw new UnsupportedOperationException();
         }
         @Override
-        public TraceTable analyzeTraceData() throws Exception {
-            return ImmutableTraceTable.builder().build();
+        public void compactH2Data() {
+            throw new UnsupportedOperationException();
         }
         @Override
-        public void deleteAllData() throws Exception {}
+        public long getH2DataFileSize() {
+            throw new UnsupportedOperationException();
+        }
         @Override
-        public void resizeIfNeeded() throws Exception {}
+        public List<H2Table> analyzeH2DiskSpace() {
+            throw new UnsupportedOperationException();
+        }
+        @Override
+        public TraceTable analyzeTraceData() {
+            throw new UnsupportedOperationException();
+        }
+        @Override
+        public void deleteAllData() {
+            throw new UnsupportedOperationException();
+        }
+        @Override
+        public void resizeIfNeeded() {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static class RateLimitedLogger {

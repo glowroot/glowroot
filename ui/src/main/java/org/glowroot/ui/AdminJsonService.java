@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -551,6 +551,7 @@ class AdminJsonService {
         if (!offline && !authentication.isAdminPermitted("admin:edit:storage")) {
             throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
         }
+        long h2DataFileSize = repoAdmin.getH2DataFileSize();
         List<H2Table> tables = repoAdmin.analyzeH2DiskSpace();
         TraceTable traceTable = repoAdmin.analyzeTraceData();
 
@@ -558,6 +559,7 @@ class AdminJsonService {
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         try {
             jg.writeStartObject();
+            jg.writeNumberField("h2DataFileSize", h2DataFileSize);
             jg.writeObjectField("tables", orderingByBytesDesc.sortedCopy(tables));
             jg.writeObjectField("traceTable", traceTable);
             jg.writeEndObject();

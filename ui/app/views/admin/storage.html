@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2017 the original author or authors.
+  Copyright 2013-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -388,9 +388,12 @@
           </div>
         </div>
       </div>
-      <div ng-if="analyzedH2Tables">
+      <div ng-if="showH2Analysis">
+        <div style="margin-top: 40px;">
+          <span style="font-weight: bold; padding-left: 8px;">H2 data file size:</span> {{h2DataFileSize | gtBytes}}
+        </div>
         <table class="table"
-               style="table-layout: fixed; margin-top: 40px;">
+               style="table-layout: fixed; margin-top: 30px;">
           <thead>
           <tr>
             <th>
