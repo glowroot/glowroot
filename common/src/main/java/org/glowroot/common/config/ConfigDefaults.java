@@ -23,17 +23,18 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMo
 
 public final class ConfigDefaults {
 
-    public static final String DEFAULT_TRANSACTION_TYPE = "Web";
+    public static final ImmutableList<String> JVM_MASK_SYSTEM_PROPERTIES =
+            ImmutableList.of("*password*");
 
-    public static final ImmutableList<Double> DEFAULT_PERCENTILES =
+    public static final String UI_DEFAULT_TRANSACTION_TYPE = "Web";
+    public static final ImmutableList<Double> UI_DEFAULT_PERCENTILES =
             ImmutableList.of(50.0, 95.0, 99.0);
-
-    public static final ImmutableList<String> DEFAULT_GAUGE_NAMES =
+    public static final ImmutableList<String> UI_DEFAULT_GAUGE_NAMES =
             ImmutableList.of("java.lang:type=Memory:HeapMemoryUsage.used");
 
-    public static final int MAX_AGGREGATE_TRANSACTIONS_PER_TYPE = 500;
-    public static final int MAX_AGGREGATE_QUERIES_PER_TYPE = 500;
-    public static final int MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE = 500;
+    public static final int ADVANCED_MAX_AGGREGATE_TRANSACTIONS_PER_TYPE = 500;
+    public static final int ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE = 500;
+    public static final int ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE = 500;
 
     private ConfigDefaults() {}
 

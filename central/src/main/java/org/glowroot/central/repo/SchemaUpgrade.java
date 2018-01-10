@@ -804,13 +804,13 @@ public class SchemaUpgrade {
 
         AgentConfig defaultAgentConfig = AgentConfig.newBuilder()
                 .setUiConfig(UiConfig.newBuilder()
-                        .setDefaultTransactionType(ConfigDefaults.DEFAULT_TRANSACTION_TYPE)
-                        .addAllDefaultPercentile(ConfigDefaults.DEFAULT_PERCENTILES))
+                        .setDefaultTransactionType(ConfigDefaults.UI_DEFAULT_TRANSACTION_TYPE)
+                        .addAllDefaultPercentile(ConfigDefaults.UI_DEFAULT_PERCENTILES))
                 .setAdvancedConfig(AdvancedConfig.newBuilder()
                         .setMaxAggregateQueriesPerType(OptionalInt32.newBuilder()
-                                .setValue(ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE))
-                        .setMaxAggregateServiceCallsPerType(OptionalInt32.newBuilder()
-                                .setValue(ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE)))
+                                .setValue(ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE))
+                        .setMaxAggregateServiceCallsPerType(OptionalInt32.newBuilder().setValue(
+                                ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE)))
                 .build();
 
         PreparedStatement readPS =
@@ -1067,7 +1067,7 @@ public class SchemaUpgrade {
             }
             AgentConfig agentConfig = oldAgentConfig.toBuilder()
                     .setUiConfig(oldAgentConfig.getUiConfig().toBuilder()
-                            .addAllDefaultGaugeName(ConfigDefaults.DEFAULT_GAUGE_NAMES))
+                            .addAllDefaultGaugeName(ConfigDefaults.UI_DEFAULT_GAUGE_NAMES))
                     .build();
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;

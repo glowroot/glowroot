@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,21 +46,21 @@ public abstract class AdvancedConfig {
     // used to limit memory requirement
     @Value.Default
     public int maxAggregateTransactionsPerType() {
-        return ConfigDefaults.MAX_AGGREGATE_TRANSACTIONS_PER_TYPE;
+        return ConfigDefaults.ADVANCED_MAX_AGGREGATE_TRANSACTIONS_PER_TYPE;
     }
 
     // used to limit memory requirement
     // applied to individual traces, transaction aggregates and overall aggregates
     @Value.Default
     public int maxAggregateQueriesPerType() {
-        return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE;
+        return ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE;
     }
 
     // used to limit memory requirement
     // applied to individual traces, transaction aggregates and overall aggregates
     @Value.Default
     public int maxAggregateServiceCallsPerType() {
-        return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+        return ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
     }
 
     // used to limit memory requirement, also used to help limit trace capture size

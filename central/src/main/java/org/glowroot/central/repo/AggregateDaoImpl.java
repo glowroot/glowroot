@@ -2328,12 +2328,12 @@ public class AggregateDaoImpl implements AggregateDao {
         try {
             advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
         } catch (AgentConfigNotFoundException e) {
-            return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE;
         }
         if (advancedConfig.hasMaxAggregateQueriesPerType()) {
             return advancedConfig.getMaxAggregateQueriesPerType().getValue();
         } else {
-            return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE;
         }
     }
 
@@ -2342,12 +2342,12 @@ public class AggregateDaoImpl implements AggregateDao {
         try {
             advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
         } catch (AgentConfigNotFoundException e) {
-            return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
         }
         if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
             return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
         } else {
-            return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
         }
     }
 

@@ -123,9 +123,9 @@ class LayoutService {
             uiConfig = configRepository.getUiConfig(agentRollup.id());
         } catch (AgentConfigNotFoundException e) {
             uiConfig = UiConfig.newBuilder()
-                    .setDefaultTransactionType(ConfigDefaults.DEFAULT_TRANSACTION_TYPE)
-                    .addAllDefaultPercentile(ConfigDefaults.DEFAULT_PERCENTILES)
-                    .addAllDefaultGaugeName(ConfigDefaults.DEFAULT_GAUGE_NAMES)
+                    .setDefaultTransactionType(ConfigDefaults.UI_DEFAULT_TRANSACTION_TYPE)
+                    .addAllDefaultPercentile(ConfigDefaults.UI_DEFAULT_PERCENTILES)
+                    .addAllDefaultGaugeName(ConfigDefaults.UI_DEFAULT_GAUGE_NAMES)
                     .build();
         }
         Permissions permissions = agentRollup.permissions();

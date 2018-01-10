@@ -26,17 +26,17 @@ public abstract class UiConfig {
 
     @Value.Default
     public String defaultTransactionType() {
-        return ConfigDefaults.DEFAULT_TRANSACTION_TYPE;
+        return ConfigDefaults.UI_DEFAULT_TRANSACTION_TYPE;
     }
 
     @Value.Default
     public ImmutableList<Double> defaultPercentiles() {
-        return ConfigDefaults.DEFAULT_PERCENTILES;
+        return ConfigDefaults.UI_DEFAULT_PERCENTILES;
     }
 
     @Value.Default
     public ImmutableList<String> defaultGaugeNames() {
-        return ConfigDefaults.DEFAULT_GAUGE_NAMES;
+        return ConfigDefaults.UI_DEFAULT_GAUGE_NAMES;
     }
 
     public AgentConfig.UiConfig toProto() {

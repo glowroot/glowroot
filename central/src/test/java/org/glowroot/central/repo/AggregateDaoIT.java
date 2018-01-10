@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,9 +67,9 @@ public class AggregateDaoIT {
 
     private static final AdvancedConfig DEFAULT_ADVANCED_CONFIG = AdvancedConfig.newBuilder()
             .setMaxAggregateQueriesPerType(OptionalInt32.newBuilder()
-                    .setValue(ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE))
+                    .setValue(ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE))
             .setMaxAggregateServiceCallsPerType(OptionalInt32.newBuilder()
-                    .setValue(ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE))
+                    .setValue(ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE))
             .build();
 
     private static Cluster cluster;
