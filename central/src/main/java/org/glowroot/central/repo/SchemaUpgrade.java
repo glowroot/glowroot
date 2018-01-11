@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
@@ -47,10 +48,12 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
@@ -66,6 +69,7 @@ import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.PermissionParser;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.repo.Utils;
+import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.PropertiesFiles;
@@ -95,7 +99,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 36;
+    private static final int CURR_SCHEMA_VERSION = 58;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -105,7 +109,7 @@ public class SchemaUpgrade {
     private final Clock clock;
     private final boolean servlet;
 
-    private final PreparedStatement insertPS;
+    private final PreparedStatement insertIntoSchemVersionPS;
     private final @Nullable Integer initialSchemaVersion;
 
     private boolean reloadCentralConfiguration;
@@ -119,8 +123,8 @@ public class SchemaUpgrade {
 
         session.execute("create table if not exists schema_version (one int,"
                 + " schema_version int, primary key (one)) " + WITH_LCS);
-        insertPS =
-                session.prepare("insert into schema_version (one, schema_version) values (?, ?)");
+        insertIntoSchemVersionPS =
+                session.prepare("insert into schema_version (one, schema_version) values (1, ?)");
         initialSchemaVersion = getSchemaVersion(session, keyspaceMetadata);
     }
 
@@ -284,7 +288,7 @@ public class SchemaUpgrade {
             addSyntheticResultErrorIntervalsColumn();
             updateSchemaVersion(33);
         }
-        // 0.9.28 to 0.9.29
+        // 0.9.28 to 0.10.0
         if (initialSchemaVersion < 34) {
             populateGaugeNameTable();
             updateSchemaVersion(34);
@@ -301,6 +305,94 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 36) {
             populateAgentConfigGeneral();
             updateSchemaVersion(36);
+        }
+        if (initialSchemaVersion < 37) {
+            populateV09AgentCheckTable();
+            updateSchemaVersion(37);
+        }
+        if (initialSchemaVersion < 38) {
+            populateAgentHistoryTable();
+            updateSchemaVersion(38);
+        }
+        if (initialSchemaVersion < 39) {
+            rewriteAgentConfigTablePart1();
+            updateSchemaVersion(39);
+        }
+        if (initialSchemaVersion < 40) {
+            rewriteAgentConfigTablePart2();
+            updateSchemaVersion(40);
+        }
+        if (initialSchemaVersion < 41) {
+            rewriteEnvironmentTablePart1();
+            updateSchemaVersion(41);
+        }
+        if (initialSchemaVersion < 42) {
+            rewriteEnvironmentTablePart2();
+            updateSchemaVersion(42);
+        }
+        if (initialSchemaVersion < 43) {
+            rewriteOpenIncidentTablePart1();
+            updateSchemaVersion(43);
+        }
+        if (initialSchemaVersion < 44) {
+            rewriteOpenIncidentTablePart2();
+            updateSchemaVersion(44);
+        }
+        if (initialSchemaVersion < 45) {
+            rewriteResolvedIncidentTablePart1();
+            updateSchemaVersion(45);
+        }
+        if (initialSchemaVersion < 46) {
+            rewriteResolvedIncidentTablePart2();
+            updateSchemaVersion(46);
+        }
+        if (initialSchemaVersion < 47) {
+            rewriteRoleTablePart1();
+            updateSchemaVersion(47);
+        }
+        if (initialSchemaVersion < 48) {
+            rewriteRoleTablePart2();
+            updateSchemaVersion(48);
+        }
+        if (initialSchemaVersion < 49) {
+            rewriteHeartbeatTablePart1();
+            updateSchemaVersion(49);
+        }
+        if (initialSchemaVersion < 50) {
+            rewriteHeartbeatTablePart2();
+            updateSchemaVersion(50);
+        }
+        if (initialSchemaVersion < 51) {
+            rewriteTransactionTypeTablePart1();
+            updateSchemaVersion(51);
+        }
+        if (initialSchemaVersion < 52) {
+            rewriteTransactionTypeTablePart2();
+            updateSchemaVersion(52);
+        }
+        if (initialSchemaVersion < 53) {
+            rewriteTraceAttributeNameTablePart1();
+            updateSchemaVersion(53);
+        }
+        if (initialSchemaVersion < 54) {
+            rewriteTraceAttributeNameTablePart2();
+            updateSchemaVersion(54);
+        }
+        if (initialSchemaVersion < 55) {
+            rewriteGaugeNameTablePart1();
+            updateSchemaVersion(55);
+        }
+        if (initialSchemaVersion < 56) {
+            rewriteGaugeNameTablePart2();
+            updateSchemaVersion(56);
+        }
+        if (initialSchemaVersion < 57) {
+            populateV09AgentRollupTable();
+            updateSchemaVersion(57);
+        }
+        if (initialSchemaVersion < 58) {
+            finishV09AgentIdUpdate();
+            updateSchemaVersion(58);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -347,8 +439,7 @@ public class SchemaUpgrade {
                 if (expirationHours == -1) {
                     // warning already logged above inside getExpirationHoursForTable()
                 } else {
-                    // this calculation is done to match same calculation below
-                    int windowSizeHours = expirationHours / 24;
+                    int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
                     if (!"HOURS".equals(windowUnit)
                             || !Integer.toString(windowSizeHours).equals(windowSize)) {
                         twcsTableNames.add(table.getName());
@@ -378,13 +469,10 @@ public class SchemaUpgrade {
                     // warning already logged above inside getExpirationHoursForTable()
                     continue;
                 }
-                // "Ideally, operators should select a compaction_window_unit and
-                // compaction_window_size pair that produces approximately 20-30 windows"
-                // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
-                int windowSizeHours = expirationHours / 24;
-                session.execute("alter table " + tableName + " with compaction"
-                        + " = { 'class' : 'TimeWindowCompactionStrategy', 'compaction_window_unit'"
-                        + " : 'HOURS', 'compaction_window_size' : '" + windowSizeHours + "' }");
+                int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
+                session.execute("alter table " + tableName + " with compaction = { 'class'"
+                        + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
+                        + " 'compaction_window_size' : '" + windowSizeHours + "' }");
                 if (dtcsUpdatedCount++ == 0) {
                     startupLogger.info("upgrading from DateTieredCompactionStrategy to"
                             + " TimeWindowCompactionStrategy compression ...");
@@ -402,16 +490,13 @@ public class SchemaUpgrade {
                 // warning already logged above inside getExpirationHoursForTable()
                 continue;
             }
-            // "Ideally, operators should select a compaction_window_unit and
-            // compaction_window_size pair that produces approximately 20-30 windows"
-            // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
-            int windowSizeHours = expirationHours / 24;
-            session.execute("alter table " + tableName + " with compaction = { 'class' :"
-                    + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : '" + windowSizeHours + "' }");
+            int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
             if (twcsUpdatedCount++ == 0) {
                 startupLogger.info("updating TimeWindowCompactionStrategy compaction windows ...");
             }
+            session.execute("alter table " + tableName + " with compaction = { 'class'"
+                    + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
+                    + " 'compaction_window_size' : '" + windowSizeHours + "' }");
         }
         if (dtcsUpdatedCount > 0) {
             startupLogger.info("upgraded {} tables from DateTieredCompactionStrategy to"
@@ -425,9 +510,8 @@ public class SchemaUpgrade {
     }
 
     private void updateSchemaVersion(int schemaVersion) throws Exception {
-        BoundStatement boundStatement = insertPS.bind();
-        boundStatement.setInt(0, 1);
-        boundStatement.setInt(1, schemaVersion);
+        BoundStatement boundStatement = insertIntoSchemVersionPS.bind();
+        boundStatement.setInt(0, schemaVersion);
         session.execute(boundStatement);
     }
 
@@ -510,7 +594,7 @@ public class SchemaUpgrade {
             boundStatement.setString(1, row.getString(1));
             session.execute(boundStatement);
         }
-        dropTable("server_config");
+        dropTableIfExists("server_config");
     }
 
     private void addAgentOneTable() throws Exception {
@@ -528,7 +612,7 @@ public class SchemaUpgrade {
             boundStatement.setString(0, row.getString(0));
             session.execute(boundStatement);
         }
-        dropTable("agent_rollup");
+        dropTableIfExists("agent_rollup");
     }
 
     private void addAgentRollupColumn() throws Exception {
@@ -611,7 +695,7 @@ public class SchemaUpgrade {
             boundStatement.setBool(i++, true);
             session.execute(boundStatement);
             if (parentAgentRollupId != null) {
-                parentAgentRollupIds.addAll(AgentRollupDao.getAgentRollupIds(parentAgentRollupId));
+                parentAgentRollupIds.addAll(getAgentRollupIds(parentAgentRollupId));
             }
         }
         for (String parentAgentRollupId : parentAgentRollupIds) {
@@ -626,7 +710,19 @@ public class SchemaUpgrade {
             session.execute(boundStatement);
         }
         session.execute("alter table agent drop agent_rollup");
-        dropTable("agent_one");
+        dropTableIfExists("agent_one");
+    }
+
+    private static List<String> getAgentRollupIds(String agentRollupId) {
+        List<String> agentRollupIds = Lists.newArrayList();
+        int lastFoundIndex = -1;
+        int nextFoundIndex;
+        while ((nextFoundIndex = agentRollupId.indexOf('/', lastFoundIndex)) != -1) {
+            agentRollupIds.add(agentRollupId.substring(0, nextFoundIndex));
+            lastFoundIndex = nextFoundIndex + 1;
+        }
+        agentRollupIds.add(agentRollupId);
+        return agentRollupIds;
     }
 
     private void addTracePointPartialColumn() throws Exception {
@@ -685,7 +781,7 @@ public class SchemaUpgrade {
             boundStatement.setUUID(i++, configUpdateToken);
             session.execute(boundStatement);
         }
-        dropTable("agent");
+        dropTableIfExists("agent");
     }
 
     private void initialPopulationOfConfigForRollups() throws Exception {
@@ -770,7 +866,7 @@ public class SchemaUpgrade {
     }
 
     private void redoOnTriggeredAlertTable() throws Exception {
-        dropTable("triggered_alert");
+        dropTableIfExists("triggered_alert");
     }
 
     private void addSyntheticMonitorAndAlertPermissions() throws Exception {
@@ -862,16 +958,13 @@ public class SchemaUpgrade {
             boundStatement.setUUID(3, row.getUUID(3));
             session.execute(boundStatement);
         }
-        dropTable("config");
+        dropTableIfExists("config");
     }
 
     private void upgradeAlertConfigs() throws Exception {
-        PreparedStatement readPS =
-                session.prepare("select agent_rollup_id, config from agent_config");
         PreparedStatement insertPS = session.prepare("insert into agent_config (agent_rollup_id,"
                 + " config, config_update, config_update_token) values (?, ?, ?, ?)");
-        BoundStatement boundStatement = readPS.bind();
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.execute("select agent_rollup_id, config from agent_config");
         for (Row row : results) {
             String agentRollupId = row.getString(0);
             AgentConfig oldAgentConfig;
@@ -886,7 +979,7 @@ public class SchemaUpgrade {
                 continue;
             }
             AgentConfig agentConfig = upgradeOldAgentConfig(oldAgentConfig);
-            boundStatement = insertPS.bind();
+            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
@@ -966,12 +1059,9 @@ public class SchemaUpgrade {
     }
 
     private void addDefaultGaugeNameToUiConfigs() throws Exception {
-        PreparedStatement readPS =
-                session.prepare("select agent_rollup_id, config from agent_config");
         PreparedStatement insertPS = session.prepare("insert into agent_config (agent_rollup_id,"
                 + " config, config_update, config_update_token) values (?, ?, ?, ?)");
-        BoundStatement boundStatement = readPS.bind();
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.execute("select agent_rollup_id, config from agent_config");
         for (Row row : results) {
             String agentRollupId = row.getString(0);
             AgentConfig oldAgentConfig;
@@ -985,7 +1075,7 @@ public class SchemaUpgrade {
                     .setUiConfig(oldAgentConfig.getUiConfig().toBuilder()
                             .addDefaultGaugeName("java.lang:type=Memory:HeapMemoryUsage.used"))
                     .build();
-            boundStatement = insertPS.bind();
+            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
@@ -1019,7 +1109,7 @@ public class SchemaUpgrade {
     }
 
     private void redoOnHeartbeatTable() throws Exception {
-        dropTable("heartbeat");
+        dropTableIfExists("heartbeat");
     }
 
     private void addSyntheticResultErrorIntervalsColumn() throws Exception {
@@ -1033,24 +1123,17 @@ public class SchemaUpgrade {
         logger.info("populating new gauge name history table - this could take several minutes on"
                 + " large data sets ...");
 
-        dropTable("gauge_name");
-
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         int maxRollupHours = storageConfig.getMaxRollupHours();
-        session.createTableWithTWCS("create table if not exists gauge_name (agent_rollup_id"
-                + " varchar, capture_time timestamp, gauge_name varchar, primary key"
-                + " (agent_rollup_id, capture_time, gauge_name))", maxRollupHours);
-
+        dropTableIfExists("gauge_name");
+        session.createTableWithTWCS("create table gauge_name (agent_rollup_id varchar, capture_time"
+                + " timestamp, gauge_name varchar, primary key (agent_rollup_id, capture_time,"
+                + " gauge_name))", maxRollupHours);
         PreparedStatement insertPS = session.prepare("insert into gauge_name (agent_rollup_id,"
                 + " capture_time, gauge_name) values (?, ?, ?) using ttl ?");
-
-        PreparedStatement readPS = session
-                .prepare("select agent_rollup, gauge_name, capture_time from gauge_value_rollup_4");
-
         Multimap<Long, AgentRollupIdGaugeNamePair> rowsPerCaptureTime = HashMultimap.create();
-
-        BoundStatement boundStatement = readPS.bind();
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session
+                .execute("select agent_rollup, gauge_name, capture_time from gauge_value_rollup_4");
         for (Row row : results) {
             int i = 0;
             String agentRollupId = checkNotNull(row.getString(i++));
@@ -1061,15 +1144,28 @@ public class SchemaUpgrade {
             rowsPerCaptureTime.put(rollupCaptureTime,
                     ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
         }
-
+        // read from 1-min gauge values to get not-yet-rolled-up data
+        // (not using 5-second gauge values since those don't exist for agent rollups)
+        results = session
+                .execute("select agent_rollup, gauge_name, capture_time from gauge_value_rollup_1");
+        for (Row row : results) {
+            int i = 0;
+            String agentRollupId = checkNotNull(row.getString(i++));
+            String gaugeName = checkNotNull(row.getString(i++));
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long millisPerDay = DAYS.toMillis(1);
+            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, millisPerDay);
+            rowsPerCaptureTime.put(rollupCaptureTime,
+                    ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
+        }
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
         List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
         for (long captureTime : sortedCaptureTimes) {
-            int adjustedTTL = AggregateDao.getAdjustedTTL(maxRollupTTL, captureTime, clock);
+            int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
             for (AgentRollupIdGaugeNamePair row : rowsPerCaptureTime.get(captureTime)) {
-                boundStatement = insertPS.bind();
+                BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
                 boundStatement.setString(i++, row.agentRollupId());
                 boundStatement.setTimestamp(i++, new Date(captureTime));
@@ -1118,6 +1214,708 @@ public class SchemaUpgrade {
         dropColumnIfExists("agent_rollup", "display");
     }
 
+    private void populateV09AgentCheckTable() throws Exception {
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        PreparedStatement insertV09AgentCheckPS = null;
+        for (V09AgentRollup v09AgentRollup : v09AgentRollups.values()) {
+            if (v09AgentRollup.agent() && v09AgentRollup.hasRollup()) {
+                // only create v09_agent_check and v09_last_capture_time tables if needed
+                if (insertV09AgentCheckPS == null) {
+                    dropTableIfExists("v09_last_capture_time");
+                    session.execute("create table v09_last_capture_time (one int,"
+                            + " v09_last_capture_time timestamp, v09_fqt_last_expiration_time"
+                            + " timestamp, v09_trace_last_expiration_time timestamp,"
+                            + " v09_aggregate_last_expiration_time timestamp, primary key (one))");
+                    BoundStatement boundStatement = session.prepare("insert into"
+                            + " v09_last_capture_time (one, v09_last_capture_time,"
+                            + " v09_fqt_last_expiration_time, v09_trace_last_expiration_time,"
+                            + " v09_aggregate_last_expiration_time) values (1, ?, ?, ?, ?)")
+                            .bind();
+                    long nextDailyRollup = RollupLevelService.getCeilRollupTime(
+                            clock.currentTimeMillis(), DAYS.toMillis(1));
+                    CentralStorageConfig storageConfig = getCentralStorageConfig(session);
+                    long v09FqtLastExpirationTime = addExpirationHours(nextDailyRollup,
+                            storageConfig.fullQueryTextExpirationHours());
+                    long v09TraceLastExpirationTime = addExpirationHours(nextDailyRollup,
+                            storageConfig.traceExpirationHours());
+                    long v09AggregateLastExpirationTime = addExpirationHours(nextDailyRollup,
+                            storageConfig.getMaxRollupHours());
+                    int i = 0;
+                    boundStatement.setTimestamp(i++, new Date(nextDailyRollup));
+                    boundStatement.setTimestamp(i++, new Date(v09FqtLastExpirationTime));
+                    boundStatement.setTimestamp(i++, new Date(v09TraceLastExpirationTime));
+                    boundStatement.setTimestamp(i++, new Date(v09AggregateLastExpirationTime));
+                    session.execute(boundStatement);
+
+                    dropTableIfExists("v09_agent_check");
+                    session.execute("create table v09_agent_check (one int, agent_id varchar,"
+                            + " primary key (one, agent_id))");
+                    insertV09AgentCheckPS = session.prepare(
+                            "insert into v09_agent_check (one, agent_id) values (1, ?)");
+                }
+                BoundStatement boundStatement = insertV09AgentCheckPS.bind();
+                boundStatement.setString(0, v09AgentRollup.agentRollupId());
+                session.execute(boundStatement);
+            }
+        }
+    }
+
+    private void populateAgentHistoryTable() throws Exception {
+        logger.info("populating new agent history table - this could take a several minutes on"
+                + " large data sets ...");
+
+        CentralStorageConfig storageConfig = getCentralStorageConfig(session);
+        dropTableIfExists("agent");
+        session.createTableWithTWCS("create table agent (one int, capture_time timestamp, agent_id"
+                + " varchar, primary key (one, capture_time, agent_id))",
+                storageConfig.getMaxRollupHours());
+        PreparedStatement insertPS = session.prepare("insert into agent (one, capture_time,"
+                + " agent_id) values (1, ?, ?) using ttl ?");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        Multimap<Long, String> agentIdsPerCaptureTime = HashMultimap.create();
+        ResultSet results = session
+                .execute("select agent_rollup, capture_time from aggregate_tt_throughput_rollup_3");
+        for (Row row : results) {
+            String v09AgentId = checkNotNull(row.getString(0));
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentId);
+            if (v09AgentRollup == null || !v09AgentRollup.agent()) {
+                // v09AgentId is not an agent, or it was manually deleted (via the UI) from the
+                // agent_rollup table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            String agentId = v09AgentRollup.agentRollupId();
+            long captureTime = checkNotNull(row.getTimestamp(1)).getTime();
+            long millisPerDay = DAYS.toMillis(1);
+            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, millisPerDay);
+            agentIdsPerCaptureTime.put(rollupCaptureTime, agentId);
+        }
+        // read from 1-min aggregates to get not-yet-rolled-up data
+        results = session
+                .execute("select agent_rollup, capture_time from aggregate_tt_throughput_rollup_0");
+        for (Row row : results) {
+            String v09AgentId = checkNotNull(row.getString(0));
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentId);
+            if (v09AgentRollup == null || !v09AgentRollup.agent()) {
+                // v09AgentId is not an agent, or it was manually deleted (via the UI) from the
+                // agent_rollup table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            String agentId = v09AgentRollup.agentRollupId();
+            long captureTime = checkNotNull(row.getTimestamp(1)).getTime();
+            long millisPerDay = DAYS.toMillis(1);
+            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, millisPerDay);
+            agentIdsPerCaptureTime.put(rollupCaptureTime, agentId);
+        }
+        int maxRollupTTL = storageConfig.getMaxRollupTTL();
+        List<Long> sortedCaptureTimes =
+                Ordering.natural().sortedCopy(agentIdsPerCaptureTime.keySet());
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        for (long captureTime : sortedCaptureTimes) {
+            int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
+            for (String agentId : agentIdsPerCaptureTime.get(captureTime)) {
+                BoundStatement boundStatement = insertPS.bind();
+                int i = 0;
+                boundStatement.setTimestamp(i++, new Date(captureTime));
+                boundStatement.setString(i++, agentId);
+                boundStatement.setInt(i++, adjustedTTL);
+                futures.add(session.executeAsync(boundStatement));
+            }
+        }
+        MoreFutures.waitForAll(futures);
+        logger.info("populating new agent history table - complete");
+    }
+
+    private void rewriteAgentConfigTablePart1() throws Exception {
+        dropTableIfExists("agent_config_temp");
+        session.execute("create table agent_config_temp (agent_rollup_id varchar, config blob,"
+                + " config_update boolean, config_update_token uuid, primary key"
+                + " (agent_rollup_id))");
+        PreparedStatement insertTempPS = session.prepare("insert into agent_config_temp"
+                + " (agent_rollup_id, config, config_update, config_update_token) values"
+                + " (?, ?, ?, ?)");
+        ResultSet results = session.execute("select agent_rollup_id, config, config_update,"
+                + " config_update_token from agent_config");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setBytes(1, row.getBytes(1));
+            boundStatement.setBool(2, row.getBool(2));
+            boundStatement.setUUID(3, row.getUUID(3));
+            session.execute(boundStatement);
+        }
+    }
+
+    private void rewriteAgentConfigTablePart2() throws Exception {
+        if (!tableExists("agent_config_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTableIfExists("agent_config");
+        session.execute("create table agent_config (agent_rollup_id varchar, config blob,"
+                + " config_update boolean, config_update_token uuid, primary key"
+                + " (agent_rollup_id)) " + WITH_LCS);
+        PreparedStatement insertPS = session.prepare("insert into agent_config"
+                + " (agent_rollup_id, config, config_update, config_update_token) values"
+                + " (?, ?, ?, ?)");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        ResultSet results = session.execute("select agent_rollup_id, config, config_update,"
+                + " config_update_token from agent_config_temp");
+        for (Row row : results) {
+            String v09AgentRollupId = row.getString(0);
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
+            if (v09AgentRollup == null) {
+                // v09AgentRollupId was manually deleted (via the UI) from the agent_rollup
+                // table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, v09AgentRollup.agentRollupId());
+            boundStatement.setBytes(1, row.getBytes(1));
+            boundStatement.setBool(2, row.getBool(2));
+            boundStatement.setUUID(3, row.getUUID(3));
+            session.execute(boundStatement);
+        }
+        dropTableIfExists("agent_config_temp");
+    }
+
+    private void rewriteEnvironmentTablePart1() throws Exception {
+        dropTableIfExists("environment_temp");
+        session.execute("create table environment_temp (agent_id varchar, environment blob,"
+                + " primary key (agent_id))");
+        PreparedStatement insertTempPS = session
+                .prepare("insert into environment_temp (agent_id, environment) values (?, ?)");
+        ResultSet results = session.execute("select agent_id, environment from environment");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setBytes(1, row.getBytes(1));
+            session.execute(boundStatement);
+        }
+    }
+
+    private void rewriteEnvironmentTablePart2() throws Exception {
+        if (!tableExists("environment_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTableIfExists("environment");
+        session.execute("create table environment (agent_id varchar, environment blob,"
+                + " primary key (agent_id)) " + WITH_LCS);
+        PreparedStatement insertPS = session
+                .prepare("insert into environment (agent_id, environment) values (?, ?)");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        ResultSet results = session.execute("select agent_id, environment from environment_temp");
+        for (Row row : results) {
+            String v09AgentRollupId = row.getString(0);
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
+            if (v09AgentRollup == null) {
+                // v09AgentRollupId was manually deleted (via the UI) from the agent_rollup
+                // table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, v09AgentRollup.agentRollupId());
+            boundStatement.setBytes(1, row.getBytes(1));
+            session.execute(boundStatement);
+        }
+        dropTableIfExists("environment_temp");
+    }
+
+    private void rewriteOpenIncidentTablePart1() throws Exception {
+        dropTableIfExists("open_incident_temp");
+        session.execute("create table open_incident_temp (one int, agent_rollup_id varchar,"
+                + " condition blob, severity varchar, notification blob, open_time timestamp,"
+                + " primary key (one, agent_rollup_id, condition, severity))");
+        PreparedStatement insertTempPS = session.prepare("insert into open_incident_temp (one,"
+                + " agent_rollup_id, condition, severity, notification, open_time) values"
+                + " (1, ?, ?, ?, ?, ?)");
+        ResultSet results = session.execute("select agent_rollup_id, condition, severity,"
+                + " notification, open_time from open_incident where one = 1");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setBytes(1, row.getBytes(1));
+            boundStatement.setString(2, row.getString(2));
+            boundStatement.setBytes(3, row.getBytes(3));
+            boundStatement.setTimestamp(4, row.getTimestamp(4));
+            session.execute(boundStatement);
+        }
+    }
+
+    private void rewriteOpenIncidentTablePart2() throws Exception {
+        if (!tableExists("open_incident_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTableIfExists("open_incident");
+        session.execute("create table open_incident (one int, agent_rollup_id varchar,"
+                + " condition blob, severity varchar, notification blob, open_time timestamp,"
+                + " primary key (one, agent_rollup_id, condition, severity)) " + WITH_LCS);
+        PreparedStatement insertPS = session.prepare("insert into open_incident (one,"
+                + " agent_rollup_id, condition, severity, notification, open_time) values"
+                + " (1, ?, ?, ?, ?, ?)");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        ResultSet results = session.execute("select agent_rollup_id, condition, severity,"
+                + " notification, open_time from open_incident_temp where one = 1");
+        for (Row row : results) {
+            String v09AgentRollupId = row.getString(0);
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
+            if (v09AgentRollup == null) {
+                // v09AgentRollupId was manually deleted (via the UI) from the agent_rollup
+                // table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, v09AgentRollup.agentRollupId());
+            boundStatement.setBytes(1, row.getBytes(1));
+            boundStatement.setString(2, row.getString(2));
+            boundStatement.setBytes(3, row.getBytes(3));
+            boundStatement.setTimestamp(4, row.getTimestamp(4));
+            session.execute(boundStatement);
+        }
+        dropTableIfExists("open_incident_temp");
+    }
+
+    private void rewriteResolvedIncidentTablePart1() throws Exception {
+        dropTableIfExists("resolved_incident_temp");
+        session.execute("create table resolved_incident_temp (one int, resolve_time"
+                + " timestamp, agent_rollup_id varchar, condition blob, severity varchar,"
+                + " notification blob, open_time timestamp, primary key (one, resolve_time,"
+                + " agent_rollup_id, condition)) with clustering order by (resolve_time desc)");
+        PreparedStatement insertTempPS = session.prepare("insert into resolved_incident_temp"
+                + " (one, resolve_time, agent_rollup_id, condition, severity, notification,"
+                + " open_time) values (1, ?, ?, ?, ?, ?, ?)");
+        ResultSet results = session.execute("select resolve_time, agent_rollup_id, condition,"
+                + " severity, notification, open_time from resolved_incident where one = 1");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setTimestamp(0, row.getTimestamp(0));
+            boundStatement.setString(1, row.getString(1));
+            boundStatement.setBytes(2, row.getBytes(2));
+            boundStatement.setString(3, row.getString(3));
+            boundStatement.setBytes(4, row.getBytes(4));
+            boundStatement.setTimestamp(5, row.getTimestamp(5));
+            session.execute(boundStatement);
+        }
+    }
+
+    private void rewriteResolvedIncidentTablePart2() throws Exception {
+        if (!tableExists("resolved_incident_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTableIfExists("resolved_incident");
+        session.createTableWithTWCS("create table resolved_incident (one int, resolve_time"
+                + " timestamp, agent_rollup_id varchar, condition blob, severity varchar,"
+                + " notification blob, open_time timestamp, primary key (one, resolve_time,"
+                + " agent_rollup_id, condition)) with clustering order by (resolve_time desc)",
+                StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS, true);
+        PreparedStatement insertPS = session.prepare("insert into resolved_incident (one,"
+                + " resolve_time, agent_rollup_id, condition, severity, notification,"
+                + " open_time) values (1, ?, ?, ?, ?, ?, ?) using ttl ?");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        int ttl = Ints.saturatedCast(
+                HOURS.toSeconds(StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS));
+        ResultSet results = session.execute("select resolve_time, agent_rollup_id, condition,"
+                + " severity, notification, open_time from resolved_incident_temp where one = 1");
+        for (Row row : results) {
+            String v09AgentRollupId = row.getString(1);
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
+            if (v09AgentRollup == null) {
+                // v09AgentRollupId was manually deleted (via the UI) from the agent_rollup
+                // table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            Date resolveTime = checkNotNull(row.getTimestamp(0));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, resolveTime.getTime(), clock);
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setTimestamp(0, resolveTime);
+            boundStatement.setString(1, v09AgentRollup.agentRollupId());
+            boundStatement.setBytes(2, row.getBytes(2));
+            boundStatement.setString(3, row.getString(3));
+            boundStatement.setBytes(4, row.getBytes(4));
+            boundStatement.setTimestamp(5, row.getTimestamp(5));
+            boundStatement.setInt(6, adjustedTTL);
+            session.execute(boundStatement);
+        }
+        dropTableIfExists("resolved_incident_temp");
+    }
+
+    private void rewriteRoleTablePart1() throws Exception {
+        dropTableIfExists("role_temp");
+        session.execute("create table role_temp (name varchar, permissions set<varchar>,"
+                + " primary key (name))");
+        PreparedStatement insertTempPS =
+                session.prepare("insert into role_temp (name, permissions) values (?, ?)");
+        ResultSet results = session.execute("select name, permissions from role");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setSet(1, row.getSet(1, String.class));
+            session.execute(boundStatement);
+        }
+    }
+
+    private void rewriteRoleTablePart2() throws Exception {
+        if (!tableExists("role_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTableIfExists("role");
+        session.execute("create table role (name varchar, permissions set<varchar>,"
+                + " primary key (name)) " + WITH_LCS);
+        PreparedStatement insertPS =
+                session.prepare("insert into role (name, permissions) values (?, ?)");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        ResultSet results = session.execute("select name, permissions from role_temp");
+        for (Row row : results) {
+            Set<String> v09Permissions = row.getSet(1, String.class);
+            Set<String> permissions = Sets.newLinkedHashSet();
+            for (String v09Permission : v09Permissions) {
+                if (!v09Permission.startsWith("agent:")) {
+                    // non-agent permission, no need for conversion
+                    permissions.add(v09Permission);
+                    continue;
+                }
+                if (v09Permission.equals("agent:") || v09Permission.startsWith("agent::")
+                        || v09Permission.equals("agent:*")
+                        || v09Permission.startsWith("agent:*:")) {
+                    // special cases, no need for conversion
+                    permissions.add(v09Permission);
+                    continue;
+                }
+                PermissionParser parser = new PermissionParser(v09Permission);
+                parser.parse();
+                List<String> v09AgentRollupIds = parser.getAgentRollupIds();
+                String perm = parser.getPermission();
+                if (v09AgentRollupIds.isEmpty()) {
+                    // this shouldn't happen since v09Permission doesn't start with "agent::"
+                    // (see condition above)
+                    logger.warn("found agent permission without any agents: {}", v09Permission);
+                    continue;
+                }
+                List<String> agentRollupIds = Lists.newArrayList();
+                for (String v09AgentRollupId : v09AgentRollupIds) {
+                    V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
+                    if (v09AgentRollup == null) {
+                        // v09AgentRollupId was manually deleted (via the UI) from the
+                        // agent_rollup table in which case its parent is no longer known
+                        // and best to ignore
+                        continue;
+                    }
+                    agentRollupIds.add(v09AgentRollup.agentRollupId());
+                }
+                if (agentRollupIds.isEmpty()) {
+                    // all v09AgentRollupIds were manually deleted (see comment above)
+                    continue;
+                }
+                if (perm.isEmpty()) {
+                    permissions.add(
+                            "agent:" + PermissionParser.quoteIfNeededAndJoin(v09AgentRollupIds));
+                } else {
+                    permissions.add("agent:" + PermissionParser.quoteIfNeededAndJoin(agentRollupIds)
+                            + ":" + perm.substring("agent:".length()));
+                }
+            }
+            if (permissions.isEmpty()) {
+                // all v09AgentRollupIds for all permissions were manually deleted (see comments
+                // above)
+                continue;
+            }
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setSet(1, permissions);
+            session.execute(boundStatement);
+        }
+        dropTableIfExists("role_temp");
+    }
+
+    private void rewriteHeartbeatTablePart1() throws Exception {
+        logger.info("rewriting heartbeat table (part 1) ...");
+        dropTableIfExists("heartbeat_temp");
+        session.execute("create table heartbeat_temp (agent_id varchar, central_capture_time"
+                + " timestamp, primary key (agent_id, central_capture_time))");
+        PreparedStatement insertTempPS = session.prepare("insert into heartbeat_temp (agent_id,"
+                + " central_capture_time) values (?, ?)");
+        ResultSet results = session.execute("select agent_id, central_capture_time from heartbeat");
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setTimestamp(1, row.getTimestamp(1));
+            futures.add(session.executeAsync(boundStatement));
+        }
+        MoreFutures.waitForAll(futures);
+        logger.info("rewriting heartbeat table (part 1) - complete");
+    }
+
+    private void rewriteHeartbeatTablePart2() throws Exception {
+        if (!tableExists("heartbeat_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        logger.info("rewriting heartbeat table (part 2) ...");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        dropTableIfExists("heartbeat");
+        session.createTableWithTWCS("create table heartbeat (agent_id varchar, central_capture_time"
+                + " timestamp, primary key (agent_id, central_capture_time))",
+                HeartbeatDao.EXPIRATION_HOURS);
+        PreparedStatement insertPS = session.prepare("insert into heartbeat (agent_id,"
+                + " central_capture_time) values (?, ?) using ttl ?");
+        int ttl = Ints.saturatedCast(HOURS.toSeconds(HeartbeatDao.EXPIRATION_HOURS));
+        ResultSet results =
+                session.execute("select agent_id, central_capture_time from heartbeat_temp");
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        for (Row row : results) {
+            String v09AgentRollupId = row.getString(0);
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
+            if (v09AgentRollup == null) {
+                // v09AgentRollupId was manually deleted (via the UI) from the agent_rollup
+                // table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            Date centralCaptureDate = checkNotNull(row.getTimestamp(1));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, centralCaptureDate.getTime(), clock);
+            BoundStatement boundStatement = insertPS.bind();
+            int i = 0;
+            boundStatement.setString(i++, v09AgentRollup.agentRollupId());
+            boundStatement.setTimestamp(i++, centralCaptureDate);
+            boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.executeAsync(boundStatement));
+        }
+        MoreFutures.waitForAll(futures);
+        dropTableIfExists("heartbeat_temp");
+        logger.info("rewriting heartbeat table (part 2) - complete");
+    }
+
+    private void rewriteTransactionTypeTablePart1() throws Exception {
+        dropTableIfExists("transaction_type_temp");
+        session.execute("create table transaction_type_temp (one int, agent_rollup varchar,"
+                + " transaction_type varchar, primary key (one, agent_rollup, transaction_type))");
+        PreparedStatement insertTempPS = session.prepare("insert into transaction_type_temp (one,"
+                + " agent_rollup, transaction_type) values (1, ?, ?)");
+        ResultSet results = session.execute(
+                "select agent_rollup, transaction_type from transaction_type where one = 1");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setString(1, row.getString(1));
+            session.execute(boundStatement);
+        }
+    }
+
+    private void rewriteTransactionTypeTablePart2() throws Exception {
+        if (!tableExists("transaction_type_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTableIfExists("transaction_type");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        session.execute("create table transaction_type (one int, agent_rollup varchar,"
+                + " transaction_type varchar, primary key (one, agent_rollup, transaction_type)) "
+                + WITH_LCS);
+        PreparedStatement insertPS = session.prepare("insert into transaction_type (one,"
+                + " agent_rollup, transaction_type) values (1, ?, ?) using ttl ?");
+        int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
+        ResultSet results = session.execute(
+                "select agent_rollup, transaction_type from transaction_type_temp where one = 1");
+        for (Row row : results) {
+            String v09AgentRollupId = row.getString(0);
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
+            if (v09AgentRollup == null) {
+                // v09AgentRollupId was manually deleted (via the UI) from the agent_rollup
+                // table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, v09AgentRollup.agentRollupId());
+            boundStatement.setString(1, row.getString(1));
+            boundStatement.setInt(2, ttl);
+            session.execute(boundStatement);
+        }
+        dropTableIfExists("transaction_type_temp");
+    }
+
+    private void rewriteTraceAttributeNameTablePart1() throws Exception {
+        dropTableIfExists("trace_attribute_name_temp");
+        session.execute("create table trace_attribute_name_temp (agent_rollup varchar,"
+                + " transaction_type varchar, trace_attribute_name varchar, primary key"
+                + " ((agent_rollup, transaction_type), trace_attribute_name))");
+        PreparedStatement insertTempPS = session.prepare("insert into trace_attribute_name_temp"
+                + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?)");
+        ResultSet results = session.execute("select agent_rollup, transaction_type,"
+                + " trace_attribute_name from trace_attribute_name");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setString(1, row.getString(1));
+            boundStatement.setString(2, row.getString(2));
+            session.execute(boundStatement);
+        }
+    }
+
+    private void rewriteTraceAttributeNameTablePart2() throws Exception {
+        if (!tableExists("trace_attribute_name_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTableIfExists("trace_attribute_name");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        session.execute("create table trace_attribute_name (agent_rollup varchar, transaction_type"
+                + " varchar, trace_attribute_name varchar, primary key ((agent_rollup,"
+                + " transaction_type), trace_attribute_name)) " + WITH_LCS);
+        PreparedStatement insertPS = session.prepare("insert into trace_attribute_name"
+                + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?) using"
+                + " ttl ?");
+        int ttl = getCentralStorageConfig(session).getTraceTTL();
+        ResultSet results = session.execute("select agent_rollup, transaction_type,"
+                + " trace_attribute_name from trace_attribute_name_temp");
+        for (Row row : results) {
+            String v09AgentRollupId = row.getString(0);
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
+            if (v09AgentRollup == null) {
+                // v09AgentRollupId was manually deleted (via the UI) from the agent_rollup
+                // table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, v09AgentRollup.agentRollupId());
+            boundStatement.setString(1, row.getString(1));
+            boundStatement.setString(2, row.getString(2));
+            boundStatement.setInt(3, ttl);
+            session.execute(boundStatement);
+        }
+        dropTableIfExists("trace_attribute_name_temp");
+    }
+
+    private void rewriteGaugeNameTablePart1() throws Exception {
+        logger.info("rewriting gauge_name table (part 1) - this could take several minutes on large"
+                + " data sets ...");
+        dropTableIfExists("gauge_name_temp");
+        session.execute("create table gauge_name_temp (agent_rollup_id varchar, capture_time"
+                + " timestamp, gauge_name varchar, primary key (agent_rollup_id, capture_time,"
+                + " gauge_name))");
+        PreparedStatement insertTempPS = session.prepare("insert into gauge_name_temp"
+                + " (agent_rollup_id, capture_time, gauge_name) values (?, ?, ?) using ttl ?");
+        ResultSet results =
+                session.execute("select agent_rollup_id, capture_time, gauge_name from gauge_name");
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setTimestamp(1, row.getTimestamp(1));
+            boundStatement.setString(2, row.getString(2));
+            futures.add(session.executeAsync(boundStatement));
+        }
+        MoreFutures.waitForAll(futures);
+        logger.info("rewriting gauge_name table (part 1) - complete");
+    }
+
+    private void rewriteGaugeNameTablePart2() throws Exception {
+        logger.info("rewriting gauge_name table (part 2) - this could take several minutes on large"
+                + " data sets ...");
+        if (!tableExists("gauge_name_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        CentralStorageConfig storageConfig = getCentralStorageConfig(session);
+        dropTableIfExists("gauge_name");
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        session.createTableWithTWCS("create table gauge_name (agent_rollup_id varchar, capture_time"
+                + " timestamp, gauge_name varchar, primary key (agent_rollup_id, capture_time,"
+                + " gauge_name))", storageConfig.getMaxRollupHours());
+        PreparedStatement insertPS = session.prepare("insert into gauge_name (agent_rollup_id,"
+                + " capture_time, gauge_name) values (?, ?, ?) using ttl ?");
+        int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
+        ResultSet results = session
+                .execute("select agent_rollup_id, capture_time, gauge_name from gauge_name_temp");
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        for (Row row : results) {
+            String v09AgentRollupId = row.getString(0);
+            V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
+            if (v09AgentRollup == null) {
+                // v09AgentRollupId was manually deleted (via the UI) from the agent_rollup
+                // table in which case its parent is no longer known and best to ignore
+                continue;
+            }
+            Date captureDate = checkNotNull(row.getTimestamp(1));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.getTime(), clock);
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, v09AgentRollup.agentRollupId());
+            boundStatement.setTimestamp(1, captureDate);
+            boundStatement.setString(2, row.getString(2));
+            boundStatement.setInt(3, adjustedTTL);
+            futures.add(session.executeAsync(boundStatement));
+        }
+        MoreFutures.waitForAll(futures);
+        dropTableIfExists("gauge_name_temp");
+        logger.info("rewriting gauge_name table (part 2) - complete");
+    }
+
+    private void populateV09AgentRollupTable() throws Exception {
+        Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
+        PreparedStatement insertPS = null;
+        for (V09AgentRollup v09AgentRollup : v09AgentRollups.values()) {
+            if (v09AgentRollup.agent() && v09AgentRollup.hasRollup()) {
+                // only create v09_agent_check and v09_last_capture_time tables if needed
+                if (insertPS == null) {
+                    dropTableIfExists("v09_agent_rollup");
+                    session.execute("create table v09_agent_rollup (one int, v09_agent_id varchar,"
+                            + " v09_agent_rollup_id varchar, primary key (one, v09_agent_id,"
+                            + " v09_agent_rollup_id)) " + WITH_LCS);
+                    insertPS = session.prepare("insert into v09_agent_rollup"
+                            + " (one, v09_agent_id, v09_agent_rollup_id) values (1, ?, ?)");
+                }
+                BoundStatement boundStatement = insertPS.bind();
+                boundStatement.setString(0, v09AgentRollup.agentRollupId());
+                int i = 0;
+                boundStatement.setString(i++, v09AgentRollup.v09AgentRollupId());
+                boundStatement.setString(i++,
+                        checkNotNull(v09AgentRollup.v09ParentAgentRollupId()));
+                session.execute(boundStatement);
+            }
+        }
+    }
+
+    private void finishV09AgentIdUpdate() throws Exception {
+        dropTableIfExists("trace_check");
+        // TODO at some point in the future drop agent_rollup
+        // (intentionally not dropping it for now, in case any upgrade corrections are needed post
+        // v0.10.0)
+    }
+
+    private Map<String, V09AgentRollup> getV09AgentRollupsFromAgentRollupTable() throws Exception {
+        Map<String, V09AgentRollup> v09AgentRollupIds = Maps.newHashMap();
+        ResultSet results = session.execute("select agent_rollup_id, parent_agent_rollup_id, agent"
+                + " from agent_rollup where one = 1");
+        for (Row row : results) {
+            int i = 0;
+            String v09AgentRollupId = checkNotNull(row.getString(i++));
+            String v09ParentAgentRollupId = row.getString(i++);
+            boolean agent = row.getBool(i++);
+            boolean hasRollup = v09ParentAgentRollupId != null;
+            String agentRollupId;
+            if (agent) {
+                if (v09ParentAgentRollupId == null) {
+                    agentRollupId = v09AgentRollupId;
+                } else {
+                    agentRollupId =
+                            v09ParentAgentRollupId.replace("/", "::") + "::" + v09AgentRollupId;
+                }
+            } else {
+                agentRollupId = v09AgentRollupId.replace("/", "::") + "::";
+            }
+            v09AgentRollupIds.put(v09AgentRollupId, ImmutableV09AgentRollup.builder()
+                    .agent(agent)
+                    .hasRollup(hasRollup)
+                    .agentRollupId(agentRollupId)
+                    .v09AgentRollupId(v09AgentRollupId)
+                    .v09ParentAgentRollupId(v09ParentAgentRollupId)
+                    .build());
+        }
+        return v09AgentRollupIds;
+    }
+
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
             throws Exception {
         if (!columnExists(tableName, columnName)) {
@@ -1141,9 +1939,9 @@ public class SchemaUpgrade {
 
     // drop table can timeout, throwing NoHostAvailableException
     // (see https://github.com/glowroot/glowroot/issues/125)
-    private void dropTable(String tableName) throws Exception {
+    private void dropTableIfExists(String tableName) throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        while (stopwatch.elapsed(SECONDS) < 30) {
+        while (stopwatch.elapsed(SECONDS) < 60) {
             try {
                 session.execute("drop table if exists " + tableName);
                 return;
@@ -1237,7 +2035,7 @@ public class SchemaUpgrade {
         } else if (tableName.startsWith("aggregate_") || tableName.startsWith("synthetic_")) {
             int rollupLevel = Integer.parseInt(tableName.substring(tableName.lastIndexOf('_') + 1));
             return storageConfig.rollupExpirationHours().get(rollupLevel);
-        } else if (tableName.equals("gauge_name")) {
+        } else if (tableName.equals("gauge_name") || tableName.equals("agent")) {
             return getMaxRollupExpirationHours(storageConfig);
         } else if (tableName.equals("heartbeat")) {
             return HeartbeatDao.EXPIRATION_HOURS;
@@ -1432,6 +2230,15 @@ public class SchemaUpgrade {
         }
     }
 
+    private static long addExpirationHours(long timeInMillis, int expirationHours) {
+        if (expirationHours == 0) {
+            // 100 years from now is the same thing as never expire (0)
+            return timeInMillis + DAYS.toMillis(365 * 100);
+        } else {
+            return timeInMillis + HOURS.toMillis(expirationHours);
+        }
+    }
+
     private static @Nullable Integer getSchemaVersion(Session session, KeyspaceMetadata keyspace)
             throws Exception {
         ResultSet results =
@@ -1455,5 +2262,15 @@ public class SchemaUpgrade {
     interface AgentRollupIdGaugeNamePair {
         String agentRollupId();
         String gaugeName();
+    }
+
+    @Value.Immutable
+    interface V09AgentRollup {
+        boolean agent();
+        boolean hasRollup();
+        String agentRollupId();
+        String v09AgentRollupId();
+        @Nullable
+        String v09ParentAgentRollupId();
     }
 }

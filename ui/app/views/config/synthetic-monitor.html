@@ -47,7 +47,7 @@
             <label>
               <input type="radio"
                      ng-model="config.kind"
-                     ng-disabled="!agentPermissions.config.edit.syntheticMonitor"
+                     ng-disabled="!agentRollup.permissions.config.edit.syntheticMonitor"
                      value="ping">
               Ping
             </label>
@@ -56,7 +56,7 @@
             <label>
               <input type="radio"
                      ng-model="config.kind"
-                     ng-disabled="!agentPermissions.config.edit.syntheticMonitor"
+                     ng-disabled="!agentRollup.permissions.config.edit.syntheticMonitor"
                      value="java">
               Java
             </label>
@@ -70,7 +70,7 @@
              gt-model="config.pingUrl"
              gt-pattern="/^https?:\/\//"
              gt-required="loaded"
-             gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
+             gt-disabled="!agentRollup.permissions.config.edit.syntheticMonitor"
              gt-rows="10"
              class="gt-alert-java-class">
           <div class="help-block">
@@ -80,7 +80,7 @@
         <div gt-form-group
              gt-label="Display name"
              gt-model="config.display"
-             gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
+             gt-disabled="!agentRollup.permissions.config.edit.syntheticMonitor"
              gt-width="40em"
              gt-placeholder="Ping {{config.pingUrl ? config.pingUrl : '<url>'}}">
           <div class="help-block">
@@ -92,7 +92,7 @@
         <div gt-form-group
              gt-label="Display name"
              gt-model="config.display"
-             gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
+             gt-disabled="!agentRollup.permissions.config.edit.syntheticMonitor"
              gt-width="40em"
              gt-required="loaded">
           <div class="help-block">
@@ -105,7 +105,7 @@
              gt-label="Java source"
              gt-model="config.javaSource"
              gt-required="loaded"
-             gt-disabled="!agentPermissions.config.edit.syntheticMonitor"
+             gt-disabled="!agentRollup.permissions.config.edit.syntheticMonitor"
              id="gtSyntheticJavaSource"
              class="gt-synthetic-java-source"
              ng-class="{'has-error': !config.javaSource}">
@@ -133,7 +133,7 @@
         </div>
       </div>
       <div class="form-group gt-form-buttons"
-           ng-if="agentPermissions.config.edit.syntheticMonitor">
+           ng-if="agentRollup.permissions.config.edit.syntheticMonitor">
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button-group>
             <div gt-button

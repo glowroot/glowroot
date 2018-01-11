@@ -54,7 +54,7 @@
                    class="form-control"
                    ng-model="config.className"
                    ng-required="true"
-                   ng-disabled="!agentPermissions.config.edit.instrumentation"
+                   ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
                    uib-typeahead="suggestion for suggestion in classNames($viewValue)"
                    typeahead-on-select="onSelectClassName()"
                    typeahead-template-url="template/gt-typeahead-class-match.html"
@@ -86,7 +86,7 @@
                    class="form-control"
                    ng-model="config.methodName"
                    ng-required="true"
-                   ng-disabled="!agentPermissions.config.edit.instrumentation"
+                   ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
                    uib-typeahead="suggestion for suggestion in methodNames($viewValue)"
                    typeahead-on-select="onSelectMethodName()"
                    typeahead-wait-ms="5"
@@ -129,7 +129,7 @@
                          ng-model="$parent.selectedMethodSignature"
                          ng-value="methodSignature"
                          ng-required="true"
-                         ng-disabled="!agentPermissions.config.edit.instrumentation">
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation">
                   {{methodSignatureText(methodSignature)}}
                   <div class="gt-red"
                        ng-show="methodSignature.notAvailable">
@@ -156,7 +156,7 @@
               <label>
                 <input type="radio"
                        ng-model="config.captureKind"
-                       ng-disabled="!agentPermissions.config.edit.instrumentation"
+                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
                        value="timer">
                 Timer
               </label>
@@ -165,7 +165,7 @@
               <label>
                 <input type="radio"
                        ng-model="config.captureKind"
-                       ng-disabled="!agentPermissions.config.edit.instrumentation"
+                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
                        value="trace-entry">
                 Trace entry
               </label>
@@ -174,7 +174,7 @@
               <label>
                 <input type="radio"
                        ng-model="config.captureKind"
-                       ng-disabled="!agentPermissions.config.edit.instrumentation"
+                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
                        value="transaction">
                 Transaction
               </label>
@@ -183,7 +183,7 @@
               <label>
                 <input type="radio"
                        ng-model="config.captureKind"
-                       ng-disabled="!agentPermissions.config.edit.instrumentation"
+                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
                        value="other">
                 Optional transaction overrides only
               </label>
@@ -207,7 +207,7 @@
         <div gt-form-group
              gt-label="Transaction type"
              gt-model="config.transactionType"
-             gt-disabled="!agentPermissions.config.edit.instrumentation"
+             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="40em"
              gt-required="captureKindTransaction"
              ng-show="captureKindTransaction">
@@ -223,7 +223,7 @@
              gt-label="Transaction name"
              gt-model="config.transactionNameTemplate"
              gt-required="captureKindTransaction"
-             gt-disabled="!agentPermissions.config.edit.instrumentation"
+             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="40em"
              ng-show="captureKindTransaction">
           <div class="help-block">
@@ -241,7 +241,7 @@
              gt-label="{{captureKindTransaction ? 'Trace headline' : 'Trace entry'}}"
              gt-model="config.traceEntryMessageTemplate"
              gt-required="showTraceEntry"
-             gt-disabled="!agentPermissions.config.edit.instrumentation"
+             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="40em"
              gt-rows="2"
              ng-show="showTraceEntry">
@@ -282,7 +282,7 @@
              gt-model="config.timerName"
              gt-pattern="/^[a-zA-Z0-9 ]*$/"
              gt-required="loaded && showTimer"
-             gt-disabled="!agentPermissions.config.edit.instrumentation"
+             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="20em"
              ng-show="showTimer">
           <div class="help-block">
@@ -295,7 +295,7 @@
              gt-label="Self nesting"
              gt-checkbox-label="Capture self nested trace entries"
              gt-model="config.traceEntryCaptureSelfNested"
-             gt-disabled="!agentPermissions.config.edit.instrumentation"
+             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              ng-show="showTraceEntry">
           <div class="help-block">
             If checked, and this custom instrumentation is encountered beneath itself or beneath another pointcut that
@@ -309,7 +309,7 @@
              gt-model="config.traceEntryStackThresholdMillis"
              gt-number="true"
              gt-pattern="pattern.integer"
-             gt-disabled="!agentPermissions.config.edit.instrumentation"
+             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="7em"
              gt-addon="milliseconds"
              ng-show="showTraceEntryStackThreshold">
@@ -325,7 +325,7 @@
         <div gt-form-group
              gt-label="Transaction type"
              gt-model="config.transactionType"
-             gt-disabled="!agentPermissions.config.edit.instrumentation"
+             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="40em"
              ng-hide="captureKindTransaction">
           <div class="help-block">
@@ -344,7 +344,7 @@
         <div gt-form-group
              gt-label="Transaction name"
              gt-model="config.transactionNameTemplate"
-             gt-disabled="!agentPermissions.config.edit.instrumentation"
+             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="40em"
              ng-hide="captureKindTransaction">
           <div class="help-block">
@@ -386,7 +386,7 @@
              gt-model="config.transactionSlowThresholdMillis"
              gt-number="true"
              gt-pattern="pattern.integer"
-             gt-disabled="!agentPermissions.config.edit.instrumentation"
+             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="7em"
              gt-addon="milliseconds">
           <div class="help-block">
@@ -405,7 +405,7 @@
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"
                  gt-click="save(deferred)"
                  gt-disabled="formCtrl.$invalid"
-                 ng-if="agentPermissions.config.edit.instrumentation"
+                 ng-if="agentRollup.permissions.config.edit.instrumentation"
                  class="gt-inline-block">
             </div>
             <div gt-button
@@ -413,7 +413,7 @@
                  gt-label="Delete"
                  gt-click="delete(deferred)"
                  gt-btn-class="btn-default"
-                 ng-if="agentPermissions.config.edit.instrumentation"
+                 ng-if="agentRollup.permissions.config.edit.instrumentation"
                  class="gt-inline-block">
             </div>
             <button ng-disabled="formCtrl.$invalid"

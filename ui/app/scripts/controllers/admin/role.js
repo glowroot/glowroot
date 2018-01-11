@@ -79,22 +79,24 @@ glowroot.controller('AdminRoleCtrl', [
         }
         populatePermissionBlock($scope.page.permissions, permission);
       });
+      $scope.allActiveAgentRollups = data.allActiveAgentRollups;
+      angular.forEach($scope.allActiveAgentRollups, function (agentRollup) {
+        var indent = '';
+        for (var i = 0; i < agentRollup.depth; i++) {
+          indent += '\u00a0\u00a0\u00a0\u00a0';
+        }
+        agentRollup.indentedDisplay = indent + agentRollup.lastDisplayPart;
+      });
       angular.forEach(data.config.permissionBlocks, function (configPermissionBlock) {
         var permissionBlock = newPermissionBlock();
         permissionBlock.agentRollupIds = configPermissionBlock.agentRollupIds;
+        permissionBlock.allActiveAgentRollupsPlus = [];
+        updateAllActiveAgentRollupsPlus(permissionBlock);
         $scope.page.permissionBlocks.push(permissionBlock);
         angular.forEach(configPermissionBlock.permissions, function (permission) {
           populatePermissionBlock(permissionBlock, permission);
         });
       });
-      angular.forEach(data.allAgentRollups, function (agentRollup) {
-        var indent = '';
-        for (var i = 0; i < agentRollup.depth; i++) {
-          indent += '\u00a0\u00a0\u00a0\u00a0';
-        }
-        agentRollup.indentedDisplay = indent + agentRollup.display;
-      });
-      $scope.allAgentRollups = data.allAgentRollups;
     }
 
     function populatePermissionBlock(permissionBlock, permission) {
@@ -361,6 +363,29 @@ glowroot.controller('AdminRoleCtrl', [
       return permissions;
     }
 
+    function updateAllActiveAgentRollupsPlus(permissionBlock) {
+      // need to re-use same array, otherwise not reflected in UI
+      // e.g. after removing an inactive item it still shows up in the dropdown
+      permissionBlock.allActiveAgentRollupsPlus.length = 0;
+      Array.prototype.push.apply(permissionBlock.allActiveAgentRollupsPlus, $scope.allActiveAgentRollups);
+      var activeAgentRollupIds = {};
+      angular.forEach(permissionBlock.allActiveAgentRollupsPlus, function (agentRollup) {
+        activeAgentRollupIds[agentRollup.id] = true;
+      });
+      angular.forEach(permissionBlock.agentRollupIds, function (agentRollupId) {
+        if (!activeAgentRollupIds[agentRollupId]) {
+          var display = agentRollupId + ' (not active in the past 30 days)';
+          permissionBlock.allActiveAgentRollupsPlus.push({
+            depth: 0,
+            id: agentRollupId,
+            display: display,
+            indentedDisplay: display,
+            notActive: true
+          });
+        }
+      });
+    }
+
     $scope.$watch('page', function () {
       if (!$scope.page.permissions) {
         // this happens during page load
@@ -378,6 +403,7 @@ glowroot.controller('AdminRoleCtrl', [
           permissions: []
         };
         cascadeInsidePermissionsObj(permissionBlock);
+        updateAllActiveAgentRollupsPlus(permissionBlock);
         configPermissionBlock.permissions = permissionsObjToList(permissionBlock);
         configPermissionBlock.agentRollupIds.sort();
         configPermissionBlock.permissions.sort();
@@ -433,6 +459,7 @@ glowroot.controller('AdminRoleCtrl', [
     $scope.addPermissionBlock = function () {
       var permissionBlock = newPermissionBlock();
       permissionBlock.agentRollupIds = [];
+      permissionBlock.allActiveAgentRollupsPlus = angular.copy($scope.allActiveAgentRollups);
       $scope.page.permissionBlocks.push(permissionBlock);
     };
 
@@ -450,8 +477,7 @@ glowroot.controller('AdminRoleCtrl', [
             httpErrors.handle(response, $scope);
           });
     } else if ($scope.layout.central) {
-      // can't just use $scope.layout.agentRollups here since that list is filtered by current user's permission
-      $http.get('backend/admin/all-agent-rollups')
+      $http.get('backend/admin/all-active-agent-rollups')
           .then(function (response) {
             $scope.loaded = true;
             onNewData({
@@ -459,7 +485,7 @@ glowroot.controller('AdminRoleCtrl', [
                 permissions: [],
                 permissionBlocks: []
               },
-              allAgentRollups: response.data
+              allActiveAgentRollups: response.data
             });
           }, function (response) {
             httpErrors.handle(response, $scope);

@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.grpc.stub.StreamObserver;
@@ -33,13 +32,14 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AgentConfigDao;
-import org.glowroot.central.repo.AgentRollupDao;
+import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.TraceDao;
+import org.glowroot.central.repo.V09AgentRollupDao;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -75,13 +75,14 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
     private static final Logger logger = LoggerFactory.getLogger(CollectorServiceImpl.class);
 
-    private final AgentRollupDao agentRollupDao;
+    private final AgentDao agentDao;
     private final AgentConfigDao agentConfigDao;
     private final EnvironmentDao environmentDao;
+    private final HeartbeatDao heartbeatDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
-    private final HeartbeatDao heartbeatDao;
     private final TraceDao traceDao;
+    private final V09AgentRollupDao v09AgentRollupDao;
     private final CentralAlertingService centralAlertingService;
     private final Clock clock;
     private final String version;
@@ -89,17 +90,18 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     private volatile long currentMinute;
     private final AtomicInteger nextDelay = new AtomicInteger();
 
-    CollectorServiceImpl(AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao,
-            EnvironmentDao environmentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
-            HeartbeatDao heartbeatDao, TraceDao traceDao,
+    CollectorServiceImpl(AgentDao agentDao, AgentConfigDao agentConfigDao,
+            EnvironmentDao environmentDao, HeartbeatDao heartbeatDao, AggregateDao aggregateDao,
+            GaugeValueDao gaugeValueDao, TraceDao traceDao, V09AgentRollupDao v09AgentRollupDao,
             CentralAlertingService centralAlertingService, Clock clock, String version) {
-        this.agentRollupDao = agentRollupDao;
+        this.agentDao = agentDao;
         this.agentConfigDao = agentConfigDao;
         this.environmentDao = environmentDao;
+        this.heartbeatDao = heartbeatDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
-        this.heartbeatDao = heartbeatDao;
         this.traceDao = traceDao;
+        this.v09AgentRollupDao = v09AgentRollupDao;
         this.centralAlertingService = centralAlertingService;
         this.clock = clock;
         this.version = version;
@@ -110,18 +112,25 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     @Override
     public void collectInit(InitMessage request, StreamObserver<InitResponse> responseObserver) {
         String agentId = request.getAgentId();
+        String v09AgentRollupId = request.getV09AgentRollupId();
+        if (!v09AgentRollupId.isEmpty()) {
+            // handle agents prior to 0.10.0
+            String v09AgentId = agentId;
+            agentId = convertFromV09AgentRollupId(v09AgentRollupId) + v09AgentId;
+            try {
+                v09AgentRollupDao.store(v09AgentId, v09AgentRollupId);
+            } catch (Throwable t) {
+                logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
+                responseObserver.onError(t);
+                return;
+            }
+        }
         AgentConfig updatedAgentConfig;
         try {
-            String agentRollupId = request.getAgentRollupId();
-            // trim spaces around rollup separator "/"
-            agentRollupId = trimSpacesAroundAgentRollupIdSeparator(agentRollupId);
             updatedAgentConfig = SchemaUpgrade.upgradeOldAgentConfig(request.getAgentConfig());
-            updatedAgentConfig = agentConfigDao.store(agentId,
-                    Strings.emptyToNull(agentRollupId), updatedAgentConfig);
-            environmentDao.insert(agentId, request.getEnvironment());
-            // insert into agent_rollup last so environment and agent config will return non-null if
-            // the agent is visible in the UI dropdown
-            agentRollupDao.store(agentId, Strings.emptyToNull(agentRollupId));
+            updatedAgentConfig = agentConfigDao.store(agentId, updatedAgentConfig);
+            environmentDao.store(agentId, request.getEnvironment());
+            agentDao.insert(agentId, clock.currentTimeMillis());
         } catch (Throwable t) {
             logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
             responseObserver.onError(t);
@@ -162,7 +171,16 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                         .build());
             }
         }
-        throttledCollectAggregates(request.getAgentId(), request.getCaptureTime(),
+        String agentId;
+        try {
+            agentId = getAgentId(request.getAgentId(), false);
+        } catch (Throwable t) {
+            logger.error("{} - {}", getDisplayForLogging(request.getAgentId(), false),
+                    t.getMessage(), t);
+            responseObserver.onError(t);
+            return;
+        }
+        throttledCollectAggregates(agentId, request.getCaptureTime(),
                 sharedQueryTexts, request.getAggregatesByTypeList(), responseObserver);
     }
 
@@ -185,7 +203,15 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     @Override
     public void collectTrace(OldTraceMessage request,
             StreamObserver<EmptyMessage> responseObserver) {
-        String agentId = request.getAgentId();
+        String agentId;
+        try {
+            agentId = getAgentId(request.getAgentId(), false);
+        } catch (Throwable t) {
+            logger.error("{} - {}", getDisplayForLogging(request.getAgentId(), false),
+                    t.getMessage(), t);
+            responseObserver.onError(t);
+            return;
+        }
         try {
             traceDao.store(agentId, request.getTrace());
         } catch (Throwable t) {
@@ -201,11 +227,20 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             traceHeadline = "Log: {{0.agentId}}", timer = "log")
     @Override
     public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
-        String agentId = request.getAgentId();
+        String agentId;
+        try {
+            agentId = getAgentId(request.getAgentId(), request.getPostV09());
+        } catch (Throwable t) {
+            logger.error("{} - {}",
+                    getDisplayForLogging(request.getAgentId(), request.getPostV09()),
+                    t.getMessage(), t);
+            responseObserver.onError(t);
+            return;
+        }
         try {
             LogEvent logEvent = request.getLogEvent();
             Level level = logEvent.getLevel();
-            String agentDisplay = agentRollupDao.readAgentRollupDisplay(agentId);
+            String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
             String formattedTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
                     .format(new Date(logEvent.getTimestamp()));
             if (logEvent.hasThrowable()) {
@@ -240,7 +275,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         String agentDisplay;
         try {
-            agentDisplay = agentRollupDao.readAgentRollupDisplay(agentId);
+            agentDisplay = agentDao.readAgentRollupDisplay(agentId);
         } catch (Exception e) {
             logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
             responseObserver.onError(e);
@@ -261,7 +296,16 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
     private void throttledCollectGaugeValues(GaugeValueMessage request,
             StreamObserver<EmptyMessage> responseObserver) {
-        String agentId = request.getAgentId();
+        String agentId;
+        try {
+            agentId = getAgentId(request.getAgentId(), request.getPostV09());
+        } catch (Throwable t) {
+            logger.error("{} - {}",
+                    getDisplayForLogging(request.getAgentId(), request.getPostV09()),
+                    t.getMessage(), t);
+            responseObserver.onError(t);
+            return;
+        }
         long maxCaptureTime = 0;
         try {
             gaugeValueDao.store(agentId, request.getGaugeValuesList());
@@ -282,7 +326,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         String agentDisplay;
         try {
-            agentDisplay = agentRollupDao.readAgentRollupDisplay(agentId);
+            agentDisplay = agentDao.readAgentRollupDisplay(agentId);
         } catch (Throwable t) {
             logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
             responseObserver.onError(t);
@@ -311,12 +355,38 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         return nextDelay.getAndAdd(100) % 10000;
     }
 
-    private String getDisplayForLogging(String agentRollupId) {
+    private String getDisplayForLogging(String agentId, boolean postV09) {
+        if (postV09) {
+            return getDisplayForLogging(agentId);
+        }
+        String postV09AgentId;
         try {
-            return agentRollupDao.readAgentRollupDisplay(agentRollupId);
+            postV09AgentId = getAgentId(agentId, false);
         } catch (Exception e) {
-            logger.error("{} - {}", agentRollupId, e.getMessage(), e);
-            return "id:" + agentRollupId;
+            logger.error("{} - v09:{}", agentId, e.getMessage(), e);
+            return "id:v09:" + agentId;
+        }
+        return getDisplayForLogging(postV09AgentId);
+    }
+
+    private String getDisplayForLogging(String agentId) {
+        try {
+            return agentDao.readAgentRollupDisplay(agentId);
+        } catch (Exception e) {
+            logger.error("{} - {}", agentId, e.getMessage(), e);
+            return "id:" + agentId;
+        }
+    }
+
+    private String getAgentId(String agentId, boolean postV09) throws Exception {
+        if (postV09) {
+            return agentId;
+        }
+        String v09AgentRollupId = v09AgentRollupDao.getV09AgentRollupId(agentId);
+        if (v09AgentRollupId == null) {
+            return agentId;
+        } else {
+            return convertFromV09AgentRollupId(v09AgentRollupId) + agentId;
         }
     }
 
@@ -362,8 +432,9 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     }
 
     @VisibleForTesting
-    static String trimSpacesAroundAgentRollupIdSeparator(String agentRollupId) {
-        return agentRollupId.replaceAll(" */ *", "/").trim();
+    static String convertFromV09AgentRollupId(String v09AgentRollupId) {
+        // old agent rollup id supported spaces around separator
+        return v09AgentRollupId.replaceAll(" */ *", "::").trim() + "::";
     }
 
     private final class AggregateStreamObserver implements StreamObserver<AggregateStreamMessage> {
@@ -412,7 +483,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             if (streamHeader == null) {
                 logger.error(t.getMessage(), t);
             } else {
-                logger.error("{} - {}", getDisplayForLogging(streamHeader.getAgentId()),
+                logger.error("{} - {}",
+                        getDisplayForLogging(streamHeader.getAgentId(), streamHeader.getPostV09()),
                         t.getMessage(), t);
             }
         }
@@ -427,8 +499,18 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             for (OldAggregatesByType.Builder aggregatesByType : aggregatesByTypeMap.values()) {
                 aggregatesByTypeList.add(aggregatesByType.build());
             }
-            throttledCollectAggregates(streamHeader.getAgentId(), streamHeader.getCaptureTime(),
-                    sharedQueryTexts, aggregatesByTypeList, responseObserver);
+            String agentId;
+            try {
+                agentId = getAgentId(streamHeader.getAgentId(), streamHeader.getPostV09());
+            } catch (Throwable t) {
+                logger.error("{} - {}",
+                        getDisplayForLogging(streamHeader.getAgentId(), streamHeader.getPostV09()),
+                        t.getMessage(), t);
+                responseObserver.onError(t);
+                return;
+            }
+            throttledCollectAggregates(agentId, streamHeader.getCaptureTime(), sharedQueryTexts,
+                    aggregatesByTypeList, responseObserver);
         }
     }
 
@@ -486,7 +568,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             if (streamHeader == null) {
                 logger.error(t.getMessage(), t);
             } else {
-                logger.error("{} - {}", getDisplayForLogging(streamHeader.getAgentId()),
+                logger.error("{} - {}",
+                        getDisplayForLogging(streamHeader.getAgentId(), streamHeader.getPostV09()),
                         t.getMessage(), t);
             }
         }
@@ -524,11 +607,20 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                         .addAllSharedQueryText(sharedQueryTexts)
                         .build();
             }
+            String agentId;
             try {
-                traceDao.store(streamHeader.getAgentId(), trace);
+                agentId = getAgentId(streamHeader.getAgentId(), streamHeader.getPostV09());
             } catch (Throwable t) {
-                logger.error("{} - {}", getDisplayForLogging(streamHeader.getAgentId()),
+                logger.error("{} - {}",
+                        getDisplayForLogging(streamHeader.getAgentId(), streamHeader.getPostV09()),
                         t.getMessage(), t);
+                responseObserver.onError(t);
+                return;
+            }
+            try {
+                traceDao.store(agentId, trace);
+            } catch (Throwable t) {
+                logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -542,21 +634,22 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             // maxMessageSize limit exceeded: "Compressed frame exceeds maximum frame size"
             if (header == null) {
                 logger.error("{} - did not receive header, likely due to gRPC maxMessageSize limit"
-                        + " exceeded", getDisplayForLogging(streamHeader.getAgentId()));
+                        + " exceeded",
+                        getDisplayForLogging(streamHeader.getAgentId(), streamHeader.getPostV09()));
                 return false;
             }
             if (sharedQueryTexts.size() < streamCounts.getSharedQueryTextCount()) {
                 logger.error(
                         "{} - expected {} shared query texts, but only received {}, likely due to"
                                 + " gRPC maxMessageSize limit exceeded for some of them",
-                        getDisplayForLogging(streamHeader.getAgentId()),
+                        getDisplayForLogging(streamHeader.getAgentId(), streamHeader.getPostV09()),
                         streamCounts.getSharedQueryTextCount(), sharedQueryTexts.size());
                 return false;
             }
             if (entries.size() < streamCounts.getEntryCount()) {
                 logger.error("{} - expected {} entries, but only received {}, likely due to gRPC"
                         + " maxMessageSize limit exceeded for some of them",
-                        getDisplayForLogging(streamHeader.getAgentId()),
+                        getDisplayForLogging(streamHeader.getAgentId(), streamHeader.getPostV09()),
                         streamCounts.getEntryCount(), entries.size());
                 return false;
             }

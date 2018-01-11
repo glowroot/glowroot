@@ -60,14 +60,13 @@ class TraceCommonService {
     }
 
     @Nullable
-    String getHeaderJson(String agentRollupId, String agentId, String traceId,
-            boolean checkLiveTraces) throws Exception {
+    String getHeaderJson(String agentId, String traceId, boolean checkLiveTraces) throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
             Trace.Header header;
             try {
-                header = liveTraceRepository.getHeader(agentRollupId, agentId, traceId);
+                header = liveTraceRepository.getHeader(agentId, traceId);
             } catch (AgentNotConnectedException e) {
                 header = null;
             } catch (TimeoutException e) {
@@ -77,8 +76,7 @@ class TraceCommonService {
                 return toJsonLiveHeader(agentId, header);
             }
         }
-        HeaderPlus header = getStoredHeader(agentRollupId, agentId, traceId,
-                new RetryCountdown(checkLiveTraces));
+        HeaderPlus header = getStoredHeader(agentId, traceId, new RetryCountdown(checkLiveTraces));
         if (header == null) {
             return null;
         }
@@ -89,14 +87,14 @@ class TraceCommonService {
     // overwritten entries will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getEntriesJson(String agentRollupId, String agentId, String traceId,
-            boolean checkLiveTraces) throws Exception {
+    String getEntriesJson(String agentId, String traceId, boolean checkLiveTraces)
+            throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
             Entries entries;
             try {
-                entries = liveTraceRepository.getEntries(agentRollupId, agentId, traceId);
+                entries = liveTraceRepository.getEntries(agentId, traceId);
             } catch (AgentNotConnectedException e) {
                 entries = null;
             } catch (TimeoutException e) {
@@ -106,21 +104,20 @@ class TraceCommonService {
                 return toJson(entries);
             }
         }
-        return toJson(getStoredEntries(agentRollupId, agentId, traceId,
-                new RetryCountdown(checkLiveTraces)));
+        return toJson(getStoredEntries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
     }
 
     // overwritten profile will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getMainThreadProfileJson(String agentRollupId, String agentId, String traceId,
-            boolean checkLiveTraces) throws Exception {
+    String getMainThreadProfileJson(String agentId, String traceId, boolean checkLiveTraces)
+            throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
             Profile profile;
             try {
-                profile = liveTraceRepository.getMainThreadProfile(agentRollupId, agentId, traceId);
+                profile = liveTraceRepository.getMainThreadProfile(agentId, traceId);
             } catch (AgentNotConnectedException e) {
                 profile = null;
             } catch (TimeoutException e) {
@@ -130,21 +127,21 @@ class TraceCommonService {
                 return toJson(profile);
             }
         }
-        return toJson(getStoredMainThreadProfile(agentRollupId, agentId, traceId,
-                new RetryCountdown(checkLiveTraces)));
+        return toJson(
+                getStoredMainThreadProfile(agentId, traceId, new RetryCountdown(checkLiveTraces)));
     }
 
     // overwritten profile will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getAuxThreadProfileJson(String agentRollupId, String agentId, String traceId,
-            boolean checkLiveTraces) throws Exception {
+    String getAuxThreadProfileJson(String agentId, String traceId, boolean checkLiveTraces)
+            throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
             Profile profile;
             try {
-                profile = liveTraceRepository.getAuxThreadProfile(agentRollupId, agentId, traceId);
+                profile = liveTraceRepository.getAuxThreadProfile(agentId, traceId);
             } catch (AgentNotConnectedException e) {
                 profile = null;
             } catch (TimeoutException e) {
@@ -154,19 +151,19 @@ class TraceCommonService {
                 return toJson(profile);
             }
         }
-        return toJson(getStoredAuxThreadProfile(agentRollupId, agentId, traceId,
-                new RetryCountdown(checkLiveTraces)));
+        return toJson(
+                getStoredAuxThreadProfile(agentId, traceId, new RetryCountdown(checkLiveTraces)));
     }
 
     @Nullable
-    TraceExport getExport(String agentRollupId, String agentId, String traceId,
-            boolean checkLiveTraces) throws Exception {
+    TraceExport getExport(String agentId, String traceId, boolean checkLiveTraces)
+            throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
             Trace trace;
             try {
-                trace = liveTraceRepository.getFullTrace(agentRollupId, agentId, traceId);
+                trace = liveTraceRepository.getFullTrace(agentId, traceId);
             } catch (AgentNotConnectedException e) {
                 trace = null;
             } catch (TimeoutException e) {
@@ -188,15 +185,14 @@ class TraceCommonService {
             }
         }
         RetryCountdown retryCountdown = new RetryCountdown(checkLiveTraces);
-        HeaderPlus header = getStoredHeader(agentRollupId, agentId, traceId, retryCountdown);
+        HeaderPlus header = getStoredHeader(agentId, traceId, retryCountdown);
         if (header == null) {
             return null;
         }
         ImmutableTraceExport.Builder builder = ImmutableTraceExport.builder()
                 .fileName(getFileName(header.header()))
                 .headerJson(toJsonRepoHeader(agentId, header));
-        Entries entries =
-                getStoredEntriesForExport(agentRollupId, agentId, traceId, retryCountdown);
+        Entries entries = getStoredEntriesForExport(agentId, traceId, retryCountdown);
         if (entries != null) {
             builder.entriesJson(entriesToJson(entries.entries()));
             // SharedQueryTexts are always returned from getStoredEntries() above with fullTrace,
@@ -204,64 +200,63 @@ class TraceCommonService {
             builder.sharedQueryTextsJson(sharedQueryTextsToJson(entries.sharedQueryTexts()));
         }
         builder.mainThreadProfileJson(
-                toJson(getStoredMainThreadProfile(agentRollupId, agentId, traceId,
-                        retryCountdown)));
+                toJson(getStoredMainThreadProfile(agentId, traceId, retryCountdown)));
         builder.auxThreadProfileJson(
-                toJson(getStoredAuxThreadProfile(agentRollupId, agentId, traceId, retryCountdown)));
+                toJson(getStoredAuxThreadProfile(agentId, traceId, retryCountdown)));
         return builder.build();
     }
 
-    private @Nullable HeaderPlus getStoredHeader(String agentRollupId, String agentId,
-            String traceId, RetryCountdown retryCountdown) throws Exception {
-        HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentRollupId, agentId, traceId);
+    private @Nullable HeaderPlus getStoredHeader(String agentId, String traceId,
+            RetryCountdown retryCountdown) throws Exception {
+        HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
         while (headerPlus == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
-            headerPlus = traceRepository.readHeaderPlus(agentRollupId, agentId, traceId);
+            headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
         }
         return headerPlus;
     }
 
-    private @Nullable Entries getStoredEntries(String agentRollupId, String agentId, String traceId,
+    private @Nullable Entries getStoredEntries(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        Entries entries = traceRepository.readEntries(agentRollupId, agentId, traceId);
+        Entries entries = traceRepository.readEntries(agentId, traceId);
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
-            entries = traceRepository.readEntries(agentRollupId, agentId, traceId);
+            entries = traceRepository.readEntries(agentId, traceId);
         }
         return entries;
     }
 
-    private @Nullable Entries getStoredEntriesForExport(String agentRollupId, String agentId,
-            String traceId, RetryCountdown retryCountdown) throws Exception {
-        Entries entries = traceRepository.readEntriesForExport(agentRollupId, agentId, traceId);
+    private @Nullable Entries getStoredEntriesForExport(String agentId, String traceId,
+            RetryCountdown retryCountdown) throws Exception {
+        Entries entries = traceRepository.readEntriesForExport(agentId, traceId);
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
-            entries = traceRepository.readEntriesForExport(agentRollupId, agentId, traceId);
+            entries = traceRepository.readEntriesForExport(agentId, traceId);
         }
         return entries;
     }
 
-    private @Nullable Profile getStoredMainThreadProfile(String agentRollupId, String agentId,
-            String traceId, RetryCountdown retryCountdown) throws Exception {
-        Profile profile = traceRepository.readMainThreadProfile(agentRollupId, agentId, traceId);
+    private @Nullable Profile getStoredMainThreadProfile(String agentId, String traceId,
+            RetryCountdown retryCountdown) throws Exception {
+        Profile profile = traceRepository.readMainThreadProfile(agentId, traceId);
         while (profile == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
-            profile = traceRepository.readMainThreadProfile(agentRollupId, agentId, traceId);
+            profile = traceRepository.readMainThreadProfile(agentId, traceId);
         }
         return profile;
     }
 
-    private @Nullable Profile getStoredAuxThreadProfile(String agentRollupId, String agentId,
-            String traceId, RetryCountdown retryCountdown) throws Exception {
-        Profile profile = traceRepository.readAuxThreadProfile(agentRollupId, agentId, traceId);
+    private @Nullable Profile getStoredAuxThreadProfile(String agentId, String traceId,
+            RetryCountdown retryCountdown) throws Exception {
+        Profile profile = traceRepository.readAuxThreadProfile(agentId, traceId);
         while (profile == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
-            profile = traceRepository.readAuxThreadProfile(agentRollupId, agentId, traceId);
+            profile = traceRepository.readAuxThreadProfile(agentId, traceId);
         }
         return profile;
     }

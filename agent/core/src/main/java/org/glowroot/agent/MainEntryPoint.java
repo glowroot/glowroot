@@ -16,6 +16,7 @@
 package org.glowroot.agent;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
@@ -244,6 +245,8 @@ public class MainEntryPoint {
         upgradeToCollectorAddressIfNeeded(propFile);
         // upgrade from 0.9.26 to 0.9.27
         addSchemeToCollectorAddressIfNeeded(propFile);
+        // upgrade from 0.9.28 to 0.10.0
+        prependAgentRollupToAgentIdIfNeeded(propFile);
         Properties props = PropertiesFiles.load(propFile);
         for (String key : props.stringPropertyNames()) {
             String value = props.getProperty(key);
@@ -318,19 +321,10 @@ public class MainEntryPoint {
     }
 
     private static void upgradeToCollectorAddressIfNeeded(File propFile) throws IOException {
-        // properties files must be ISO_8859_1
-        List<String> lines = Files.readLines(propFile, Charsets.ISO_8859_1);
+        List<String> lines = readPropertiesFile(propFile);
         List<String> newLines = upgradeToCollectorAddressIfNeeded(lines);
         if (!newLines.equals(lines)) {
-            // properties files must be ISO_8859_1
-            PrintWriter out = new PrintWriter(Files.newWriter(propFile, Charsets.ISO_8859_1));
-            try {
-                for (String newLine : newLines) {
-                    out.println(newLine);
-                }
-            } finally {
-                out.close();
-            }
+            writePropertiesFile(propFile, newLines);
         }
     }
 
@@ -375,19 +369,10 @@ public class MainEntryPoint {
     }
 
     private static void addSchemeToCollectorAddressIfNeeded(File propFile) throws IOException {
-        // properties files must be ISO_8859_1
-        List<String> lines = Files.readLines(propFile, Charsets.ISO_8859_1);
+        List<String> lines = readPropertiesFile(propFile);
         List<String> newLines = addSchemeToCollectorAddressIfNeeded(lines);
         if (!newLines.equals(lines)) {
-            // properties files must be ISO_8859_1
-            PrintWriter out = new PrintWriter(Files.newWriter(propFile, Charsets.ISO_8859_1));
-            try {
-                for (String newLine : newLines) {
-                    out.println(newLine);
-                }
-            } finally {
-                out.close();
-            }
+            writePropertiesFile(propFile, newLines);
         }
     }
 
@@ -422,6 +407,54 @@ public class MainEntryPoint {
         return newLines;
     }
 
+    private static void prependAgentRollupToAgentIdIfNeeded(File propFile) throws IOException {
+        List<String> lines = readPropertiesFile(propFile);
+        List<String> newLines = prependAgentRollupToAgentIdIfNeeded(lines);
+        if (!newLines.equals(lines)) {
+            writePropertiesFile(propFile, newLines);
+        }
+    }
+
+    private static List<String> prependAgentRollupToAgentIdIfNeeded(List<String> lines) {
+        List<String> newLines = Lists.newArrayList();
+        String agentId = null;
+        String agentRollupId = null;
+        int agentIdLineIndex = -1;
+        for (String line : lines) {
+            if (line.startsWith("agent.id=")) {
+                agentId = line.substring("agent.id=".length());
+                agentIdLineIndex = newLines.size();
+                newLines.add(line);
+            } else if (line.startsWith("agent.rollup.id=")) {
+                agentRollupId = line.substring("agent.rollup.id=".length());
+            } else {
+                newLines.add(line);
+            }
+        }
+        if (agentIdLineIndex != -1 && !Strings.isNullOrEmpty(agentRollupId)) {
+            newLines.set(agentIdLineIndex,
+                    "agent.id=" + agentRollupId.replace("/", "::") + "::" + agentId);
+        }
+        return newLines;
+    }
+
+    private static List<String> readPropertiesFile(File propFile) throws IOException {
+        // properties files must be ISO_8859_1
+        return Files.readLines(propFile, Charsets.ISO_8859_1);
+    }
+
+    private static void writePropertiesFile(File propFile, List<String> newLines)
+            throws FileNotFoundException {
+        // properties files must be ISO_8859_1
+        PrintWriter out = new PrintWriter(Files.newWriter(propFile, Charsets.ISO_8859_1));
+        try {
+            for (String newLine : newLines) {
+                out.println(newLine);
+            }
+        } finally {
+            out.close();
+        }
+    }
     @OnlyUsedByTests
     public static void start(Map<String, String> properties) throws Exception {
         String testDirPath = properties.get("glowroot.test.dir");

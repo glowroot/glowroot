@@ -28,20 +28,18 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class HeartbeatDao {
 
-    static final int EXPIRATION_HOURS = 24;
+    public static final int EXPIRATION_HOURS = 24;
 
     private static final int TTL = (int) HOURS.toSeconds(EXPIRATION_HOURS);
 
     private final Session session;
-    private final AgentRollupDao agentRollupDao;
     private final Clock clock;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement existsPS;
 
-    HeartbeatDao(Session session, AgentRollupDao agentRollupDao, Clock clock) {
+    HeartbeatDao(Session session, Clock clock) {
         this.session = session;
-        this.agentRollupDao = agentRollupDao;
         this.clock = clock;
 
         session.createTableWithTWCS("create table if not exists heartbeat (agent_id varchar,"
@@ -54,7 +52,7 @@ public class HeartbeatDao {
     }
 
     public void store(String agentId) throws Exception {
-        List<String> agentRollupIds = agentRollupDao.readAgentRollupIds(agentId);
+        List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
         for (String agentRollupId : agentRollupIds) {
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;

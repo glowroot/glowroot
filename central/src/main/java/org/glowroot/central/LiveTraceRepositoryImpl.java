@@ -21,7 +21,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
-import org.glowroot.central.repo.AgentRollupDao;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -29,46 +28,33 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     private final DownstreamServiceImpl downstreamService;
-    private final AgentRollupDao agentRollupDao;
 
-    LiveTraceRepositoryImpl(DownstreamServiceImpl downstreamService,
-            AgentRollupDao agentRollupDao) {
+    LiveTraceRepositoryImpl(DownstreamServiceImpl downstreamService) {
         this.downstreamService = downstreamService;
-        this.agentRollupDao = agentRollupDao;
     }
 
     @Override
-    public @Nullable Trace.Header getHeader(String agentRollupId, String agentId, String traceId)
-            throws Exception {
-        checkValidAgentIdForRequest(agentRollupId, agentId);
+    public @Nullable Trace.Header getHeader(String agentId, String traceId) throws Exception {
         return downstreamService.getHeader(agentId, traceId);
     }
 
     @Override
-    public @Nullable Entries getEntries(String agentRollupId, String agentId, String traceId)
-            throws Exception {
-        checkValidAgentIdForRequest(agentRollupId, agentId);
+    public @Nullable Entries getEntries(String agentId, String traceId) throws Exception {
         return downstreamService.getEntries(agentId, traceId);
     }
 
     @Override
-    public @Nullable Profile getMainThreadProfile(String agentRollupId, String agentId,
-            String traceId) throws Exception {
-        checkValidAgentIdForRequest(agentRollupId, agentId);
+    public @Nullable Profile getMainThreadProfile(String agentId, String traceId) throws Exception {
         return downstreamService.getMainThreadProfile(agentId, traceId);
     }
 
     @Override
-    public @Nullable Profile getAuxThreadProfile(String agentRollupId, String agentId,
-            String traceId) throws Exception {
-        checkValidAgentIdForRequest(agentRollupId, agentId);
+    public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) throws Exception {
         return downstreamService.getAuxThreadProfile(agentId, traceId);
     }
 
     @Override
-    public @Nullable Trace getFullTrace(String agentRollupId, String agentId, String traceId)
-            throws Exception {
-        checkValidAgentIdForRequest(agentRollupId, agentId);
+    public @Nullable Trace getFullTrace(String agentId, String traceId) throws Exception {
         return downstreamService.getFullTrace(agentId, traceId);
     }
 
@@ -88,13 +74,5 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String transactionType,
             @Nullable String transactionName, TracePointFilter filter, long captureTime) {
         return ImmutableList.of();
-    }
-
-    private void checkValidAgentIdForRequest(String agentRollupId, String agentId)
-            throws Exception {
-        if (!agentRollupDao.readAgentRollupIds(agentId).contains(agentRollupId)) {
-            throw new IllegalArgumentException(
-                    "Agent " + agentId + " is not a child of rollup " + agentRollupId);
-        }
     }
 }

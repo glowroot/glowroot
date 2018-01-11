@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2016 the original author or authors.
+  Copyright 2015-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
     <a ng-href="transaction/traces{{tabQueryString()}}"
        ng-click="clickTab('traces', $event)"
        ng-keydown="keydownTab('tab_time', 'tab_queries', $event)"
-       ng-if="agentPermissions.transaction.traces"
+       ng-if="agentRollup.permissions.transaction.traces"
        id="tab_traces">
       {{transactionType === 'Startup' ? 'Traces' : 'Slow traces'}} ({{traceCountDisplay()}})
     </a>
@@ -35,7 +35,7 @@
     <a ng-href="transaction/queries{{tabQueryString()}}"
        ng-click="clickTab('queries', $event)"
        ng-keydown="keydownTab('tab_traces', 'tab_services', $event)"
-       ng-if="agentPermissions.transaction.queries"
+       ng-if="agentRollup.permissions.transaction.queries"
        id="tab_queries">
       Queries
     </a>
@@ -44,7 +44,7 @@
     <a ng-href="transaction/services{{tabQueryString()}}"
        ng-click="clickTab('services', $event)"
        ng-keydown="keydownTab('tab_queries', 'tab_profile', $event)"
-       ng-if="agentPermissions.transaction.serviceCalls"
+       ng-if="agentRollup.permissions.transaction.serviceCalls"
        id="tab_services">
       Service calls
     </a>
@@ -53,7 +53,7 @@
     <a ng-href="transaction/thread-profile{{tabQueryString()}}"
        ng-click="clickTab('profile', $event)"
        ng-keydown="keydownTab('tab_services', null, $event)"
-       ng-if="agentPermissions.transaction.profile"
+       ng-if="agentRollup.permissions.transaction.profile"
        id="tab_profile">
       Continuous profiling
     </a>

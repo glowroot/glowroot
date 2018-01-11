@@ -128,7 +128,7 @@
           <div gt-navbar-item
                gt-display="JVM"
                gt-item-name="jvm"
-               gt-url="jvm/gauges{{queryString(true)}}"
+               gt-url="jvm/gauges{{queryString(true, false, true)}}"
                ng-if="layout.showNavbarJvm">
           </div>
           <div gt-navbar-item
@@ -174,7 +174,7 @@
                 </a>
               </li>
               <li ng-if="layout.adminView">
-                <a ng-href="{{layout.central ? 'admin/agent-list' : 'admin/general'}}"
+                <a ng-href="{{layout.central ? 'admin/user-list' : 'admin/general'}}"
                    style="padding-top: 5px; padding-bottom: 5px;">
                   Administration
                 </a>
@@ -357,8 +357,6 @@
 <script src="scripts/controllers/config/advanced.js"></script>
 <script src="scripts/controllers/config/user-recording.js"></script>
 <script src="scripts/controllers/admin.js"></script>
-<script src="scripts/controllers/admin/agent-list.js"></script>
-<script src="scripts/controllers/admin/agent.js"></script>
 <script src="scripts/controllers/admin/general.js"></script>
 <script src="scripts/controllers/admin/user-list.js"></script>
 <script src="scripts/controllers/admin/user.js"></script>

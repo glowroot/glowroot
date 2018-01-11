@@ -38,7 +38,7 @@ public class SyntheticResultDaoIT {
     private static Cluster cluster;
     private static Session session;
     private static ClusterManager clusterManager;
-    private static SyntheticResultDao syntheticResultDao;
+    private static SyntheticResultDaoImpl syntheticResultDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -53,12 +53,12 @@ public class SyntheticResultDaoIT {
         clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager);
-        AgentRollupDao agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,
-                agentConfigDao, agentRollupDao, userDao, roleDao, "");
-        syntheticResultDao = new SyntheticResultDao(session, configRepository, Clock.systemClock());
+        ConfigRepositoryImpl configRepository =
+                new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
+        syntheticResultDao =
+                new SyntheticResultDaoImpl(session, configRepository, Clock.systemClock());
     }
 
     @AfterClass

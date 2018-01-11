@@ -93,8 +93,7 @@ class GaugeNameDao {
         boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
         boundStatement.setString(i++, gaugeName);
         int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
-        boundStatement.setInt(i++,
-                AggregateDao.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
+        boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 

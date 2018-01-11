@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ glowroot.controller('JvmThreadDumpCtrl', [
       var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
       if (modalTraceId) {
         $('#traceModal').data('location-query', ['modal-trace-id', 'modal-check-live-traces']);
-        traceModal.displayModal($scope.agentRollupId, $scope.agentId, modalTraceId, modalCheckLiveTraces);
+        traceModal.displayModal($scope.agentId, modalTraceId, modalCheckLiveTraces);
       } else {
         $('#traceModal').modal('hide');
       }

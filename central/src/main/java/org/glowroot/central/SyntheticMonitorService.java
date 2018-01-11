@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.RollupService.AgentRollupConsumer;
-import org.glowroot.central.repo.AgentRollupDao;
+import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
@@ -122,7 +122,7 @@ class SyntheticMonitorService implements Runnable {
         REQUEST_HEADERS = new RequestHeaders(headersTmp);
     }
 
-    private final AgentRollupDao agentRollupDao;
+    private final AgentDao agentDao;
     private final ConfigRepositoryImpl configRepository;
     private final IncidentDao incidentDao;
     private final AlertingService alertingService;
@@ -146,10 +146,11 @@ class SyntheticMonitorService implements Runnable {
 
     private volatile boolean closed;
 
-    SyntheticMonitorService(AgentRollupDao agentRollupDao, ConfigRepositoryImpl configRepository,
+    SyntheticMonitorService(AgentDao agentDao, ConfigRepositoryImpl configRepository,
             IncidentDao incidentDao, AlertingService alertingService,
-            SyntheticResultDao syntheticResponseDao, Ticker ticker, Clock clock, String version) {
-        this.agentRollupDao = agentRollupDao;
+            SyntheticResultDao syntheticResponseDao, Ticker ticker, Clock clock,
+            String version) {
+        this.agentDao = agentDao;
         this.configRepository = configRepository;
         this.incidentDao = incidentDao;
         this.alertingService = alertingService;
@@ -225,7 +226,7 @@ class SyntheticMonitorService implements Runnable {
             timer = "outer synthetic monitor loop")
     private void runInternal() throws Exception {
         Glowroot.setTransactionOuter();
-        for (AgentRollup agentRollup : agentRollupDao.readAgentRollups()) {
+        for (AgentRollup agentRollup : agentDao.readRecentlyActiveAgentRollups(7)) {
             consumeAgentRollups(agentRollup, this::runSyntheticMonitors);
         }
     }

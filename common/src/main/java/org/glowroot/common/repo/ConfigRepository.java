@@ -223,8 +223,6 @@ public interface ConfigRepository {
     void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion)
             throws Exception;
 
-    void deleteAgentRollup(String agentRollupId) throws Exception;
-
     void updateAdminGeneralConfig(AdminGeneralConfig config, String priorVersion) throws Exception;
 
     void insertUserConfig(UserConfig config) throws Exception;

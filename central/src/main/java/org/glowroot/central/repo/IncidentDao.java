@@ -108,8 +108,8 @@ public class IncidentDao implements IncidentRepository {
     }
 
     @Override
-    public @Nullable OpenIncident readOpenIncident(String agentRollupId,
-            AlertCondition condition, AlertSeverity severity) throws Exception {
+    public @Nullable OpenIncident readOpenIncident(String agentRollupId, AlertCondition condition,
+            AlertSeverity severity) throws Exception {
         BoundStatement boundStatement = readOpenIncidentPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
@@ -132,8 +132,7 @@ public class IncidentDao implements IncidentRepository {
     }
 
     @Override
-    public List<OpenIncident> readOpenIncidents(String agentRollupId)
-            throws Exception {
+    public List<OpenIncident> readOpenIncidents(String agentRollupId) throws Exception {
         BoundStatement boundStatement = readOpenIncidentsPS.bind();
         boundStatement.setString(0, agentRollupId);
         ResultSet results = session.execute(boundStatement);
@@ -184,7 +183,7 @@ public class IncidentDao implements IncidentRepository {
 
     @Override
     public void resolveIncident(OpenIncident openIncident, long resolveTime) throws Exception {
-        int adjustedTTL = AggregateDao.getAdjustedTTL(
+        int adjustedTTL = Common.getAdjustedTTL(
                 Ints.saturatedCast(
                         HOURS.toSeconds(StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS)),
                 resolveTime, clock);

@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,9 +64,8 @@ public class ConfigDaoIT {
     @Test
     public void shouldStoreAgentConfig() throws Exception {
         // given
-        AgentConfig agentConfig = AgentConfig.newBuilder()
-                .build();
-        agentConfigDao.store("a", null, agentConfig);
+        AgentConfig agentConfig = AgentConfig.getDefaultInstance();
+        agentConfigDao.store("a", agentConfig);
         // when
         AgentConfig readAgentConfig = agentConfigDao.read("a");
         // then
@@ -74,10 +75,12 @@ public class ConfigDaoIT {
     @Test
     public void shouldNotOverwriteExistingAgentConfig() throws Exception {
         // given
-        AgentConfig agentConfig = AgentConfig.newBuilder()
-                .build();
-        agentConfigDao.store("a", null, agentConfig);
-        agentConfigDao.store("a", null, AgentConfig.newBuilder()
+        AgentConfig agentConfig = AgentConfig.getDefaultInstance();
+        agentConfigDao.store("a", agentConfig);
+        agentConfigDao.store("a", AgentConfig.newBuilder()
+                .setTransactionConfig(TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder()
+                                .setValue(1234)))
                 .build());
         // when
         AgentConfig readAgentConfig = agentConfigDao.read("a");

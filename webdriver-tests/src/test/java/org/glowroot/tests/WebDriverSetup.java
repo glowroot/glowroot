@@ -191,11 +191,11 @@ public class WebDriverSetup {
             session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
                     + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
             session.execute("use glowroot_unit_tests");
-            session.execute("drop table if exists agent_rollup");
             session.execute("drop table if exists agent_config");
             session.execute("drop table if exists user");
             session.execute("drop table if exists role");
             session.execute("drop table if exists central_config");
+            session.execute("drop table if exists agent");
             session.close();
             cluster.close();
             int grpcPort = getAvailablePort();

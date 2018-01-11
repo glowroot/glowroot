@@ -668,12 +668,14 @@
                          ng-required="true"
                          ng-disabled="!layout.adminEdit"
                          style="min-width: 200px; max-width: 650px;">
-                <ui-select-match placeholder="Select agents...">{{$item.display}}</ui-select-match>
-                <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
-                     that start with '$', because angular silently ignores object keys starting with '$' -->
+                <ui-select-match placeholder="Select agents...">
+                  <span ng-class="{'gt-role-inactive-agent': $item.notActive}">{{$item.display}}</span>
+                </ui-select-match>
                 <ui-select-choices
-                    repeat="agentRollup.id as agentRollup in allAgentRollups | filter: {display: $select.search}">
-                  <div ng-bind-html="agentRollup.indentedDisplay | highlight: $select.search"></div>
+                    repeat="agentRollup.id as agentRollup in permissionBlock.allActiveAgentRollupsPlus | filter: {display: $select.search}">
+                  <div ng-class="{'gt-red': agentRollup.notActive}">
+                    <div ng-bind-html="agentRollup.indentedDisplay | highlight: $select.search"></div>
+                  </div>
                 </ui-select-choices>
               </ui-select>
             </div>
@@ -957,12 +959,12 @@
       <fieldset ng-if="layout.central && layout.adminEdit">
         <legend>Add {{page.permissionBlocks.length ? 'another' : 'an'}} agent specific permission block</legend>
         <div style="margin-bottom: 23px; margin-left: 14px;">
-          <div ng-if="!allAgentRollups.length" style="font-style: italic;">
-            There are no agents
+          <div ng-if="!allActiveAgentRollups.length" style="font-style: italic;">
+            There are no agents active in the past 30 days
           </div>
           <button class="btn btn-default"
                   ng-click="addPermissionBlock()"
-                  ng-if="allAgentRollups.length">
+                  ng-if="allActiveAgentRollups.length">
             Add
           </button>
         </div>

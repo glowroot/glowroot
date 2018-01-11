@@ -22,20 +22,27 @@ glowroot.controller('NavbarCtrl', [
   'queryStrings',
   function ($scope, $location, queryStrings) {
 
-    $scope.queryString = function (preserveAgentSelection, preserveTransactionType) {
+    $scope.queryString = function (preserveAgentRollup, preserveTransactionType, addDefaultGaugeNames) {
       var query = {};
-      var onReportPage = $location.path().substr(0, '/report/'.length) === '/report/';
-      if (preserveAgentSelection && !onReportPage) {
-        query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
-        query['agent-id'] = $location.search()['agent-id'];
-      }
-      if (preserveTransactionType && !onReportPage) {
-        var transactionType = $location.search()['transaction-type'];
-        if (!transactionType) {
-          transactionType = $scope.defaultTransactionType();
+      if (preserveAgentRollup && $scope.agentRollup) {
+        if ($scope.layout.central) {
+          if ($scope.isAgentRollup()) {
+            query['agent-rollup-id'] = $scope.agentRollupId;
+          } else {
+            query['agent-id'] = $scope.agentId;
+          }
         }
-        if (transactionType) {
-          query['transaction-type'] = transactionType;
+        if (preserveTransactionType) {
+          var onReportPage = $location.path().substr(0, '/report/'.length) === '/report/';
+          if (!onReportPage) {
+            var transactionType = $location.search()['transaction-type'];
+            if (transactionType) {
+              query['transaction-type'] = transactionType;
+            }
+          }
+        }
+        if (addDefaultGaugeNames) {
+          query['gauge-name'] = $scope.agentRollup.defaultGaugeNames;
         }
       }
       var last = $location.search().last;
@@ -53,7 +60,7 @@ glowroot.controller('NavbarCtrl', [
     };
 
     $scope.configUrl = function () {
-      if ($scope.layout.central && $scope.agentPermissions && $scope.agentPermissions.config.view) {
+      if ($scope.layout.central && $scope.agentRollup && $scope.agentRollup.permissions.config.view) {
         if ($scope.isAgentRollup()) {
           return 'config/general?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId);
         } else {
@@ -70,26 +77,12 @@ glowroot.controller('NavbarCtrl', [
       return $scope.layout && $scope.layout.username && $scope.layout.username.toLowerCase() === 'anonymous';
     };
 
-    $scope.gearIconUrl = function () {
-      if (!$scope.layout) {
-        return '';
-      }
-      if ($scope.layout.central && $scope.layout.adminView) {
-        return 'admin/agent-list';
-      } else if (!$scope.layout.central
-          && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
-        return 'config/transaction';
-      } else {
-        return 'change-password';
-      }
-    };
-
     $scope.gearIconNavbarTitle = function () {
       if (!$scope.layout) {
         return '';
       }
       if (!$scope.layout.central
-          && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
+          && ($scope.agentRollup && $scope.agentRollup.permissions.config.view || $scope.layout.adminView)) {
         return 'Configuration';
       } else if ($scope.layout.central && $scope.layout.adminView) {
         return 'Administration';

@@ -15,10 +15,7 @@
  */
 package org.glowroot.common.repo;
 
-import java.util.Date;
 import java.util.List;
-
-import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
 
@@ -26,21 +23,20 @@ import org.glowroot.common.util.Styles;
 
 public interface AgentRollupRepository {
 
-    List<AgentRollup> readAgentRollups() throws Exception;
+    List<AgentRollup> readRecentlyActiveAgentRollups(int lastXDays) throws Exception;
+
+    List<AgentRollup> readAgentRollups(long from, long to) throws Exception;
 
     String readAgentRollupDisplay(String agentRollupId) throws Exception;
 
-    boolean isAgent(String agentRollupId) throws Exception;
+    List<String> readAgentRollupDisplayParts(String agentRollupId) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters
     interface AgentRollup {
         String id();
         String display();
-        // cannot rely on empty children to determine since children could have been deleted
-        boolean agent();
-        @Nullable
-        Date lastCaptureTime();
+        String lastDisplayPart();
         List<AgentRollup> children();
     }
 }

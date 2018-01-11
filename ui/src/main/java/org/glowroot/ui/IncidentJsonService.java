@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
+import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.IncidentRepository;
 import org.glowroot.common.repo.IncidentRepository.OpenIncident;
@@ -45,13 +46,16 @@ class IncidentJsonService {
     private final boolean central;
     private final IncidentRepository incidentRepository;
     private final ConfigRepository configRepository;
+    private final AgentRollupRepository agentRollupRepository;
     private final Clock clock;
 
     IncidentJsonService(boolean central, IncidentRepository incidentRepository,
-            ConfigRepository configRepository, Clock clock) {
+            ConfigRepository configRepository, AgentRollupRepository agentRollupRepository,
+            Clock clock) {
         this.central = central;
         this.incidentRepository = incidentRepository;
         this.configRepository = configRepository;
+        this.agentRollupRepository = agentRollupRepository;
         this.clock = clock;
     }
 
@@ -65,7 +69,7 @@ class IncidentJsonService {
         // individually for every agentRollupId that user has permission to read
         List<OpenIncident> openIncidents = incidentRepository.readAllOpenIncidents();
         for (OpenIncident openIncident : openIncidents) {
-            if (authentication.isAgentPermitted(openIncident.agentRollupId(),
+            if (authentication.isPermittedForAgentRollup(openIncident.agentRollupId(),
                     "agent:incident")) {
                 response.addOpenIncidents(createDisplayedIncident(openIncident));
             }
@@ -73,7 +77,7 @@ class IncidentJsonService {
         List<ResolvedIncident> resolvedIncidents = incidentRepository
                 .readResolvedIncidents(clock.currentTimeMillis() - DAYS.toMillis(30));
         for (ResolvedIncident resolvedIncident : resolvedIncidents) {
-            if (authentication.isAgentPermitted(resolvedIncident.agentRollupId(),
+            if (authentication.isPermittedForAgentRollup(resolvedIncident.agentRollupId(),
                     "agent:incident")) {
                 response.addResolvedIncidents(createDisplayedIncident(resolvedIncident));
             }
@@ -83,7 +87,8 @@ class IncidentJsonService {
 
     private DisplayedIncident createDisplayedIncident(OpenIncident incident) throws Exception {
         return ImmutableDisplayedIncident.builder()
-                .agentRollupId(incident.agentRollupId())
+                .agentRollupDisplay(
+                        agentRollupRepository.readAgentRollupDisplay(incident.agentRollupId()))
                 .openTime(incident.openTime())
                 .durationMillis(clock.currentTimeMillis() - incident.openTime())
                 .severity(toString(incident.severity()))
@@ -94,7 +99,8 @@ class IncidentJsonService {
 
     private DisplayedIncident createDisplayedIncident(ResolvedIncident incident) throws Exception {
         return ImmutableDisplayedIncident.builder()
-                .agentRollupId(incident.agentRollupId())
+                .agentRollupDisplay(
+                        agentRollupRepository.readAgentRollupDisplay(incident.agentRollupId()))
                 .openTime(incident.openTime())
                 .durationMillis(incident.resolveTime() - incident.openTime())
                 .resolveTime(incident.resolveTime())
@@ -111,7 +117,7 @@ class IncidentJsonService {
 
     @Value.Immutable
     interface DisplayedIncident {
-        String agentRollupId();
+        String agentRollupDisplay();
         long openTime();
         long durationMillis();
         @Nullable

@@ -83,7 +83,7 @@ class RoleConfigJsonService {
         }
     }
 
-    @GET(path = "/backend/admin/all-agent-rollups", permission = "admin:edit:role")
+    @GET(path = "/backend/admin/all-active-agent-rollups", permission = "admin:edit:role")
     String getAllAgentRollups() throws Exception {
         return mapper.writeValueAsString(getFlattenedAgentRollups());
     }
@@ -134,13 +134,13 @@ class RoleConfigJsonService {
         ImmutableRoleConfigResponse.Builder response = ImmutableRoleConfigResponse.builder()
                 .config(RoleConfigDto.create(roleConfig, central));
         if (central) {
-            response.allAgentRollups(getFlattenedAgentRollups());
+            response.allActiveAgentRollups(getFlattenedAgentRollups());
         }
         return mapper.writeValueAsString(response.build());
     }
 
     private List<FlattenedAgentRollup> getFlattenedAgentRollups() throws Exception {
-        List<AgentRollup> agentRollups = agentRollupRepository.readAgentRollups();
+        List<AgentRollup> agentRollups = agentRollupRepository.readRecentlyActiveAgentRollups(7);
         List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
             flattenedAgentRollups.addAll(getFlattenedAgentRollups(agentRollup, 0));
@@ -154,6 +154,7 @@ class RoleConfigJsonService {
         flattenedAgentRollups.add(ImmutableFlattenedAgentRollup.builder()
                 .id(agentRollup.id())
                 .display(agentRollup.display())
+                .lastDisplayPart(agentRollup.lastDisplayPart())
                 .depth(depth)
                 .build());
         for (AgentRollup childAgentRollup : agentRollup.children()) {
@@ -170,7 +171,7 @@ class RoleConfigJsonService {
     @Value.Immutable
     interface RoleConfigResponse {
         RoleConfigDto config();
-        ImmutableList<FlattenedAgentRollup> allAgentRollups();
+        ImmutableList<FlattenedAgentRollup> allActiveAgentRollups();
     }
 
     @Value.Immutable
@@ -178,6 +179,7 @@ class RoleConfigJsonService {
         int depth();
         String id();
         String display();
+        String lastDisplayPart();
     }
 
     @Value.Immutable

@@ -79,29 +79,27 @@ public class ConfigRepositoryIT {
         session = new Session(cluster.newSession());
         session.createKeyspaceIfNotExists("glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
-        session.execute("drop table if exists agent_rollup");
         session.execute("drop table if exists agent_config");
         session.execute("drop table if exists user");
         session.execute("drop table if exists role");
         session.execute("drop table if exists central_config");
+        session.execute("drop table if exists agent");
         KeyspaceMetadata keyspaceMetadata =
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
         clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
-        AgentRollupDao agentRollupDao = new AgentRollupDao(session, agentConfigDao, clusterManager);
         UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
         RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
-        configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao,
-                agentRollupDao, userDao, roleDao, "");
+        configRepository =
+                new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         clusterManager.close();
         // remove bad data so other tests don't have issue
-        session.execute("drop table agent_rollup");
         session.execute("drop table agent_config");
         session.execute("drop table user");
         session.execute("drop table role");
@@ -152,7 +150,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateTransactionConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
         TransactionConfig updatedConfig = TransactionConfig.newBuilder()
                 .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(1234))
@@ -173,7 +171,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateJvmConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
         JvmConfig config = configRepository.getJvmConfig(agentId);
         JvmConfig updatedConfig = JvmConfig.newBuilder()
                 .addMaskSystemProperty("x")
@@ -194,7 +192,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateUiConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
         UiConfig config = configRepository.getUiConfig(agentId);
         UiConfig updatedConfig = UiConfig.newBuilder()
                 .setDefaultDisplayedTransactionType("xyz")
@@ -215,7 +213,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateUserRecordingConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
         UserRecordingConfig config = configRepository.getUserRecordingConfig(agentId);
         UserRecordingConfig updatedConfig = UserRecordingConfig.newBuilder()
                 .addUser("x")
@@ -237,7 +235,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateAdvancedConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
         AdvancedConfig config = configRepository.getAdvancedConfig(agentId);
         AdvancedConfig updatedConfig = AdvancedConfig.newBuilder()
                 .setWeavingTimer(true)
@@ -262,7 +260,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudGaugeConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
         GaugeConfig gaugeConfig = GaugeConfig.newBuilder()
                 .setMbeanObjectName("x")
                 .addMbeanAttribute(MBeanAttribute.newBuilder()
@@ -310,7 +308,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudAlertConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
         AlertConfig alertConfig = AlertConfig.newBuilder()
                 .setCondition(AlertCondition.newBuilder()
                         .setMetricCondition(MetricCondition.newBuilder()
@@ -369,7 +367,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudInstrumentationConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
         InstrumentationConfig instrumentationConfig = InstrumentationConfig.newBuilder()
                 .setClassName("a")
                 .setMethodName("b")

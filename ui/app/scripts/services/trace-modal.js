@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,13 @@ glowroot.factory('traceModal', [
   'modals',
   function ($http, modals) {
 
-    function displayModal(agentRollupId, agentId, traceId, checkLiveTraces) {
+    function displayModal(agentId, traceId, checkLiveTraces) {
 
       var spinner;
       var $modalContent = $('#traceModal .modal-body');
 
       modals.display('#traceModal');
-      var url = 'backend/trace/header?agent-rollup-id=' + encodeURIComponent(agentRollupId) + '&agent-id='
-          + encodeURIComponent(agentId) + '&trace-id=' + traceId;
+      var url = 'backend/trace/header?agent-id=' + encodeURIComponent(agentId) + '&trace-id=' + traceId;
       if (checkLiveTraces) {
         url += '&check-live-traces=true';
       }
@@ -41,15 +40,12 @@ glowroot.factory('traceModal', [
               $modalContent.html('expired');
             } else {
               data.showExport = true;
-              HandlebarsRendering.renderTrace(data, agentRollupId, agentId, traceId, checkLiveTraces, $modalContent);
+              HandlebarsRendering.renderTrace(data, agentId, traceId, checkLiveTraces, $modalContent);
               $('#traceModal .modal-body button.download-trace').click(function () {
                 var $traceParent = $(this).parents('.gt-trace-parent');
                 var traceId = $traceParent.data('gtTraceId');
                 var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
                 var url = document.getElementsByTagName('base')[0].href + 'export/trace?';
-                if (agentRollupId !== agentId) {
-                  url += 'agent-rollup-id=' + encodeURIComponent(agentRollupId) + '&';
-                }
                 url += 'agent-id=' + encodeURIComponent(agentId) + '&trace-id=' + traceId;
                 if (checkLiveTraces) {
                   url += '&check-live-traces=true';

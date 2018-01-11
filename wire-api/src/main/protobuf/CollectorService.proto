@@ -24,7 +24,7 @@ service CollectorService {
 
 message InitMessage {
   string agent_id = 1;
-  string agent_rollup_id = 4;
+  string v09_agent_rollup_id = 4; // deprecated in 0.10.0, now rollup is incorporated into agent_id
   Environment environment = 2;
   AgentConfig agent_config = 3;
 }
@@ -59,6 +59,7 @@ message AggregateResponseMessage {
 message GaugeValueMessage {
   string agent_id = 1;
   repeated GaugeValue gauge_values = 2;
+  bool post_v09 = 3;
 }
 
 message OldTraceMessage {
@@ -83,6 +84,7 @@ message TraceStreamMessage {
 message LogMessage {
   string agent_id = 1;
   LogEvent log_event = 2;
+  bool post_v09 = 3;
 }
 
 message Environment {
@@ -115,6 +117,7 @@ message JavaInfo {
 message AggregateStreamHeader {
   string agent_id = 1;
   int64 capture_time = 2;
+  bool post_v09 = 3;
 }
 
 message OverallAggregate {
@@ -142,6 +145,7 @@ message TraceStreamHeader {
   string agent_id = 1;
   string trace_id = 2;
   bool update = 3;
+  bool post_v09 = 4;
 }
 
 message TraceStreamCounts {

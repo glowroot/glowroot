@@ -421,7 +421,7 @@ glowroot.directive('gtSelectpicker', [
       link: function (scope, iElement) {
         // need to set title before initializing selectpicker in order to avoid flicker of 'None selected' text
         // when going back and forth between two different transaction types
-        iElement.attr('title', scope.gtTitle);
+        iElement.attr('title', scope.gtTitle());
         // set style outside of $timeout to avoid style flicker on loading
         iElement.selectpicker(scope.gtSelectpickerOptions());
         scope.$watch('gtModel', function () {

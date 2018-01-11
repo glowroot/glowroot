@@ -541,15 +541,13 @@ HandlebarsRendering = (function () {
         renderNext(flattenedTraceEntries, 0);
       } else {
         // this is not an export file
-        var agentRollupId = $traceParent.data('gtAgentRollupId');
         var agentId = $traceParent.data('gtAgentId');
         var traceId = $traceParent.data('gtTraceId');
         var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
         $selector.data('gtLoading', true);
         var $button = $(this);
         var spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
-        var url = 'backend/trace/entries?agent-rollup-id=' + encodeURIComponent(agentRollupId) + '&agent-id='
-            + encodeURIComponent(agentId) + '&trace-id=' + traceId;
+        var url = 'backend/trace/entries?agent-id=' + encodeURIComponent(agentId) + '&trace-id=' + traceId;
         if (checkLiveTraces) {
           url += '&check-live-traces=true';
         }
@@ -631,12 +629,10 @@ HandlebarsRendering = (function () {
     var profile = $traceParent.data('gtMainThreadProfile');
     var url;
     if (!profile) {
-      var agentRollupId = $traceParent.data('gtAgentRollupId');
       var agentId = $traceParent.data('gtAgentId');
       var traceId = $traceParent.data('gtTraceId');
       var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
-      url = 'backend/trace/main-thread-profile?agent-rollup-id=' + encodeURIComponent(agentRollupId) + '&agent-id='
-          + encodeURIComponent(agentId) + '&trace-id=' + traceId;
+      url = 'backend/trace/main-thread-profile?agent-id=' + encodeURIComponent(agentId) + '&trace-id=' + traceId;
       if (checkLiveTraces) {
         url += '&check-live-traces=true';
       }
@@ -650,12 +646,10 @@ HandlebarsRendering = (function () {
     var profile = $traceParent.data('gtAuxThreadProfile');
     var url;
     if (!profile) {
-      var agentRollupId = $traceParent.data('gtAgentRollupId');
       var agentId = $traceParent.data('gtAgentId');
       var traceId = $traceParent.data('gtTraceId');
       var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
-      url = 'backend/trace/aux-thread-profile?agent-rollup-id=' + encodeURIComponent(agentRollupId) + '&agent-id='
-          + encodeURIComponent(agentId) + '&trace-id=' + traceId;
+      url = 'backend/trace/aux-thread-profile?agent-id=' + encodeURIComponent(agentId) + '&trace-id=' + traceId;
       if (checkLiveTraces) {
         url += '&check-live-traces=true';
       }
@@ -1404,7 +1398,7 @@ HandlebarsRendering = (function () {
   }
 
   return {
-    renderTrace: function (traceHeader, agentRollupId, agentId, traceId, checkLiveTraces, $selector) {
+    renderTrace: function (traceHeader, agentId, traceId, checkLiveTraces, $selector) {
 
       traceHeader.mainBreakdown = {
         treeTimers: traceHeader.mainThreadRootTimer,
@@ -1431,8 +1425,7 @@ HandlebarsRendering = (function () {
       var html = JST.trace(traceHeader);
       $selector.html(html);
       $selector.addClass('gt-trace-parent');
-      if (agentRollupId !== undefined) {
-        $selector.data('gtAgentRollupId', agentRollupId);
+      if (agentId !== undefined) {
         $selector.data('gtAgentId', agentId);
         $selector.data('gtTraceId', traceId);
         $selector.data('gtCheckLiveTraces', checkLiveTraces);

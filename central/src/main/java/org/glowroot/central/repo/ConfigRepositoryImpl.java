@@ -85,7 +85,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final CentralConfigDao centralConfigDao;
     private final AgentConfigDao agentConfigDao;
-    private final AgentRollupDao agentRollupDao;
     private final UserDao userDao;
     private final RoleDao roleDao;
 
@@ -96,11 +95,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private final Set<AgentConfigListener> agentConfigListeners = Sets.newCopyOnWriteArraySet();
 
     ConfigRepositoryImpl(CentralConfigDao centralConfigDao, AgentConfigDao agentConfigDao,
-            AgentRollupDao agentRollupDao, UserDao userDao, RoleDao roleDao,
-            String symmetricEncryptionKey) {
+            UserDao userDao, RoleDao roleDao, String symmetricEncryptionKey) {
         this.centralConfigDao = centralConfigDao;
         this.agentConfigDao = agentConfigDao;
-        this.agentRollupDao = agentRollupDao;
         this.userDao = userDao;
         this.roleDao = roleDao;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
@@ -925,11 +922,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
         });
         notifyAgentConfigListeners(agentRollupId);
-    }
-
-    @Override
-    public void deleteAgentRollup(String agentRollupId) throws Exception {
-        agentRollupDao.delete(agentRollupId);
     }
 
     @Override

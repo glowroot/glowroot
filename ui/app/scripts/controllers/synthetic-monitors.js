@@ -47,8 +47,8 @@ glowroot.controller('SyntheticMonitorsCtrl', [
 
     $scope.range = {};
 
-    $scope.agentRollupUrl = function (agentRollup) {
-      var query = $scope.agentRollupQuery(agentRollup);
+    $scope.agentRollupUrl = function (agentRollupId) {
+      var query = $scope.agentRollupQuery(agentRollupId);
       delete query['synthetic-monitor-id'];
       return $location.path().substring(1) + queryStrings.encodeObject(query);
     };
@@ -56,13 +56,11 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     $scope.buildQueryObject = function (baseQuery) {
       var query = baseQuery || angular.copy($location.search());
       if ($scope.layout.central) {
-        var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];
-        if (agentRollup) {
-          if (agentRollup.agent) {
-            query['agent-id'] = $scope.agentRollupId;
-          } else {
-            query['agent-rollup-id'] = $scope.agentRollupId;
-          }
+        var agentId = $location.search()['agent-id'];
+        if (agentId) {
+          query['agent-id'] = agentId;
+        } else {
+          query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
         }
       }
       var allSyntheticMonitorIds = [];
@@ -334,16 +332,27 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     charts.initResize(chartState.plot, $scope);
     charts.startAutoRefresh($scope, 60000);
 
-    $scope.selectedAgentRollup = $scope.agentRollupId;
+    if ($scope.layout.central) {
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo'], function (newValue, oldValue) {
-      if (newValue !== oldValue) {
-        // need to refresh selectpicker in order to update hrefs of the items
-        $timeout(function () {
-          // timeout is needed so this runs after dom is updated
-          $('#agentRollupDropdown').selectpicker('refresh');
-        });
+      $scope.$watchGroup(['range.chartFrom', 'range.chartTo'], function (newValue, oldValue) {
+        if (newValue !== oldValue) {
+          // need to refresh selectpicker in order to update hrefs of the items
+          $timeout(function () {
+            // timeout is needed so this runs after dom is updated
+            $('#agentRollupDropdown').selectpicker('refresh');
+          });
+        }
+      });
+
+      var refreshAgentRollups = function () {
+        $scope.refreshAgentRollups($scope.range.chartFrom, $scope.range.chartTo, $scope);
+      };
+
+      $('#agentRollupDropdown').on('show.bs.select', refreshAgentRollups);
+
+      if ($scope.agentRollups === undefined) {
+        refreshAgentRollups();
       }
-    });
+    }
   }
 ]);

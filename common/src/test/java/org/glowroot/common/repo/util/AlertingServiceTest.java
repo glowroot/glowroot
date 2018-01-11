@@ -34,12 +34,9 @@ import org.glowroot.common.live.ImmutableTransactionQuery;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
-import org.glowroot.common.repo.AgentRollupRepository;
-import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
-import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.repo.IncidentRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Clock;
@@ -126,7 +123,6 @@ public class AlertingServiceTest {
     }
 
     private ConfigRepository configRepository;
-    private AgentRollupRepository agentRollupRepository;
     private IncidentRepository incidentRepository;
     private AggregateRepository aggregateRepository;
     private GaugeValueRepository gaugeValueRepository;
@@ -137,13 +133,6 @@ public class AlertingServiceTest {
     @Before
     public void beforeEachTest() throws Exception {
         configRepository = mock(ConfigRepository.class);
-        agentRollupRepository = mock(AgentRollupRepository.class);
-        when(agentRollupRepository.readAgentRollups()).thenReturn(ImmutableList.<AgentRollup>of(
-                ImmutableAgentRollup.builder()
-                        .id("")
-                        .display("")
-                        .agent(true)
-                        .build()));
         incidentRepository = mock(IncidentRepository.class);
         aggregateRepository = mock(AggregateRepository.class);
         gaugeValueRepository = mock(GaugeValueRepository.class);

@@ -177,12 +177,13 @@ public class CentralModule {
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(),
                     centralConfig.grpcHttpPort(), centralConfig.grpcHttpsPort(), centralDir,
-                    repos.getAgentRollupDao(), repos.getAgentConfigDao(), repos.getAggregateDao(),
-                    repos.getGaugeValueDao(), repos.getEnvironmentDao(), repos.getHeartbeatDao(),
-                    repos.getTraceDao(), centralAlertingService, clusterManager, clock, version);
+                    repos.getAgentConfigDao(), repos.getAgentDao(), repos.getEnvironmentDao(),
+                    repos.getHeartbeatDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
+                    repos.getTraceDao(), repos.getV09AgentRollupDao(), centralAlertingService,
+                    clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
-                    repos.getAgentRollupDao(), repos.getAgentConfigDao(), downstreamService, clock);
+                    repos.getAgentDao(), repos.getAgentConfigDao(), downstreamService, clock);
             UpdateAgentConfigIfNeededService updateAgentConfigIfNeededServiceEffectivelyFinal =
                     updateAgentConfigIfNeededService;
             repos.getConfigRepository().addAgentConfigListener(new AgentConfigListener() {
@@ -193,10 +194,10 @@ public class CentralModule {
                             .updateAgentConfigIfNeededAndConnected(agentId);
                 }
             });
-            rollupService = new RollupService(repos.getAgentRollupDao(), repos.getAggregateDao(),
+            rollupService = new RollupService(repos.getAgentDao(), repos.getAggregateDao(),
                     repos.getGaugeValueDao(), repos.getSyntheticResultDao(), centralAlertingService,
                     clock);
-            syntheticMonitorService = new SyntheticMonitorService(repos.getAgentRollupDao(),
+            syntheticMonitorService = new SyntheticMonitorService(repos.getAgentDao(),
                     repos.getConfigRepository(), repos.getIncidentDao(), alertingService,
                     repos.getSyntheticResultDao(), ticker, clock, version);
 
@@ -215,7 +216,7 @@ public class CentralModule {
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(repos.getConfigRepository())
-                    .agentRollupRepository(repos.getAgentRollupDao())
+                    .agentRollupRepository(repos.getAgentDao())
                     .environmentRepository(repos.getEnvironmentDao())
                     .transactionTypeRepository(repos.getTransactionTypeDao())
                     .traceAttributeNameRepository(repos.getTraceAttributeNameDao())
@@ -226,8 +227,7 @@ public class CentralModule {
                     .incidentRepository(repos.getIncidentDao())
                     .repoAdmin(new NopRepoAdmin())
                     .rollupLevelService(rollupLevelService)
-                    .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService,
-                            repos.getAgentRollupDao()))
+                    .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(new LiveWeavingServiceImpl(downstreamService))
                     .sessionMapFactory(new SessionMapFactory() {

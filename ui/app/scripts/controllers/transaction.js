@@ -19,20 +19,22 @@
 glowroot.controller('TransactionCtrl', [
   '$scope',
   '$location',
+  '$http',
   '$timeout',
   'queryStrings',
   'charts',
   'headerDisplay',
   'shortName',
   'defaultSummarySortOrder',
-  function ($scope, $location, $timeout, queryStrings, charts, headerDisplay, shortName, defaultSummarySortOrder) {
+  'httpErrors',
+  function ($scope, $location, $http, $timeout, queryStrings, charts, headerDisplay, shortName, defaultSummarySortOrder, httpErrors) {
 
     // \u00b7 is &middot;
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;
 
-    if ($scope.layout.embeddedAgentDisplayName) {
-      $scope.headerDisplay = $scope.layout.embeddedAgentDisplayName;
+    if (!$scope.layout.central && $scope.layout.embeddedAgentRollup.display) {
+      $scope.headerDisplay = $scope.layout.embeddedAgentRollup.display;
     } else {
       $scope.headerDisplay = headerDisplay;
     }
@@ -42,7 +44,7 @@ glowroot.controller('TransactionCtrl', [
     $scope.range = {};
 
     $scope.hideTransactionTypeDropdown = function () {
-      var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];
+      var agentRollup = $scope.agentRollup;
       if (!agentRollup) {
         // show empty dropdown
         return false;
@@ -62,19 +64,28 @@ glowroot.controller('TransactionCtrl', [
       return ($scope.layout.central && !$scope.agentRollupId) || !$scope.transactionType;
     };
 
-    $scope.headerQueryString = function (agentRollup, transactionType) {
+    $scope.headerQueryString = function (agentRollupId, transactionType) {
       var query = {};
       if ($scope.layout.central) {
-        if (agentRollup.agent) {
-          query['agent-id'] = agentRollup.id;
+        if (agentRollupId) {
+          // this is from agent dropdown
+          if ($scope.isRollup(agentRollupId)) {
+            query['agent-rollup-id'] = agentRollupId;
+          } else {
+            query['agent-id'] = agentRollupId;
+          }
         } else {
-          query['agent-rollup-id'] = agentRollup.id;
+          // this is from transaction dropdown
+          var agentId = $location.search()['agent-id'];
+          if (agentId) {
+            query['agent-id'] = agentId;
+          } else {
+            query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
+          }
         }
       }
       if (transactionType) {
         query['transaction-type'] = transactionType;
-      } else {
-        query['transaction-type'] = agentRollup.defaultDisplayedTransactionType;
       }
       if ($scope.range.last) {
         if ($scope.range.last !== 4 * 60 * 60 * 1000) {
@@ -151,13 +162,11 @@ glowroot.controller('TransactionCtrl', [
     $scope.buildQueryObject = function (baseQuery, allowSeconds) {
       var query = baseQuery || angular.copy($location.search());
       if ($scope.layout.central) {
-        var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];
-        if (agentRollup) {
-          if (agentRollup.agent) {
-            query['agent-id'] = $scope.agentRollupId;
-          } else {
-            query['agent-rollup-id'] = $scope.agentRollupId;
-          }
+        var agentId = $location.search()['agent-id'];
+        if (agentId) {
+          query['agent-id'] = agentId;
+        } else {
+          query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
         }
       }
       query['transaction-type'] = $scope.transactionType;
@@ -188,16 +197,27 @@ glowroot.controller('TransactionCtrl', [
       return $location.path().substring(1);
     };
 
-    $scope.selectedAgentRollup = $scope.agentRollupId;
+    if ($scope.layout.central) {
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo'], function (newValue, oldValue) {
-      if (newValue !== oldValue) {
-        // need to refresh selectpicker in order to update hrefs of the items
-        $timeout(function () {
-          // timeout is needed so this runs after dom is updated
-          $('#agentRollupDropdown').selectpicker('refresh');
-        });
+      $scope.$watchGroup(['range.chartFrom', 'range.chartTo'], function (newValue, oldValue) {
+        if (newValue !== oldValue) {
+          // need to refresh selectpicker in order to update hrefs of the items
+          $timeout(function () {
+            // timeout is needed so this runs after dom is updated
+            $('#agentRollupDropdown').selectpicker('refresh');
+          });
+        }
+      });
+
+      var refreshAgentRollups = function () {
+        $scope.refreshAgentRollups($scope.range.chartFrom, $scope.range.chartTo, $scope);
+      };
+
+      $('#agentRollupDropdown').on('show.bs.select', refreshAgentRollups);
+
+      if ($scope.agentRollups === undefined) {
+        refreshAgentRollups();
       }
-    });
+    }
   }
 ]);

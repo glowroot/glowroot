@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -69,7 +70,6 @@ public class CentralCollector implements Collector {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private final String agentId;
-    private final String agentRollupId;
     private final String collectorAddress;
     private final CentralConnection centralConnection;
     private final CollectorServiceStub collectorServiceStub;
@@ -87,17 +87,20 @@ public class CentralCollector implements Collector {
 
         String agentId = properties.get("glowroot.agent.id");
         if (Strings.isNullOrEmpty(agentId)) {
-            agentId = InetAddress.getLocalHost().getHostName();
+            agentId = escapeHostName(InetAddress.getLocalHost().getHostName());
+        } else if (agentId.endsWith("::")) {
+            agentId += escapeHostName(InetAddress.getLocalHost().getHostName());
+        } else if (!agentId.contains("::")) {
+            // check for 0.9.x agent rollup id
+            String v09AgentRollupId = properties.get("glowroot.agent.rollup.id");
+            if (!Strings.isNullOrEmpty(v09AgentRollupId)) {
+                agentId = convertFromV09AgentRollupId(v09AgentRollupId) + agentId;
+            }
         }
         this.agentId = agentId;
-        this.agentRollupId = Strings.nullToEmpty(properties.get("glowroot.agent.rollup.id"));
         this.collectorAddress = collectorAddress;
 
-        if (agentRollupId.isEmpty()) {
-            startupLogger.info("agent id: {}", agentId);
-        } else {
-            startupLogger.info("agent id: {}, rollup id: {}", agentId, agentRollupId);
-        }
+        startupLogger.info("agent id: {}", agentId);
 
         AtomicBoolean inConnectionFailure = new AtomicBoolean();
         centralConnection = new CentralConnection(collectorAddress, collectorAuthority, confDir,
@@ -114,7 +117,6 @@ public class CentralCollector implements Collector {
             AgentConfig agentConfig, final AgentConfigUpdater agentConfigUpdater) {
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setAgentId(agentId)
-                .setAgentRollupId(agentRollupId)
                 .setEnvironment(environment)
                 .setAgentConfig(agentConfig)
                 .build();
@@ -153,6 +155,7 @@ public class CentralCollector implements Collector {
         final GaugeValueMessage gaugeValueMessage = GaugeValueMessage.newBuilder()
                 .setAgentId(agentId)
                 .addAllGaugeValues(gaugeValues)
+                .setPostV09(true)
                 .build();
         centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override
@@ -185,6 +188,7 @@ public class CentralCollector implements Collector {
         final LogMessage logMessage = LogMessage.newBuilder()
                 .setAgentId(agentId)
                 .setLogEvent(logEvent)
+                .setPostV09(true)
                 .build();
         centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override
@@ -203,6 +207,23 @@ public class CentralCollector implements Collector {
     @OnlyUsedByTests
     public void awaitClose() throws InterruptedException {
         centralConnection.awaitClose();
+    }
+
+    @VisibleForTesting
+    static String escapeHostName(String hostName) {
+        hostName = hostName.replace("\\", "\\\\");
+        if (hostName.startsWith(":")) {
+            hostName = "\\" + hostName;
+        }
+        while (hostName.contains("::")) {
+            hostName = hostName.replace("::", ":\\:");
+        }
+        return hostName;
+    }
+
+    private static String convertFromV09AgentRollupId(String agentRollupId) {
+        // old agent rollup id supported spaces around separator
+        return agentRollupId.replaceAll(" */ *", "::").trim() + "::";
     }
 
     private class CollectAggregatesGrpcCall extends GrpcCall<AggregateResponseMessage> {
@@ -265,7 +286,8 @@ public class CentralCollector implements Collector {
             requestObserver.onNext(AggregateStreamMessage.newBuilder()
                     .setStreamHeader(AggregateStreamHeader.newBuilder()
                             .setAgentId(agentId)
-                            .setCaptureTime(aggregateReader.captureTime()))
+                            .setCaptureTime(aggregateReader.captureTime())
+                            .setPostV09(true))
                     .build());
             // need to clear in case this is a retry
             fullTextSha1s.clear();
@@ -307,7 +329,8 @@ public class CentralCollector implements Collector {
                     .setStreamHeader(TraceStreamHeader.newBuilder()
                             .setAgentId(agentId)
                             .setTraceId(traceReader.traceId())
-                            .setUpdate(traceReader.update()))
+                            .setUpdate(traceReader.update())
+                            .setPostV09(true))
                     .build());
             // need to clear in case this is a retry
             fullTextSha1s.clear();

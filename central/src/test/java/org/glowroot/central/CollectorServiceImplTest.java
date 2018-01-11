@@ -23,13 +23,13 @@ public class CollectorServiceImplTest {
 
     @Test
     public void test() {
-        assertThat(CollectorServiceImpl.trimSpacesAroundAgentRollupIdSeparator("a/b/c"))
-                .isEqualTo("a/b/c");
-        assertThat(CollectorServiceImpl.trimSpacesAroundAgentRollupIdSeparator("  a/b/c  "))
-                .isEqualTo("a/b/c");
-        assertThat(CollectorServiceImpl.trimSpacesAroundAgentRollupIdSeparator("a /  b/c"))
-                .isEqualTo("a/b/c");
-        assertThat(CollectorServiceImpl.trimSpacesAroundAgentRollupIdSeparator("a/  b  /c"))
-                .isEqualTo("a/b/c");
+        assertThat(CollectorServiceImpl.convertFromV09AgentRollupId("a/b/c"))
+                .isEqualTo("a::b::c::");
+        assertThat(CollectorServiceImpl.convertFromV09AgentRollupId("  a/b/c  "))
+                .isEqualTo("a::b::c::");
+        assertThat(CollectorServiceImpl.convertFromV09AgentRollupId("a /  b/c"))
+                .isEqualTo("a::b::c::");
+        assertThat(CollectorServiceImpl.convertFromV09AgentRollupId("a/  b  /c"))
+                .isEqualTo("a::b::c::");
     }
 }

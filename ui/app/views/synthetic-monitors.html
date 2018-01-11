@@ -21,18 +21,25 @@
       <span class="gt-inline-block gt-header-menu"
             style="margin-left: -1px; vertical-align: 2px;">
         <select gt-selectpicker
-                gt-model="selectedAgentRollup"
-                gt-title="layout.agentRollups[agentRollupId].display || '&amp;lt;select&amp;gt;'"
+                gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
                 data-live-search="true"
                 data-style="btn-flat"
                 id="agentRollupDropdown">
-          <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
-               that start with '$', because angular silently ignores object keys starting with '$' -->
-          <option ng-repeat="agentRollup in layout.agentRollupValues"
-                  data-href="{{agentRollupUrl(agentRollup)}}"
-                  value="{{agentRollup.id}}"
-                  ng-hide="!agentRollup.permissions.syntheticMonitor">
+          <option ng-repeat="agentRollup in agentRollups"
+                  data-href="{{agentRollupUrl(agentRollup.id)}}"
+                  value="{{agentRollup.id}}">
             {{agentRollup.indentedDisplay}}
+          </option>
+          <option disabled
+                  class="gt-agent-rollup-dropdown-message hide"
+                  style="font-style: italic; font-size: 16px; cursor: inherit;"
+                  ng-if="agentRollups.length === 0">
+            No active agents in this time period
+          </option>
+          <!-- can't use gt-spinner due to selectpicker behavior -->
+          <option disabled
+                  class="gt-agent-rollup-dropdown-spinner hide"
+                  style="position: relative; height: 30px; cursor: inherit;">
           </option>
         </select>
       </span>

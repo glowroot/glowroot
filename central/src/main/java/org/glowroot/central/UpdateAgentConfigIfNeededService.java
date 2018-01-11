@@ -25,8 +25,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AgentConfigDao;
-import org.glowroot.central.repo.AgentRollupDao;
-import org.glowroot.central.repo.AgentRollupDao.AgentConfigUpdate;
+import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
 import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.util.Clock;
 
@@ -37,7 +37,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     private static final Logger logger =
             LoggerFactory.getLogger(UpdateAgentConfigIfNeededService.class);
 
-    private final AgentRollupDao agentRollupDao;
+    private final AgentDao agentDao;
     private final AgentConfigDao agentConfigDao;
     private final DownstreamServiceImpl downstreamService;
     private final Clock clock;
@@ -46,9 +46,9 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     private volatile boolean closed;
 
-    UpdateAgentConfigIfNeededService(AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao,
+    UpdateAgentConfigIfNeededService(AgentDao agentDao, AgentConfigDao agentConfigDao,
             DownstreamServiceImpl downstreamService, Clock clock) {
-        this.agentRollupDao = agentRollupDao;
+        this.agentDao = agentDao;
         this.agentConfigDao = agentConfigDao;
         this.downstreamService = downstreamService;
         this.clock = clock;
@@ -87,7 +87,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             timer = "outer rollup loop")
     private void runInternal() throws Exception {
         Glowroot.setTransactionOuter();
-        for (AgentRollup agentRollup : agentRollupDao.readAgentRollups()) {
+        for (AgentRollup agentRollup : agentDao.readRecentlyActiveAgentRollups(7)) {
             updateAgentConfigIfNeededAndConnected(agentRollup);
         }
     }
@@ -133,7 +133,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     private String getDisplayForLogging(String agentRollupId) throws InterruptedException {
         try {
-            return agentRollupDao.readAgentRollupDisplay(agentRollupId);
+            return agentDao.readAgentRollupDisplay(agentRollupId);
         } catch (InterruptedException e) {
             // probably shutdown requested (see close method above)
             throw e;

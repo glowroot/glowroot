@@ -26,7 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.immutables.value.Value;
 
-import org.glowroot.common.repo.AgentRollupRepository;
+import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.GaugeValueRepository;
@@ -52,13 +52,11 @@ class ConfigJsonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final AgentRollupRepository agentRollupRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final ConfigRepository configRepository;
 
-    ConfigJsonService(AgentRollupRepository agentRollupRepository,
-            GaugeValueRepository gaugeValueRepository, ConfigRepository configRepository) {
-        this.agentRollupRepository = agentRollupRepository;
+    ConfigJsonService(GaugeValueRepository gaugeValueRepository,
+            ConfigRepository configRepository) {
         this.gaugeValueRepository = gaugeValueRepository;
         this.configRepository = configRepository;
     }
@@ -66,7 +64,7 @@ class ConfigJsonService {
     @GET(path = "/backend/config/general", permission = "agent:config:view:general")
     String getGeneralConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         GeneralConfig config = configRepository.getGeneralConfig(agentRollupId);
-        return mapper.writeValueAsString(GeneralConfigDto.create(config));
+        return mapper.writeValueAsString(GeneralConfigDto.create(config, agentRollupId));
     }
 
     @GET(path = "/backend/config/transaction", permission = "agent:config:view:transaction")
@@ -124,8 +122,7 @@ class ConfigJsonService {
     @GET(path = "/backend/config/advanced", permission = "agent:config:view:advanced")
     String getAdvancedConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         AdvancedConfig config = configRepository.getAdvancedConfig(agentRollupId);
-        return mapper.writeValueAsString(
-                AdvancedConfigDto.create(config, agentRollupRepository.isAgent(agentRollupId)));
+        return mapper.writeValueAsString(AdvancedConfigDto.create(config));
     }
 
     @POST(path = "/backend/config/general", permission = "agent:config:edit:general")
@@ -210,8 +207,8 @@ class ConfigJsonService {
     String updateAdvancedConfig(@BindAgentRollupId String agentRollupId,
             @BindRequest AdvancedConfigDto configDto) throws Exception {
         try {
-            AdvancedConfig config = configDto.convert(agentRollupRepository.isAgent(agentRollupId));
-            configRepository.updateAdvancedConfig(agentRollupId, config, configDto.version());
+            configRepository.updateAdvancedConfig(agentRollupId, configDto.convert(),
+                    configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -249,6 +246,7 @@ class ConfigJsonService {
     abstract static class GeneralConfigDto {
 
         abstract String display();
+        abstract @Nullable String defaultDisplay(); // only used in response
         abstract String version();
 
         private GeneralConfig convert() {
@@ -257,9 +255,10 @@ class ConfigJsonService {
                     .build();
         }
 
-        private static GeneralConfigDto create(GeneralConfig config) {
+        private static GeneralConfigDto create(GeneralConfig config, String agentRollupId) {
             return ImmutableGeneralConfigDto.builder()
                     .display(config.getDisplay())
+                    .defaultDisplay(ConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId))
                     .version(Versions.getVersion(config))
                     .build();
         }
@@ -456,70 +455,49 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class AdvancedConfigDto {
 
-        abstract @Nullable Boolean weavingTimer(); // null for rollup config
-        abstract @Nullable Integer immediatePartialStoreThresholdSeconds(); // null for rollup cfg
-        abstract @Nullable Integer maxAggregateTransactionsPerType(); // null for rollup config
+        abstract boolean weavingTimer();
+        abstract int immediatePartialStoreThresholdSeconds();
+        abstract int maxAggregateTransactionsPerType();
         abstract int maxAggregateQueriesPerType();
         abstract int maxAggregateServiceCallsPerType();
-        abstract @Nullable Integer maxTraceEntriesPerTransaction(); // null for rollup config
-        abstract @Nullable Integer maxStackTraceSamplesPerTransaction(); // null for rollup config
-        abstract @Nullable Integer mbeanGaugeNotFoundDelaySeconds(); // null for rollup config
+        abstract int maxTraceEntriesPerTransaction();
+        abstract int maxStackTraceSamplesPerTransaction();
+        abstract int mbeanGaugeNotFoundDelaySeconds();
         abstract String version();
 
-        private AdvancedConfig convert(boolean agent) {
-            if (agent) {
-                return AdvancedConfig.newBuilder()
-                        .setWeavingTimer(checkNotNull(weavingTimer()))
-                        .setImmediatePartialStoreThresholdSeconds(
-                                of(checkNotNull(immediatePartialStoreThresholdSeconds())))
-                        .setMaxAggregateTransactionsPerType(
-                                of(checkNotNull(maxAggregateTransactionsPerType())))
-                        .setMaxAggregateQueriesPerType(of(maxAggregateQueriesPerType()))
-                        .setMaxAggregateServiceCallsPerType(of(maxAggregateServiceCallsPerType()))
-                        .setMaxTraceEntriesPerTransaction(
-                                of(checkNotNull(maxTraceEntriesPerTransaction())))
-                        .setMaxStackTraceSamplesPerTransaction(
-                                of(checkNotNull(maxStackTraceSamplesPerTransaction())))
-                        .setMbeanGaugeNotFoundDelaySeconds(
-                                of(checkNotNull(mbeanGaugeNotFoundDelaySeconds())))
-                        .build();
-            } else {
-                return AdvancedConfig.newBuilder()
-                        .setMaxAggregateQueriesPerType(of(maxAggregateQueriesPerType()))
-                        .setMaxAggregateServiceCallsPerType(of(maxAggregateServiceCallsPerType()))
-                        .build();
-            }
+        private AdvancedConfig convert() {
+            return AdvancedConfig.newBuilder()
+                    .setWeavingTimer(weavingTimer())
+                    .setImmediatePartialStoreThresholdSeconds(
+                            of(immediatePartialStoreThresholdSeconds()))
+                    .setMaxAggregateTransactionsPerType(of(maxAggregateTransactionsPerType()))
+                    .setMaxAggregateQueriesPerType(of(maxAggregateQueriesPerType()))
+                    .setMaxAggregateServiceCallsPerType(of(maxAggregateServiceCallsPerType()))
+                    .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
+                    .setMaxStackTraceSamplesPerTransaction(of(maxStackTraceSamplesPerTransaction()))
+                    .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
+                    .build();
         }
 
-        private static AdvancedConfigDto create(AdvancedConfig config, boolean agent) {
-            if (agent) {
-                return ImmutableAdvancedConfigDto.builder()
-                        .weavingTimer(config.getWeavingTimer())
-                        .immediatePartialStoreThresholdSeconds(
-                                config.getImmediatePartialStoreThresholdSeconds().getValue())
-                        .maxAggregateTransactionsPerType(
-                                config.getMaxAggregateTransactionsPerType().getValue())
-                        .maxAggregateQueriesPerType(
-                                config.getMaxAggregateQueriesPerType().getValue())
-                        .maxAggregateServiceCallsPerType(
-                                config.getMaxAggregateServiceCallsPerType().getValue())
-                        .maxTraceEntriesPerTransaction(
-                                config.getMaxTraceEntriesPerTransaction().getValue())
-                        .maxStackTraceSamplesPerTransaction(
-                                config.getMaxStackTraceSamplesPerTransaction().getValue())
-                        .mbeanGaugeNotFoundDelaySeconds(
-                                config.getMbeanGaugeNotFoundDelaySeconds().getValue())
-                        .version(Versions.getVersion(config))
-                        .build();
-            } else {
-                return ImmutableAdvancedConfigDto.builder()
-                        .maxAggregateQueriesPerType(
-                                config.getMaxAggregateQueriesPerType().getValue())
-                        .maxAggregateServiceCallsPerType(
-                                config.getMaxAggregateServiceCallsPerType().getValue())
-                        .version(Versions.getVersion(config))
-                        .build();
-            }
+        private static AdvancedConfigDto create(AdvancedConfig config) {
+            return ImmutableAdvancedConfigDto.builder()
+                    .weavingTimer(config.getWeavingTimer())
+                    .immediatePartialStoreThresholdSeconds(
+                            config.getImmediatePartialStoreThresholdSeconds().getValue())
+                    .maxAggregateTransactionsPerType(
+                            config.getMaxAggregateTransactionsPerType().getValue())
+                    .maxAggregateQueriesPerType(
+                            config.getMaxAggregateQueriesPerType().getValue())
+                    .maxAggregateServiceCallsPerType(
+                            config.getMaxAggregateServiceCallsPerType().getValue())
+                    .maxTraceEntriesPerTransaction(
+                            config.getMaxTraceEntriesPerTransaction().getValue())
+                    .maxStackTraceSamplesPerTransaction(
+                            config.getMaxStackTraceSamplesPerTransaction().getValue())
+                    .mbeanGaugeNotFoundDelaySeconds(
+                            config.getMbeanGaugeNotFoundDelaySeconds().getValue())
+                    .version(Versions.getVersion(config))
+                    .build();
         }
     }
 

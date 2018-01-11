@@ -34,7 +34,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 
-import org.glowroot.central.repo.AgentRollupDao.AgentConfigUpdate;
+import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
@@ -91,12 +91,14 @@ public class AgentConfigDao {
                 clusterManager.createCache("agentConfigCache", new AgentConfigCacheLoader());
     }
 
-    public AgentConfig store(String agentId, @Nullable String agentRollupId,
-            AgentConfig agentConfig) throws Exception {
+    public AgentConfig store(String agentId, AgentConfig agentConfig) throws Exception {
         AgentConfig existingAgentConfig = read(agentId);
         AgentConfig updatedAgentConfig;
         if (existingAgentConfig == null) {
-            updatedAgentConfig = agentConfig;
+            updatedAgentConfig = agentConfig.toBuilder()
+                    // agent should not send general config, but clearing it just to be safe
+                    .clearGeneralConfig()
+                    .build();
         } else {
             // sync list of plugin properties, central property values win
             Map<String, PluginConfig> existingPluginConfigs = Maps.newHashMap();
@@ -152,8 +154,9 @@ public class AgentConfigDao {
             session.execute(boundStatement);
             agentConfigCache.invalidate(agentId);
         }
+        String agentRollupId = AgentRollupIds.getParent(agentId);
         if (agentRollupId != null) {
-            List<String> agentRollupIds = AgentRollupDao.getAgentRollupIds(agentRollupId);
+            List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
             for (String loopAgentRollupId : agentRollupIds) {
                 if (read(loopAgentRollupId) != null) {
                     continue;

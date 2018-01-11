@@ -15,6 +15,8 @@
  */
 package org.glowroot.common.config;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig.SyntheticMonitorKind;
 
@@ -42,5 +44,32 @@ public final class ConfigDefaults {
         } else {
             return "<Missing display>";
         }
+    }
+
+    public static String getDefaultAgentRollupDisplayPart(String agentRollupId) {
+        return unescapeForDisplay(getLastPartForDisplay(agentRollupId));
+    }
+
+    @VisibleForTesting
+    static String getLastPartForDisplay(String agentRollupId) {
+        if (agentRollupId.endsWith("::")) {
+            int index = agentRollupId.lastIndexOf("::", agentRollupId.length() - 3);
+            if (index == -1) {
+                return agentRollupId.substring(0, agentRollupId.length() - 2);
+            } else {
+                return agentRollupId.substring(index + 2, agentRollupId.length() - 2);
+            }
+        } else {
+            int index = agentRollupId.lastIndexOf("::");
+            if (index == -1) {
+                return agentRollupId;
+            } else {
+                return agentRollupId.substring(index + 2);
+            }
+        }
+    }
+
+    private static String unescapeForDisplay(String escaped) {
+        return escaped.replace("\\:", ":").replace("\\\\", "\\");
     }
 }

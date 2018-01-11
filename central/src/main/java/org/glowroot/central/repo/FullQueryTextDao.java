@@ -106,9 +106,8 @@ class FullQueryTextDao {
         return row.getString(0);
     }
 
-    List<Future<?>> store(String agentRollupId, String fullTextSha1, String fullText)
-            throws Exception {
-        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
+    List<Future<?>> store(String agentId, String fullTextSha1, String fullText) throws Exception {
+        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentId, fullTextSha1);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
@@ -259,7 +258,7 @@ class FullQueryTextDao {
     private int getTTL() throws Exception {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         RollupConfig lastRollupConfig = rollupConfigs.get(rollupConfigs.size() - 1);
-        // adding largest rollup time to account for query being retained longer by rollups
+        // adding largest rollup interval to account for query being retained longer by rollups
         long ttl = MILLISECONDS.toSeconds(lastRollupConfig.intervalMillis())
                 // adding 1 day to account for rateLimiter
                 + DAYS.toSeconds(1)

@@ -16,12 +16,14 @@
 package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
+import com.google.common.collect.ImmutableSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
+import org.glowroot.central.v09support.TraceDaoWithV09Support;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.live.ImmutableTracePointFilter;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
@@ -40,7 +42,6 @@ import static org.mockito.Mockito.when;
 // NOTE this is mostly a copy of TraceDaoTest in glowroot-agent
 public class TraceDaoIT {
 
-    private static final String AGENT_ROLLUP = "xyz";
     private static final String AGENT_ID = "xyz";
 
     private static Cluster cluster;
@@ -60,10 +61,10 @@ public class TraceDaoIT {
         ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
         when(configRepository.getCentralStorageConfig())
                 .thenReturn(ImmutableCentralStorageConfig.builder().build());
-        traceDao = new TraceDao(session,
-                new AgentRollupDao(session, mock(AgentConfigDao.class), clusterManager),
-                mock(TransactionTypeDao.class), mock(FullQueryTextDao.class),
-                mock(TraceAttributeNameDao.class), configRepository, Clock.systemClock());
+        traceDao = new TraceDaoWithV09Support(ImmutableSet.of(), 0, 0, Clock.systemClock(),
+                new TraceDaoImpl(session, mock(TransactionTypeDao.class),
+                        mock(FullQueryTextDao.class), mock(TraceAttributeNameDao.class),
+                        configRepository, Clock.systemClock()));
     }
 
     @AfterClass
@@ -85,11 +86,11 @@ public class TraceDaoIT {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder().build();
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
 
         // when
         Trace.Header header = traceDao
-                .readHeaderPlus(AGENT_ROLLUP, AGENT_ID, queryResult.records().get(0).traceId())
+                .readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId())
                 .header();
 
         // then
@@ -118,7 +119,7 @@ public class TraceDaoIT {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -141,7 +142,7 @@ public class TraceDaoIT {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -164,7 +165,7 @@ public class TraceDaoIT {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -187,7 +188,7 @@ public class TraceDaoIT {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).isEmpty();
@@ -210,7 +211,7 @@ public class TraceDaoIT {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).isEmpty();

@@ -90,7 +90,7 @@ glowroot.controller('TransactionTabCtrl', [
     });
 
     function updateTabBarData(autoRefresh) {
-      if (!$scope.agentPermissions || !$scope.agentPermissions[shortName].traces) {
+      if (!$scope.agentRollup || !$scope.agentRollup.permissions[shortName].traces) {
         return;
       }
       if (($scope.layout.central && !$scope.agentRollupId) || !$scope.transactionType) {

@@ -15,12 +15,12 @@
 -->
 <div class="gt-header" style="margin-bottom: 5px;">
   <div class="gt-header-page-name">
-    <div ng-show="!layout.embeddedAgentDisplayName"
+    <div ng-show="!layout.embeddedAgentRollup.display"
          style="margin-bottom: 10px;">
       Incidents
     </div>
-    <div style="margin-top: -16px;" ng-show="layout.embeddedAgentDisplayName">
-      {{layout.embeddedAgentDisplayName}}
+    <div style="margin-top: -16px;" ng-show="layout.embeddedAgentRollup.display">
+      {{layout.embeddedAgentRollup.display}}
       <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
            while chrome guesses the placement of the border based on default font and then it moves slightly
            once font is available -->
@@ -56,7 +56,7 @@
             style="font-weight: bold; font-size: 16px;">
           <td>{{incident.severity}}</td>
           <td>{{incident.durationMillis | gtDuration}}</td>
-          <td ng-if="layout.central">{{layout.agentRollups[incident.agentRollupId].display}}</td>
+          <td ng-if="layout.central">{{incident.agentRollupDisplay}}</td>
           <td>{{incident.display}}</td>
         </tr>
         </tbody>
@@ -91,7 +91,7 @@
           <td>{{incident.severity}}</td>
           <td>{{incident.resolveTime | date:'medium'}}</td>
           <td>{{incident.durationMillis | gtDuration}}</td>
-          <td ng-if="layout.central">{{layout.agentRollups[incident.agentRollupId].display}}</td>
+          <td ng-if="layout.central">{{incident.agentRollupDisplay}}</td>
           <td>{{incident.display}}</td>
         </tr>
         </tbody>

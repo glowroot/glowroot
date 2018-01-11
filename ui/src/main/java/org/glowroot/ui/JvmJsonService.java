@@ -138,7 +138,7 @@ class JvmJsonService {
             jg.writeArrayFieldStart("args");
             // mask JVM args here in case maskSystemProperties was modified after the environment
             // data was captured JVM startup
-            // (this also provides support in central for agent prior to 0.9.29)
+            // (this also provides support in central for agent prior to 0.10.0)
             for (String arg : SystemProperties.maskJvmArgs(javaInfo.getArgList(),
                     configRepository.getJvmConfig(agentId).getMaskSystemPropertyList())) {
                 jg.writeString(arg);
@@ -434,7 +434,7 @@ class JvmJsonService {
             logger.debug(e.getMessage(), e);
             return getAgentUnsupportedOperationResponse(agentId);
         }
-        // mask here to provide support in central for agents prior to 0.9.29
+        // mask here to provide support in central for agents prior to 0.10.0
         List<String> maskSystemProperties =
                 configRepository.getJvmConfig(agentId).getMaskSystemPropertyList();
         properties = SystemProperties.maskSystemProperties(properties, maskSystemProperties);

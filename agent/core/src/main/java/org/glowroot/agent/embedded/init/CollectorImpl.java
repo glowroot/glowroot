@@ -52,12 +52,12 @@ class CollectorImpl implements Collector {
     private final AlertingService alertingService;
     private final HttpClient httpClient;
 
-    CollectorImpl(EnvironmentDao environmentDao, AggregateDao aggregateRepository,
+    CollectorImpl(EnvironmentDao environmentDao, AggregateDao aggregateDao,
             TraceDao traceRepository, GaugeValueDao gaugeValueRepository,
             ConfigRepositoryImpl configRepository, AlertingService alertingService,
             HttpClient httpClient) {
         this.environmentDao = environmentDao;
-        this.aggregateDao = aggregateRepository;
+        this.aggregateDao = aggregateDao;
         this.traceDao = traceRepository;
         this.gaugeValueDao = gaugeValueRepository;
         this.configRepository = configRepository;

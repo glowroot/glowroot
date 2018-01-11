@@ -63,7 +63,7 @@ public class EnvironmentDaoIT {
                 .setHostInfo(HostInfo.newBuilder()
                         .setHostName("hosty"))
                 .build();
-        environmentDao.insert("a", environment);
+        environmentDao.store("a", environment);
         // when
         Environment readEnvironment = environmentDao.read("a");
         // then

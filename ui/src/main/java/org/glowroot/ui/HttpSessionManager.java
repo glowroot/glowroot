@@ -19,12 +19,14 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.net.MediaType;
@@ -320,21 +322,22 @@ class HttpSessionManager {
 
         boolean isPermitted(String agentRollupId, String permission) throws Exception {
             if (permission.startsWith("agent:")) {
-                return isAgentPermitted(agentRollupId, permission);
+                return isPermittedForAgentRollup(agentRollupId, permission);
             } else {
                 return isAdminPermitted(permission);
             }
         }
 
-        boolean isAgentPermitted(String agentRollupId, String permission) throws Exception {
+        boolean isPermittedForAgentRollup(String agentRollupId, String permission)
+                throws Exception {
             checkState(permission.startsWith("agent:"));
             if (offline()) {
                 return !permission.startsWith("agent:config:edit:");
             }
             if (permission.equals("agent:trace")) {
                 // special case for now
-                return isAgentPermitted(agentRollupId, "agent:transaction:traces")
-                        || isAgentPermitted(agentRollupId, "agent:error:traces");
+                return isPermittedForAgentRollup(agentRollupId, "agent:transaction:traces")
+                        || isPermittedForAgentRollup(agentRollupId, "agent:error:traces");
             }
             return isPermitted(SimplePermission.create(agentRollupId, permission));
         }
@@ -345,6 +348,38 @@ class HttpSessionManager {
                 return permission.equals("admin:view") || permission.startsWith("admin:view:");
             }
             return isPermitted(SimplePermission.create(permission));
+        }
+
+        // only used by LayoutService
+        boolean hasAnyPermissionImpliedBy(String permission) throws Exception {
+            checkState(permission.equals("agent") || permission.startsWith("agent:"));
+            if (offline()) {
+                return !permission.startsWith("agent:config:edit:");
+            }
+            List<String> permissionParts = Splitter.on(':').splitToList(permission);
+            for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
+                if (roles().contains(roleConfig.name())
+                        && roleConfig.hasAnyPermissionImpliedBy(permissionParts)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // only used by LayoutService
+        boolean isPermittedForSomeAgentRollup(String permission) throws Exception {
+            checkState(permission.startsWith("agent:"));
+            if (offline()) {
+                return !permission.startsWith("agent:config:edit:");
+            }
+            List<String> permissionParts = Splitter.on(':').splitToList(permission);
+            for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
+                if (roles().contains(roleConfig.name())
+                        && roleConfig.isPermittedForSomeAgentRollup(permissionParts)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private boolean isPermitted(SimplePermission permission) throws Exception {

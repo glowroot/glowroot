@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,12 @@ class TraceJsonService {
 
     // see special case for "agent:trace" permission in Authentication.isPermitted()
     @GET(path = "/backend/trace/header", permission = "agent:trace")
-    String getHeader(@BindAgentRollupId String agentRollupId, @BindRequest HeaderRequest request)
+    String getHeader(@BindAgentId String agentId, @BindRequest HeaderRequest request)
             throws Exception {
-        String headerJson = traceCommonService.getHeaderJson(agentRollupId, request.agentId(),
-                request.traceId(), request.checkLiveTraces());
+        String headerJson = traceCommonService.getHeaderJson(agentId, request.traceId(),
+                request.checkLiveTraces());
         if (headerJson == null) {
-            logger.debug("no trace found for agent id '{}' and trace id '{}'", request.agentId(),
+            logger.debug("no trace found for agent id '{}' and trace id '{}'", agentId,
                     request.traceId());
             return "{\"expired\":true}";
         } else {
@@ -47,7 +47,6 @@ class TraceJsonService {
 
     @Value.Immutable
     abstract static class HeaderRequest {
-        abstract String agentId();
         abstract String traceId();
         @Value.Default
         boolean checkLiveTraces() {

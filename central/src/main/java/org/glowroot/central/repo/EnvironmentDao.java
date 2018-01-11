@@ -50,7 +50,7 @@ public class EnvironmentDao implements EnvironmentRepository {
         readPS = session.prepare("select environment from environment where agent_id = ?");
     }
 
-    public void insert(String agentId, Environment environment) throws Exception {
+    public void store(String agentId, Environment environment) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);

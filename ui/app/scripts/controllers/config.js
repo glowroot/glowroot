@@ -19,9 +19,11 @@
 glowroot.controller('ConfigCtrl', [
   '$scope',
   '$location',
+  '$http',
   '$timeout',
   'queryStrings',
-  function ($scope, $location, $timeout, queryStrings) {
+  'httpErrors',
+  function ($scope, $location, $http, $timeout, queryStrings, httpErrors) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'gears';
@@ -58,41 +60,46 @@ glowroot.controller('ConfigCtrl', [
       return $location.path().substring(1);
     };
 
-    function agentRollupUrl(path, agentRollup) {
-      var query = $scope.agentRollupQuery(agentRollup);
+    function agentRollupUrl(path, agentRollupId) {
+      var query = $scope.agentRollupQuery(agentRollupId);
       return path + queryStrings.encodeObject(query);
     }
 
-    $scope.agentRollupUrl = function (agentRollup) {
+    $scope.agentRollupUrl = function (agentRollupId) {
       var path = $location.path().substring(1);
-      if (agentRollup.agent) {
-        return agentRollupUrl(path, agentRollup);
+      if ($scope.isRollup(agentRollupId)) {
+        return agentRollupUrl('config/general', agentRollupId);
       }
-      if (path === 'config/general'
-          || path === 'config/synthetic-monitor-list'
-          || path === 'config/synthetic-monitor'
-          || path === 'config/alert-list'
-          || path === 'config/alert'
-          || path === 'config/ui'
-          || path === 'config/advanced') {
-        return agentRollupUrl(path, agentRollup);
-      } else {
-        return agentRollupUrl('config/general', agentRollup);
-      }
+      return agentRollupUrl(path, agentRollupId);
     };
 
-    $scope.selectedAgentRollup = $scope.agentRollupId;
+    if ($scope.layout.central) {
 
-    $scope.$watch(function () {
-      return $location.search();
-    }, function (newValue, oldValue) {
-      if (newValue !== oldValue) {
-        // need to refresh selectpicker in order to update hrefs of the items
-        $timeout(function () {
-          // timeout is needed so this runs after dom is updated
-          $('#agentRollupDropdown').selectpicker('refresh');
-        });
+      $scope.$watch(function () {
+        return $location.search();
+      }, function (newValue, oldValue) {
+        if (newValue !== oldValue) {
+          // need to refresh selectpicker in order to update hrefs of the items
+          $timeout(function () {
+            // timeout is needed so this runs after dom is updated
+            $('#agentRollupDropdown').selectpicker('refresh');
+          });
+        }
+      }, true);
+
+      var refreshAgentRollups = function () {
+        var now = new Date().getTime();
+        var from = now - 7 * 24 * 60 * 60 * 1000;
+        // looking to the future just to be safe
+        var to = now + 7 * 24 * 60 * 60 * 1000;
+        $scope.refreshAgentRollups(from, to, $scope);
+      };
+
+      $('#agentRollupDropdown').on('show.bs.select', refreshAgentRollups);
+
+      if ($scope.agentRollups === undefined) {
+        refreshAgentRollups();
       }
-    }, true);
+    }
   }
 ]);

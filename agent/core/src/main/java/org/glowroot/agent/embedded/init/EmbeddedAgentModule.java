@@ -394,11 +394,20 @@ class EmbeddedAgentModule {
     private static class AgentRollupRepositoryImpl implements AgentRollupRepository {
 
         @Override
-        public List<AgentRollup> readAgentRollups() {
+        public List<AgentRollup> readRecentlyActiveAgentRollups(int lastXDays) {
             return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
                     .id("")
                     .display("")
-                    .agent(true)
+                    .lastDisplayPart("")
+                    .build());
+        }
+
+        @Override
+        public List<AgentRollup> readAgentRollups(long from, long to) {
+            return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
+                    .id("")
+                    .display("")
+                    .lastDisplayPart("")
                     .build());
         }
 
@@ -408,8 +417,8 @@ class EmbeddedAgentModule {
         }
 
         @Override
-        public boolean isAgent(String agentId) {
-            return true;
+        public List<String> readAgentRollupDisplayParts(String agentRollupId) {
+            return ImmutableList.of("");
         }
     }
 }

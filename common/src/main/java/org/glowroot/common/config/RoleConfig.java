@@ -61,6 +61,24 @@ public abstract class RoleConfig {
         return false;
     }
 
+    public boolean isPermittedForSomeAgentRollup(List<String> permissionParts) {
+        for (SimplePermission simplePermission : simplePermissions()) {
+            if (SimplePermission.implies(simplePermission.parts(), permissionParts)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasAnyPermissionImpliedBy(List<String> permissionParts) {
+        for (SimplePermission simplePermission : simplePermissions()) {
+            if (SimplePermission.implies(permissionParts, simplePermission.parts())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Value.Derived
     @JsonIgnore
     public String version() {
@@ -94,11 +112,15 @@ public abstract class RoleConfig {
                 return false;
             }
             List<String> otherParts = other.parts();
-            if (otherParts.size() < parts().size()) {
+            return implies(parts(), otherParts);
+        }
+
+        static boolean implies(List<String> parts, List<String> otherParts) {
+            if (otherParts.size() < parts.size()) {
                 return false;
             }
-            for (int i = 0; i < parts().size(); i++) {
-                String part = parts().get(i);
+            for (int i = 0; i < parts.size(); i++) {
+                String part = parts.get(i);
                 String otherPart = otherParts.get(i);
                 if (!implies(part, otherPart)) {
                     return false;

@@ -28,12 +28,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.repo.AgentConfigDao;
-import org.glowroot.central.repo.AgentRollupDao;
+import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.TraceDao;
+import org.glowroot.central.repo.V09AgentRollupDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.util.Clock;
 
@@ -50,17 +51,17 @@ class GrpcServer {
     private final @Nullable Server httpsServer;
 
     GrpcServer(String bindAddress, @Nullable Integer httpPort, @Nullable Integer httpsPort,
-            File centralDir, AgentRollupDao agentRollupDao, AgentConfigDao agentConfigDao,
-            AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, EnvironmentDao environmentDao,
-            HeartbeatDao heartbeatDao, TraceDao traceDao,
+            File centralDir, AgentConfigDao agentConfigDao, AgentDao agentDao,
+            EnvironmentDao environmentDao, HeartbeatDao heartbeatDao, AggregateDao aggregateDao,
+            GaugeValueDao gaugeValueDao, TraceDao traceDao, V09AgentRollupDao v09AgentRollupDao,
             CentralAlertingService centralAlertingService, ClusterManager clusterManager,
             Clock clock, String version) throws IOException {
 
-        downstreamService = new DownstreamServiceImpl(agentRollupDao, clusterManager);
+        downstreamService = new DownstreamServiceImpl(agentDao, v09AgentRollupDao, clusterManager);
 
-        CollectorServiceImpl collectorService = new CollectorServiceImpl(agentRollupDao,
-                agentConfigDao, environmentDao, aggregateDao, gaugeValueDao, heartbeatDao, traceDao,
-                centralAlertingService, clock, version);
+        CollectorServiceImpl collectorService = new CollectorServiceImpl(agentDao, agentConfigDao,
+                environmentDao, heartbeatDao, aggregateDao, gaugeValueDao, traceDao,
+                v09AgentRollupDao, centralAlertingService, clock, version);
 
         if (httpPort == null) {
             httpServer = null;

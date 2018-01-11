@@ -157,11 +157,24 @@ public class CommonHandler {
         Authentication authentication =
                 httpSessionManager.getAuthentication(request, touchSession);
         Glowroot.setTransactionUser(authentication.caseAmbiguousUsername());
+        // need to grab agent-rollup-id up here before it is removed from query parameters
+        String agentRollupId = getAgentRollupIdFromRequest(request);
         response = handleRequest(request, authentication);
-        if (request.getPath().startsWith("/backend/")
-                && !request.getPath().equals("/backend/layout")) {
-            response.setHeader("Glowroot-Layout-Version",
-                    layoutService.getLayoutVersion(authentication));
+        if (request.getPath().startsWith("/backend/")) {
+            if (!request.getPath().equals("/backend/layout")) {
+                response.setHeader("Glowroot-Layout-Version",
+                        layoutService.getLayoutVersion(authentication));
+            }
+            if (!request.getPath().equals("/backend/agent-rollup-layout")) {
+                if (agentRollupId != null) {
+                    String agentRollupLayoutVersion = layoutService
+                            .getAgentRollupLayoutVersion(authentication, agentRollupId);
+                    if (agentRollupLayoutVersion != null) {
+                        response.setHeader("Glowroot-Agent-Rollup-Layout-Version",
+                                agentRollupLayoutVersion);
+                    }
+                }
+            }
         }
         return response;
     }
@@ -189,12 +202,27 @@ public class CommonHandler {
             CommonResponse response = new CommonResponse(OK);
             response.setHeader("Glowroot-Layout-Version",
                     layoutService.getLayoutVersion(authentication));
+            List<String> agentRollupIds = request.getParameters("agent-rollup-id");
+            if (agentRollupIds != null && agentRollupIds.size() == 1) {
+                String agentRollupLayoutVersion = layoutService
+                        .getAgentRollupLayoutVersion(authentication, agentRollupIds.get(0));
+                if (agentRollupLayoutVersion != null) {
+                    response.setHeader("Glowroot-Agent-Rollup-Layout-Version",
+                            agentRollupLayoutVersion);
+                }
+            }
             return response;
         }
         if (path.equals("/backend/layout")) {
             Authentication authentication = httpSessionManager.getAuthentication(request, false);
             return new CommonResponse(OK, MediaType.JSON_UTF_8,
                     layoutService.getLayoutJson(authentication));
+        }
+        if (path.equals("/backend/agent-rollup-layout")) {
+            Authentication authentication = httpSessionManager.getAuthentication(request, false);
+            String agentRollupId = request.getParameters("agent-rollup-id").get(0);
+            return new CommonResponse(OK, MediaType.JSON_UTF_8,
+                    layoutService.getAgentRollupLayoutJson(agentRollupId, authentication));
         }
         return null;
     }
@@ -266,10 +294,15 @@ public class CommonHandler {
             if (central && agentId.isEmpty()) {
                 throw new JsonServiceException(BAD_REQUEST, "agent-id query parameter is empty");
             }
+            if (agentId.endsWith("::")) {
+                throw new JsonServiceException(BAD_REQUEST,
+                        "agent rollup id received when expecting an agent id");
+            }
             parameterTypes.add(String.class);
             parameters.add(agentId);
             queryParameters.remove("agent-id");
-            permitted = authentication.isAgentPermitted(agentId, jsonServiceMapping.permission());
+            permitted = authentication.isPermittedForAgentRollup(agentId,
+                    jsonServiceMapping.permission());
         } else if (jsonServiceMapping.bindAgentRollup()) {
             List<String> agentRollupIds = queryParameters.get("agent-rollup-id");
             if (agentRollupIds == null) {
@@ -281,7 +314,8 @@ public class CommonHandler {
             parameters.add(agentRollupId);
             queryParameters.remove("agent-rollup-id");
             permitted =
-                    authentication.isAgentPermitted(agentRollupId, jsonServiceMapping.permission());
+                    authentication.isPermittedForAgentRollup(agentRollupId,
+                            jsonServiceMapping.permission());
         } else {
             permitted = jsonServiceMapping.permission().isEmpty()
                     || authentication.isAdminPermitted(jsonServiceMapping.permission());
@@ -382,6 +416,18 @@ public class CommonHandler {
         } else {
             return null;
         }
+    }
+
+    private static @Nullable String getAgentRollupIdFromRequest(CommonRequest request) {
+        List<String> agentIds = request.getParameters("agent-id");
+        if (agentIds != null && agentIds.size() == 1) {
+            return agentIds.get(0);
+        }
+        List<String> agentRollupIds = request.getParameters("agent-rollup-id");
+        if (agentRollupIds != null && agentRollupIds.size() == 1) {
+            return agentRollupIds.get(0);
+        }
+        return null;
     }
 
     private static CommonResponse buildJsonResponse(@Nullable Object responseObject) {

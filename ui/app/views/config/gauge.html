@@ -53,7 +53,7 @@
                  class="form-control"
                  ng-model="config.mbeanObjectName"
                  ng-required="true"
-                 ng-disabled="!agentPermissions.config.edit.gauge"
+                 ng-disabled="!agentRollup.permissions.config.edit.gauge"
                  uib-typeahead="suggestion for suggestion in mbeanObjectNames($viewValue)"
                  typeahead-on-select="onSelectMBeanObjectName()"
                  ng-blur="onBlurMBeanObjectName()"
@@ -100,7 +100,7 @@
                 <label>
                   <input type="checkbox"
                          ng-model="mbeanAttribute.checked"
-                         ng-disabled="!agentPermissions.config.edit.gauge">
+                         ng-disabled="!agentRollup.permissions.config.edit.gauge">
                   {{mbeanAttribute.name.replace('/', ' / ')}}
                   <span ng-show="!mbeanAttribute.available && !mbeanUnavailable && !mbeanUnmatched"
                         class="gt-red"
@@ -115,7 +115,7 @@
                   <label>
                     <input type="checkbox"
                            ng-model="mbeanAttribute.counter"
-                           ng-disabled="!agentPermissions.config.edit.gauge">
+                           ng-disabled="!agentRollup.permissions.config.edit.gauge">
                     Counter?
                   </label>
                 </div>
@@ -130,7 +130,7 @@
         </div>
       </div>
       <div class="form-group gt-form-buttons"
-           ng-if="agentPermissions.config.edit.gauge">
+           ng-if="agentRollup.permissions.config.edit.gauge">
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button-group>
             <div gt-button

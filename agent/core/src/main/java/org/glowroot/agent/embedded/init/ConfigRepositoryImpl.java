@@ -748,11 +748,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteAgentRollup(String agentRollup) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void updateAdminGeneralConfig(AdminGeneralConfig config, String priorVersion)
             throws Exception {
         synchronized (writeLock) {

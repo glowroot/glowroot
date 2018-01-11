@@ -120,10 +120,6 @@ glowroot.controller('ReportAdhocCtrl', [
       return 'report/ad-hoc';
     };
 
-    $scope.hasAgents = function () {
-      return !angular.equals({}, $scope.layout.agentRollups);
-    };
-
     $scope.allTransactionTypes = [];
 
     $scope.agentRollups = [];
@@ -141,15 +137,6 @@ glowroot.controller('ReportAdhocCtrl', [
       ]);
     }
 
-    angular.forEach($scope.layout.agentRollupValues, function (agentRollup) {
-      // for now (for simplicity) reporting requires permission for ALL reportable metrics
-      // (currently transaction:overview, error:overview and jvm:gauges)
-      if (agentRollup.permissions.transaction.overview
-          && agentRollup.permissions.error.overview && agentRollup.permissions.jvm.gauges) {
-        $scope.agentRollups.push(agentRollup);
-      }
-    });
-
     function showTransactionTypeAndName(metric) {
       return metric && (metric.lastIndexOf('transaction:', 0) === 0 || metric.lastIndexOf('error:', 0) === 0);
     }
@@ -158,30 +145,49 @@ glowroot.controller('ReportAdhocCtrl', [
       return showTransactionTypeAndName($scope.report.metric);
     };
 
-    $scope.$watch('report.agentRollupIds', function () {
-      var temp = {};
-      angular.forEach($scope.report.agentRollupIds, function (agentRollupId) {
-        var agentRollup = $scope.layout.agentRollups[agentRollupId];
-        angular.forEach(agentRollup.transactionTypes, function (transactionType) {
-          temp[transactionType] = true;
-        });
-      });
-      $scope.allTransactionTypes = Object.keys(temp).sort();
-      if ($scope.allTransactionTypes.indexOf($scope.report.transactionType) === -1) {
-        $scope.report.transactionType = '';
-      }
+    if ($scope.layout.central) {
+      $scope.$watchGroup(['report.fromDate', 'report.toDate'], function () {
+        var query = {
+          fromDate: moment($scope.report.fromDate).format('YYYYMMDD'),
+          toDate: moment($scope.report.toDate).format('YYYYMMDD'),
+          timeZoneId: $scope.report.timeZoneId
+        };
+        $http.get('backend/report/agent-rollups' + queryStrings.encodeObject(query))
+            .then(function (response) {
+              $scope.allAgentRollups = response.data;
+              angular.forEach($scope.allAgentRollups, function (agentRollup) {
+                var indent = '';
+                for (var i = 0; i < agentRollup.depth; i++) {
+                  indent += '\u00a0\u00a0\u00a0\u00a0';
+                }
+                agentRollup.indentedDisplay = indent + agentRollup.lastDisplayPart;
+              });
 
+            }, function (response) {
+              // FIXME equivalent of $scope.showChartSpinner--;
+              httpErrors.handle(response, $scope);
+            });
+      });
+    }
+
+    $scope.$watchGroup(['report.agentRollupIds', 'report.fromDate', 'report.toDate'], function () {
       if ($scope.report.agentRollupIds.length) {
         var query = {
           agentRollupIds: $scope.report.agentRollupIds,
-          from: $scope.report.fromDate,
-          to: moment($scope.report.toDate).add(1, 'day').valueOf()
+          fromDate: moment($scope.report.fromDate).format('YYYYMMDD'),
+          toDate: moment($scope.report.toDate).format('YYYYMMDD'),
+          timeZoneId: $scope.report.timeZoneId
         };
-        $http.get('backend/report/all-gauges' + queryStrings.encodeObject(query))
+        $http.get('backend/report/transaction-types-and-gauges' + queryStrings.encodeObject(query))
             .then(function (response) {
+              $scope.transactionTypes = response.data.transactionTypes;
+              if ($scope.transactionTypes.indexOf($scope.report.transactionType) === -1) {
+                $scope.report.transactionType = '';
+              }
+
               $scope.metrics = angular.copy(METRICS);
               gaugeUnits = {};
-              angular.forEach(response.data, function (gauge) {
+              angular.forEach(response.data.gauges, function (gauge) {
                 $scope.metrics.push({
                   id: 'gauge:' + gauge.name,
                   display: gauge.display
@@ -754,12 +760,11 @@ glowroot.controller('ReportAdhocCtrl', [
       } else if (appliedReport.metric.indexOf('gauge:') === 0) {
         path = 'jvm/gauges';
       }
-      var agentRollup = $scope.layout.agentRollups[agentRollupId];
       var url = path;
-      if (agentRollup.agent) {
-        url += '?agent-id=';
-      } else {
+      if ($scope.isAgentRollup()) {
         url += '?agent-rollup-id=';
+      } else {
+        url += '?agent-id=';
       }
       url += encodeURIComponent(agentRollupId);
       if (showTransactionTypeAndName(appliedReport.metric)) {

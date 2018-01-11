@@ -112,11 +112,6 @@ public class Session {
 
     public void createTableWithTWCS(String createTableQuery, int expirationHours,
             boolean useAndInsteadOfWith) {
-        // "Ideally, operators should select a compaction_window_unit and compaction_window_size
-        // pair that produces approximately 20-30 windows"
-        // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
-        int windowSizeHours = expirationHours / 24;
-
         // as long as gc_grace_seconds is less than TTL, then tombstones can be collected
         // immediately (https://issues.apache.org/jira/browse/CASSANDRA-4917)
         //
@@ -132,8 +127,9 @@ public class Session {
         try {
             wrappedSession.execute(createTableQuery + " " + term + " compaction = { 'class' :"
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : '" + windowSizeHours + "',"
-                    + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
+                    + " 'compaction_window_size' : '"
+                    + getCompactionWindowSizeHours(expirationHours)
+                    + "', 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
                     + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
@@ -173,6 +169,18 @@ public class Session {
             }
         }, MoreExecutors.directExecutor());
         return outerFuture;
+    }
+
+    public static int getCompactionWindowSizeHours(int expirationHours) {
+        // "Ideally, operators should select a compaction_window_unit and compaction_window_size
+        // pair that produces approximately 20-30 windows"
+        // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
+        if (expirationHours == 0) {
+            // treat as expiration 10 years
+            return 10 * 365;
+        } else {
+            return expirationHours / 24;
+        }
     }
 
     private static void propagateCauseIfPossible(ExecutionException e) throws Exception {

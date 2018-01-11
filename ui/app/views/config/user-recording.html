@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2016 the original author or authors.
+  Copyright 2013-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
       <div gt-form-group
            gt-label="Users"
            gt-model="page.users"
-           gt-disabled="!agentPermissions.config.edit.userRecording"
+           gt-disabled="!agentRollup.permissions.config.edit.userRecording"
            gt-width="20em">
         <div class="help-block">
           Comma-separated list of users.
@@ -41,7 +41,7 @@
            gt-model="config.profilingIntervalMillis"
            gt-number="true"
            gt-pattern="pattern.integer"
-           gt-disabled="!agentPermissions.config.edit.userRecording"
+           gt-disabled="!agentRollup.permissions.config.edit.userRecording"
            gt-width="7em"
            gt-addon="milliseconds">
         <div class="help-block">
@@ -49,7 +49,7 @@
         </div>
       </div>
       <div class="form-group gt-form-buttons"
-           ng-if="agentPermissions.config.edit.userRecording">
+           ng-if="agentRollup.permissions.config.edit.userRecording">
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button
                gt-label="Save changes"

@@ -90,6 +90,7 @@ message AgentResponse {
 
 message Hello {
   string agent_id = 1;
+  bool post_v09 = 2;
 }
 
 message HelloAck {

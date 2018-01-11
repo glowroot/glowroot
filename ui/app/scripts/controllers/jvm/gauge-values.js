@@ -31,8 +31,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     $scope.$parent.heading = 'Gauges';
 
     if ($scope.hideMainContent()) {
-      // these are needed to prevent nested controller chart-range.js from throwing errors
-      $scope.range = {};
+      // this is needed to prevent nested controller chart-range.js from throwing errors
       $scope.buildQueryObject = function () {
         return {};
       };
@@ -41,8 +40,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     // initialize page binding object
     $scope.page = {};
-
-    var defaultGaugeNames = [];
 
     var chartState = charts.createState();
 
@@ -58,8 +55,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     $scope.page.gaugeFilter = '';
     $scope.useGaugeViewThresholdMultiplier = true;
-
-    $scope.range = {};
 
     $scope.currentTabUrl = function () {
       return 'jvm/gauges';
@@ -81,20 +76,19 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       }
     }
 
-    // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
-    // (see https://github.com/angular/angular.js/pull/12643)
-    $scope.$watch('[range.chartFrom, range.chartTo, range.chartRefresh, range.chartAutoRefresh]',
-        function (newValues, oldValues) {
-          if (newValues !== oldValues) {
-            watchListener(newValues[3] !== oldValues[3]);
-          }
-        });
+    function watchExpression(scope) {
+      return {
+        chartFrom: scope.range.chartFrom,
+        chartTo: scope.range.chartTo,
+        chartRefresh: scope.range.chartRefresh,
+        chartAutoRefresh: scope.range.chartAutoRefresh,
+        gaugeNames: scope.gaugeNames
+      };
+    }
 
-    $scope.$watchCollection('gaugeNames', function (newValue, oldValue) {
-      if (newValue !== oldValue || newValue.length) {
-        watchListener(false);
-      }
-    });
+    $scope.$watch(watchExpression, function (newValue, oldValue) {
+      watchListener(newValue.chartAutoRefresh !== oldValue.chartAutoRefresh);
+    }, true);
 
     $scope.$watch('seriesLabels', function (newValues, oldValues) {
       if (newValues !== oldValues) {
@@ -124,11 +118,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
         query.last = $scope.range.last.toString();
       }
-      if (angular.equals($scope.gaugeNames, defaultGaugeNames)) {
-        delete query['gauge-name'];
-      } else {
-        query['gauge-name'] = $scope.gaugeNames;
-      }
+      query['gauge-name'] = $scope.gaugeNames;
       return query;
     };
 
@@ -225,13 +215,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       location.gaugeNames = $location.search()['gauge-name'];
       if (!location.gaugeNames) {
         location.gaugeNames = [];
-        angular.forEach(defaultGaugeNames, function (defaultGaugeName) {
-          if (allGaugeNames.indexOf(defaultGaugeName) !== -1) {
-            location.gaugeNames.push(defaultGaugeName);
-          }
-        });
-      }
-      if (!angular.isArray(location.gaugeNames)) {
+      } else if (!angular.isArray(location.gaugeNames)) {
         location.gaugeNames = [location.gaugeNames];
       }
       if (!angular.equals(location, priorLocation)) {
@@ -243,11 +227,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         $scope.applyLast();
       }
     });
-
-    if (!$scope.gaugeNames.length) {
-      var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];
-      $scope.gaugeNames = angular.copy(agentRollup.defaultGaugeNames);
-    }
 
     // scale will bring max into 0..100 range
     // not using Math.log / Math.log(10) due to floating point issues

@@ -112,7 +112,11 @@ public class UiModule {
                 new AdminJsonService(central, offline, confDir, sharedConfDir, configRepository,
                         repoAdmin, liveAggregateRepository, mailService, httpClient);
 
+        LayoutService layoutService = new LayoutService(central, offline, version, configRepository,
+                transactionTypeRepository, traceAttributeNameRepository, agentRollupRepository);
+
         List<Object> jsonServices = Lists.newArrayList();
+        jsonServices.add(new LayoutJsonService(agentRollupRepository, layoutService));
         jsonServices.add(new TransactionJsonService(transactionCommonService, aggregateRepository,
                 configRepository, rollupLevelService, clock));
         jsonServices.add(new TracePointJsonService(traceRepository, liveTraceRepository,
@@ -121,18 +125,16 @@ public class UiModule {
         jsonServices.add(new ErrorJsonService(errorCommonService, transactionCommonService,
                 traceRepository, rollupLevelService, clock));
         jsonServices.add(new GaugeValueJsonService(gaugeValueRepository, rollupLevelService,
-                agentRollupRepository, configRepository));
-        jsonServices
-                .add(new JvmJsonService(environmentRepository, configRepository, liveJvmService));
-        jsonServices.add(new IncidentJsonService(central, incidentRepository,
-                configRepository, clock));
-        jsonServices.add(new ReportJsonService(aggregateRepository, agentRollupRepository,
-                gaugeValueRepository, rollupLevelService));
-        jsonServices.add(new ConfigJsonService(agentRollupRepository, gaugeValueRepository,
                 configRepository));
         jsonServices
+                .add(new JvmJsonService(environmentRepository, configRepository, liveJvmService));
+        jsonServices.add(new IncidentJsonService(central, incidentRepository, configRepository,
+                agentRollupRepository, clock));
+        jsonServices.add(new ReportJsonService(agentRollupRepository, transactionTypeRepository,
+                aggregateRepository, gaugeValueRepository, rollupLevelService));
+        jsonServices.add(new ConfigJsonService(gaugeValueRepository, configRepository));
+        jsonServices
                 .add(new AlertConfigJsonService(configRepository, gaugeValueRepository, central));
-        jsonServices.add(new AgentConfigJsonService(configRepository, agentRollupRepository));
         jsonServices.add(new UserConfigJsonService(configRepository));
         jsonServices
                 .add(new RoleConfigJsonService(central, configRepository, agentRollupRepository));
@@ -148,8 +150,6 @@ public class UiModule {
             jsonServices.add(new SyntheticMonitorConfigJsonService(configRepository));
         }
 
-        LayoutService layoutService = new LayoutService(central, offline, version, configRepository,
-                agentRollupRepository, transactionTypeRepository, traceAttributeNameRepository);
         HttpSessionManager httpSessionManager = new HttpSessionManager(central, offline,
                 configRepository, clock, layoutService, sessionMapFactory);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
