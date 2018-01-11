@@ -45,7 +45,7 @@
         since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
         methods still return com.google.common.base.Function, which only extends
         java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>23.5-jre</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>23.6-jre</version> <!-- $NO-MVN-MAN-VER$ -->
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
@@ -64,12 +64,12 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.1.3.Final</version>
+      <version>9.1.4.Final</version>
     </dependency>
     <dependency>
       <groupId>org.jgroups</groupId>
       <artifactId>jgroups</artifactId>
-      <version>4.0.8.Final</version>
+      <version>4.0.9.Final</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -143,7 +143,7 @@
     <dependency>
       <groupId>org.codehaus.janino</groupId>
       <artifactId>janino</artifactId>
-      <version>3.0.7</version>
+      <version>3.0.8</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

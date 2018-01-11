@@ -359,8 +359,6 @@
                   <artifact>io.netty:netty-*</artifact>
                   <excludes>
                     <exclude>META-INF/io.netty.versions.properties</exclude>
-                    <exclude>io/netty/util/internal/NativeLibraryLoader.class</exclude>
-                    <exclude>io/netty/util/internal/NativeLibraryLoader$*.class</exclude>
                   </excludes>
                 </filter>
                 <filter>

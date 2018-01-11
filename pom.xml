@@ -77,16 +77,11 @@
   </scm>
 
   <properties>
-    <grpc.version>1.8.0</grpc.version>
-    <protobuf.version>3.5.0</protobuf.version>
-    <protoc.version>3.5.0</protoc.version>
+    <grpc.version>1.9.0</grpc.version>
+    <protobuf.version>3.5.1</protobuf.version>
+    <protoc.version>3.5.1</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
-    <!-- when upgrading to netty 4.1.17.Final or later, remove workaround for
-      https://github.com/netty/netty/pull/7345 (see patched version of
-      io.netty.util.internal.NativeLibraryLoader in glowroot-agent-core, and related shading in the
-      glowroot-agent-core pom.xml, and null checker skipping of patched
-      io.netty.util.internal.NativeLibraryLoader at the bottom of this file) -->
-    <netty.version>4.1.16.Final</netty.version>
+    <netty.version>4.1.17.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.2.3</logback.version>
@@ -244,7 +239,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.12.0</version>
+        <version>2.13.0</version>
       </dependency>
       <dependency>
         <groupId>com.ning</groupId>
@@ -811,7 +806,7 @@
                 <!-- checker.stubs.dir needs to be absolute path since relative path will be
                   interpreted from each module directory -->
                 <arg>-Astubs=${checker.stubs.dir}</arg>
-                <arg>-AskipDefs=^org\.glowroot\.agent\.embedded\.repo\.model\.|^org\.glowroot\.agent\.it\.harness\.grpc\.|^org\.glowroot\.central\.repo\.model\.|^io\.netty\.util\.internal\.NativeLibraryLoader</arg>
+                <arg>-AskipDefs=^org\.glowroot\.agent\.embedded\.repo\.model\.|^org\.glowroot\.agent\.it\.harness\.grpc\.|^org\.glowroot\.central\.repo\.model\.</arg>
               </compilerArgs>
             </configuration>
           </plugin>
