@@ -32,10 +32,22 @@
            gt-model="config.agentDisplayName"
            gt-disabled="!layout.adminEdit"
            gt-width="40em"
-           gt-placeholder="{{defaultAgentDisplayName}}">
+           gt-placeholder="{{defaultAgentDisplayName}}"
+           ng-if="!layout.central">
         <div class="help-block">
           Display name for this agent. Glowroot displays this name prominently in the UI and in outgoing alert emails,
-          which can be helpful if you have multiple glowroot agents in your environment.
+          which can be helpful if you have multiple glowroot agents.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Glowroot central display name"
+           gt-model="config.centralDisplayName"
+           gt-disabled="!layout.adminEdit"
+           gt-width="40em"
+           ng-if="layout.central">
+        <div class="help-block">
+          Display name for this Glowroot central installation. Glowroot central displays this in outgoing alert emails,
+          which can be helpful if you have multiple Glowroot central installations.
         </div>
       </div>
       <div class="form-group gt-form-buttons"

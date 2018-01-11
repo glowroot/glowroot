@@ -123,9 +123,9 @@ public class AlertingService {
         }
     }
 
-    public void checkMetricAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, MetricCondition metricCondition, long endTime)
-            throws Exception {
+    public void checkMetricAlert(String centralDisplay, String agentRollupId,
+            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
+            long endTime) throws Exception {
         AlertCondition alertCondition = alertConfig.getCondition();
         long startTime = endTime - SECONDS.toMillis(metricCondition.getTimePeriodSeconds());
         Number value =
@@ -145,36 +145,34 @@ public class AlertingService {
                 alertCondition, alertConfig.getSeverity());
         if (openIncident != null && !currentlyTriggered) {
             incidentRepository.resolveIncident(openIncident, endTime);
-            sendMetricAlert(agentRollupId, agentRollupDisplay, alertConfig, metricCondition,
-                    endTime, true);
+            sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
+                    metricCondition, endTime, true);
         } else if (openIncident == null && currentlyTriggered) {
             // the start time for the incident is the end time of the interval evaluated above
             incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
                     alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
-            sendMetricAlert(agentRollupId, agentRollupDisplay, alertConfig, metricCondition,
-                    endTime, false);
+            sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
+                    metricCondition, endTime, false);
         }
     }
 
-    private void sendMetricAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, MetricCondition metricCondition, long endTime, boolean ok)
-            throws Exception {
+    private void sendMetricAlert(String centralDisplay, String agentRollupId,
+            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
+            long endTime, boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         StringBuilder subject = new StringBuilder();
-        if (!agentRollupDisplay.isEmpty()) {
-            subject.append("[");
-            subject.append(agentRollupDisplay);
-            subject.append("] ");
-        }
         String metric = metricCondition.getMetric();
         String transactionType = metricCondition.getTransactionType();
+        boolean needsSubjectSeparator = false;
         if (!transactionType.isEmpty()) {
-            subject.append(" - ");
             subject.append(transactionType);
+            needsSubjectSeparator = true;
         }
         String transactionName = metricCondition.getTransactionName();
         if (!transactionName.isEmpty()) {
-            subject.append(" - ");
+            if (needsSubjectSeparator) {
+                subject.append(" - ");
+            }
             subject.append(transactionName);
         }
         Gauge gauge = null;
@@ -195,7 +193,6 @@ public class AlertingService {
         } else if (metric.startsWith("gauge:")) {
             String gaugeName = metric.substring("gauge:".length());
             gauge = Gauges.getGauge(gaugeName);
-            subject.append(" - ");
             subject.append(gauge.display());
             message.append("Average");
         } else {
@@ -224,13 +221,13 @@ public class AlertingService {
             throw new IllegalStateException("Unexpected metric: " + metric);
         }
         message.append(".\n\n");
-        sendNotification(agentRollupId, agentRollupDisplay, alertConfig, endTime,
+        sendNotification(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig, endTime,
                 subject.toString(), message.toString(), ok);
     }
 
-    public void sendNotification(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, long endTime, String subject, String messageText, boolean ok)
-            throws Exception {
+    public void sendNotification(String centralDisplay, String agentRollupId,
+            String agentRollupDisplay, AlertConfig alertConfig, long endTime, String subject,
+            String messageText, boolean ok) throws Exception {
         AlertNotification alertNotification = alertConfig.getNotification();
         if (alertNotification.hasEmailNotification()) {
             SmtpConfig smtpConfig = configRepository.getSmtpConfig();
@@ -240,7 +237,8 @@ public class AlertingService {
                             + " (this warning will be logged at most once an hour)");
                 }
             } else {
-                sendEmail(alertNotification.getEmailNotification().getEmailAddressList(), subject,
+                sendEmail(centralDisplay, agentRollupDisplay, subject,
+                        alertNotification.getEmailNotification().getEmailAddressList(),
                         messageText, smtpConfig, null, configRepository.getLazySecretKey(),
                         mailService);
             }
@@ -263,9 +261,10 @@ public class AlertingService {
     // optional passwordOverride can be passed in to test SMTP from
     // AdminJsonService.sentTestEmail() without possibility of throwing
     // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
-    public static void sendEmail(List<String> emailAddresses, String subject, String messageText,
-            SmtpConfig smtpConfig, @Nullable String passwordOverride, LazySecretKey lazySecretKey,
-            MailService mailService) throws Exception {
+    public static void sendEmail(String centralDisplay, String agentRollupDisplay, String subject,
+            List<String> emailAddresses, String messageText, SmtpConfig smtpConfig,
+            @Nullable String passwordOverride, LazySecretKey lazySecretKey, MailService mailService)
+            throws Exception {
         Session session = createMailSession(smtpConfig, passwordOverride, lazySecretKey);
         Message message = new MimeMessage(session);
         String fromEmailAddress = smtpConfig.fromEmailAddress();
@@ -283,7 +282,17 @@ public class AlertingService {
             emailAddrs[i] = new InternetAddress(emailAddresses.get(i));
         }
         message.setRecipients(Message.RecipientType.TO, emailAddrs);
-        message.setSubject(subject);
+        String subj = subject;
+        if (!agentRollupDisplay.isEmpty()) {
+            subj = "[" + agentRollupDisplay + "] " + subj;
+        }
+        if (!centralDisplay.isEmpty()) {
+            subj = "[" + centralDisplay + "] " + subj;
+        }
+        if (agentRollupDisplay.isEmpty() && centralDisplay.isEmpty()) {
+            subj = "[Glowroot] " + subj;
+        }
+        message.setSubject(subj);
         message.setText(messageText);
         mailService.send(message);
     }

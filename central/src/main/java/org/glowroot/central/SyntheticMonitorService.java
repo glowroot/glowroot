@@ -483,9 +483,6 @@ class SyntheticMonitorService implements Runnable {
             @Nullable String errorMessage) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig);
-        if (!agentRollupDisplay.isEmpty()) {
-            subject = "[" + agentRollupDisplay + "] " + subject;
-        }
         StringBuilder sb = new StringBuilder();
         sb.append(ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig));
         if (errorMessage == null) {
@@ -497,8 +494,9 @@ class SyntheticMonitorService implements Runnable {
             sb.append(" resulted in error: ");
             sb.append(errorMessage);
         }
-        alertingService.sendNotification(agentRollupId, agentRollupDisplay, alertConfig, endTime,
-                subject, sb.toString(), ok);
+        alertingService.sendNotification(
+                configRepository.getCentralAdminGeneralConfig().centralDisplayName(), agentRollupId,
+                agentRollupDisplay, alertConfig, endTime, subject, sb.toString(), ok);
     }
 
     private HttpClientContext getHttpClientContext() throws Exception {

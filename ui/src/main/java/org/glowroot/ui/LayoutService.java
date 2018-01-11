@@ -299,7 +299,7 @@ class LayoutService {
             return null;
         } else {
             return Strings.emptyToNull(
-                    configRepository.getAdminGeneralConfig().agentDisplayNameOrDefault());
+                    configRepository.getEmbeddedAdminGeneralConfig().agentDisplayNameOrDefault());
         }
     }
 

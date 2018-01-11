@@ -198,8 +198,9 @@ class CentralAlertingService {
     private void checkMetricAlert(String agentRollupId, String agentDisplay,
             AlertConfig alertConfig, MetricCondition metricCondition, long endTime)
             throws Exception {
-        alertingService.checkMetricAlert(agentRollupId, agentDisplay, alertConfig, metricCondition,
-                endTime);
+        alertingService.checkMetricAlert(
+                configRepository.getCentralAdminGeneralConfig().centralDisplayName(), agentRollupId,
+                agentDisplay, alertConfig, metricCondition, endTime);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",

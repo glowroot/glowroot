@@ -30,8 +30,12 @@ glowroot.controller('AdminGeneralCtrl', [
 
     function onNewData(data) {
       $scope.loaded = true;
-      $scope.config = data.config;
-      $scope.defaultAgentDisplayName = data.defaultAgentDisplayName;
+      if ($scope.layout.central) {
+        $scope.config = data;
+      } else {
+        $scope.config = data.config;
+        $scope.defaultAgentDisplayName = data.defaultAgentDisplayName;
+      }
       $scope.originalConfig = angular.copy($scope.config);
     }
 

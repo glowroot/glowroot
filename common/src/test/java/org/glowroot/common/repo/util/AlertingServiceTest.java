@@ -152,7 +152,7 @@ public class AlertingServiceTest {
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
+        alertingService.checkMetricAlert("", "", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
                 TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
@@ -169,7 +169,7 @@ public class AlertingServiceTest {
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
+        alertingService.checkMetricAlert("", "", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
                 TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNull();
@@ -183,7 +183,7 @@ public class AlertingServiceTest {
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
+        alertingService.checkMetricAlert("", "", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
                 UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
@@ -200,7 +200,7 @@ public class AlertingServiceTest {
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
+        alertingService.checkMetricAlert("", "", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
                 UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNull();
@@ -214,7 +214,7 @@ public class AlertingServiceTest {
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
+        alertingService.checkMetricAlert("", "", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
                 LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
@@ -231,7 +231,7 @@ public class AlertingServiceTest {
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
         // when
-        alertingService.checkMetricAlert("", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
+        alertingService.checkMetricAlert("", "", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
                 LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
         // then
         assertThat(mailService.getMessage()).isNull();

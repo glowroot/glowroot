@@ -33,14 +33,16 @@ import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
 
 import org.glowroot.central.repo.AgentConfigDao.AgentConfigUpdater;
-import org.glowroot.common.config.AdminGeneralConfig;
+import org.glowroot.common.config.CentralAdminGeneralConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
 import org.glowroot.common.config.ConfigDefaults;
+import org.glowroot.common.config.EmbeddedAdminGeneralConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.config.HttpProxyConfig;
+import org.glowroot.common.config.ImmutableCentralAdminGeneralConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
@@ -103,6 +105,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         lazySecretKey = new LazySecretKeyImpl(symmetricEncryptionKey);
 
+        centralConfigDao.addKeyType(GENERAL_KEY, ImmutableCentralAdminGeneralConfig.class);
         centralConfigDao.addKeyType(WEB_KEY, ImmutableCentralWebConfig.class);
         centralConfigDao.addKeyType(STORAGE_KEY, ImmutableCentralStorageConfig.class);
         centralConfigDao.addKeyType(SMTP_KEY, ImmutableSmtpConfig.class);
@@ -293,8 +296,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AdminGeneralConfig getAdminGeneralConfig() {
+    public EmbeddedAdminGeneralConfig getEmbeddedAdminGeneralConfig() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CentralAdminGeneralConfig getCentralAdminGeneralConfig() throws Exception {
+        CentralAdminGeneralConfig config =
+                (CentralAdminGeneralConfig) centralConfigDao.read(GENERAL_KEY);
+        if (config == null) {
+            return ImmutableCentralAdminGeneralConfig.builder().build();
+        }
+        return config;
     }
 
     @Override
@@ -925,8 +938,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateAdminGeneralConfig(AdminGeneralConfig config, String priorVersion) {
+    public void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config,
+            String priorVersion) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config,
+            String priorVersion) throws Exception {
+        centralConfigDao.write(GENERAL_KEY, config, priorVersion);
     }
 
     @Override

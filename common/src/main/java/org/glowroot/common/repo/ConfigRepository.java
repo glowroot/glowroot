@@ -22,9 +22,10 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.AdminGeneralConfig;
+import org.glowroot.common.config.CentralAdminGeneralConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
+import org.glowroot.common.config.EmbeddedAdminGeneralConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
@@ -58,6 +59,7 @@ public interface ConfigRepository {
 
     public static final int GAUGE_VIEW_THRESHOLD_MULTIPLIER = 4;
 
+    String GENERAL_KEY = "general";
     String USERS_KEY = "users";
     String ROLES_KEY = "roles";
     String WEB_KEY = "web";
@@ -120,7 +122,9 @@ public interface ConfigRepository {
     @Nullable
     InstrumentationConfig getInstrumentationConfig(String agentId, String version) throws Exception;
 
-    AdminGeneralConfig getAdminGeneralConfig();
+    EmbeddedAdminGeneralConfig getEmbeddedAdminGeneralConfig();
+
+    CentralAdminGeneralConfig getCentralAdminGeneralConfig() throws Exception;
 
     List<UserConfig> getUserConfigs() throws Exception;
 
@@ -223,7 +227,11 @@ public interface ConfigRepository {
     void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion)
             throws Exception;
 
-    void updateAdminGeneralConfig(AdminGeneralConfig config, String priorVersion) throws Exception;
+    void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config, String priorVersion)
+            throws Exception;
+
+    void updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config, String priorVersion)
+            throws Exception;
 
     void insertUserConfig(UserConfig config) throws Exception;
 

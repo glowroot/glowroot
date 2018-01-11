@@ -23,7 +23,7 @@ import javax.mail.Message;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.common.config.ImmutableAdminGeneralConfig;
+import org.glowroot.common.config.ImmutableEmbeddedAdminGeneralConfig;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
@@ -46,8 +46,8 @@ public class AdminJsonServiceTest {
         mailService = new MockMailService();
         httpClient = mock(HttpClient.class);
         ConfigRepository configRepository = mock(ConfigRepository.class);
-        when(configRepository.getAdminGeneralConfig())
-                .thenReturn(ImmutableAdminGeneralConfig.builder().build());
+        when(configRepository.getEmbeddedAdminGeneralConfig())
+                .thenReturn(ImmutableEmbeddedAdminGeneralConfig.builder().build());
         adminJsonService = new AdminJsonService(false, false, new File("."), null, configRepository,
                 mock(RepoAdmin.class), mock(LiveAggregateRepository.class), mailService,
                 httpClient);
@@ -72,7 +72,7 @@ public class AdminJsonServiceTest {
         assertThat(message.getFrom()[0].toString()).isEqualTo("From Example <from@example.org>");
         assertThat(message.getRecipients(Message.RecipientType.TO)[0].toString())
                 .isEqualTo("to@example.org");
-        assertThat(message.getSubject()).isEqualTo("Test email from Glowroot");
+        assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email");
         assertThat(message.getContent()).isEqualTo("");
     }
 
@@ -97,7 +97,7 @@ public class AdminJsonServiceTest {
                 .isEqualTo("From Example <glowroot@" + localHostname + ">");
         assertThat(message.getRecipients(Message.RecipientType.TO)[0].toString())
                 .isEqualTo("to@example.org");
-        assertThat(message.getSubject()).isEqualTo("Test email from Glowroot");
+        assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email");
         assertThat(message.getContent()).isEqualTo("");
     }
 
@@ -122,7 +122,7 @@ public class AdminJsonServiceTest {
                 .isEqualTo("Glowroot <glowroot@" + localHostname + ">");
         assertThat(message.getRecipients(Message.RecipientType.TO)[0].toString())
                 .isEqualTo("to@example.org");
-        assertThat(message.getSubject()).isEqualTo("Test email from Glowroot");
+        assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email");
         assertThat(message.getContent()).isEqualTo("");
     }
 

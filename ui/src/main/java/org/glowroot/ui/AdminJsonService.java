@@ -42,16 +42,18 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.config.AdminGeneralConfig;
+import org.glowroot.common.config.CentralAdminGeneralConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.CentralWebConfig;
+import org.glowroot.common.config.EmbeddedAdminGeneralConfig;
 import org.glowroot.common.config.EmbeddedStorageConfig;
 import org.glowroot.common.config.EmbeddedWebConfig;
 import org.glowroot.common.config.HealthchecksIoConfig;
 import org.glowroot.common.config.HttpProxyConfig;
-import org.glowroot.common.config.ImmutableAdminGeneralConfig;
+import org.glowroot.common.config.ImmutableCentralAdminGeneralConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
+import org.glowroot.common.config.ImmutableEmbeddedAdminGeneralConfig;
 import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableEmbeddedWebConfig;
 import org.glowroot.common.config.ImmutableHealthchecksIoConfig;
@@ -159,11 +161,11 @@ class AdminJsonService {
 
     @GET(path = "/backend/admin/general", permission = "admin:view:general")
     String getGeneralConfig() throws Exception {
-        AdminGeneralConfig config = configRepository.getAdminGeneralConfig();
-        return mapper.writeValueAsString(ImmutableAdminGeneralConfigResponse.builder()
-                .config(AdminGeneralConfigDto.create(config))
-                .defaultAgentDisplayName(AdminGeneralConfig.defaultAgentDisplayName())
-                .build());
+        if (central) {
+            return getCentralAdminGeneralConfig();
+        } else {
+            return getEmbeddedAdminGeneralConfig();
+        }
     }
 
     @GET(path = "/backend/admin/web", permission = "admin:view:web")
@@ -228,13 +230,28 @@ class AdminJsonService {
     }
 
     @POST(path = "/backend/admin/general", permission = "admin:edit:general")
-    String updateGeneralConfig(@BindRequest AdminGeneralConfigDto configDto) throws Exception {
-        try {
-            configRepository.updateAdminGeneralConfig(configDto.convert(), configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
+    String updateGeneralConfig(@BindRequest String content) throws Exception {
+        if (central) {
+            CentralAdminGeneralConfigDto configDto =
+                    mapper.readValue(content, ImmutableCentralAdminGeneralConfigDto.class);
+            CentralAdminGeneralConfig config = configDto.convert();
+            try {
+                configRepository.updateCentralAdminGeneralConfig(config, configDto.version());
+            } catch (OptimisticLockException e) {
+                throw new JsonServiceException(PRECONDITION_FAILED, e);
+            }
+            return getCentralAdminGeneralConfig();
+        } else {
+            EmbeddedAdminGeneralConfigDto configDto =
+                    mapper.readValue(content, ImmutableEmbeddedAdminGeneralConfigDto.class);
+            EmbeddedAdminGeneralConfig config = configDto.convert();
+            try {
+                configRepository.updateEmbeddedAdminGeneralConfig(config, configDto.version());
+            } catch (OptimisticLockException e) {
+                throw new JsonServiceException(PRECONDITION_FAILED, e);
+            }
+            return getEmbeddedAdminGeneralConfig();
         }
-        return getGeneralConfig();
     }
 
     @POST(path = "/backend/admin/web", permission = "admin:edit:web")
@@ -407,15 +424,19 @@ class AdminJsonService {
         List<String> emailAddresses =
                 Splitter.on(',').trimResults().splitToList(testEmailRecipient);
         try {
-            String subject = "Test email from Glowroot";
-            if (!central) {
-                String agentDisplayName =
-                        configRepository.getAdminGeneralConfig().agentDisplayNameOrDefault();
-                if (!agentDisplayName.isEmpty()) {
-                    subject = "[" + agentDisplayName + "] " + subject;
-                }
+            String centralDisplay;
+            String agentDisplay;
+            if (central) {
+                centralDisplay =
+                        configRepository.getCentralAdminGeneralConfig().centralDisplayName();
+                agentDisplay = "";
+            } else {
+                centralDisplay = "";
+                agentDisplay = configRepository.getEmbeddedAdminGeneralConfig()
+                        .agentDisplayNameOrDefault();
             }
-            AlertingService.sendEmail(emailAddresses, subject, "",
+            String subject = "Test email";
+            AlertingService.sendEmail(centralDisplay, agentDisplay, subject, emailAddresses, "",
                     configDtoWithoutNewPassword.convert(configRepository), passwordOverride,
                     configRepository.getLazySecretKey(), mailService);
         } catch (Exception e) {
@@ -594,6 +615,19 @@ class AdminJsonService {
         return response;
     }
 
+    private String getEmbeddedAdminGeneralConfig() throws Exception {
+        return mapper.writeValueAsString(ImmutableEmbeddedAdminGeneralConfigResponse.builder()
+                .config(EmbeddedAdminGeneralConfigDto
+                        .create(configRepository.getEmbeddedAdminGeneralConfig()))
+                .defaultAgentDisplayName(EmbeddedAdminGeneralConfig.defaultAgentDisplayName())
+                .build());
+    }
+
+    private String getCentralAdminGeneralConfig() throws Exception {
+        return mapper.writeValueAsString(CentralAdminGeneralConfigDto
+                .create(configRepository.getCentralAdminGeneralConfig()));
+    }
+
     private String getEmbeddedWebConfig(boolean portChangeFailed) throws Exception {
         EmbeddedWebConfig config = configRepository.getEmbeddedWebConfig();
         ImmutableEmbeddedWebConfigResponse.Builder builder =
@@ -643,8 +677,8 @@ class AdminJsonService {
     }
 
     @Value.Immutable
-    interface AdminGeneralConfigResponse {
-        AdminGeneralConfigDto config();
+    interface EmbeddedAdminGeneralConfigResponse {
+        EmbeddedAdminGeneralConfigDto config();
         String defaultAgentDisplayName();
     }
 
@@ -678,20 +712,40 @@ class AdminJsonService {
     }
 
     @Value.Immutable
-    abstract static class AdminGeneralConfigDto {
+    abstract static class EmbeddedAdminGeneralConfigDto {
 
         abstract String agentDisplayName();
         abstract String version();
 
-        private AdminGeneralConfig convert() {
-            return ImmutableAdminGeneralConfig.builder()
+        private EmbeddedAdminGeneralConfig convert() {
+            return ImmutableEmbeddedAdminGeneralConfig.builder()
                     .agentDisplayName(agentDisplayName())
                     .build();
         }
 
-        private static AdminGeneralConfigDto create(AdminGeneralConfig config) {
-            return ImmutableAdminGeneralConfigDto.builder()
+        private static EmbeddedAdminGeneralConfigDto create(EmbeddedAdminGeneralConfig config) {
+            return ImmutableEmbeddedAdminGeneralConfigDto.builder()
                     .agentDisplayName(config.agentDisplayName())
+                    .version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class CentralAdminGeneralConfigDto {
+
+        abstract String centralDisplayName();
+        abstract String version();
+
+        private CentralAdminGeneralConfig convert() {
+            return ImmutableCentralAdminGeneralConfig.builder()
+                    .centralDisplayName(centralDisplayName())
+                    .build();
+        }
+
+        private static CentralAdminGeneralConfigDto create(CentralAdminGeneralConfig config) {
+            return ImmutableCentralAdminGeneralConfigDto.builder()
+                    .centralDisplayName(config.centralDisplayName())
                     .version(config.version())
                     .build();
         }

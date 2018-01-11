@@ -23,7 +23,7 @@ import org.immutables.value.Value;
 import org.glowroot.common.util.Versions;
 
 @Value.Immutable
-public abstract class AdminGeneralConfig {
+public abstract class EmbeddedAdminGeneralConfig {
 
     private static final String defaultAgentDisplayName;
 

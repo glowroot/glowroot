@@ -16,6 +16,7 @@
 package org.glowroot.central;
 
 import org.glowroot.central.repo.HeartbeatDao;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.IncidentRepository;
 import org.glowroot.common.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common.repo.util.AlertingService;
@@ -30,12 +31,14 @@ class HeartbeatAlertingService {
     private final HeartbeatDao heartbeatDao;
     private final IncidentRepository incidentRepository;
     private final AlertingService alertingService;
+    private final ConfigRepository configRepository;
 
     HeartbeatAlertingService(HeartbeatDao heartbeatDao, IncidentRepository incidentRepository,
-            AlertingService alertingService) {
+            AlertingService alertingService, ConfigRepository configRepository) {
         this.heartbeatDao = heartbeatDao;
         this.incidentRepository = incidentRepository;
         this.alertingService = alertingService;
+        this.configRepository = configRepository;
     }
 
     void checkHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
@@ -70,7 +73,7 @@ class HeartbeatAlertingService {
             AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
             boolean ok) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
-        String subject = "[" + agentRollupDisplay + "] Heartbeat";
+        String subject = "Heartbeat";
         StringBuilder sb = new StringBuilder();
         if (ok) {
             sb.append("Receving heartbeat again.\n\n");
@@ -79,7 +82,9 @@ class HeartbeatAlertingService {
             sb.append(heartbeatCondition.getTimePeriodSeconds());
             sb.append(" seconds.\n\n");
         }
-        alertingService.sendNotification(agentRollupId, agentRollupDisplay, alertConfig, endTime,
-                subject, sb.toString(), ok);
+        String centralDisplay =
+                configRepository.getCentralAdminGeneralConfig().centralDisplayName();
+        alertingService.sendNotification(centralDisplay, agentRollupId, agentRollupDisplay,
+                alertConfig, endTime, subject, sb.toString(), ok);
     }
 }

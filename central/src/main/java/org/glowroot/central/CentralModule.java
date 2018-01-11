@@ -171,7 +171,8 @@ public class CentralModule {
                     repos.getIncidentDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
                     rollupLevelService, new MailService(), httpClient, clock);
             HeartbeatAlertingService heartbeatAlertingService = new HeartbeatAlertingService(
-                    repos.getHeartbeatDao(), repos.getIncidentDao(), alertingService);
+                    repos.getHeartbeatDao(), repos.getIncidentDao(), alertingService,
+                    repos.getConfigRepository());
             centralAlertingService = new CentralAlertingService(repos.getConfigRepository(),
                     alertingService, heartbeatAlertingService);
 
