@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,9 @@ import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.config.JvmConfig;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
+import org.glowroot.common.util.SystemProperties;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.JavaInfo;
@@ -46,11 +48,11 @@ public class EnvironmentCreator {
 
     private EnvironmentCreator() {}
 
-    public static Environment create(String glowrootVersion) {
+    public static Environment create(String glowrootVersion, JvmConfig jvmConfig) {
         HostInfo hostInfo = createHostInfo();
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         ProcessInfo processInfo = createProcessInfo(runtimeMXBean);
-        JavaInfo javaInfo = createJavaInfo(glowrootVersion, runtimeMXBean);
+        JavaInfo javaInfo = createJavaInfo(glowrootVersion, jvmConfig, runtimeMXBean);
         return Environment.newBuilder()
                 .setHostInfo(hostInfo)
                 .setProcessInfo(processInfo)
@@ -87,7 +89,8 @@ public class EnvironmentCreator {
         return processInfo.build();
     }
 
-    private static JavaInfo createJavaInfo(String glowrootVersion, RuntimeMXBean runtimeMXBean) {
+    private static JavaInfo createJavaInfo(String glowrootVersion, JvmConfig jvmConfig,
+            RuntimeMXBean runtimeMXBean) {
         String jvm = "";
         String javaVmName = StandardSystemProperty.JAVA_VM_NAME.value();
         if (javaVmName != null) {
@@ -104,7 +107,8 @@ public class EnvironmentCreator {
         return JavaInfo.newBuilder()
                 .setVersion(Strings.nullToEmpty(javaVersion))
                 .setVm(jvm)
-                .addAllArg(runtimeMXBean.getInputArguments())
+                .addAllArg(SystemProperties.maskJvmArgs(runtimeMXBean.getInputArguments(),
+                        jvmConfig.maskSystemProperties()))
                 .setHeapDumpDefaultDir(heapDumpPath)
                 .setGlowrootAgentVersion(glowrootVersion)
                 .build();

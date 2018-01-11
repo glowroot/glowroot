@@ -233,7 +233,8 @@ public class AgentModule {
         liveWeavingService = new LiveWeavingServiceImpl(analyzedWorld, instrumentation,
                 configService, adviceCache, jvmRetransformClassesSupported);
         liveJvmService = new LiveJvmServiceImpl(lazyPlatformMBeanServer, transactionRegistry,
-                transactionCollector, threadAllocatedBytes.getAvailability(), glowrootJarFile);
+                transactionCollector, threadAllocatedBytes.getAvailability(), configService,
+                glowrootJarFile);
 
         initPlugins(pluginCache.pluginDescriptors());
 

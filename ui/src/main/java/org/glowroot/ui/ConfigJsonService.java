@@ -35,6 +35,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
@@ -65,6 +66,12 @@ class ConfigJsonService {
     String getTransactionConfig(@BindAgentId String agentId) throws Exception {
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
         return mapper.writeValueAsString(TransactionConfigDto.create(config));
+    }
+
+    @GET(path = "/backend/config/jvm", permission = "agent:config:view:jvm")
+    String getJvmConfig(@BindAgentId String agentId) throws Exception {
+        JvmConfig config = configRepository.getJvmConfig(agentId);
+        return mapper.writeValueAsString(JvmConfigDto.create(config));
     }
 
     // central supports ui config on rollups
@@ -124,6 +131,17 @@ class ConfigJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getTransactionConfig(agentId);
+    }
+
+    @POST(path = "/backend/config/jvm", permission = "agent:config:edit:jvm")
+    String updateJvmConfig(@BindAgentId String agentId, @BindRequest JvmConfigDto configDto)
+            throws Exception {
+        try {
+            configRepository.updateJvmConfig(agentId, configDto.convert(), configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getJvmConfig(agentId);
     }
 
     // central supports ui config on rollups
@@ -230,6 +248,26 @@ class ConfigJsonService {
                     .captureThreadStats(config.getCaptureThreadStats())
                     .version(Versions.getVersion(config))
                     .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class JvmConfigDto {
+
+        abstract ImmutableList<String> maskSystemProperties();
+        abstract String version();
+
+        private JvmConfig convert() {
+            JvmConfig.Builder builder =
+                    JvmConfig.newBuilder().addAllMaskSystemProperty(maskSystemProperties());
+            return builder.build();
+        }
+
+        private static JvmConfigDto create(JvmConfig config) {
+            ImmutableJvmConfigDto.Builder builder = ImmutableJvmConfigDto.builder()
+                    .maskSystemProperties(config.getMaskSystemPropertyList())
+                    .version(Versions.getVersion(config));
+            return builder.build();
         }
     }
 

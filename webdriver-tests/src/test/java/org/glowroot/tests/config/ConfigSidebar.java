@@ -35,6 +35,10 @@ public class ConfigSidebar {
         return Utils.withWait(driver, getSidebar(), linkText("Gauges"));
     }
 
+    public WebElement getJvmLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("JVM"));
+    }
+
     public WebElement getAlertsLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Alerts"));
     }

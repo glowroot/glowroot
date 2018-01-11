@@ -9,6 +9,7 @@ option java_package = "org.glowroot.wire.api.model";
 message AgentConfig {
 
   TransactionConfig transaction_config = 2;
+  JvmConfig jvm_config = 17;
   UiConfig ui_config = 3;
   UserRecordingConfig user_recording_config = 4;
   AdvancedConfig advanced_config = 5;
@@ -24,6 +25,10 @@ message AgentConfig {
     OptionalInt32 slow_threshold_millis = 1; // optional used due to non-zero default value
     OptionalInt32 profiling_interval_millis = 2; // optional used due to non-zero default value
     bool capture_thread_stats = 3;
+  }
+
+  message JvmConfig {
+    repeated string mask_system_property = 1;
   }
 
   message UiConfig {

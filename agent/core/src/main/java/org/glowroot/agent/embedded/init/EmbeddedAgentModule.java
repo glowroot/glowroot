@@ -169,7 +169,8 @@ class EmbeddedAgentModule {
                         collectorProxy.setInstance(collectorImpl);
                         // embedded CollectorImpl does nothing with agent config parameter
                         collectorImpl.init(confDir, sharedConfDir,
-                                EnvironmentCreator.create(glowrootVersion),
+                                EnvironmentCreator.create(glowrootVersion,
+                                        agentModule.getConfigService().getJvmConfig()),
                                 AgentConfig.getDefaultInstance(), new AgentConfigUpdater() {
                                     @Override
                                     public void update(AgentConfig agentConfig) {}

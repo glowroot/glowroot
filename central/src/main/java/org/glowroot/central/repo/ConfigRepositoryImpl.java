@@ -66,6 +66,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.Value.ValCase;
@@ -121,6 +122,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getTransactionConfig();
+    }
+
+    @Override
+    public JvmConfig getJvmConfig(String agentId) throws Exception {
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        if (agentConfig == null) {
+            // for some reason received data from agent, but not initial agent config
+            throw new AgentConfigNotFoundException(agentId);
+        }
+        return agentConfig.getJvmConfig();
     }
 
     // central supports ui config on rollups
@@ -495,6 +506,24 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 return agentConfig.toBuilder()
                         .clearGaugeConfig()
                         .addAllGaugeConfig(existingConfigs)
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentId);
+    }
+
+    @Override
+    public void updateJvmConfig(String agentId, JvmConfig config, String priorVersion)
+            throws Exception {
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
+                String existingVersion = Versions.getVersion(agentConfig.getJvmConfig());
+                if (!priorVersion.equals(existingVersion)) {
+                    throw new OptimisticLockException();
+                }
+                return agentConfig.toBuilder()
+                        .setJvmConfig(config)
                         .build();
             }
         });

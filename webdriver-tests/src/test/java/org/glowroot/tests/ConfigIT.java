@@ -25,6 +25,7 @@ import org.glowroot.tests.admin.SmtpConfigPage;
 import org.glowroot.tests.admin.StorageConfigPage;
 import org.glowroot.tests.config.AdvancedConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
+import org.glowroot.tests.config.JvmConfigPage;
 import org.glowroot.tests.config.TransactionConfigPage;
 import org.glowroot.tests.config.UiConfigPage;
 import org.glowroot.tests.config.UserRecordingConfigPage;
@@ -61,6 +62,33 @@ public class ConfigIT extends WebDriverIT {
         assertThat(page.getSlowThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
         assertThat(page.getCaptureThreadStatsCheckBox().isSelected()).isFalse();
+    }
+
+    @Test
+    public void shouldUpdateJvmConfig() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        JvmConfigPage page = new JvmConfigPage(driver);
+
+        app.open();
+        globalNavbar.getConfigLink().click();
+        configSidebar.getJvmLink().click();
+
+        // when
+        page.getMaskSystemPropertiesTextField().clear();
+        page.getMaskSystemPropertiesTextField().sendKeys("abc,xyz");
+        page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(1000);
+
+        // then
+        app.open();
+        globalNavbar.getConfigLink().click();
+        configSidebar.getJvmLink().click();
+        assertThat(page.getMaskSystemPropertiesTextField().getAttribute("value"))
+                .isEqualTo("abc, xyz");
     }
 
     @Test

@@ -299,6 +299,8 @@ class LayoutService {
                                         "agent:config:edit:transaction"))
                                 .gauge(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:gauge"))
+                                .jvm(authentication.isAgentPermitted(agentRollupId,
+                                        "agent:config:edit:jvm"))
                                 // central supports synthetic monitor configs on rollups
                                 .syntheticMonitor(authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:syntheticMonitor"))
@@ -561,6 +563,7 @@ class LayoutService {
     interface EditConfigPermissions {
         boolean transaction();
         boolean gauge();
+        boolean jvm();
         boolean syntheticMonitor();
         boolean alert();
         boolean ui();

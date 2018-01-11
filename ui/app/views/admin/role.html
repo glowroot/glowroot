@@ -255,6 +255,14 @@
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
+                     ng-model="page.permissions.config.edit.jvm"
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">JVM
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
+              <input type="checkbox"
                      ng-model="page.permissions.config.edit.alert"
                      ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Alerts
             </label>
@@ -541,6 +549,14 @@
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.gauge"
                      ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Gauges
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.config.edit.jvm"
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">JVM
             </label>
           </div>
           <div class="checkbox">
@@ -857,6 +873,14 @@
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.gauge"
                      ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Gauges
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
+                   style="margin-left: 60px;">
+              <input type="checkbox"
+                     ng-model="permissionBlock.config.edit.jvm"
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">JVM
             </label>
           </div>
           <div class="checkbox">

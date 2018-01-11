@@ -43,6 +43,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedCon
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
@@ -76,6 +77,8 @@ public interface ConfigRepository {
             Long.getLong("glowroot.internal.rollup.3.intervalMillis", HOURS.toMillis(4));
 
     TransactionConfig getTransactionConfig(String agentId) throws Exception;
+
+    JvmConfig getJvmConfig(String agentId) throws Exception;
 
     // central supports ui config on rollups
     UiConfig getUiConfig(String agentRollupId) throws Exception;
@@ -166,6 +169,8 @@ public interface ConfigRepository {
             throws Exception;
 
     void deleteGaugeConfig(String agentId, String version) throws Exception;
+
+    void updateJvmConfig(String agentId, JvmConfig config, String priorVersion) throws Exception;
 
     // central supports synthetic monitor configs on rollups
     // returns id

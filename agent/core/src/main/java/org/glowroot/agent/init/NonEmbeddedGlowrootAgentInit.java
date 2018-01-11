@@ -122,7 +122,9 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                     collector = customCollector;
                 }
                 collectorProxy.setInstance(collector);
-                collector.init(confDir, sharedConfDir, EnvironmentCreator.create(glowrootVersion),
+                collector.init(confDir, sharedConfDir,
+                        EnvironmentCreator.create(glowrootVersion,
+                                agentModule.getConfigService().getJvmConfig()),
                         configService.getAgentConfig(), agentConfigUpdater);
             }
         });

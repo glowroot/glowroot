@@ -58,6 +58,7 @@ public class ConfigService {
     private final Set<ConfigListener> pluginConfigListeners = Sets.newCopyOnWriteArraySet();
 
     private volatile TransactionConfig transactionConfig;
+    private volatile JvmConfig jvmConfig;
     private volatile UiConfig uiConfig;
     private volatile UserRecordingConfig userRecordingConfig;
     private volatile AdvancedConfig advancedConfig;
@@ -92,6 +93,12 @@ public class ConfigService {
             this.transactionConfig = ImmutableTransactionConfig.builder().build();
         } else {
             this.transactionConfig = transactionConfig;
+        }
+        JvmConfig jvmConfig = configFile.getConfigNode("jvm", ImmutableJvmConfig.class, mapper);
+        if (jvmConfig == null) {
+            this.jvmConfig = ImmutableJvmConfig.builder().build();
+        } else {
+            this.jvmConfig = jvmConfig;
         }
         UiConfig uiConfig = configFile.getConfigNode("ui", ImmutableUiConfig.class, mapper);
         if (uiConfig == null) {
@@ -160,6 +167,10 @@ public class ConfigService {
         return transactionConfig;
     }
 
+    public JvmConfig getJvmConfig() {
+        return jvmConfig;
+    }
+
     public UiConfig getUiConfig() {
         return uiConfig;
     }
@@ -207,6 +218,7 @@ public class ConfigService {
         for (GaugeConfig gaugeConfig : gaugeConfigs) {
             builder.addGaugeConfig(gaugeConfig.toProto());
         }
+        builder.setJvmConfig(jvmConfig.toProto());
         for (SyntheticMonitorConfig syntheticMonitorConfig : syntheticMonitorConfigs) {
             builder.addSyntheticMonitorConfig(syntheticMonitorConfig.toProto());
         }
@@ -243,6 +255,12 @@ public class ConfigService {
     public void updateGaugeConfigs(List<GaugeConfig> updatedConfigs) throws IOException {
         configFile.writeConfig("gauges", updatedConfigs, mapper);
         gaugeConfigs = ImmutableList.copyOf(updatedConfigs);
+        notifyConfigListeners();
+    }
+
+    public void updateJvmConfig(JvmConfig updatedConfig) throws IOException {
+        configFile.writeConfig("jvm", updatedConfig, mapper);
+        jvmConfig = updatedConfig;
         notifyConfigListeners();
     }
 
@@ -348,6 +366,7 @@ public class ConfigService {
         transactionConfig = ImmutableTransactionConfig.builder()
                 .slowThresholdMillis(0)
                 .build();
+        jvmConfig = ImmutableJvmConfig.builder().build();
         uiConfig = ImmutableUiConfig.builder().build();
         userRecordingConfig = ImmutableUserRecordingConfig.builder().build();
         advancedConfig = ImmutableAdvancedConfig.builder().build();
@@ -366,6 +385,7 @@ public class ConfigService {
         // linked hash map to preserve ordering when writing to config file
         Map<String, Object> configs = Maps.newLinkedHashMap();
         configs.put("transactions", transactionConfig);
+        configs.put("jvm", jvmConfig);
         configs.put("ui", uiConfig);
         configs.put("userRecording", userRecordingConfig);
         configs.put("advanced", advancedConfig);

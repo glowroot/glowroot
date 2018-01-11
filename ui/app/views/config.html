@@ -72,6 +72,12 @@
            ng-if="!isAgentRollup()">
       </div>
       <div gt-sidebar-item
+           gt-display="JVM"
+           gt-url="config/jvm{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/jvm'"
+           ng-if="!isAgentRollup()">
+      </div>
+      <div gt-sidebar-item
            gt-display="Synthetic monitors"
            gt-url="config/synthetic-monitor-list{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/synthetic-monitor-list'"

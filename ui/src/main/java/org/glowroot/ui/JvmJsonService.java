@@ -53,9 +53,11 @@ import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationExceptio
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.SystemProperties;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
@@ -87,11 +89,13 @@ class JvmJsonService {
     }
 
     private final EnvironmentRepository environmentRepository;
+    private final ConfigRepository configRepository;
     private final @Nullable LiveJvmService liveJvmService;
 
-    JvmJsonService(EnvironmentRepository environmentRepository,
+    JvmJsonService(EnvironmentRepository environmentRepository, ConfigRepository configRepository,
             @Nullable LiveJvmService liveJvmService) {
         this.environmentRepository = environmentRepository;
+        this.configRepository = configRepository;
         this.liveJvmService = liveJvmService;
     }
 
@@ -132,7 +136,11 @@ class JvmJsonService {
             jg.writeStringField("version", javaInfo.getVersion());
             jg.writeStringField("vm", javaInfo.getVm());
             jg.writeArrayFieldStart("args");
-            for (String arg : javaInfo.getArgList()) {
+            // mask JVM args here in case maskSystemProperties was modified after the environment
+            // data was captured JVM startup
+            // (this also provides support in central for agent prior to 0.9.29)
+            for (String arg : SystemProperties.maskJvmArgs(javaInfo.getArgList(),
+                    configRepository.getJvmConfig(agentId).getMaskSystemPropertyList())) {
                 jg.writeString(arg);
             }
             jg.writeEndArray();
@@ -426,6 +434,11 @@ class JvmJsonService {
             logger.debug(e.getMessage(), e);
             return getAgentUnsupportedOperationResponse(agentId);
         }
+        // mask here to provide support in central for agents prior to 0.9.29
+        List<String> maskSystemProperties =
+                configRepository.getJvmConfig(agentId).getMaskSystemPropertyList();
+        properties = SystemProperties.maskSystemProperties(properties, maskSystemProperties);
+
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {

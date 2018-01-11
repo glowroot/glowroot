@@ -28,6 +28,7 @@ import org.glowroot.agent.config.AlertConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.GaugeConfig;
 import org.glowroot.agent.config.InstrumentationConfig;
+import org.glowroot.agent.config.JvmConfig;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.config.PluginConfig;
 import org.glowroot.agent.config.PluginDescriptor;
@@ -56,6 +57,7 @@ class ConfigUpdateService implements AgentConfigUpdater {
         synchronized (lock) {
             configService.updateTransactionConfig(
                     TransactionConfig.create(agentConfig.getTransactionConfig()));
+            configService.updateJvmConfig(JvmConfig.create(agentConfig.getJvmConfig()));
             configService.updateUiConfig(UiConfig.create(agentConfig.getUiConfig()));
             configService.updateUserRecordingConfig(
                     UserRecordingConfig.create(agentConfig.getUserRecordingConfig()));

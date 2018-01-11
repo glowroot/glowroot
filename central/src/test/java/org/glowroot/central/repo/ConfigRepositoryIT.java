@@ -55,6 +55,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
@@ -163,6 +164,27 @@ public class ConfigRepositoryIT {
         configRepository.updateTransactionConfig(agentId, updatedConfig,
                 Versions.getVersion(config));
         config = configRepository.getTransactionConfig(agentId);
+
+        // then
+        assertThat(config).isEqualTo(updatedConfig);
+    }
+
+    @Test
+    public void shouldUpdateJvmConfig() throws Exception {
+        // given
+        String agentId = UUID.randomUUID().toString();
+        agentConfigDao.store(agentId, null, AgentConfig.getDefaultInstance());
+        JvmConfig config = configRepository.getJvmConfig(agentId);
+        JvmConfig updatedConfig = JvmConfig.newBuilder()
+                .addMaskSystemProperty("x")
+                .addMaskSystemProperty("y")
+                .addMaskSystemProperty("z")
+                .build();
+
+        // when
+        configRepository.updateJvmConfig(agentId, updatedConfig,
+                Versions.getVersion(config));
+        config = configRepository.getJvmConfig(agentId);
 
         // then
         assertThat(config).isEqualTo(updatedConfig);

@@ -35,6 +35,7 @@ import org.glowroot.agent.config.AlertConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.GaugeConfig;
 import org.glowroot.agent.config.InstrumentationConfig;
+import org.glowroot.agent.config.JvmConfig;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.config.PluginConfig;
 import org.glowroot.agent.config.PluginDescriptor;
@@ -206,6 +207,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public AgentConfig.TransactionConfig getTransactionConfig(String agentId) {
         return configService.getTransactionConfig().toProto();
+    }
+
+    @Override
+    public AgentConfig.JvmConfig getJvmConfig(String agentRollupId) {
+        return configService.getJvmConfig().toProto();
     }
 
     @Override
@@ -503,6 +509,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new OptimisticLockException();
             }
             configService.updateGaugeConfigs(configs);
+        }
+    }
+
+    @Override
+    public void updateJvmConfig(String agentId, AgentConfig.JvmConfig protoConfig,
+            String priorVersion) throws Exception {
+        JvmConfig config = JvmConfig.create(protoConfig);
+        synchronized (writeLock) {
+            String currVersion =
+                    Versions.getVersion(configService.getJvmConfig().toProto());
+            checkVersionsEqual(currVersion, priorVersion);
+            configService.updateJvmConfig(config);
         }
     }
 

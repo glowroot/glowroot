@@ -442,6 +442,11 @@ glowroot.config([
       templateUrl: 'views/config/gauge.html',
       controller: 'ConfigGaugeCtrl'
     });
+    $stateProvider.state('config.jvm', {
+      url: '/jvm',
+      templateUrl: 'views/config/jvm.html',
+      controller: 'ConfigJvmCtrl'
+    });
     $stateProvider.state('config.syntheticMonitorList', {
       url: '/synthetic-monitor-list',
       templateUrl: 'views/config/synthetic-monitor-list.html',

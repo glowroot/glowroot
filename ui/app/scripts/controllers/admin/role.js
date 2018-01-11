@@ -146,6 +146,8 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.config.edit.transaction = true;
       } else if (permission === 'agent:config:edit:gauge') {
         permissionBlock.config.edit.gauge = true;
+      } else if (permission === 'agent:config:edit:jvm') {
+        permissionBlock.config.edit.jvm = true;
       } else if ($scope.layout.central && permission === 'agent:config:edit:syntheticMonitor') {
         permissionBlock.config.edit.syntheticMonitor = true;
       } else if (permission === 'agent:config:edit:alert') {
@@ -187,6 +189,7 @@ glowroot.controller('AdminRoleCtrl', [
         permissionsObj.config.edit._ = false;
         permissionsObj.config.edit.transaction = false;
         permissionsObj.config.edit.gauge = false;
+        permissionsObj.config.edit.jvm = false;
         if ($scope.layout.central) {
           permissionsObj.config.edit.syntheticMonitor = false;
         }
@@ -200,6 +203,7 @@ glowroot.controller('AdminRoleCtrl', [
       if (permissionsObj.config.edit._) {
         permissionsObj.config.edit.transaction = false;
         permissionsObj.config.edit.gauge = false;
+        permissionsObj.config.edit.jvm = false;
         if ($scope.layout.central) {
           permissionsObj.config.edit.syntheticMonitor = false;
         }
@@ -229,7 +233,7 @@ glowroot.controller('AdminRoleCtrl', [
         return false;
       }
       return permissionsObj.config.edit._ || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
-          || ($scope.layout.central && permissionsObj.config.edit.syntheticMonitor)
+          || permissionsObj.config.edit.jvm || ($scope.layout.central && permissionsObj.config.edit.syntheticMonitor)
           || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui || permissionsObj.config.edit.plugin
           || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.reweave
           || permissionsObj.config.edit.advanced;
@@ -308,6 +312,9 @@ glowroot.controller('AdminRoleCtrl', [
       }
       if (permissionsObj.config.edit.gauge) {
         permissions.push('agent:config:edit:gauge');
+      }
+      if (permissionsObj.config.edit.jvm) {
+        permissions.push('agent:config:edit:jvm');
       }
       if ($scope.layout.central && permissionsObj.config.edit.syntheticMonitor) {
         permissions.push('agent:config:edit:syntheticMonitor');
@@ -400,6 +407,7 @@ glowroot.controller('AdminRoleCtrl', [
             _: false,
             transaction: false,
             gauge: false,
+            jvm: false,
             alert: false,
             ui: false,
             plugin: false,
