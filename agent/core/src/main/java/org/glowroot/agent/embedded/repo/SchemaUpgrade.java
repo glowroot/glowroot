@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ class SchemaUpgrade {
         }
         startupLogger.info("upgrading glowroot schema from version {} to version {} ...",
                 initialSchemaVersion, CURR_SCHEMA_VERSION);
-        // 0.9.26 to 0.9.27
+        // 0.9.28 to 0.10.0
         if (initialSchemaVersion < 3) {
             renameOldGaugeNameTable();
             updateSchemaVersion(3);
@@ -82,7 +82,6 @@ class SchemaUpgrade {
             // only applies when upgrading from immediately prior schema version (4)
             // (fix bad upgrade that populated gauge_name table based on gauge_value_rollup_3
             // instead of gauge_value_rollup_4)
-            dataSource.execute("truncate table gauge_name");
             populateNewGaugeNameTable();
             updateSchemaVersion(5);
         } else {
@@ -121,7 +120,8 @@ class SchemaUpgrade {
                 + " on large data sets ...");
         dataSource.syncTable("gauge_name", GaugeNameDao.columns);
         dataSource.syncIndexes("gauge_name", GaugeNameDao.indexes);
-
+        // truncate in case previously failed prior to updating schema version
+        dataSource.execute("truncate table gauge_name");
         long fixedIntervalMillis = DAYS.toMillis(1);
         // need ".0" to force double result
         String captureTimeSql = castUntainted(
