@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,8 +70,10 @@ public class Weaver {
 
     public static final String JBOSS_WELD_HACK_CLASS_NAME = "org/jboss/weld/util/Decorators";
     public static final String JBOSS_MODULES_HACK_CLASS_NAME = "org/jboss/modules/Module";
-    public static final String FELIX_HACK_CLASS_NAME =
+    public static final String FELIX_OSGI_HACK_CLASS_NAME =
             "org/apache/felix/framework/BundleWiringImpl";
+    public static final String ECLIPSE_OSGI_HACK_CLASS_NAME =
+            "org/eclipse/osgi/internal/framework/EquinoxContainer";
     public static final String JBOSS4_HACK_CLASS_NAME = "org/jboss/system/server/ServerImpl";
 
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
@@ -185,9 +187,15 @@ public class Weaver {
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(FELIX_HACK_CLASS_NAME)) {
+        } else if (className.equals(FELIX_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals(ECLIPSE_OSGI_HACK_CLASS_NAME)) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new EclipseOsgiHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
@@ -471,6 +479,48 @@ public class Weaver {
     private static class FelixOsgiHackMethodVisitor extends AdviceAdapter {
 
         private FelixOsgiHackMethodVisitor(MethodVisitor mv, int access, String name, String desc) {
+            super(ASM6, mv, access, name, desc);
+        }
+
+        @Override
+        protected void onMethodEnter() {
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitLdcInsn("org.glowroot.");
+            mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith",
+                    "(Ljava/lang/String;)Z", false);
+            Label label = new Label();
+            mv.visitJumpInsn(IFEQ, label);
+            mv.visitInsn(ICONST_1);
+            mv.visitInsn(IRETURN);
+            mv.visitLabel(label);
+        }
+    }
+
+    private static class EclipseOsgiHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        EclipseOsgiHackClassVisitor(ClassWriter cw) {
+            super(ASM6, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            if (name.equals("isBootDelegationPackage") && desc.equals("(Ljava/lang/String;)Z")) {
+                return new EclipseOsgiHackMethodVisitor(mv, access, name, desc);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class EclipseOsgiHackMethodVisitor extends AdviceAdapter {
+
+        private EclipseOsgiHackMethodVisitor(MethodVisitor mv, int access, String name,
+                String desc) {
             super(ASM6, mv, access, name, desc);
         }
 

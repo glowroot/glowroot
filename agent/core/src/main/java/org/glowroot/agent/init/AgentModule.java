@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -278,7 +278,8 @@ public class AgentModule {
         Set<String> hackClassNames = ImmutableSet.of(
                 Weaver.JBOSS_WELD_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.JBOSS_MODULES_HACK_CLASS_NAME.replace('/', '.'),
-                Weaver.FELIX_HACK_CLASS_NAME.replace('/', '.'),
+                Weaver.FELIX_OSGI_HACK_CLASS_NAME.replace('/', '.'),
+                Weaver.ECLIPSE_OSGI_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.JBOSS4_HACK_CLASS_NAME.replace('/', '.'));
         for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
             String className = clazz.getName();
