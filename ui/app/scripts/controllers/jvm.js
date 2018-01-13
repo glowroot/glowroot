@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, $ */
+/* global glowroot, angular, $ */
 
 glowroot.controller('JvmCtrl', [
   '$scope',
@@ -49,6 +49,26 @@ glowroot.controller('JvmCtrl', [
         return agentRollupUrl('jvm/gauges', agentRollupId);
       }
       return agentRollupUrl(path, agentRollupId);
+    };
+
+    $scope.gaugeQueryString = function () {
+      var queryString = $scope.agentQueryString();
+      if ($location.path() !== '/jvm/gauges') {
+        return queryString;
+      }
+      var defaultGaugeNames = $scope.agentRollup.defaultGaugeNames;
+      if (defaultGaugeNames.length === 0) {
+        return queryString;
+      }
+      angular.forEach(defaultGaugeNames, function (defaultGaugeName) {
+        if (queryString === '') {
+          queryString += '?gauge-name=';
+        } else {
+          queryString += '&gauge-name=';
+        }
+        queryString += encodeURIComponent(defaultGaugeName);
+      });
+      return queryString;
     };
 
     if ($scope.layout.central) {

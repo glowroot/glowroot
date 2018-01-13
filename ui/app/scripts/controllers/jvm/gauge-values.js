@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,12 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
         query.last = $scope.range.last.toString();
       }
-      query['gauge-name'] = $scope.gaugeNames;
+      if ($scope.gaugeNames && $scope.gaugeNames.length === 0) {
+        // special case to differentiate between no gauges selected and default gauge list
+        query['gauge-name'] = '';
+      } else {
+        query['gauge-name'] = $scope.gaugeNames;
+      }
       return query;
     };
 
@@ -201,6 +206,13 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     }
 
     locationChanges.on($scope, function () {
+
+      if ($location.search()['gauge-name'] === undefined) {
+        $location.search('gauge-name', $scope.agentRollup.defaultGaugeNames);
+        $location.replace();
+        return;
+      }
+
       var priorLocation = location;
       location = {};
       location.last = Number($location.search().last);
@@ -213,10 +225,15 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         location.last = 4 * 60 * 60 * 1000;
       }
       location.gaugeNames = $location.search()['gauge-name'];
-      if (!location.gaugeNames) {
+      if (location.gaugeNames === undefined) {
         location.gaugeNames = [];
       } else if (!angular.isArray(location.gaugeNames)) {
-        location.gaugeNames = [location.gaugeNames];
+        if (location.gaugeNames === '') {
+          // special case to differentiate between no gauges selected and default gauge list
+          location.gaugeNames = [];
+        } else {
+          location.gaugeNames = [location.gaugeNames];
+        }
       }
       if (!angular.equals(location, priorLocation)) {
         // only update scope if relevant change

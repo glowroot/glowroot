@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,18 +41,15 @@ glowroot.config([
 
         return waitForLayout($q, $rootScope).then(function () {
 
-          function addTransactionTypeOrGaugeNameIfNeeded() {
+          function addTransactionType() {
             if (needsTransactionType && !$location.search()['transaction-type']) {
               $location.search('transaction-type', $rootScope.defaultTransactionType());
-              $location.replace();
-            } else if ($location.path() === '/jvm/gauges' && !$location.search()['gauge-name']) {
-              $location.search('gauge-name', $rootScope.agentRollup.defaultGaugeNames);
               $location.replace();
             }
           }
 
           if (!$rootScope.layout.central) {
-            addTransactionTypeOrGaugeNameIfNeeded();
+            addTransactionType();
             return;
           }
 
@@ -66,7 +63,7 @@ glowroot.config([
           }
 
           if ($rootScope.agentRollup && $rootScope.agentRollup.id === agentRollupId) {
-            addTransactionTypeOrGaugeNameIfNeeded();
+            addTransactionType();
             return;
           }
 
@@ -75,7 +72,7 @@ glowroot.config([
                 $rootScope.agentId = agentId;
                 $rootScope.agentRollupId = agentRollupId;
                 $rootScope.agentRollup = response.data;
-                addTransactionTypeOrGaugeNameIfNeeded();
+                addTransactionType();
               }, function (response) {
                 $rootScope.navbarErrorMessage = 'An error occurred getting agent rollup: ' + agentRollupId;
                 if (response.data.message) {

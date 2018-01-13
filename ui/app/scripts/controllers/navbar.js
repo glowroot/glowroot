@@ -41,7 +41,7 @@ glowroot.controller('NavbarCtrl', [
             }
           }
         }
-        if (addDefaultGaugeNames) {
+        if (addDefaultGaugeNames && $location.path() === '/jvm/gauges') {
           query['gauge-name'] = $scope.agentRollup.defaultGaugeNames;
         }
       }
