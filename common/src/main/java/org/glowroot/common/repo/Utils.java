@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,8 +53,9 @@ public class Utils {
     public static long getRollupCaptureTime(long captureTime, long intervalMillis,
             @Nullable TimeZone timeZone) {
         int timeZoneOffset = timeZone == null ? 0 : timeZone.getOffset(captureTime);
-        return (long) Math.ceil((captureTime + timeZoneOffset) / (double) intervalMillis)
-                * intervalMillis - timeZoneOffset;
+        // cast to long at the very end to avoid long rollover (e.g. when captureTime = Long.MAX)
+        return (long) (Math.ceil((captureTime + timeZoneOffset) / (double) intervalMillis)
+                * intervalMillis - timeZoneOffset);
     }
 
     private static boolean isSpecialCase(String percentileText, String teen) {
