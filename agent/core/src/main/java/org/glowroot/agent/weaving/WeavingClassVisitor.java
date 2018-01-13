@@ -44,8 +44,6 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
-import org.objectweb.asm.signature.SignatureReader;
-import org.objectweb.asm.signature.SignatureVisitor;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -615,36 +613,5 @@ class WeavingClassVisitor extends ClassVisitor {
         ImmutableList<Type> methodParameterTypes();
         int uniqueNum();
         ImmutableSet<Type> methodMetaTypes();
-    }
-
-    public static void main(String[] args) {
-        String signature = "(TT;TT;)V";
-        SignatureReader r = new SignatureReader(signature);
-        r.accept(new MethodSignatureVisitor());
-
-    }
-
-    private static class MethodSignatureVisitor extends SignatureVisitor {
-
-        private MethodSignatureVisitor() {
-            super(ASM6);
-        }
-
-        @Override
-        public SignatureVisitor visitParameterType() {
-            return new ParamSignatureVisitor();
-        }
-    }
-
-    private static class ParamSignatureVisitor extends SignatureVisitor {
-
-        private ParamSignatureVisitor() {
-            super(ASM6);
-        }
-
-        @Override
-        public SignatureVisitor visitParameterType() {
-            return this;
-        }
     }
 }

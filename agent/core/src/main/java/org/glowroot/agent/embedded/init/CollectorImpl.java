@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.embedded.repo.AggregateDao;
+import org.glowroot.agent.embedded.repo.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.repo.EnvironmentDao;
 import org.glowroot.agent.embedded.repo.GaugeValueDao;
 import org.glowroot.agent.embedded.repo.TraceDao;

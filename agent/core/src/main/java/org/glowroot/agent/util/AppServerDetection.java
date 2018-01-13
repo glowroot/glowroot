@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.jar.Manifest;
 import javax.annotation.Nullable;
 
 import com.google.common.base.StandardSystemProperty;
+import com.google.common.io.Closer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,11 +40,11 @@ public class AppServerDetection {
         return "IBM J9 VM".equals(StandardSystemProperty.JAVA_VM_NAME.value());
     }
 
-    public static boolean isJBossModules() {
+    static boolean isJBossModules() {
         return "org.jboss.modules.Main".equals(MAIN_CLASS);
     }
 
-    public static boolean isWildflySwarm() {
+    static boolean isWildflySwarm() {
         return "org.wildfly.swarm.bootstrap.Main".equals(MAIN_CLASS);
     }
 
@@ -90,14 +91,18 @@ public class AppServerDetection {
         }
         Manifest manifest = null;
         try {
-            manifest = new JarFile(mainClassOrJarFile).getManifest();
+            Closer closer = Closer.create();
+            try {
+                JarFile jarFile = closer.register(new JarFile(mainClassOrJarFile));
+                manifest = jarFile.getManifest();
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
+            } finally {
+                closer.close();
+            }
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
         }
-        if (manifest == null) {
-            return null;
-        } else {
-            return manifest.getMainAttributes().getValue("Main-Class");
-        }
+        return manifest == null ? null : manifest.getMainAttributes().getValue("Main-Class");
     }
 }

@@ -270,10 +270,10 @@ class ConfigFile {
 
     private static class ExplicitOrdering extends Ordering<Entry<String, JsonNode>> {
 
-        private final List<String> explicitOrdering;
+        private final List<String> ordering;
 
-        private ExplicitOrdering(List<String> explicitOrdering) {
-            this.explicitOrdering = explicitOrdering;
+        private ExplicitOrdering(List<String> ordering) {
+            this.ordering = ordering;
         }
 
         @Override
@@ -288,7 +288,7 @@ class ConfigFile {
         }
 
         private int getIndex(String key) {
-            int index = explicitOrdering.indexOf(key);
+            int index = ordering.indexOf(key);
             return index == -1 ? Integer.MAX_VALUE : index;
         }
     }

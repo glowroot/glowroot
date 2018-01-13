@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ import org.glowroot.common.util.Versions;
 @Value.Immutable
 public abstract class EmbeddedAdminGeneralConfig {
 
-    private static final String defaultAgentDisplayName;
+    private static final String DEFAULT_AGENT_DISPLAY_NAME;
 
     static {
         // only look at system property, b/c only want to have default agent display name if there
         // are multiple agent.id values for a given installation
-        defaultAgentDisplayName = System.getProperty("glowroot.agent.id", "");
+        DEFAULT_AGENT_DISPLAY_NAME = System.getProperty("glowroot.agent.id", "");
     }
 
     @Value.Default
@@ -43,7 +43,7 @@ public abstract class EmbeddedAdminGeneralConfig {
     @JsonIgnore
     public String agentDisplayNameOrDefault() {
         String agentDisplayName = agentDisplayName();
-        return agentDisplayName.isEmpty() ? defaultAgentDisplayName : agentDisplayName;
+        return agentDisplayName.isEmpty() ? DEFAULT_AGENT_DISPLAY_NAME : agentDisplayName;
     }
 
     @Value.Derived
@@ -53,6 +53,6 @@ public abstract class EmbeddedAdminGeneralConfig {
     }
 
     public static String defaultAgentDisplayName() {
-        return defaultAgentDisplayName;
+        return DEFAULT_AGENT_DISPLAY_NAME;
     }
 }

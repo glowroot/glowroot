@@ -2041,7 +2041,7 @@ public class SchemaUpgrade {
         }
     }
 
-    static int getMaxRollupExpirationHours(CentralStorageConfig storageConfig) {
+    private static int getMaxRollupExpirationHours(CentralStorageConfig storageConfig) {
         int maxRollupExpirationHours = 0;
         for (int expirationHours : storageConfig.rollupExpirationHours()) {
             if (expirationHours == 0) {
@@ -2227,7 +2227,7 @@ public class SchemaUpgrade {
     private static long addExpirationHours(long timeInMillis, int expirationHours) {
         if (expirationHours == 0) {
             // 100 years from now is the same thing as never expire (0)
-            return timeInMillis + DAYS.toMillis(365 * 100);
+            return timeInMillis + DAYS.toMillis(365 * 100L);
         } else {
             return timeInMillis + HOURS.toMillis(expirationHours);
         }

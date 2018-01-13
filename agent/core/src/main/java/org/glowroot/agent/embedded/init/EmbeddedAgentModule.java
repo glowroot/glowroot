@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
+import org.glowroot.agent.embedded.repo.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.repo.PlatformMBeanServerLifecycle;
 import org.glowroot.agent.embedded.repo.SimpleRepoModule;
 import org.glowroot.agent.embedded.util.DataSource;
@@ -283,10 +284,6 @@ class EmbeddedAgentModule {
                     .version(version)
                     .build();
         }
-    }
-
-    boolean isSimpleRepoModuleReady() throws InterruptedException {
-        return simpleRepoModuleInit.await(0, SECONDS);
     }
 
     void waitForSimpleRepoModule() throws InterruptedException {

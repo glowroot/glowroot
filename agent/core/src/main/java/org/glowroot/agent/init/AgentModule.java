@@ -331,23 +331,28 @@ public class AgentModule {
                 nonGlowrootAgents.add(jvmArg);
             }
         }
-        String extraExplanation = "";
-        if (!nonGlowrootAgents.isEmpty()) {
-            extraExplanation = "This likely occurred because there";
-            if (nonGlowrootAgents.size() == 1) {
-                extraExplanation += " is another agent";
-            } else {
-                extraExplanation += " are other agents";
-            }
-            extraExplanation += " listed in the JVM args prior to the Glowroot agent ("
-                    + Joiner.on(" ").join(nonGlowrootAgents)
-                    + ") which gives the other agent";
-            if (nonGlowrootAgents.size() != 1) {
-                extraExplanation += "s";
-            }
-            extraExplanation += " higher loading precedence. ";
+        if (nonGlowrootAgents.isEmpty()) {
+            return "";
         }
-        return extraExplanation;
+        StringBuilder sb = new StringBuilder("This likely occurred because there");
+        if (nonGlowrootAgents.size() == 1) {
+            sb.append(" is another agent");
+        } else {
+            sb.append(" are other agents");
+        }
+        sb.append(" listed in the JVM args prior to the Glowroot agent (");
+        for (int i = 0; i < nonGlowrootAgents.size(); i++) {
+            if (i > 0) {
+                sb.append(" ");
+            }
+            sb.append(nonGlowrootAgents.get(i));
+        }
+        sb.append(") which gives the other agent");
+        if (nonGlowrootAgents.size() != 1) {
+            sb.append("s");
+        }
+        sb.append(" higher loading precedence. ");
+        return sb.toString();
     }
 
     // now init plugins to give them a chance to do something in their static initializer

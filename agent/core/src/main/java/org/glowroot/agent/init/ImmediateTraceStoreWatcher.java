@@ -109,8 +109,7 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
                     throw new TerminateSubsequentExecutionsException();
                 } else {
                     // there is a small window between trace completion and cancellation of this
-                    // command
-                    // so give it one extra chance to be completed normally
+                    // command so give it one extra chance to be completed normally
                     transactionPreviouslyCompleted = true;
                     return;
                 }

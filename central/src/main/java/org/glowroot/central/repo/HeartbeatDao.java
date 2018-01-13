@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class HeartbeatDao {
 
-    public static final int EXPIRATION_HOURS = 24;
+    static final int EXPIRATION_HOURS = 24;
 
     private static final int TTL = (int) HOURS.toSeconds(EXPIRATION_HOURS);
 

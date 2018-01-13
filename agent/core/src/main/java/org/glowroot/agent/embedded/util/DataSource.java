@@ -263,21 +263,6 @@ public class DataSource {
         }
     }
 
-    public boolean queryForExists(final @Untainted String sql, Object... args) throws SQLException {
-        debug(sql, args);
-        synchronized (lock) {
-            if (closed) {
-                return false;
-            }
-            return queryUnderLock(sql, args, new ResultSetExtractor<Boolean>() {
-                @Override
-                public Boolean extractData(ResultSet resultSet) throws SQLException {
-                    return resultSet.next();
-                }
-            });
-        }
-    }
-
     public List<String> queryForStringList(final @Untainted String sql) throws SQLException {
         return query(new JdbcRowQuery<String>() {
             @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,14 +165,13 @@ public class CommonHandler {
                 response.setHeader("Glowroot-Layout-Version",
                         layoutService.getLayoutVersion(authentication));
             }
-            if (!request.getPath().equals("/backend/agent-rollup-layout")) {
-                if (agentRollupId != null) {
-                    String agentRollupLayoutVersion = layoutService
-                            .getAgentRollupLayoutVersion(authentication, agentRollupId);
-                    if (agentRollupLayoutVersion != null) {
-                        response.setHeader("Glowroot-Agent-Rollup-Layout-Version",
-                                agentRollupLayoutVersion);
-                    }
+            if (!request.getPath().equals("/backend/agent-rollup-layout")
+                    && agentRollupId != null) {
+                String agentRollupLayoutVersion = layoutService
+                        .getAgentRollupLayoutVersion(authentication, agentRollupId);
+                if (agentRollupLayoutVersion != null) {
+                    response.setHeader("Glowroot-Agent-Rollup-Layout-Version",
+                            agentRollupLayoutVersion);
                 }
             }
         }

@@ -22,8 +22,7 @@ glowroot.controller('JvmCtrl', [
   '$http',
   '$timeout',
   'queryStrings',
-  'httpErrors',
-  function ($scope, $location, $http, $timeout, queryStrings, httpErrors) {
+  function ($scope, $location, $http, $timeout, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'JVM \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'jvm';

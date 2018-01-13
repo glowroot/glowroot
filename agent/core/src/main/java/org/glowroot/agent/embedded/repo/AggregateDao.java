@@ -34,7 +34,6 @@ import org.immutables.value.Value;
 
 import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
-import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.repo.model.Stored;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;

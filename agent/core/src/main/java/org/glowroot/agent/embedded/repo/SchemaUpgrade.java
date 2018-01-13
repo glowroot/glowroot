@@ -97,11 +97,7 @@ class SchemaUpgrade {
         updateSchemaVersion(CURR_SCHEMA_VERSION);
     }
 
-    public int getCurrentSchemaVersion() {
-        return CURR_SCHEMA_VERSION;
-    }
-
-    void updateSchemaVersion(int schemaVersion) throws Exception {
+    private void updateSchemaVersion(int schemaVersion) throws Exception {
         int updated =
                 dataSource.update("update schema_version set schema_version = ?", schemaVersion);
         if (updated == 0) {

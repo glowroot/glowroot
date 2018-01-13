@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,14 +63,6 @@ public class Session {
         return wrappedSession.prepare(query);
     }
 
-    public ListenableFuture<ResultSet> executeAsync(Statement statement) throws Exception {
-        return throttle(() -> wrappedSession.executeAsync(statement));
-    }
-
-    public ListenableFuture<ResultSet> executeAsync(String query) throws Exception {
-        return throttle(() -> wrappedSession.executeAsync(query));
-    }
-
     public ResultSet execute(Statement statement) throws Exception {
         try {
             // do not use session.execute() because that calls getUninterruptibly() which can cause
@@ -91,6 +83,14 @@ public class Session {
             propagateCauseIfPossible(e);
             throw e; // unusual case (cause is null or cause is not Exception or Error)
         }
+    }
+
+    public ListenableFuture<ResultSet> executeAsync(Statement statement) throws Exception {
+        return throttle(() -> wrappedSession.executeAsync(statement));
+    }
+
+    private ListenableFuture<ResultSet> executeAsync(String query) throws Exception {
+        return throttle(() -> wrappedSession.executeAsync(query));
     }
 
     public Cluster getCluster() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ class JvmTool {
 
     private static final Logger logger = LoggerFactory.getLogger(JvmTool.class);
 
-    static final int UNAVAILABLE_DUE_TO_RUNNING_IN_JRE_STATUS = 12345;
+    private static final int UNAVAILABLE_DUE_TO_RUNNING_IN_JRE_STATUS = 12345;
 
     private JvmTool() {}
 
@@ -123,6 +123,7 @@ class JvmTool {
             processingException = new RuntimeException(t);
         }
         errorStreamReaderThread.join();
+        closer.close();
         int status = process.waitFor();
         if (status == UNAVAILABLE_DUE_TO_RUNNING_IN_JRE_STATUS) {
             throw new UnavailableDueToRunningInJreException();
@@ -138,7 +139,7 @@ class JvmTool {
     }
 
     private static List<String> buildCommand(long pid, String methodName,
-            @Nullable File glowrootJarFile) throws IOException {
+            @Nullable File glowrootJarFile) {
         List<String> command = Lists.newArrayList();
         String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
                 + File.separator + "java";

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.embedded.init;
+package org.glowroot.agent.embedded.repo;
 
 import java.io.File;
 import java.io.IOException;
@@ -101,7 +101,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private volatile PagerDutyConfig pagerDutyConfig;
     private volatile HealthchecksIoConfig healthchecksIoConfig;
 
-    static ConfigRepositoryImpl create(File confDir, ConfigService configService,
+    public static ConfigRepositoryImpl create(File confDir, ConfigService configService,
             PluginCache pluginCache) throws IOException {
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(confDir, configService, pluginCache);

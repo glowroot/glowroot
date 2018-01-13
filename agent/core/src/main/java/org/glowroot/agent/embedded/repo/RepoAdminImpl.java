@@ -28,7 +28,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
-import org.glowroot.agent.embedded.init.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.embedded.util.DataSource.JdbcQuery;

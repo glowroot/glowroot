@@ -1188,7 +1188,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    static Object convert(Type type) {
+    private static Object convert(Type type) {
         switch (type.getSort()) {
             case Type.BOOLEAN:
             case Type.CHAR:

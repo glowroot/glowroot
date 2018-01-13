@@ -23,10 +23,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
   '$http',
   'locationChanges',
   'charts',
-  'keyedColorPools',
-  'queryStrings',
-  'httpErrors',
-  function ($scope, $location, $filter, $http, locationChanges, charts, keyedColorPools, queryStrings, httpErrors) {
+  function ($scope, $location, $filter, $http, locationChanges, charts) {
 
     $scope.$parent.heading = 'Gauges';
 

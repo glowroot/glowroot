@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -233,17 +233,6 @@ public class TimerImpl implements Timer, CommonTimerImpl {
     }
 
     // only called by transaction thread
-    public TimerImpl startNestedTimer(TimerName timerName) {
-        // timer names are guaranteed one instance per name so pointer equality can be used
-        if (this.timerName == timerName) {
-            selfNestingLevel++;
-            return this;
-        }
-        long nestedTimerStartTick = ticker.read();
-        return startNestedTimerInternal(timerName, nestedTimerStartTick);
-    }
-
-    // only called by transaction thread
     public TimerImpl startNestedTimer(TimerName timerName, long startTick) {
         // timer names are guaranteed one instance per name so pointer equality can be used
         if (this.timerName == timerName) {
@@ -251,6 +240,17 @@ public class TimerImpl implements Timer, CommonTimerImpl {
             return this;
         }
         return startNestedTimerInternal(timerName, startTick);
+    }
+
+    // only called by transaction thread
+    TimerImpl startNestedTimer(TimerName timerName) {
+        // timer names are guaranteed one instance per name so pointer equality can be used
+        if (this.timerName == timerName) {
+            selfNestingLevel++;
+            return this;
+        }
+        long nestedTimerStartTick = ticker.read();
+        return startNestedTimerInternal(timerName, nestedTimerStartTick);
     }
 
     TimerImpl extend(long startTick) {
