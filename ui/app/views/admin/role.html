@@ -1,5 +1,5 @@
 <!--
-  Copyright 2016-2017 the original author or authors.
+  Copyright 2016-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -303,7 +303,8 @@
             <label>
               <input type="checkbox"
                      ng-model="page.permissions.admin._"
-                     ng-disabled="!layout.adminEdit">Administration (Users, Roles, Web, Storage, SMTP, HTTP proxy, Integrations)
+                     ng-disabled="!layout.adminEdit">Administration (Users, Roles, Web, Storage, SMTP, HTTP proxy,
+              Integrations)
             </label>
           </div>
           <div class="checkbox"
@@ -572,7 +573,8 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.syntheticMonitor"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Synthetic monitors
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Synthetic
+              monitors
             </label>
           </div>
           <div class="checkbox">
@@ -625,7 +627,8 @@
             <label>
               <input type="checkbox"
                      ng-model="page.permissions.admin._"
-                     ng-disabled="!layout.adminEdit">Administration (Users, Roles, Web, Storage, SMTP, HTTP proxy, Integrations)
+                     ng-disabled="!layout.adminEdit">Administration (Users, Roles, Web, Storage, SMTP, HTTP proxy,
+              Integrations)
             </label>
           </div>
           <div class="checkbox"
@@ -679,6 +682,9 @@
                 </ui-select-choices>
               </ui-select>
             </div>
+          </div>
+          <div ng-if="rollupsExist" style="font-style: italic; padding-bottom: 10px;">
+            Note that permissions on rollups are inherited by their children.
           </div>
           <div class="checkbox">
             <label>
@@ -906,7 +912,8 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.syntheticMonitor"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Synthetic monitors
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Synthetic
+              monitors
             </label>
           </div>
           <div class="checkbox">
@@ -941,7 +948,7 @@
                      ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Instrumentation
             </label>
           </div>
-          <div class="checkbox gt-role-permission-block-last-checkbox">
+          <div class="checkbox">
             <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
@@ -949,9 +956,10 @@
                      ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Advanced
             </label>
           </div>
-          <button class="gt-role-permission-block-remove btn btn-default"
+          <button class="btn btn-default"
                   ng-click="removePermissionBlock(permissionBlock)"
-                  ng-if="layout.adminEdit">
+                  ng-if="layout.adminEdit"
+                  style="margin-top: 18px;">
             Remove this agent specific permission block
           </button>
         </div>

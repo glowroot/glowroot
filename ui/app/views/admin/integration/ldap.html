@@ -1,5 +1,5 @@
 <!--
-  Copyright 2016-2017 the original author or authors.
+  Copyright 2016-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -177,19 +177,18 @@
             Glowroot roles
           </label>
           <div class="col-lg-8">
-            <div class="gt-role-permission-block-last-checkbox">
-              <select multiple
-                      class="form-control"
-                      ng-model="roleMappingBlock.glowrootRoles"
-                      ng-options="glowrootRole as glowrootRole for glowrootRole in allGlowrootRoles"
-                      name="role{{$index}}"
-                      id="role{{$index}}"
-                      style="width: auto; min-width: 200px; display: inline; border-top-right-radius: 0; border-bottom-right-radius: 0;">
-              </select>
-            </div>
-            <button class="gt-ldap-role-mapping-block-remove btn btn-default"
+            <select multiple
+                    class="form-control"
+                    ng-model="roleMappingBlock.glowrootRoles"
+                    ng-options="glowrootRole as glowrootRole for glowrootRole in allGlowrootRoles"
+                    name="role{{$index}}"
+                    id="role{{$index}}"
+                    style="width: auto; min-width: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
+            </select>
+            <button class="btn btn-default"
                     ng-click="removeRoleMappingBlock(roleMappingBlock)"
-                    ng-if="layout.adminEdit">
+                    ng-if="layout.adminEdit"
+                    style="margin-top: 30px;">
               Remove this role mapping
             </button>
           </div>
