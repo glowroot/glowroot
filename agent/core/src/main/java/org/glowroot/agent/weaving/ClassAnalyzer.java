@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,22 +109,19 @@ class ClassAnalyzer {
         if (intf) {
             matchedShimTypes = getMatchedShimTypes(shimTypes, className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
-            analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
             matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
-            analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
         } else {
-            superAnalyzedClasses.addAll(
-                    analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext));
-            matchedShimTypes = getMatchedShimTypes(shimTypes, className,
-                    analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext),
+            List<AnalyzedClass> superAnalyzedHierarchy =
+                    analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext);
+            superAnalyzedClasses.addAll(superAnalyzedHierarchy);
+            matchedShimTypes = getMatchedShimTypes(shimTypes, className, superAnalyzedHierarchy,
                     interfaceAnalyzedHierarchy);
-            analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
-            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className,
-                    analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext),
+            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, superAnalyzedHierarchy,
                     interfaceAnalyzedHierarchy);
-            analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
         }
+        analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
+        analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
         this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
 
         Set<String> superClassNames = Sets.newHashSet();
@@ -174,7 +171,8 @@ class ClassAnalyzer {
         checkNotNull(methodAdvisors);
         checkNotNull(methodsThatOnlyNowFulfillAdvice);
         if (Modifier.isInterface(thinClass.access())) {
-            return !matchedMixinTypes.isEmpty();
+            // FIXME only need to return true if any default methods have advice
+            return !methodAdvisors.isEmpty() || !matchedMixinTypes.isEmpty();
         }
         return !methodAdvisors.isEmpty() || !methodsThatOnlyNowFulfillAdvice.isEmpty()
                 || !matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty();
@@ -320,7 +318,7 @@ class ClassAnalyzer {
     }
 
     private List<AnalyzedMethod> getMethodsThatOnlyNowFulfillAdvice(AnalyzedClass analyzedClass) {
-        if (analyzedClass.isInterface() || analyzedClass.isAbstract()) {
+        if (analyzedClass.isAbstract()) {
             ImmutableMap.of();
         }
         Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets =
@@ -371,10 +369,10 @@ class ClassAnalyzer {
     private void removeAdviceAlreadyWovenIntoSuperClass(
             Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets) {
         for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
-            if (superAnalyzedClass.isInterface()) {
-                continue;
-            }
             for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
+                if (Modifier.isAbstract(superAnalyzedMethod.modifiers())) {
+                    continue;
+                }
                 Set<Advice> matchingAdvisorSet =
                         matchingAdvisorSets.get(AnalyzedMethodKey.wrap(superAnalyzedMethod));
                 if (matchingAdvisorSet == null) {
@@ -388,12 +386,6 @@ class ClassAnalyzer {
     private void removeMethodsThatWouldOverridePublicFinalMethodsFromSuperClass(
             Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets) {
         for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
-            if (superAnalyzedClass.isInterface()) {
-                continue;
-            }
-            if (superAnalyzedClass.publicFinalMethods().isEmpty()) {
-                continue;
-            }
             for (PublicFinalMethod publicFinalMethod : superAnalyzedClass.publicFinalMethods()) {
                 ImmutableAnalyzedMethodKey key = ImmutableAnalyzedMethodKey.builder()
                         .name(publicFinalMethod.name())
@@ -426,8 +418,8 @@ class ClassAnalyzer {
     }
 
     private static ImmutableList<ShimType> getMatchedShimTypes(List<ShimType> shimTypes,
-            String className, Iterable<AnalyzedClass> superAnalyzedClasses,
-            List<AnalyzedClass> newInterfaceAnalyzedClasses) {
+            String className, List<AnalyzedClass> superAnalyzedHierarchy,
+            List<AnalyzedClass> interfaceAnalyzedHierarchy) {
         Set<ShimType> matchedShimTypes = Sets.newHashSet();
         for (ShimType shimType : shimTypes) {
             // currently only exact matching is supported
@@ -435,11 +427,11 @@ class ClassAnalyzer {
                 matchedShimTypes.add(shimType);
             }
         }
-        for (AnalyzedClass newInterfaceAnalyzedClass : newInterfaceAnalyzedClasses) {
-            matchedShimTypes.addAll(newInterfaceAnalyzedClass.shimTypes());
+        for (AnalyzedClass interfaceAnalyzedClass : interfaceAnalyzedHierarchy) {
+            matchedShimTypes.addAll(interfaceAnalyzedClass.shimTypes());
         }
         // remove shims that were already implemented in a super class
-        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedHierarchy) {
             if (!superAnalyzedClass.isInterface()) {
                 matchedShimTypes.removeAll(superAnalyzedClass.shimTypes());
             }
@@ -448,8 +440,8 @@ class ClassAnalyzer {
     }
 
     private static ImmutableList<MixinType> getMatchedMixinTypes(List<MixinType> mixinTypes,
-            String className, Iterable<AnalyzedClass> superAnalyzedClasses,
-            List<AnalyzedClass> newInterfaceAnalyzedClasses) {
+            String className, List<AnalyzedClass> superAnalyzedHierarchy,
+            List<AnalyzedClass> interfaceAnalyzedHierarchy) {
         Set<MixinType> matchedMixinTypes = Sets.newHashSet();
         for (MixinType mixinType : mixinTypes) {
             // currently only exact matching is supported
@@ -457,11 +449,11 @@ class ClassAnalyzer {
                 matchedMixinTypes.add(mixinType);
             }
         }
-        for (AnalyzedClass newInterfaceAnalyzedClass : newInterfaceAnalyzedClasses) {
-            matchedMixinTypes.addAll(newInterfaceAnalyzedClass.mixinTypes());
+        for (AnalyzedClass interfaceAnalyzedClass : interfaceAnalyzedHierarchy) {
+            matchedMixinTypes.addAll(interfaceAnalyzedClass.mixinTypes());
         }
         // remove mixins that were already implemented in a super class
-        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedHierarchy) {
             if (!superAnalyzedClass.isInterface()) {
                 matchedMixinTypes.removeAll(superAnalyzedClass.mixinTypes());
             }

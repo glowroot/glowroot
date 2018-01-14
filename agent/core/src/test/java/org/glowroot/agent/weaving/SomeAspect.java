@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,9 @@ import org.glowroot.agent.weaving.targets.Misc;
 
 public class SomeAspect {
 
-    @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
+    @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc"
+            + "|org.glowroot.agent.weaving.targets.DefaultMethodMisc"
+            + "|org.glowroot.agent.weaving.targets.DefaultMethodMisc2",
             methodName = "execute1|execute2", methodParameterTypes = {}, timerName = "xyz")
     public static class BasicAdvice {
         @IsEnabled
@@ -1381,6 +1383,27 @@ public class SomeAspect {
             SomeAspectThreadLocals.enabledCount.increment();
             return true;
         }
+        @OnBefore
+        public static void onBefore() {
+            SomeAspectThreadLocals.onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            SomeAspectThreadLocals.onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            SomeAspectThreadLocals.onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            SomeAspectThreadLocals.onAfterCount.increment();
+        }
+    }
+
+    @Pointcut(className = "java.lang.Iterable", methodName = "iterator|spliterator",
+            methodParameterTypes = {".."})
+    public static class IterableAdvice {
         @OnBefore
         public static void onBefore() {
             SomeAspectThreadLocals.onBeforeCount.increment();

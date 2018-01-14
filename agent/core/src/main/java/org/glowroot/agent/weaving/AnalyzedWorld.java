@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -326,6 +326,7 @@ public class AnalyzedWorld {
         // weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
         analyzedClass = createAnalyzedClassPlanC(clazz, advisors.get());
         if (analyzedClass.isInterface()) {
+            // FIXME log warning if any default methods have advice
             return analyzedClass;
         }
         if (!analyzedClass.analyzedMethods().isEmpty()) {

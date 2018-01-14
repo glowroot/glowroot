@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,7 +152,12 @@ class WeavingClassVisitor extends ClassVisitor {
     @Override
     public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-        if (analyzedClass.isInterface()) {
+        checkNotNull(type);
+        if (isAbstractOrNativeOrSynthetic(access)) {
+            // don't try to weave abstract, native and synthetic methods
+            // no need to weave bridge methods (which are also marked synthetic) since they forward
+            // to non-bridged method which receives same advice (see ClassAnalyzer
+            // bridgeTargetAdvisors)
             return cw.visitMethod(access, name, desc, signature, exceptions);
         }
         if (isMixinProxy(name, desc)) {
@@ -163,14 +168,6 @@ class WeavingClassVisitor extends ClassVisitor {
             matchingAdvisors = ImmutableList.of();
         } else {
             matchingAdvisors = removeSuperseded(matchingAdvisors);
-        }
-        checkNotNull(type); // type is non null if there is something to weave
-        if (isAbstractOrNativeOrSynthetic(access)) {
-            // don't try to weave abstract, native and synthetic methods
-            // no need to weave bridge methods (which are also marked synthetic) since they forward
-            // to non-bridged method which receives same advice (see ClassAnalyzer
-            // bridgeTargetAdvisors)
-            return cw.visitMethod(access, name, desc, signature, exceptions);
         }
         if (isInitWithMixins(name)) {
             return visitInitWithMixins(access, name, desc, signature, exceptions, matchingAdvisors);
@@ -195,19 +192,17 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
+        checkNotNull(type);
         analyzedWorld.add(analyzedClass, loader);
-        if (analyzedClass.isInterface()) {
-            cw.visitEnd();
-            return;
+        if (!analyzedClass.isInterface()) {
+            for (ShimType shimType : shimTypes) {
+                addShim(shimType);
+            }
+            for (ClassNode mixinClassNode : mixinClassNodes) {
+                addMixin(mixinClassNode);
+            }
         }
-        checkNotNull(type); // type is non null if there is something to weave
-        for (ShimType shimType : shimTypes) {
-            addShim(shimType);
-        }
-        for (ClassNode mixinClassNode : mixinClassNodes) {
-            addMixin(mixinClassNode);
-        }
-        if (!Modifier.isAbstract(analyzedClass.modifiers())) {
+        if (!analyzedClass.isAbstract()) {
             for (AnalyzedMethod methodThatOnlyNowFulfillAdvice : methodsThatOnlyNowFulfillAdvice) {
                 overrideAndWeaveInheritedMethod(methodThatOnlyNowFulfillAdvice);
             }
