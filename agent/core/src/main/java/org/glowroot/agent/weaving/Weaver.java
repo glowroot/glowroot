@@ -484,15 +484,17 @@ public class Weaver {
 
         @Override
         protected void onMethodEnter() {
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitLdcInsn("org.glowroot.");
-            mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith",
+            visitVarInsn(ALOAD, 1);
+            visitLdcInsn("org.glowroot.");
+            visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith",
                     "(Ljava/lang/String;)Z", false);
             Label label = new Label();
-            mv.visitJumpInsn(IFEQ, label);
-            mv.visitInsn(ICONST_1);
-            mv.visitInsn(IRETURN);
-            mv.visitLabel(label);
+            visitJumpInsn(IFEQ, label);
+            visitInsn(ICONST_1);
+            visitInsn(IRETURN);
+            visitLabel(label);
+            Object[] locals = new Object[] {FELIX_OSGI_HACK_CLASS_NAME, "java/lang/String"};
+            visitFrame(F_NEW, locals.length, locals, 0, new Object[0]);
         }
     }
 
@@ -526,15 +528,17 @@ public class Weaver {
 
         @Override
         protected void onMethodEnter() {
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitLdcInsn("org.glowroot.");
-            mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith",
+            visitVarInsn(ALOAD, 1);
+            visitLdcInsn("org.glowroot.");
+            visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith",
                     "(Ljava/lang/String;)Z", false);
             Label label = new Label();
-            mv.visitJumpInsn(IFEQ, label);
-            mv.visitInsn(ICONST_1);
-            mv.visitInsn(IRETURN);
-            mv.visitLabel(label);
+            visitJumpInsn(IFEQ, label);
+            visitInsn(ICONST_1);
+            visitInsn(IRETURN);
+            visitLabel(label);
+            Object[] locals = new Object[] {ECLIPSE_OSGI_HACK_CLASS_NAME, "java/lang/String"};
+            visitFrame(F_NEW, locals.length, locals, 0, new Object[0]);
         }
     }
 
