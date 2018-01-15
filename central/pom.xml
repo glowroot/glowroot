@@ -87,21 +87,17 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
-      <!-- latest version of jbrowserdriver (0.17.11) uses org.openqa.selenium.security.Credentials,
-        which is no longer present in selenium 3.8.0+ -->
-      <version>3.7.1</version>
+      <version>3.8.1</version>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
-      <!-- latest version of jbrowserdriver (0.17.11) uses org.openqa.selenium.security.Credentials,
-        which is no longer present in selenium 3.8.0+ -->
-      <version>3.7.1</version>
+      <version>3.8.1</version>
     </dependency>
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>0.17.11</version>
+      <version>1.0.0-RC1</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->
@@ -156,6 +152,18 @@
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
       <version>1.7.9</version>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.5.4</version>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>4.4.9</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

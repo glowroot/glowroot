@@ -86,7 +86,7 @@
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>0.17.11</version>
+      <version>1.0.0-RC1</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->
@@ -143,7 +143,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.12.RELEASE</version>
+      <version>4.3.13.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -152,7 +152,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.12.RELEASE</version>
+      <version>4.3.13.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -208,7 +208,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
-      <version>4.4.7</version>
+      <version>4.4.9</version>
       <scope>test</scope>
     </dependency>
     <dependency>

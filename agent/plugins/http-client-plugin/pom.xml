@@ -25,7 +25,7 @@
     <!-- CXF 3.2.0+ requires Java 8+ -->
     <cxf.version>3.1.13</cxf.version>
     <!-- Spring 5+ requires Java 8+ -->
-    <spring.version>4.3.12.RELEASE</spring.version>
+    <spring.version>4.3.13.RELEASE</spring.version>
   </properties>
 
   <dependencies>

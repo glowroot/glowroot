@@ -482,7 +482,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.7.9</version>
+          <version>0.8.0</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
@@ -704,7 +704,7 @@
               <dependency>
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_core</artifactId>
-                <version>2.1.3</version>
+                <version>2.2.0</version>
               </dependency>
             </dependencies>
           </plugin>
@@ -720,7 +720,7 @@
         </property>
       </activation>
       <properties>
-        <checker.version>2.3.0</checker.version>
+        <checker.version>2.3.1</checker.version>
       </properties>
       <dependencies>
         <dependency>

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public class Hibernate {
         for (int i = 0; i <= 12; i++) {
             runJava7("5.0." + i + ".Final");
         }
-        for (int i = 0; i <= 10; i++) {
+        for (int i = 0; i <= 11; i++) {
             runJava8("5.1." + i + ".Final");
         }
         for (int i = 0; i <= 12; i++) {
