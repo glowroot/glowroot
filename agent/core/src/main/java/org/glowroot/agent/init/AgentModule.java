@@ -279,6 +279,7 @@ public class AgentModule {
                 Weaver.JBOSS_WELD_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.JBOSS_MODULES_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.FELIX_OSGI_HACK_CLASS_NAME.replace('/', '.'),
+                Weaver.FELIX3_OSGI_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.ECLIPSE_OSGI_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.JBOSS4_HACK_CLASS_NAME.replace('/', '.'));
         for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {

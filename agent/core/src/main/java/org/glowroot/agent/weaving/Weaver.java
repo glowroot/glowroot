@@ -72,6 +72,8 @@ public class Weaver {
     public static final String JBOSS_MODULES_HACK_CLASS_NAME = "org/jboss/modules/Module";
     public static final String FELIX_OSGI_HACK_CLASS_NAME =
             "org/apache/felix/framework/BundleWiringImpl";
+    public static final String FELIX3_OSGI_HACK_CLASS_NAME =
+            "org/apache/felix/framework/ModuleImpl";
     public static final String ECLIPSE_OSGI_HACK_CLASS_NAME =
             "org/eclipse/osgi/internal/framework/EquinoxContainer";
     public static final String JBOSS4_HACK_CLASS_NAME = "org/jboss/system/server/ServerImpl";
@@ -187,7 +189,8 @@ public class Weaver {
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(FELIX_OSGI_HACK_CLASS_NAME)) {
+        } else if (className.equals(FELIX_OSGI_HACK_CLASS_NAME)
+                || className.equals(FELIX3_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
@@ -458,6 +461,9 @@ public class Weaver {
     private static class FelixOsgiHackClassVisitor extends ClassVisitor {
 
         private final ClassWriter cw;
+        // this hack is used for both org.apache.felix.framework.BundleWiringImpl (felix 4.0.0+)
+        // and org.apache.felix.framework.ModuleImpl (prior to felix 4.0.0)
+        private @Nullable String className;
 
         FelixOsgiHackClassVisitor(ClassWriter cw) {
             super(ASM6, cw);
@@ -465,11 +471,19 @@ public class Weaver {
         }
 
         @Override
+        public void visit(int version, int access, String name, @Nullable String signature,
+                @Nullable String superName, String /*@Nullable*/ [] interfaces) {
+            super.visit(version, access, name, signature, superName, interfaces);
+            this.className = name;
+        }
+
+        @Override
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
             if (name.equals("shouldBootDelegate") && desc.equals("(Ljava/lang/String;)Z")) {
-                return new FelixOsgiHackMethodVisitor(mv, access, name, desc);
+                return new FelixOsgiHackMethodVisitor(checkNotNull(className), mv, access, name,
+                        desc);
             } else {
                 return mv;
             }
@@ -478,8 +492,12 @@ public class Weaver {
 
     private static class FelixOsgiHackMethodVisitor extends AdviceAdapter {
 
-        private FelixOsgiHackMethodVisitor(MethodVisitor mv, int access, String name, String desc) {
+        private final String ownerName;
+
+        private FelixOsgiHackMethodVisitor(String ownerName, MethodVisitor mv, int access,
+                String name, String desc) {
             super(ASM6, mv, access, name, desc);
+            this.ownerName = ownerName;
         }
 
         @Override
@@ -493,7 +511,7 @@ public class Weaver {
             visitInsn(ICONST_1);
             visitInsn(IRETURN);
             visitLabel(label);
-            Object[] locals = new Object[] {FELIX_OSGI_HACK_CLASS_NAME, "java/lang/String"};
+            Object[] locals = new Object[] {ownerName, "java/lang/String"};
             visitFrame(F_NEW, locals.length, locals, 0, new Object[0]);
         }
     }
