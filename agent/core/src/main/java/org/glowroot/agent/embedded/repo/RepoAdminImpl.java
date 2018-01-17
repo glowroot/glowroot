@@ -17,28 +17,25 @@ package org.glowroot.agent.embedded.repo;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.embedded.util.DataSource.JdbcQuery;
-import org.glowroot.common.repo.ImmutableTraceTable;
+import org.glowroot.common.repo.ImmutableTraceCount;
+import org.glowroot.common.repo.ImmutableTraceCounts;
+import org.glowroot.common.repo.ImmutableTraceOverallCount;
 import org.glowroot.common.repo.RepoAdmin;
-import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
-import static java.util.concurrent.TimeUnit.DAYS;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.glowroot.agent.util.Checkers.castUntainted;
 
 class RepoAdminImpl implements RepoAdmin {
 
@@ -53,14 +50,12 @@ class RepoAdminImpl implements RepoAdmin {
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
-    private final Clock clock;
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             CappedDatabase traceCappedDatabase, ConfigRepositoryImpl configRepository,
             EnvironmentDao environmentDao, GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao,
             GaugeValueDao gaugeValueDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
-            Clock clock) {
+            FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao) {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
@@ -72,7 +67,6 @@ class RepoAdminImpl implements RepoAdmin {
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.traceAttributeNameDao = traceAttributeNameDao;
-        this.clock = clock;
     }
 
     @Override
@@ -112,56 +106,19 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
-    public TraceTable analyzeTraceData() throws Exception {
-        return dataSource.suppressQueryTimeout(new Callable<TraceTable>() {
+    public TraceCounts analyzeTraceCounts() throws Exception {
+        return dataSource.suppressQueryTimeout(new Callable<TraceCounts>() {
             @Override
-            public TraceTable call() throws Exception {
-                long captureTime = clock.currentTimeMillis();
+            public TraceCounts call() throws Exception {
+                ImmutableTraceCounts.Builder builder = ImmutableTraceCounts.builder();
                 Stopwatch stopwatch = Stopwatch.createStarted();
-                long count = dataSource.queryForLong(
-                        "select count(*) from trace where capture_time < ?", captureTime);
+                builder.addAllOverallCounts(dataSource.query(new TraceOverallCountQuery()));
                 // sleep a bit to allow some other threads to use the data source
                 Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
-                stopwatch.reset().start();
-                long errorCount = dataSource.queryForLong(
-                        "select count(*) from trace where error = ? and capture_time < ?", true,
-                        captureTime);
-                // sleep a bit to allow some other threads to use the data source
-                Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
-                int slowThresholdMillis1 = configRepository.getTransactionConfig("")
-                        .getSlowThresholdMillis().getValue();
-                int slowThresholdMillis2 =
-                        slowThresholdMillis1 == 0 ? 500 : slowThresholdMillis1 * 2;
-                int slowThresholdMillis3 =
-                        slowThresholdMillis1 == 0 ? 1000 : slowThresholdMillis1 * 3;
-                int slowThresholdMillis4 =
-                        slowThresholdMillis1 == 0 ? 1500 : slowThresholdMillis1 * 4;
-                long slowCount1 = getSlowCount(slowThresholdMillis1, captureTime);
-                long slowCount2 = getSlowCount(slowThresholdMillis2, captureTime);
-                long slowCount3 = getSlowCount(slowThresholdMillis3, captureTime);
-                long slowCount4 = getSlowCount(slowThresholdMillis4, captureTime);
-                List<Long> ageDistribution = dataSource.query(new AgeDistributionQuery());
-                return ImmutableTraceTable.builder()
-                        .count(count)
-                        .errorCount(errorCount)
-                        .slowThresholdMillis1(slowThresholdMillis1)
-                        .slowCount1(slowCount1)
-                        .slowThresholdMillis2(slowThresholdMillis2)
-                        .slowCount2(slowCount2)
-                        .slowThresholdMillis3(slowThresholdMillis3)
-                        .slowCount3(slowCount3)
-                        .slowThresholdMillis4(slowThresholdMillis4)
-                        .slowCount4(slowCount4)
-                        .ageDistribution(ageDistribution)
-                        .build();
+                builder.addAllCounts(dataSource.query(new TraceCountQuery()));
+                return builder.build();
             }
         });
-    }
-
-    private long getSlowCount(int slowThresholdMillis, long captureTime) throws SQLException {
-        return dataSource.queryForLong("select count(*) from trace where slow = ? and error = ?"
-                + " and duration_nanos >= ? and capture_time < ?", true, false,
-                MILLISECONDS.toNanos(slowThresholdMillis), captureTime);
     }
 
     @Override
@@ -176,40 +133,66 @@ class RepoAdminImpl implements RepoAdmin {
                 configRepository.getEmbeddedStorageConfig().traceCappedDatabaseSizeMb() * 1024);
     }
 
-    private class AgeDistributionQuery implements JdbcQuery<List<Long>> {
+    private class TraceOverallCountQuery implements JdbcQuery<List<TraceOverallCount>> {
 
         @Override
         public @Untainted String getSql() {
-            return "select floor((? - capture_time) / " + castUntainted(DAYS.toMillis(1))
-                    + ") age, count(*) from trace where capture_time < ? group by age";
+            return "select transaction_type, count(*), count(case when error then 1 end) from trace"
+                    + " group by transaction_type order by count(*) desc";
         }
 
         @Override
-        public void bind(PreparedStatement preparedStatement) throws SQLException {
-            long now = clock.currentTimeMillis();
-            preparedStatement.setLong(1, now);
-            preparedStatement.setLong(2, now);
-        }
+        public void bind(PreparedStatement preparedStatement) {}
 
         @Override
-        public List<Long> processResultSet(ResultSet resultSet) throws Exception {
-            Map<Integer, Long> countsPerAge = Maps.newHashMap();
+        public List<TraceOverallCount> processResultSet(ResultSet resultSet) throws Exception {
+            List<TraceOverallCount> traceCounts = Lists.newArrayList();
             while (resultSet.next()) {
-                countsPerAge.put(resultSet.getInt(1), resultSet.getLong(2));
+                int i = 1;
+                traceCounts.add(ImmutableTraceOverallCount.builder()
+                        .transactionType(checkNotNull(resultSet.getString(i++)))
+                        .count(resultSet.getLong(i++))
+                        .errorCount(resultSet.getLong(i++))
+                        .build());
             }
-            List<Long> ageDistribution = Lists.newArrayList();
-            for (Map.Entry<Integer, Long> entry : countsPerAge.entrySet()) {
-                int age = entry.getKey();
-                while (age >= ageDistribution.size()) {
-                    ageDistribution.add(0L);
-                }
-                ageDistribution.set(age, entry.getValue());
-            }
-            return ageDistribution;
+            return traceCounts;
         }
 
         @Override
-        public List<Long> valueIfDataSourceClosed() {
+        public List<TraceOverallCount> valueIfDataSourceClosed() {
+            return ImmutableList.of();
+        }
+    }
+
+    private class TraceCountQuery implements JdbcQuery<List<TraceCount>> {
+
+        @Override
+        public @Untainted String getSql() {
+            return "select transaction_type, transaction_name, count(*), count(case when error then"
+                    + " 1 end) from trace group by transaction_type, transaction_name order by"
+                    + " count(*) desc limit 50";
+        }
+
+        @Override
+        public void bind(PreparedStatement preparedStatement) {}
+
+        @Override
+        public List<TraceCount> processResultSet(ResultSet resultSet) throws Exception {
+            List<TraceCount> traceCounts = Lists.newArrayList();
+            while (resultSet.next()) {
+                int i = 1;
+                traceCounts.add(ImmutableTraceCount.builder()
+                        .transactionType(checkNotNull(resultSet.getString(i++)))
+                        .transactionName(checkNotNull(resultSet.getString(i++)))
+                        .count(resultSet.getLong(i++))
+                        .errorCount(resultSet.getLong(i++))
+                        .build());
+            }
+            return traceCounts;
+        }
+
+        @Override
+        public List<TraceCount> valueIfDataSourceClosed() {
             return ImmutableList.of();
         }
     }

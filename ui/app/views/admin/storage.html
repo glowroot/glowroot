@@ -344,7 +344,17 @@
                  gt-btn-class="btn-warning"
                  gt-dont-validate-form="true"
                  gt-confirm-header="Analyze H2 disk space?"
-                 gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
+                 gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot data capture will be impacted."
+                 ng-if="layout.adminEdit && !layout.central"
+                 class="gt-inline-block">
+            </div>
+            <div gt-button
+                 gt-label="Analyze trace counts"
+                 gt-click="analyzeTraceCounts(deferred)"
+                 gt-btn-class="btn-warning"
+                 gt-dont-validate-form="true"
+                 gt-confirm-header="Analyze trace counts?"
+                 gt-confirm-body="This could take several minutes depending on the number of traces, during which time Glowroot data capture will be impacted."
                  ng-if="layout.adminEdit && !layout.central"
                  class="gt-inline-block">
             </div>
@@ -379,6 +389,13 @@
                  ng-if="layout.offline"
                  class="gt-inline-block">
             </div>
+            <div gt-button
+                 gt-label="Analyze trace counts"
+                 gt-click="analyzeTraceCounts(deferred)"
+                 gt-btn-class="btn-default"
+                 ng-if="layout.offline"
+                 class="gt-inline-block">
+            </div>
           </div>
           <div class="help-block" ng-if="layout.central">
             Updated expiration settings only apply to data collected from this point forward. Existing data is still
@@ -388,21 +405,21 @@
           </div>
         </div>
       </div>
-      <div ng-if="showH2Analysis">
+      <div ng-if="showH2DiskSpaceAnalysis">
         <div style="margin-top: 40px;">
-          <span style="font-weight: bold; padding-left: 8px;">H2 data file size:</span> {{h2DataFileSize | gtBytes}}
+          <span style="font-weight: bold; margin-left: 8px;">H2 data file size:</span> {{h2DataFileSize | gtBytes}}
         </div>
         <table class="table"
                style="table-layout: fixed; margin-top: 30px;">
           <thead>
           <tr>
-            <th>
+            <th width="50%">
               Table name
             </th>
-            <th>
+            <th width="25%">
               Total bytes
             </th>
-            <th>
+            <th width="25%">
               Row count
             </th>
           </tr>
@@ -421,68 +438,75 @@
           </tr>
           </tbody>
         </table>
+      </div>
+      <div ng-if="showTraceCountAnalysis">
         <table class="table"
-               style="table-layout: fixed; margin-top: 40px;">
+               style="table-layout: fixed; margin-top: 40px;"
+               ng-if="analyzedTraceOverallCounts.length > 1">
           <thead>
+          <tr style="padding-top: 10px;">
+            <th colspan="3" style="font-size: 18px; font-weight: 600; text-align: center;">By transaction type</th>
+          </tr>
           <tr>
             <th>
-              TRACE table detail
+              Transaction type
             </th>
             <th>
+              Traces captured
+            </th>
+            <th>
+              Traces captured because they were flagged as errors
             </th>
           </tr>
           </thead>
           <tbody>
-          <tr>
+          <tr ng-repeat="analyzedTraceOverallCount in analyzedTraceOverallCounts">
             <td>
+              {{analyzedTraceOverallCount.transactionType}}
+            </td>
+            <td>
+              {{analyzedTraceOverallCount.count | number}}
+            </td>
+            <td>
+              {{analyzedTraceOverallCount.errorCount | number}}
+            </td>
+          </tr>
+          </tbody>
+        </table>
+        <table class="table"
+               style="table-layout: fixed; margin-top: 40px;">
+          <thead>
+          <tr ng-if="analyzedTraceOverallCounts.length > 1">
+            <th colspan="4" style="font-size: 18px; font-weight: 600; text-align: center;">By transaction name</th>
+          </tr>
+          <tr>
+            <th width="20%">
+              Transaction type
+            </th>
+            <th width="40%">
+              Transaction name
+            </th>
+            <th width="20%">
               Traces captured
-            </td>
-            <td>
-              {{analyzedTraceTable.count | number}}
-            </td>
-          </tr>
-          <tr>
-            <td>
+            </th>
+            <th width="20%">
               Traces captured because they were flagged as errors
-            </td>
-            <td>
-              {{analyzedTraceTable.errorCount | number}}
-            </td>
+            </th>
           </tr>
-          <tr>
+          </thead>
+          <tbody>
+          <tr ng-repeat="analyzedTraceCount in analyzedTraceCounts">
             <td>
-              Traces captured because they exceeded the currently configured slow threshold of
-              {{analyzedTraceTable.slowThresholdMillis1}}&nbsp;milliseconds
+              {{analyzedTraceCount.transactionType}}
             </td>
-            <td>
-              {{analyzedTraceTable.slowCount1 | number}}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-left: 40px;">
-              Traces that would have been captured due to the slow threshold if it was set to
-              {{analyzedTraceTable.slowThresholdMillis2}}&nbsp;milliseconds
+            <td class="gt-break-word">
+              {{analyzedTraceCount.transactionName}}
             </td>
             <td>
-              {{analyzedTraceTable.slowCount2 | number}}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-left: 40px;">
-              Traces that would have been captured due to the slow threshold if it was set to
-              {{analyzedTraceTable.slowThresholdMillis3}}&nbsp;milliseconds
+              {{analyzedTraceCount.count | number}}
             </td>
             <td>
-              {{analyzedTraceTable.slowCount3 | number}}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-left: 40px;">
-              Traces that would have been captured due to the slow threshold if it was set to
-              {{analyzedTraceTable.slowThresholdMillis4}}&nbsp;milliseconds
-            </td>
-            <td>
-              {{analyzedTraceTable.slowCount4 | number}}
+              {{analyzedTraceCount.errorCount | number}}
             </td>
           </tr>
           </tbody>

@@ -76,7 +76,6 @@ import org.glowroot.common.repo.ConfigRepository.DuplicatePagerDutyIntegrationKe
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.RepoAdmin.H2Table;
-import org.glowroot.common.repo.RepoAdmin.TraceTable;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.repo.util.HttpClient;
@@ -547,20 +546,25 @@ class AdminJsonService {
         }
         long h2DataFileSize = repoAdmin.getH2DataFileSize();
         List<H2Table> tables = repoAdmin.analyzeH2DiskSpace();
-        TraceTable traceTable = repoAdmin.analyzeTraceData();
-
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         try {
             jg.writeStartObject();
             jg.writeNumberField("h2DataFileSize", h2DataFileSize);
             jg.writeObjectField("tables", orderingByBytesDesc.sortedCopy(tables));
-            jg.writeObjectField("traceTable", traceTable);
             jg.writeEndObject();
         } finally {
             jg.close();
         }
         return sw.toString();
+    }
+
+    @POST(path = "/backend/admin/analyze-trace-counts", permission = "")
+    String analyzeTraceCounts(@BindAuthentication Authentication authentication) throws Exception {
+        if (!offline && !authentication.isAdminPermitted("admin:edit:storage")) {
+            throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
+        }
+        return mapper.writeValueAsString(repoAdmin.analyzeTraceCounts());
     }
 
     @POST(path = "/backend/admin/delete-all-stored-data", permission = "admin:edit:storage")

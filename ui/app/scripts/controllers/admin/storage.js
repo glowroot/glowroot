@@ -67,7 +67,8 @@ glowroot.controller('AdminStorageCtrl', [
     }
 
     $scope.save = function (deferred) {
-      $scope.showH2Analysis = false;
+      $scope.showH2DiskSpaceAnalysis = false;
+      $scope.showTraceCountAnalysis = false;
       $http.post('backend/admin/storage', $scope.config)
           .then(function (response) {
             onNewData(response.data);
@@ -78,7 +79,8 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.deleteAllStoredData = function (deferred) {
-      $scope.showH2Analysis = false;
+      $scope.showH2DiskSpaceAnalysis = false;
+      $scope.showTraceCountAnalysis = false;
       $http.post('backend/admin/delete-all-stored-data', {})
           .then(function () {
             deferred.resolve('Deleted');
@@ -88,7 +90,8 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.defragH2Data = function (deferred) {
-      $scope.showH2Analysis = false;
+      $scope.showH2DiskSpaceAnalysis = false;
+      $scope.showTraceCountAnalysis = false;
       $http.post('backend/admin/defrag-h2-data', {})
           .then(function () {
             deferred.resolve('Defragmented');
@@ -98,7 +101,8 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.compactH2Data = function (deferred) {
-      $scope.showH2Analysis = false;
+      $scope.showH2DiskSpaceAnalysis = false;
+      $scope.showTraceCountAnalysis = false;
       $http.post('backend/admin/compact-h2-data', {})
           .then(function () {
             deferred.resolve('Compacted');
@@ -108,13 +112,27 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.analyzeH2DiskSpace = function (deferred) {
-      $scope.showH2Analysis = false;
+      $scope.showH2DiskSpaceAnalysis = false;
+      $scope.showTraceCountAnalysis = false;
       $http.post('backend/admin/analyze-h2-disk-space', {})
           .then(function (data) {
-            $scope.showH2Analysis = true;
             $scope.h2DataFileSize = data.data.h2DataFileSize;
             $scope.analyzedH2Tables = data.data.tables;
-            $scope.analyzedTraceTable = data.data.traceTable;
+            $scope.showH2DiskSpaceAnalysis = true;
+            deferred.resolve('Analyzed');
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
+    };
+
+    $scope.analyzeTraceCounts = function (deferred) {
+      $scope.showH2DiskSpaceAnalysis = false;
+      $scope.showTraceCountAnalysis = false;
+      $http.post('backend/admin/analyze-trace-counts', {})
+          .then(function (data) {
+            $scope.analyzedTraceOverallCounts = data.data.overallCounts;
+            $scope.analyzedTraceCounts = data.data.counts;
+            $scope.showTraceCountAnalysis = true;
             deferred.resolve('Analyzed');
           }, function (response) {
             httpErrors.handle(response, $scope, deferred);

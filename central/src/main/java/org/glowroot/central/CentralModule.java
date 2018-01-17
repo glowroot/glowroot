@@ -830,7 +830,7 @@ public class CentralModule {
             throw new UnsupportedOperationException();
         }
         @Override
-        public TraceTable analyzeTraceData() {
+        public TraceCounts analyzeTraceCounts() {
             throw new UnsupportedOperationException();
         }
         @Override

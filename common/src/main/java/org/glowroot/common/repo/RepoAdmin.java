@@ -29,7 +29,7 @@ public interface RepoAdmin {
 
     List<H2Table> analyzeH2DiskSpace() throws Exception;
 
-    TraceTable analyzeTraceData() throws Exception;
+    TraceCounts analyzeTraceCounts() throws Exception;
 
     void deleteAllData() throws Exception;
 
@@ -43,17 +43,23 @@ public interface RepoAdmin {
     }
 
     @Value.Immutable
-    interface TraceTable {
+    interface TraceCounts {
+        List<TraceOverallCount> overallCounts();
+        List<TraceCount> counts();
+    }
+
+    @Value.Immutable
+    interface TraceOverallCount {
+        String transactionType();
         long count();
         long errorCount();
-        int slowThresholdMillis1();
-        long slowCount1();
-        int slowThresholdMillis2();
-        long slowCount2();
-        int slowThresholdMillis3();
-        long slowCount3();
-        int slowThresholdMillis4();
-        long slowCount4();
-        List<Long> ageDistribution();
+    }
+
+    @Value.Immutable
+    interface TraceCount {
+        String transactionType();
+        String transactionName();
+        long count();
+        long errorCount();
     }
 }
