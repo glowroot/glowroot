@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2017 the original author or authors.
+  Copyright 2012-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@
             </button>
             <button ng-click="displayDeleteAllConfirmationModal()"
                     ng-if="configs.length"
-                    class="btn btn-warning gt-button-spacing">
+                    class="btn gt-btn-danger-light gt-button-spacing">
               Delete all
             </button>
             <div gt-button
@@ -158,7 +158,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-default" ng-click="deleteAll()">Yes</button>
+        <button class="btn gt-btn-danger-light" ng-click="deleteAll()">Yes</button>
         <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>
