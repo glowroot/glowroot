@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package org.glowroot.agent.config;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -42,12 +45,22 @@ public abstract class TransactionConfig {
         return true;
     }
 
+    @JsonInclude(Include.NON_EMPTY)
+    public abstract ImmutableList<ImmutableSlowThreshold> slowThresholds();
+
     public AgentConfig.TransactionConfig toProto() {
-        return AgentConfig.TransactionConfig.newBuilder()
+        AgentConfig.TransactionConfig.Builder builder = AgentConfig.TransactionConfig.newBuilder()
                 .setSlowThresholdMillis(of(slowThresholdMillis()))
                 .setProfilingIntervalMillis(of(profilingIntervalMillis()))
-                .setCaptureThreadStats(captureThreadStats())
-                .build();
+                .setCaptureThreadStats(captureThreadStats());
+        for (SlowThreshold slowThreshold : slowThresholds()) {
+            builder.addSlowThreshold(AgentConfig.SlowThreshold.newBuilder()
+                    .setTransactionType(slowThreshold.transactionType())
+                    .setTransactionName(slowThreshold.transactionName())
+                    .setThresholdMillis(slowThreshold.thresholdMillis())
+                    .build());
+        }
+        return builder.build();
     }
 
     public static TransactionConfig create(AgentConfig.TransactionConfig config) {
@@ -58,11 +71,32 @@ public abstract class TransactionConfig {
         if (config.hasProfilingIntervalMillis()) {
             builder.profilingIntervalMillis(config.getProfilingIntervalMillis().getValue());
         }
-        return builder.captureThreadStats(config.getCaptureThreadStats())
-                .build();
+        builder.captureThreadStats(config.getCaptureThreadStats());
+        for (AgentConfig.SlowThreshold slowThreshold : config.getSlowThresholdList()) {
+            builder.addSlowThresholds(ImmutableSlowThreshold.builder()
+                    .transactionType(slowThreshold.getTransactionType())
+                    .transactionName(slowThreshold.getTransactionName())
+                    .thresholdMillis(slowThreshold.getThresholdMillis())
+                    .build());
+        }
+        return builder.build();
     }
 
     private static OptionalInt32 of(int value) {
         return OptionalInt32.newBuilder().setValue(value).build();
+    }
+
+    @Value.Immutable
+    public static abstract class SlowThreshold {
+
+        public abstract String transactionType();
+
+        @Value.Default
+        @JsonInclude(Include.NON_EMPTY)
+        public String transactionName() {
+            return "";
+        }
+
+        public abstract int thresholdMillis();
     }
 }

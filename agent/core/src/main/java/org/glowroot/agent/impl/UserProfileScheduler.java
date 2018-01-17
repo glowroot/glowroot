@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ public class UserProfileScheduler {
         if (users.isEmpty()) {
             return;
         }
-        if (!TransactionCollector.containsIgnoreCase(users, user)) {
+        if (!containsIgnoreCase(users, user)) {
             return;
         }
         // for now lumping user recording into slow traces tab
@@ -72,6 +72,15 @@ public class UserProfileScheduler {
                 new UserProfileRunnable(transaction, intervalMillis);
         userProfileRunnable.scheduleFirst();
         transaction.setUserProfileRunnable(userProfileRunnable);
+    }
+
+    private static boolean containsIgnoreCase(List<String> list, String test) {
+        for (String item : list) {
+            if (test.equalsIgnoreCase(item)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @VisibleForTesting

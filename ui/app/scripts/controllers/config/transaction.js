@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,19 @@ glowroot.controller('ConfigTransactionCtrl', [
       $scope.config = data;
       $scope.originalConfig = angular.copy($scope.config);
     }
+
+    $scope.addSlowThreshold = function () {
+      $scope.config.slowThresholds.push({
+        transactionType: '',
+        transactionName: '',
+        thresholdMillis: null
+      });
+    };
+
+    $scope.removeSlowThreshold = function (slowThreshold) {
+      var index = $scope.config.slowThresholds.indexOf(slowThreshold);
+      $scope.config.slowThresholds.splice(index, 1);
+    };
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);

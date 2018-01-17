@@ -32,6 +32,7 @@ import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -39,6 +40,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConf
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThreshold;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
@@ -270,22 +272,71 @@ class ConfigJsonService {
         abstract int slowThresholdMillis();
         abstract int profilingIntervalMillis();
         abstract boolean captureThreadStats();
+        abstract List<ImmutableSlowThresholdDto> slowThresholds();
         abstract String version();
 
         private TransactionConfig convert() {
-            return TransactionConfig.newBuilder()
+            TransactionConfig.Builder builder = TransactionConfig.newBuilder()
                     .setSlowThresholdMillis(of(slowThresholdMillis()))
                     .setProfilingIntervalMillis(of(profilingIntervalMillis()))
-                    .setCaptureThreadStats(captureThreadStats())
-                    .build();
+                    .setCaptureThreadStats(captureThreadStats());
+            for (SlowThresholdDto slowThreshold : new SlowThresholdDtoOrdering()
+                    .sortedCopy(slowThresholds())) {
+                builder.addSlowThreshold(slowThreshold.convert());
+            }
+            return builder.build();
         }
+
         private static TransactionConfigDto create(TransactionConfig config) {
-            return ImmutableTransactionConfigDto.builder()
+            ImmutableTransactionConfigDto.Builder builder = ImmutableTransactionConfigDto.builder()
                     .slowThresholdMillis(config.getSlowThresholdMillis().getValue())
                     .profilingIntervalMillis(config.getProfilingIntervalMillis().getValue())
                     .captureThreadStats(config.getCaptureThreadStats())
-                    .version(Versions.getVersion(config))
+                    .version(Versions.getVersion(config));
+            for (SlowThreshold slowThreshold : config.getSlowThresholdList()) {
+                builder.addSlowThresholds(SlowThresholdDto.create(slowThreshold));
+            }
+            return builder.build();
+        }
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    abstract static class SlowThresholdDto {
+
+        public abstract String transactionType();
+        public abstract String transactionName();
+        public abstract int thresholdMillis();
+
+        private SlowThreshold convert() {
+            return SlowThreshold.newBuilder()
+                    .setTransactionType(transactionType())
+                    .setTransactionName(transactionName())
+                    .setThresholdMillis(thresholdMillis())
                     .build();
+        }
+
+        private static ImmutableSlowThresholdDto create(SlowThreshold slowThreshold) {
+            return ImmutableSlowThresholdDto.builder()
+                    .transactionType(slowThreshold.getTransactionType())
+                    .transactionName(slowThreshold.getTransactionName())
+                    .thresholdMillis(slowThreshold.getThresholdMillis())
+                    .build();
+        }
+    }
+
+    private static class SlowThresholdDtoOrdering extends Ordering<SlowThresholdDto> {
+        @Override
+        public int compare(SlowThresholdDto left, SlowThresholdDto right) {
+            int compare = left.transactionType().compareToIgnoreCase(right.transactionType());
+            if (compare != 0) {
+                return compare;
+            }
+            compare = left.transactionName().compareToIgnoreCase(right.transactionName());
+            if (compare != 0) {
+                return compare;
+            }
+            return left.thresholdMillis() - right.thresholdMillis();
         }
     }
 

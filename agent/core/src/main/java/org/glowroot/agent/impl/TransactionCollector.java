@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,26 @@
 package org.glowroot.agent.impl;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.config.TransactionConfig;
+import org.glowroot.agent.config.TransactionConfig.SlowThreshold;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
@@ -55,6 +62,7 @@ public class TransactionCollector {
     private final RateLimitedLogger backPressureLogger =
             new RateLimitedLogger(TransactionCollector.class);
 
+    private volatile Map<String, SlowThresholdsForType> slowThresholds = ImmutableMap.of();
     private volatile long defaultSlowThresholdNanos;
 
     public TransactionCollector(final ConfigService configService, Collector collector,
@@ -65,29 +73,37 @@ public class TransactionCollector {
         this.ticker = ticker;
         dedicatedExecutor = Executors
                 .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Trace-Collector"));
-        configService.addConfigListener(new ConfigListener() {
-            @Override
-            public void onChange() {
-                defaultSlowThresholdNanos = MILLISECONDS
-                        .toNanos(configService.getTransactionConfig().slowThresholdMillis());
-            }
-        });
+        configService.addConfigListener(new UpdateSlowThresholds(configService));
     }
 
     public boolean shouldStoreSlow(Transaction transaction) {
         if (transaction.isPartiallyStored()) {
             return true;
         }
+        long durationNanos = transaction.getDurationNanos();
         // check if trace-specific store threshold was set
         long slowThresholdMillis = transaction.getSlowThresholdMillisOverride();
         if (slowThresholdMillis != Transaction.USE_GENERAL_STORE_THRESHOLD) {
-            return transaction.getDurationNanos() >= MILLISECONDS.toNanos(slowThresholdMillis);
+            return durationNanos >= MILLISECONDS.toNanos(slowThresholdMillis);
+        }
+        // check if there is a matching transaction type / transaction name specific slow threshold
+        if (!slowThresholds.isEmpty()) {
+            SlowThresholdsForType slowThresholdForType =
+                    slowThresholds.get(transaction.getTransactionType());
+            if (slowThresholdForType != null) {
+                Long slowThresholdNanos =
+                        slowThresholdForType.thresholdNanos().get(transaction.getTransactionName());
+                if (slowThresholdNanos != null) {
+                    return durationNanos >= slowThresholdNanos;
+                }
+                slowThresholdNanos = slowThresholdForType.defaultThresholdNanos();
+                if (slowThresholdNanos != null) {
+                    return durationNanos >= slowThresholdNanos;
+                }
+            }
         }
         // fall back to default slow trace threshold
-        if (transaction.getDurationNanos() >= defaultSlowThresholdNanos) {
-            return true;
-        }
-        return false;
+        return durationNanos >= defaultSlowThresholdNanos;
     }
 
     public boolean shouldStoreError(Transaction transaction) {
@@ -161,12 +177,64 @@ public class TransactionCollector {
         }
     }
 
-    static boolean containsIgnoreCase(List<String> list, String test) {
-        for (String item : list) {
-            if (test.equalsIgnoreCase(item)) {
-                return true;
-            }
+    private class UpdateSlowThresholds implements ConfigListener {
+
+        private final ConfigService configService;
+
+        private UpdateSlowThresholds(ConfigService configService) {
+            this.configService = configService;
         }
-        return false;
+
+        @Override
+        public void onChange() {
+            TransactionConfig transactionConfig = configService.getTransactionConfig();
+            Map<String, SlowThresholdsForTypeBuilder> slowThresholds = Maps.newHashMap();
+            for (SlowThreshold slowThreshold : transactionConfig.slowThresholds()) {
+                String transactionType = slowThreshold.transactionType();
+                SlowThresholdsForTypeBuilder slowThresholdForType =
+                        slowThresholds.get(transactionType);
+                if (slowThresholdForType == null) {
+                    slowThresholdForType = new SlowThresholdsForTypeBuilder();
+                    slowThresholds.put(transactionType, slowThresholdForType);
+                }
+                String transactionName = slowThreshold.transactionName();
+                long thresholdNanos = MILLISECONDS.toNanos(slowThreshold.thresholdMillis());
+                if (transactionName.isEmpty()) {
+                    slowThresholdForType.defaultThresholdNanos = thresholdNanos;
+                } else {
+                    slowThresholdForType.thresholdNanos.put(transactionName, thresholdNanos);
+                }
+            }
+            Map<String, SlowThresholdsForType> builder = Maps.newHashMap();
+            for (Map.Entry<String, SlowThresholdsForTypeBuilder> entry : slowThresholds
+                    .entrySet()) {
+                builder.put(entry.getKey(), entry.getValue().toImmutable());
+            }
+            TransactionCollector.this.slowThresholds = ImmutableMap.copyOf(builder);
+            defaultSlowThresholdNanos =
+                    MILLISECONDS.toNanos(transactionConfig.slowThresholdMillis());
+        }
+    }
+
+    @Value.Immutable
+    interface SlowThresholdsForType {
+        @Nullable
+        Long defaultThresholdNanos();
+        Map<String, Long> thresholdNanos(); // key is transaction name
+    }
+
+    // need separate builder type to avoid exception in case of duplicate
+    // transactionType/transactionName pair
+    private static class SlowThresholdsForTypeBuilder {
+
+        private @Nullable Long defaultThresholdNanos;
+        private Map<String, Long> thresholdNanos = Maps.newHashMap();
+
+        private SlowThresholdsForType toImmutable() {
+            return ImmutableSlowThresholdsForType.builder()
+                    .defaultThresholdNanos(defaultThresholdNanos)
+                    .putAllThresholdNanos(thresholdNanos)
+                    .build();
+        }
     }
 }

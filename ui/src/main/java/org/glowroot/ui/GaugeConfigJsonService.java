@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import org.glowroot.common.repo.util.Gauges;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
@@ -246,7 +245,7 @@ class GaugeConfigJsonService {
         abstract Optional<String> version(); // absent for insert operations
 
         private GaugeConfig convert() {
-            AgentConfig.GaugeConfig.Builder builder = GaugeConfig.newBuilder()
+            GaugeConfig.Builder builder = GaugeConfig.newBuilder()
                     .setMbeanObjectName(mbeanObjectName());
             for (MBeanAttributeDto mbeanAttribute : mbeanAttributes()) {
                 builder.addMbeanAttribute(mbeanAttribute.convert());
