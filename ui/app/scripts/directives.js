@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ glowroot.directive('gtButtonGroup', [
       + '<div class="clearfix">'
       + '  <span ng-transclude style="margin-right: 15px;"></span>'
       + '  <div class="gt-button-spinner hide"></div>'
-      + '  <div class="gt-button-message hide" style="padding-top: 5px;"></div>'
+      + '  <div class="gt-button-message hide" style="padding-top: 4px;"></div>'
       + '</div>',
       controller: [
         '$element',
