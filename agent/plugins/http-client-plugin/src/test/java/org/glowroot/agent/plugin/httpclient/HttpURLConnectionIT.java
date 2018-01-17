@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Iterator;
@@ -136,7 +137,9 @@ public class HttpURLConnectionIT {
             String protocol = getClass().getName().endsWith("HTTPS") ? "https" : "http";
             URL obj = new URL(protocol + "://localhost:" + getPort() + "/hello1/");
             HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
-            ByteStreams.exhaust(connection.getInputStream());
+            InputStream content = connection.getInputStream();
+            ByteStreams.exhaust(content);
+            content.close();
         }
     }
 
@@ -146,7 +149,9 @@ public class HttpURLConnectionIT {
             String protocol = getClass().getName().endsWith("HTTPS") ? "https" : "http";
             URL obj = new URL(protocol + "://localhost:" + getPort() + "/hello1?abc=xyz");
             HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
-            ByteStreams.exhaust(connection.getInputStream());
+            InputStream content = connection.getInputStream();
+            ByteStreams.exhaust(content);
+            content.close();
         }
     }
 
@@ -159,7 +164,9 @@ public class HttpURLConnectionIT {
             connection.setDoOutput(true);
             connection.getOutputStream().write("some data".getBytes());
             connection.getOutputStream().close();
-            ByteStreams.exhaust(connection.getInputStream());
+            InputStream content = connection.getInputStream();
+            ByteStreams.exhaust(content);
+            content.close();
         }
     }
 
