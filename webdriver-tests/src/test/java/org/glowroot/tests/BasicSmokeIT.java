@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class BasicSmokeIT extends WebDriverIT {
         String content = httpGet("http://localhost:" + getUiPort()
                 + "/backend/config/transaction?agent-id=" + agentId);
         JsonNode responseNode = new ObjectMapper().readTree(content);
-        String version = responseNode.get("version").asText();
+        String version = responseNode.get("config").get("version").asText();
         httpPost("http://localhost:" + getUiPort()
                 + "/backend/config/transaction?agent-id=" + agentId,
                 "{\"slowThresholdMillis\":0,\"profilingIntervalMillis\":10,"

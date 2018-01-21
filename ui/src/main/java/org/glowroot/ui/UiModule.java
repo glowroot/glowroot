@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,7 +132,8 @@ public class UiModule {
                 agentRollupRepository, clock));
         jsonServices.add(new ReportJsonService(agentRollupRepository, transactionTypeRepository,
                 aggregateRepository, gaugeValueRepository, rollupLevelService));
-        jsonServices.add(new ConfigJsonService(gaugeValueRepository, configRepository));
+        jsonServices.add(new ConfigJsonService(transactionTypeRepository, gaugeValueRepository,
+                configRepository));
         jsonServices
                 .add(new AlertConfigJsonService(configRepository, gaugeValueRepository, central));
         jsonServices.add(new UserConfigJsonService(configRepository));

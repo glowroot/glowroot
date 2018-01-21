@@ -57,9 +57,21 @@ glowroot.controller('ConfigUiCtrl', [
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
       $scope.page = {};
+      $scope.allTransactionTypes = [];
+      angular.forEach(data.allTransactionTypes, function (transactionType) {
+        $scope.allTransactionTypes.push({
+          name: transactionType
+        });
+      });
+      if (data.allTransactionTypes.indexOf($scope.config.defaultTransactionType) === -1) {
+        $scope.allTransactionTypes.push({
+          name: $scope.config.defaultTransactionType,
+          disabled: true
+        });
+      }
       $scope.allGauges = data.allGauges;
       var allGaugeNames = [];
-      angular.forEach(data.allGauges, function (gauge) {
+      angular.forEach($scope.allGauges, function (gauge) {
         allGaugeNames.push(gauge.name);
       });
       angular.forEach(data.config.defaultGaugeNames, function (defaultGaugeName) {

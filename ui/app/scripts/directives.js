@@ -370,10 +370,9 @@ glowroot.directive('gtFormAutofocusOnFirstInput', [
   function ($timeout) {
     return function (scope, iElement) {
       $timeout(function () {
-        // don't focus on selects because then back button won't work (at least in chrome)
-        var selector = 'input:not(.gt-autofocus-ignore)';
+        var selector = 'input:not(.gt-autofocus-ignore),select';
         var unregisterWatch = scope.$watch(function () {
-          return iElement.find(selector).length && iElement.find('input').first().is(':visible');
+          return iElement.find(selector).length && iElement.find('input,select').first().is(':visible');
         }, function (newValue) {
           if (newValue) {
             iElement.find(selector).first().focus();

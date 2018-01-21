@@ -26,16 +26,26 @@
            class="form-horizontal"
            name="formCtrl"
            style="padding-top: 15px;">
-        <div gt-form-group
-             gt-label="Default transaction type"
-             gt-model="config.defaultTransactionType"
-             gt-required="loaded"
-             gt-disabled="!agentRollup.permissions.config.edit.ui"
-             gt-width="20em"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
-          <div class="help-block">
-            The default transaction type displayed on the transactions and errors page.
+        <div class="form-group">
+          <label class="col-lg-4 control-label"
+                 for="defaultTransactionType">
+            Default transaction type
+          </label>
+          <div class="col-lg-8">
+            <select ng-model="config.defaultTransactionType"
+                    ng-disabled="!agentRollup.permissions.config.edit.ui"
+                    id="defaultTransactionType"
+                    class="form-control"
+                    style="width: auto;">
+              <option ng-repeat="transactionType in allTransactionTypes"
+                      ng-value="transactionType.name"
+                      ng-disabled="transactionType.disabled">
+                {{transactionType.name}}
+              </option>
+            </select>
+            <div class="help-block">
+              The default transaction type displayed on the transactions and errors page.
+            </div>
           </div>
         </div>
         <div gt-form-group

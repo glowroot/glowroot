@@ -31,6 +31,7 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
@@ -54,11 +55,13 @@ class ConfigJsonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private final TransactionTypeRepository transactionTypeRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final ConfigRepository configRepository;
 
-    ConfigJsonService(GaugeValueRepository gaugeValueRepository,
-            ConfigRepository configRepository) {
+    ConfigJsonService(TransactionTypeRepository transactionTypeRepository,
+            GaugeValueRepository gaugeValueRepository, ConfigRepository configRepository) {
+        this.transactionTypeRepository = transactionTypeRepository;
         this.gaugeValueRepository = gaugeValueRepository;
         this.configRepository = configRepository;
     }
@@ -72,7 +75,16 @@ class ConfigJsonService {
     @GET(path = "/backend/config/transaction", permission = "agent:config:view:transaction")
     String getTransactionConfig(@BindAgentId String agentId) throws Exception {
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
-        return mapper.writeValueAsString(TransactionConfigDto.create(config));
+        List<String> transactionTypes = transactionTypeRepository.read().get(agentId);
+        if (transactionTypes == null) {
+            transactionTypes = ImmutableList.of();
+        }
+        return mapper.writeValueAsString(ImmutableTransactionConfigResponse.builder()
+                .config(TransactionConfigDto.create(config))
+                .defaultTransactionType(
+                        configRepository.getUiConfig(agentId).getDefaultTransactionType())
+                .addAllAllTransactionTypes(transactionTypes)
+                .build());
     }
 
     @GET(path = "/backend/config/jvm", permission = "agent:config:view:jvm")
@@ -85,10 +97,15 @@ class ConfigJsonService {
     @GET(path = "/backend/config/ui", permission = "agent:config:view:ui")
     String getUiConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         UiConfig config = configRepository.getUiConfig(agentRollupId);
+        List<String> transactionTypes = transactionTypeRepository.read().get(agentRollupId);
+        if (transactionTypes == null) {
+            transactionTypes = ImmutableList.of();
+        }
         List<Gauge> gauges = gaugeValueRepository.getRecentlyActiveGauges(agentRollupId);
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(ImmutableUiConfigResponse.builder()
                 .config(UiConfigDto.create(config))
+                .addAllAllTransactionTypes(transactionTypes)
                 .addAllAllGauges(sortedGauges)
                 .build());
     }
@@ -267,6 +284,13 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
+    interface TransactionConfigResponse {
+        ImmutableTransactionConfigDto config();
+        String defaultTransactionType();
+        List<String> allTransactionTypes();
+    }
+
+    @Value.Immutable
     abstract static class TransactionConfigDto {
 
         abstract int slowThresholdMillis();
@@ -287,7 +311,7 @@ class ConfigJsonService {
             return builder.build();
         }
 
-        private static TransactionConfigDto create(TransactionConfig config) {
+        private static ImmutableTransactionConfigDto create(TransactionConfig config) {
             ImmutableTransactionConfigDto.Builder builder = ImmutableTransactionConfigDto.builder()
                     .slowThresholdMillis(config.getSlowThresholdMillis().getValue())
                     .profilingIntervalMillis(config.getProfilingIntervalMillis().getValue())
@@ -555,6 +579,7 @@ class ConfigJsonService {
     @Value.Immutable
     interface UiConfigResponse {
         ImmutableUiConfigDto config();
+        List<String> allTransactionTypes();
         List<Gauge> allGauges();
     }
 
