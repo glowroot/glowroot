@@ -99,7 +99,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 58;
+    private static final int CURR_SCHEMA_VERSION = 64;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -394,6 +394,31 @@ public class SchemaUpgrade {
             finishV09AgentIdUpdate();
             updateSchemaVersion(58);
         }
+        // 0.10.0 to 0.10.1
+        if (initialSchemaVersion < 59) {
+            removeTraceTtErrorCountPartialColumn();
+            updateSchemaVersion(59);
+        }
+        if (initialSchemaVersion < 60) {
+            removeTraceTnErrorCountPartialColumn();
+            updateSchemaVersion(60);
+        }
+        if (initialSchemaVersion < 61) {
+            populateTraceTtSlowCountAndPointPartialPart1();
+            updateSchemaVersion(61);
+        }
+        if (initialSchemaVersion < 62) {
+            populateTraceTtSlowCountAndPointPartialPart2();
+            updateSchemaVersion(62);
+        }
+        if (initialSchemaVersion < 63) {
+            populateTraceTnSlowCountAndPointPartialPart1();
+            updateSchemaVersion(63);
+        }
+        if (initialSchemaVersion < 64) {
+            populateTraceTnSlowCountAndPointPartialPart2();
+            updateSchemaVersion(64);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded glowroot central schema from version {} to version {}",
@@ -426,6 +451,12 @@ public class SchemaUpgrade {
             String compaction = table.getOptions().getCompaction().get("class");
             if (compaction != null && compaction
                     .equals("org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
+                dtcsTableNames.add(table.getName());
+            }
+            if (table.getName().startsWith("trace_") && table.getName().endsWith("_partial")
+                    && compaction != null && compaction.equals(
+                            "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")) {
+                // these need to be updated to TWCS also
                 dtcsTableNames.add(table.getName());
             }
             if (compaction != null && compaction
@@ -1116,7 +1147,6 @@ public class SchemaUpgrade {
     private void populateGaugeNameTable() throws Exception {
         logger.info("populating new gauge name history table - this could take several minutes on"
                 + " large data sets ...");
-
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         int maxRollupHours = storageConfig.getMaxRollupHours();
         dropTableIfExists("gauge_name");
@@ -1174,6 +1204,7 @@ public class SchemaUpgrade {
 
     private void populateAgentConfigGeneral() throws Exception {
         if (!columnExists("agent_rollup", "display")) {
+            // previously failed mid-upgrade prior to updating schema version
             return;
         }
         ResultSet results =
@@ -1257,7 +1288,6 @@ public class SchemaUpgrade {
     private void populateAgentHistoryTable() throws Exception {
         logger.info("populating new agent history table - this could take a several minutes on"
                 + " large data sets ...");
-
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("agent");
         session.createTableWithTWCS("create table agent (one int, capture_time timestamp, agent_id"
@@ -1806,12 +1836,12 @@ public class SchemaUpgrade {
     }
 
     private void rewriteGaugeNameTablePart2() throws Exception {
-        logger.info("rewriting gauge_name table (part 2) - this could take several minutes on large"
-                + " data sets ...");
         if (!tableExists("gauge_name_temp")) {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
+        logger.info("rewriting gauge_name table (part 2) - this could take several minutes on large"
+                + " data sets ...");
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("gauge_name");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
@@ -1876,6 +1906,245 @@ public class SchemaUpgrade {
         // TODO at some point in the future drop agent_rollup
         // (intentionally not dropping it for now, in case any upgrade corrections are needed post
         // v0.10.0)
+    }
+
+    private void removeTraceTtErrorCountPartialColumn() throws Exception {
+        // this column is unused
+        dropColumnIfExists("trace_tt_error_point", "partial");
+    }
+
+    private void removeTraceTnErrorCountPartialColumn() throws Exception {
+        // this column is unused
+        dropColumnIfExists("trace_tn_error_point", "partial");
+    }
+
+    private void populateTraceTtSlowCountAndPointPartialPart1() throws Exception {
+        logger.info("populating trace_tt_slow_count_partial and trace_tt_slow_point_partial tables"
+                + " - this could take several minutes on large data sets ...");
+        CentralStorageConfig storageConfig = getCentralStorageConfig(session);
+        dropTableIfExists("trace_tt_slow_count_partial");
+        dropTableIfExists("trace_tt_slow_point_partial");
+        session.createTableWithTWCS("create table if not exists trace_tt_slow_count_partial"
+                + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
+                + " agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
+                + " transaction_type), capture_time, agent_id, trace_id))",
+                storageConfig.traceExpirationHours(), false, true);
+        session.createTableWithTWCS("create table if not exists trace_tt_slow_point_partial"
+                + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
+                + " agent_id varchar, trace_id varchar, duration_nanos bigint, error boolean,"
+                + " headline varchar, user varchar, attributes blob, primary key ((agent_rollup,"
+                + " transaction_type), capture_time, agent_id, trace_id))",
+                storageConfig.traceExpirationHours(), false, true);
+        PreparedStatement insertCountPartialPS = session.prepare("insert into"
+                + " trace_tt_slow_count_partial (agent_rollup, transaction_type, capture_time,"
+                + " agent_id, trace_id) values (?, ?, ?, ?, ?) using ttl ?");
+        PreparedStatement insertPointPartialPS = session.prepare("insert into"
+                + " trace_tt_slow_point_partial (agent_rollup, transaction_type, capture_time,"
+                + " agent_id, trace_id, duration_nanos, error, headline, user, attributes) values"
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+        int ttl = getCentralStorageConfig(session).getTraceTTL();
+        ResultSet results = session.execute("select agent_rollup, transaction_type, capture_time,"
+                + " agent_id, trace_id, duration_nanos, error, headline, user, attributes, partial"
+                + " from trace_tt_slow_point");
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        int rowCount = 0;
+        for (Row row : results) {
+            if (!row.getBool(10)) { // partial
+                // unfortunately cannot use "where partial = true allow filtering" in the query
+                // above as that leads to ReadTimeoutException
+                continue;
+            }
+            BoundStatement boundStatement = insertCountPartialPS.bind();
+            int i = 0;
+            copyString(row, boundStatement, i++); // agent_rollup
+            copyString(row, boundStatement, i++); // transaction_type
+            Date captureDate = checkNotNull(row.getTimestamp(i));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.getTime(), clock);
+            copyTimestamp(row, boundStatement, i++); // capture_time
+            copyString(row, boundStatement, i++); // agent_id
+            copyString(row, boundStatement, i++); // trace_id
+            boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.executeAsync(boundStatement));
+
+            boundStatement = insertPointPartialPS.bind();
+            i = 0;
+            copyString(row, boundStatement, i++); // agent_rollup
+            copyString(row, boundStatement, i++); // transaction_type
+            copyTimestamp(row, boundStatement, i++); // capture_time
+            copyString(row, boundStatement, i++); // agent_id
+            copyString(row, boundStatement, i++); // trace_id
+            copyLong(row, boundStatement, i++); // duration_nanos
+            copyBool(row, boundStatement, i++); // error
+            copyString(row, boundStatement, i++); // headline
+            copyString(row, boundStatement, i++); // user
+            copyBytes(row, boundStatement, i++); // attributes
+            boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.executeAsync(boundStatement));
+
+            rowCount++;
+            if (stopwatch.elapsed(SECONDS) > 60) {
+                logger.info("processed {} records", rowCount);
+                stopwatch.reset().start();
+            }
+        }
+        MoreFutures.waitForAll(futures);
+        logger.info("populating trace_tt_slow_count_partial and trace_tt_slow_point_partial tables"
+                + " - complete");
+    }
+
+    private void populateTraceTtSlowCountAndPointPartialPart2() throws Exception {
+        if (!columnExists("trace_tt_slow_point", "partial")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        PreparedStatement deleteCountPS = session.prepare("delete from trace_tt_slow_count where"
+                + " agent_rollup = ? and transaction_type = ? and capture_time = ? and agent_id = ?"
+                + " and trace_id = ?");
+        PreparedStatement deletePointPS = session.prepare("delete from trace_tt_slow_point where"
+                + " agent_rollup = ? and transaction_type = ? and capture_time = ? and agent_id = ?"
+                + " and trace_id = ?");
+        ResultSet results = session.execute("select agent_rollup, transaction_type, capture_time,"
+                + " agent_id, trace_id from trace_tt_slow_count_partial");
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        for (Row row : results) {
+            BoundStatement boundStatement = deleteCountPS.bind();
+            int i = 0;
+            copyString(row, boundStatement, i++); // agent_rollup
+            copyString(row, boundStatement, i++); // transaction_type
+            copyTimestamp(row, boundStatement, i++); // capture_time
+            copyString(row, boundStatement, i++); // agent_id
+            copyString(row, boundStatement, i++); // trace_id
+            futures.add(session.executeAsync(boundStatement));
+
+            boundStatement = deletePointPS.bind();
+            i = 0;
+            copyString(row, boundStatement, i++); // agent_rollup
+            copyString(row, boundStatement, i++); // transaction_type
+            copyTimestamp(row, boundStatement, i++); // capture_time
+            copyString(row, boundStatement, i++); // agent_id
+            copyString(row, boundStatement, i++); // trace_id
+            futures.add(session.executeAsync(boundStatement));
+        }
+        MoreFutures.waitForAll(futures);
+        dropColumnIfExists("trace_tt_slow_point", "partial");
+    }
+
+    private void populateTraceTnSlowCountAndPointPartialPart1() throws Exception {
+        logger.info("populating trace_tn_slow_count_partial and trace_tn_slow_point_partial tables"
+                + " - this could take several minutes on large data sets ...");
+        CentralStorageConfig storageConfig = getCentralStorageConfig(session);
+        dropTableIfExists("trace_tn_slow_count_partial");
+        dropTableIfExists("trace_tn_slow_point_partial");
+        session.createTableWithTWCS("create table if not exists trace_tn_slow_count_partial"
+                + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, agent_id varchar, trace_id varchar, primary key"
+                + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
+                + " trace_id))", storageConfig.traceExpirationHours(), false, true);
+        session.createTableWithTWCS("create table if not exists trace_tn_slow_point_partial"
+                + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, agent_id varchar, trace_id varchar, duration_nanos"
+                + " bigint, error boolean, headline varchar, user varchar, attributes blob, primary"
+                + " key ((agent_rollup, transaction_type, transaction_name), capture_time,"
+                + " agent_id, trace_id))", storageConfig.traceExpirationHours(), false, true);
+        PreparedStatement insertCountPartialPS = session.prepare("insert into"
+                + " trace_tn_slow_count_partial (agent_rollup, transaction_type, transaction_name,"
+                + " capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?, ?) using ttl ?");
+        PreparedStatement insertPointPartialPS = session.prepare("insert into"
+                + " trace_tn_slow_point_partial (agent_rollup, transaction_type, transaction_name,"
+                + " capture_time, agent_id, trace_id, duration_nanos, error, headline, user,"
+                + " attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+        int ttl = getCentralStorageConfig(session).getTraceTTL();
+        ResultSet results = session.execute("select agent_rollup, transaction_type,"
+                + " transaction_name, capture_time, agent_id, trace_id, duration_nanos, error,"
+                + " headline, user, attributes, partial from trace_tn_slow_point");
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        int rowCount = 0;
+        for (Row row : results) {
+            if (!row.getBool(11)) { // partial
+                // unfortunately cannot use "where partial = true allow filtering" in the query
+                // above as that leads to ReadTimeoutException
+                continue;
+            }
+            BoundStatement boundStatement = insertCountPartialPS.bind();
+            int i = 0;
+            copyString(row, boundStatement, i++); // agent_rollup
+            copyString(row, boundStatement, i++); // transaction_type
+            copyString(row, boundStatement, i++); // transaction_name
+            Date captureDate = checkNotNull(row.getTimestamp(i));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.getTime(), clock);
+            copyTimestamp(row, boundStatement, i++); // capture_time
+            copyString(row, boundStatement, i++); // agent_id
+            copyString(row, boundStatement, i++); // trace_id
+            boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.executeAsync(boundStatement));
+
+            boundStatement = insertPointPartialPS.bind();
+            i = 0;
+            copyString(row, boundStatement, i++); // agent_rollup
+            copyString(row, boundStatement, i++); // transaction_type
+            copyString(row, boundStatement, i++); // transaction_name
+            copyTimestamp(row, boundStatement, i++); // capture_time
+            copyString(row, boundStatement, i++); // agent_id
+            copyString(row, boundStatement, i++); // trace_id
+            copyLong(row, boundStatement, i++); // duration_nanos
+            copyBool(row, boundStatement, i++); // error
+            copyString(row, boundStatement, i++); // headline
+            copyString(row, boundStatement, i++); // user
+            copyBytes(row, boundStatement, i++); // attributes
+            boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.executeAsync(boundStatement));
+
+            rowCount++;
+            if (stopwatch.elapsed(SECONDS) > 60) {
+                logger.info("processed {} records", rowCount);
+                stopwatch.reset().start();
+            }
+        }
+        MoreFutures.waitForAll(futures);
+        logger.info("populating trace_tn_slow_count_partial and trace_tn_slow_point_partial tables"
+                + " - complete");
+    }
+
+    private void populateTraceTnSlowCountAndPointPartialPart2() throws Exception {
+        if (!columnExists("trace_tn_slow_point", "partial")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        PreparedStatement deleteCountPS = session.prepare("delete from trace_tn_slow_count where"
+                + " agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
+                + " capture_time = ? and agent_id = ? and trace_id = ?");
+        PreparedStatement deletePointPS = session.prepare("delete from trace_tn_slow_point where"
+                + " agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
+                + " capture_time = ? and agent_id = ? and trace_id = ?");
+        ResultSet results = session.execute("select agent_rollup, transaction_type,"
+                + " transaction_name, capture_time, agent_id, trace_id from"
+                + " trace_tn_slow_count_partial");
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        for (Row row : results) {
+            BoundStatement boundStatement = deleteCountPS.bind();
+            int i = 0;
+            copyString(row, boundStatement, i++); // agent_rollup
+            copyString(row, boundStatement, i++); // transaction_type
+            copyString(row, boundStatement, i++); // transaction_name
+            copyTimestamp(row, boundStatement, i++); // capture_time
+            copyString(row, boundStatement, i++); // agent_id
+            copyString(row, boundStatement, i++); // trace_id
+            futures.add(session.executeAsync(boundStatement));
+
+            boundStatement = deletePointPS.bind();
+            i = 0;
+            copyString(row, boundStatement, i++); // agent_rollup
+            copyString(row, boundStatement, i++); // transaction_type
+            copyString(row, boundStatement, i++); // transaction_name
+            copyTimestamp(row, boundStatement, i++); // capture_time
+            copyString(row, boundStatement, i++); // agent_id
+            copyString(row, boundStatement, i++); // trace_id
+            futures.add(session.executeAsync(boundStatement));
+        }
+        MoreFutures.waitForAll(futures);
+        dropColumnIfExists("trace_tn_slow_point", "partial");
     }
 
     private Map<String, V09AgentRollup> getV09AgentRollupsFromAgentRollupTable() throws Exception {
@@ -2231,6 +2500,26 @@ public class SchemaUpgrade {
         } else {
             return timeInMillis + HOURS.toMillis(expirationHours);
         }
+    }
+
+    private static void copyString(Row row, BoundStatement boundStatement, int i) {
+        boundStatement.setString(i, row.getString(i));
+    }
+
+    private static void copyLong(Row row, BoundStatement boundStatement, int i) {
+        boundStatement.setLong(i, row.getLong(i));
+    }
+
+    private static void copyBool(Row row, BoundStatement boundStatement, int i) {
+        boundStatement.setBool(i, row.getBool(i));
+    }
+
+    private static void copyTimestamp(Row row, BoundStatement boundStatement, int i) {
+        boundStatement.setTimestamp(i, row.getTimestamp(i));
+    }
+
+    private static void copyBytes(Row row, BoundStatement boundStatement, int i) {
+        boundStatement.setBytes(i, row.getBytes(i));
     }
 
     private static @Nullable Integer getSchemaVersion(Session session, KeyspaceMetadata keyspace)

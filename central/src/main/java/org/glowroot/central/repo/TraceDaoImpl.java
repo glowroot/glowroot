@@ -17,6 +17,7 @@ package org.glowroot.central.repo;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -37,6 +38,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -59,7 +61,6 @@ import org.glowroot.common.repo.ImmutableErrorMessageResult;
 import org.glowroot.common.repo.ImmutableHeaderPlus;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.Proto.StackTraceElement;
@@ -80,10 +81,14 @@ public class TraceDaoImpl implements TraceDao {
     private final Clock clock;
 
     private final PreparedStatement insertOverallSlowCount;
+    private final PreparedStatement insertOverallSlowCountPartial;
     private final PreparedStatement insertTransactionSlowCount;
+    private final PreparedStatement insertTransactionSlowCountPartial;
 
     private final PreparedStatement insertOverallSlowPoint;
+    private final PreparedStatement insertOverallSlowPointPartial;
     private final PreparedStatement insertTransactionSlowPoint;
+    private final PreparedStatement insertTransactionSlowPointPartial;
 
     private final PreparedStatement insertOverallErrorCount;
     private final PreparedStatement insertTransactionErrorCount;
@@ -101,10 +106,14 @@ public class TraceDaoImpl implements TraceDao {
     private final PreparedStatement insertAuxThreadProfile;
 
     private final PreparedStatement readOverallSlowCount;
+    private final PreparedStatement readOverallSlowCountPartial;
     private final PreparedStatement readTransactionSlowCount;
+    private final PreparedStatement readTransactionSlowCountPartial;
 
     private final PreparedStatement readOverallSlowPoint;
+    private final PreparedStatement readOverallSlowPointPartial;
     private final PreparedStatement readTransactionSlowPoint;
+    private final PreparedStatement readTransactionSlowPointPartial;
 
     private final PreparedStatement readOverallErrorCount;
     private final PreparedStatement readTransactionErrorCount;
@@ -121,11 +130,11 @@ public class TraceDaoImpl implements TraceDao {
     private final PreparedStatement readMainThreadProfile;
     private final PreparedStatement readAuxThreadProfile;
 
-    private final PreparedStatement deletePartialOverallSlowCount;
-    private final PreparedStatement deletePartialTransactionSlowCount;
+    private final PreparedStatement deleteOverallSlowCountPartial;
+    private final PreparedStatement deleteTransactionSlowCountPartial;
 
-    private final PreparedStatement deletePartialOverallSlowPoint;
-    private final PreparedStatement deletePartialTransactionSlowPoint;
+    private final PreparedStatement deleteOverallSlowPointPartial;
+    private final PreparedStatement deleteTransactionSlowPointPartial;
 
     TraceDaoImpl(Session session, TransactionTypeDao transactionTypeDao,
             FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
@@ -148,24 +157,50 @@ public class TraceDaoImpl implements TraceDao {
                 + " trace_id varchar, primary key ((agent_rollup, transaction_type), capture_time,"
                 + " agent_id, trace_id))", expirationHours);
 
+        session.createTableWithTWCS("create table if not exists trace_tt_slow_count_partial"
+                + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
+                + " agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
+                + " transaction_type), capture_time, agent_id, trace_id))", expirationHours, false,
+                true);
+
         session.createTableWithTWCS("create table if not exists trace_tn_slow_count (agent_rollup"
                 + " varchar, transaction_type varchar, transaction_name varchar, capture_time"
                 + " timestamp, agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
                 + " transaction_type, transaction_name), capture_time, agent_id, trace_id))",
                 expirationHours);
 
+        session.createTableWithTWCS("create table if not exists trace_tn_slow_count_partial"
+                + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, agent_id varchar, trace_id varchar, primary key"
+                + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
+                + " trace_id))", expirationHours, false, true);
+
         session.createTableWithTWCS("create table if not exists trace_tt_slow_point (agent_rollup"
                 + " varchar, transaction_type varchar, capture_time timestamp, agent_id varchar,"
-                + " trace_id varchar, duration_nanos bigint, partial boolean, error boolean,"
+                + " trace_id varchar, duration_nanos bigint, error boolean, headline varchar, user"
+                + " varchar, attributes blob, primary key ((agent_rollup, transaction_type),"
+                + " capture_time, agent_id, trace_id))", expirationHours);
+
+        session.createTableWithTWCS("create table if not exists trace_tt_slow_point_partial"
+                + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
+                + " agent_id varchar, trace_id varchar, duration_nanos bigint, error boolean,"
                 + " headline varchar, user varchar, attributes blob, primary key ((agent_rollup,"
-                + " transaction_type), capture_time, agent_id, trace_id))", expirationHours);
+                + " transaction_type), capture_time, agent_id, trace_id))", expirationHours, false,
+                true);
 
         session.createTableWithTWCS("create table if not exists trace_tn_slow_point (agent_rollup"
                 + " varchar, transaction_type varchar, transaction_name varchar, capture_time"
-                + " timestamp, agent_id varchar, trace_id varchar, duration_nanos bigint, partial"
-                + " boolean, error boolean, headline varchar, user varchar, attributes blob,"
-                + " primary key ((agent_rollup, transaction_type, transaction_name), capture_time,"
-                + " agent_id, trace_id))", expirationHours);
+                + " timestamp, agent_id varchar, trace_id varchar, duration_nanos bigint, error"
+                + " boolean, headline varchar, user varchar, attributes blob, primary key"
+                + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
+                + " trace_id))", expirationHours);
+
+        session.createTableWithTWCS("create table if not exists trace_tn_slow_point_partial"
+                + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, agent_id varchar, trace_id varchar, duration_nanos"
+                + " bigint, error boolean, headline varchar, user varchar, attributes blob, primary"
+                + " key ((agent_rollup, transaction_type, transaction_name), capture_time,"
+                + " agent_id, trace_id))", expirationHours, false, true);
 
         session.createTableWithTWCS("create table if not exists trace_tt_error_count (agent_rollup"
                 + " varchar, transaction_type varchar, capture_time timestamp, agent_id varchar,"
@@ -180,17 +215,16 @@ public class TraceDaoImpl implements TraceDao {
 
         session.createTableWithTWCS("create table if not exists trace_tt_error_point (agent_rollup"
                 + " varchar, transaction_type varchar, capture_time timestamp, agent_id varchar,"
-                + " trace_id varchar, duration_nanos bigint, partial boolean, error_message"
-                + " varchar, headline varchar, user varchar, attributes blob, primary key"
-                + " ((agent_rollup, transaction_type), capture_time, agent_id, trace_id))",
-                expirationHours);
+                + " trace_id varchar, duration_nanos bigint, error_message varchar, headline"
+                + " varchar, user varchar, attributes blob, primary key ((agent_rollup,"
+                + " transaction_type), capture_time, agent_id, trace_id))", expirationHours);
 
         session.createTableWithTWCS("create table if not exists trace_tn_error_point (agent_rollup"
                 + " varchar, transaction_type varchar, transaction_name varchar, capture_time"
-                + " timestamp, agent_id varchar, trace_id varchar, duration_nanos bigint, partial"
-                + " boolean, error_message varchar, headline varchar, user varchar, attributes"
-                + " blob, primary key ((agent_rollup, transaction_type, transaction_name),"
-                + " capture_time, agent_id, trace_id))", expirationHours);
+                + " timestamp, agent_id varchar, trace_id varchar, duration_nanos bigint,"
+                + " error_message varchar, headline varchar, user varchar, attributes blob, primary"
+                + " key ((agent_rollup, transaction_type, transaction_name), capture_time,"
+                + " agent_id, trace_id))", expirationHours);
 
         session.createTableWithTWCS("create table if not exists trace_tt_error_message"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
@@ -234,19 +268,36 @@ public class TraceDaoImpl implements TraceDao {
                 + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
                 + " using ttl ?");
 
+        insertOverallSlowCountPartial = session.prepare("insert into trace_tt_slow_count_partial"
+                + " (agent_rollup, transaction_type, capture_time, agent_id, trace_id) values"
+                + " (?, ?, ?, ?, ?) using ttl ?");
+
         insertTransactionSlowCount = session.prepare("insert into trace_tn_slow_count"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
                 + " trace_id) values (?, ?, ?, ?, ?, ?) using ttl ?");
 
+        insertTransactionSlowCountPartial = session.prepare("insert into"
+                + " trace_tn_slow_count_partial (agent_rollup, transaction_type, transaction_name,"
+                + " capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?, ?) using ttl ?");
+
         insertOverallSlowPoint = session.prepare("insert into trace_tt_slow_point (agent_rollup,"
-                + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, partial,"
-                + " error, headline, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                + " using ttl ?");
+                + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, error,"
+                + " headline, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+
+        insertOverallSlowPointPartial = session.prepare("insert into trace_tt_slow_point_partial"
+                + " (agent_rollup, transaction_type, capture_time, agent_id, trace_id,"
+                + " duration_nanos, error, headline, user, attributes) values (?, ?, ?, ?, ?, ?, ?,"
+                + " ?, ?, ?) using ttl ?");
 
         insertTransactionSlowPoint = session.prepare("insert into trace_tn_slow_point"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
-                + " trace_id, duration_nanos, partial, error, headline, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " trace_id, duration_nanos, error, headline, user, attributes) values (?, ?, ?,"
+                + " ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+
+        insertTransactionSlowPointPartial = session.prepare("insert into"
+                + " trace_tn_slow_point_partial (agent_rollup, transaction_type, transaction_name,"
+                + " capture_time, agent_id, trace_id, duration_nanos, error, headline, user,"
+                + " attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallErrorCount = session.prepare("insert into trace_tt_error_count (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
@@ -257,14 +308,14 @@ public class TraceDaoImpl implements TraceDao {
                 + " trace_id) values (?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallErrorPoint = session.prepare("insert into trace_tt_error_point (agent_rollup,"
-                + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, partial,"
+                + " transaction_type, capture_time, agent_id, trace_id, duration_nanos,"
                 + " error_message, headline, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?,"
-                + " ?, ?) using ttl ?");
+                + " ?) using ttl ?");
 
         insertTransactionErrorPoint = session.prepare("insert into trace_tn_error_point"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
-                + " trace_id, duration_nanos, partial, error_message, headline, user, attributes)"
-                + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " trace_id, duration_nanos, error_message, headline, user, attributes) values (?,"
+                + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallErrorMessage = session.prepare("insert into trace_tt_error_message"
                 + " (agent_rollup, transaction_type, capture_time, agent_id, trace_id,"
@@ -296,18 +347,36 @@ public class TraceDaoImpl implements TraceDao {
                 + " agent_rollup = ? and transaction_type = ? and capture_time > ? and capture_time"
                 + " <= ?");
 
+        readOverallSlowCountPartial = session.prepare("select count(*) from"
+                + " trace_tt_slow_count_partial where agent_rollup = ? and transaction_type = ? and"
+                + " capture_time > ? and capture_time <= ?");
+
         readTransactionSlowCount = session.prepare("select count(*) from trace_tn_slow_count where"
                 + " agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
                 + " capture_time > ? and capture_time <= ?");
 
+        readTransactionSlowCountPartial = session.prepare("select count(*) from"
+                + " trace_tn_slow_count_partial where agent_rollup = ? and transaction_type = ? and"
+                + " transaction_name = ? and capture_time > ? and capture_time <= ?");
+
         readOverallSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, partial, error, headline, user, attributes from"
-                + " trace_tt_slow_point where agent_rollup = ? and transaction_type = ? and"
+                + " duration_nanos, error, headline, user, attributes from trace_tt_slow_point"
+                + " where agent_rollup = ? and transaction_type = ? and capture_time > ? and"
+                + " capture_time <= ?");
+
+        readOverallSlowPointPartial = session.prepare("select agent_id, trace_id, capture_time,"
+                + " duration_nanos, error, headline, user, attributes from"
+                + " trace_tt_slow_point_partial where agent_rollup = ? and transaction_type = ? and"
                 + " capture_time > ? and capture_time <= ?");
 
         readTransactionSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, partial, error, headline, user, attributes from"
-                + " trace_tn_slow_point where agent_rollup = ? and transaction_type = ? and"
+                + " duration_nanos, error, headline, user, attributes from trace_tn_slow_point"
+                + " where agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
+                + " capture_time > ? and capture_time <= ?");
+
+        readTransactionSlowPointPartial = session.prepare("select agent_id, trace_id, capture_time,"
+                + " duration_nanos, error, headline, user, attributes from"
+                + " trace_tn_slow_point_partial where agent_rollup = ? and transaction_type = ? and"
                 + " transaction_name = ? and capture_time > ? and capture_time <= ?");
 
         readOverallErrorCount = session.prepare("select count(*) from trace_tt_error_count where"
@@ -319,12 +388,12 @@ public class TraceDaoImpl implements TraceDao {
                 + " and capture_time > ? and capture_time <= ?");
 
         readOverallErrorPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, partial, error_message, headline, user, attributes from"
+                + " duration_nanos, error_message, headline, user, attributes from"
                 + " trace_tt_error_point where agent_rollup = ? and transaction_type = ? and"
                 + " capture_time > ? and capture_time <= ?");
 
         readTransactionErrorPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, partial, error_message, headline, user, attributes from"
+                + " duration_nanos, error_message, headline, user, attributes from"
                 + " trace_tn_error_point where agent_rollup = ? and transaction_type = ? and"
                 + " transaction_name = ? and capture_time > ? and capture_time <= ?");
 
@@ -354,21 +423,21 @@ public class TraceDaoImpl implements TraceDao {
         readAuxThreadProfile = session.prepare("select profile from trace_aux_thread_profile"
                 + " where agent_id = ? and trace_id = ?");
 
-        deletePartialOverallSlowCount = session.prepare("delete from trace_tt_slow_count where"
-                + " agent_rollup = ? and transaction_type = ? and capture_time = ? and agent_id = ?"
-                + " and trace_id = ?");
+        deleteOverallSlowCountPartial = session.prepare("delete from trace_tt_slow_count_partial"
+                + " where agent_rollup = ? and transaction_type = ? and capture_time = ? and"
+                + " agent_id = ? and trace_id = ?");
 
-        deletePartialTransactionSlowCount = session.prepare("delete from trace_tn_slow_count where"
-                + " agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
-                + " capture_time = ? and agent_id = ? and trace_id = ?");
+        deleteTransactionSlowCountPartial = session.prepare("delete from"
+                + " trace_tn_slow_count_partial where agent_rollup = ? and transaction_type = ? and"
+                + " transaction_name = ? and capture_time = ? and agent_id = ? and trace_id = ?");
 
-        deletePartialOverallSlowPoint = session.prepare("delete from trace_tt_slow_point where"
-                + " agent_rollup = ? and transaction_type = ? and capture_time = ? and agent_id = ?"
-                + " and trace_id = ?");
+        deleteOverallSlowPointPartial = session.prepare("delete from trace_tt_slow_point_partial"
+                + " where agent_rollup = ? and transaction_type = ? and capture_time = ? and"
+                + " agent_id = ? and trace_id = ?");
 
-        deletePartialTransactionSlowPoint = session.prepare("delete from trace_tn_slow_point where"
-                + " agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
-                + " capture_time = ? and agent_id = ? and trace_id = ?");
+        deleteTransactionSlowPointPartial = session.prepare("delete from"
+                + " trace_tn_slow_point_partial where agent_rollup = ? and transaction_type = ? and"
+                + " transaction_name = ? and capture_time = ? and agent_id = ? and trace_id = ?");
     }
 
     @Override
@@ -428,40 +497,57 @@ public class TraceDaoImpl implements TraceDao {
                         header.getCaptureTime(), clock);
         for (String agentRollupId : agentRollupIds) {
             if (header.getSlow()) {
-                BoundStatement boundStatement = insertOverallSlowPoint.bind();
+                BoundStatement boundStatement;
+                if (header.getPartial()) {
+                    boundStatement = insertOverallSlowPointPartial.bind();
+                } else {
+                    boundStatement = insertOverallSlowPoint.bind();
+                }
                 bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         true);
                 futures.add(session.executeAsync(boundStatement));
 
-                boundStatement = insertTransactionSlowPoint.bind();
+                if (header.getPartial()) {
+                    boundStatement = insertTransactionSlowPointPartial.bind();
+                } else {
+                    boundStatement = insertTransactionSlowPoint.bind();
+                }
                 bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         false);
                 futures.add(session.executeAsync(boundStatement));
 
-                boundStatement = insertOverallSlowCount.bind();
+                if (header.getPartial()) {
+                    boundStatement = insertOverallSlowCountPartial.bind();
+                } else {
+                    boundStatement = insertOverallSlowCount.bind();
+                }
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         true);
                 futures.add(session.executeAsync(boundStatement));
 
-                boundStatement = insertTransactionSlowCount.bind();
+                if (header.getPartial()) {
+                    boundStatement = insertTransactionSlowCountPartial.bind();
+                } else {
+                    boundStatement = insertTransactionSlowCount.bind();
+                }
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         false);
                 futures.add(session.executeAsync(boundStatement));
 
                 if (priorHeader != null) {
-                    boundStatement = deletePartialOverallSlowPoint.bind();
+                    boundStatement = deleteOverallSlowPointPartial.bind();
                     bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true);
                     futures.add(session.executeAsync(boundStatement));
 
-                    boundStatement = deletePartialTransactionSlowPoint.bind();
+                    boundStatement = deleteTransactionSlowPointPartial.bind();
                     bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false);
                     futures.add(session.executeAsync(boundStatement));
 
-                    boundStatement = deletePartialOverallSlowCount.bind();
+                    boundStatement = deleteOverallSlowCountPartial.bind();
                     bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true);
                     futures.add(session.executeAsync(boundStatement));
 
-                    boundStatement = deletePartialTransactionSlowCount.bind();
+                    boundStatement = deleteTransactionSlowCountPartial.bind();
                     bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false);
                     futures.add(session.executeAsync(boundStatement));
                 }
@@ -603,32 +689,46 @@ public class TraceDaoImpl implements TraceDao {
     @Override
     public long readSlowCount(String agentRollupId, TraceQuery query) throws Exception {
         BoundStatement boundStatement;
+        BoundStatement boundStatementPartial;
         String transactionName = query.transactionName();
         if (transactionName == null) {
             boundStatement = readOverallSlowCount.bind();
+            boundStatementPartial = readOverallSlowCountPartial.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, true);
+            bindTraceQuery(boundStatementPartial, agentRollupId, query, true);
         } else {
             boundStatement = readTransactionSlowCount.bind();
+            boundStatementPartial = readTransactionSlowCountPartial.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
+            bindTraceQuery(boundStatementPartial, agentRollupId, query, false);
         }
-        ResultSet results = session.execute(boundStatement);
-        return results.one().getLong(0);
+        Future<ResultSet> future = session.executeAsync(boundStatement);
+        Future<ResultSet> futurePartial = session.executeAsync(boundStatementPartial);
+        return future.get().one().getLong(0) + futurePartial.get().one().getLong(0);
     }
 
     @Override
     public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception {
         BoundStatement boundStatement;
+        BoundStatement boundStatementPartial;
         String transactionName = query.transactionName();
         if (transactionName == null) {
             boundStatement = readOverallSlowPoint.bind();
+            boundStatementPartial = readOverallSlowPointPartial.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, true);
+            bindTraceQuery(boundStatementPartial, agentRollupId, query, true);
         } else {
             boundStatement = readTransactionSlowPoint.bind();
+            boundStatementPartial = readTransactionSlowPointPartial.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
+            bindTraceQuery(boundStatementPartial, agentRollupId, query, false);
         }
-        ResultSet results = session.execute(boundStatement);
-        return processPoints(results, filter, limit, false);
+        Future<ResultSet> future = session.executeAsync(boundStatement);
+        Future<ResultSet> futurePartial = session.executeAsync(boundStatementPartial);
+        List<TracePoint> completedPoints = processPoints(future.get(), filter, false, false);
+        List<TracePoint> partialPoints = processPoints(futurePartial.get(), filter, true, false);
+        return combine(completedPoints, partialPoints, limit);
     }
 
     @Override
@@ -659,7 +759,8 @@ public class TraceDaoImpl implements TraceDao {
             bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
         ResultSet results = session.execute(boundStatement);
-        return processPoints(results, filter, limit, true);
+        List<TracePoint> errorPoints = processPoints(results, filter, false, true);
+        return createResult(errorPoints, limit);
     }
 
     @Override
@@ -882,7 +983,6 @@ public class TraceDaoImpl implements TraceDao {
             throws IOException {
         int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
         boundStatement.setLong(i++, header.getDurationNanos());
-        boundStatement.setBool(i++, header.getPartial());
         boundStatement.setBool(i++, header.hasError());
         boundStatement.setString(i++, header.getHeadline());
         boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
@@ -913,7 +1013,6 @@ public class TraceDaoImpl implements TraceDao {
             throws IOException {
         int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
         boundStatement.setLong(i++, header.getDurationNanos());
-        boundStatement.setBool(i++, header.getPartial());
         boundStatement.setString(i++, header.getError().getMessage());
         boundStatement.setString(i++, header.getHeadline());
         boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
@@ -961,8 +1060,8 @@ public class TraceDaoImpl implements TraceDao {
         boundStatement.setTimestamp(i++, new Date(query.to()));
     }
 
-    private static Result<TracePoint> processPoints(ResultSet results, TracePointFilter filter,
-            int limit, boolean errorPoints) throws IOException {
+    private static List<TracePoint> processPoints(ResultSet results, TracePointFilter filter,
+            boolean partial, boolean errorPoints) throws IOException {
         List<TracePoint> tracePoints = Lists.newArrayList();
         for (Row row : results) {
             int i = 0;
@@ -970,7 +1069,6 @@ public class TraceDaoImpl implements TraceDao {
             String traceId = checkNotNull(row.getString(i++));
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             long durationNanos = row.getLong(i++);
-            boolean partial = row.getBool(i++);
             boolean error = errorPoints ? true : row.getBool(i++);
             // error points are defined by having an error message, so safe to checkNotNull
             String errorMessage = errorPoints ? checkNotNull(row.getString(i++)) : "";
@@ -996,23 +1094,52 @@ public class TraceDaoImpl implements TraceDao {
                         .build());
             }
         }
+        return tracePoints;
+    }
+
+    private static Result<TracePoint> combine(List<TracePoint> completedPoints,
+            List<TracePoint> partialPoints, int limit) {
+        if (partialPoints.isEmpty()) {
+            // optimization of common path
+            return createResult(completedPoints, limit);
+        }
+        removeDuplicatePartialPoints(completedPoints, partialPoints);
+        List<TracePoint> allPoints = new ArrayList<>(completedPoints.size() + partialPoints.size());
+        allPoints.addAll(completedPoints);
+        allPoints.addAll(partialPoints);
+        if (allPoints.size() > limit) {
+            allPoints = applyLimitByDurationNanosAndThenSortByCaptureTime(allPoints, limit);
+            return new Result<>(allPoints, true);
+        } else {
+            // sort by capture time needed since combined partial points are out of order
+            allPoints = Ordering.from(Comparator.comparingLong(TracePoint::captureTime))
+                    .sortedCopy(allPoints);
+            return new Result<>(allPoints, false);
+        }
+    }
+
+    private static Result<TracePoint> createResult(List<TracePoint> tracePoints, int limit) {
+        if (tracePoints.size() > limit) {
+            return new Result<>(
+                    applyLimitByDurationNanosAndThenSortByCaptureTime(tracePoints, limit), true);
+        } else {
+            return new Result<>(tracePoints, false);
+        }
+    }
+
+    private static void removeDuplicatePartialPoints(List<TracePoint> completedPoints,
+            List<TracePoint> partialPoints) {
         // remove duplicates (partially stored traces) since there is (small) window between updated
         // insert (with new capture time) and the delete of prior insert (with prior capture time)
         Set<TraceKey> traceKeys = Sets.newHashSet();
-        ListIterator<TracePoint> i = tracePoints.listIterator(tracePoints.size());
+        for (TracePoint completedPoint : completedPoints) {
+            traceKeys.add(TraceKey.from(completedPoint));
+        }
+        ListIterator<TracePoint> i = partialPoints.listIterator(partialPoints.size());
         while (i.hasPrevious()) {
-            TracePoint trace = i.previous();
-            TraceKey traceKey = ImmutableTraceKey.of(trace.agentId(), trace.traceId());
-            if (!traceKeys.add(traceKey)) {
+            if (!traceKeys.add(TraceKey.from(i.previous()))) {
                 i.remove();
             }
-        }
-        // apply limit and re-sort if needed
-        if (tracePoints.size() > limit) {
-            tracePoints = applyLimitByDurationNanosAndThenSortByCaptureTime(tracePoints, limit);
-            return new Result<>(tracePoints, true);
-        } else {
-            return new Result<>(tracePoints, false);
         }
     }
 
@@ -1043,10 +1170,17 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     @Value.Immutable
-    @Styles.AllParameters
-    interface TraceKey {
-        String agentId();
-        String traceId();
+    static abstract class TraceKey {
+
+        abstract String agentId();
+        abstract String traceId();
+
+        private static TraceKey from(TracePoint tracePoint) {
+            return ImmutableTraceKey.builder()
+                    .agentId(tracePoint.agentId())
+                    .traceId(tracePoint.traceId())
+                    .build();
+        }
     }
 
     private static class MutableLong {

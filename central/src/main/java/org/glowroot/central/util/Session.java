@@ -112,6 +112,11 @@ public class Session {
 
     public void createTableWithTWCS(String createTableQuery, int expirationHours,
             boolean useAndInsteadOfWith) {
+        createTableWithTWCS(createTableQuery, expirationHours, useAndInsteadOfWith, false);
+    }
+
+    public void createTableWithTWCS(String createTableQuery, int expirationHours,
+            boolean useAndInsteadOfWith, boolean fallbackToSTCS) {
         // as long as gc_grace_seconds is less than TTL, then tombstones can be collected
         // immediately (https://issues.apache.org/jira/browse/CASSANDRA-4917)
         //
@@ -133,10 +138,17 @@ public class Session {
                     + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
-            wrappedSession.execute(createTableQuery + " " + term
-                    + " compaction = { 'class' : 'DateTieredCompactionStrategy',"
-                    + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
-                    + gcGraceSeconds);
+            if (fallbackToSTCS) {
+                wrappedSession.execute(createTableQuery + " " + term
+                        + " compaction = { 'class' : 'SizeTieredCompactionStrategy',"
+                        + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
+                        + gcGraceSeconds);
+            } else {
+                wrappedSession.execute(createTableQuery + " " + term
+                        + " compaction = { 'class' : 'DateTieredCompactionStrategy',"
+                        + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
+                        + gcGraceSeconds);
+            }
         }
     }
 
