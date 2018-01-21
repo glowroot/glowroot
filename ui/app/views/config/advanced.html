@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2017 the original author or authors.
+  Copyright 2013-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@
             disk immediately (prior to its completion).
             This is to guard against transactions which never complete (or at least run long
             enough and do enough harm to hang the jvm).
+            In the case where some transactions have been configured with a very long slow threshold, the immediate
+            partial trace store threshold does not take effect on those transactions until they have exceeded their slow
+            threshold.
           </div>
         </div>
         <div gt-form-group
