@@ -99,7 +99,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 64;
+    private static final int CURR_SCHEMA_VERSION = 66;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -180,11 +180,11 @@ public class SchemaUpgrade {
         }
         // 0.9.6 to 0.9.7
         if (initialSchemaVersion < 11) {
-            updateDtcsTwcsGcSeconds();
+            updateTwcsDtcsGcSeconds();
             updateSchemaVersion(11);
         }
         if (initialSchemaVersion < 12) {
-            updateGcSeconds();
+            updateNeedsRollupGcSeconds();
             updateSchemaVersion(12);
         }
         if (initialSchemaVersion < 13) {
@@ -419,6 +419,14 @@ public class SchemaUpgrade {
             populateTraceTnSlowCountAndPointPartialPart2();
             updateSchemaVersion(64);
         }
+        if (initialSchemaVersion < 65) {
+            updateTwcsDtcsGcSeconds();
+            updateSchemaVersion(65);
+        }
+        if (initialSchemaVersion < 66) {
+            updateNeedsRollupGcSeconds();
+            updateSchemaVersion(66);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded glowroot central schema from version {} to version {}",
@@ -650,33 +658,37 @@ public class SchemaUpgrade {
         addColumnIfNotExists("agent", "agent_rollup", "varchar");
     }
 
-    private void updateDtcsTwcsGcSeconds() throws Exception {
+    private void updateTwcsDtcsGcSeconds() throws Exception {
+        logger.info("updating gc_grace_seconds on TWCS/DTCS tables ...");
         for (TableMetadata table : keyspaceMetadata.getTables()) {
             String compaction = table.getOptions().getCompaction().get("class");
             if (compaction == null) {
                 continue;
             }
-            if (compaction.equals("org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")
+            if (compaction.equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
                     || compaction.equals(
-                            "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
+                            "org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
                 // see gc_grace_seconds related comments in Sessions.createTableWithTWCS()
-                // for reasoning behind the value of 1 day
+                // for reasoning behind the value of 4 hours
                 session.execute("alter table " + table.getName() + " with gc_grace_seconds = "
-                        + DAYS.toSeconds(1));
+                        + HOURS.toSeconds(4));
             }
         }
+        logger.info("updating gc_grace_seconds on TWCS/DTCS tables - complete");
     }
 
-    private void updateGcSeconds() throws Exception {
-        // reduce from default 10 days to 3 hours
+    private void updateNeedsRollupGcSeconds() throws Exception {
+        logger.info("updating gc_grace_seconds on \"needs rollup\" tables ...");
+        // reduce from default 10 days to 4 hours
         //
         // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
         // would just create extra work, but not have any other effect
         //
-        // 3 hours is chosen to match default max_hint_window_in_ms since hints are stored
-        // with a TTL of gc_grace_seconds
-        // (see http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
-        long gcGraceSeconds = HOURS.toSeconds(3);
+        // not using gc_grace_seconds of 0 since that disables hinted handoff
+        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
+        //
+        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
+        long gcGraceSeconds = HOURS.toSeconds(4);
 
         if (tableExists("aggregate_needs_rollup_from_child")) {
             session.execute("alter table aggregate_needs_rollup_from_child with gc_grace_seconds = "
@@ -700,6 +712,7 @@ public class SchemaUpgrade {
                 "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
         session.execute(
                 "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + gcGraceSeconds);
+        logger.info("updating gc_grace_seconds on \"needs rollup\" tables - complete");
     }
 
     private void updateAgentRollup() throws Exception {

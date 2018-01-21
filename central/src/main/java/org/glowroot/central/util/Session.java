@@ -34,7 +34,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 public class Session {
 
@@ -124,7 +124,7 @@ public class Session {
         // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
         //
         // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
-        long gcGraceSeconds = DAYS.toSeconds(1);
+        long gcGraceSeconds = HOURS.toSeconds(4);
 
         // using unchecked_tombstone_compaction=true for better tombstone purging
         // see http://thelastpickle.com/blog/2016/12/08/TWCS-part1.html

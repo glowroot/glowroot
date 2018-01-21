@@ -346,10 +346,11 @@ public class AggregateDaoImpl implements AggregateDao {
         // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
         // would just create extra work, but not have any other effect
         //
-        // 3 hours is chosen to match default max_hint_window_in_ms since hints are stored
-        // with a TTL of gc_grace_seconds
-        // (see http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
-        long needsRollupGcGraceSeconds = HOURS.toSeconds(3);
+        // not using gc_grace_seconds of 0 since that disables hinted handoff
+        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
+        //
+        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
+        long needsRollupGcGraceSeconds = HOURS.toSeconds(4);
 
         List<PreparedStatement> insertNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
