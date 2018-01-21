@@ -62,8 +62,10 @@ public class TransactionCollector {
     private final RateLimitedLogger backPressureLogger =
             new RateLimitedLogger(TransactionCollector.class);
 
-    private volatile Map<String, SlowThresholdsForType> slowThresholds = ImmutableMap.of();
-    private volatile long defaultSlowThresholdNanos;
+    // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
+    private Map<String, SlowThresholdsForType> slowThresholds = ImmutableMap.of();
+    // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
+    private long defaultSlowThresholdNanos;
 
     public TransactionCollector(final ConfigService configService, Collector collector,
             Aggregator aggregator, Clock clock, Ticker ticker) {
