@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -185,18 +185,6 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
-            TracePointFilter filter, int limit) throws Exception {
-        return readPoints(TraceKind.SLOW, query, filter, limit);
-    }
-
-    @Override
-    public Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
-            TracePointFilter filter, int limit) throws Exception {
-        return readPoints(TraceKind.ERROR, query, filter, limit);
-    }
-
-    @Override
     public long readSlowCount(String agentRollupId, TraceQuery query) throws Exception {
         String transactionName = query.transactionName();
         if (transactionName == null) {
@@ -213,6 +201,12 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
+    public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
+            TracePointFilter filter, int limit) throws Exception {
+        return readPoints(TraceKind.SLOW, query, filter, limit);
+    }
+
+    @Override
     public long readErrorCount(String agentRollupId, TraceQuery query) throws Exception {
         String transactionName = query.transactionName();
         if (transactionName == null) {
@@ -226,6 +220,12 @@ public class TraceDao implements TraceRepository {
                             + " and capture_time > ? and capture_time <= ? and error = ?",
                     query.transactionType(), transactionName, query.from(), query.to(), true);
         }
+    }
+
+    @Override
+    public Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
+            TracePointFilter filter, int limit) throws Exception {
+        return readPoints(TraceKind.ERROR, query, filter, limit);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,11 +92,10 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         for (int i = 0; i < count; i++) {
             // total_duration_nanos and execution_count only represent successful results
             session.createTableWithTWCS("create table if not exists synthetic_result_rollup_" + i
-                    + " (agent_rollup_id varchar, synthetic_config_id varchar,"
-                    + " capture_time timestamp, total_duration_nanos double,"
-                    + " execution_count bigint, error_intervals blob, primary key"
-                    + " ((agent_rollup_id, synthetic_config_id), capture_time))",
-                    rollupExpirationHours.get(i));
+                    + " (agent_rollup_id varchar, synthetic_config_id varchar, capture_time"
+                    + " timestamp, total_duration_nanos double, execution_count bigint,"
+                    + " error_intervals blob, primary key ((agent_rollup_id, synthetic_config_id),"
+                    + " capture_time))", rollupExpirationHours.get(i));
             insertResultPS.add(session.prepare("insert into synthetic_result_rollup_" + i
                     + " (agent_rollup_id, synthetic_config_id, capture_time, total_duration_nanos,"
                     + " execution_count, error_intervals) values (?, ?, ?, ?, ?, ?) using ttl ?"));
@@ -134,8 +133,8 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                     + " (agent_rollup_id, capture_time, uniqueness, synthetic_config_ids) values"
                     + " (?, ?, ?, ?) using TTL ?"));
             readNeedsRollup.add(session.prepare("select capture_time, uniqueness,"
-                    + " synthetic_config_ids from synthetic_needs_rollup_" + i
-                    + " where agent_rollup_id = ?"));
+                    + " synthetic_config_ids from synthetic_needs_rollup_" + i + " where"
+                    + " agent_rollup_id = ?"));
             deleteNeedsRollup.add(session.prepare("delete from synthetic_needs_rollup_" + i
                     + " where agent_rollup_id = ? and capture_time = ? and uniqueness = ?"));
         }

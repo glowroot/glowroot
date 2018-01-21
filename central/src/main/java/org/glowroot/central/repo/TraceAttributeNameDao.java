@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,10 +65,9 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         this.session = session;
         this.configRepository = configRepository;
 
-        session.execute("create table if not exists trace_attribute_name"
-                + " (agent_rollup varchar, transaction_type varchar, trace_attribute_name varchar,"
-                + " primary key ((agent_rollup, transaction_type), trace_attribute_name)) "
-                + WITH_LCS);
+        session.execute("create table if not exists trace_attribute_name (agent_rollup varchar,"
+                + " transaction_type varchar, trace_attribute_name varchar, primary key"
+                + " ((agent_rollup, transaction_type), trace_attribute_name)) " + WITH_LCS);
 
         insertPS = session.prepare("insert into trace_attribute_name (agent_rollup,"
                 + " transaction_type, trace_attribute_name) values (?, ?, ?) using ttl ?");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,25 +104,25 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         for (int i = 0; i <= count; i++) {
             // name already has "[counter]" suffix when it is a counter
             session.createTableWithTWCS("create table if not exists gauge_value_rollup_" + i
-                    + " (agent_rollup varchar, gauge_name varchar, capture_time timestamp,"
-                    + " value double, weight bigint, primary key ((agent_rollup, gauge_name),"
+                    + " (agent_rollup varchar, gauge_name varchar, capture_time timestamp, value"
+                    + " double, weight bigint, primary key ((agent_rollup, gauge_name),"
                     + " capture_time))", rollupExpirationHours.get(i));
             insertValuePS.add(session.prepare("insert into gauge_value_rollup_" + i
-                    + " (agent_rollup, gauge_name, capture_time, value, weight)"
-                    + " values (?, ?, ?, ?, ?) using ttl ?"));
+                    + " (agent_rollup, gauge_name, capture_time, value, weight) values (?, ?, ?, ?,"
+                    + " ?) using ttl ?"));
             readValuePS.add(session.prepare("select capture_time, value, weight from"
-                    + " gauge_value_rollup_" + i + " where agent_rollup = ? and gauge_name = ?"
-                    + " and capture_time >= ? and capture_time <= ?"));
+                    + " gauge_value_rollup_" + i + " where agent_rollup = ? and gauge_name = ? and"
+                    + " capture_time >= ? and capture_time <= ?"));
             readValueForRollupPS.add(session.prepare("select value, weight from gauge_value_rollup_"
-                    + i + " where agent_rollup = ? and gauge_name = ? and capture_time > ?"
-                    + " and capture_time <= ?"));
+                    + i + " where agent_rollup = ? and gauge_name = ? and capture_time > ? and"
+                    + " capture_time <= ?"));
         }
         this.insertValuePS = ImmutableList.copyOf(insertValuePS);
         this.readValuePS = ImmutableList.copyOf(readValuePS);
         this.readValueForRollupPS = ImmutableList.copyOf(readValueForRollupPS);
         this.readValueForRollupFromChildPS = session.prepare("select value, weight from"
-                + " gauge_value_rollup_1 where agent_rollup = ? and gauge_name = ?"
-                + " and capture_time = ?");
+                + " gauge_value_rollup_1 where agent_rollup = ? and gauge_name = ? and"
+                + " capture_time = ?");
 
         // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
         // would just create extra work, but not have any other effect
@@ -136,34 +136,33 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i <= count; i++) {
-            session.execute("create table if not exists gauge_needs_rollup_" + i
-                    + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
-                    + " gauge_names set<varchar>, primary key (agent_rollup, capture_time,"
-                    + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and "
-                    + LCS);
+            session.execute("create table if not exists gauge_needs_rollup_" + i + " (agent_rollup"
+                    + " varchar, capture_time timestamp, uniqueness timeuuid, gauge_names"
+                    + " set<varchar>, primary key (agent_rollup, capture_time, uniqueness)) with"
+                    + " gc_grace_seconds = " + needsRollupGcGraceSeconds + " and " + LCS);
             insertNeedsRollup.add(session.prepare("insert into gauge_needs_rollup_" + i
-                    + " (agent_rollup, capture_time, uniqueness, gauge_names) values"
-                    + " (?, ?, ?, ?) using TTL ?"));
-            readNeedsRollup.add(session.prepare("select capture_time, uniqueness, gauge_names"
-                    + " from gauge_needs_rollup_" + i + " where agent_rollup = ?"));
-            deleteNeedsRollup.add(session.prepare("delete from gauge_needs_rollup_" + i
-                    + " where agent_rollup = ? and capture_time = ? and uniqueness = ?"));
+                    + " (agent_rollup, capture_time, uniqueness, gauge_names) values (?, ?, ?, ?)"
+                    + " using TTL ?"));
+            readNeedsRollup.add(session.prepare("select capture_time, uniqueness, gauge_names from"
+                    + " gauge_needs_rollup_" + i + " where agent_rollup = ?"));
+            deleteNeedsRollup.add(session.prepare("delete from gauge_needs_rollup_" + i + " where"
+                    + " agent_rollup = ? and capture_time = ? and uniqueness = ?"));
         }
         this.insertNeedsRollup = insertNeedsRollup;
         this.readNeedsRollup = readNeedsRollup;
         this.deleteNeedsRollup = deleteNeedsRollup;
 
-        session.execute("create table if not exists gauge_needs_rollup_from_child"
-                + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
-                + " child_agent_rollup varchar, gauge_names set<varchar>,"
-                + " primary key (agent_rollup, capture_time, uniqueness))"
-                + " with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and " + LCS);
+        session.execute("create table if not exists gauge_needs_rollup_from_child (agent_rollup"
+                + " varchar, capture_time timestamp, uniqueness timeuuid, child_agent_rollup"
+                + " varchar, gauge_names set<varchar>, primary key (agent_rollup, capture_time,"
+                + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and "
+                + LCS);
         insertNeedsRollupFromChild = session.prepare("insert into gauge_needs_rollup_from_child"
                 + " (agent_rollup, capture_time, uniqueness, child_agent_rollup, gauge_names)"
                 + " values (?, ?, ?, ?, ?) using TTL ?");
         readNeedsRollupFromChild = session.prepare("select capture_time, uniqueness,"
-                + " child_agent_rollup, gauge_names from gauge_needs_rollup_from_child"
-                + " where agent_rollup = ?");
+                + " child_agent_rollup, gauge_names from gauge_needs_rollup_from_child where"
+                + " agent_rollup = ?");
         deleteNeedsRollupFromChild = session.prepare("delete from gauge_needs_rollup_from_child"
                 + " where agent_rollup = ? and capture_time = ? and uniqueness = ?");
     }

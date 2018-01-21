@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,8 +62,8 @@ class CentralConfigDao {
     CentralConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists central_config (key varchar,"
-                + " value varchar, primary key (key)) " + WITH_LCS);
+        session.execute("create table if not exists central_config (key varchar, value varchar,"
+                + " primary key (key)) " + WITH_LCS);
 
         insertIfNotExistsPS = session
                 .prepare("insert into central_config (key, value) values (?, ?) if not exists");

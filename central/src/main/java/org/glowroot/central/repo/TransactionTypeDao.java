@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,9 +63,9 @@ class TransactionTypeDao implements TransactionTypeRepository {
         this.session = session;
         this.configRepository = configRepository;
 
-        session.execute("create table if not exists transaction_type (one int,"
-                + " agent_rollup varchar, transaction_type varchar, primary key"
-                + " (one, agent_rollup, transaction_type)) " + WITH_LCS);
+        session.execute("create table if not exists transaction_type (one int, agent_rollup"
+                + " varchar, transaction_type varchar, primary key (one, agent_rollup,"
+                + " transaction_type)) " + WITH_LCS);
 
         insertPS = session.prepare("insert into transaction_type (one, agent_rollup,"
                 + " transaction_type) values (1, ?, ?) using ttl ?");

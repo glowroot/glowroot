@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,15 +33,15 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceRepository {
 
+    long readSlowCount(String agentRollupId, TraceQuery query) throws Exception;
+
     Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception;
 
+    long readErrorCount(String agentRollupId, TraceQuery query) throws Exception;
+
     Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception;
-
-    long readSlowCount(String agentRollupId, TraceQuery query) throws Exception;
-
-    long readErrorCount(String agentRollupId, TraceQuery query) throws Exception;
 
     ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,
             ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception;

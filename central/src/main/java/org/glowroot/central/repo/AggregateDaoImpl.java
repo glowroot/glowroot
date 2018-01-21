@@ -374,11 +374,11 @@ public class AggregateDaoImpl implements AggregateDao {
         this.readNeedsRollup = readNeedsRollup;
         this.deleteNeedsRollup = deleteNeedsRollup;
 
-        session.execute("create table if not exists aggregate_needs_rollup_from_child"
-                + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
-                + " child_agent_rollup varchar, transaction_types set<varchar>,"
-                + " primary key (agent_rollup, capture_time, uniqueness))"
-                + " with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and " + LCS);
+        session.execute("create table if not exists aggregate_needs_rollup_from_child (agent_rollup"
+                + " varchar, capture_time timestamp, uniqueness timeuuid, child_agent_rollup"
+                + " varchar, transaction_types set<varchar>, primary key (agent_rollup,"
+                + " capture_time, uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds
+                + " and " + LCS);
         // TTL is used to prevent non-idempotent rolling up of partially expired aggregates
         // (e.g. "needs rollup" record resurrecting due to small gc_grace_seconds)
         insertNeedsRollupFromChild = session.prepare("insert into aggregate_needs_rollup_from_child"

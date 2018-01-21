@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ public class EnvironmentDao implements EnvironmentRepository {
     EnvironmentDao(Session session) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists environment (agent_id varchar,"
-                + " environment blob, primary key (agent_id)) " + WITH_LCS);
+        session.execute("create table if not exists environment (agent_id varchar, environment"
+                + " blob, primary key (agent_id)) " + WITH_LCS);
 
         insertPS = session.prepare("insert into environment (agent_id, environment) values (?, ?)");
         readPS = session.prepare("select environment from environment where agent_id = ?");

@@ -63,14 +63,14 @@ public class IncidentDao implements IncidentRepository {
         this.session = session;
         this.clock = clock;
 
-        session.execute("create table if not exists open_incident (one int,"
-                + " agent_rollup_id varchar, condition blob, severity varchar, notification blob,"
-                + " open_time timestamp, primary key (one, agent_rollup_id, condition, severity)) "
+        session.execute("create table if not exists open_incident (one int, agent_rollup_id"
+                + " varchar, condition blob, severity varchar, notification blob, open_time"
+                + " timestamp, primary key (one, agent_rollup_id, condition, severity)) "
                 + WITH_LCS);
 
         session.createTableWithTWCS("create table if not exists resolved_incident (one int,"
-                + " resolve_time timestamp, agent_rollup_id varchar, condition blob,"
-                + " severity varchar, notification blob, open_time timestamp, primary key (one,"
+                + " resolve_time timestamp, agent_rollup_id varchar, condition blob, severity"
+                + " varchar, notification blob, open_time timestamp, primary key (one,"
                 + " resolve_time, agent_rollup_id, condition)) with clustering order by"
                 + " (resolve_time desc)", StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS, true);
 
@@ -82,8 +82,8 @@ public class IncidentDao implements IncidentRepository {
                 + " from open_incident where one = 1 and agent_rollup_id = ?");
         readAllOpenIncidentsPS = session.prepare("select agent_rollup_id, condition, severity,"
                 + " notification, open_time from open_incident where one = 1");
-        deleteOpenIncidentPS = session.prepare("delete from open_incident where one = 1"
-                + " and agent_rollup_id = ? and condition = ? and severity = ?");
+        deleteOpenIncidentPS = session.prepare("delete from open_incident where one = 1 and"
+                + " agent_rollup_id = ? and condition = ? and severity = ?");
 
         insertResolvedIncidentPS = session.prepare("insert into resolved_incident (one,"
                 + " resolve_time, agent_rollup_id, condition, severity, notification, open_time)"

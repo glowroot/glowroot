@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,9 +68,9 @@ public class AgentConfigDao {
     AgentConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists agent_config (agent_rollup_id"
-                + " varchar, config blob, config_update boolean, config_update_token uuid,"
-                + " primary key (agent_rollup_id)) " + WITH_LCS);
+        session.execute("create table if not exists agent_config (agent_rollup_id varchar, config"
+                + " blob, config_update boolean, config_update_token uuid, primary key"
+                + " (agent_rollup_id)) " + WITH_LCS);
         // secondary index is needed for Cassandra 2.x (to avoid error on readUpdatePS)
         session.execute(
                 "create index if not exists config_update_idx on agent_config (config_update)");
@@ -84,8 +84,8 @@ public class AgentConfigDao {
         readForUpdatePS = session.prepare("select config, config_update_token from agent_config"
                 + " where agent_rollup_id = ? and config_update = true allow filtering");
         markUpdatedPS = session.prepare("update agent_config set config_update = false,"
-                + " config_update_token = null where agent_rollup_id = ?"
-                + " if config_update_token = ?");
+                + " config_update_token = null where agent_rollup_id = ? if config_update_token"
+                + " = ?");
 
         agentConfigCache =
                 clusterManager.createCache("agentConfigCache", new AgentConfigCacheLoader());

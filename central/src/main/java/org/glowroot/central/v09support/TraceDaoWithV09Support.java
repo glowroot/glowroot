@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,6 +85,11 @@ public class TraceDaoWithV09Support implements TraceDao {
     }
 
     @Override
+    public long readSlowCount(String agentRollupId, TraceQuery query) throws Exception {
+        return splitCountIfNeeded(agentRollupId, query, (id, q) -> delegate.readSlowCount(id, q));
+    }
+
+    @Override
     public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception {
         return splitResultIfNeeded(agentRollupId, query, limit,
@@ -92,20 +97,15 @@ public class TraceDaoWithV09Support implements TraceDao {
     }
 
     @Override
+    public long readErrorCount(String agentRollupId, TraceQuery query) throws Exception {
+        return splitCountIfNeeded(agentRollupId, query, (id, q) -> delegate.readErrorCount(id, q));
+    }
+
+    @Override
     public Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception {
         return splitResultIfNeeded(agentRollupId, query, limit,
                 (id, q) -> delegate.readErrorPoints(id, q, filter, limit));
-    }
-
-    @Override
-    public long readSlowCount(String agentRollupId, TraceQuery query) throws Exception {
-        return splitCountIfNeeded(agentRollupId, query, (id, q) -> delegate.readSlowCount(id, q));
-    }
-
-    @Override
-    public long readErrorCount(String agentRollupId, TraceQuery query) throws Exception {
-        return splitCountIfNeeded(agentRollupId, query, (id, q) -> delegate.readErrorCount(id, q));
     }
 
     @Override
