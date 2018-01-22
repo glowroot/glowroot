@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,6 +99,25 @@ glowroot.controller('ConfigAlertCtrl', [
       }
     ];
 
+    $scope.conditionThresholdByteUnits = [
+      {
+        display: 'bytes',
+        value: 'bytes'
+      },
+      {
+        display: 'KB',
+        value: 'KB'
+      },
+      {
+        display: 'MB',
+        value: 'MB'
+      },
+      {
+        display: 'GB',
+        value: 'GB'
+      }
+    ];
+
     $scope.metrics = angular.copy(METRICS);
     $scope.metrics.push({
       id: 'gauge:select',
@@ -129,11 +148,33 @@ glowroot.controller('ConfigAlertCtrl', [
         delete $scope.config.condition.transactionType;
         delete $scope.config.condition.transactionName;
       }
-      if (newValue !== 'transaction:x-percentile' && $scope.config) {
+      if (newValue !== 'transaction:x-percentile') {
         delete $scope.config.condition.percentile;
       }
+      // update unit
+      if (newValue === 'transaction:average' || newValue === 'transaction:x-percentile') {
+        $scope.unit = 'milliseconds';
+      } else if (newValue === 'error:rate') {
+        $scope.unit = 'percent';
+      } else if (newValue && newValue.lastIndexOf('gauge:', 0) === 0) {
+        var gaugeName = newValue.substring('gauge:'.length);
+        $scope.unit = gaugeUnits[gaugeName];
+      } else {
+        // e.g. 'transaction:count'
+        $scope.unit = '';
+      }
       if (oldValue) {
+        // clear existing threshold
         delete $scope.config.condition.threshold;
+        delete $scope.page.conditionThreshold;
+      }
+      if ($scope.unit === ' bytes') {
+        if ($scope.page.conditionThresholdByteUnit === undefined) {
+          // e.g. open new alert, then switch to HeapMemoryUsage
+          $scope.page.conditionThresholdByteUnit = 'MB';
+        }
+      } else {
+        delete $scope.page.conditionThresholdByteUnit;
       }
     });
 
@@ -196,10 +237,13 @@ glowroot.controller('ConfigAlertCtrl', [
           gaugeUnits[gauge.name] = '';
         }
       });
+      $scope.page.conditionThreshold = $scope.config.condition.threshold;
+      delete $scope.page.conditionThresholdByteUnit;
       if ($scope.config.condition.conditionType === 'metric'
           && $scope.config.condition.metric.lastIndexOf('gauge:', 0) === 0) {
         var gaugeName = $scope.config.condition.metric.substring('gauge:'.length);
-        if (gaugeUnits[gaugeName] === undefined) {
+        var gaugeUnit = gaugeUnits[gaugeName];
+        if (gaugeUnit === undefined) {
           $scope.metrics.push({
             id: '-empty9-',
             display: '',
@@ -210,26 +254,29 @@ glowroot.controller('ConfigAlertCtrl', [
             display: gaugeName + ' (not available)',
             disabled: true
           });
+        } else if (gaugeUnit === ' bytes') {
+          var threshold = $scope.config.condition.threshold;
+          if (threshold === 0) {
+            $scope.page.conditionThreshold = threshold;
+            $scope.page.conditionThresholdByteUnit = 'bytes';
+          } else if (threshold % (1024 * 1024 * 1024) === 0) {
+            $scope.page.conditionThreshold = threshold / (1024 * 1024 * 1024);
+            $scope.page.conditionThresholdByteUnit = 'GB';
+          } else if (threshold % (1024 * 1024) === 0) {
+            $scope.page.conditionThreshold = threshold / (1024 * 1024);
+            $scope.page.conditionThresholdByteUnit = 'MB';
+          } else if (threshold % 1024 === 0) {
+            $scope.page.conditionThreshold = threshold / 1024;
+            $scope.page.conditionThresholdByteUnit = 'KB';
+          } else {
+            $scope.page.conditionThreshold = threshold;
+            $scope.page.conditionThresholdByteUnit = 'bytes';
+          }
         }
       }
       $scope.syntheticMonitors = data.syntheticMonitors;
       $scope.pagerDutyIntegrationKeys = data.pagerDutyIntegrationKeys;
     }
-
-    $scope.unit = function () {
-      var metric = $scope.config.condition.metric;
-      if (metric === 'transaction:average' || metric === 'transaction:x-percentile') {
-        return 'milliseconds';
-      } else if (metric === 'error:rate') {
-        return 'percent';
-      } else if (metric && metric.lastIndexOf('gauge:', 0) === 0) {
-        var gaugeName = metric.substring('gauge:'.length);
-        return gaugeUnits[gaugeName];
-      } else {
-        // e.g. 'transaction:count'
-        return '';
-      }
-    };
 
     if (version) {
       $http.get('backend/config/alerts?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId) + '&version=' + version)
@@ -260,6 +307,18 @@ glowroot.controller('ConfigAlertCtrl', [
             httpErrors.handle(response, $scope);
           });
     }
+
+    $scope.$watchGroup(['page.conditionThreshold', 'page.conditionThresholdByteUnit'], function () {
+      if ($scope.page.conditionThresholdByteUnit === 'KB') {
+        $scope.config.condition.threshold = $scope.page.conditionThreshold * 1024;
+      } else if ($scope.page.conditionThresholdByteUnit === 'MB') {
+        $scope.config.condition.threshold = $scope.page.conditionThreshold * 1024 * 1024;
+      } else if ($scope.page.conditionThresholdByteUnit === 'GB') {
+        $scope.config.condition.threshold = $scope.page.conditionThreshold * 1024 * 1024 * 1024;
+      } else if ($scope.config) {
+        $scope.config.condition.threshold = $scope.page.conditionThreshold;
+      }
+    });
 
     $scope.$watch('config.condition.conditionType', function (newValue, oldValue) {
       if (!$scope.config) {

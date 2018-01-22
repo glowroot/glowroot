@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,13 +228,13 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 1 minute exceeds 2.0 KB")).click();
+                + " - average over the last 1 minute exceeds 2.0 MB")).click();
         if (WebDriverSetup.useCentral) {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
         assertThat(alertPage.getMetricSelect().getFirstSelectedOption().getAttribute("value"))
                 .isEqualTo("string:gauge:java.lang:type=Memory:HeapMemoryUsage.used");
-        assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("2000");
+        assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("2");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isFalse();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
@@ -260,13 +260,13 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 1 minute drops below 2.0 KB")).click();
+                + " - average over the last 1 minute drops below 2.0 MB")).click();
         if (WebDriverSetup.useCentral) {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
         assertThat(alertPage.getMetricSelect().getFirstSelectedOption().getAttribute("value"))
                 .isEqualTo("string:gauge:java.lang:type=Memory:HeapMemoryUsage.used");
-        assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("2000");
+        assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("2");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isTrue();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
@@ -411,7 +411,7 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createGaugeAlert(false);
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 1 minute exceeds 2.0 KB")).click();
+                + " - average over the last 1 minute exceeds 2.0 MB")).click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
@@ -421,7 +421,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 2 minutes exceeds 2.0 KB")).click();
+                + " - average over the last 2 minutes exceeds 2.0 MB")).click();
     }
 
     @Test
@@ -439,7 +439,7 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createGaugeAlert(true);
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 1 minute drops below 2.0 KB")).click();
+                + " - average over the last 1 minute drops below 2.0 MB")).click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
@@ -449,7 +449,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 2 minutes drops below 2.0 KB")).click();
+                + " - average over the last 2 minutes drops below 2.0 MB")).click();
     }
 
     @Test
@@ -555,7 +555,7 @@ public class AlertConfigIT extends WebDriverIT {
         }
         alertPage.getMetricSelect()
                 .selectByValue("string:gauge:java.lang:type=Memory:HeapMemoryUsage.used");
-        alertPage.getThresholdTextField().sendKeys("2000");
+        alertPage.getThresholdTextField().sendKeys("2");
         if (lowerBoundThreshold) {
             alertPage.getLowerBoundThresholdCheckBox().click();
         }

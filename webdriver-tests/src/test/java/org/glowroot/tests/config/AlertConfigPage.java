@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class AlertConfigPage {
     }
 
     public WebElement getThresholdTextField() {
-        return withWait(xpath("//div[@gt-model='config.condition.threshold']//input"));
+        return withWait(xpath("//input[@ng-model='page.conditionThreshold']"));
     }
 
     public WebElement getTimePeriodMinutesTextField() {

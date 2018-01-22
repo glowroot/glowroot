@@ -156,18 +156,34 @@
               The transaction response time percentile to use for alerting.
             </div>
           </div>
-          <div gt-form-group
-               gt-label="Threshold"
-               gt-model="config.condition.threshold"
-               gt-number="true"
-               gt-pattern="{{ config.condition.metric === 'error:rate' ? 'pattern.percentage' : 'pattern.double' }}"
-               gt-disabled="!agentRollup.permissions.config.edit.alert"
-               gt-required="loaded"
-               gt-width="7em"
-               gt-addon="{{unit()}}">
-            <div class="help-block">
-              If the {{phraseForValue()}} over the given time period exceeds this threshold, then alert will be
-              triggered.
+          <div class="form-group" ng-class="{'has-error': formCtrl.conditionThreshold.$invalid}">
+            <label class="col-lg-3 control-label"
+                   for="conditionThreshold">
+              Threshold
+            </label>
+            <div class="col-lg-9">
+              <div ng-class="{'input-group' : unit}">
+                <input type="text"
+                       class="form-control"
+                       ng-model="page.conditionThreshold"
+                       ng-pattern="config.condition.metric === 'error:rate' ? pattern.percentage : pattern.double"
+                       ng-disabled="!agentRollup.permissions.config.edit.alert"
+                       ng-required="loaded"
+                       name="conditionThreshold"
+                       id="conditionThreshold"
+                       style="max-width: 7em;">
+                <span ng-if="unit && unit !== ' bytes'" class="input-group-addon">{{unit}}</span>
+                <div gt-input-group-dropdown
+                     gt-model="page.conditionThresholdByteUnit"
+                     gt-items="conditionThresholdByteUnits"
+                     class="input-group-right"
+                     ng-if="unit === ' bytes'">
+                </div>
+              </div>
+              <div class="help-block">
+                If the {{phraseForValue()}} over the given time period exceeds this threshold, then alert will be
+                triggered.
+              </div>
             </div>
           </div>
           <div gt-form-group
@@ -323,8 +339,9 @@
                     id="pagerDutyIntegrationKey"
                     style="width: auto;">
               <option value=""></option>
-              <option ng-repeat="pagerDutyIntegrationKey in pagerDutyIntegrationKeys track by pagerDutyIntegrationKey.key"
-                      ng-value="pagerDutyIntegrationKey.key">
+              <option
+                  ng-repeat="pagerDutyIntegrationKey in pagerDutyIntegrationKeys track by pagerDutyIntegrationKey.key"
+                  ng-value="pagerDutyIntegrationKey.key">
                 {{pagerDutyIntegrationKey.display}} ({{pagerDutyIntegrationKey.key}})
               </option>
               <option ng-value="config.pagerDutyNotification.pagerDutyIntegrationKey"

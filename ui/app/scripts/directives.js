@@ -232,11 +232,6 @@ glowroot.directive('gtInputGroupDropdown', function () {
           }
         });
       });
-      if (scope.gtClass) {
-        scope.classes = 'input-group-btn ' + scope.gtClass;
-      } else {
-        scope.classes = 'input-group-btn';
-      }
     }
   };
 });
