@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,15 +40,11 @@ public class AgentPremain {
             @SuppressWarnings("argument.type.incompatible")
             File glowrootJarFile = getGlowrootJarFile(codeSource);
             Class<?> mainEntryPointClass;
-            if (glowrootJarFile == null) {
-                // this is ok, running integration test in IDE
-                mainEntryPointClass = Class.forName("org.glowroot.agent.MainEntryPoint", true,
-                        AgentPremain.class.getClassLoader());
-            } else {
+            if (glowrootJarFile != null) {
                 instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(glowrootJarFile));
-                mainEntryPointClass =
-                        Class.forName("org.glowroot.agent.MainEntryPoint", true, null);
             }
+            mainEntryPointClass = Class.forName("org.glowroot.agent.MainEntryPoint", true,
+                    AgentPremain.class.getClassLoader());
             Method premainMethod =
                     mainEntryPointClass.getMethod("premain", Instrumentation.class, File.class);
             premainMethod.invoke(null, instrumentation, glowrootJarFile);
