@@ -34,14 +34,18 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 
+import org.glowroot.central.util.MoreFutures;
+import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.repo.AgentRollupRepository;
 import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -56,6 +60,8 @@ public class AgentDao implements AgentRollupRepository {
 
     private final PreparedStatement readPS;
     private final PreparedStatement insertPS;
+
+    private final RateLimiter<AgentInsertKey> rateLimiter = new RateLimiter<>();
 
     AgentDao(Session session, AgentConfigDao agentConfigDao, ConfigRepositoryImpl configRepository,
             Clock clock) throws Exception {
@@ -136,13 +142,19 @@ public class AgentDao implements AgentRollupRepository {
             // have yet to receive collectInit()
             return Futures.immediateFuture(null);
         }
+        AgentInsertKey rateLimiterKey = ImmutableAgentInsertKey.of(agentId, captureTime);
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+            return Futures.immediateFuture(null);
+        }
         long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, DAYS.toMillis(1));
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
         boundStatement.setString(i++, agentId);
         boundStatement.setInt(i++, configRepository.getCentralStorageConfig().getMaxRollupTTL());
-        return session.executeAsync(boundStatement);
+        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
+        return MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
+
     }
 
     private AgentRollup createAgentRollup(String agentRollupId,
@@ -178,5 +190,12 @@ public class AgentDao implements AgentRollupRepository {
     public interface AgentConfigUpdate {
         AgentConfig config();
         UUID configUpdateToken();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface AgentInsertKey {
+        String agentId();
+        long captureTime();
     }
 }
