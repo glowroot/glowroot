@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,11 @@ import com.google.common.cache.LoadingCache;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.agent.api.internal.GlowrootService;
+import org.glowroot.agent.api.internal.GlowrootServiceHolder;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
+import org.glowroot.agent.plugin.api.internal.ServiceRegistryHolder;
 
 public class ServiceRegistryImpl implements ServiceRegistry {
 
@@ -64,14 +66,12 @@ public class ServiceRegistryImpl implements ServiceRegistry {
         return configServices.getUnchecked(pluginId);
     }
 
-    // called via reflection from org.glowroot.agent.plugin.api.Agent
-    // also called via reflection from generated pointcut config advice
+    // called via reflection from generated pointcut config advice
     public static @Nullable ServiceRegistry getInstance() {
         return instance;
     }
 
-    // called via reflection from org.glowroot.agent.api.Glowroot
-    // also called via reflection from generated pointcut config advice
+    // called via reflection from generated pointcut config advice
     public static @Nullable GlowrootService getGlowrootService() {
         return instance == null ? null : instance.glowrootService;
     }
@@ -79,6 +79,8 @@ public class ServiceRegistryImpl implements ServiceRegistry {
     public static void init(GlowrootService glowrootService, TimerNameCache timerNameCache,
             ConfigServiceFactory configServiceFactory) {
         instance = new ServiceRegistryImpl(glowrootService, timerNameCache, configServiceFactory);
+        GlowrootServiceHolder.set(instance.glowrootService);
+        ServiceRegistryHolder.set(instance);
     }
 
     public interface ConfigServiceFactory {

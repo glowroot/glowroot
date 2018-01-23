@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,39 +15,19 @@
  */
 package org.glowroot.agent.api;
 
-import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.agent.api.internal.GlowrootService;
-import org.glowroot.agent.api.internal.NopGlowrootService;
+import org.glowroot.agent.api.internal.GlowrootServiceHolder;
 
 public class Glowroot {
-
-    private static final Logger logger = LoggerFactory.getLogger(Glowroot.class);
 
     private static final GlowrootService glowrootService;
 
     static {
-        GlowrootService service;
-        try {
-            Class<?> registryClass = Class.forName("org.glowroot.agent.impl.ServiceRegistryImpl");
-            Method getInstanceMethod = registryClass.getMethod("getGlowrootService");
-            service = (GlowrootService) getInstanceMethod.invoke(null);
-            if (service == null) {
-                service = NopGlowrootService.INSTANCE;
-            }
-        } catch (Exception e) {
-            // this is expected when Glowroot is not running
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            service = NopGlowrootService.INSTANCE;
-        }
-        glowrootService = service;
+        glowrootService = GlowrootServiceHolder.get();
     }
 
     private Glowroot() {}
