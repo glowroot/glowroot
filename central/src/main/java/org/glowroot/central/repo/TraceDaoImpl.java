@@ -99,11 +99,11 @@ public class TraceDaoImpl implements TraceDao {
     private final PreparedStatement insertOverallErrorMessage;
     private final PreparedStatement insertTransactionErrorMessage;
 
-    private final PreparedStatement insertHeader;
-    private final PreparedStatement insertEntry;
-    private final PreparedStatement insertSharedQueryText;
-    private final PreparedStatement insertMainThreadProfile;
-    private final PreparedStatement insertAuxThreadProfile;
+    private final PreparedStatement insertHeaderV2;
+    private final PreparedStatement insertEntryV2;
+    private final PreparedStatement insertSharedQueryTextV2;
+    private final PreparedStatement insertMainThreadProfileV2;
+    private final PreparedStatement insertAuxThreadProfileV2;
 
     private final PreparedStatement readOverallSlowCount;
     private final PreparedStatement readOverallSlowCountPartial;
@@ -124,11 +124,17 @@ public class TraceDaoImpl implements TraceDao {
     private final PreparedStatement readOverallErrorMessage;
     private final PreparedStatement readTransactionErrorMessage;
 
-    private final PreparedStatement readHeader;
-    private final PreparedStatement readEntries;
-    private final PreparedStatement readSharedQueryTexts;
-    private final PreparedStatement readMainThreadProfile;
-    private final PreparedStatement readAuxThreadProfile;
+    private final PreparedStatement readHeaderV1;
+    private final PreparedStatement readEntriesV1;
+    private final PreparedStatement readSharedQueryTextsV1;
+    private final PreparedStatement readMainThreadProfileV1;
+    private final PreparedStatement readAuxThreadProfileV1;
+
+    private final PreparedStatement readHeaderV2;
+    private final PreparedStatement readEntriesV2;
+    private final PreparedStatement readSharedQueryTextsV2;
+    private final PreparedStatement readMainThreadProfileV2;
+    private final PreparedStatement readAuxThreadProfileV2;
 
     private final PreparedStatement deleteOverallSlowCountPartial;
     private final PreparedStatement deleteTransactionSlowCountPartial;
@@ -238,6 +244,8 @@ public class TraceDaoImpl implements TraceDao {
                 + " varchar, primary key ((agent_rollup, transaction_type, transaction_name),"
                 + " capture_time, agent_id, trace_id))", expirationHours);
 
+        // ===== trace components v1 =====
+
         session.createTableWithTWCS("create table if not exists trace_header (agent_id varchar,"
                 + " trace_id varchar, header blob, primary key (agent_id, trace_id))",
                 expirationHours);
@@ -263,6 +271,34 @@ public class TraceDaoImpl implements TraceDao {
         session.createTableWithTWCS("create table if not exists trace_aux_thread_profile (agent_id"
                 + " varchar, trace_id varchar, profile blob, primary key (agent_id, trace_id))",
                 expirationHours);
+
+        // ===== trace components v2 =====
+
+        session.createTableWithTWCS("create table if not exists trace_header_v2 (agent_id varchar,"
+                + " trace_id varchar, header blob, primary key ((agent_id, trace_id)))",
+                expirationHours);
+
+        // index_ is just to provide uniqueness
+        session.createTableWithTWCS("create table if not exists trace_entry_v2 (agent_id varchar,"
+                + " trace_id varchar, index_ int, depth int, start_offset_nanos bigint,"
+                + " duration_nanos bigint, active boolean, message varchar, shared_query_text_index"
+                + " int, query_message_prefix varchar, query_message_suffix varchar, detail blob,"
+                + " location_stack_trace blob, error blob, primary key ((agent_id, trace_id),"
+                + " index_))", expirationHours);
+
+        // index_ is just to provide uniqueness
+        session.createTableWithTWCS("create table if not exists trace_shared_query_text_v2"
+                + " (agent_id varchar, trace_id varchar, index_ int, truncated_text varchar,"
+                + " truncated_end_text varchar, full_text_sha1 varchar, primary key ((agent_id,"
+                + " trace_id), index_))", expirationHours);
+
+        session.createTableWithTWCS("create table if not exists trace_main_thread_profile_v2"
+                + " (agent_id varchar, trace_id varchar, profile blob, primary key ((agent_id,"
+                + " trace_id)))", expirationHours);
+
+        session.createTableWithTWCS("create table if not exists trace_aux_thread_profile_v2"
+                + " (agent_id varchar, trace_id varchar, profile blob, primary key ((agent_id,"
+                + " trace_id)))", expirationHours);
 
         insertOverallSlowCount = session.prepare("insert into trace_tt_slow_count (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
@@ -325,23 +361,24 @@ public class TraceDaoImpl implements TraceDao {
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
                 + " trace_id, error_message) values (?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
-        insertHeader = session.prepare("insert into trace_header (agent_id, trace_id, header)"
+        insertHeaderV2 = session.prepare("insert into trace_header_v2 (agent_id, trace_id, header)"
                 + " values (?, ?, ?) using ttl ?");
 
-        insertEntry = session.prepare("insert into trace_entry (agent_id, trace_id, index_, depth,"
-                + " start_offset_nanos, duration_nanos, active, message, shared_query_text_index,"
-                + " query_message_prefix, query_message_suffix, detail, location_stack_trace,"
-                + " error) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+        insertEntryV2 = session.prepare("insert into trace_entry_v2 (agent_id, trace_id, index_,"
+                + " depth, start_offset_nanos, duration_nanos, active, message,"
+                + " shared_query_text_index, query_message_prefix, query_message_suffix, detail,"
+                + " location_stack_trace, error) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                + " using ttl ?");
 
-        insertSharedQueryText = session.prepare("insert into trace_shared_query_text (agent_id,"
-                + " trace_id, index_, truncated_text, truncated_end_text, full_text_sha1) values"
-                + " (?, ?, ?, ?, ?, ?) using ttl ?");
+        insertSharedQueryTextV2 = session.prepare("insert into trace_shared_query_text_v2"
+                + " (agent_id, trace_id, index_, truncated_text, truncated_end_text,"
+                + " full_text_sha1) values (?, ?, ?, ?, ?, ?) using ttl ?");
 
-        insertMainThreadProfile = session.prepare("insert into trace_main_thread_profile (agent_id,"
-                + " trace_id, profile) values (?, ?, ?) using ttl ?");
+        insertMainThreadProfileV2 = session.prepare("insert into trace_main_thread_profile_v2"
+                + " (agent_id, trace_id, profile) values (?, ?, ?) using ttl ?");
 
-        insertAuxThreadProfile = session.prepare("insert into trace_aux_thread_profile (agent_id,"
-                + " trace_id, profile) values (?, ?, ?) using ttl ?");
+        insertAuxThreadProfileV2 = session.prepare("insert into trace_aux_thread_profile_v2"
+                + " (agent_id, trace_id, profile) values (?, ?, ?) using ttl ?");
 
         readOverallSlowCount = session.prepare("select count(*) from trace_tt_slow_count where"
                 + " agent_rollup = ? and transaction_type = ? and capture_time > ? and capture_time"
@@ -405,22 +442,40 @@ public class TraceDaoImpl implements TraceDao {
                 + " trace_tn_error_message where agent_rollup = ? and transaction_type = ? and"
                 + " transaction_name = ? and capture_time > ? and capture_time <= ?");
 
-        readHeader = session
+        readHeaderV1 = session
                 .prepare("select header from trace_header where agent_id = ? and trace_id = ?");
 
-        readEntries = session.prepare("select depth, start_offset_nanos, duration_nanos, active,"
+        readEntriesV1 = session.prepare("select depth, start_offset_nanos, duration_nanos, active,"
                 + " message, shared_query_text_index, query_message_prefix, query_message_suffix,"
                 + " detail, location_stack_trace, error from trace_entry where agent_id = ? and"
                 + " trace_id = ?");
 
-        readSharedQueryTexts = session.prepare("select truncated_text, truncated_end_text,"
+        readSharedQueryTextsV1 = session.prepare("select truncated_text, truncated_end_text,"
                 + " full_text_sha1 from trace_shared_query_text where agent_id = ? and trace_id"
                 + " = ?");
 
-        readMainThreadProfile = session.prepare("select profile from trace_main_thread_profile"
+        readMainThreadProfileV1 = session.prepare("select profile from trace_main_thread_profile"
                 + " where agent_id = ? and trace_id = ?");
 
-        readAuxThreadProfile = session.prepare("select profile from trace_aux_thread_profile"
+        readAuxThreadProfileV1 = session.prepare("select profile from trace_aux_thread_profile"
+                + " where agent_id = ? and trace_id = ?");
+
+        readHeaderV2 = session
+                .prepare("select header from trace_header_v2 where agent_id = ? and trace_id = ?");
+
+        readEntriesV2 = session.prepare("select depth, start_offset_nanos, duration_nanos, active,"
+                + " message, shared_query_text_index, query_message_prefix, query_message_suffix,"
+                + " detail, location_stack_trace, error from trace_entry_v2 where agent_id = ? and"
+                + " trace_id = ?");
+
+        readSharedQueryTextsV2 = session.prepare("select truncated_text, truncated_end_text,"
+                + " full_text_sha1 from trace_shared_query_text_v2 where agent_id = ? and trace_id"
+                + " = ?");
+
+        readMainThreadProfileV2 = session.prepare("select profile from trace_main_thread_profile_v2"
+                + " where agent_id = ? and trace_id = ?");
+
+        readAuxThreadProfileV2 = session.prepare("select profile from trace_aux_thread_profile_v2"
                 + " where agent_id = ? and trace_id = ?");
 
         deleteOverallSlowCountPartial = session.prepare("delete from trace_tt_slow_count_partial"
@@ -593,7 +648,7 @@ public class TraceDaoImpl implements TraceDao {
             }
         }
 
-        BoundStatement boundStatement = insertHeader.bind();
+        BoundStatement boundStatement = insertHeaderV2.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, traceId);
@@ -603,7 +658,7 @@ public class TraceDaoImpl implements TraceDao {
 
         int index = 0;
         for (Trace.Entry entry : trace.getEntryList()) {
-            boundStatement = insertEntry.bind();
+            boundStatement = insertEntryV2.bind();
             i = 0;
             boundStatement.setString(i++, agentId);
             boundStatement.setString(i++, traceId);
@@ -649,7 +704,7 @@ public class TraceDaoImpl implements TraceDao {
 
         index = 0;
         for (Trace.SharedQueryText sharedQueryText : sharedQueryTexts) {
-            boundStatement = insertSharedQueryText.bind();
+            boundStatement = insertSharedQueryTextV2.bind();
             i = 0;
             boundStatement.setString(i++, agentId);
             boundStatement.setString(i++, traceId);
@@ -669,14 +724,14 @@ public class TraceDaoImpl implements TraceDao {
         }
 
         if (trace.hasMainThreadProfile()) {
-            boundStatement = insertMainThreadProfile.bind();
+            boundStatement = insertMainThreadProfileV2.bind();
             bindThreadProfile(boundStatement, agentId, traceId, trace.getMainThreadProfile(),
                     adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
 
         if (trace.hasAuxThreadProfile()) {
-            boundStatement = insertAuxThreadProfile.bind();
+            boundStatement = insertAuxThreadProfileV2.bind();
             bindThreadProfile(boundStatement, agentId, traceId, trace.getAuxThreadProfile(),
                     adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
@@ -868,7 +923,16 @@ public class TraceDaoImpl implements TraceDao {
     @Override
     public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
             throws Exception {
-        BoundStatement boundStatement = readMainThreadProfile.bind();
+        Profile profile = readMainThreadProfileUsingPS(agentId, traceId, readMainThreadProfileV2);
+        if (profile != null) {
+            return profile;
+        }
+        return readMainThreadProfileUsingPS(agentId, traceId, readMainThreadProfileV1);
+    }
+
+    public @Nullable Profile readMainThreadProfileUsingPS(String agentId, String traceId,
+            PreparedStatement readPS) throws Exception {
+        BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
         ResultSet results = session.execute(boundStatement);
@@ -881,7 +945,16 @@ public class TraceDaoImpl implements TraceDao {
 
     @Override
     public @Nullable Profile readAuxThreadProfile(String agentId, String traceId) throws Exception {
-        BoundStatement boundStatement = readAuxThreadProfile.bind();
+        Profile profile = readAuxThreadProfileUsingPS(agentId, traceId, readAuxThreadProfileV2);
+        if (profile != null) {
+            return profile;
+        }
+        return readAuxThreadProfileUsingPS(agentId, traceId, readAuxThreadProfileV1);
+    }
+
+    public @Nullable Profile readAuxThreadProfileUsingPS(String agentId, String traceId,
+            PreparedStatement readPS) throws Exception {
+        BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
         ResultSet results = session.execute(boundStatement);
@@ -893,7 +966,16 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     private @Nullable Trace.Header readHeader(String agentId, String traceId) throws Exception {
-        BoundStatement boundStatement = readHeader.bind();
+        Trace.Header header = readHeaderUsingPS(agentId, traceId, readHeaderV2);
+        if (header != null) {
+            return header;
+        }
+        return readHeaderUsingPS(agentId, traceId, readHeaderV1);
+    }
+
+    private @Nullable Trace.Header readHeaderUsingPS(String agentId, String traceId,
+            PreparedStatement readPS) throws Exception {
+        BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
         ResultSet results = session.execute(boundStatement);
@@ -905,7 +987,16 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     private List<Trace.Entry> readEntriesInternal(String agentId, String traceId) throws Exception {
-        BoundStatement boundStatement = readEntries.bind();
+        List<Trace.Entry> entries = readEntriesUsingPS(agentId, traceId, readEntriesV2);
+        if (!entries.isEmpty()) {
+            return entries;
+        }
+        return readEntriesUsingPS(agentId, traceId, readEntriesV1);
+    }
+
+    private List<Trace.Entry> readEntriesUsingPS(String agentId, String traceId,
+            PreparedStatement readPS) throws Exception {
+        BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
         ResultSet results = session.execute(boundStatement);
@@ -954,7 +1045,17 @@ public class TraceDaoImpl implements TraceDao {
 
     private List<Trace.SharedQueryText> readSharedQueryTexts(String agentId, String traceId)
             throws Exception {
-        BoundStatement boundStatement = readSharedQueryTexts.bind();
+        List<Trace.SharedQueryText> sharedQueryTexts =
+                readSharedQueryTextsUsingPS(agentId, traceId, readSharedQueryTextsV2);
+        if (!sharedQueryTexts.isEmpty()) {
+            return sharedQueryTexts;
+        }
+        return readSharedQueryTextsUsingPS(agentId, traceId, readSharedQueryTextsV1);
+    }
+
+    private List<Trace.SharedQueryText> readSharedQueryTextsUsingPS(String agentId, String traceId,
+            PreparedStatement readPS) throws Exception {
+        BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
         ResultSet results = session.execute(boundStatement);
