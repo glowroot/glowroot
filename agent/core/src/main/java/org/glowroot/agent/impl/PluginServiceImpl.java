@@ -15,32 +15,22 @@
  */
 package org.glowroot.agent.impl;
 
-import javax.annotation.Nullable;
-
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.agent.api.internal.GlowrootService;
-import org.glowroot.agent.api.internal.GlowrootServiceHolder;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
-import org.glowroot.agent.plugin.api.internal.ServiceRegistryHolder;
+import org.glowroot.agent.plugin.api.internal.PluginService;
 
-public class ServiceRegistryImpl implements ServiceRegistry {
+public class PluginServiceImpl implements PluginService {
 
-    private static volatile @MonotonicNonNull ServiceRegistryImpl instance;
-
-    private final GlowrootService glowrootService;
     private final TimerNameCache timerNameCache;
 
     private final LoadingCache<String, ConfigService> configServices;
 
-    private ServiceRegistryImpl(GlowrootService glowrootService, TimerNameCache timerNameCache,
+    public PluginServiceImpl(TimerNameCache timerNameCache,
             final ConfigServiceFactory configServiceFactory) {
-        this.glowrootService = glowrootService;
         this.timerNameCache = timerNameCache;
         configServices = CacheBuilder.newBuilder()
                 .build(new CacheLoader<String, ConfigService>() {
@@ -64,23 +54,6 @@ public class ServiceRegistryImpl implements ServiceRegistry {
     @Override
     public ConfigService getConfigService(String pluginId) {
         return configServices.getUnchecked(pluginId);
-    }
-
-    // called via reflection from generated pointcut config advice
-    public static @Nullable ServiceRegistry getInstance() {
-        return instance;
-    }
-
-    // called via reflection from generated pointcut config advice
-    public static @Nullable GlowrootService getGlowrootService() {
-        return instance == null ? null : instance.glowrootService;
-    }
-
-    public static void init(GlowrootService glowrootService, TimerNameCache timerNameCache,
-            ConfigServiceFactory configServiceFactory) {
-        instance = new ServiceRegistryImpl(glowrootService, timerNameCache, configServiceFactory);
-        GlowrootServiceHolder.set(instance.glowrootService);
-        ServiceRegistryHolder.set(instance);
     }
 
     public interface ConfigServiceFactory {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.common.util;
+package org.glowroot.agent.bytecode.api;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Target;
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
+public interface ThreadContextPlus extends OptionalThreadContext {
 
-// this is helpful to know when refactoring and when running tools to find unused code
-@Documented
-@Target({TYPE, METHOD})
-public @interface UsedByGeneratedBytecode {}
+    int getCurrentNestingGroupId();
+
+    void setCurrentNestingGroupId(int nestingGroupId);
+
+    int getCurrentSuppressionKeyId();
+
+    void setCurrentSuppressionKeyId(int suppressionKeyId);
+}

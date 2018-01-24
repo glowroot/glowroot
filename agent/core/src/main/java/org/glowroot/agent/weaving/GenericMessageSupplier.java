@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,24 +20,21 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TraceEntry;
-import org.glowroot.agent.weaving.MessageTemplate.ArgPathPart;
-import org.glowroot.agent.weaving.MessageTemplate.ConstantPart;
-import org.glowroot.agent.weaving.MessageTemplate.Part;
-import org.glowroot.agent.weaving.MessageTemplate.PartType;
-import org.glowroot.agent.weaving.MessageTemplate.ValuePathPart;
-import org.glowroot.common.util.UsedByGeneratedBytecode;
+import org.glowroot.agent.weaving.MessageTemplateImpl.ArgPathPart;
+import org.glowroot.agent.weaving.MessageTemplateImpl.ConstantPart;
+import org.glowroot.agent.weaving.MessageTemplateImpl.Part;
+import org.glowroot.agent.weaving.MessageTemplateImpl.PartType;
+import org.glowroot.agent.weaving.MessageTemplateImpl.ValuePathPart;
 
-@UsedByGeneratedBytecode
 public class GenericMessageSupplier extends MessageSupplier {
 
-    private final MessageTemplate template;
+    private final MessageTemplateImpl template;
     private final String[] resolvedReceiverPathParts;
     private final String[] resolvedArgPathParts;
     private volatile String /*@MonotonicNonNull*/[] resolvedReturnValuePathParts;
     private final String methodName;
 
-    @UsedByGeneratedBytecode
-    public static GenericMessageSupplier create(MessageTemplate template, Object receiver,
+    public static GenericMessageSupplier create(MessageTemplateImpl template, Object receiver,
             String methodName, @Nullable Object... args) {
         // render paths to strings immediately in case the objects are mutable
         String[] resolvedReceiverPathParts = new String[template.getThisPathParts().size()];
@@ -59,7 +56,7 @@ public class GenericMessageSupplier extends MessageSupplier {
                 methodName);
     }
 
-    private GenericMessageSupplier(MessageTemplate template, String[] resolvedReceiverPathParts,
+    private GenericMessageSupplier(MessageTemplateImpl template, String[] resolvedReceiverPathParts,
             String[] resolvedArgPathParts, String methodName) {
         this.template = template;
         this.resolvedReceiverPathParts = resolvedReceiverPathParts;
@@ -82,7 +79,6 @@ public class GenericMessageSupplier extends MessageSupplier {
         return Message.create(getMessageText());
     }
 
-    @UsedByGeneratedBytecode
     public String getMessageText() {
         StringBuilder sb = new StringBuilder();
         int receiverPathPartIndex = 0;
@@ -115,7 +111,6 @@ public class GenericMessageSupplier extends MessageSupplier {
         return sb.toString();
     }
 
-    @UsedByGeneratedBytecode
     public static void updateWithReturnValue(TraceEntry traceEntry, @Nullable Object returnValue) {
         GenericMessageSupplier messageSupplier =
                 (GenericMessageSupplier) traceEntry.getMessageSupplier();

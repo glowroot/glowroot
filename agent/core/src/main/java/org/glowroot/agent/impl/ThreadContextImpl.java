@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,15 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.bytecode.api.ThreadContextPlus;
+import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.AsyncTimerImpl;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.QueryDataMap;
 import org.glowroot.agent.model.QueryEntryBase;
-import org.glowroot.agent.model.ThreadContextPlus;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.ThreadStatsComponent;
 import org.glowroot.agent.model.TimerNameImpl;
@@ -51,13 +53,10 @@ import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.NotAvailableAware;
-import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castInitialized;
@@ -149,7 +148,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.ticker = ticker;
         this.threadContextHolder = threadContextHolder;
         this.servletRequestInfo = servletRequestInfo;
-        this.outerTransactionThreadContext = threadContextHolder.get();
+        this.outerTransactionThreadContext = (ThreadContextImpl) threadContextHolder.get();
     }
 
     public Transaction getTransaction() {
@@ -210,25 +209,21 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    @UsedByGeneratedBytecode
     public int getCurrentNestingGroupId() {
         return currentNestingGroupId;
     }
 
     @Override
-    @UsedByGeneratedBytecode
     public void setCurrentNestingGroupId(int nestingGroupId) {
         this.currentNestingGroupId = nestingGroupId;
     }
 
     @Override
-    @UsedByGeneratedBytecode
     public int getCurrentSuppressionKeyId() {
         return currentSuppressionKeyId;
     }
 
     @Override
-    @UsedByGeneratedBytecode
     public void setCurrentSuppressionKeyId(int suppressionKeyId) {
         this.currentSuppressionKeyId = suppressionKeyId;
     }
@@ -538,7 +533,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (transaction.isOuter()) {
             TraceEntryImpl traceEntry = transaction.startInnerTransaction(transactionType,
                     transactionName, messageSupplier, timerName, threadContextHolder);
-            innerTransactionThreadContext = checkNotNull(threadContextHolder.get());
+            innerTransactionThreadContext =
+                    (ThreadContextImpl) checkNotNull(threadContextHolder.get());
             return traceEntry;
         }
         long startTick = ticker.read();

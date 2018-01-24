@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.api.internal;
+package org.glowroot.agent.impl;
 
 import org.junit.Test;
 
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAuxThreadContext;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimerName;
+import org.glowroot.agent.impl.NopTransactionService.NopAuxThreadContext;
+import org.glowroot.agent.impl.NopTransactionService.NopTimer;
+import org.glowroot.agent.impl.NopTransactionService.NopTimerName;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;

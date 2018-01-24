@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.impl;
+package org.glowroot.agent.bytecode.api;
 
 import javax.annotation.Nullable;
 
@@ -39,11 +39,11 @@ public class ThreadContextThreadLocal {
         }
     };
 
-    public @Nullable ThreadContextImpl get() {
+    public @Nullable ThreadContextPlus get() {
         return threadLocal.get().value;
     }
 
-    public void set(@Nullable ThreadContextImpl value) {
+    public void set(@Nullable ThreadContextPlus value) {
         threadLocal.get().value = value;
     }
 
@@ -51,23 +51,23 @@ public class ThreadContextThreadLocal {
         return threadLocal.get();
     }
 
-    protected @Nullable ThreadContextImpl initialValue() {
+    protected @Nullable ThreadContextPlus initialValue() {
         return null;
     }
 
     public static class Holder {
 
-        private @Nullable ThreadContextImpl value;
+        private @Nullable ThreadContextPlus value;
 
-        private Holder(@Nullable ThreadContextImpl value) {
+        private Holder(@Nullable ThreadContextPlus value) {
             this.value = value;
         }
 
-        public @Nullable ThreadContextImpl get() {
+        public @Nullable ThreadContextPlus get() {
             return value;
         }
 
-        public void set(@Nullable ThreadContextImpl value) {
+        public void set(@Nullable ThreadContextPlus value) {
             this.value = value;
         }
     }

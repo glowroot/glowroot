@@ -19,15 +19,25 @@ import javax.annotation.Nullable;
 
 public class GlowrootServiceHolder {
 
-    private static volatile @Nullable GlowrootService glowrootService;
+    private static volatile @Nullable GlowrootService service;
+    private static volatile @Nullable Exception retrievedTooEarlyLocation;
 
     private GlowrootServiceHolder() {}
 
     public static GlowrootService get() {
-        return glowrootService == null ? NopGlowrootService.INSTANCE : glowrootService;
+        if (service == null) {
+            retrievedTooEarlyLocation = new Exception();
+            return NopGlowrootService.INSTANCE;
+        } else {
+            return service;
+        }
     }
 
-    public static void set(GlowrootService glowrootService) {
-        GlowrootServiceHolder.glowrootService = glowrootService;
+    public static void set(GlowrootService service) {
+        GlowrootServiceHolder.service = service;
+    }
+
+    public static @Nullable Exception getRetrievedTooEarlyLocation() {
+        return retrievedTooEarlyLocation;
     }
 }

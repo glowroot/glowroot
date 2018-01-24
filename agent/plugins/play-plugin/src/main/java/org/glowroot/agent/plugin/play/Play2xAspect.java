@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 package org.glowroot.agent.plugin.play;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -42,13 +37,8 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class Play2xAspect {
 
-    private static final Pattern routePattern = Pattern.compile("\\$[^<]+<([^>]+)>");
-
     private static final BooleanProperty useAltTransactionNaming =
             Agent.getConfigService("play").getBooleanProperty("useAltTransactionNaming");
-
-    private static final ConcurrentMap<String, String> simplifiedRoutes =
-            new ConcurrentHashMap<String, String>();
 
     // "play.core.routing.TaggingInvoker" is for play 2.4.x and later
     // "play.core.Router$Routes$TaggingInvoker" is for play 2.3.x
@@ -100,7 +90,7 @@ public class Play2xAspect {
                 ScalaOption option = tags.glowroot$get("ROUTE_PATTERN");
                 if (option != null && option.isDefined()) {
                     String route = option.get().toString();
-                    route = simplifiedRoute(route);
+                    route = Routes.simplifiedRoute(route);
                     context.setTransactionName(route, Priority.CORE_PLUGIN);
                 }
             }
@@ -134,30 +124,6 @@ public class Play2xAspect {
         }
     }
 
-    // visible for testing
-    static String simplifiedRoute(String route) {
-        String simplifiedRoute = simplifiedRoutes.get(route);
-        if (simplifiedRoute == null) {
-            Matcher matcher = routePattern.matcher(route);
-            StringBuilder sb = new StringBuilder();
-            int end = 0;
-            while (matcher.find()) {
-                if (end == 0) {
-                    sb.append(route.substring(0, matcher.start()));
-                }
-                String regex = nullToEmpty(matcher.group(1));
-                regex = regex.replace("[^/]+", "*");
-                regex = regex.replace(".+", "**");
-                sb.append(regex);
-                end = matcher.end();
-            }
-            sb.append(route.substring(end));
-            simplifiedRoute = sb.toString();
-            simplifiedRoutes.putIfAbsent(route, simplifiedRoute);
-        }
-        return simplifiedRoute;
-    }
-
     private static String getAltTransactionName(String controller, String methodName) {
         int index = controller.lastIndexOf('.');
         if (index == -1) {
@@ -165,10 +131,6 @@ public class Play2xAspect {
         } else {
             return controller.substring(index + 1) + "#" + methodName;
         }
-    }
-
-    private static String nullToEmpty(@Nullable String s) {
-        return s == null ? "" : s;
     }
 
     // ========== play 2.0.x - 2.2.x ==========
@@ -200,7 +162,7 @@ public class Play2xAspect {
                             Priority.CORE_PLUGIN);
                 }
             } else {
-                path = simplifiedRoute(path);
+                path = Routes.simplifiedRoute(path);
                 context.setTransactionName(path, Priority.CORE_PLUGIN);
             }
         }

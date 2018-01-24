@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,26 @@ package org.glowroot.agent.plugin.api.util;
 import java.lang.reflect.Method;
 
 import com.google.common.base.Optional;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.glowroot.agent.plugin.api.internal.PluginService;
+import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class ReflectionTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    @BeforeClass
+    public static void setUp() {
+        PluginServiceHolder.set(mock(PluginService.class));
+    }
 
     @Test
     public void shouldReturnNullMethodWhenClassIsNull() {

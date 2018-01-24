@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package org.glowroot.agent.impl;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
+import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.Transaction.CompletionCallback;
@@ -29,15 +31,12 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common.util.UsedByGeneratedBytecode;
 
-public class TransactionServiceImpl implements ConfigListener {
+public class TransactionService implements ConfigListener {
 
     private final TransactionRegistry transactionRegistry;
-    private final TransactionCollector transactionCollector;
     private final ConfigService configService;
     private final TimerNameCache timerNameCache;
-    private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
     private final UserProfileScheduler userProfileScheduler;
     private final Clock clock;
     private final Ticker ticker;
@@ -52,29 +51,37 @@ public class TransactionServiceImpl implements ConfigListener {
     private int maxAggregateServiceCallsPerType;
     private int maxTraceEntriesPerTransaction;
 
-    public static void createSingleton(TransactionRegistry transactionRegistry,
-            TransactionCollector transactionCollector, ConfigService configService,
-            TimerNameCache timerNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+    // intentionally not volatile for small optimization
+    private @MonotonicNonNull TransactionCollector transactionCollector;
+    // intentionally not volatile for small optimization
+    private @Nullable ThreadAllocatedBytes threadAllocatedBytes;
+
+    public static TransactionService create(TransactionRegistry transactionRegistry,
+            ConfigService configService, TimerNameCache timerNameCache,
             UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock) {
-        TransactionServiceImpl transactionServiceImpl =
-                new TransactionServiceImpl(transactionRegistry, transactionCollector, configService,
-                        timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker, clock);
-        configService.addConfigListener(transactionServiceImpl);
-        TransactionServiceHolder.transactionService = transactionServiceImpl;
+        TransactionService transactionService = new TransactionService(transactionRegistry,
+                configService, timerNameCache, userProfileScheduler, ticker, clock);
+        configService.addConfigListener(transactionService);
+        return transactionService;
     }
 
-    private TransactionServiceImpl(TransactionRegistry transactionRegistry,
-            TransactionCollector transactionCollector, ConfigService configService,
-            TimerNameCache timerNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock) {
+    private TransactionService(TransactionRegistry transactionRegistry, ConfigService configService,
+            TimerNameCache timerNameCache, UserProfileScheduler userProfileScheduler, Ticker ticker,
+            Clock clock) {
         this.transactionRegistry = transactionRegistry;
-        this.transactionCollector = transactionCollector;
         this.configService = configService;
         this.timerNameCache = timerNameCache;
-        this.threadAllocatedBytes = threadAllocatedBytes;
         this.userProfileScheduler = userProfileScheduler;
         this.clock = clock;
         this.ticker = ticker;
+    }
+
+    public void setTransactionCollector(TransactionCollector transactionCollector) {
+        this.transactionCollector = transactionCollector;
+    }
+
+    public void setThreadAllocatedBytes(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
+        this.threadAllocatedBytes = threadAllocatedBytes;
     }
 
     TraceEntryImpl startTransaction(String transactionType, String transactionName,
@@ -121,23 +128,13 @@ public class TransactionServiceImpl implements ConfigListener {
 
         @Override
         public void completed(Transaction transaction) {
-            // send to trace collector before removing from trace registry so that trace
-            // collector can cover the gap
-            // (via TransactionCollectorImpl.getPendingCompleteTraces())
-            // between removing the trace from the registry and storing it
-            transactionCollector.onCompletedTransaction(transaction);
-        }
-    }
-
-    @UsedByGeneratedBytecode
-    public static class TransactionServiceHolder {
-
-        private static @Nullable TransactionServiceImpl transactionService;
-
-        private TransactionServiceHolder() {}
-
-        public static @Nullable TransactionServiceImpl getTransactionService() {
-            return transactionService;
+            if (transactionCollector != null) {
+                // send to trace collector before removing from trace registry so that trace
+                // collector can cover the gap
+                // (via TransactionCollectorImpl.getPendingCompleteTraces())
+                // between removing the trace from the registry and storing it
+                transactionCollector.onCompletedTransaction(transaction);
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector.EntryVisitor;
+import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.AsyncTimerImpl;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
@@ -37,7 +38,6 @@ import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.plugin.api.internal.ReadableQueryMessage;
 import org.glowroot.agent.util.Tickers;

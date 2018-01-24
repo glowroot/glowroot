@@ -159,7 +159,8 @@ public class Weaver {
         if (!weavingTimerEnabled) {
             return null;
         }
-        ThreadContextImpl threadContext = transactionRegistry.getCurrentThreadContextHolder().get();
+        ThreadContextImpl threadContext =
+                (ThreadContextImpl) transactionRegistry.getCurrentThreadContextHolder().get();
         if (threadContext == null) {
             return null;
         }
@@ -413,8 +414,7 @@ public class Weaver {
                 boolean itf) {
             super.visitMethodInsn(opcode, owner, name, desc, itf);
             if (name.equals("getDecoratedTypes") && desc.equals("()Ljava/util/Set;")) {
-                super.visitMethodInsn(INVOKESTATIC,
-                        "org/glowroot/agent/weaving/GeneratedBytecodeUtil",
+                super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
                         "stripGlowrootTypes", "(Ljava/util/Set;)Ljava/util/Set;", false);
             }
         }
@@ -450,7 +450,7 @@ public class Weaver {
         @Override
         public void visitFieldInsn(int opcode, String owner, String name, String desc) {
             if (name.equals("systemPackages") && desc.equals("[Ljava/lang/String;")) {
-                visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/GeneratedBytecodeUtil",
+                visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
                         "appendToJBossModulesSystemPkgs",
                         "([Ljava/lang/String;)[Ljava/lang/String;", false);
             }

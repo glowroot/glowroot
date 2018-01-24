@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,19 @@
  */
 package org.glowroot.agent.plugin.jaxrs;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ResourceMethodMetaTest {
+
+    @BeforeClass
+    public static void setUp() {
+        PluginServiceHolder.setMockForLogger();
+    }
 
     @Test
     public void should() {

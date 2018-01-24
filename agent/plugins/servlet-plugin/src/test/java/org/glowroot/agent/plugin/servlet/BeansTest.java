@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,19 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BeansTest {
+
+    @BeforeClass
+    public static void setUp() {
+        PluginServiceHolder.setMockForLogger();
+    }
 
     @Test
     public void shouldCallGetterMethod() {

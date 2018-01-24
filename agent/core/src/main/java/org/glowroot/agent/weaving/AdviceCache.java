@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,10 +105,11 @@ public class AdviceCache {
             pluginAdvisors.add(entry.getKey());
         }
         if (instrumentation == null) {
-            // this is for tests that don't run with javaagent container
-            ClassLoader loader = AdviceCache.class.getClassLoader();
-            checkNotNull(loader);
-            ClassLoaders.defineClassesInClassLoader(lazyAdvisors.values(), loader);
+            // instrumentation is null when debugging with LocalContainer
+            ClassLoader isolatedWeavingClassLoader = Thread.currentThread().getContextClassLoader();
+            checkNotNull(isolatedWeavingClassLoader);
+            ClassLoaders.defineClassesInClassLoader(lazyAdvisors.values(),
+                    isolatedWeavingClassLoader);
         } else {
             ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(tmpDir,
                     "plugin-pointcuts.jar");
@@ -206,10 +207,11 @@ public class AdviceCache {
         ImmutableMap<Advice, LazyDefinedClass> advisors =
                 AdviceGenerator.createAdvisors(reweavableConfigs, null, true);
         if (instrumentation == null) {
-            // this is for tests that don't run with javaagent container
-            ClassLoader loader = AdviceCache.class.getClassLoader();
-            checkNotNull(loader);
-            ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
+            // instrumentation is null when debugging with LocalContainer
+            ClassLoader isolatedWeavingClassLoader =
+                    Thread.currentThread().getContextClassLoader();
+            checkNotNull(isolatedWeavingClassLoader);
+            ClassLoaders.defineClassesInClassLoader(advisors.values(), isolatedWeavingClassLoader);
         } else {
             if (cleanTmpDir) {
                 ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(tmpDir,

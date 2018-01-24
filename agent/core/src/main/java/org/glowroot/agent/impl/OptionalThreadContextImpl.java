@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,10 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.model.ThreadContextPlus;
+import org.glowroot.agent.bytecode.api.ThreadContextPlus;
+import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.agent.impl.NopTransactionService.NopAuxThreadContext;
+import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.AsyncTraceEntry;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
@@ -33,10 +36,6 @@ import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAuxThreadContext;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
-import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -44,18 +43,17 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
 
     private static final Logger logger = LoggerFactory.getLogger(OptionalThreadContextImpl.class);
 
-    private @MonotonicNonNull ThreadContextImpl threadContext;
+    private @MonotonicNonNull ThreadContextPlus threadContext;
 
-    private final TransactionServiceImpl transactionService;
+    private final TransactionService transactionService;
     private final ThreadContextThreadLocal.Holder threadContextHolder;
 
-    @UsedByGeneratedBytecode
-    public static OptionalThreadContextImpl create(TransactionServiceImpl transactionService,
+    public static OptionalThreadContextImpl create(TransactionService transactionService,
             ThreadContextThreadLocal.Holder threadContextHolder) {
         return new OptionalThreadContextImpl(transactionService, threadContextHolder);
     }
 
-    private OptionalThreadContextImpl(TransactionServiceImpl transactionService,
+    private OptionalThreadContextImpl(TransactionService transactionService,
             ThreadContextThreadLocal.Holder threadContextHolder) {
         this.transactionService = transactionService;
         this.threadContextHolder = threadContextHolder;

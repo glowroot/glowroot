@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.model;
+package org.glowroot.agent.bytecode.api;
 
-import org.glowroot.agent.plugin.api.OptionalThreadContext;
-
-public interface ThreadContextPlus extends OptionalThreadContext {
-
-    int getCurrentNestingGroupId();
-
-    void setCurrentNestingGroupId(int nestingGroupId);
-
-    int getCurrentSuppressionKeyId();
-
-    void setCurrentSuppressionKeyId(int suppressionKeyId);
-}
+public interface MessageTemplate {}

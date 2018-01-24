@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.weaving;
+package org.glowroot.agent.bytecode.api;
 
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.weaving.OptionalReturn;
-import org.glowroot.common.util.UsedByGeneratedBytecode;
 
-@UsedByGeneratedBytecode
 public class NonVoidReturn implements OptionalReturn {
 
     private final @Nullable Object returnValue;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,15 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SimplifiedRouteTest {
+public class RoutesTest {
 
     @Test
     public void test() {
-        assertThat(Play2xAspect.simplifiedRoute("")).isEqualTo("");
-        assertThat(Play2xAspect.simplifiedRoute("/one")).isEqualTo("/one");
-        assertThat(Play2xAspect.simplifiedRoute("/one/$two<[^/]+>/three"))
-                .isEqualTo("/one/*/three");
-        assertThat(Play2xAspect.simplifiedRoute("/assets/$file<.+>")).isEqualTo("/assets/**");
-        assertThat(Play2xAspect.simplifiedRoute("/custom/$xyz<xyz[^/]+>/three"))
+        assertThat(Routes.simplifiedRoute("")).isEqualTo("");
+        assertThat(Routes.simplifiedRoute("/one")).isEqualTo("/one");
+        assertThat(Routes.simplifiedRoute("/one/$two<[^/]+>/three")).isEqualTo("/one/*/three");
+        assertThat(Routes.simplifiedRoute("/assets/$file<.+>")).isEqualTo("/assets/**");
+        assertThat(Routes.simplifiedRoute("/custom/$xyz<xyz[^/]+>/three"))
                 .isEqualTo("/custom/xyz*/three");
     }
 }

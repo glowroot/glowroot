@@ -29,8 +29,8 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.impl.ThreadContextThreadLocal;
 import org.glowroot.agent.impl.TimerNameCache;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.plugin.api.weaving.Mixin;

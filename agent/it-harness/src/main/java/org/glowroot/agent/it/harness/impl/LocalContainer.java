@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import com.google.common.collect.Maps;
 import com.google.common.reflect.Reflection;
 
 import org.glowroot.agent.MainEntryPoint;
-import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.ConfigService;
@@ -91,8 +90,13 @@ public class LocalContainer implements Container {
         Executors.newSingleThreadExecutor().submit(new Callable<Void>() {
             @Override
             public @Nullable Void call() throws Exception {
-                AgentModule.isolatedWeavingClassLoader.set(isolatedWeavingClassLoader);
-                MainEntryPoint.start(properties);
+                ClassLoader loader = Thread.currentThread().getContextClassLoader();
+                Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
+                try {
+                    MainEntryPoint.start(properties);
+                } finally {
+                    Thread.currentThread().setContextClassLoader(loader);
+                }
                 return null;
             }
         }).get();

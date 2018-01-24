@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,14 +32,13 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.util.UsedByGeneratedBytecode;
+import org.glowroot.agent.bytecode.api.MessageTemplate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-@UsedByGeneratedBytecode
-public class MessageTemplate {
+public class MessageTemplateImpl implements MessageTemplate {
 
-    private static final Logger logger = LoggerFactory.getLogger(MessageTemplate.class);
+    private static final Logger logger = LoggerFactory.getLogger(MessageTemplateImpl.class);
 
     private static final Pattern pattern = Pattern.compile("\\{\\{([^}]*)}}");
 
@@ -48,8 +47,7 @@ public class MessageTemplate {
     private final ImmutableList<ArgPathPart> argPathParts;
     private final ImmutableList<ValuePathPart> returnPathParts;
 
-    @UsedByGeneratedBytecode
-    public static MessageTemplate create(String template, Method method) {
+    public static MessageTemplateImpl create(String template, Method method) {
         List<Part> allParts = Lists.newArrayList();
         List<ValuePathPart> thisPathParts = Lists.newArrayList();
         List<ArgPathPart> argPathParts = Lists.newArrayList();
@@ -104,10 +102,10 @@ public class MessageTemplate {
         if (curr < template.length()) {
             allParts.add(new ConstantPart(template.substring(curr)));
         }
-        return new MessageTemplate(allParts, thisPathParts, argPathParts, returnPathParts);
+        return new MessageTemplateImpl(allParts, thisPathParts, argPathParts, returnPathParts);
     }
 
-    private MessageTemplate(List<Part> allParts, List<ValuePathPart> thisPathParts,
+    private MessageTemplateImpl(List<Part> allParts, List<ValuePathPart> thisPathParts,
             List<ArgPathPart> argPathParts, List<ValuePathPart> returnPathParts) {
         this.allParts = ImmutableList.copyOf(allParts);
         this.thisPathParts = ImmutableList.copyOf(thisPathParts);

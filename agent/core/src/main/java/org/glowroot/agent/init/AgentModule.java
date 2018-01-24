@@ -37,6 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.internal.GlowrootService;
+import org.glowroot.agent.api.internal.GlowrootServiceHolder;
+import org.glowroot.agent.bytecode.api.BytecodeService;
+import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
@@ -44,18 +47,21 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.impl.Aggregator;
 import org.glowroot.agent.impl.ConfigServiceImpl;
 import org.glowroot.agent.impl.GlowrootServiceImpl;
-import org.glowroot.agent.impl.ServiceRegistryImpl;
-import org.glowroot.agent.impl.ServiceRegistryImpl.ConfigServiceFactory;
+import org.glowroot.agent.impl.PluginServiceImpl;
+import org.glowroot.agent.impl.PluginServiceImpl.ConfigServiceFactory;
 import org.glowroot.agent.impl.StackTraceCollector;
 import org.glowroot.agent.impl.TimerNameCache;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
-import org.glowroot.agent.impl.TransactionServiceImpl;
+import org.glowroot.agent.impl.TransactionService;
 import org.glowroot.agent.impl.UserProfileScheduler;
+import org.glowroot.agent.impl.WeavingServiceImpl;
 import org.glowroot.agent.live.LiveAggregateRepositoryImpl;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
+import org.glowroot.agent.plugin.api.internal.PluginService;
+import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.OptionalService;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
@@ -89,10 +95,6 @@ public class AgentModule {
     // java.util.logging is shaded to org.glowroot.agent.jul
     private static final String SHADE_PROOF_JUL_LOGGER_CLASS_NAME =
             "_java.util.logging.Logger".substring(1);
-
-    @OnlyUsedByTests
-    public static final ThreadLocal</*@Nullable*/ IsolatedWeavingClassLoader> isolatedWeavingClassLoader =
-            new ThreadLocal</*@Nullable*/ IsolatedWeavingClassLoader>();
 
     private final ConfigService configService;
     private final AnalyzedWorld analyzedWorld;
@@ -137,16 +139,40 @@ public class AgentModule {
                 configService.getInstrumentationConfigs(), instrumentation, tmpDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes());
-        final TimerNameCache timerNameCache = new TimerNameCache();
+        TimerNameCache timerNameCache = new TimerNameCache();
 
-        final Weaver weaver = new Weaver(adviceCache.getAdvisorsSupplier(),
-                adviceCache.getShimTypes(), adviceCache.getMixinTypes(), analyzedWorld,
-                transactionRegistry, ticker, timerNameCache, configService);
+        Weaver weaver = new Weaver(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
+                adviceCache.getMixinTypes(), analyzedWorld, transactionRegistry, ticker,
+                timerNameCache, configService);
+
+        // need to initialize glowroot-agent-api, glowroot-agent-plugin-api and glowroot-weaving-api
+        // services before enabling instrumentation
+        GlowrootService glowrootService = new GlowrootServiceImpl(transactionRegistry);
+        GlowrootServiceHolder.set(glowrootService);
+        ConfigServiceFactory configServiceFactory = new ConfigServiceFactory() {
+            @Override
+            public org.glowroot.agent.plugin.api.config.ConfigService create(String pluginId) {
+                checkNotNull(configService);
+                checkNotNull(pluginCache);
+                return ConfigServiceImpl.create(configService, pluginCache.pluginDescriptors(),
+                        pluginId);
+            }
+        };
+        PluginService pluginService = new PluginServiceImpl(timerNameCache, configServiceFactory);
+        PluginServiceHolder.set(pluginService);
+        Random random = new Random();
+        UserProfileScheduler userProfileScheduler =
+                new UserProfileScheduler(configService, random);
+        TransactionService transactionService = TransactionService.create(transactionRegistry,
+                configService, timerNameCache, userProfileScheduler, ticker, clock);
+        BytecodeService weavingService =
+                new WeavingServiceImpl(transactionRegistry, transactionService);
+        BytecodeServiceHolder.set(weavingService);
 
         if (instrumentation == null) {
             // instrumentation is null when debugging with LocalContainer
             IsolatedWeavingClassLoader isolatedWeavingClassLoader =
-                    AgentModule.isolatedWeavingClassLoader.get();
+                    (IsolatedWeavingClassLoader) Thread.currentThread().getContextClassLoader();
             checkNotNull(isolatedWeavingClassLoader);
             isolatedWeavingClassLoader.setWeaver(weaver);
             jvmRetransformClassesSupported = false;
@@ -178,29 +204,23 @@ public class AgentModule {
         deadlockedActiveWeavingRunnable = new DeadlockedActiveWeavingRunnable(weaver);
         deadlockedActiveWeavingRunnable.scheduleWithFixedDelay(backgroundExecutor, 5, 5, SECONDS);
 
+        // complete initialization of glowroot-agent-api, glowroot-agent-plugin-api and
+        // glowroot-weaving-api services
+        userProfileScheduler.setBackgroundExecutor(backgroundExecutor);
+        OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
+        transactionService.setThreadAllocatedBytes(threadAllocatedBytes.getService());
         aggregator = new Aggregator(collector, configService, ROLLUP_0_INTERVAL_MILLIS, clock);
         transactionCollector =
                 new TransactionCollector(configService, collector, aggregator, clock, ticker);
+        transactionService.setTransactionCollector(transactionCollector);
 
-        OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
-
-        Random random = new Random();
-        UserProfileScheduler userProfileScheduler =
-                new UserProfileScheduler(backgroundExecutor, configService, random);
-        GlowrootService glowrootService = new GlowrootServiceImpl(transactionRegistry);
-        TransactionServiceImpl.createSingleton(transactionRegistry, transactionCollector,
-                configService, timerNameCache, threadAllocatedBytes.getService(),
-                userProfileScheduler, ticker, clock);
-        ConfigServiceFactory configServiceFactory = new ConfigServiceFactory() {
-            @Override
-            public org.glowroot.agent.plugin.api.config.ConfigService create(String pluginId) {
-                checkNotNull(configService);
-                checkNotNull(pluginCache);
-                return ConfigServiceImpl.create(configService, pluginCache.pluginDescriptors(),
-                        pluginId);
-            }
-        };
-        ServiceRegistryImpl.init(glowrootService, timerNameCache, configServiceFactory);
+        // verify initialization of glowroot-agent-api, glowroot-agent-plugin-api and
+        // glowroot-weaving-api services
+        Exception getterCalledTooEarlyLocation =
+                GlowrootServiceHolder.getRetrievedTooEarlyLocation();
+        if (getterCalledTooEarlyLocation != null) {
+            logger.error("Glowroot Agent API was called too early", getterCalledTooEarlyLocation);
+        }
 
         lazyPlatformMBeanServer = LazyPlatformMBeanServer.create();
         File[] roots = File.listRoots();

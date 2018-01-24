@@ -40,6 +40,7 @@
     <module>ui</module>
     <module>agent/api</module>
     <module>agent/plugin-api</module>
+    <module>agent/bytecode-api</module>
     <module>agent/core</module>
     <module>agent/it-harness</module>
     <module>agent/integration-tests</module>

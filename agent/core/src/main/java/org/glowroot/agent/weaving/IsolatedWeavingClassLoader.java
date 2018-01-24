@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Glowroot;
-import org.glowroot.agent.impl.OptionalThreadContextImpl;
-import org.glowroot.agent.impl.ServiceRegistryImpl;
-import org.glowroot.agent.impl.ThreadContextImpl;
-import org.glowroot.agent.impl.ThreadContextThreadLocal;
-import org.glowroot.agent.impl.TransactionRegistry;
-import org.glowroot.agent.impl.TransactionServiceImpl;
-import org.glowroot.agent.model.ThreadContextPlus;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal;
+import org.glowroot.agent.bytecode.api.Bytecode;
+import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 // the placement of this code in the main Glowroot code base (and not inside of the tests folder) is
@@ -230,31 +224,14 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             // package name"
             return true;
         }
-        // this is needed to prevent these thread locals retaining the IsolatedWeavingClassLoader
-        // and causing PermGen OOM during maven test
-        if (name.equals(FastThreadLocal.class.getName())
-                || name.equals(FastThreadLocal.class.getName() + "$Holder")
-                || name.equals(ThreadContextThreadLocal.class.getName())
-                || name.equals(ThreadContextThreadLocal.class.getName() + "$Holder")) {
-            return true;
-        }
-        if (name.equals(Glowroot.class.getName())) {
+        if (name.equals(Glowroot.class.getName())
+                || name.equals(Agent.class.getName())
+                || name.equals(Bytecode.class.getName())) {
             return false;
         }
-        // these are the classes that plugins depend on, either directly (api classes) or indirectly
-        // (weaving)
         if (name.startsWith("org.glowroot.agent.api.")
                 || name.startsWith("org.glowroot.agent.plugin.api.")
-                || name.startsWith("org.glowroot.agent.weaving.GeneratedAdvice")
-                || name.startsWith("org.glowroot.agent.weaving.GeneratedMethodMeta")
-                || name.equals(OptionalThreadContextImpl.class.getName())
-                || name.equals(ServiceRegistryImpl.class.getName())
-                || name.equals(ThreadContextImpl.class.getName())
-                || name.equals(ThreadContextPlus.class.getName())
-                || name.equals(TransactionRegistry.class.getName())
-                || name.equals(TransactionRegistry.TransactionRegistryHolder.class.getName())
-                || name.equals(TransactionServiceImpl.class.getName())
-                || name.equals(TransactionServiceImpl.TransactionServiceHolder.class.getName())) {
+                || name.startsWith("org.glowroot.agent.bytecode.api.")) {
             return true;
         }
         return false;

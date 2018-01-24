@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,6 +148,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                 || className.startsWith("org/glowroot/wire/api/")
                 || className.startsWith("org/glowroot/agent/api/")
                 || className.startsWith("org/glowroot/agent/plugin/api/")
+                || className.startsWith("org/glowroot/agent/bytecode/api/")
                 || className.startsWith("org/glowroot/agent/central/")
                 || className.startsWith("org/glowroot/agent/collector/")
                 || className.startsWith("org/glowroot/agent/config/")

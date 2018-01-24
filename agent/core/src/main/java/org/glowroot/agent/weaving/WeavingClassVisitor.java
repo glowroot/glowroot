@@ -50,6 +50,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.bytecode.api.Util;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -83,6 +84,8 @@ import static org.objectweb.asm.Opcodes.V1_5;
 class WeavingClassVisitor extends ClassVisitor {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
+
+    private static final Type generatedBytecodeUtilType = Type.getType(Util.class);
 
     private static final AtomicLong metaHolderCounter = new AtomicLong();
 
@@ -369,7 +372,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private static void loadArrayType(MethodVisitor mv, Type type, Type ownerType) {
         loadType(mv, type.getElementType(), ownerType);
         mv.visitLdcInsn(type.getDimensions());
-        mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(GeneratedBytecodeUtil.class),
+        mv.visitMethodInsn(INVOKESTATIC, generatedBytecodeUtilType.getInternalName(),
                 "getArrayClass", "(Ljava/lang/Class;I)Ljava/lang/Class;", false);
     }
 

@@ -24,11 +24,7 @@ import org.glowroot.agent.api.internal.GlowrootServiceHolder;
 
 public class Glowroot {
 
-    private static final GlowrootService glowrootService;
-
-    static {
-        glowrootService = GlowrootServiceHolder.get();
-    }
+    private static final GlowrootService service = GlowrootServiceHolder.get();
 
     private Glowroot() {}
 
@@ -38,7 +34,7 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionType(@Nullable String transactionType) {
-        glowrootService.setTransactionType(transactionType);
+        service.setTransactionType(transactionType);
     }
 
     /**
@@ -47,7 +43,7 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionName(@Nullable String transactionName) {
-        glowrootService.setTransactionName(transactionName);
+        service.setTransactionName(transactionName);
     }
 
     /**
@@ -56,7 +52,7 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionUser(@Nullable String user) {
-        glowrootService.setTransactionUser(user);
+        service.setTransactionUser(user);
     }
 
     /**
@@ -73,7 +69,7 @@ public class Glowroot {
      * {@code null} values are normalized to the empty string.
      */
     public static void addTransactionAttribute(String name, @Nullable String value) {
-        glowrootService.addTransactionAttribute(name, value);
+        service.addTransactionAttribute(name, value);
     }
 
     /**
@@ -87,7 +83,7 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
-        glowrootService.setTransactionSlowThreshold(threshold, unit);
+        service.setTransactionSlowThreshold(threshold, unit);
     }
 
     /**
@@ -101,6 +97,6 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionOuter() {
-        glowrootService.setTransactionOuter();
+        service.setTransactionOuter();
     }
 }

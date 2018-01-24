@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
@@ -131,7 +132,7 @@ public class Transaction {
     private final int maxAggregateServiceCallsPerType;
 
     private final TransactionRegistry transactionRegistry;
-    private final TransactionServiceImpl transactionService;
+    private final TransactionService transactionService;
     private final ConfigService configService;
 
     // stack trace data constructed from profiling
@@ -209,7 +210,7 @@ public class Transaction {
             int maxAggregateServiceCallsPerType,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             CompletionCallback completionCallback, Ticker ticker,
-            TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService,
+            TransactionRegistry transactionRegistry, TransactionService transactionService,
             ConfigService configService, UserProfileScheduler userProfileScheduler,
             ThreadContextThreadLocal.Holder threadContextHolder) {
         this.startTime = startTime;
@@ -821,7 +822,7 @@ public class Transaction {
         return transactionRegistry;
     }
 
-    TransactionServiceImpl getTransactionService() {
+    TransactionService getTransactionService() {
         return transactionService;
     }
 

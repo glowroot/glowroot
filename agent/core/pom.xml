@@ -32,6 +32,11 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-bytecode-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
       <artifactId>glowroot-ui</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -687,6 +692,7 @@
                 <option>-dontwarn **</option>
                 <option>-keep class org.glowroot.agent.* { *; }</option>
                 <option>-keep class org.glowroot.agent.api.** { *; }</option>
+                <option>-keep class org.glowroot.agent.bytecode.api.** { *; }</option>
                 <option>-keep class org.glowroot.agent.central.** { *; }</option>
                 <option>-keep class org.glowroot.agent.collector.** { *; }</option>
                 <option>-keep class org.glowroot.agent.config.** { *; }</option>

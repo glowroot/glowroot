@@ -40,14 +40,9 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.impl.OptionalThreadContextImpl;
-import org.glowroot.agent.impl.ThreadContextImpl;
-import org.glowroot.agent.impl.ThreadContextThreadLocal;
-import org.glowroot.agent.impl.TransactionRegistry;
-import org.glowroot.agent.impl.TransactionRegistry.TransactionRegistryHolder;
-import org.glowroot.agent.impl.TransactionServiceImpl;
-import org.glowroot.agent.impl.TransactionServiceImpl.TransactionServiceHolder;
-import org.glowroot.agent.model.ThreadContextPlus;
+import org.glowroot.agent.bytecode.api.Bytecode;
+import org.glowroot.agent.bytecode.api.ThreadContextPlus;
+import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
@@ -68,19 +63,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private static final Type objectType = Type.getType(Object.class);
 
-    private static final Type transactionRegistryHolderType =
-            Type.getType(TransactionRegistryHolder.class);
-    private static final Type transactionRegistryType = Type.getType(TransactionRegistry.class);
     private static final Type fastThreadContextThreadLocalHolderType =
             Type.getType(ThreadContextThreadLocal.Holder.class);
-    private static final Type transactionServiceHolderType =
-            Type.getType(TransactionServiceHolder.class);
-    private static final Type transactionServiceImplType =
-            Type.getType(TransactionServiceImpl.class);
-    private static final Type threadContextImplType = Type.getType(ThreadContextImpl.class);
-    private static final Type optionalThreadContextImplType =
-            Type.getType(OptionalThreadContextImpl.class);
     private static final Type threadContextPlusType = Type.getType(ThreadContextPlus.class);
+
+    private static final Type bytecodeType = Type.getType(Bytecode.class);
 
     // starts at 1 since 0 is used for "no nesting group"
     private static final AtomicInteger nestingGroupIdCounter = new AtomicInteger(1);
@@ -421,7 +408,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             checkNotNull(threadContextHolderLocal);
             storeLocal(threadContextHolderLocal);
             visitMethodInsn(INVOKEVIRTUAL, fastThreadContextThreadLocalHolderType.getInternalName(),
-                    "get", "()" + threadContextImplType.getDescriptor(), false);
+                    "get", "()" + threadContextPlusType.getDescriptor(), false);
             dup();
             checkNotNull(threadContextLocal);
             storeLocal(threadContextLocal);
@@ -493,9 +480,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private void loadThreadContextHolder() {
         // TODO optimize, don't need to look up ThreadContext thread local each time
-        visitMethodInsn(INVOKESTATIC, transactionRegistryHolderType.getInternalName(),
-                "getTransactionRegistry", "()" + transactionRegistryType.getDescriptor(), false);
-        visitMethodInsn(INVOKEVIRTUAL, transactionRegistryType.getInternalName(),
+        visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
                 "getCurrentThreadContextHolder",
                 "()" + fastThreadContextThreadLocalHolderType.getDescriptor(), false);
     }
@@ -748,11 +733,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void loadOptionalReturnValue(int opcode, boolean dup) {
         if (opcode == RETURN) {
             // void
-            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/VoidReturn", "getInstance",
-                    "()Lorg/glowroot/agent/plugin/api/weaving/OptionalReturn;", false);
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/VoidReturn",
+                    "getInstance", "()Lorg/glowroot/agent/plugin/api/weaving/OptionalReturn;",
+                    false);
         } else {
             loadReturnValue(opcode, dup, true);
-            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/NonVoidReturn", "create",
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/NonVoidReturn", "create",
                     "(Ljava/lang/Object;)Lorg/glowroot/agent/plugin/api/weaving/OptionalReturn;",
                     false);
         }
@@ -1017,8 +1003,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
             int index = BootstrapMetaHolders.reserveClassMetaHolderIndex(metaHolderInternalName,
                     classMetaFieldName);
             push(index);
-            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/BootstrapMetaHolders",
-                    "getClassMeta", "(I)Ljava/lang/Object;", false);
+            visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(), "getClassMeta",
+                    "(I)Ljava/lang/Object;", false);
             mv.visitTypeInsn(CHECKCAST, classMetaFieldType.getInternalName());
         } else {
             visitFieldInsn(GETSTATIC, metaHolderInternalName, classMetaFieldName,
@@ -1035,8 +1021,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
             int index = BootstrapMetaHolders.reserveMethodMetaHolderIndex(metaHolderInternalName,
                     methodMetaFieldName);
             push(index);
-            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/BootstrapMetaHolders",
-                    "getMethodMeta", "(I)Ljava/lang/Object;", false);
+            visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(), "getMethodMeta",
+                    "(I)Ljava/lang/Object;", false);
             mv.visitTypeInsn(CHECKCAST, methodMetaFieldType.getInternalName());
         } else {
             visitFieldInsn(GETSTATIC, metaHolderInternalName, methodMetaFieldName,
@@ -1055,18 +1041,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
         visitImplicitFrame(stack);
         loadLocal(threadContextHolderLocal);
         visitMethodInsn(INVOKEVIRTUAL, fastThreadContextThreadLocalHolderType.getInternalName(),
-                "get", "()" + threadContextImplType.getDescriptor(), false);
+                "get", "()" + threadContextPlusType.getDescriptor(), false);
         dup();
         storeLocal(threadContextLocal);
         Label label2 = new Label();
         visitJumpInsn(IFNONNULL, label2);
-        visitMethodInsn(INVOKESTATIC, transactionServiceHolderType.getInternalName(),
-                "getTransactionService", "()" + transactionServiceImplType.getDescriptor(), false);
         loadLocal(threadContextHolderLocal);
-        visitMethodInsn(INVOKESTATIC, optionalThreadContextImplType.getInternalName(), "create",
-                "(" + transactionServiceImplType.getDescriptor()
-                        + fastThreadContextThreadLocalHolderType.getDescriptor() + ")"
-                        + optionalThreadContextImplType.getDescriptor(),
+        visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(), "createOptionalThreadContext",
+                "(" + fastThreadContextThreadLocalHolderType.getDescriptor() + ")"
+                        + threadContextPlusType.getDescriptor(),
                 false);
         storeLocal(threadContextLocal);
         visitLabel(label2);

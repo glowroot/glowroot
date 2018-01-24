@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,13 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.objectweb.asm.Type;
 
-import org.glowroot.common.util.UsedByGeneratedBytecode;
+import org.glowroot.agent.bytecode.api.Util;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // can't generate classes in bootstrap class loader, so this is needed for storing meta holders
 // similar technique is not good for non-bootstrap class loaders anyways since then weak references
 // would need to be used to prevent retention of meta holders
-@UsedByGeneratedBytecode
 public class BootstrapMetaHolders {
 
     private static final Map<String, Integer> classMetaHolderIndexes =
@@ -89,14 +88,12 @@ public class BootstrapMetaHolders {
         methodMetaHolders.set(index, methodMetaHolder);
     }
 
-    @UsedByGeneratedBytecode
     public static Object getClassMeta(int index) throws Exception {
         ClassMetaHolder classMetaHolder = classMetaHolders.get(index);
         checkNotNull(classMetaHolder, "ClassMetaHolder was not instantiated for index: " + index);
         return classMetaHolder.getClassMeta();
     }
 
-    @UsedByGeneratedBytecode
     public static Object getMethodMeta(int index) throws Exception {
         MethodMetaHolder methodMetaHolder = methodMetaHolders.get(index);
         checkNotNull(methodMetaHolder, "MethodMetaHolder was not instantiated for index: " + index);
@@ -124,7 +121,7 @@ public class BootstrapMetaHolders {
             case Type.DOUBLE:
                 return double.class;
             case Type.ARRAY:
-                return GeneratedBytecodeUtil.getArrayClass(getType(type.getElementType()),
+                return Util.getArrayClass(getType(type.getElementType()),
                         type.getDimensions());
             default:
                 return Class.forName(type.getClassName(), false, null);

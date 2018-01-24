@@ -13,23 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.weaving;
+package org.glowroot.agent.bytecode.api;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
-import com.google.common.collect.ObjectArrays;
-import com.google.common.collect.Sets;
+public class Util {
 
-import org.glowroot.common.util.UsedByGeneratedBytecode;
+    private Util() {}
 
-@UsedByGeneratedBytecode
-public class GeneratedBytecodeUtil {
-
-    private GeneratedBytecodeUtil() {}
-
-    @UsedByGeneratedBytecode
     public static Class<?> getArrayClass(Class<?> type, int nDimensions) {
         if (nDimensions == 0) {
             return type;
@@ -37,12 +31,13 @@ public class GeneratedBytecodeUtil {
         return getArrayClass(Array.newInstance(type, 0).getClass(), nDimensions - 1);
     }
 
-    @UsedByGeneratedBytecode
     public static String[] appendToJBossModulesSystemPkgs(String[] original) {
-        return ObjectArrays.concat(original, "org.glowroot.agent");
+        String[] arr = new String[original.length + 1];
+        System.arraycopy(original, 0, arr, 0, original.length);
+        arr[original.length] = "org.glowroot.agent";
+        return arr;
     }
 
-    @UsedByGeneratedBytecode
     public static Set<Type> stripGlowrootTypes(Set<Type> decoratedTypes) {
         boolean found = false;
         for (Type decoratedType : decoratedTypes) {
@@ -55,7 +50,7 @@ public class GeneratedBytecodeUtil {
             return decoratedTypes;
         }
         // linked hash set to preserve ordering
-        Set<Type> stripped = Sets.newLinkedHashSet();
+        Set<Type> stripped = new LinkedHashSet<Type>();
         for (Type decoratedType : decoratedTypes) {
             if (decoratedType instanceof Class && !isGlowrootType(decoratedType)) {
                 stripped.add(decoratedType);

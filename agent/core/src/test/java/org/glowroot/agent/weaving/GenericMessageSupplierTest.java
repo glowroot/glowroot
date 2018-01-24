@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderConstant() throws Exception {
-        MessageTemplate template = MessageTemplate.create("abc",
+        MessageTemplateImpl template = MessageTemplateImpl.create("abc",
                 TestReceiver.class.getMethod("execute", HasName.class));
         Message message = GenericMessageSupplier
                 .create(template, new HasName(), "execute", new HasName()).get();
@@ -36,9 +36,9 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderNormal() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}",
-                        TestReceiver.class.getMethod("execute", HasName.class));
+        MessageTemplateImpl template = MessageTemplateImpl.create(
+                "{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}",
+                TestReceiver.class.getMethod("execute", HasName.class));
         Message message = GenericMessageSupplier
                 .create(template, new TestReceiver(), "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
@@ -47,9 +47,9 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderNullPart() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}",
-                        TestReceiver.class.getMethod("execute", HasName.class));
+        MessageTemplateImpl template = MessageTemplateImpl.create(
+                "{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}",
+                TestReceiver.class.getMethod("execute", HasName.class));
         Message message =
                 GenericMessageSupplier.create(template, null, "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
@@ -58,7 +58,7 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderRequestedArgOutOfBounds() throws Exception {
-        MessageTemplate template = MessageTemplate.create(
+        MessageTemplateImpl template = MessageTemplateImpl.create(
                 "{{this.class.name}}.{{methodName}}(): {{0.name}}, {{1.oops}} => {{_}}",
                 TestReceiver.class.getMethod("execute", HasName.class));
         Message message = GenericMessageSupplier
@@ -70,9 +70,9 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderTrailingText() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.name}} trailing",
-                        TestReceiver.class.getMethod("execute", HasName.class));
+        MessageTemplateImpl template = MessageTemplateImpl.create(
+                "{{this.class.name}}.{{methodName}}(): {{0.name}} trailing",
+                TestReceiver.class.getMethod("execute", HasName.class));
         Message message = GenericMessageSupplier
                 .create(template, new TestReceiver(), "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
@@ -81,9 +81,9 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderBadTemplate() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{1.name}} trailing",
-                        TestReceiver.class.getMethod("execute", HasName.class));
+        MessageTemplateImpl template = MessageTemplateImpl.create(
+                "{{this.class.name}}.{{methodName}}(): {{1.name}} trailing",
+                TestReceiver.class.getMethod("execute", HasName.class));
         Message message = GenericMessageSupplier
                 .create(template, new TestReceiver(), "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
@@ -93,9 +93,9 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderBadTemplate2() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{x.name}} trailing",
-                        TestReceiver.class.getMethod("execute", HasName.class));
+        MessageTemplateImpl template = MessageTemplateImpl.create(
+                "{{this.class.name}}.{{methodName}}(): {{x.name}} trailing",
+                TestReceiver.class.getMethod("execute", HasName.class));
         Message message =
                 GenericMessageSupplier.create(template, new TestReceiver(), "execute").get();
         String text = ((ReadableMessage) message).getText();
@@ -105,9 +105,9 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderBadMessage() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.name}} trailing",
-                        TestReceiver.class.getMethod("execute", HasName.class));
+        MessageTemplateImpl template = MessageTemplateImpl.create(
+                "{{this.class.name}}.{{methodName}}(): {{0.name}} trailing",
+                TestReceiver.class.getMethod("execute", HasName.class));
         Message message =
                 GenericMessageSupplier.create(template, new TestReceiver(), "execute").get();
         String text = ((ReadableMessage) message).getText();
@@ -117,7 +117,7 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderMessageWithThrowingPart() throws Exception {
-        MessageTemplate template = MessageTemplate.create(
+        MessageTemplateImpl template = MessageTemplateImpl.create(
                 "{{this.class.name}}.{{methodName}}(): {{0.throwingName}} trailing",
                 TestReceiver.class.getMethod("execute", HasName.class));
         Message message = GenericMessageSupplier
@@ -129,8 +129,8 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderArray() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.names}}",
+        MessageTemplateImpl template =
+                MessageTemplateImpl.create("{{this.class.name}}.{{methodName}}(): {{0.names}}",
                         TestArrayReceiver.class.getMethod("execute", HasArray.class));
         Message message = GenericMessageSupplier
                 .create(template, new TestReceiver(), "execute", new HasArray()).get();
@@ -140,8 +140,8 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderArray1() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.names.name}}",
+        MessageTemplateImpl template =
+                MessageTemplateImpl.create("{{this.class.name}}.{{methodName}}(): {{0.names.name}}",
                         TestArrayReceiver1.class.getMethod("execute", HasArray1.class));
         Message message = GenericMessageSupplier
                 .create(template, new TestReceiver(), "execute", new HasArray1()).get();
@@ -152,8 +152,8 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderArray2() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.names.name}}",
+        MessageTemplateImpl template =
+                MessageTemplateImpl.create("{{this.class.name}}.{{methodName}}(): {{0.names.name}}",
                         TestArrayReceiver2.class.getMethod("execute", HasArray2.class));
         Message message = GenericMessageSupplier
                 .create(template, new TestReceiver(), "execute", new HasArray2()).get();
@@ -164,9 +164,9 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderArrayLength() throws Exception {
-        MessageTemplate template =
-                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.names.length}}",
-                        TestArrayReceiver.class.getMethod("execute", HasArray.class));
+        MessageTemplateImpl template = MessageTemplateImpl.create(
+                "{{this.class.name}}.{{methodName}}(): {{0.names.length}}",
+                TestArrayReceiver.class.getMethod("execute", HasArray.class));
         Message message = GenericMessageSupplier
                 .create(template, new TestReceiver(), "execute", new HasArray()).get();
         String text = ((ReadableMessage) message).getText();
