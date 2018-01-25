@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 package org.glowroot.agent.plugin.netty;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.agent.plugin.api.checker.NonNull;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
@@ -151,11 +150,11 @@ public class Netty3Aspect {
                 // not null, just checked above in isEnabled()
                 @BindParameter Object channelEvent) {
             @SuppressWarnings("nullness") // just checked above in isEnabled()
-            @Nonnull
+            @NonNull
             ChannelMixin channel = channelHandlerContext.glowroot$getChannel();
             // just checked valid cast above in isEnabled()
             @SuppressWarnings("nullness") // just checked above in isEnabled()
-            @Nonnull
+            @NonNull
             Object msg = ((MessageEvent) channelEvent).getMessage();
             // just checked valid cast above in isEnabled()
             HttpRequest request = (HttpRequest) msg;
@@ -263,7 +262,7 @@ public class Netty3Aspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver ListenerMixin listener) {
             @SuppressWarnings("nullness") // just checked above in isEnabled()
-            @Nonnull
+            @NonNull
             AuxThreadContext auxContext = listener.glowroot$getAuxContext();
             listener.glowroot$setAuxContext(null);
             return auxContext.start();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,17 +21,13 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
-
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
@@ -138,8 +134,7 @@ public class HttpHandlerAspect {
             String requestUri = getRequestURI(exchange.getRequestURI());
             String requestQueryString = getRequestQueryString(exchange.getRequestURI());
             String requestMethod = Strings.nullToEmpty(exchange.getRequestMethod());
-            ImmutableMap<String, Object> requestHeaders =
-                    DetailCapture.captureRequestHeaders(exchange);
+            Map<String, Object> requestHeaders = DetailCapture.captureRequestHeaders(exchange);
             String requestRemoteAddr = DetailCapture.captureRequestRemoteAddr(exchange);
             String requestRemoteHost = DetailCapture.captureRequestRemoteHost(exchange);
             HttpHandlerMessageSupplier messageSupplier =

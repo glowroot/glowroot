@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.glowroot.agent.plugin.api.internal;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -26,6 +25,7 @@ import com.google.common.collect.Maps;
 import org.junit.Test;
 
 import org.glowroot.agent.plugin.api.Message;
+import org.glowroot.agent.plugin.api.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -88,7 +88,7 @@ public class MessageTest {
         detail.put("xx" + longString, "xx" + longString);
         detail.put("list",
                 ImmutableList.of(longString, longString + "a", Optional.of("x" + longString)));
-        detail.put("absent", Optional.absent());
+        detail.put("absent", Optional.fromNullable(null));
         detail.put("oa", Optional.of("a"));
         detail.put("ox", Optional.of("x" + longString));
         detail.put("nested", ImmutableMap.of(longString + "a", longString + "a"));
@@ -102,7 +102,7 @@ public class MessageTest {
                 .isEqualTo("xx" + Strings.repeat("a", 9998) + suffix);
         assertThat((List<?>) truncatedDetail.get("list")).containsExactly(longString,
                 longString + suffix, Optional.of("x" + Strings.repeat("a", 9999) + suffix));
-        assertThat(truncatedDetail.get("absent")).isEqualTo(Optional.absent());
+        assertThat(truncatedDetail.get("absent")).isEqualTo(Optional.fromNullable(null));
         assertThat(truncatedDetail.get("oa")).isEqualTo(Optional.of("a"));
         assertThat(truncatedDetail.get("ox"))
                 .isEqualTo(Optional.of("x" + Strings.repeat("a", 9999) + suffix));

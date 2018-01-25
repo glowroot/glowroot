@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package org.glowroot.agent.plugin.javahttpserver;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -183,7 +181,7 @@ public class ResponseHeaderIT {
         assertThat(responseHeaders.get("Extra")).isNull();
     }
 
-    static @Nullable Map<String, Object> getDetailMap(Trace trace, String name) {
+    static Map<String, Object> getDetailMap(Trace trace, String name) {
         List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
         Trace.DetailEntry found = null;
         for (Trace.DetailEntry detail : details) {
@@ -211,7 +209,7 @@ public class ResponseHeaderIT {
         return responseHeaders;
     }
 
-    private static @Nullable Map<String, Object> getResponseHeaders(Trace trace) {
+    private static Map<String, Object> getResponseHeaders(Trace trace) {
         return getDetailMap(trace, "Response headers");
     }
 

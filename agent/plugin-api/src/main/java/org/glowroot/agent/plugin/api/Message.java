@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,19 @@
  */
 package org.glowroot.agent.plugin.api;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.checker.PolyNull;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
+import org.glowroot.agent.plugin.api.util.Optional;
 
 /**
  * The detail map can contain only {@link String}, {@link Number}, {@link Boolean} and null values.
@@ -40,9 +39,9 @@ import org.glowroot.agent.plugin.api.internal.ReadableMessage;
  * Lists are supported to simulate multimaps, e.g. for http request parameters and http headers,
  * both of which can have multiple values for the same key.
  * 
- * As an extra bonus, detail map can also contain
- * org.glowroot.agent.shaded.org.google.common.base.Optional values which is useful for Maps that do
- * not accept null values, e.g. org.glowroot.agent.shaded.org.google.common.collect.ImmutableMap.
+ * As an extra bonus, detail map can also contain org.glowroot.agent.plugin.api.util.Optional values
+ * which is useful for Maps that do not allow null values, e.g. Maps created using
+ * {@link org.glowroot.agent.plugin.api.util.ImmutableMap#copyOf(Map)}
  * 
  * The detail map does not need to be thread safe as long as it is only instantiated in response to
  * either MessageSupplier.get() or Message.getDetail() which are called by the thread that needs the
@@ -57,7 +56,7 @@ public abstract class Message {
             Integer.getInteger("glowroot.message.detail.char.limit", 10000);
 
     private static final String[] EMPTY_ARGS = new String[0];
-    private static final ImmutableMap<String, Object> EMPTY_DETAIL = ImmutableMap.of();
+    private static final Map<String, Object> EMPTY_DETAIL = Collections.emptyMap();
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static Message create(@Nullable String message) {
@@ -198,7 +197,8 @@ public abstract class Message {
 
         private static Map<String, ?> truncateDetail(Map<String, ?> detail) {
             // cannot use immutable map since detail map may contain null values
-            Map<String, /*@Nullable*/ Object> truncatedDetail = Maps.newHashMap();
+            Map<String, /*@Nullable*/ Object> truncatedDetail =
+                    new HashMap<String, /*@Nullable*/ Object>();
             for (Map.Entry<String, ?> entry : detail.entrySet()) {
                 truncatedDetail.put(truncateDetailIfNeeded(entry.getKey()),
                         truncate(entry.getValue()));
@@ -222,7 +222,8 @@ public abstract class Message {
 
         private static Map<?, ?> truncateDetailNested(Map<?, ?> detail) {
             // cannot use immutable map since detail map may contain null values
-            Map</*@Nullable*/ Object, /*@Nullable*/ Object> truncatedDetail = Maps.newHashMap();
+            Map</*@Nullable*/ Object, /*@Nullable*/ Object> truncatedDetail =
+                    new HashMap</*@Nullable*/ Object, /*@Nullable*/ Object>();
             for (Map.Entry<?, ?> entry : detail.entrySet()) {
                 Object key = entry.getKey();
                 if (key instanceof String) {
@@ -235,7 +236,7 @@ public abstract class Message {
 
         private static List</*@Nullable*/ Object> truncateDetail(List<?> detail) {
             // cannot use immutable list since detail list may contain null values
-            List</*@Nullable*/ Object> truncatedDetail = Lists.newArrayList();
+            List</*@Nullable*/ Object> truncatedDetail = new ArrayList</*@Nullable*/ Object>();
             for (Object value : detail) {
                 truncatedDetail.add(truncate(value));
             }

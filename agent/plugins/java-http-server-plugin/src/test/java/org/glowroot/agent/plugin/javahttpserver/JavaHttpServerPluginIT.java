@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ package org.glowroot.agent.plugin.javahttpserver;
 
 import java.io.IOException;
 import java.util.Iterator;
-
-import javax.annotation.Nullable;
 
 import com.sun.net.httpserver.HttpExchange;
 import org.junit.After;
@@ -206,7 +204,7 @@ public class JavaHttpServerPluginIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static @Nullable String getDetailValue(Trace.Header header, String name) {
+    private static String getDetailValue(Trace.Header header, String name) {
         for (Trace.DetailEntry detail : header.getDetailEntryList()) {
             if (detail.getName().equals(name)) {
                 return detail.getValueList().get(0).getString();

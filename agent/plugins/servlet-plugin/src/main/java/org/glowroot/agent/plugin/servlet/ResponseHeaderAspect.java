@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,12 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableList;
-
 import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
@@ -325,7 +323,7 @@ public class ResponseHeaderAspect {
     }
 
     private static boolean captureResponseHeader(String name) {
-        ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureResponseHeaders();
+        List<Pattern> capturePatterns = ServletPluginProperties.captureResponseHeaders();
         // converted to lower case for case-insensitive matching (patterns are lower case)
         String keyLowerCase = name.toLowerCase(Locale.ENGLISH);
         return DetailCapture.matchesOneOf(keyLowerCase, capturePatterns);

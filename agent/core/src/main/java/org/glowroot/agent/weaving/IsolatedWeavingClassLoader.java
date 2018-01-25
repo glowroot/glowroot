@@ -226,7 +226,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
         if (name.equals(Glowroot.class.getName())
                 || name.equals(Agent.class.getName())
-                || name.equals(Bytecode.class.getName())) {
+                || name.equals(Bytecode.class.getName())
+                || name.equals(org.glowroot.agent.plugin.api.util.ImmutableList.class.getName())
+                || name.equals(org.glowroot.agent.plugin.api.util.ImmutableMap.class.getName())
+                || name.equals(org.glowroot.agent.plugin.api.util.ImmutableSet.class.getName())
+                || name.equals(Beans.class.getName())) {
             return false;
         }
         if (name.startsWith("org.glowroot.agent.api.")

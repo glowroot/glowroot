@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
  */
 package org.glowroot.agent.plugin.jdbc;
 
-import javax.annotation.Nonnull;
-
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.QueryEntry;
 import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.checker.NonNull;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
@@ -169,10 +168,10 @@ public class ResultSetAspect {
 
     private static Timer onBeforeCommon(HasStatementMirror resultSet) {
         @SuppressWarnings("nullness") // just checked above in isEnabledCommon()
-        @Nonnull
+        @NonNull
         StatementMirror mirror = resultSet.glowroot$getStatementMirror();
         @SuppressWarnings("nullness") // just checked above in isEnabledCommon()
-        @Nonnull
+        @NonNull
         QueryEntry lastQueryEntry = mirror.getLastQueryEntry();
         return lastQueryEntry.extend();
     }

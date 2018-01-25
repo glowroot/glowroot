@@ -241,7 +241,7 @@ public class MessageTemplateImpl implements MessageTemplate {
         private static final Splitter splitter = Splitter.on('.').omitEmptyStrings();
 
         private final Accessor[] accessors;
-        private final String /*@Nullable*/ [] remainingPath;
+        private final List<String> remainingPath;
 
         PathEvaluator(Class<?> baseClass, String path) {
             List<String> parts = Lists.newArrayList(splitter.split(path));
@@ -259,9 +259,9 @@ public class MessageTemplateImpl implements MessageTemplate {
             }
             this.accessors = accessors.toArray(new Accessor[accessors.size()]);
             if (parts.isEmpty()) {
-                remainingPath = null;
+                remainingPath = ImmutableList.of();
             } else {
-                remainingPath = parts.toArray(new String[parts.size()]);
+                remainingPath = ImmutableList.copyOf(parts);
             }
         }
 
@@ -274,7 +274,7 @@ public class MessageTemplateImpl implements MessageTemplate {
                     return null;
                 }
             }
-            if (remainingPath != null) {
+            if (!remainingPath.isEmpty()) {
                 // too bad, revert to slow Beans
                 return Beans.value(curr, remainingPath);
             }

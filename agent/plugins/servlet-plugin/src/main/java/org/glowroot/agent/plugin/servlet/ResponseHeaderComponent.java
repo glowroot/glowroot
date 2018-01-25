@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,22 @@
 package org.glowroot.agent.plugin.servlet;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.checker.MonotonicNonNull;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 
 // this class is thread safe since it is part of the thread safe ServletMessageSupplier (see comment
 // in ServletMessageSupplier for details why)
@@ -55,16 +54,16 @@ class ResponseHeaderComponent {
 
     synchronized Map<String, Object> getMapOfStrings() {
         if (responseHeaders == null) {
-            return ImmutableMap.of();
+            return Collections.emptyMap();
         }
         // lazy format int and date headers as strings since this method is only called if
         // it is really needed (for storage or display of active trace)
-        Map<String, Object> responseHeaderStrings = Maps.newHashMap();
+        Map<String, Object> responseHeaderStrings = new HashMap<String, Object>();
         for (ResponseHeader responseHeader : responseHeaders.values()) {
             String name = responseHeader.getName();
             List<Object> values = responseHeader.getValues();
             if (values != null) {
-                List<String> headerValueStrings = Lists.newArrayList();
+                List<String> headerValueStrings = new ArrayList<String>();
                 for (Object v : values) {
                     headerValueStrings.add(headerValueString(v));
                 }
@@ -79,7 +78,7 @@ class ResponseHeaderComponent {
 
     synchronized void setHeader(String name, Object value) {
         if (responseHeaders == null) {
-            responseHeaders = Maps.newConcurrentMap();
+            responseHeaders = new ConcurrentHashMap<String, ResponseHeader>();
         }
         String nameUpper = name.toUpperCase(Locale.ENGLISH);
         ResponseHeader responseHeader = responseHeaders.get(nameUpper);
@@ -92,7 +91,7 @@ class ResponseHeaderComponent {
 
     synchronized void addHeader(String name, Object value) {
         if (responseHeaders == null) {
-            responseHeaders = Maps.newConcurrentMap();
+            responseHeaders = new ConcurrentHashMap<String, ResponseHeader>();
         }
         String nameUpper = name.toUpperCase(Locale.ENGLISH);
         ResponseHeader responseHeader = responseHeaders.get(nameUpper);
@@ -151,7 +150,7 @@ class ResponseHeaderComponent {
 
         private void addValue(Object newValue) {
             if (values == null) {
-                values = Lists.newCopyOnWriteArrayList();
+                values = new CopyOnWriteArrayList<Object>();
                 values.add(value);
             }
             values.add(newValue);

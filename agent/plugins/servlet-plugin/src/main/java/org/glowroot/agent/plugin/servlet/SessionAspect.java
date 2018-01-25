@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,18 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.annotation.Nullable;
-
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
+import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.util.Beans;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
-import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.servlet.ServletAspect.HttpSession;
+import org.glowroot.agent.plugin.servlet.ServletPluginProperties.SessionAttributePath;
 
 public class SessionAspect {
 
@@ -36,8 +36,8 @@ public class SessionAspect {
     public static class SetAttributeAdvice {
 
         @OnAfter
-        public static void onAfter(ThreadContext context, @BindReceiver HttpSession session,
-                @BindParameter @Nullable String name, @BindParameter @Nullable Object value) {
+        public static void onAfter(ThreadContext context, @BindParameter @Nullable String name,
+                @BindParameter @Nullable Object value) {
             if (name == null) {
                 // theoretically possible, so just ignore
                 return;
@@ -47,85 +47,100 @@ public class SessionAspect {
             ServletMessageSupplier messageSupplier =
                     (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
-                updateUserIfApplicable(context, name, value, session);
-                updateSessionAttributesIfApplicable(messageSupplier, name, value, session);
+                updateUserIfApplicable(context, name, value);
+                updateSessionAttributesIfApplicable(messageSupplier, name, value);
             }
         }
 
-        private static void updateUserIfApplicable(ThreadContext context, String name,
-                @Nullable Object value, HttpSession session) {
-            if (value == null) {
+        private static void updateUserIfApplicable(ThreadContext context, String attributeName,
+                @Nullable Object attributeValue) {
+            if (attributeValue == null) {
                 // if user value is set to null, don't clear it
                 return;
             }
-            String sessionUserAttributePath = ServletPluginProperties.sessionUserAttributePath();
-            if (!sessionUserAttributePath.isEmpty()) {
-                // capture user now, don't use a lazy supplier
-                if (sessionUserAttributePath.equals(name)) {
-                    context.setTransactionUser(value.toString(), Priority.CORE_PLUGIN);
-                } else if (sessionUserAttributePath.startsWith(name + ".")) {
-                    String user = HttpSessions.getSessionAttributeTextValue(session,
-                            sessionUserAttributePath);
-                    if (user != null) {
-                        // if user is null, don't clear it by setting Suppliers.ofInstance(null)
-                        context.setTransactionUser(user, Priority.CORE_PLUGIN);
-                    }
+            SessionAttributePath userAttributePath = ServletPluginProperties.userAttributePath();
+            if (userAttributePath == null) {
+                return;
+            }
+            if (!userAttributePath.getAttributeName().equals(attributeName)) {
+                return;
+            }
+            // capture user now, don't use a lazy supplier
+            List<String> nestedPath = userAttributePath.getNestedPath();
+            if (nestedPath.isEmpty()) {
+                context.setTransactionUser(attributeValue.toString(), Priority.CORE_PLUGIN);
+            } else {
+                Object user;
+                try {
+                    user = Beans.value(attributeValue, nestedPath);
+                } catch (Exception e) {
+                    user = "<could not access: " + e + ">";
+                }
+                if (user != null) {
+                    // if user is null, don't clear it
+                    context.setTransactionUser(user.toString(), Priority.CORE_PLUGIN);
                 }
             }
         }
 
         private static void updateSessionAttributesIfApplicable(
-                ServletMessageSupplier messageSupplier,
-                String name, @Nullable Object value, HttpSession session) {
-            if (ServletPluginProperties.captureSessionAttributeNames().contains(name)
+                ServletMessageSupplier messageSupplier, String attributeName,
+                @Nullable Object attributeValue) {
+            if (ServletPluginProperties.captureSessionAttributeNames().contains(attributeName)
                     || ServletPluginProperties.captureSessionAttributeNames().contains("*")) {
                 // update all session attributes (possibly nested) at or under the set attribute
-                for (String capturePath : ServletPluginProperties.captureSessionAttributePaths()) {
-                    if (capturePath.equals(name) || capturePath.equals("*")) {
-                        updateSessionAttribute(messageSupplier, name, value);
-                    } else if (capturePath.startsWith(name + ".")) {
-                        updateNestedSessionAttributes(messageSupplier, capturePath, value, session);
+                for (SessionAttributePath attributePath : ServletPluginProperties
+                        .captureSessionAttributePaths()) {
+                    if (attributePath.getAttributeName().equals(attributeName)
+                            || attributePath.isAttributeNameWildcard()) {
+                        if (attributePath.getNestedPath().isEmpty()
+                                && !attributePath.isWildcard()) {
+                            updateSessionAttribute(messageSupplier, attributeName, attributeValue);
+                        } else {
+                            updateNestedSessionAttributes(messageSupplier, attributePath,
+                                    attributeValue);
+                        }
                     }
                 }
             }
         }
 
         private static void updateSessionAttribute(ServletMessageSupplier messageSupplier,
-                String name,
-                @Nullable Object value) {
-            if (value == null) {
-                messageSupplier.putSessionAttributeChangedValue(name, null);
+                String attributeName, @Nullable Object attributeValue) {
+            if (attributeValue == null) {
+                messageSupplier.putSessionAttributeChangedValue(attributeName, null);
             } else {
-                messageSupplier.putSessionAttributeChangedValue(name, value.toString());
+                messageSupplier.putSessionAttributeChangedValue(attributeName,
+                        attributeValue.toString());
             }
         }
 
         private static void updateNestedSessionAttributes(ServletMessageSupplier messageSupplier,
-                String capturePath, @Nullable Object value, HttpSession session) {
-            if (capturePath.endsWith(".*")) {
-                String capturePathBase = capturePath.substring(0, capturePath.length() - 2);
-                Object val = HttpSessions.getSessionAttribute(session, capturePathBase);
+                SessionAttributePath attributePath, @Nullable Object attributeValue) {
+            String fullPath = attributePath.getFullPath();
+            if (attributePath.isWildcard()) {
+                Object val = HttpSessions.getSessionAttribute(attributeValue, attributePath);
                 if (val == null) {
-                    messageSupplier.putSessionAttributeChangedValue(capturePathBase, null);
+                    messageSupplier.putSessionAttributeChangedValue(fullPath, null);
                 } else if (val instanceof Map<?, ?>) {
                     for (Entry<?, ?> entry : ((Map<?, ?>) val).entrySet()) {
                         Object v = entry.getValue();
                         messageSupplier.putSessionAttributeChangedValue(
-                                capturePathBase + "." + entry.getKey(),
-                                v == null ? null : v.toString());
+                                fullPath + "." + entry.getKey(), v == null ? null : v.toString());
                     }
                 } else {
                     for (Entry<String, String> entry : Beans.propertiesAsText(val).entrySet()) {
                         messageSupplier.putSessionAttributeChangedValue(
-                                capturePathBase + "." + entry.getKey(), entry.getValue());
+                                fullPath + "." + entry.getKey(), entry.getValue());
                     }
                 }
-            } else if (value == null) {
+            } else if (attributeValue == null) {
                 // no need to navigate path since it will always be null
-                messageSupplier.putSessionAttributeChangedValue(capturePath, null);
+                messageSupplier.putSessionAttributeChangedValue(fullPath, null);
             } else {
-                String val = HttpSessions.getSessionAttributeTextValue(session, capturePath);
-                messageSupplier.putSessionAttributeChangedValue(capturePath, val);
+                Object val = HttpSessions.getSessionAttribute(attributeValue, attributePath);
+                messageSupplier.putSessionAttributeChangedValue(fullPath,
+                        val == null ? null : val.toString());
             }
         }
     }
@@ -134,11 +149,10 @@ public class SessionAspect {
             methodParameterTypes = {"java.lang.String"}, nestingGroup = "servlet-inner-call")
     public static class RemoveAttributeAdvice {
         @OnAfter
-        public static void onAfter(ThreadContext context, @BindReceiver HttpSession session,
-                @BindParameter @Nullable String name) {
+        public static void onAfter(ThreadContext context, @BindParameter @Nullable String name) {
             // calling HttpSession.setAttribute() with null value is the same as calling
             // removeAttribute(), per the setAttribute() javadoc
-            SetAttributeAdvice.onAfter(context, session, name, null);
+            SetAttributeAdvice.onAfter(context, name, null);
         }
     }
 }

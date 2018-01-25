@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
 package org.glowroot.agent.plugin.jdbc;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Queues;
-import com.google.common.hash.HashCode;
-
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.jdbc.message.BindParameterList;
 
 // used to capture and mirror the state of prepared statements since the underlying
@@ -52,7 +49,7 @@ class PreparedStatementMirror extends StatementMirror {
     void addBatch() {
         // synchronization isn't an issue here as this method is called only by the monitored thread
         if (batchedParameters == null) {
-            batchedParameters = Queues.newConcurrentLinkedQueue();
+            batchedParameters = new ConcurrentLinkedQueue<BindParameterList>();
         }
         if (batchSize++ < CAPTURED_BATCH_SIZE_LIMIT) {
             batchedParameters.add(parameters);
@@ -62,7 +59,7 @@ class PreparedStatementMirror extends StatementMirror {
 
     Collection<BindParameterList> getBatchedParameters() {
         if (batchedParameters == null) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         } else {
             return batchedParameters;
         }
@@ -119,6 +116,8 @@ class PreparedStatementMirror extends StatementMirror {
 
     static class ByteArrayParameterValue {
 
+        private static final char[] hexDigits = "0123456789abcdef".toCharArray();
+
         private final int length;
         private final byte /*@Nullable*/ [] bytes;
 
@@ -131,7 +130,13 @@ class PreparedStatementMirror extends StatementMirror {
         @Override
         public String toString() {
             if (bytes != null) {
-                return "0x" + HashCode.fromBytes(bytes).toString();
+                StringBuilder sb = new StringBuilder(2 + 2 * bytes.length);
+                sb.append("0x");
+                for (byte b : bytes) {
+                    // this logic copied from com.google.common.hash.HashCode.toString()
+                    sb.append(hexDigits[(b >> 4) & 0xf]).append(hexDigits[b & 0xf]);
+                }
+                return sb.toString();
             } else {
                 return "{" + length + " bytes}";
             }

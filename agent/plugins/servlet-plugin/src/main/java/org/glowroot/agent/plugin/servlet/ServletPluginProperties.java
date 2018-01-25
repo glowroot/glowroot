@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,20 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.util.ImmutableList;
+import org.glowroot.agent.plugin.api.util.ImmutableSet;
 
 class ServletPluginProperties {
 
@@ -47,23 +49,21 @@ class ServletPluginProperties {
 
     private static final ConfigService configService = Agent.getConfigService("servlet");
 
-    private static final Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
-
-    private static ImmutableList<Pattern> captureRequestParameters = ImmutableList.of();
-    private static ImmutableList<Pattern> maskRequestParameters = ImmutableList.of();
-    private static ImmutableList<Pattern> captureRequestHeaders = ImmutableList.of();
+    private static List<Pattern> captureRequestParameters = Collections.emptyList();
+    private static List<Pattern> maskRequestParameters = Collections.emptyList();
+    private static List<Pattern> captureRequestHeaders = Collections.emptyList();
 
     private static boolean captureRequestRemoteAddr;
     private static boolean captureRequestRemoteHost;
 
-    private static ImmutableList<Pattern> captureResponseHeaders = ImmutableList.of();
+    private static List<Pattern> captureResponseHeaders = Collections.emptyList();
     private static boolean captureResponseHeadersNonEmpty;
 
-    private static String sessionUserAttributePath = "";
-    private static boolean sessionUserAttributeIsId;
+    private static @Nullable SessionAttributePath userAttributePath;
 
-    private static ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
-    private static ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
+    private static List<SessionAttributePath> captureSessionAttributePaths =
+            Collections.emptyList();
+    private static Set<String> captureSessionAttributeNames = Collections.emptySet();
     private static boolean captureSessionAttributeNamesContainsId;
 
     private static boolean traceErrorOn4xxResponseCode;
@@ -74,15 +74,15 @@ class ServletPluginProperties {
 
     private ServletPluginProperties() {}
 
-    static ImmutableList<Pattern> captureRequestParameters() {
+    static List<Pattern> captureRequestParameters() {
         return captureRequestParameters;
     }
 
-    static ImmutableList<Pattern> maskRequestParameters() {
+    static List<Pattern> maskRequestParameters() {
         return maskRequestParameters;
     }
 
-    static ImmutableList<Pattern> captureRequestHeaders() {
+    static List<Pattern> captureRequestHeaders() {
         return captureRequestHeaders;
     }
 
@@ -94,7 +94,7 @@ class ServletPluginProperties {
         return captureRequestRemoteHost;
     }
 
-    static ImmutableList<Pattern> captureResponseHeaders() {
+    static List<Pattern> captureResponseHeaders() {
         return captureResponseHeaders;
     }
 
@@ -102,21 +102,21 @@ class ServletPluginProperties {
         return captureResponseHeadersNonEmpty;
     }
 
-    static String sessionUserAttributePath() {
-        return sessionUserAttributePath;
+    static @Nullable SessionAttributePath userAttributePath() {
+        return userAttributePath;
     }
 
     static boolean sessionUserAttributeIsId() {
-        return sessionUserAttributeIsId;
+        return userAttributePath != null && userAttributePath.isSessionId();
     }
 
-    static ImmutableSet<String> captureSessionAttributePaths() {
+    static List<SessionAttributePath> captureSessionAttributePaths() {
         return captureSessionAttributePaths;
     }
 
     // only the first-level attribute names (e.g. "one", "abc") as opposed to full paths (e.g.
     // "one.two", "abc.def") returned by captureSessionAttributePaths()
-    static ImmutableSet<String> captureSessionAttributeNames() {
+    static Set<String> captureSessionAttributeNames() {
         return captureSessionAttributeNames;
     }
 
@@ -126,6 +126,48 @@ class ServletPluginProperties {
 
     static boolean traceErrorOn4xxResponseCode() {
         return traceErrorOn4xxResponseCode;
+    }
+
+    static class SessionAttributePath {
+
+        private final String attributeName;
+        private final List<String> nestedPath;
+        private final boolean wildcard;
+
+        private final String fullPath; // attributeName + nestedPath, cached for optimization
+
+        private SessionAttributePath(String attributeName, List<String> nestedPath,
+                boolean wildcard, String fullPath) {
+            this.attributeName = attributeName;
+            this.nestedPath = nestedPath;
+            this.wildcard = wildcard;
+            this.fullPath = fullPath;
+        }
+
+        String getAttributeName() {
+            return attributeName;
+        }
+
+        List<String> getNestedPath() {
+            return nestedPath;
+        }
+
+        boolean isWildcard() {
+            return wildcard;
+        }
+
+        String getFullPath() {
+            return fullPath;
+        }
+
+        boolean isAttributeNameWildcard() {
+            return attributeName.equals("*") && nestedPath.isEmpty() && !wildcard;
+        }
+
+        boolean isSessionId() {
+            return attributeName.equals(ServletPluginProperties.HTTP_SESSION_ID_ATTR)
+                    && nestedPath.isEmpty() && !wildcard;
+        }
     }
 
     private static class ServletPluginConfigListener implements ConfigListener {
@@ -145,13 +187,10 @@ class ServletPluginProperties {
                     .getBooleanProperty(CAPTURE_REQUEST_REMOTE_HOST_PROPERTY_NAME).value();
             captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
             captureResponseHeadersNonEmpty = !captureResponseHeaders.isEmpty();
-            sessionUserAttributePath = configService
-                    .getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value();
-            sessionUserAttributeIsId = sessionUserAttributePath.equals(HTTP_SESSION_ID_ATTR);
-            String captureSessionAttributesText = configService
-                    .getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME).value();
-            captureSessionAttributePaths =
-                    ImmutableSet.copyOf(splitter.split(captureSessionAttributesText));
+            userAttributePath = buildSessionAttributePath(
+                    configService.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value());
+            captureSessionAttributePaths = buildSessionAttributePaths(configService
+                    .getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME).value());
             captureSessionAttributeNames = buildCaptureSessionAttributeNames();
             captureSessionAttributeNamesContainsId =
                     captureSessionAttributeNames.contains(HTTP_SESSION_ID_ATTR);
@@ -159,28 +198,50 @@ class ServletPluginProperties {
                     configService.getBooleanProperty(TRACE_ERROR_ON_4XX_RESPONSE_CODE).value();
         }
 
-        private static ImmutableList<Pattern> buildPatternList(String propertyName) {
+        private static List<Pattern> buildPatternList(String propertyName) {
             String captureRequestParametersText =
                     configService.getStringProperty(propertyName).value();
-            List<Pattern> captureParameters = Lists.newArrayList();
-            for (String parameter : splitter.split(captureRequestParametersText)) {
+            List<Pattern> captureParameters = new ArrayList<Pattern>();
+            for (String parameter : Strings.split(captureRequestParametersText, ',')) {
                 // converted to lower case for case-insensitive matching
                 captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
             }
             return ImmutableList.copyOf(captureParameters);
         }
 
-        private static ImmutableSet<String> buildCaptureSessionAttributeNames() {
-            ImmutableSet.Builder<String> names = ImmutableSet.builder();
-            for (String captureSessionAttributePath : captureSessionAttributePaths) {
-                int index = captureSessionAttributePath.indexOf('.');
-                if (index == -1) {
-                    names.add(captureSessionAttributePath);
-                } else {
-                    names.add(captureSessionAttributePath.substring(0, index));
-                }
+        private static List<SessionAttributePath> buildSessionAttributePaths(
+                String sessionAttributes) {
+            List<SessionAttributePath> attributePaths = new ArrayList<SessionAttributePath>();
+            for (String sessionAttribute : Strings.split(sessionAttributes, ',')) {
+                attributePaths.add(buildSessionAttributePath(sessionAttribute));
             }
-            return names.build();
+            return ImmutableList.copyOf(attributePaths);
+        }
+
+        private static SessionAttributePath buildSessionAttributePath(String sessionAttribute) {
+            boolean wildcard = sessionAttribute.endsWith(".*");
+            String sessionAttr = sessionAttribute;
+            if (wildcard) {
+                sessionAttr = sessionAttribute.substring(0, sessionAttribute.length() - 2);
+            }
+            int index = sessionAttr.indexOf('.');
+            if (index == -1) {
+                return new SessionAttributePath(sessionAttr, Collections.<String>emptyList(),
+                        wildcard, sessionAttr);
+            } else {
+                String attributeName = sessionAttr.substring(0, index);
+                String remaining = sessionAttr.substring(index + 1);
+                List<String> nestedPath = Strings.split(remaining, '.');
+                return new SessionAttributePath(attributeName, nestedPath, wildcard, sessionAttr);
+            }
+        }
+
+        private static Set<String> buildCaptureSessionAttributeNames() {
+            Set<String> names = new HashSet<String>();
+            for (SessionAttributePath sessionAttributePath : captureSessionAttributePaths) {
+                names.add(sessionAttributePath.attributeName);
+            }
+            return ImmutableSet.copyOf(names);
         }
 
         private static Pattern buildRegexPattern(String wildcardPattern) {

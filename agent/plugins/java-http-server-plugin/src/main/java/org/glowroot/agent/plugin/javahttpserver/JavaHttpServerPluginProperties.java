@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,16 @@
  */
 package org.glowroot.agent.plugin.javahttpserver;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.util.ImmutableList;
 
 class JavaHttpServerPluginProperties {
 
@@ -40,15 +39,13 @@ class JavaHttpServerPluginProperties {
 
     private static final ConfigService configService = Agent.getConfigService("java-http-server");
 
-    private static final Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
-
-    private static ImmutableList<Pattern> captureRequestHeaders = ImmutableList.of();
-    private static ImmutableList<Pattern> maskRequestHeaders = ImmutableList.of();
+    private static List<Pattern> captureRequestHeaders = Collections.emptyList();
+    private static List<Pattern> maskRequestHeaders = Collections.emptyList();
 
     private static boolean captureRequestRemoteAddr;
     private static boolean captureRequestRemoteHost;
 
-    private static ImmutableList<Pattern> captureResponseHeaders = ImmutableList.of();
+    private static List<Pattern> captureResponseHeaders = Collections.emptyList();
 
     private static boolean traceErrorOn4xxResponseCode;
 
@@ -58,11 +55,11 @@ class JavaHttpServerPluginProperties {
 
     private JavaHttpServerPluginProperties() {}
 
-    static ImmutableList<Pattern> captureRequestHeaders() {
+    static List<Pattern> captureRequestHeaders() {
         return captureRequestHeaders;
     }
 
-    static ImmutableList<Pattern> maskRequestHeaders() {
+    static List<Pattern> maskRequestHeaders() {
         return maskRequestHeaders;
     }
 
@@ -74,7 +71,7 @@ class JavaHttpServerPluginProperties {
         return captureRequestRemoteHost;
     }
 
-    static ImmutableList<Pattern> captureResponseHeaders() {
+    static List<Pattern> captureResponseHeaders() {
         return captureResponseHeaders;
     }
 
@@ -101,11 +98,11 @@ class JavaHttpServerPluginProperties {
                     configService.getBooleanProperty(TRACE_ERROR_ON_4XX_RESPONSE_CODE).value();
         }
 
-        private static ImmutableList<Pattern> buildPatternList(String propertyName) {
+        private static List<Pattern> buildPatternList(String propertyName) {
             String captureRequestParametersText =
                     configService.getStringProperty(propertyName).value();
-            List<Pattern> captureParameters = Lists.newArrayList();
-            for (String parameter : splitter.split(captureRequestParametersText)) {
+            List<Pattern> captureParameters = new ArrayList<Pattern>();
+            for (String parameter : Strings.split(captureRequestParametersText)) {
                 // converted to lower case for case-insensitive matching
                 captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
             }

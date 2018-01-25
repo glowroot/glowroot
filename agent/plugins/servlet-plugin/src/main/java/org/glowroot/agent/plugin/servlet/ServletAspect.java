@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,9 @@
 package org.glowroot.agent.plugin.servlet;
 
 import java.security.Principal;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
-
-import javax.annotation.Nullable;
-
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
@@ -31,6 +27,7 @@ import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
@@ -43,6 +40,7 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
+import org.glowroot.agent.plugin.servlet.ServletPluginProperties.SessionAttributePath;
 
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
@@ -185,30 +183,28 @@ public class ServletAspect {
             String requestContextPath = Strings.nullToEmpty(request.getContextPath());
             String requestServletPath = Strings.nullToEmpty(request.getServletPath());
             String requestPathInfo = request.getPathInfo();
-            ImmutableMap<String, Object> requestHeaders =
-                    DetailCapture.captureRequestHeaders(request);
+            Map<String, Object> requestHeaders = DetailCapture.captureRequestHeaders(request);
             String requestRemoteAddr = DetailCapture.captureRequestRemoteAddr(request);
             String requestRemoteHost = DetailCapture.captureRequestRemoteHost(request);
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestContextPath,
                         requestServletPath, requestPathInfo, requestUri, requestQueryString,
                         requestHeaders, requestRemoteAddr, requestRemoteHost,
-                        ImmutableMap.<String, String>of());
+                        Collections.<String, String>emptyMap());
             } else {
-                ImmutableMap<String, String> sessionAttributes =
-                        HttpSessions.getSessionAttributes(session);
+                Map<String, String> sessionAttributes = HttpSessions.getSessionAttributes(session);
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestContextPath,
                         requestServletPath, requestPathInfo, requestUri, requestQueryString,
                         requestHeaders, requestRemoteAddr, requestRemoteHost, sessionAttributes);
             }
             String user = null;
             if (session != null) {
-                String sessionUserAttributePath =
-                        ServletPluginProperties.sessionUserAttributePath();
-                if (!sessionUserAttributePath.isEmpty()) {
+                SessionAttributePath userAttributePath =
+                        ServletPluginProperties.userAttributePath();
+                if (userAttributePath != null) {
                     // capture user now, don't use a lazy supplier
-                    user = HttpSessions.getSessionAttributeTextValue(session,
-                            sessionUserAttributePath);
+                    Object val = HttpSessions.getSessionAttribute(session, userAttributePath);
+                    user = val == null ? null : val.toString();
                 }
             }
             String transactionType;

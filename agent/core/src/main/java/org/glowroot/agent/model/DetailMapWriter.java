@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,18 @@
  */
 package org.glowroot.agent.model;
 
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.plugin.api.util.Optional;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class DetailMapWriter {
 
@@ -37,17 +34,6 @@ public class DetailMapWriter {
 
     private static final int MESSAGE_CHAR_LIMIT =
             Integer.getInteger("glowroot.message.char.limit", 100000);
-
-    private static final String UNSHADED_GUAVA_OPTIONAL_CLASS_NAME;
-
-    static {
-        String className = Optional.class.getName();
-        String shadingPrefix = "org.glowroot.agent.shaded.";
-        if (className.startsWith(shadingPrefix)) {
-            className = className.substring(shadingPrefix.length());
-        }
-        UNSHADED_GUAVA_OPTIONAL_CLASS_NAME = className;
-    }
 
     private DetailMapWriter() {}
 
@@ -121,31 +107,7 @@ public class DetailMapWriter {
             Optional<?> val = (Optional<?>) value;
             return val.orNull();
         }
-        if (isUnshadedGuavaOptional(value) || isGuavaOptionalInAnotherClassLoader(value)) {
-            // this is just for plugin tests that run against shaded glowroot-core
-            Class<?> optionalClass = value.getClass().getSuperclass();
-            // just tested that super class is not null in condition
-            checkNotNull(optionalClass);
-            try {
-                Method orNullMethod = optionalClass.getMethod("orNull");
-                return orNullMethod.invoke(value);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                return null;
-            }
-        }
         return value;
-    }
-
-    private static boolean isUnshadedGuavaOptional(Object value) {
-        Class<?> superClass = value.getClass().getSuperclass();
-        return superClass != null
-                && superClass.getName().equals(UNSHADED_GUAVA_OPTIONAL_CLASS_NAME);
-    }
-
-    private static boolean isGuavaOptionalInAnotherClassLoader(Object value) {
-        Class<?> superClass = value.getClass().getSuperclass();
-        return superClass != null && superClass.getName().equals(Optional.class.getName());
     }
 
     // unexpected keys and values are not truncated in org.glowroot.agent.plugin.api.MessageImpl, so

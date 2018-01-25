@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,12 @@
  */
 package org.glowroot.agent.plugin.javahttpserver;
 
+import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 
 class HttpHandlerMessageSupplier extends MessageSupplier {
 
@@ -31,14 +28,14 @@ class HttpHandlerMessageSupplier extends MessageSupplier {
     private final String requestUri;
     private final @Nullable String requestQueryString;
 
-    private final ImmutableMap<String, Object> requestHeaders;
-    private @Nullable ImmutableMap<String, Object> responseHeaders;
+    private final Map<String, Object> requestHeaders;
+    private @Nullable Map<String, Object> responseHeaders;
 
     private final @Nullable String requestRemoteAddr;
     private final @Nullable String requestRemoteHost;
 
     HttpHandlerMessageSupplier(String requestMethod, String requestUri,
-            @Nullable String requestQueryString, ImmutableMap<String, Object> requestHeaders,
+            @Nullable String requestQueryString, Map<String, Object> requestHeaders,
             @Nullable String requestRemoteAddr, @Nullable String requestRemoteHost) {
         this.requestMethod = requestMethod;
         this.requestUri = requestUri;
@@ -50,7 +47,7 @@ class HttpHandlerMessageSupplier extends MessageSupplier {
 
     @Override
     public Message get() {
-        Map<String, Object> detail = Maps.newHashMap();
+        Map<String, Object> detail = new HashMap<String, Object>();
         detail.put("Request http method", requestMethod);
         if (requestQueryString != null) {
             // including empty query string since that means request ended with ?
@@ -71,7 +68,7 @@ class HttpHandlerMessageSupplier extends MessageSupplier {
         return Message.create(requestUri, detail);
     }
 
-    void setResponseHeaders(ImmutableMap<String, Object> responseHeaders) {
+    void setResponseHeaders(Map<String, Object> responseHeaders) {
         this.responseHeaders = responseHeaders;
     }
 }

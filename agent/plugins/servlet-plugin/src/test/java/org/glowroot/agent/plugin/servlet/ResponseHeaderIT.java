@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -210,7 +209,7 @@ public class ResponseHeaderIT {
         // basically just testing that it should not generate any errors
     }
 
-    static @Nullable Map<String, Object> getDetailMap(Trace trace, String name) {
+    static Map<String, Object> getDetailMap(Trace trace, String name) {
         Trace.DetailEntry detailEntry = getDetailEntry(trace, name);
         if (detailEntry == null) {
             return null;
@@ -231,12 +230,12 @@ public class ResponseHeaderIT {
         return responseHeaders;
     }
 
-    static @Nullable String getDetailValue(Trace trace, String name) {
+    static String getDetailValue(Trace trace, String name) {
         Trace.DetailEntry detailEntry = getDetailEntry(trace, name);
         return detailEntry == null ? null : detailEntry.getValue(0).getString();
     }
 
-    private static @Nullable Map<String, Object> getResponseHeaders(Trace trace) {
+    private static Map<String, Object> getResponseHeaders(Trace trace) {
         return getDetailMap(trace, "Response headers");
     }
 

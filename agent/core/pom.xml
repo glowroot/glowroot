@@ -709,18 +709,6 @@
                 <option>-keep class org.glowroot.agent.shaded.org.glowroot.common.** { *; }</option>
                 <option>-keep class org.glowroot.agent.shaded.org.glowroot.ui.** { *; }</option>
                 <option>-keep class org.glowroot.agent.shaded.com.sun.mail.smtp.** { *; }</option>
-                <!-- keep all guava classes so that plugins can use them -->
-                <option>-keep class org.glowroot.agent.shaded.com.google.common.** { *; }</option>
-                <!-- keep all checkerframework classes so that plugins can use them (all annotation
-                  classes must be available on IBM Java 1.6 SR8 and earlier due to
-                  http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354) -->
-                <option>-keep class org.glowroot.agent.shaded.org.checkerframework.** { *; }</option>
-                <!-- keep all jsr305 classes so that plugins can use them (all annotation classes
-                  must be available on IBM Java 1.6 SR8 and earlier due to
-                  http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354) -->
-                <option>-keep class org.glowroot.agent.shaded.javax.annotation.** { *; }</option>
-                <!-- keep all guava classes so that plugins can use them -->
-                <option>-keep class org.glowroot.agent.shaded.com.google.common.** { *; }</option>
                 <!-- keep all logback appenders -->
                 <option>
                   -keep class * extends org.glowroot.agent.shaded.ch.qos.logback.** { *; }

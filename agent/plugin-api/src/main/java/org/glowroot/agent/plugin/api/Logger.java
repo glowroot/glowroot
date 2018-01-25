@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, @Nullable Version 2.0 (@Nullable the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.api;
 
-import javax.annotation.Nullable;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 
 /**
  * Very thin wrapper around SLF4J so plugins don't have to worry about SLF4J shading.

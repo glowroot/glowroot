@@ -15,12 +15,10 @@
  */
 package org.glowroot.agent.plugin.api.internal;
 
-import javax.annotation.Nullable;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 
 public class LoggerImpl implements Logger {
 
@@ -30,7 +28,6 @@ public class LoggerImpl implements Logger {
         this(LoggerFactory.getLogger(clazz));
     }
 
-    @VisibleForTesting
     LoggerImpl(org.slf4j.Logger logger) {
         this.logger = logger;
     }

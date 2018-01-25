@@ -15,9 +15,13 @@
  */
 package org.glowroot.agent.plugin.api.internal;
 
-import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 
 public class PluginServiceHolder {
@@ -59,6 +63,32 @@ public class PluginServiceHolder {
 
         @Override
         public ConfigService getConfigService(String pluginId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <E> List<E> toImmutableList(Collection<E> elements) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <E> Set<E> toImmutableSet(Collection<E> elements) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <K, V> Map<K, V> toImmutableMap(Map<K, V> map) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public @Nullable Object getBeanValue(@Nullable Object obj, List<String> path)
+                throws Exception {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<String, String> getBeanPropertiesAsText(Object obj) {
             throw new UnsupportedOperationException();
         }
     }

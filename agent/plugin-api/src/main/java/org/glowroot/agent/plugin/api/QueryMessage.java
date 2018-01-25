@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
  */
 package org.glowroot.agent.plugin.api;
 
+import java.util.Collections;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.internal.ReadableQueryMessage;
 
@@ -41,7 +40,7 @@ import org.glowroot.agent.plugin.api.internal.ReadableQueryMessage;
  */
 public abstract class QueryMessage {
 
-    private static final ImmutableMap<String, Object> EMPTY_DETAIL = ImmutableMap.of();
+    private static final Map<String, Object> EMPTY_DETAIL = Collections.emptyMap();
 
     public static QueryMessage create(String prefix) {
         return new QueryMessageImpl(prefix, "", EMPTY_DETAIL);

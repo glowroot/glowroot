@@ -328,6 +328,8 @@ case "$1" in
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Initialized\*/|@org.checkerframework.checker.initialization.qual.Initialized|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|@org.checkerframework.checker.tainting.qual.Untainted|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|@org.checkerframework.checker.nullness.qual.\1|g'
+               find agent/plugin-api -name *.java -print0 | xargs -0 sed -i 's|^import org.glowroot.agent.plugin.api.checker.|import org.checkerframework.checker.nullness.qual.|g'
+               find agent/plugins -name *.java -print0 | xargs -0 sed -i 's|^import org.glowroot.agent.plugin.api.checker.|import org.checkerframework.checker.nullness.qual.|g'
 
                # omitting wire-api from checker framework validation since it contains large protobuf generated code which does not pass
                # and even when using -AskipDefs, checker framework still runs on the code (even though it does not report errors)

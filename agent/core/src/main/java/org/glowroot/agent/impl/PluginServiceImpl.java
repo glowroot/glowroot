@@ -15,15 +15,34 @@
  */
 package org.glowroot.agent.impl;
 
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.internal.PluginService;
+import org.glowroot.agent.weaving.Beans;
 
 public class PluginServiceImpl implements PluginService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PluginServiceImpl.class);
 
     private final TimerNameCache timerNameCache;
 
@@ -58,5 +77,114 @@ public class PluginServiceImpl implements PluginService {
 
     public interface ConfigServiceFactory {
         ConfigService create(String pluginId);
+    }
+
+    @Override
+    public <E> List<E> toImmutableList(Collection<E> elements) {
+        return ImmutableList.copyOf(elements);
+    }
+
+    @Override
+    public <E> Set<E> toImmutableSet(Collection<E> elements) {
+        return ImmutableSet.copyOf(elements);
+    }
+
+    @Override
+    public <K, V> Map<K, V> toImmutableMap(Map<K, V> map) {
+        return ImmutableMap.copyOf(map);
+    }
+
+    @Override
+    public @Nullable Object getBeanValue(@Nullable Object obj, List<String> path) throws Exception {
+        return Beans.value(obj, path);
+    }
+
+    @Override
+    public Map<String, String> getBeanPropertiesAsText(Object obj) {
+        return Beans2.propertiesAsText(obj);
+    }
+
+    @VisibleForTesting
+    static class Beans2 {
+
+        // all getters for an individual class are only needed to handle wildcards at the end of a
+        // session attribute path, e.g. "user.*"
+        private static final LoadingCache<Class<?>, Map<String, Method>> wildcardGetters =
+                CacheBuilder.newBuilder().weakKeys().build(new WildcardGettersCacheLoader());
+
+        private Beans2() {}
+
+        @VisibleForTesting
+        static Map<String, String> propertiesAsText(Object obj) {
+            Map<String, String> properties = new HashMap<String, String>();
+            Map<String, Method> allGettersForObj = wildcardGetters.getUnchecked(obj.getClass());
+            for (Entry<String, Method> entry : allGettersForObj.entrySet()) {
+                try {
+                    Object value = entry.getValue().invoke(obj);
+                    if (value != null) {
+                        properties.put(entry.getKey(), value.toString());
+                    }
+                } catch (Exception e) {
+                    // log exception at debug level
+                    logger.debug(e.getMessage(), e);
+                    properties.put(entry.getKey(), "<could not access>");
+                }
+            }
+            return properties;
+        }
+
+        // this unused private method is required for use as SENTINEL_METHOD above
+        @SuppressWarnings("unused")
+        private static void sentinelMethod() {}
+
+        private static class WildcardGettersCacheLoader
+                extends CacheLoader<Class<?>, Map<String, Method>> {
+            @Override
+            public Map<String, Method> load(Class<?> clazz) {
+                Map<String, Method> propertyNames = new HashMap<String, Method>();
+                for (Method method : clazz.getMethods()) {
+                    String propertyName = getPropertyName(method);
+                    if (propertyName == null) {
+                        continue;
+                    }
+                    Method otherMethod = propertyNames.get(propertyName);
+                    if (otherMethod != null && otherMethod.getName().startsWith("get")) {
+                        // "getX" takes precedence over "isX"
+                        continue;
+                    }
+                    method.setAccessible(true);
+                    propertyNames.put(propertyName, method);
+                }
+                return ImmutableMap.copyOf(propertyNames);
+            }
+
+            private static @Nullable String getPropertyName(Method method) {
+                if (method.getParameterTypes().length > 0) {
+                    return null;
+                }
+                String methodName = method.getName();
+                if (methodName.equals("getClass")) {
+                    // ignore this "getter"
+                    return null;
+                }
+                if (startsWithAndThenUpperCaseChar(methodName, "get")) {
+                    return getRemainingWithFirstCharLowercased(methodName, "get");
+                }
+                if (startsWithAndThenUpperCaseChar(methodName, "is")) {
+                    return getRemainingWithFirstCharLowercased(methodName, "is");
+                }
+                return null;
+            }
+
+            private static boolean startsWithAndThenUpperCaseChar(String str, String prefix) {
+                return str.startsWith(prefix) && str.length() > prefix.length()
+                        && Character.isUpperCase(str.charAt(prefix.length()));
+            }
+
+            private static String getRemainingWithFirstCharLowercased(String str, String prefix) {
+                return Character.toLowerCase(str.charAt(prefix.length()))
+                        + str.substring(prefix.length() + 1);
+            }
+        }
     }
 }

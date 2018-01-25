@@ -15,7 +15,13 @@
  */
 package org.glowroot.agent.plugin.api.internal;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 
 public interface PluginService {
@@ -25,4 +31,15 @@ public interface PluginService {
     TimerName getTimerName(String name);
 
     ConfigService getConfigService(String pluginId);
+
+    <E> List<E> toImmutableList(Collection<E> elements);
+
+    <E> Set<E> toImmutableSet(Collection<E> elements);
+
+    <K, V> Map<K, V> toImmutableMap(Map<K, V> map);
+
+    @Nullable
+    Object getBeanValue(@Nullable Object obj, List<String> path) throws Exception;
+
+    Map<String, String> getBeanPropertiesAsText(Object obj);
 }

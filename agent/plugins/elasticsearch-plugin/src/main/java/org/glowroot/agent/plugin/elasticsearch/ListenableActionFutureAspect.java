@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
  */
 package org.glowroot.agent.plugin.elasticsearch;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.checker.NonNull;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -102,7 +101,7 @@ public class ListenableActionFutureAspect {
         public static Timer onBefore(ThreadContext threadContext,
                 @BindReceiver ListenableActionFutureMixin listenableActionFuture) {
             @SuppressWarnings("nullness") // just checked above in isEnabled()
-            @Nonnull
+            @NonNull
             AsyncQueryEntry asyncQueryEntry = listenableActionFuture.glowroot$getAsyncQueryEntry();
             return asyncQueryEntry.extendSyncTimer(threadContext);
         }

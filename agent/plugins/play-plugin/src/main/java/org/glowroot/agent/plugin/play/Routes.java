@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 
 class Routes {
 

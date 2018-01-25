@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,12 @@
  */
 package org.glowroot.agent.plugin.jdbc;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 
 // used to capture and mirror the state of statements since the underlying {@link Statement} values
 // cannot be inspected after they have been set
@@ -44,14 +42,14 @@ public class StatementMirror {
         // synchronization isn't an issue here as this method is called only by
         // the monitored thread
         if (batchedSql == null) {
-            batchedSql = Lists.newArrayList();
+            batchedSql = new ArrayList<String>();
         }
         batchedSql.add(sql);
     }
 
     List<String> getBatchedSql() {
         if (batchedSql == null) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         } else {
             return batchedSql;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,18 @@
 package org.glowroot.agent.plugin.javahttpserver;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
+import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.util.ImmutableList;
+import org.glowroot.agent.plugin.api.util.ImmutableMap;
 import org.glowroot.agent.plugin.javahttpserver.HttpHandlerAspect.Headers;
 import org.glowroot.agent.plugin.javahttpserver.HttpHandlerAspect.HttpExchange;
 
@@ -37,37 +35,34 @@ class DetailCapture {
 
     private DetailCapture() {}
 
-    static ImmutableMap<String, Object> captureRequestHeaders(HttpExchange exchange) {
-        ImmutableList<Pattern> capturePatterns =
-                JavaHttpServerPluginProperties.captureRequestHeaders();
+    static Map<String, Object> captureRequestHeaders(HttpExchange exchange) {
+        List<Pattern> capturePatterns = JavaHttpServerPluginProperties.captureRequestHeaders();
         if (capturePatterns.isEmpty()) {
-            return ImmutableMap.of();
+            return Collections.emptyMap();
         }
         return captureHeaders(capturePatterns, exchange.glowroot$getRequestHeaders(),
                 JavaHttpServerPluginProperties.maskRequestHeaders());
     }
 
-    static ImmutableMap<String, Object> captureResponseHeaders(HttpExchange exchange) {
-        ImmutableList<Pattern> capturePatterns =
-                JavaHttpServerPluginProperties.captureResponseHeaders();
+    static Map<String, Object> captureResponseHeaders(HttpExchange exchange) {
+        List<Pattern> capturePatterns = JavaHttpServerPluginProperties.captureResponseHeaders();
         if (capturePatterns.isEmpty()) {
-            return ImmutableMap.of();
+            return Collections.emptyMap();
         }
         return captureHeaders(capturePatterns, exchange.glowroot$getResponseHeaders(),
-                ImmutableList.<Pattern>of());
+                Collections.<Pattern>emptyList());
     }
 
-    private static ImmutableMap<String, Object> captureHeaders(
-            ImmutableList<Pattern> capturePatterns, @Nullable Headers headers,
-            ImmutableList<Pattern> maskPatterns) {
+    private static Map<String, Object> captureHeaders(List<Pattern> capturePatterns,
+            @Nullable Headers headers, List<Pattern> maskPatterns) {
         if (headers == null) {
-            return ImmutableMap.of();
+            return Collections.emptyMap();
         }
         Set<String> headerNames = headers.keySet();
         if (headerNames == null) {
-            return ImmutableMap.of();
+            return Collections.emptyMap();
         }
-        Map<String, Object> headersMap = Maps.newHashMap();
+        Map<String, Object> headersMap = new HashMap<String, Object>();
         for (String name : headerNames) {
             if (name == null) {
                 continue;
@@ -135,7 +130,7 @@ class DetailCapture {
         if (values.isEmpty()) {
             header.put(name, "");
         } else {
-            List<String> list = Lists.newArrayList();
+            List<String> list = new ArrayList<String>();
             for (String value : values) {
                 list.add(Strings.nullToEmpty(value));
             }
