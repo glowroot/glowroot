@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,22 @@ public class AgentRollupIdsTest {
         assertThat(AgentRollupIds.getAgentRollupIds("a::b::c")).containsExactly("a::b::c", "a::b::",
                 "a::");
         assertThat(AgentRollupIds.getAgentRollupIds("a:b:c")).containsExactly("a:b:c");
+        assertThat(AgentRollupIds.getAgentRollupIds("a:::b")).containsExactly("a:::b", "a:::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a:::b:::c")).containsExactly("a:::b:::c",
+                "a:::b:::", "a:::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a::::b")).containsExactly("a::::b", "a::::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a::::b::::c")).containsExactly("a::::b::::c",
+                "a::::b::::", "a::::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a:::::b")).containsExactly("a:::::b", "a:::::",
+                "a::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a:::::b:::::c")).containsExactly(
+                "a:::::b:::::c", "a:::::b:::::", "a:::::b::", "a:::::", "a::");
+        assertThat(AgentRollupIds.getAgentRollupIds(":")).containsExactly(":");
+        assertThat(AgentRollupIds.getAgentRollupIds("::")).containsExactly("::");
+        assertThat(AgentRollupIds.getAgentRollupIds(":::")).containsExactly(":::");
+        assertThat(AgentRollupIds.getAgentRollupIds("::::")).containsExactly("::::");
+        assertThat(AgentRollupIds.getAgentRollupIds(":::::")).containsExactly(":::::");
+        assertThat(AgentRollupIds.getAgentRollupIds("::::::")).containsExactly("::::::", ":::");
     }
 
     @Test
@@ -47,6 +63,19 @@ public class AgentRollupIdsTest {
         assertThat(AgentRollupIds.getAgentRollupIds("a::b::c::")).containsExactly("a::b::c::",
                 "a::b::", "a::");
         assertThat(AgentRollupIds.getAgentRollupIds("a:b:c::")).containsExactly("a:b:c::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a:::b:::")).containsExactly("a:::b:::",
+                "a:::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a:::b:::c:::")).containsExactly("a:::b:::c:::",
+                "a:::b:::", "a:::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a::::b::::")).containsExactly("a::::b::::",
+                "a::::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a::::b::::c::::")).containsExactly(
+                "a::::b::::c::::", "a::::b::::", "a::::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a:::::b:::::")).containsExactly("a:::::b:::::",
+                "a:::::b::", "a:::::", "a::");
+        assertThat(AgentRollupIds.getAgentRollupIds("a:::::b:::::c:::::")).containsExactly(
+                "a:::::b:::::c:::::", "a:::::b:::::c::", "a:::::b:::::", "a:::::b::", "a:::::",
+                "a::");
     }
 
     @Test
@@ -57,5 +86,31 @@ public class AgentRollupIdsTest {
         assertThat(AgentRollupIds.getParent("aaa::bbb::")).isEqualTo("aaa::");
         assertThat(AgentRollupIds.getParent("aaa::bbb::ccc")).isEqualTo("aaa::bbb::");
         assertThat(AgentRollupIds.getParent("aaa::bbb::ccc::")).isEqualTo("aaa::bbb::");
+
+        assertThat(AgentRollupIds.getParent("aaa:::")).isNull();
+        assertThat(AgentRollupIds.getParent("aaa:::bbb")).isEqualTo("aaa:::");
+        assertThat(AgentRollupIds.getParent("aaa:::bbb:::")).isEqualTo("aaa:::");
+        assertThat(AgentRollupIds.getParent("aaa:::bbb:::ccc")).isEqualTo("aaa:::bbb:::");
+        assertThat(AgentRollupIds.getParent("aaa:::bbb:::ccc:::")).isEqualTo("aaa:::bbb:::");
+
+        assertThat(AgentRollupIds.getParent("aaa::::")).isNull();
+        assertThat(AgentRollupIds.getParent("aaa::::bbb")).isEqualTo("aaa::::");
+        assertThat(AgentRollupIds.getParent("aaa::::bbb::::")).isEqualTo("aaa::::");
+        assertThat(AgentRollupIds.getParent("aaa::::bbb::::ccc")).isEqualTo("aaa::::bbb::::");
+        assertThat(AgentRollupIds.getParent("aaa::::bbb::::ccc::::")).isEqualTo("aaa::::bbb::::");
+
+        assertThat(AgentRollupIds.getParent("aaa:::::")).isEqualTo("aaa::");
+        assertThat(AgentRollupIds.getParent("aaa:::::bbb")).isEqualTo("aaa:::::");
+        assertThat(AgentRollupIds.getParent("aaa:::::bbb:::::")).isEqualTo("aaa:::::bbb::");
+        assertThat(AgentRollupIds.getParent("aaa:::::bbb:::::ccc")).isEqualTo("aaa:::::bbb:::::");
+        assertThat(AgentRollupIds.getParent("aaa:::::bbb:::::ccc:::::"))
+                .isEqualTo("aaa:::::bbb:::::ccc::");
+
+        assertThat(AgentRollupIds.getParent(":")).isNull();
+        assertThat(AgentRollupIds.getParent("::")).isNull();
+        assertThat(AgentRollupIds.getParent(":::")).isNull();
+        assertThat(AgentRollupIds.getParent("::::")).isNull();
+        assertThat(AgentRollupIds.getParent(":::::")).isNull();
+        assertThat(AgentRollupIds.getParent("::::::")).isEqualTo(":::");
     }
 }

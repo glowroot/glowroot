@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,11 +32,22 @@ public class AgentRollupIds {
     public static List<String> getAgentRollupIds(String agentRollupId) {
         List<String> agentRollupIds = Lists.newArrayList();
         agentRollupIds.add(agentRollupId);
-        int lastFoundIndex = agentRollupId.length() - 3;
+        int separatorLen = "::".length();
+        int lastFoundIndex;
+        if (agentRollupId.endsWith("::")) {
+            lastFoundIndex = agentRollupId.length() - separatorLen;
+        } else {
+            lastFoundIndex = agentRollupId.length();
+        }
         int nextFoundIndex;
-        while ((nextFoundIndex = agentRollupId.lastIndexOf("::", lastFoundIndex)) != -1) {
-            agentRollupIds.add(agentRollupId.substring(0, nextFoundIndex + 2));
-            lastFoundIndex = nextFoundIndex - 1;
+        // -1 because the agent rollup part must be at least 1 character
+        while ((nextFoundIndex =
+                agentRollupId.lastIndexOf("::", lastFoundIndex - separatorLen - 1)) != -1) {
+            if (nextFoundIndex == 0) {
+                break;
+            }
+            agentRollupIds.add(agentRollupId.substring(0, nextFoundIndex + separatorLen));
+            lastFoundIndex = nextFoundIndex;
         }
         return agentRollupIds;
     }
@@ -44,11 +55,11 @@ public class AgentRollupIds {
     static @Nullable String getParent(String agentRollupId) {
         int index;
         if (agentRollupId.endsWith("::")) {
-            index = agentRollupId.lastIndexOf("::", agentRollupId.length() - 3);
+            index = agentRollupId.lastIndexOf("::", agentRollupId.length() - 5);
         } else {
             index = agentRollupId.lastIndexOf("::");
         }
-        if (index == -1) {
+        if (index == -1 || index == 0) {
             return null;
         }
         return agentRollupId.substring(0, index + 2);

@@ -761,9 +761,9 @@ public class SchemaUpgrade {
         List<String> agentRollupIds = Lists.newArrayList();
         int lastFoundIndex = -1;
         int nextFoundIndex;
-        while ((nextFoundIndex = agentRollupId.indexOf('/', lastFoundIndex)) != -1) {
+        while ((nextFoundIndex = agentRollupId.indexOf('/', lastFoundIndex + 1)) != -1) {
             agentRollupIds.add(agentRollupId.substring(0, nextFoundIndex));
-            lastFoundIndex = nextFoundIndex + 1;
+            lastFoundIndex = nextFoundIndex;
         }
         agentRollupIds.add(agentRollupId);
         return agentRollupIds;

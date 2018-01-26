@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.central.v09support;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -32,18 +31,15 @@ class V09Support {
     // etc...
     static List<String> getAgentRollupIdsV09(String agentId) {
         List<String> agentRollupIds = Lists.newArrayList();
-        int lastFoundIndex = -1;
-        int nextFoundIndex;
-        while ((nextFoundIndex = agentId.indexOf("::", lastFoundIndex)) != -1) {
-            agentRollupIds.add(agentId.substring(0, nextFoundIndex).replace("::", "/"));
-            lastFoundIndex = nextFoundIndex + 2;
-        }
-        Collections.reverse(agentRollupIds);
-        if (lastFoundIndex == -1) {
-            // no rollups
-            agentRollupIds.add(0, agentId);
+        int nextFoundIndex = agentId.lastIndexOf("::", agentId.length() - 3);
+        if (nextFoundIndex == -1) {
+            agentRollupIds.add(agentId);
         } else {
-            agentRollupIds.add(0, agentId.substring(lastFoundIndex));
+            agentRollupIds.add(agentId.substring(agentId.lastIndexOf("::", agentId.length()) + 2));
+            while (nextFoundIndex != -1) {
+                agentRollupIds.add(agentId.substring(0, nextFoundIndex).replace("::", "/"));
+                nextFoundIndex = agentId.lastIndexOf("::", nextFoundIndex - 1);
+            }
         }
         return agentRollupIds;
     }
