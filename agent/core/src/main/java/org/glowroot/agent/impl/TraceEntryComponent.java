@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,9 +101,8 @@ class TraceEntryComponent {
 
     TraceEntryImpl addErrorEntry(long startTick, long endTick, @Nullable Object messageSupplier,
             @Nullable QueryData queryData, ErrorMessage errorMessage) {
-        TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier,
-                queryData, 1, startTick, null, null);
-        entry.immediateEndAsErrorEntry(errorMessage, endTick);
+        TraceEntryImpl entry = TraceEntryImpl.createCompletedErrorEntry(threadContext, activeEntry,
+                messageSupplier, queryData, errorMessage, startTick, endTick);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         return entry;

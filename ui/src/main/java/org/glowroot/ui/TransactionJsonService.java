@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.MutableQuery;
+import org.glowroot.common.model.MutableServiceCall;
 import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
@@ -236,16 +237,16 @@ class TransactionJsonService {
     String getServiceCalls(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
-        List<Aggregate.ServiceCallsByType> queries =
+        Map<String, List<MutableServiceCall>> serviceCalls =
                 transactionCommonService.getMergedServiceCalls(agentRollupId, query);
         List<ServiceCall> serviceCallList = Lists.newArrayList();
-        for (Aggregate.ServiceCallsByType queriesByType : queries) {
-            for (Aggregate.ServiceCall aggServiceCall : queriesByType.getServiceCallList()) {
+        for (Entry<String, List<MutableServiceCall>> entry : serviceCalls.entrySet()) {
+            for (MutableServiceCall loopServiceCall : entry.getValue()) {
                 serviceCallList.add(ImmutableServiceCall.builder()
-                        .type(queriesByType.getType())
-                        .text(aggServiceCall.getText())
-                        .totalDurationNanos(aggServiceCall.getTotalDurationNanos())
-                        .executionCount(aggServiceCall.getExecutionCount())
+                        .type(entry.getKey())
+                        .text(loopServiceCall.getText())
+                        .totalDurationNanos(loopServiceCall.getTotalDurationNanos())
+                        .executionCount(loopServiceCall.getExecutionCount())
                         .build());
             }
         }

@@ -346,13 +346,18 @@ public class AggregateDao implements AggregateRepository {
         long captureTime = Long.MIN_VALUE;
         for (CappedId cappedId : cappedIds) {
             captureTime = Math.max(captureTime, cappedId.captureTime());
-            List<Aggregate.ServiceCallsByType> queries =
+            List<Aggregate.ServiceCallsByType> serviceCalls =
                     rollupCappedDatabases.get(query.rollupLevel()).readMessages(cappedId.cappedId(),
                             Aggregate.ServiceCallsByType.parser());
-            if (queries != null) {
-                collector.mergeServiceCalls(queries);
-                collector.updateLastCaptureTime(captureTime);
+            for (Aggregate.ServiceCallsByType toBeMergedServiceCalls : serviceCalls) {
+                for (Aggregate.ServiceCall toBeMergedQuery : toBeMergedServiceCalls
+                        .getServiceCallList()) {
+                    collector.mergeServiceCall(toBeMergedServiceCalls.getType(),
+                            toBeMergedQuery.getText(), toBeMergedQuery.getTotalDurationNanos(),
+                            toBeMergedQuery.getExecutionCount());
+                }
             }
+            collector.updateLastCaptureTime(captureTime);
         }
     }
 
@@ -520,7 +525,14 @@ public class AggregateDao implements AggregateRepository {
                     rollupCappedDatabases.get(fromRollupLevel).readMessages(serviceCallsCappedId,
                             Aggregate.ServiceCallsByType.parser());
             if (serviceCalls != null) {
-                mergedAggregate.mergeServiceCalls(serviceCalls);
+                for (Aggregate.ServiceCallsByType serviceCallsByType : serviceCalls) {
+                    for (Aggregate.ServiceCall serviceCall : serviceCallsByType
+                            .getServiceCallList()) {
+                        mergedAggregate.mergeServiceCall(serviceCallsByType.getType(),
+                                serviceCall.getText(), serviceCall.getTotalDurationNanos(),
+                                serviceCall.getExecutionCount());
+                    }
+                }
             }
         }
         if (mainThreadProfileCappedId != null) {

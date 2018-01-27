@@ -36,6 +36,7 @@ import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.MutableQuery;
+import org.glowroot.common.model.MutableServiceCall;
 import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
 import org.glowroot.common.model.ProfileCollector;
@@ -52,7 +53,6 @@ import org.glowroot.common.repo.MutableAggregate;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 class TransactionCommonService {
 
@@ -341,13 +341,13 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    List<Aggregate.ServiceCallsByType> getMergedServiceCalls(String agentRollupId,
+    Map<String, List<MutableServiceCall>> getMergedServiceCalls(String agentRollupId,
             TransactionQuery query)
             throws Exception {
         int maxAggregateServiceCallsPerType =
                 getMaxAggregateServiceCallsPerType(agentRollupId);
         ServiceCallCollector serviceCallCollector =
-                new ServiceCallCollector(maxAggregateServiceCallsPerType, 0);
+                new ServiceCallCollector(maxAggregateServiceCallsPerType);
         long revisedFrom = query.from();
         long revisedTo = liveAggregateRepository.mergeInServiceCalls(agentRollupId, query,
                 serviceCallCollector);
@@ -366,7 +366,7 @@ class TransactionCommonService {
                 break;
             }
         }
-        return serviceCallCollector.toProto();
+        return serviceCallCollector.getSortedAndTruncatedServiceCalls();
     }
 
     // query.from() is non-inclusive

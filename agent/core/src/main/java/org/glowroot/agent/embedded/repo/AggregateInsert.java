@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,14 +32,15 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.agent.embedded.repo.AggregateDao.TruncatedQueryText;
 import org.glowroot.agent.embedded.repo.model.Stored;
-import org.glowroot.agent.embedded.repo.model.Stored.QueriesByType;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource.JdbcUpdate;
 import org.glowroot.agent.embedded.util.RowMappers;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.MutableQuery;
+import org.glowroot.common.model.MutableServiceCall;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.repo.MutableAggregate;
 import org.glowroot.common.repo.MutableThreadStats;
 import org.glowroot.common.util.NotAvailableAware;
@@ -148,8 +149,9 @@ class AggregateInsert implements JdbcUpdate {
         errorCount = aggregate.getErrorCount();
         asyncTransactions = aggregate.isAsyncTransactions();
 
-        queriesCappedId = writeQueries(cappedDatabase, convertToStored(aggregate.getQueries()));
-        serviceCallsCappedId = writeServiceCalls(cappedDatabase, aggregate.getServiceCallsProto());
+        queriesCappedId = writeQueries(cappedDatabase, toProto(aggregate.getQueries()));
+        serviceCallsCappedId =
+                writeServiceCalls(cappedDatabase, toProto(aggregate.getServiceCalls()));
         mainThreadProfileCappedId = writeProfile(cappedDatabase, aggregate.getMainThreadProfile());
         auxThreadProfileCappedId = writeProfile(cappedDatabase, aggregate.getAuxThreadProfile());
         mainThreadRootTimers = toByteArray(aggregate.getMainThreadRootTimersProto());
@@ -267,31 +269,53 @@ class AggregateInsert implements JdbcUpdate {
         return storedQueries;
     }
 
-    private static List<QueriesByType> convertToStored(@Nullable QueryCollector queries) {
-        if (queries == null) {
+    private static List<Stored.QueriesByType> toProto(@Nullable QueryCollector collector) {
+        if (collector == null) {
             return ImmutableList.of();
         }
-        List<Stored.QueriesByType> storedQueries = Lists.newArrayList();
-        for (Entry<String, List<MutableQuery>> entry : queries.getSortedAndTruncatedQueries()
+        List<Stored.QueriesByType> queries = Lists.newArrayList();
+        for (Entry<String, List<MutableQuery>> entry : collector.getSortedAndTruncatedQueries()
                 .entrySet()) {
-            Stored.QueriesByType.Builder storedQueryByType = Stored.QueriesByType.newBuilder()
+            Stored.QueriesByType.Builder queriesByType = Stored.QueriesByType.newBuilder()
                     .setType(entry.getKey());
-            for (MutableQuery query : entry.getValue()) {
-                Stored.Query.Builder storedQuery = Stored.Query.newBuilder()
-                        .setTruncatedText(query.getTruncatedText())
-                        .setFullTextSha1(Strings.nullToEmpty(query.getFullTextSha1()))
-                        .setTotalDurationNanos(query.getTotalDurationNanos())
-                        .setExecutionCount(query.getExecutionCount());
-                if (query.hasTotalRows()) {
-                    storedQuery.setTotalRows(Stored.OptionalInt64.newBuilder()
-                            .setValue(query.getTotalRows())
+            for (MutableQuery mutableQuery : entry.getValue()) {
+                Stored.Query.Builder query = Stored.Query.newBuilder()
+                        .setTruncatedText(mutableQuery.getTruncatedText())
+                        .setFullTextSha1(Strings.nullToEmpty(mutableQuery.getFullTextSha1()))
+                        .setTotalDurationNanos(mutableQuery.getTotalDurationNanos())
+                        .setExecutionCount(mutableQuery.getExecutionCount());
+                if (mutableQuery.hasTotalRows()) {
+                    query.setTotalRows(Stored.OptionalInt64.newBuilder()
+                            .setValue(mutableQuery.getTotalRows())
                             .build());
                 }
-                storedQueryByType.addQuery(storedQuery.build());
+                queriesByType.addQuery(query.build());
             }
-            storedQueries.add(storedQueryByType.build());
+            queries.add(queriesByType.build());
         }
-        return storedQueries;
+        return queries;
+    }
+
+    private static List<Aggregate.ServiceCallsByType> toProto(
+            @Nullable ServiceCallCollector collector) {
+        if (collector == null) {
+            return ImmutableList.of();
+        }
+        List<Aggregate.ServiceCallsByType> serviceCalls = Lists.newArrayList();
+        for (Entry<String, List<MutableServiceCall>> entry : collector
+                .getSortedAndTruncatedServiceCalls().entrySet()) {
+            Aggregate.ServiceCallsByType.Builder serviceCallsByType =
+                    Aggregate.ServiceCallsByType.newBuilder().setType(entry.getKey());
+            for (MutableServiceCall mutableServiceCall : entry.getValue()) {
+                Aggregate.ServiceCall.Builder serviceCall = Aggregate.ServiceCall.newBuilder()
+                        .setText(mutableServiceCall.getText())
+                        .setTotalDurationNanos(mutableServiceCall.getTotalDurationNanos())
+                        .setExecutionCount(mutableServiceCall.getExecutionCount());
+                serviceCallsByType.addServiceCall(serviceCall.build());
+            }
+            serviceCalls.add(serviceCallsByType.build());
+        }
+        return serviceCalls;
     }
 
     private static @Nullable Long writeQueries(CappedDatabase cappedDatabase,

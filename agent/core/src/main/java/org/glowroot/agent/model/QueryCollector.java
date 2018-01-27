@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,14 +56,15 @@ public class QueryCollector {
         List<Aggregate.QueriesByType> proto = Lists.newArrayList();
         for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
             Map<String, MutableQuery> innerMap = outerEntry.getValue();
-            // + 1 is for possible limit exceeded bucket
+            // + 1 is for possible limit exceeded bucket added at the end before final sorting
             List<Aggregate.Query> queries =
                     Lists.newArrayListWithCapacity(innerMap.values().size() + 1);
             for (Entry<String, MutableQuery> innerEntry : innerMap.entrySet()) {
                 queries.add(innerEntry.getValue().toAggregateProto(innerEntry.getKey(),
                         sharedQueryTextCollector));
             }
-            if (queries.size() > limitPerQueryType) {
+            // need to check equality in case maxMultiplierWhileBuilding is 1
+            if (queries.size() >= limitPerQueryType) {
                 sort(queries);
                 List<Aggregate.Query> exceededQueries =
                         queries.subList(limitPerQueryType, queries.size());
@@ -71,10 +72,15 @@ public class QueryCollector {
                 MutableQuery limitExceededBucket = limitExceededBuckets.get(outerEntry.getKey());
                 if (limitExceededBucket == null) {
                     limitExceededBucket = new MutableQuery();
+                } else {
+                    // make copy of limit exceeded bucket since adding exceeded queries to it below
+                    MutableQuery copy = new MutableQuery();
+                    copy.add(limitExceededBucket);
+                    limitExceededBucket = copy;
                 }
                 for (Aggregate.Query exceededQuery : exceededQueries) {
                     limitExceededBucket
-                            .addToTotalDurationNanos((long) exceededQuery.getTotalDurationNanos());
+                            .addToTotalDurationNanos(exceededQuery.getTotalDurationNanos());
                     limitExceededBucket.addToExecutionCount(exceededQuery.getExecutionCount());
                     limitExceededBucket.addToTotalRows(exceededQuery.hasTotalRows(),
                             exceededQuery.getTotalRows().getValue());
@@ -92,7 +98,7 @@ public class QueryCollector {
         return proto;
     }
 
-    public void mergeQuery(String queryType, String queryText, long totalDurationNanos,
+    public void mergeQuery(String queryType, String queryText, double totalDurationNanos,
             long executionCount, boolean hasTotalRows, long totalRows) {
         Map<String, MutableQuery> queriesForType = queries.get(queryType);
         if (queriesForType == null) {
@@ -101,6 +107,21 @@ public class QueryCollector {
         }
         mergeQuery(queryType, queryText, totalDurationNanos, executionCount, totalRows,
                 hasTotalRows, queriesForType);
+    }
+
+    public void mergeQueriesInto(QueryCollector collector) {
+        for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
+            for (Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
+                MutableQuery query = entry.getValue();
+                collector.mergeQuery(outerEntry.getKey(), entry.getKey(),
+                        query.getTotalDurationNanos(), query.getExecutionCount(),
+                        query.hasTotalRows(), query.getTotalRows());
+            }
+        }
+        for (Entry<String, MutableQuery> limitExceededBucket : limitExceededBuckets.entrySet()) {
+            collector.mergeLimitExceededBucket(limitExceededBucket.getKey(),
+                    limitExceededBucket.getValue());
+        }
     }
 
     public void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector) {
@@ -124,6 +145,12 @@ public class QueryCollector {
                         query.hasTotalRows(), query.getTotalRows());
             }
         }
+        for (Entry<String, MutableQuery> limitExceededBucket : limitExceededBuckets.entrySet()) {
+            MutableQuery query = limitExceededBucket.getValue();
+            collector.mergeQuery(limitExceededBucket.getKey(), LIMIT_EXCEEDED_BUCKET, null,
+                    query.getTotalDurationNanos(), query.getExecutionCount(), query.hasTotalRows(),
+                    query.getTotalRows());
+        }
     }
 
     public @Nullable String getFullQueryText(String fullQueryTextSha1) {
@@ -141,7 +168,7 @@ public class QueryCollector {
         return null;
     }
 
-    private void mergeQuery(String queryType, String queryText, long totalDurationNanos,
+    private void mergeQuery(String queryType, String queryText, double totalDurationNanos,
             long executionCount, long totalRows, boolean hasTotalRows,
             Map<String, MutableQuery> queriesForType) {
         MutableQuery aggregateQuery = queriesForType.get(queryText);
@@ -150,16 +177,26 @@ public class QueryCollector {
                 aggregateQuery = new MutableQuery();
                 queriesForType.put(queryText, aggregateQuery);
             } else {
-                aggregateQuery = limitExceededBuckets.get(queryType);
-                if (aggregateQuery == null) {
-                    aggregateQuery = new MutableQuery();
-                    limitExceededBuckets.put(queryType, aggregateQuery);
-                }
+                aggregateQuery = getOrCreateLimitExceededBucket(queryType);
             }
         }
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);
         aggregateQuery.addToExecutionCount(executionCount);
         aggregateQuery.addToTotalRows(hasTotalRows, totalRows);
+    }
+
+    private void mergeLimitExceededBucket(String queryType, MutableQuery limitExceededBucket) {
+        MutableQuery query = getOrCreateLimitExceededBucket(queryType);
+        query.add(limitExceededBucket);
+    }
+
+    private MutableQuery getOrCreateLimitExceededBucket(String queryType) {
+        MutableQuery query = limitExceededBuckets.get(queryType);
+        if (query == null) {
+            query = new MutableQuery();
+            limitExceededBuckets.put(queryType, query);
+        }
+        return query;
     }
 
     private static void sort(List<Aggregate.Query> queries) {

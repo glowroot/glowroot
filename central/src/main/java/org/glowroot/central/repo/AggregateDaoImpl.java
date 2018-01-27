@@ -67,6 +67,7 @@ import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.MutableQuery;
+import org.glowroot.common.model.MutableServiceCall;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.ProfileCollector;
@@ -1506,7 +1507,7 @@ public class AggregateDaoImpl implements AggregateDao {
     private List<Future<?>> rollupServiceCallsFromRows(RollupParams rollup, TransactionQuery query,
             Iterable<Row> rows) throws Exception {
         ServiceCallCollector collector =
-                new ServiceCallCollector(rollup.maxAggregateServiceCallsPerType(), 0);
+                new ServiceCallCollector(rollup.maxAggregateServiceCallsPerType());
         for (Row row : rows) {
             int i = 0;
             String serviceCallType = checkNotNull(row.getString(i++));
@@ -1516,8 +1517,9 @@ public class AggregateDaoImpl implements AggregateDao {
             collector.mergeServiceCall(serviceCallType, serviceCallText, totalDurationNanos,
                     executionCount);
         }
-        return insertServiceCalls(collector.toProto(), rollup.rollupLevel(), rollup.agentRollupId(),
-                query.transactionType(), query.transactionName(), query.to(), rollup.adjustedTTL());
+        return insertServiceCalls(collector.getSortedAndTruncatedServiceCalls(),
+                rollup.rollupLevel(), rollup.agentRollupId(), query.transactionType(),
+                query.transactionName(), query.to(), rollup.adjustedTTL());
     }
 
     private List<Future<?>> rollupThreadProfile(RollupParams rollup, TransactionQuery query,
@@ -1883,6 +1885,36 @@ public class AggregateDaoImpl implements AggregateDao {
                 }
                 boundStatement.setTimestamp(i++, new Date(captureTime));
                 boundStatement.setString(i++, serviceCallsByType.getType());
+                boundStatement.setString(i++, serviceCall.getText());
+                boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
+                boundStatement.setLong(i++, serviceCall.getExecutionCount());
+                boundStatement.setInt(i++, adjustedTTL);
+                futures.add(session.executeAsync(boundStatement));
+            }
+        }
+        return futures;
+    }
+
+    private List<Future<?>> insertServiceCalls(Map<String, List<MutableServiceCall>> map,
+            int rollupLevel, String agentRollupId, String transactionType,
+            @Nullable String transactionName, long captureTime, int adjustedTTL) throws Exception {
+        List<Future<?>> futures = Lists.newArrayList();
+        for (Entry<String, List<MutableServiceCall>> entry : map.entrySet()) {
+            for (MutableServiceCall serviceCall : entry.getValue()) {
+                BoundStatement boundStatement;
+                if (transactionName == null) {
+                    boundStatement = getInsertOverallPS(serviceCallTable, rollupLevel).bind();
+                } else {
+                    boundStatement = getInsertTransactionPS(serviceCallTable, rollupLevel).bind();
+                }
+                int i = 0;
+                boundStatement.setString(i++, agentRollupId);
+                boundStatement.setString(i++, transactionType);
+                if (transactionName != null) {
+                    boundStatement.setString(i++, transactionName);
+                }
+                boundStatement.setTimestamp(i++, new Date(captureTime));
+                boundStatement.setString(i++, entry.getKey());
                 boundStatement.setString(i++, serviceCall.getText());
                 boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
                 boundStatement.setLong(i++, serviceCall.getExecutionCount());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ public class QueryCollector {
 
     private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
-    // first key is query type, second key is either full query text (if query text is relatively
-    // short) or sha1 of full query text (if query text is long)
+    // first key is the query type, second key is either the full query text (if the query text is
+    // relatively short) or the sha1 of the full query text (if the query text is long)
     private final Map<String, Map<String, MutableQuery>> queries = Maps.newHashMap();
     private final int limitPerQueryType;
 
@@ -63,6 +63,13 @@ public class QueryCollector {
                     innerMap = Maps.newHashMap(innerMap);
                     // remove temporarily so it is not included in initial sort/truncation
                     innerMap.remove(LIMIT_EXCEEDED_BUCKET);
+                    // make copy of limit exceeded bucket since adding exceeded queries below
+                    MutableQuery copy = new MutableQuery(LIMIT_EXCEEDED_BUCKET, null);
+                    copy.addToTotalDurationNanos(limitExceededBucket.getTotalDurationNanos());
+                    copy.addToExecutionCount(limitExceededBucket.getExecutionCount());
+                    copy.addToTotalRows(limitExceededBucket.hasTotalRows(),
+                            limitExceededBucket.getTotalRows());
+                    limitExceededBucket = copy;
                 }
                 List<MutableQuery> queries =
                         MutableQuery.byTotalDurationDesc.sortedCopy(innerMap.values());
@@ -70,7 +77,7 @@ public class QueryCollector {
                         queries.subList(limitPerQueryType, queries.size());
                 queries = Lists.newArrayList(queries.subList(0, limitPerQueryType));
                 for (MutableQuery exceededQuery : exceededQueries) {
-                    limitExceededBucket.addTo(exceededQuery);
+                    limitExceededBucket.add(exceededQuery);
                 }
                 queries.add(limitExceededBucket);
                 // need to re-sort now including limit exceeded bucket

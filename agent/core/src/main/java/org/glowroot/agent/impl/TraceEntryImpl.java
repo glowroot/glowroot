@@ -81,6 +81,22 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     // only used by transaction thread
     private @MonotonicNonNull TimerImpl extendedTimer;
 
+    static TraceEntryImpl createCompletedErrorEntry(ThreadContextImpl threadContext,
+            TraceEntryImpl parentTraceEntry, @Nullable Object messageSupplier,
+            @Nullable QueryData queryData, ErrorMessage errorMessage, long startTick,
+            long endTick) {
+        // timing/etc for queryData have been captured already at this point, so passing
+        // queryExecutionCount -1 because that triggers special case to bypass calling start on
+        // the queryData in the constructor below
+        TraceEntryImpl entry = new TraceEntryImpl(threadContext, parentTraceEntry,
+                messageSupplier, queryData, -1, startTick, null, null);
+        entry.errorMessage = errorMessage;
+        entry.endTick = endTick;
+        entry.selfNestingLevel = 0;
+        entry.initialComplete = true;
+        return entry;
+    }
+
     TraceEntryImpl(ThreadContextImpl threadContext, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable Object messageSupplier, @Nullable QueryData queryData,
             long queryExecutionCount, long startTick, @Nullable TimerImpl syncTimer,
@@ -94,7 +110,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         this.asyncTimer = asyncTimer;
         revisedStartTick = startTick;
         selfNestingLevel = 1;
-        if (queryData != null) {
+        // see special case for queryExecutionCount -1 in createCompletedErrorEntry() above
+        if (queryData != null && queryExecutionCount != -1) {
             queryData.start(startTick, queryExecutionCount);
         }
     }
@@ -305,13 +322,6 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
     void setNextTraceEntry(TraceEntryImpl nextTraceEntry) {
         this.nextTraceEntry = nextTraceEntry;
-    }
-
-    void immediateEndAsErrorEntry(ErrorMessage errorMessage, long endTick) {
-        this.errorMessage = errorMessage;
-        this.endTick = endTick;
-        selfNestingLevel--;
-        initialComplete = true;
     }
 
     boolean isAuxThreadRoot() {

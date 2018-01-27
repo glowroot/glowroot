@@ -15,17 +15,12 @@
  */
 package org.glowroot.agent.model;
 
-import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
-class MutableQuery {
+class MutableServiceCall {
 
     private double totalDurationNanos;
     private long executionCount;
-
-    private boolean hasTotalRows;
-    private long totalRows;
 
     double getTotalDurationNanos() {
         return totalDurationNanos;
@@ -33,14 +28,6 @@ class MutableQuery {
 
     long getExecutionCount() {
         return executionCount;
-    }
-
-    boolean hasTotalRows() {
-        return hasTotalRows;
-    }
-
-    long getTotalRows() {
-        return totalRows;
     }
 
     void addToTotalDurationNanos(double totalDurationNanos) {
@@ -51,29 +38,16 @@ class MutableQuery {
         this.executionCount += executionCount;
     }
 
-    void addToTotalRows(boolean hasTotalRows, long totalRows) {
-        if (hasTotalRows) {
-            this.hasTotalRows = true;
-            this.totalRows += totalRows;
-        }
+    void add(MutableServiceCall serviceCall) {
+        addToTotalDurationNanos(serviceCall.totalDurationNanos);
+        addToExecutionCount(serviceCall.executionCount);
     }
 
-    void add(MutableQuery query) {
-        addToTotalDurationNanos(query.totalDurationNanos);
-        addToExecutionCount(query.executionCount);
-        addToTotalRows(query.hasTotalRows, query.totalRows);
-    }
-
-    Aggregate.Query toAggregateProto(String queryText,
-            SharedQueryTextCollector sharedQueryTextCollector) {
-        int sharedQueryTextIndex = sharedQueryTextCollector.getIndex(queryText);
-        Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
-                .setSharedQueryTextIndex(sharedQueryTextIndex)
+    Aggregate.ServiceCall toAggregateProto(String serviceCallText) {
+        Aggregate.ServiceCall.Builder builder = Aggregate.ServiceCall.newBuilder()
+                .setText(serviceCallText)
                 .setTotalDurationNanos(totalDurationNanos)
                 .setExecutionCount(executionCount);
-        if (hasTotalRows) {
-            builder.setTotalRows(OptionalInt64.newBuilder().setValue(totalRows));
-        }
         return builder.build();
     }
 }

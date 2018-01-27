@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,10 @@ import org.glowroot.agent.impl.Transaction.RootTimerCollector;
 import org.glowroot.agent.impl.Transaction.ThreadStatsCollector;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.MutableAggregateTimer;
-import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
+import org.glowroot.agent.model.ServiceCallCollector;
+import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
@@ -43,7 +44,6 @@ import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.ProfileCollector;
-import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.util.NotAvailableAware;
@@ -173,7 +173,7 @@ class AggregateCollector {
             builder.addAllQueriesByType(queries.toAggregateProto(sharedQueryTextCollector));
         }
         if (serviceCalls != null) {
-            builder.addAllServiceCallsByType(serviceCalls.toProto());
+            builder.addAllServiceCallsByType(serviceCalls.toAggregateProto());
         }
         if (mainThreadProfile != null) {
             builder.setMainThreadProfile(mainThreadProfile.toProto());
@@ -253,9 +253,9 @@ class AggregateCollector {
         }
     }
 
-    void mergeServiceCallsInto(ServiceCallCollector collector) {
+    void mergeServiceCallsInto(org.glowroot.common.model.ServiceCallCollector collector) {
         if (serviceCalls != null) {
-            collector.mergeServiceCalls(serviceCalls.toProto());
+            serviceCalls.mergeServiceCallsInto(collector);
         }
     }
 

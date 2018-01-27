@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,27 +20,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public class ServiceCallCollector {
 
     private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
+    // first key is the service call type, second key is the service call text
     private final Map<String, Map<String, MutableServiceCall>> serviceCalls = Maps.newHashMap();
-    private final Map<String, MutableServiceCall> limitExceededBuckets = Maps.newHashMap();
     private final int limitPerServiceCallType;
-    private final int maxMultiplierWhileBuilding;
 
     // this is only used by UI
     private long lastCaptureTime;
 
-    public ServiceCallCollector(int limitPerServiceCallType, int maxMultiplierWhileBuilding) {
+    public ServiceCallCollector(int limitPerServiceCallType) {
         this.limitPerServiceCallType = limitPerServiceCallType;
-        this.maxMultiplierWhileBuilding = maxMultiplierWhileBuilding;
     }
 
     public void updateLastCaptureTime(long captureTime) {
@@ -51,25 +46,8 @@ public class ServiceCallCollector {
         return lastCaptureTime;
     }
 
-    public List<Aggregate.ServiceCallsByType> toProto() {
-        if (serviceCalls.isEmpty()) {
-            return ImmutableList.of();
-        }
-        List<Aggregate.ServiceCallsByType> serviceCallsByType = Lists.newArrayList();
-        for (Entry<String, List<MutableServiceCall>> entry : getSortedAndTruncatedQueries()
-                .entrySet()) {
-            Aggregate.ServiceCallsByType.Builder builder = Aggregate.ServiceCallsByType.newBuilder()
-                    .setType(entry.getKey());
-            for (MutableServiceCall serviceCall : entry.getValue()) {
-                builder.addServiceCall(serviceCall.toProto());
-            }
-            serviceCallsByType.add(builder.build());
-        }
-        return serviceCallsByType;
-    }
-
-    private Map<String, List<MutableServiceCall>> getSortedAndTruncatedQueries() {
-        Map<String, List<MutableServiceCall>> sortedQueries = Maps.newHashMap();
+    public Map<String, List<MutableServiceCall>> getSortedAndTruncatedServiceCalls() {
+        Map<String, List<MutableServiceCall>> sortedServiceCalls = Maps.newHashMap();
         for (Entry<String, Map<String, MutableServiceCall>> outerEntry : serviceCalls.entrySet()) {
             Map<String, MutableServiceCall> innerMap = outerEntry.getValue();
             if (innerMap.size() > limitPerServiceCallType) {
@@ -81,42 +59,30 @@ public class ServiceCallCollector {
                     innerMap = Maps.newHashMap(innerMap);
                     // remove temporarily so it is not included in initial sort/truncation
                     innerMap.remove(LIMIT_EXCEEDED_BUCKET);
+                    // make copy of limit exceeded bucket since adding exceeded service calls below
+                    MutableServiceCall copy = new MutableServiceCall(LIMIT_EXCEEDED_BUCKET);
+                    copy.addToTotalDurationNanos(limitExceededBucket.getTotalDurationNanos());
+                    copy.addToExecutionCount(limitExceededBucket.getExecutionCount());
+                    limitExceededBucket = copy;
                 }
-                List<MutableServiceCall> queries =
+                List<MutableServiceCall> serviceCalls =
                         MutableServiceCall.byTotalDurationDesc.sortedCopy(innerMap.values());
-                List<MutableServiceCall> exceededQueries =
-                        queries.subList(limitPerServiceCallType, queries.size());
-                queries = Lists.newArrayList(queries.subList(0, limitPerServiceCallType));
-                for (MutableServiceCall exceededServiceCall : exceededQueries) {
-                    limitExceededBucket.addTo(exceededServiceCall);
+                List<MutableServiceCall> exceededServiceCalls =
+                        serviceCalls.subList(limitPerServiceCallType, serviceCalls.size());
+                serviceCalls = Lists.newArrayList(serviceCalls.subList(0, limitPerServiceCallType));
+                for (MutableServiceCall exceededServiceCall : exceededServiceCalls) {
+                    limitExceededBucket.add(exceededServiceCall);
                 }
-                queries.add(limitExceededBucket);
+                serviceCalls.add(limitExceededBucket);
                 // need to re-sort now including limit exceeded bucket
-                Collections.sort(queries, MutableServiceCall.byTotalDurationDesc);
-                sortedQueries.put(outerEntry.getKey(), queries);
+                Collections.sort(serviceCalls, MutableServiceCall.byTotalDurationDesc);
+                sortedServiceCalls.put(outerEntry.getKey(), serviceCalls);
             } else {
-                sortedQueries.put(outerEntry.getKey(),
+                sortedServiceCalls.put(outerEntry.getKey(),
                         MutableServiceCall.byTotalDurationDesc.sortedCopy(innerMap.values()));
             }
         }
-        return sortedQueries;
-    }
-
-    public void mergeServiceCalls(List<Aggregate.ServiceCallsByType> toBeMergedServiceCalls) {
-        for (Aggregate.ServiceCallsByType toBeMergedServiceCallsByType : toBeMergedServiceCalls) {
-            String serviceCallType = toBeMergedServiceCallsByType.getType();
-            Map<String, MutableServiceCall> serviceCallsForType = serviceCalls.get(serviceCallType);
-            if (serviceCallsForType == null) {
-                serviceCallsForType = Maps.newHashMap();
-                serviceCalls.put(serviceCallType, serviceCallsForType);
-            }
-            for (Aggregate.ServiceCall serviceCall : toBeMergedServiceCallsByType
-                    .getServiceCallList()) {
-                mergeServiceCall(serviceCallType, serviceCall.getText(),
-                        serviceCall.getTotalDurationNanos(), serviceCall.getExecutionCount(),
-                        serviceCallsForType);
-            }
-        }
+        return sortedServiceCalls;
     }
 
     public void mergeServiceCall(String serviceCallType, String serviceCallText,
@@ -126,27 +92,15 @@ public class ServiceCallCollector {
             serviceCallsForType = Maps.newHashMap();
             serviceCalls.put(serviceCallType, serviceCallsForType);
         }
-        mergeServiceCall(serviceCallType, serviceCallText, totalDurationNanos, executionCount,
-                serviceCallsForType);
+        mergeServiceCall(serviceCallText, totalDurationNanos, executionCount, serviceCallsForType);
     }
 
-    private void mergeServiceCall(String serviceCallType, String serviceCallText,
-            double totalDurationNanos, long executionCount,
-            Map<String, MutableServiceCall> serviceCallsForType) {
+    private static void mergeServiceCall(String serviceCallText, double totalDurationNanos,
+            long executionCount, Map<String, MutableServiceCall> serviceCallsForType) {
         MutableServiceCall aggregateServiceCall = serviceCallsForType.get(serviceCallText);
         if (aggregateServiceCall == null) {
-            if (maxMultiplierWhileBuilding == 0
-                    || serviceCallsForType.size() < limitPerServiceCallType
-                            * maxMultiplierWhileBuilding) {
-                aggregateServiceCall = new MutableServiceCall(serviceCallText);
-                serviceCallsForType.put(serviceCallText, aggregateServiceCall);
-            } else {
-                aggregateServiceCall = limitExceededBuckets.get(serviceCallType);
-                if (aggregateServiceCall == null) {
-                    aggregateServiceCall = new MutableServiceCall(LIMIT_EXCEEDED_BUCKET);
-                    limitExceededBuckets.put(serviceCallType, aggregateServiceCall);
-                }
-            }
+            aggregateServiceCall = new MutableServiceCall(serviceCallText);
+            serviceCallsForType.put(serviceCallText, aggregateServiceCall);
         }
         aggregateServiceCall.addToTotalDurationNanos(totalDurationNanos);
         aggregateServiceCall.addToExecutionCount(executionCount);

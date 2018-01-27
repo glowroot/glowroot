@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,9 +107,9 @@ public class QueryData {
     void end(long endTick) {
         if (--selfNestingLevel == 0) {
             endInternal(endTick);
-        }
-        if (limitExceededBucket != null) {
-            limitExceededBucket.end(endTick);
+            if (limitExceededBucket != null) {
+                limitExceededBucket.end(endTick);
+            }
         }
     }
 
@@ -131,9 +131,9 @@ public class QueryData {
     void extend(long startTick) {
         if (selfNestingLevel++ == 0) {
             this.startTick = startTick;
-        }
-        if (limitExceededBucket != null) {
-            limitExceededBucket.extend(startTick);
+            if (limitExceededBucket != null) {
+                limitExceededBucket.extend(startTick);
+            }
         }
     }
 

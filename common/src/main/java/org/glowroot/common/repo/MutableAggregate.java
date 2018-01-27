@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
@@ -109,12 +108,8 @@ public class MutableAggregate {
         return queries;
     }
 
-    public List<Aggregate.ServiceCallsByType> getServiceCallsProto() {
-        if (serviceCalls == null) {
-            return ImmutableList.of();
-        } else {
-            return serviceCalls.toProto();
-        }
+    public @Nullable ServiceCallCollector getServiceCalls() {
+        return serviceCalls;
     }
 
     public @Nullable MutableProfile getMainThreadProfile() {
@@ -240,11 +235,13 @@ public class MutableAggregate {
                 executionCount, hasTotalRows, totalRows);
     }
 
-    public void mergeServiceCalls(List<Aggregate.ServiceCallsByType> toBeMergedServiceCalls) {
+    public void mergeServiceCall(String serviceCallType, String serviceCallText,
+            double totalDurationNanos, long executionCount) {
         if (serviceCalls == null) {
-            serviceCalls = new ServiceCallCollector(maxAggregateServiceCallsPerType, 0);
+            serviceCalls = new ServiceCallCollector(maxAggregateServiceCallsPerType);
         }
-        serviceCalls.mergeServiceCalls(toBeMergedServiceCalls);
+        serviceCalls.mergeServiceCall(serviceCallType, serviceCallText, totalDurationNanos,
+                executionCount);
     }
 
     public void mergeMainThreadProfile(Profile toBeMergedProfile) {

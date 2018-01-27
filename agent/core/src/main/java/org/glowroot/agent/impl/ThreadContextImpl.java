@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.AsyncTimerImpl;
 import org.glowroot.agent.model.ErrorMessage;
@@ -40,6 +41,7 @@ import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.QueryDataMap;
 import org.glowroot.agent.model.QueryEntryBase;
+import org.glowroot.agent.model.ServiceCallCollector;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.ThreadStatsComponent;
 import org.glowroot.agent.model.TimerNameImpl;
@@ -55,7 +57,6 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
-import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.NotAvailableAware;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -104,6 +105,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private @MonotonicNonNull QueryDataMap serviceCallsForFirstType;
     private @MonotonicNonNull Map<String, QueryDataMap> allServiceCallTypesMap;
 
+    private int aggregateQueryLimitCounter;
+    private int aggregateServiceCallLimitCounter;
+
+    private final int maxAggregateQueriesPerType;
+    private final int maxAggregateServiceCallsPerType;
+
     private final long threadId;
 
     private final boolean limitExceededAuxThreadContext;
@@ -130,6 +137,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, MessageSupplier messageSupplier,
             TimerName rootTimerName, long startTick, boolean captureThreadStats,
+            int maxAggregateQueriesPerType, int maxAggregateServiceCallsPerType,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             boolean limitExceededAuxThreadContext, Ticker ticker,
             ThreadContextThreadLocal.Holder threadContextHolder,
@@ -144,6 +152,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         threadId = Thread.currentThread().getId();
         threadStatsComponent =
                 captureThreadStats ? new ThreadStatsComponent(threadAllocatedBytes) : null;
+        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
+        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
         this.limitExceededAuxThreadContext = limitExceededAuxThreadContext;
         this.ticker = ticker;
         this.threadContextHolder = threadContextHolder;
@@ -228,25 +238,25 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.currentSuppressionKeyId = suppressionKeyId;
     }
 
-    boolean isCompleteAndEmptyExceptForTimersAndThreadStats() {
-        return isCompleted() && !mayHaveChildAuxThreadContext && traceEntryComponent.isEmpty()
-                && headQueryData == null && headServiceCallData == null;
+    // FIXME why is this safe when called from another thread?
+    boolean isMergeable() {
+        return !mayHaveChildAuxThreadContext && traceEntryComponent.isEmpty();
     }
 
-    void mergeQueriesInto(QueryCollector queries) {
+    void mergeQueriesInto(QueryCollector collector) {
         QueryData curr = headQueryData;
         while (curr != null) {
-            queries.mergeQuery(curr.getQueryType(), curr.getQueryText(),
+            collector.mergeQuery(curr.getQueryType(), curr.getQueryText(),
                     curr.getTotalDurationNanos(), curr.getExecutionCount(), curr.hasTotalRows(),
                     curr.getTotalRows());
             curr = curr.getNextQueryData();
         }
     }
 
-    void mergeServiceCallsInto(ServiceCallCollector serviceCalls) {
+    void mergeServiceCallsInto(ServiceCallCollector collector) {
         QueryData curr = headServiceCallData;
         while (curr != null) {
-            serviceCalls.mergeServiceCall(curr.getQueryType(), curr.getQueryText(),
+            collector.mergeServiceCall(curr.getQueryType(), curr.getQueryText(),
                     curr.getTotalDurationNanos(), curr.getExecutionCount());
             curr = curr.getNextQueryData();
         }
@@ -264,19 +274,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     // only called by transaction thread
-    private QueryData getOrCreateQueryDataIfPossible(String queryType, String queryText,
+    private QueryData getOrCreateQueryData(String queryType, String queryText,
             boolean bypassLimit) {
         if (headQueryData == null) {
-            // the call to allowAnotherAggregateQuery() is needed to increment the counter
-            if (!transaction.allowAnotherAggregateQuery(bypassLimit)) {
-                // this only occurs if maxAggregateQueriesPerType is set to 0
-                return new QueryData(queryType, queryText, null, null);
-            }
-            QueryData queryData = new QueryData(queryType, queryText, null, null);
             queriesForFirstType = new QueryDataMap(queryType);
-            queriesForFirstType.put(queryText, queryData);
-            headQueryData = queryData;
-            return headQueryData;
+            return createQueryData(queriesForFirstType, queryType, queryText, bypassLimit);
         }
         QueryDataMap queriesForCurrentType = checkNotNull(queriesForFirstType);
         if (!queriesForCurrentType.getType().equals(queryType)) {
@@ -284,18 +286,23 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         QueryData queryData = queriesForCurrentType.get(queryText);
         if (queryData == null) {
-            if (transaction.allowAnotherAggregateQuery(bypassLimit)) {
-                queryData = createQueryData(queriesForCurrentType, queryType, queryText);
-            } else {
-                QueryData limitExceededBucket = queriesForCurrentType.get(LIMIT_EXCEEDED_BUCKET);
-                if (limitExceededBucket == null) {
-                    limitExceededBucket = createQueryData(queriesForCurrentType, queryType,
-                            LIMIT_EXCEEDED_BUCKET);
-                }
-                queryData = new QueryData(queryType, queryText, null, limitExceededBucket);
-            }
+            queryData = createQueryData(queriesForCurrentType, queryType, queryText, bypassLimit);
         }
         return queryData;
+    }
+
+    private QueryData createQueryData(QueryDataMap queriesForCurrentType, String queryType,
+            String queryText, boolean bypassLimit) {
+        if (allowAnotherAggregateQuery(bypassLimit)) {
+            return createQueryData(queriesForCurrentType, queryType, queryText);
+        } else {
+            QueryData limitExceededBucket = queriesForCurrentType.get(LIMIT_EXCEEDED_BUCKET);
+            if (limitExceededBucket == null) {
+                limitExceededBucket = createQueryData(queriesForCurrentType, queryType,
+                        LIMIT_EXCEEDED_BUCKET);
+            }
+            return new QueryData(queryType, queryText, null, limitExceededBucket);
+        }
     }
 
     private QueryData createQueryData(QueryDataMap queriesForCurrentType, String queryType,
@@ -310,7 +317,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private @Nullable QueryData getOrCreateServiceCallDataIfPossible(String serviceCallType,
             String serviceCallText) {
         if (headServiceCallData == null) {
-            if (!transaction.allowAnotherAggregateServiceCall()) {
+            if (!allowAnotherAggregateServiceCall()) {
                 // this only occurs if maxAggregateServiceCallsPerType is set to 0
                 return null;
             }
@@ -326,10 +333,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         QueryData serviceCallData = serviceCallsForCurrentType.get(serviceCallText);
         if (serviceCallData == null) {
-            if (transaction.allowAnotherAggregateServiceCall()) {
-                serviceCallData =
-                        createServiceCallData(serviceCallType, serviceCallText,
-                                serviceCallsForCurrentType);
+            if (allowAnotherAggregateServiceCall()) {
+                serviceCallData = createServiceCallData(serviceCallType, serviceCallText,
+                        serviceCallsForCurrentType);
             } else {
                 QueryData limitExceededBucket =
                         serviceCallsForCurrentType.get(LIMIT_EXCEEDED_BUCKET);
@@ -351,6 +357,21 @@ public class ThreadContextImpl implements ThreadContextPlus {
         serviceCallsForCurrentType.put(serviceCallText, serviceCallData);
         headServiceCallData = serviceCallData;
         return serviceCallData;
+    }
+
+    // this method has side effect of incrementing counter
+    private boolean allowAnotherAggregateQuery(boolean bypassLimit) {
+        if (aggregateQueryLimitCounter++ < maxAggregateQueriesPerType
+                * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER) {
+            return true;
+        }
+        return bypassLimit;
+    }
+
+    // this method has side effect of incrementing counter
+    private boolean allowAnotherAggregateServiceCall() {
+        return aggregateServiceCallLimitCounter++ < maxAggregateServiceCallsPerType
+                * AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER;
     }
 
     private TraceEntryImpl addErrorEntry(long startTick, long endTick,
@@ -435,15 +456,15 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // memory barrier read ensures timely visibility of detach()
         transaction.memoryBarrierReadWrite();
         if (traceEntryComponent.isCompleted()) {
+            if (threadStatsComponent != null) {
+                threadStatsComponent.onComplete();
+            }
             if (limitExceededAuxThreadContext) {
                 // this is a limit exceeded auxiliary thread context
                 transaction.mergeLimitExceededAuxThreadContext(this);
             }
             if (!isAuxiliary() || transactionAsyncComplete) {
                 transaction.end(endTick, transactionAsyncComplete);
-            }
-            if (threadStatsComponent != null) {
-                threadStatsComponent.onComplete();
             }
             threadContextHolder.set(outerTransactionThreadContext);
             if (outerTransactionThreadContext != null) {
@@ -609,11 +630,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
         long startTick = ticker.read();
         TimerImpl timer = startTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
-            QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText, true);
+            QueryData queryData = getOrCreateQueryData(queryType, queryText, true);
             return traceEntryComponent.pushEntry(startTick, queryMessageSupplier, timer, null,
                     queryData, 1);
         } else {
-            QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText, false);
+            QueryData queryData = getOrCreateQueryData(queryType, queryText, false);
             return new DummyTraceEntryOrQuery(timer, null, startTick, queryMessageSupplier,
                     queryData, 1);
         }
@@ -641,11 +662,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
         long startTick = ticker.read();
         TimerImpl timer = startTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
-            QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText, true);
+            QueryData queryData = getOrCreateQueryData(queryType, queryText, true);
             return traceEntryComponent.pushEntry(startTick, queryMessageSupplier, timer, null,
                     queryData, queryExecutionCount);
         } else {
-            QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText, false);
+            QueryData queryData = getOrCreateQueryData(queryType, queryText, false);
             return new DummyTraceEntryOrQuery(timer, null, startTick, queryMessageSupplier,
                     queryData, queryExecutionCount);
         }
@@ -675,11 +696,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
         TimerImpl syncTimer = startTimer(timerName, startTick);
         AsyncTimerImpl asyncTimer = startAsyncTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
-            QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText, true);
+            QueryData queryData = getOrCreateQueryData(queryType, queryText, true);
             return startAsyncQueryEntry(startTick, queryMessageSupplier, syncTimer, asyncTimer,
                     queryData, 1);
         } else {
-            QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText, false);
+            QueryData queryData = getOrCreateQueryData(queryType, queryText, false);
             return new DummyTraceEntryOrQuery(syncTimer, asyncTimer, startTick,
                     queryMessageSupplier, queryData, 1);
         }
