@@ -320,7 +320,7 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeQuery",
             methodParameterTypes = {"java.lang.String"}, methodReturnType = "java.sql.ResultSet",
-            nestingGroup = "jdbc", timerName = "jdbc execute")
+            nestingGroup = "jdbc")
     public static class StatementExecuteQueryAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
@@ -359,7 +359,7 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeUpdate",
             methodParameterTypes = {"java.lang.String", ".."}, methodReturnType = "int",
-            nestingGroup = "jdbc", timerName = "jdbc execute")
+            nestingGroup = "jdbc")
     public static class StatementExecuteUpdateAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
@@ -430,7 +430,7 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "executeQuery",
             methodParameterTypes = {}, methodReturnType = "java.sql.ResultSet",
-            nestingGroup = "jdbc", timerName = "jdbc execute")
+            nestingGroup = "jdbc")
     public static class PreparedStatementExecuteQueryAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
@@ -464,8 +464,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "executeUpdate",
-            methodParameterTypes = {}, methodReturnType = "int", nestingGroup = "jdbc",
-            timerName = "jdbc execute")
+            methodParameterTypes = {}, methodReturnType = "int", nestingGroup = "jdbc")
     public static class PreparedStatementExecuteUpdateAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
