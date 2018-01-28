@@ -1914,6 +1914,38 @@ public class SchemaUpgrade {
         }
     }
 
+    private Map<String, V09AgentRollup> getV09AgentRollupsFromAgentRollupTable() throws Exception {
+        Map<String, V09AgentRollup> v09AgentRollupIds = Maps.newHashMap();
+        ResultSet results = session.execute("select agent_rollup_id, parent_agent_rollup_id, agent"
+                + " from agent_rollup where one = 1");
+        for (Row row : results) {
+            int i = 0;
+            String v09AgentRollupId = checkNotNull(row.getString(i++));
+            String v09ParentAgentRollupId = row.getString(i++);
+            boolean agent = row.getBool(i++);
+            boolean hasRollup = v09ParentAgentRollupId != null;
+            String agentRollupId;
+            if (agent) {
+                if (v09ParentAgentRollupId == null) {
+                    agentRollupId = v09AgentRollupId;
+                } else {
+                    agentRollupId =
+                            v09ParentAgentRollupId.replace("/", "::") + "::" + v09AgentRollupId;
+                }
+            } else {
+                agentRollupId = v09AgentRollupId.replace("/", "::") + "::";
+            }
+            v09AgentRollupIds.put(v09AgentRollupId, ImmutableV09AgentRollup.builder()
+                    .agent(agent)
+                    .hasRollup(hasRollup)
+                    .agentRollupId(agentRollupId)
+                    .v09AgentRollupId(v09AgentRollupId)
+                    .v09ParentAgentRollupId(v09ParentAgentRollupId)
+                    .build());
+        }
+        return v09AgentRollupIds;
+    }
+
     private void finishV09AgentIdUpdate() throws Exception {
         dropTableIfExists("trace_check");
         // TODO at some point in the future drop agent_rollup
@@ -2158,38 +2190,6 @@ public class SchemaUpgrade {
         }
         MoreFutures.waitForAll(futures);
         dropColumnIfExists("trace_tn_slow_point", "partial");
-    }
-
-    private Map<String, V09AgentRollup> getV09AgentRollupsFromAgentRollupTable() throws Exception {
-        Map<String, V09AgentRollup> v09AgentRollupIds = Maps.newHashMap();
-        ResultSet results = session.execute("select agent_rollup_id, parent_agent_rollup_id, agent"
-                + " from agent_rollup where one = 1");
-        for (Row row : results) {
-            int i = 0;
-            String v09AgentRollupId = checkNotNull(row.getString(i++));
-            String v09ParentAgentRollupId = row.getString(i++);
-            boolean agent = row.getBool(i++);
-            boolean hasRollup = v09ParentAgentRollupId != null;
-            String agentRollupId;
-            if (agent) {
-                if (v09ParentAgentRollupId == null) {
-                    agentRollupId = v09AgentRollupId;
-                } else {
-                    agentRollupId =
-                            v09ParentAgentRollupId.replace("/", "::") + "::" + v09AgentRollupId;
-                }
-            } else {
-                agentRollupId = v09AgentRollupId.replace("/", "::") + "::";
-            }
-            v09AgentRollupIds.put(v09AgentRollupId, ImmutableV09AgentRollup.builder()
-                    .agent(agent)
-                    .hasRollup(hasRollup)
-                    .agentRollupId(agentRollupId)
-                    .v09AgentRollupId(v09AgentRollupId)
-                    .v09ParentAgentRollupId(v09ParentAgentRollupId)
-                    .build());
-        }
-        return v09AgentRollupIds;
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
