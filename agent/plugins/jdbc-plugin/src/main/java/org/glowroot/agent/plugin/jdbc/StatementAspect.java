@@ -538,7 +538,11 @@ public class StatementAspect {
             QueryMessageSupplier queryMessageSupplier;
             String queryText = mirror.getSql();
             int batchSize = mirror.getBatchSize();
-            if (captureBindParameters.value()) {
+            if (batchSize <= 0) {
+                queryText = "[empty batch] " + queryText;
+                queryMessageSupplier = QueryMessageSupplier.create("jdbc execution: ");
+                batchSize = 1;
+            } else if (captureBindParameters.value()) {
                 queryMessageSupplier = new BatchPreparedStatementMessageSupplier(
                         mirror.getBatchedParameters(), batchSize);
             } else {

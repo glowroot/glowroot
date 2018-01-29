@@ -97,15 +97,15 @@ public class ThreadContextImplTest {
 
     @Test
     public void testStartQueryEntryWithExecutionCount() {
-        assertThat(threadContext.startQueryEntry(null, "text", 0, queryMessageSupplier, timerName))
+        assertThat(threadContext.startQueryEntry(null, "text", 1, queryMessageSupplier, timerName))
                 .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", null, 0, queryMessageSupplier, timerName))
+        assertThat(threadContext.startQueryEntry("type", null, 1, queryMessageSupplier, timerName))
                 .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", "text", 0, null, timerName))
+        assertThat(threadContext.startQueryEntry("type", "text", 1, null, timerName))
                 .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", "text", 0, queryMessageSupplier, null))
+        assertThat(threadContext.startQueryEntry("type", "text", 1, queryMessageSupplier, null))
                 .isEqualTo(NopTransactionService.QUERY_ENTRY);
-        assertThat(threadContext.startQueryEntry("type", "text", 0, queryMessageSupplier, timerName)
+        assertThat(threadContext.startQueryEntry("type", "text", 1, queryMessageSupplier, timerName)
                 .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 

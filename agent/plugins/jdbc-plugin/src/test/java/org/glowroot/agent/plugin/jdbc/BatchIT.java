@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingStatement;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -321,6 +322,47 @@ public class BatchIT {
     }
 
     @Test
+    public void testBatchPreparedStatementWithNoBatches() throws Exception {
+        // hsqldb driver (and maybe some others) throw error when executing a batch with no batches
+        Assume.assumeTrue(Connections.getConnectionType() == ConnectionType.H2);
+
+        // when
+        Trace trace = container.execute(ExecuteBatchPreparedStatementWithNoBatches.class);
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("[empty batch] insert into employee (name) values (?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
+    public void testBatchPreparedStatementWithSingleBatch() throws Exception {
+        // when
+        Trace trace = container.execute(ExecuteBatchPreparedStatementWithSingleBatch.class);
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name) values (?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
     public void testBatchStatementWithoutClear() throws Exception {
         // when
         Trace trace = container.execute(ExecuteBatchStatementWithoutClear.class);
@@ -534,6 +576,58 @@ public class BatchIT {
                 statement.executeBatch();
             } finally {
                 statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteBatchPreparedStatementWithNoBatches
+            implements AppUnderTest, TransactionMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            connection.setAutoCommit(false);
+            try {
+                transactionMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void transactionMarker() throws Exception {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("insert into employee (name) values (?)");
+            try {
+                preparedStatement.executeBatch();
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecuteBatchPreparedStatementWithSingleBatch
+            implements AppUnderTest, TransactionMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            connection.setAutoCommit(false);
+            try {
+                transactionMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void transactionMarker() throws Exception {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("insert into employee (name) values (?)");
+            try {
+                preparedStatement.setString(1, "huckle");
+                preparedStatement.addBatch();
+                preparedStatement.executeBatch();
+            } finally {
+                preparedStatement.close();
             }
         }
     }

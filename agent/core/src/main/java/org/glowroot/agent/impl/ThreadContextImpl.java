@@ -651,6 +651,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startQueryEntry(): argument 'queryText' must be non-null");
             return NopTransactionService.QUERY_ENTRY;
         }
+        if (queryExecutionCount <= 0) {
+            logger.error("startQueryEntry(): argument 'queryExecutionCount' must be positive");
+            return NopTransactionService.QUERY_ENTRY;
+        }
         if (queryMessageSupplier == null) {
             logger.error("startQueryEntry(): argument 'queryMessageSupplier' must be non-null");
             return NopTransactionService.QUERY_ENTRY;
