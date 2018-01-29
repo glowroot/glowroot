@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -196,7 +195,7 @@ class LayoutService {
 
         AgentRollupLayout embeddedAgentRollup = ImmutableAgentRollupLayout.builder()
                 .id(AGENT_ID)
-                .display(AGENT_ID)
+                .display(getEmbeddedAgentDisplayName())
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypes)
                 .putAllTraceAttributeNames(traceAttributeNames)
@@ -294,13 +293,8 @@ class LayoutService {
                 .build();
     }
 
-    private @Nullable String getEmbeddedAgentDisplayName() {
-        if (central) {
-            return null;
-        } else {
-            return Strings.emptyToNull(
-                    configRepository.getEmbeddedAdminGeneralConfig().agentDisplayNameOrDefault());
-        }
+    private String getEmbeddedAgentDisplayName() {
+        return configRepository.getEmbeddedAdminGeneralConfig().agentDisplayNameOrDefault();
     }
 
     static Permissions getPermissions(Authentication authentication, String agentRollupId)
