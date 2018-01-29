@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -887,13 +887,13 @@ HandlebarsRendering = (function () {
       }
       if (queryMessage && queryMessage.sharedQueryText.fullTextSha1 && !queryMessage.sharedQueryText.fullText) {
         var $traceParent = parent.parents('.gt-trace-parent');
-        var agentRollupId = $traceParent.data('gtAgentRollupId');
+        var agentId = $traceParent.data('gtAgentId');
         var alreadyDoneAfter;
         var spinner = Glowroot.showSpinner(expanded.find('.gt-trace-detail-spinner'), function () {
           doAfter();
           alreadyDoneAfter = true;
         });
-        $.get('backend/transaction/full-query-text?agent-rollup-id=' + encodeURIComponent(agentRollupId)
+        $.get('backend/transaction/full-query-text?agent-rollup-id=' + encodeURIComponent(agentId)
             + '&full-text-sha1=' + queryMessage.sharedQueryText.fullTextSha1)
             .done(function (data) {
               if (data.expired) {
