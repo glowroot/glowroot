@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,9 @@ public class BatchPreparedStatementMessageSupplier2 extends QueryMessageSupplier
         String prefix;
         if (batchSize > 1) {
             // print out number of batches to make it easy to identify
-            prefix = "jdbc execution: " + batchSize + " x ";
+            prefix = "jdbc execute: " + batchSize + " x ";
         } else {
-            prefix = "jdbc execution: ";
+            prefix = "jdbc execute: ";
         }
         return QueryMessage.create(prefix);
     }

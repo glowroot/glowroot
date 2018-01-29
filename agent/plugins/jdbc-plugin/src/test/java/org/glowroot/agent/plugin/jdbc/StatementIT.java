@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -90,7 +90,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -110,7 +110,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("update employee set name = 'nobody'");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -142,7 +142,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
@@ -164,7 +164,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -184,7 +184,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -204,7 +204,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -224,7 +224,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -244,7 +244,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 1 row");
 
         assertThat(i.hasNext()).isFalse();
@@ -264,7 +264,7 @@ public class StatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();

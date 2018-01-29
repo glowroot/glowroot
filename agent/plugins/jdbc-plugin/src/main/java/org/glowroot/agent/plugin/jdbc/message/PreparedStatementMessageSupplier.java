@@ -36,7 +36,7 @@ public class PreparedStatementMessageSupplier extends QueryMessageSupplier {
             appendParameters(sb, parameters);
             suffix = sb.toString();
         }
-        return QueryMessage.create("jdbc execution: ", suffix);
+        return QueryMessage.create("jdbc execute: ", suffix);
     }
 
     static void appendParameters(StringBuilder sb, BindParameterList parameters) {

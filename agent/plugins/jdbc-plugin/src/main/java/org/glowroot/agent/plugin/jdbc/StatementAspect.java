@@ -298,7 +298,7 @@ public class StatementAspect {
                 return null;
             }
             QueryEntry query = context.startQueryEntry(QUERY_TYPE, sql,
-                    QueryMessageSupplier.create("jdbc execution: "), timerName);
+                    QueryMessageSupplier.create("jdbc execute: "), timerName);
             mirror.setLastQueryEntry(query);
             return query;
         }
@@ -409,7 +409,7 @@ public class StatementAspect {
             if (captureBindParameters.value()) {
                 queryMessageSupplier = new PreparedStatementMessageSupplier(mirror.getParameters());
             } else {
-                queryMessageSupplier = QueryMessageSupplier.create("jdbc execution: ");
+                queryMessageSupplier = QueryMessageSupplier.create("jdbc execute: ");
             }
             QueryEntry queryEntry =
                     context.startQueryEntry(QUERY_TYPE, queryText, queryMessageSupplier, timerName);
@@ -540,7 +540,7 @@ public class StatementAspect {
             int batchSize = mirror.getBatchSize();
             if (batchSize <= 0) {
                 queryText = "[empty batch] " + queryText;
-                queryMessageSupplier = QueryMessageSupplier.create("jdbc execution: ");
+                queryMessageSupplier = QueryMessageSupplier.create("jdbc execute: ");
                 batchSize = 1;
             } else if (captureBindParameters.value()) {
                 queryMessageSupplier = new BatchPreparedStatementMessageSupplier(
@@ -572,7 +572,7 @@ public class StatementAspect {
                 concatenated = sb.toString();
             }
             QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, concatenated,
-                    QueryMessageSupplier.create("jdbc execution: "), timerName);
+                    QueryMessageSupplier.create("jdbc execute: "), timerName);
             mirror.setLastQueryEntry(queryEntry);
             mirror.clearBatch();
             return queryEntry;

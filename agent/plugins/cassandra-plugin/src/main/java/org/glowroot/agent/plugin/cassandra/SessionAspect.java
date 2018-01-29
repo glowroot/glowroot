@@ -219,7 +219,7 @@ public class SessionAspect {
         } else {
             return null;
         }
-        return new QueryEntryInfo(queryText, QueryMessageSupplier.create("cql execution: "));
+        return new QueryEntryInfo(queryText, QueryMessageSupplier.create("cql execute: "));
     }
 
     private static String concatenate(Collection<Statement> statements) {

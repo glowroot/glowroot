@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("PUT testindex/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -94,7 +94,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("GET testindex/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
@@ -116,7 +116,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("PUT testindex/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
@@ -138,7 +138,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("DELETE testindex/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
@@ -160,7 +160,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("SEARCH testindex/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -182,7 +182,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("SEARCH _any/testtype");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -206,7 +206,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("SEARCH /");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -230,7 +230,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("SEARCH testindex,testindex2/testtype,testtype2");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -252,7 +252,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).startsWith("SEARCH testindex/testtype {");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execution: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
