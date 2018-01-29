@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.api;
 
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.internal.LoggerImpl;
 import org.glowroot.agent.plugin.api.internal.PluginService;
 import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -56,7 +55,11 @@ public class Agent {
         return service.getConfigService(pluginId);
     }
 
+    /**
+     * @deprecated Use {@link Logger#getLogger(Class)} instead.
+     */
+    @Deprecated
     public static Logger getLogger(Class<?> clazz) {
-        return new LoggerImpl(clazz);
+        return Logger.getLogger(clazz);
     }
 }

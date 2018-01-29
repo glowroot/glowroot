@@ -18,13 +18,12 @@ package org.glowroot.agent.plugin.api.util;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 
 public class Reflection {
 
-    private static final Logger logger = Agent.getLogger(Reflection.class);
+    private static final Logger logger = Logger.getLogger(Reflection.class);
 
     private Reflection() {}
 

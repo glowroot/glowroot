@@ -43,7 +43,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 // slow while expanding
 public class DataSourceAspect {
 
-    private static final Logger logger = Agent.getLogger(DataSourceAspect.class);
+    private static final Logger logger = Logger.getLogger(DataSourceAspect.class);
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty captureGetConnection =

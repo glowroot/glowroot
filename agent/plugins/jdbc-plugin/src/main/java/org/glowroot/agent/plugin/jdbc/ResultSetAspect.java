@@ -35,7 +35,7 @@ import org.glowroot.agent.plugin.jdbc.StatementAspect.HasStatementMirror;
 
 public class ResultSetAspect {
 
-    private static final Logger logger = Agent.getLogger(ResultSetAspect.class);
+    private static final Logger logger = Logger.getLogger(ResultSetAspect.class);
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     @Shim("java.sql.ResultSet")

@@ -43,7 +43,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class ExecutorAspect {
 
-    private static final Logger logger = Agent.getLogger(ExecutorAspect.class);
+    private static final Logger logger = Logger.getLogger(ExecutorAspect.class);
 
     private static final AtomicBoolean isDoneExceptionLogged = new AtomicBoolean();
 

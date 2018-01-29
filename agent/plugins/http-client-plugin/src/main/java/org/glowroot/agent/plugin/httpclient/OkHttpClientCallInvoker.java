@@ -17,14 +17,13 @@ package org.glowroot.agent.plugin.httpclient;
 
 import java.lang.reflect.Field;
 
-import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class OkHttpClientCallInvoker {
 
-    private static final Logger logger = Agent.getLogger(OkHttpClientCallInvoker.class);
+    private static final Logger logger = Logger.getLogger(OkHttpClientCallInvoker.class);
 
     private final @Nullable Field originalRequestField;
 

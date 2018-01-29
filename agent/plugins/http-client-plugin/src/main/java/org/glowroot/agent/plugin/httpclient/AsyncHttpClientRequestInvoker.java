@@ -18,14 +18,13 @@ package org.glowroot.agent.plugin.httpclient;
 import java.lang.reflect.Method;
 import java.net.URI;
 
-import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class AsyncHttpClientRequestInvoker {
 
-    private static final Logger logger = Agent.getLogger(AsyncHttpClientRequestInvoker.class);
+    private static final Logger logger = Logger.getLogger(AsyncHttpClientRequestInvoker.class);
 
     private final @Nullable Method getUrlMethod;
     private final @Nullable Method getURIMethod;

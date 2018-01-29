@@ -15,19 +15,11 @@
  */
 package org.glowroot.agent.plugin.api.internal;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.checker.Nullable;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 
 public class PluginServiceHolder {
 
     private static volatile @Nullable PluginService service;
-    private static volatile @Nullable Exception retrievedTooEarlyLocation;
 
     private PluginServiceHolder() {}
 
@@ -41,55 +33,5 @@ public class PluginServiceHolder {
 
     public static void set(PluginService service) {
         PluginServiceHolder.service = service;
-    }
-
-    public static void setMockForLogger() {
-        if (service == null) {
-            service = new MockPluginService();
-        }
-    }
-
-    private static class MockPluginService implements PluginService {
-
-        @Override
-        public TimerName getTimerName(Class<?> adviceClass) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public TimerName getTimerName(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public ConfigService getConfigService(String pluginId) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <E> List<E> toImmutableList(Collection<E> elements) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <E> Set<E> toImmutableSet(Collection<E> elements) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <K, V> Map<K, V> toImmutableMap(Map<K, V> map) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public @Nullable Object getBeanValue(@Nullable Object obj, List<String> path)
-                throws Exception {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Map<String, String> getBeanPropertiesAsText(Object obj) {
-            throw new UnsupportedOperationException();
-        }
     }
 }

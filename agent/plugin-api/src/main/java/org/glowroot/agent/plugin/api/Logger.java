@@ -15,72 +15,253 @@
  */
 package org.glowroot.agent.plugin.api;
 
+import org.slf4j.LoggerFactory;
+
 import org.glowroot.agent.plugin.api.checker.Nullable;
 
 /**
  * Very thin wrapper around SLF4J so plugins don't have to worry about SLF4J shading.
  */
-public interface Logger {
+public abstract class Logger {
 
-    String getName();
+    public static Logger getLogger(Class<?> clazz) {
+        return new LoggerImpl(clazz);
+    }
 
-    boolean isTraceEnabled();
+    public abstract String getName();
 
-    void trace(@Nullable String msg);
+    public abstract boolean isTraceEnabled();
 
-    void trace(@Nullable String format, @Nullable Object arg);
+    public abstract void trace(@Nullable String msg);
 
-    void trace(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public abstract void trace(@Nullable String format, @Nullable Object arg);
 
-    void trace(@Nullable String format, @Nullable Object... arguments);
+    public abstract void trace(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2);
 
-    void trace(@Nullable String msg, @Nullable Throwable t);
+    public abstract void trace(@Nullable String format, @Nullable Object... arguments);
 
-    boolean isDebugEnabled();
+    public abstract void trace(@Nullable String msg, @Nullable Throwable t);
 
-    void debug(@Nullable String msg);
+    public abstract boolean isDebugEnabled();
 
-    void debug(@Nullable String format, @Nullable Object arg);
+    public abstract void debug(@Nullable String msg);
 
-    void debug(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public abstract void debug(@Nullable String format, @Nullable Object arg);
 
-    void debug(@Nullable String format, @Nullable Object... arguments);
+    public abstract void debug(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2);
 
-    void debug(@Nullable String msg, @Nullable Throwable t);
+    public abstract void debug(@Nullable String format, @Nullable Object... arguments);
 
-    boolean isInfoEnabled();
+    public abstract void debug(@Nullable String msg, @Nullable Throwable t);
 
-    void info(@Nullable String msg);
+    public abstract boolean isInfoEnabled();
 
-    void info(@Nullable String format, @Nullable Object arg);
+    public abstract void info(@Nullable String msg);
 
-    void info(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public abstract void info(@Nullable String format, @Nullable Object arg);
 
-    void info(@Nullable String format, @Nullable Object... arguments);
+    public abstract void info(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2);
 
-    void info(@Nullable String msg, @Nullable Throwable t);
+    public abstract void info(@Nullable String format, @Nullable Object... arguments);
 
-    boolean isWarnEnabled();
+    public abstract void info(@Nullable String msg, @Nullable Throwable t);
 
-    void warn(@Nullable String msg);
+    public abstract boolean isWarnEnabled();
 
-    void warn(@Nullable String format, @Nullable Object arg);
+    public abstract void warn(@Nullable String msg);
 
-    void warn(@Nullable String format, @Nullable Object... arguments);
+    public abstract void warn(@Nullable String format, @Nullable Object arg);
 
-    void warn(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public abstract void warn(@Nullable String format, @Nullable Object... arguments);
 
-    void warn(@Nullable String msg, @Nullable Throwable t);
+    public abstract void warn(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2);
 
-    boolean isErrorEnabled();
+    public abstract void warn(@Nullable String msg, @Nullable Throwable t);
 
-    void error(@Nullable String msg);
+    public abstract boolean isErrorEnabled();
 
-    void error(@Nullable String format, @Nullable Object arg);
+    public abstract void error(@Nullable String msg);
 
-    void error(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public abstract void error(@Nullable String format, @Nullable Object arg);
 
-    void error(@Nullable String format, @Nullable Object... arguments);
+    public abstract void error(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2);
 
-    void error(@Nullable String msg, @Nullable Throwable t);
+    public abstract void error(@Nullable String format, @Nullable Object... arguments);
+
+    public abstract void error(@Nullable String msg, @Nullable Throwable t);
+
+    // visible for testing
+    static class LoggerImpl extends Logger {
+
+        private final org.slf4j.Logger logger;
+
+        private LoggerImpl(Class<?> clazz) {
+            this(LoggerFactory.getLogger(clazz));
+        }
+
+        // visible for testing
+        LoggerImpl(org.slf4j.Logger logger) {
+            this.logger = logger;
+        }
+
+        @Override
+        public String getName() {
+            return logger.getName();
+        }
+
+        @Override
+        public boolean isTraceEnabled() {
+            return logger.isTraceEnabled();
+        }
+
+        @Override
+        public void trace(@Nullable String msg) {
+            logger.trace(msg);
+        }
+
+        @Override
+        public void trace(@Nullable String format, @Nullable Object arg) {
+            logger.trace(format, arg);
+        }
+
+        @Override
+        public void trace(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2) {
+            logger.trace(format, arg1, arg2);
+        }
+
+        @Override
+        public void trace(@Nullable String format, @Nullable Object... arguments) {
+            logger.trace(format, arguments);
+        }
+
+        @Override
+        public void trace(@Nullable String msg, @Nullable Throwable t) {
+            logger.trace(msg, t);
+        }
+
+        @Override
+        public boolean isDebugEnabled() {
+            return logger.isDebugEnabled();
+        }
+
+        @Override
+        public void debug(@Nullable String msg) {
+            logger.debug(msg);
+        }
+
+        @Override
+        public void debug(@Nullable String format, @Nullable Object arg) {
+            logger.debug(format, arg);
+        }
+
+        @Override
+        public void debug(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2) {
+            logger.debug(format, arg1, arg2);
+        }
+
+        @Override
+        public void debug(@Nullable String format, @Nullable Object... arguments) {
+            logger.debug(format, arguments);
+        }
+
+        @Override
+        public void debug(@Nullable String msg, @Nullable Throwable t) {
+            logger.debug(msg, t);
+        }
+
+        @Override
+        public boolean isInfoEnabled() {
+            return logger.isInfoEnabled();
+        }
+
+        @Override
+        public void info(@Nullable String msg) {
+            logger.info(msg);
+        }
+
+        @Override
+        public void info(@Nullable String format, @Nullable Object arg) {
+            logger.info(format, arg);
+        }
+
+        @Override
+        public void info(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2) {
+            logger.info(format, arg1, arg2);
+        }
+
+        @Override
+        public void info(@Nullable String format, @Nullable Object... arguments) {
+            logger.info(format, arguments);
+        }
+
+        @Override
+        public void info(@Nullable String msg, @Nullable Throwable t) {
+            logger.info(msg, t);
+        }
+
+        @Override
+        public boolean isWarnEnabled() {
+            return logger.isWarnEnabled();
+        }
+
+        @Override
+        public void warn(@Nullable String msg) {
+            logger.warn(msg);
+        }
+
+        @Override
+        public void warn(@Nullable String format, @Nullable Object arg) {
+            logger.warn(format, arg);
+        }
+
+        @Override
+        public void warn(@Nullable String format, @Nullable Object... arguments) {
+            logger.warn(format, arguments);
+        }
+
+        @Override
+        public void warn(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2) {
+            logger.warn(format, arg1, arg2);
+        }
+
+        @Override
+        public void warn(@Nullable String msg, @Nullable Throwable t) {
+            logger.warn(msg, t);
+        }
+
+        @Override
+        public boolean isErrorEnabled() {
+            return logger.isErrorEnabled();
+        }
+
+        @Override
+        public void error(@Nullable String msg) {
+            logger.error(msg);
+        }
+
+        @Override
+        public void error(@Nullable String format, @Nullable Object arg) {
+            logger.error(format, arg);
+        }
+
+        @Override
+        public void error(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2) {
+            logger.error(format, arg1, arg2);
+        }
+
+        @Override
+        public void error(@Nullable String format, @Nullable Object... arguments) {
+            logger.error(format, arguments);
+        }
+
+        @Override
+        public void error(@Nullable String msg, @Nullable Throwable t) {
+            logger.error(msg, t);
+        }
+    }
 }

@@ -17,7 +17,6 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.lang.management.ManagementFactory;
 
-import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
@@ -31,7 +30,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ContainerStartup {
 
-    private static final Logger logger = Agent.getLogger(Beans.class);
+    private static final Logger logger = Logger.getLogger(Beans.class);
 
     private ContainerStartup() {}
 

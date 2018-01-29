@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.MonotonicNonNull;
 import org.glowroot.agent.plugin.api.checker.Nullable;
@@ -37,7 +36,7 @@ import org.glowroot.agent.plugin.api.checker.Nullable;
 // in ServletMessageSupplier for details why)
 class ResponseHeaderComponent {
 
-    private static final Logger logger = Agent.getLogger(ServletMessageSupplier.class);
+    private static final Logger logger = Logger.getLogger(ServletMessageSupplier.class);
 
     // HTTP response header date format (RFC 1123)
     // also see org.apache.tomcat.util.http.FastHttpDateFormat

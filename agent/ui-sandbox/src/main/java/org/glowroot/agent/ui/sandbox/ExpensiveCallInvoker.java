@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,11 @@ package org.glowroot.agent.ui.sandbox;
 
 import java.lang.reflect.Method;
 
-import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 
 public class ExpensiveCallInvoker {
 
-    private static final Logger logger = Agent.getLogger(ExpensiveCallInvoker.class);
+    private static final Logger logger = Logger.getLogger(ExpensiveCallInvoker.class);
 
     private final Method getTraceEntryMessageMethod;
 

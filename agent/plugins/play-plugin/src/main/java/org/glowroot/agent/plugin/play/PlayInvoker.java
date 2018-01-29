@@ -18,7 +18,6 @@ package org.glowroot.agent.plugin.play;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Reflection;
@@ -26,7 +25,7 @@ import org.glowroot.agent.plugin.play.Play2xAspect.HandlerDef;
 
 public class PlayInvoker {
 
-    private static final Logger logger = Agent.getLogger(PlayInvoker.class);
+    private static final Logger logger = Logger.getLogger(PlayInvoker.class);
 
     private final @Nullable Method pathMethod;
     private final @Nullable Field actionField;

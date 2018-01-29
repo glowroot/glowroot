@@ -17,14 +17,13 @@ package org.glowroot.agent.plugin.logger;
 
 import java.lang.reflect.Method;
 
-import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class LoggingEventInvoker {
 
-    private static final Logger logger = Agent.getLogger(LoggingEventInvoker.class);
+    private static final Logger logger = Logger.getLogger(LoggingEventInvoker.class);
 
     private final @Nullable Method getLoggerNameMethod;
 

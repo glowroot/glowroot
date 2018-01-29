@@ -15,19 +15,11 @@
  */
 package org.glowroot.agent.plugin.jaxrs;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ResourceMethodMetaTest {
-
-    @BeforeClass
-    public static void setUp() {
-        PluginServiceHolder.setMockForLogger();
-    }
 
     @Test
     public void should() {
