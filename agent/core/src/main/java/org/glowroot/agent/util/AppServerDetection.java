@@ -22,7 +22,6 @@ import java.util.jar.Manifest;
 import javax.annotation.Nullable;
 
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.io.Closer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,14 +90,12 @@ public class AppServerDetection {
         }
         Manifest manifest = null;
         try {
-            Closer closer = Closer.create();
+            // cannot use guava's Closer because JarFile doesn't implement Closeable prior to Java 7
+            JarFile jarFile = new JarFile(mainClassOrJarFile);
             try {
-                JarFile jarFile = closer.register(new JarFile(mainClassOrJarFile));
                 manifest = jarFile.getManifest();
-            } catch (Throwable t) {
-                throw closer.rethrow(t);
             } finally {
-                closer.close();
+                jarFile.close();
             }
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
