@@ -378,10 +378,14 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('ifSqlMessage', function (message, options) {
-    if (message.lastIndexOf('jdbc execution: ', 0) === 0) {
+    if (message.lastIndexOf('jdbc execute: ', 0) === 0) {
       return options.fn(this);
+    } else if (message.lastIndexOf('jdbc execution: ', 0) === 0) {
+      // this is for traces captured prior to 0.10.1
+      return options.fn(this);
+    } else {
+      return options.inverse(this);
     }
-    return options.inverse(this);
   });
 
   Handlebars.registerHelper('errorIndentClass', function (message) {
@@ -779,7 +783,7 @@ HandlebarsRendering = (function () {
     }
   }
 
-  function formatSql(unexpanded, expanded, queryText, suffix) {
+  function formatSql(unexpanded, expanded, queryText, prefix, suffix) {
     var comment;
     var sql;
     if (queryText.lastIndexOf('/*', 0) === 0) {
@@ -812,18 +816,16 @@ HandlebarsRendering = (function () {
       }
       var parameters = suffix.replace(/ => [0-9]+ rows?$/, '');
       var rows = suffix.substring(parameters.length + 1);
-      var html = 'jdbc execution:\n\n';
+      var html = prefix;
       // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
       // there are extra newlines after the pre tag
-      html += '<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">'
-          + formatted + '</span>';
+      html += '\n\n<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
       if (parameters) {
-        html += '\n\n<span class="gt-indent2">parameters:</span>\n\n'
-            + '<span class="gt-indent2">  ' + parameters + '</span>';
+        html += '\n\n<span class="gt-indent2">parameters:</span>\n\n' + '<span class="gt-indent2">  ' + parameters
+            + '</span>';
       }
       if (rows) {
-        html += '\n\n<span class="gt-indent2">rows:</span>\n\n'
-            + '<span class="gt-indent2">  ' + rows + '</span>';
+        html += '\n\n<span class="gt-indent2">rows:</span>\n\n' + '<span class="gt-indent2">  ' + rows + '</span>';
       }
       expanded.css('padding-bottom', '10px');
       var $clip = expanded.find('.gt-clip');
@@ -873,7 +875,10 @@ HandlebarsRendering = (function () {
       }, function () {
         var text = clipTextNode.text();
         // TODO deal with this hacky special case for SQL formatting
-        if (text.lastIndexOf('jdbc execution:\n\n', 0) === 0) {
+        if (text.lastIndexOf('jdbc execute:\n\n', 0) === 0) {
+          text = text.substring('jdbc execute:\n\n'.length);
+        } else if (text.lastIndexOf('jdbc execution:\n\n', 0) === 0) {
+          // this is for traces captured prior to 0.10.1
           text = text.substring('jdbc execution:\n\n'.length);
         }
         return text;
@@ -900,8 +905,11 @@ HandlebarsRendering = (function () {
                 expandedTraceEntryNode.text('[the full query text has expired]');
               } else {
                 expandedTraceEntryNode.text(queryMessage.prefix + data.fullText + queryMessage.suffix);
-                if (queryMessage.prefix === 'jdbc execution: ') {
-                  formatSql(unexpanded, expanded, data.fullText, queryMessage.suffix.trim());
+                if (queryMessage.prefix === 'jdbc execute: ') {
+                  formatSql(unexpanded, expanded, data.fullText, 'jdbc execute:', queryMessage.suffix.trim());
+                } else if (queryMessage.prefix === 'jdbc execution: ') {
+                  // this is for traces captured prior to 0.10.1
+                  formatSql(unexpanded, expanded, data.fullText, 'jdbc execution:', queryMessage.suffix.trim());
                 }
                 // so other trace entries with same shared query text don't need to go to server
                 queryMessage.sharedQueryText.fullText = data.fullText;
@@ -923,8 +931,12 @@ HandlebarsRendering = (function () {
       } else if (queryMessage && queryMessage.sharedQueryText.fullTextSha1) {
         // already fetched full text for this sha1
         expandedTraceEntryNode.text(queryMessage.prefix + queryMessage.sharedQueryText.fullText + queryMessage.suffix);
-        if (queryMessage.prefix === 'jdbc execution: ') {
-          formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, queryMessage.suffix.trim());
+        if (queryMessage.prefix === 'jdbc execute: ') {
+          formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execute:',
+              queryMessage.suffix.trim());
+        } else if (queryMessage.prefix === 'jdbc execution: ') {
+          formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execution:',
+              queryMessage.suffix.trim());
         }
         doAfter();
       } else {
@@ -935,7 +947,7 @@ HandlebarsRendering = (function () {
           var afterRowsStripped = afterPrefixStripped.replace(/ => [0-9]+ rows?$/, '');
           var queryText = afterRowsStripped.replace(/ \[.*?]$/, '');
           var suffix = afterPrefixStripped.substring(queryText.length + 1);
-          formatSql(unexpanded, expanded, queryText, suffix);
+          formatSql(unexpanded, expanded, queryText, 'jdbc execution:', suffix);
         }
         doAfter();
       }
@@ -1048,6 +1060,7 @@ HandlebarsRendering = (function () {
           node = node.childNodes[0];
           nodes.push(node);
         }
+
         function matchIncludes(text) {
           var i;
           var textUpper = text.toUpperCase();
