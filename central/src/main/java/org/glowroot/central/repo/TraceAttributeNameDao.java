@@ -45,9 +45,6 @@ import static java.util.concurrent.TimeUnit.DAYS;
 
 class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private static final String SINGLE_CACHE_KEY = "x";
 
     private final Session session;
@@ -65,9 +62,9 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         this.session = session;
         this.configRepository = configRepository;
 
-        session.execute("create table if not exists trace_attribute_name (agent_rollup varchar,"
-                + " transaction_type varchar, trace_attribute_name varchar, primary key"
-                + " ((agent_rollup, transaction_type), trace_attribute_name)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists trace_attribute_name (agent_rollup"
+                + " varchar, transaction_type varchar, trace_attribute_name varchar, primary key"
+                + " ((agent_rollup, transaction_type), trace_attribute_name))");
 
         insertPS = session.prepare("insert into trace_attribute_name (agent_rollup,"
                 + " transaction_type, trace_attribute_name) values (?, ?, ?) using ttl ?");

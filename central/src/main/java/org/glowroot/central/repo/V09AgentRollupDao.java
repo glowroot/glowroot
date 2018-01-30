@@ -35,9 +35,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 // this is needed as long as new v09 agents may connect in the future
 public class V09AgentRollupDao {
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private static final String SINGLE_CACHE_KEY = "x";
 
     private final Session session;
@@ -50,9 +47,9 @@ public class V09AgentRollupDao {
     V09AgentRollupDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists v09_agent_rollup (one int, v09_agent_id"
-                + " varchar, v09_agent_rollup_id varchar, primary key (one, v09_agent_id,"
-                + " v09_agent_rollup_id)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists v09_agent_rollup (one int,"
+                + " v09_agent_id varchar, v09_agent_rollup_id varchar, primary key (one,"
+                + " v09_agent_id, v09_agent_rollup_id))");
 
         insertPS = session.prepare("insert into v09_agent_rollup (one, v09_agent_id,"
                 + " v09_agent_rollup_id) values (1, ?, ?)");

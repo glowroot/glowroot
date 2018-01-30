@@ -32,9 +32,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 // TODO environment records never expire for abandoned agent ids
 public class EnvironmentDao implements EnvironmentRepository {
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private final Session session;
 
     private final PreparedStatement insertPS;
@@ -43,8 +40,8 @@ public class EnvironmentDao implements EnvironmentRepository {
     EnvironmentDao(Session session) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists environment (agent_id varchar, environment"
-                + " blob, primary key (agent_id)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists environment (agent_id varchar,"
+                + " environment blob, primary key (agent_id))");
 
         insertPS = session.prepare("insert into environment (agent_id, environment) values (?, ?)");
         readPS = session.prepare("select environment from environment where agent_id = ?");

@@ -44,9 +44,6 @@ class CentralConfigDao {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralConfigDao.class);
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final Session session;
@@ -62,8 +59,8 @@ class CentralConfigDao {
     CentralConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists central_config (key varchar, value varchar,"
-                + " primary key (key)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists central_config (key varchar, value"
+                + " varchar, primary key (key))");
 
         insertIfNotExistsPS = session
                 .prepare("insert into central_config (key, value) values (?, ?) if not exists");

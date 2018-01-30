@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 class UserDao {
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private static final String ALL_USERS_SINGLE_CACHE_KEY = "x";
 
     private final Session session;
@@ -59,9 +56,8 @@ class UserDao {
 
         boolean createAnonymousUser = keyspaceMetadata.getTable("user") == null;
 
-        session.execute("create table if not exists user (username varchar, ldap boolean,"
-                + " password_hash varchar, roles set<varchar>, primary key (username)) "
-                + WITH_LCS);
+        session.createTableWithLCS("create table if not exists user (username varchar, ldap"
+                + " boolean, password_hash varchar, roles set<varchar>, primary key (username))");
 
         readPS = session.prepare("select username, ldap, password_hash, roles from user");
         insertIfNotExistsPS = session.prepare("insert into user (username, ldap, password_hash,"

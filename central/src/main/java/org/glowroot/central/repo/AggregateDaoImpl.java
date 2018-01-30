@@ -100,8 +100,6 @@ public class AggregateDaoImpl implements AggregateDao {
 
     private static final Logger logger = LoggerFactory.getLogger(AggregateDaoImpl.class);
 
-    private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     @SuppressWarnings("deprecation")
     private static final HashFunction SHA_1 = Hashing.sha1();
 
@@ -357,11 +355,10 @@ public class AggregateDaoImpl implements AggregateDao {
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i < count; i++) {
-            session.execute("create table if not exists aggregate_needs_rollup_" + i
+            session.createTableWithLCS("create table if not exists aggregate_needs_rollup_" + i
                     + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " transaction_types set<varchar>, primary key (agent_rollup, capture_time,"
-                    + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and "
-                    + LCS);
+                    + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds, true);
             // TTL is used to prevent non-idempotent rolling up of partially expired aggregates
             // (e.g. "needs rollup" record resurrecting due to small gc_grace_seconds)
             insertNeedsRollup.add(session.prepare("insert into aggregate_needs_rollup_" + i
@@ -376,11 +373,11 @@ public class AggregateDaoImpl implements AggregateDao {
         this.readNeedsRollup = readNeedsRollup;
         this.deleteNeedsRollup = deleteNeedsRollup;
 
-        session.execute("create table if not exists aggregate_needs_rollup_from_child (agent_rollup"
-                + " varchar, capture_time timestamp, uniqueness timeuuid, child_agent_rollup"
-                + " varchar, transaction_types set<varchar>, primary key (agent_rollup,"
-                + " capture_time, uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds
-                + " and " + LCS);
+        session.createTableWithLCS("create table if not exists aggregate_needs_rollup_from_child"
+                + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
+                + " child_agent_rollup varchar, transaction_types set<varchar>, primary key"
+                + " (agent_rollup, capture_time, uniqueness)) with gc_grace_seconds = "
+                + needsRollupGcGraceSeconds, true);
         // TTL is used to prevent non-idempotent rolling up of partially expired aggregates
         // (e.g. "needs rollup" record resurrecting due to small gc_grace_seconds)
         insertNeedsRollupFromChild = session.prepare("insert into aggregate_needs_rollup_from_child"

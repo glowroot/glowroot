@@ -152,6 +152,16 @@ public class Session {
         }
     }
 
+    public void createTableWithLCS(String createTableQuery) {
+        createTableWithLCS(createTableQuery, false);
+    }
+
+    public void createTableWithLCS(String createTableQuery, boolean useAndInsteadOfWith) {
+        String term = useAndInsteadOfWith ? "and" : "with";
+        wrappedSession.execute(createTableQuery + " " + term + " compaction = { 'class' :"
+                + " 'LeveledCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
+    }
+
     private ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle) throws Exception {
         Semaphore perThreadSemaphore = perThreadSemaphores.get();
         perThreadSemaphore.acquire();

@@ -43,9 +43,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 class TransactionTypeDao implements TransactionTypeRepository {
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private static final String SINGLE_CACHE_KEY = "x";
 
     private final Session session;
@@ -63,9 +60,9 @@ class TransactionTypeDao implements TransactionTypeRepository {
         this.session = session;
         this.configRepository = configRepository;
 
-        session.execute("create table if not exists transaction_type (one int, agent_rollup"
-                + " varchar, transaction_type varchar, primary key (one, agent_rollup,"
-                + " transaction_type)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists transaction_type (one int,"
+                + " agent_rollup varchar, transaction_type varchar, primary key (one, agent_rollup,"
+                + " transaction_type))");
 
         insertPS = session.prepare("insert into transaction_type (one, agent_rollup,"
                 + " transaction_type) values (1, ?, ?) using ttl ?");

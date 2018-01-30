@@ -40,9 +40,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 class RoleDao {
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private static final String ALL_ROLES_SINGLE_CACHE_KEY = "x";
 
     private final Session session;
@@ -63,8 +60,8 @@ class RoleDao {
 
         boolean createAnonymousRole = keyspaceMetadata.getTable("role") == null;
 
-        session.execute("create table if not exists role (name varchar, permissions set<varchar>,"
-                + " primary key (name)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists role (name varchar, permissions"
+                + " set<varchar>, primary key (name))");
 
         readPS = session.prepare("select name, permissions from role");
         insertIfNotExistsPS =

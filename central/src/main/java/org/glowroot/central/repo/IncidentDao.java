@@ -44,9 +44,6 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class IncidentDao implements IncidentRepository {
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private final Session session;
     private final Clock clock;
 
@@ -63,10 +60,9 @@ public class IncidentDao implements IncidentRepository {
         this.session = session;
         this.clock = clock;
 
-        session.execute("create table if not exists open_incident (one int, agent_rollup_id"
-                + " varchar, condition blob, severity varchar, notification blob, open_time"
-                + " timestamp, primary key (one, agent_rollup_id, condition, severity)) "
-                + WITH_LCS);
+        session.createTableWithLCS("create table if not exists open_incident (one int,"
+                + " agent_rollup_id varchar, condition blob, severity varchar, notification blob,"
+                + " open_time timestamp, primary key (one, agent_rollup_id, condition, severity))");
 
         session.createTableWithTWCS("create table if not exists resolved_incident (one int,"
                 + " resolve_time timestamp, agent_rollup_id varchar, condition blob, severity"

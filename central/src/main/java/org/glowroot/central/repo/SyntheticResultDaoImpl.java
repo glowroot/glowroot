@@ -61,8 +61,6 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
 
     private static final Logger logger = LoggerFactory.getLogger(SyntheticResultDaoImpl.class);
 
-    private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
     private final Clock clock;
@@ -124,11 +122,11 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i < count; i++) {
-            session.execute("create table if not exists synthetic_needs_rollup_" + i
+            session.createTableWithLCS("create table if not exists synthetic_needs_rollup_" + i
                     + " (agent_rollup_id varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " synthetic_config_ids set<varchar>, primary key (agent_rollup_id,"
                     + " capture_time, uniqueness)) with gc_grace_seconds = "
-                    + needsRollupGcGraceSeconds + " and " + LCS);
+                    + needsRollupGcGraceSeconds, true);
             insertNeedsRollup.add(session.prepare("insert into synthetic_needs_rollup_" + i
                     + " (agent_rollup_id, capture_time, uniqueness, synthetic_config_ids) values"
                     + " (?, ?, ?, ?) using TTL ?"));

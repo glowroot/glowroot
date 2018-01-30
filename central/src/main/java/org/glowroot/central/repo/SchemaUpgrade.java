@@ -99,10 +99,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 66;
-
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
+    private static final int CURR_SCHEMA_VERSION = 67;
 
     private final Session session;
     private final KeyspaceMetadata keyspaceMetadata;
@@ -121,8 +118,8 @@ public class SchemaUpgrade {
         this.clock = clock;
         this.servlet = servlet;
 
-        session.execute("create table if not exists schema_version (one int,"
-                + " schema_version int, primary key (one)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists schema_version (one int,"
+                + " schema_version int, primary key (one))");
         insertIntoSchemVersionPS =
                 session.prepare("insert into schema_version (one, schema_version) values (1, ?)");
         initialSchemaVersion = getSchemaVersion(session, keyspaceMetadata);
@@ -427,6 +424,10 @@ public class SchemaUpgrade {
             updateNeedsRollupGcSeconds();
             updateSchemaVersion(66);
         }
+        if (initialSchemaVersion < 67) {
+            updateLcsUncheckedTombstoneCompaction();
+            updateSchemaVersion(67);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded glowroot central schema from version {} to version {}",
@@ -511,7 +512,8 @@ public class SchemaUpgrade {
                 int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
                 session.execute("alter table " + tableName + " with compaction = { 'class'"
                         + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                        + " 'compaction_window_size' : '" + windowSizeHours + "' }");
+                        + " 'compaction_window_size' : '" + windowSizeHours + "',"
+                        + " 'unchecked_tombstone_compaction' : true }");
                 if (dtcsUpdatedCount++ == 0) {
                     startupLogger.info("upgrading from DateTieredCompactionStrategy to"
                             + " TimeWindowCompactionStrategy compression ...");
@@ -535,7 +537,8 @@ public class SchemaUpgrade {
             }
             session.execute("alter table " + tableName + " with compaction = { 'class'"
                     + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : '" + windowSizeHours + "' }");
+                    + " 'compaction_window_size' : '" + windowSizeHours + "',"
+                    + " 'unchecked_tombstone_compaction' : true }");
         }
         if (dtcsUpdatedCount > 0) {
             startupLogger.info("upgraded {} tables from DateTieredCompactionStrategy to"
@@ -622,8 +625,8 @@ public class SchemaUpgrade {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        session.execute("create table if not exists central_config (key varchar,"
-                + " value varchar, primary key (key)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists central_config (key varchar,"
+                + " value varchar, primary key (key))");
         ResultSet results = session.execute("select key, value from server_config");
         PreparedStatement insertPS =
                 session.prepare("insert into central_config (key, value) values (?, ?)");
@@ -641,8 +644,8 @@ public class SchemaUpgrade {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        session.execute("create table if not exists agent_one (one int, agent_id varchar,"
-                + " agent_rollup varchar, primary key (one, agent_id)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists agent_one (one int, agent_id"
+                + " varchar, agent_rollup varchar, primary key (one, agent_id))");
         ResultSet results = session.execute("select agent_rollup from agent_rollup");
         PreparedStatement insertPS =
                 session.prepare("insert into agent_one (one, agent_id) values (1, ?)");
@@ -720,10 +723,10 @@ public class SchemaUpgrade {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        session.execute("create table if not exists agent_rollup (one int,"
+        session.createTableWithLCS("create table if not exists agent_rollup (one int,"
                 + " agent_rollup_id varchar, parent_agent_rollup_id varchar, agent boolean,"
                 + " display varchar, last_capture_time timestamp, primary key (one,"
-                + " agent_rollup_id)) " + WITH_LCS);
+                + " agent_rollup_id))");
         ResultSet results =
                 session.execute("select agent_id, agent_rollup from agent_one");
         PreparedStatement insertPS = session.prepare("insert into agent_rollup (one,"
@@ -777,11 +780,11 @@ public class SchemaUpgrade {
     }
 
     private void splitUpAgentTable() throws Exception {
-        session.execute("create table if not exists config (agent_rollup_id varchar,"
+        session.createTableWithLCS("create table if not exists config (agent_rollup_id varchar,"
                 + " config blob, config_update boolean, config_update_token uuid, primary key"
-                + " (agent_rollup_id)) " + WITH_LCS);
-        session.execute("create table if not exists environment (agent_id varchar,"
-                + " environment blob, primary key (agent_id)) " + WITH_LCS);
+                + " (agent_rollup_id))");
+        session.createTableWithLCS("create table if not exists environment (agent_id varchar,"
+                + " environment blob, primary key (agent_id))");
 
         ResultSet results =
                 session.execute("select agent_rollup_id, agent from agent_rollup where one = 1");
@@ -980,9 +983,9 @@ public class SchemaUpgrade {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        session.execute("create table if not exists agent_config (agent_rollup_id"
+        session.createTableWithLCS("create table if not exists agent_config (agent_rollup_id"
                 + " varchar, config blob, config_update boolean, config_update_token uuid,"
-                + " primary key (agent_rollup_id)) " + WITH_LCS);
+                + " primary key (agent_rollup_id))");
         ResultSet results = session.execute("select agent_rollup_id, config,"
                 + " config_update, config_update_token from config");
         PreparedStatement insertPS =
@@ -1388,9 +1391,9 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("agent_config");
-        session.execute("create table agent_config (agent_rollup_id varchar, config blob,"
-                + " config_update boolean, config_update_token uuid, primary key"
-                + " (agent_rollup_id)) " + WITH_LCS);
+        session.createTableWithLCS("create table agent_config (agent_rollup_id varchar, config"
+                + " blob, config_update boolean, config_update_token uuid, primary key"
+                + " (agent_rollup_id))");
         PreparedStatement insertPS = session.prepare("insert into agent_config"
                 + " (agent_rollup_id, config, config_update, config_update_token) values"
                 + " (?, ?, ?, ?)");
@@ -1436,8 +1439,8 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("environment");
-        session.execute("create table environment (agent_id varchar, environment blob,"
-                + " primary key (agent_id)) " + WITH_LCS);
+        session.createTableWithLCS("create table environment (agent_id varchar, environment blob,"
+                + " primary key (agent_id))");
         PreparedStatement insertPS = session
                 .prepare("insert into environment (agent_id, environment) values (?, ?)");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
@@ -1485,9 +1488,9 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("open_incident");
-        session.execute("create table open_incident (one int, agent_rollup_id varchar,"
+        session.createTableWithLCS("create table open_incident (one int, agent_rollup_id varchar,"
                 + " condition blob, severity varchar, notification blob, open_time timestamp,"
-                + " primary key (one, agent_rollup_id, condition, severity)) " + WITH_LCS);
+                + " primary key (one, agent_rollup_id, condition, severity))");
         PreparedStatement insertPS = session.prepare("insert into open_incident (one,"
                 + " agent_rollup_id, condition, severity, notification, open_time) values"
                 + " (1, ?, ?, ?, ?, ?)");
@@ -1599,8 +1602,8 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("role");
-        session.execute("create table role (name varchar, permissions set<varchar>,"
-                + " primary key (name)) " + WITH_LCS);
+        session.createTableWithLCS("create table role (name varchar, permissions set<varchar>,"
+                + " primary key (name))");
         PreparedStatement insertPS =
                 session.prepare("insert into role (name, permissions) values (?, ?)");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
@@ -1748,9 +1751,8 @@ public class SchemaUpgrade {
         }
         dropTableIfExists("transaction_type");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
-        session.execute("create table transaction_type (one int, agent_rollup varchar,"
-                + " transaction_type varchar, primary key (one, agent_rollup, transaction_type)) "
-                + WITH_LCS);
+        session.createTableWithLCS("create table transaction_type (one int, agent_rollup varchar,"
+                + " transaction_type varchar, primary key (one, agent_rollup, transaction_type))");
         PreparedStatement insertPS = session.prepare("insert into transaction_type (one,"
                 + " agent_rollup, transaction_type) values (1, ?, ?) using ttl ?");
         int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
@@ -1798,9 +1800,9 @@ public class SchemaUpgrade {
         }
         dropTableIfExists("trace_attribute_name");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
-        session.execute("create table trace_attribute_name (agent_rollup varchar, transaction_type"
-                + " varchar, trace_attribute_name varchar, primary key ((agent_rollup,"
-                + " transaction_type), trace_attribute_name)) " + WITH_LCS);
+        session.createTableWithLCS("create table trace_attribute_name (agent_rollup varchar,"
+                + " transaction_type varchar, trace_attribute_name varchar, primary key"
+                + " ((agent_rollup, transaction_type), trace_attribute_name))");
         PreparedStatement insertPS = session.prepare("insert into trace_attribute_name"
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?) using"
                 + " ttl ?");
@@ -1897,9 +1899,9 @@ public class SchemaUpgrade {
                 // only create v09_agent_check and v09_last_capture_time tables if needed
                 if (insertPS == null) {
                     dropTableIfExists("v09_agent_rollup");
-                    session.execute("create table v09_agent_rollup (one int, v09_agent_id varchar,"
-                            + " v09_agent_rollup_id varchar, primary key (one, v09_agent_id,"
-                            + " v09_agent_rollup_id)) " + WITH_LCS);
+                    session.createTableWithLCS("create table v09_agent_rollup (one int,"
+                            + " v09_agent_id varchar, v09_agent_rollup_id varchar, primary key"
+                            + " (one, v09_agent_id, v09_agent_rollup_id))");
                     insertPS = session.prepare("insert into v09_agent_rollup"
                             + " (one, v09_agent_id, v09_agent_rollup_id) values (1, ?, ?)");
                 }
@@ -2190,6 +2192,18 @@ public class SchemaUpgrade {
         }
         MoreFutures.waitForAll(futures);
         dropColumnIfExists("trace_tn_slow_point", "partial");
+    }
+
+    private void updateLcsUncheckedTombstoneCompaction() throws Exception {
+        for (TableMetadata table : keyspaceMetadata.getTables()) {
+            String compaction = table.getOptions().getCompaction().get("class");
+            if (compaction != null && compaction
+                    .equals("org.apache.cassandra.db.compaction.LeveledCompactionStrategy")) {
+                session.execute("alter table " + table.getName() + " with compaction = { 'class'"
+                        + " : 'LeveledCompactionStrategy', 'unchecked_tombstone_compaction'"
+                        + " : true }");
+            }
+        }
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

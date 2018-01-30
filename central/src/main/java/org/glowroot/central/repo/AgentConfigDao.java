@@ -50,9 +50,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 // TODO agent config records never expire for abandoned agent rollup ids
 public class AgentConfigDao {
 
-    private static final String WITH_LCS =
-            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private static final Random random = new Random();
 
     private final Session session;
@@ -68,9 +65,9 @@ public class AgentConfigDao {
     AgentConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        session.execute("create table if not exists agent_config (agent_rollup_id varchar, config"
-                + " blob, config_update boolean, config_update_token uuid, primary key"
-                + " (agent_rollup_id)) " + WITH_LCS);
+        session.createTableWithLCS("create table if not exists agent_config (agent_rollup_id"
+                + " varchar, config blob, config_update boolean, config_update_token uuid, primary"
+                + " key (agent_rollup_id))");
         // secondary index is needed for Cassandra 2.x (to avoid error on readUpdatePS)
         session.execute(
                 "create index if not exists config_update_idx on agent_config (config_update)");

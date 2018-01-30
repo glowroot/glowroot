@@ -63,8 +63,6 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
 
     private static final Logger logger = LoggerFactory.getLogger(GaugeValueDaoImpl.class);
 
-    private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
-
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
     private final Clock clock;
@@ -136,10 +134,10 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i <= count; i++) {
-            session.execute("create table if not exists gauge_needs_rollup_" + i + " (agent_rollup"
-                    + " varchar, capture_time timestamp, uniqueness timeuuid, gauge_names"
-                    + " set<varchar>, primary key (agent_rollup, capture_time, uniqueness)) with"
-                    + " gc_grace_seconds = " + needsRollupGcGraceSeconds + " and " + LCS);
+            session.createTableWithLCS("create table if not exists gauge_needs_rollup_" + i
+                    + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
+                    + " gauge_names set<varchar>, primary key (agent_rollup, capture_time,"
+                    + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds, true);
             insertNeedsRollup.add(session.prepare("insert into gauge_needs_rollup_" + i
                     + " (agent_rollup, capture_time, uniqueness, gauge_names) values (?, ?, ?, ?)"
                     + " using TTL ?"));
@@ -152,11 +150,11 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         this.readNeedsRollup = readNeedsRollup;
         this.deleteNeedsRollup = deleteNeedsRollup;
 
-        session.execute("create table if not exists gauge_needs_rollup_from_child (agent_rollup"
-                + " varchar, capture_time timestamp, uniqueness timeuuid, child_agent_rollup"
-                + " varchar, gauge_names set<varchar>, primary key (agent_rollup, capture_time,"
-                + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and "
-                + LCS);
+        session.createTableWithLCS("create table if not exists gauge_needs_rollup_from_child"
+                + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
+                + " child_agent_rollup varchar, gauge_names set<varchar>, primary key"
+                + " (agent_rollup, capture_time, uniqueness)) with gc_grace_seconds = "
+                + needsRollupGcGraceSeconds, true);
         insertNeedsRollupFromChild = session.prepare("insert into gauge_needs_rollup_from_child"
                 + " (agent_rollup, capture_time, uniqueness, child_agent_rollup, gauge_names)"
                 + " values (?, ?, ?, ?, ?) using TTL ?");
