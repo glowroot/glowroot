@@ -110,20 +110,6 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <!-- this is needed for running tests on Java 9 -->
-      <groupId>javax.xml.bind</groupId>
-      <artifactId>jaxb-api</artifactId>
-      <version>2.3.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is needed for running tests on Java 9 -->
-      <groupId>com.sun.activation</groupId>
-      <artifactId>javax.activation</artifactId>
-      <version>1.2.0</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -162,18 +148,37 @@
 
   <profiles>
     <profile>
-      <id>jersey-2.26</id>
+      <id>not-force-java6</id>
+      <activation>
+        <property>
+          <name>!glowroot.forceJava6</name>
+        </property>
+      </activation>
       <dependencies>
+        <!-- these dependencies require Java 7+ -->
         <dependency>
-          <groupId>org.glassfish.jersey.inject</groupId>
-          <artifactId>jersey-hk2</artifactId>
-          <version>${jersey.version}</version>
+          <!-- this is needed for running tests on Java 9 -->
+          <groupId>javax.xml.bind</groupId>
+          <artifactId>jaxb-api</artifactId>
+          <version>2.3.0</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- this is needed for running tests on Java 9 -->
+          <groupId>com.sun.activation</groupId>
+          <artifactId>javax.activation</artifactId>
+          <version>1.2.0</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
     </profile>
     <profile>
       <id>force-java6</id>
+      <activation>
+        <property>
+          <name>glowroot.forceJava6</name>
+        </property>
+      </activation>
       <build>
         <pluginManagement>
           <plugins>
@@ -192,6 +197,17 @@
           </plugins>
         </pluginManagement>
       </build>
+    </profile>
+    <profile>
+      <id>jersey-2.26</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.glassfish.jersey.inject</groupId>
+          <artifactId>jersey-hk2</artifactId>
+          <version>${jersey.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
     </profile>
   </profiles>
 </project>

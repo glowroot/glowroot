@@ -126,34 +126,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- this is needed for running tests on Java 9 -->
-      <groupId>javax.xml.ws</groupId>
-      <artifactId>jaxws-api</artifactId>
-      <version>2.3.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is needed for running tests on Java 9 -->
-      <groupId>javax.jws</groupId>
-      <artifactId>jsr181-api</artifactId>
-      <version>1.0-MR1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is needed for running tests on Java 9 -->
-      <groupId>org.glassfish.jaxb</groupId>
-      <artifactId>jaxb-runtime</artifactId>
-      <version>2.3.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is needed for running tests on Java 9 -->
-      <groupId>com.sun.activation</groupId>
-      <artifactId>javax.activation</artifactId>
-      <version>1.2.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
@@ -198,7 +170,51 @@
 
   <profiles>
     <profile>
+      <id>not-force-java6</id>
+      <activation>
+        <property>
+          <name>!glowroot.forceJava6</name>
+        </property>
+      </activation>
+      <dependencies>
+        <!-- these dependencies require Java 7+ -->
+        <dependency>
+          <!-- this is needed for running tests on Java 9 -->
+          <groupId>javax.xml.ws</groupId>
+          <artifactId>jaxws-api</artifactId>
+          <version>2.3.0</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- this is needed for running tests on Java 9 -->
+          <groupId>javax.jws</groupId>
+          <artifactId>jsr181-api</artifactId>
+          <version>1.0-MR1</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- this is needed for running tests on Java 9 -->
+          <groupId>org.glassfish.jaxb</groupId>
+          <artifactId>jaxb-runtime</artifactId>
+          <version>2.3.0</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- this is needed for running tests on Java 9 -->
+          <groupId>com.sun.activation</groupId>
+          <artifactId>javax.activation</artifactId>
+          <version>1.2.0</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
       <id>force-java6</id>
+      <activation>
+        <property>
+          <name>glowroot.forceJava6</name>
+        </property>
+      </activation>
       <build>
         <pluginManagement>
           <plugins>

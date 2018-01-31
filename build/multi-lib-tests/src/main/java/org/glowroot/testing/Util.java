@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,18 +109,17 @@ class Util {
         report.println(javaVersion);
         List<String> command = Lists.newArrayList();
         command.add(MVN);
-        List<String> profilesPlus = Lists.newArrayList(profiles);
-        if (javaVersion == JavaVersion.JAVA6) {
-            profilesPlus.add("force-java6");
-        }
-        if (!profilesPlus.isEmpty()) {
+        if (profiles.length > 0) {
             command.add("-P");
-            command.add(Joiner.on(',').join(profilesPlus));
+            command.add(Joiner.on(',').join(profiles));
         }
         command.add("-pl");
         command.add(modulePath);
         command.add("-Djvm=" + javaVersion.getJavaHome() + File.separator + "bin" + File.separator
                 + "java");
+        if (javaVersion == JavaVersion.JAVA6) {
+            command.add("-Dglowroot.forceJava6");
+        }
         // cassandra plugin tests need java7.home when running under java 6 in order to run
         // cassandra itself
         command.add("-Djava7.home=" + JAVA7.getJavaHome());

@@ -177,6 +177,11 @@
   <profiles>
     <profile>
       <id>force-java6</id>
+      <activation>
+        <property>
+          <name>glowroot.forceJava6</name>
+        </property>
+      </activation>
       <build>
         <pluginManagement>
           <plugins>
