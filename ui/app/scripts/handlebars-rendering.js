@@ -928,8 +928,8 @@ HandlebarsRendering = (function () {
                 doAfter();
               }
             });
-      } else if (queryMessage && queryMessage.sharedQueryText.fullTextSha1) {
-        // already fetched full text for this sha1
+      } else if (queryMessage && queryMessage.sharedQueryText.fullText) {
+        // full text is already available for short query texts, or was already fetched above
         expandedTraceEntryNode.text(queryMessage.prefix + queryMessage.sharedQueryText.fullText + queryMessage.suffix);
         if (queryMessage.prefix === 'jdbc execute: ') {
           formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execute:',
