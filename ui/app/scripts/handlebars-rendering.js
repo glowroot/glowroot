@@ -1460,7 +1460,7 @@ HandlebarsRendering = (function () {
       $selector.data('gtSharedQueryTexts', sharedQueryTexts);
       $selector.data('gtMainThreadProfile', mainThreadProfile);
       $selector.data('gtAuxThreadProfile', auxThreadProfile);
-      this.renderTrace(traceHeader, undefined, undefined, undefined, false, $selector);
+      this.renderTrace(traceHeader, undefined, undefined, false, $selector);
     },
     formatBytes: formatBytes,
     formatMillis: formatMillis,
