@@ -66,12 +66,12 @@ class FullQueryTextDao {
         this.session = session;
         this.configRepository = configRepository;
 
-        // intentionally using default size-tiered compaction strategy
-        session.execute("create table if not exists full_query_text_check (agent_rollup varchar,"
-                + " full_query_text_sha1 varchar, primary key (agent_rollup,"
+        session.createTableWithSTCS("create table if not exists full_query_text_check (agent_rollup"
+                + " varchar, full_query_text_sha1 varchar, primary key (agent_rollup,"
                 + " full_query_text_sha1))");
-        session.execute("create table if not exists full_query_text (full_query_text_sha1 varchar,"
-                + " full_query_text varchar, primary key (full_query_text_sha1))");
+        session.createTableWithSTCS("create table if not exists full_query_text"
+                + " (full_query_text_sha1 varchar, full_query_text varchar, primary key"
+                + " (full_query_text_sha1))");
 
         insertCheckPS = session.prepare("insert into full_query_text_check (agent_rollup,"
                 + " full_query_text_sha1) values (?, ?) using ttl ?");

@@ -162,6 +162,11 @@ public class Session {
                 + " 'LeveledCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
     }
 
+    public void createTableWithSTCS(String createTableQuery) {
+        wrappedSession.execute(createTableQuery + " with compaction = { 'class' :"
+                + " 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
+    }
+
     private ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle) throws Exception {
         Semaphore perThreadSemaphore = perThreadSemaphores.get();
         perThreadSemaphore.acquire();

@@ -99,7 +99,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 67;
+    private static final int CURR_SCHEMA_VERSION = 68;
 
     private final Session session;
     private final KeyspaceMetadata keyspaceMetadata;
@@ -427,6 +427,10 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 67) {
             updateLcsUncheckedTombstoneCompaction();
             updateSchemaVersion(67);
+        }
+        if (initialSchemaVersion < 68) {
+            updateStcsUncheckedTombstoneCompaction();
+            updateSchemaVersion(68);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2201,6 +2205,18 @@ public class SchemaUpgrade {
                     .equals("org.apache.cassandra.db.compaction.LeveledCompactionStrategy")) {
                 session.execute("alter table " + table.getName() + " with compaction = { 'class'"
                         + " : 'LeveledCompactionStrategy', 'unchecked_tombstone_compaction'"
+                        + " : true }");
+            }
+        }
+    }
+
+    private void updateStcsUncheckedTombstoneCompaction() throws Exception {
+        for (TableMetadata table : keyspaceMetadata.getTables()) {
+            String compaction = table.getOptions().getCompaction().get("class");
+            if (compaction != null && compaction
+                    .equals("org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")) {
+                session.execute("alter table " + table.getName() + " with compaction = { 'class'"
+                        + " : 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction'"
                         + " : true }");
             }
         }
