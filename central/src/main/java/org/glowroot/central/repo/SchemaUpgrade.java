@@ -456,23 +456,23 @@ public class SchemaUpgrade {
         List<String> dtcsTableNames = Lists.newArrayList();
         List<String> twcsTableNames = Lists.newArrayList();
         for (TableMetadata table : keyspaceMetadata.getTables()) {
-            String compression = table.getOptions().getCompression().get("class");
-            if (compression != null
-                    && compression.equals("org.apache.cassandra.io.compress.SnappyCompressor")) {
-                snappyTableNames.add(compression);
+            String compressionClass = table.getOptions().getCompression().get("class");
+            if (compressionClass != null && compressionClass
+                    .equals("org.apache.cassandra.io.compress.SnappyCompressor")) {
+                snappyTableNames.add(compressionClass);
             }
-            String compaction = table.getOptions().getCompaction().get("class");
-            if (compaction != null && compaction
+            String compactionClass = table.getOptions().getCompaction().get("class");
+            if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
                 dtcsTableNames.add(table.getName());
             }
             if (table.getName().startsWith("trace_") && table.getName().endsWith("_partial")
-                    && compaction != null && compaction.equals(
+                    && compactionClass != null && compactionClass.equals(
                             "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")) {
                 // these need to be updated to TWCS also
                 dtcsTableNames.add(table.getName());
             }
-            if (compaction != null && compaction
+            if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
                 String windowUnit =
                         table.getOptions().getCompaction().get("compaction_window_unit");
@@ -668,12 +668,13 @@ public class SchemaUpgrade {
     private void updateTwcsDtcsGcSeconds() throws Exception {
         logger.info("updating gc_grace_seconds on TWCS/DTCS tables ...");
         for (TableMetadata table : keyspaceMetadata.getTables()) {
-            String compaction = table.getOptions().getCompaction().get("class");
-            if (compaction == null) {
+            String compactionClass = table.getOptions().getCompaction().get("class");
+            if (compactionClass == null) {
                 continue;
             }
-            if (compaction.equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
-                    || compaction.equals(
+            if (compactionClass
+                    .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
+                    || compactionClass.equals(
                             "org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
                 // see gc_grace_seconds related comments in Sessions.createTableWithTWCS()
                 // for reasoning behind the value of 4 hours
@@ -2200,8 +2201,8 @@ public class SchemaUpgrade {
 
     private void updateLcsUncheckedTombstoneCompaction() throws Exception {
         for (TableMetadata table : keyspaceMetadata.getTables()) {
-            String compaction = table.getOptions().getCompaction().get("class");
-            if (compaction != null && compaction
+            String compactionClass = table.getOptions().getCompaction().get("class");
+            if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.LeveledCompactionStrategy")) {
                 session.execute("alter table " + table.getName() + " with compaction = { 'class'"
                         + " : 'LeveledCompactionStrategy', 'unchecked_tombstone_compaction'"
@@ -2212,8 +2213,8 @@ public class SchemaUpgrade {
 
     private void updateStcsUncheckedTombstoneCompaction() throws Exception {
         for (TableMetadata table : keyspaceMetadata.getTables()) {
-            String compaction = table.getOptions().getCompaction().get("class");
-            if (compaction != null && compaction
+            String compactionClass = table.getOptions().getCompaction().get("class");
+            if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")) {
                 session.execute("alter table " + table.getName() + " with compaction = { 'class'"
                         + " : 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction'"
