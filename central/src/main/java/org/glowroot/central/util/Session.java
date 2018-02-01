@@ -197,11 +197,19 @@ public class Session {
         // "Ideally, operators should select a compaction_window_unit and compaction_window_size
         // pair that produces approximately 20-30 windows"
         // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
+        //
+        // "You should target fewer than 50 buckets per table based on your TTL"
+        // (https://github.com/jeffjirsa/twcs)
+        //
+        // "With a 10 year retention, just ignore the target sstable count (I should remove that
+        // guidance, to be honest)"
+        // (https://groups.google.com/d/msg/nosql-databases/KiKVqD0Oe98/TJD0mnJFEAAJ)
         if (expirationHours == 0) {
-            // treat as expiration 10 years
-            return 10 * 365;
+            // one month buckets seems like a sensible maximum
+            return 30 * 24;
         } else {
-            return expirationHours / 24;
+            // one month buckets seems like a sensible maximum
+            return Math.min(expirationHours / 24, 30 * 24);
         }
     }
 
