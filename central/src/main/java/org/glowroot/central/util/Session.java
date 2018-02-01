@@ -130,10 +130,21 @@ public class Session {
         // see http://thelastpickle.com/blog/2016/12/08/TWCS-part1.html
         String term = useAndInsteadOfWith ? "and" : "with";
         try {
+            // using small min_sstable_size to avoid scenario where small sstables get written and
+            // continually merged with "large" (but under default min_sstable_size of 50mb) sstable,
+            // essentially recompacting the data in that "large" sstable over and over until it
+            // finally reaches the default min_sstable_size of 50mb
+            //
+            // it's ok if a few smaller sstables don't get compacted due to reduced min_sstable_size
+            // since major compaction is never too far away at the end of the window
+            // bucket_high is increased a bit to compensate for lower min_sstable_size so that worst
+            // case number of sstables will be three 5mb sstables, three 10mb sstables, three 20mb
+            // sstables, three 40mb sstables, etc
             wrappedSession.execute(createTableQuery + " " + term + " compaction = { 'class' :"
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
                     + " 'compaction_window_size' : " + getCompactionWindowSizeHours(expirationHours)
-                    + ", 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
+                    + ", 'unchecked_tombstone_compaction' : true, 'min_sstable_size' : "
+                    + (5 * 1024 * 1024) + ", 'bucket_high' : 2 } and gc_grace_seconds = "
                     + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);

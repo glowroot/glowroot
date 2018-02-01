@@ -99,7 +99,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 68;
+    private static final int CURR_SCHEMA_VERSION = 69;
 
     private final Session session;
     private final KeyspaceMetadata keyspaceMetadata;
@@ -431,6 +431,10 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 68) {
             updateStcsUncheckedTombstoneCompaction();
             updateSchemaVersion(68);
+        }
+        if (initialSchemaVersion < 69) {
+            optimizeTwcsTables();
+            updateSchemaVersion(69);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2219,6 +2223,31 @@ public class SchemaUpgrade {
                 session.execute("alter table " + table.getName() + " with compaction = { 'class'"
                         + " : 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction'"
                         + " : true }");
+            }
+        }
+    }
+
+    private void optimizeTwcsTables() throws Exception {
+        for (TableMetadata table : keyspaceMetadata.getTables()) {
+            Map<String, String> compaction = table.getOptions().getCompaction();
+            String compactionClass = compaction.get("class");
+            if (compactionClass != null && compactionClass
+                    .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
+                String compactionWindowUnit = compaction.get("compaction_window_unit");
+                if (compactionWindowUnit == null) {
+                    logger.warn("compaction_window_unit missing for table: " + table.getName());
+                    continue;
+                }
+                String compactionWindowSize = compaction.get("compaction_window_size");
+                if (compactionWindowSize == null) {
+                    logger.warn("compaction_window_size missing for table: " + table.getName());
+                    continue;
+                }
+                session.execute("alter table " + table.getName() + " with compaction = { 'class'"
+                        + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : '"
+                        + compactionWindowUnit + "', 'compaction_window_size' : "
+                        + compactionWindowSize + ", 'unchecked_tombstone_compaction' : true,"
+                        + " 'min_sstable_size' : " + (5 * 1024 * 1024) + ", 'bucket_high' : 2 }");
             }
         }
     }
