@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package org.glowroot.central;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -91,7 +94,9 @@ class RollupService implements Runnable {
             timer = "outer rollup loop")
     private void runInternal() throws Exception {
         Glowroot.setTransactionOuter();
-        for (AgentRollup agentRollup : agentDao.readRecentlyActiveAgentRollups(7)) {
+        // randomize order so that multiple central collector nodes will be less likely to perform
+        // duplicative work
+        for (AgentRollup agentRollup : shuffle(agentDao.readRecentlyActiveAgentRollups(7))) {
             rollupAggregates(agentRollup);
             rollupGauges(agentRollup);
             rollupSyntheticMonitors(agentRollup);
@@ -108,7 +113,9 @@ class RollupService implements Runnable {
     }
 
     private void rollupAggregates(AgentRollup agentRollup) throws InterruptedException {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
+        // randomize order so that multiple central collector nodes will be less likely to perform
+        // duplicative work
+        for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
             rollupAggregates(childAgentRollup);
         }
         try {
@@ -198,6 +205,12 @@ class RollupService implements Runnable {
             consumeAgentRollups(childAgentRollup, agentRollupConsumer);
         }
         agentRollupConsumer.accept(agentRollup);
+    }
+
+    private static <T> List<T> shuffle(List<T> agentRollups) {
+        List<T> mutable = new ArrayList<>(agentRollups);
+        Collections.shuffle(mutable);
+        return mutable;
     }
 
     @VisibleForTesting
