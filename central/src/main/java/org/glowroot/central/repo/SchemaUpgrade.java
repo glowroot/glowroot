@@ -516,7 +516,7 @@ public class SchemaUpgrade {
                 int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
                 session.execute("alter table " + tableName + " with compaction = { 'class'"
                         + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                        + " 'compaction_window_size' : '" + windowSizeHours + "',"
+                        + " 'compaction_window_size' : " + windowSizeHours + ","
                         + " 'unchecked_tombstone_compaction' : true }");
                 if (dtcsUpdatedCount++ == 0) {
                     startupLogger.info("upgrading from DateTieredCompactionStrategy to"
@@ -541,7 +541,7 @@ public class SchemaUpgrade {
             }
             session.execute("alter table " + tableName + " with compaction = { 'class'"
                     + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : '" + windowSizeHours + "',"
+                    + " 'compaction_window_size' : " + windowSizeHours + ","
                     + " 'unchecked_tombstone_compaction' : true }");
         }
         if (dtcsUpdatedCount > 0) {

@@ -132,9 +132,8 @@ public class Session {
         try {
             wrappedSession.execute(createTableQuery + " " + term + " compaction = { 'class' :"
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : '"
-                    + getCompactionWindowSizeHours(expirationHours)
-                    + "', 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
+                    + " 'compaction_window_size' : " + getCompactionWindowSizeHours(expirationHours)
+                    + ", 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
                     + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
