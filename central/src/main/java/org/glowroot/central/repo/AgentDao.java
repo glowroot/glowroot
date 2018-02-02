@@ -177,7 +177,7 @@ public class AgentDao implements AgentRollupRepository {
     private String readAgentRollupLastDisplayPart(String agentRollupId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
-            return agentRollupId;
+            return ConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
         }
         String display = agentConfig.getGeneralConfig().getDisplay();
         if (display.isEmpty()) {
