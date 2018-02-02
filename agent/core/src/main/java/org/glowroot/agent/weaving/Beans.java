@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +84,24 @@ public class Beans {
         }
         String curr = path.get(currIndex);
         if (obj instanceof Map) {
-            return value(((Map<?, ?>) obj).get(curr), path, currIndex + 1);
+            if (curr.equals("size")) {
+                // special case
+                return ((Map<?, ?>) obj).size();
+            } else {
+                return value(((Map<?, ?>) obj).get(curr), path, currIndex + 1);
+            }
+        }
+        if (obj instanceof List) {
+            if (curr.equals("size")) {
+                // special case
+                return ((List<?>) obj).size();
+            } else {
+                List</*@Nullable*/ Object> values = Lists.newArrayList();
+                for (Object val : (List<?>) obj) {
+                    values.add(value(val, path, currIndex));
+                }
+                return values;
+            }
         }
         Accessor accessor = getAccessor(obj.getClass(), curr);
         if (accessor.equals(SENTINEL_ACCESSOR)) {

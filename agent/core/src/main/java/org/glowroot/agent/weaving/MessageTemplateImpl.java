@@ -191,33 +191,51 @@ public class MessageTemplateImpl implements MessageTemplate {
         }
 
         private static String valueOf(@Nullable Object value) {
-            if (value == null || !value.getClass().isArray()) {
-                // shortcut the common case
+            if (value == null) {
+                return String.valueOf(value);
+            } else if (value instanceof List || value.getClass().isArray()) {
+                StringBuilder sb = new StringBuilder();
+                appendValue(sb, value);
+                return sb.toString();
+            } else {
+                // no need for StringBuilder in common case
                 return String.valueOf(value);
             }
-            StringBuilder sb = new StringBuilder();
-            valueOfArray(value, sb);
-            return sb.toString();
         }
 
-        private static void valueOfArray(Object array, StringBuilder sb) {
+        private static void appendValue(StringBuilder sb, @Nullable Object value) {
+            if (value == null) {
+                sb.append(String.valueOf(value));
+            } else if (value instanceof List) {
+                appendList(sb, (List<?>) value);
+            } else if (value.getClass().isArray()) {
+                appendArray(sb, value);
+            } else {
+                sb.append(String.valueOf(value));
+            }
+        }
+
+        private static void appendList(StringBuilder sb, List<?> list) {
+            sb.append('[');
+            for (int i = 0; i < list.size(); i++) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                appendValue(sb, list.get(i));
+            }
+            sb.append(']');
+        }
+
+        private static void appendArray(StringBuilder sb, Object array) {
             sb.append('[');
             int len = Array.getLength(array);
             for (int i = 0; i < len; i++) {
                 if (i > 0) {
                     sb.append(", ");
                 }
-                valueOf(Array.get(array, i), sb);
+                appendValue(sb, Array.get(array, i));
             }
             sb.append(']');
-        }
-
-        private static void valueOf(Object object, StringBuilder sb) {
-            if (object.getClass().isArray()) {
-                valueOfArray(object, sb);
-            } else {
-                sb.append(String.valueOf(object));
-            }
         }
     }
 
