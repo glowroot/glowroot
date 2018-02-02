@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,9 +109,7 @@ public class MainEntryPoint {
                 instrumentation.removeTransformer(transformer);
             } catch (Throwable t) {
                 // log error but don't re-throw which would prevent monitored app from starting
-                // also, don't use logger since not initialized yet
-                System.err.println("Glowroot not started: " + t.getMessage());
-                t.printStackTrace();
+                startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
                 return;
             }
         }
