@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,8 +53,8 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       return $location.path().substring(1) + queryStrings.encodeObject(query);
     };
 
-    $scope.buildQueryObject = function (baseQuery) {
-      var query = baseQuery || angular.copy($location.search());
+    $scope.buildQueryObject = function () {
+      var query = {};
       if ($scope.layout.central) {
         var agentId = $location.search()['agent-id'];
         if (agentId) {
@@ -94,7 +94,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     }
 
     function watchListener(autoRefresh) {
-      var query = $scope.buildQueryObject({});
+      var query = $scope.buildQueryObject();
       $location.search(query);
       if ($scope.syntheticMonitorIds.length) {
         refreshData(autoRefresh);
