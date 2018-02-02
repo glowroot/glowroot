@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $ */
+/* global glowroot, $ */
 
 glowroot.controller('JvmCtrl', [
   '$scope',
@@ -51,23 +51,7 @@ glowroot.controller('JvmCtrl', [
     };
 
     $scope.gaugeQueryString = function () {
-      var queryString = $scope.agentQueryString();
-      if ($location.path() !== '/jvm/gauges') {
-        return queryString;
-      }
-      var defaultGaugeNames = $scope.agentRollup.defaultGaugeNames;
-      if (defaultGaugeNames.length === 0) {
-        return queryString;
-      }
-      angular.forEach(defaultGaugeNames, function (defaultGaugeName) {
-        if (queryString === '') {
-          queryString += '?gauge-name=';
-        } else {
-          queryString += '&gauge-name=';
-        }
-        queryString += encodeURIComponent(defaultGaugeName);
-      });
-      return queryString;
+      return $scope.agentQueryString();
     };
 
     if ($scope.layout.central) {

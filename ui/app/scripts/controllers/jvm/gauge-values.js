@@ -61,8 +61,13 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       charts.refreshData('backend/jvm/gauges', chartState, $scope, autoRefresh, addToQuery, onRefreshData);
     }
 
+    var locationReplace = false;
+
     function watchListener(autoRefresh) {
       $location.search($scope.buildQueryObject());
+      if (locationReplace) {
+        $location.replace();
+      }
       if ($scope.gaugeNames.length) {
         refreshData(autoRefresh);
       } else {
@@ -104,22 +109,27 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       return window.innerWidth < 768;
     };
 
-    $scope.buildQueryObject = function (baseQuery) {
-      var query = baseQuery || angular.copy($location.search());
-      delete query.from;
-      delete query.to;
-      delete query.last;
-      if (!$scope.range.last) {
-        query.from = $scope.range.chartFrom.toString();
-        query.to = $scope.range.chartTo.toString();
-      } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
-        query.last = $scope.range.last.toString();
+    $scope.buildQueryObject = function () {
+      var query = {};
+      if ($scope.layout.central) {
+        var agentId = $location.search()['agent-id'];
+        if (agentId) {
+          query['agent-id'] = agentId;
+        } else {
+          query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
+        }
       }
       if ($scope.gaugeNames && $scope.gaugeNames.length === 0) {
         // special case to differentiate between no gauges selected and default gauge list
         query['gauge-name'] = '';
       } else {
         query['gauge-name'] = $scope.gaugeNames;
+      }
+      if (!$scope.range.last) {
+        query.from = $scope.range.chartFrom;
+        query.to = $scope.range.chartTo;
+      } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
+        query.last = $scope.range.last;
       }
       return query;
     };
@@ -204,12 +214,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     locationChanges.on($scope, function () {
 
-      if ($location.search()['gauge-name'] === undefined) {
-        $location.search('gauge-name', $scope.agentRollup.defaultGaugeNames);
-        $location.replace();
-        return;
-      }
-
       var priorLocation = location;
       location = {};
       location.last = Number($location.search().last);
@@ -223,7 +227,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       }
       location.gaugeNames = $location.search()['gauge-name'];
       if (location.gaugeNames === undefined) {
-        location.gaugeNames = [];
+        location.gaugeNames = $scope.agentRollup.defaultGaugeNames;
+        locationReplace = true;
       } else if (!angular.isArray(location.gaugeNames)) {
         if (location.gaugeNames === '') {
           // special case to differentiate between no gauges selected and default gauge list
