@@ -76,6 +76,10 @@ public class MainEntryPoint {
     private MainEntryPoint() {}
 
     public static void premain(Instrumentation instrumentation, @Nullable File glowrootJarFile) {
+        if (startupLogger != null) {
+            // glowroot is already running, probably due to multiple glowroot -javaagent JVM args
+            return;
+        }
         // DO NOT USE ANY GUAVA CLASSES before initLogging() because they trigger loading of jul
         // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
         Directories directories;
