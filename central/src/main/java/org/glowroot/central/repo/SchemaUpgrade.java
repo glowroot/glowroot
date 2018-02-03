@@ -99,7 +99,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 69;
+    private static final int CURR_SCHEMA_VERSION = 70;
 
     private final Session session;
     private final KeyspaceMetadata keyspaceMetadata;
@@ -435,6 +435,10 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 69) {
             optimizeTwcsTables();
             updateSchemaVersion(69);
+        }
+        if (initialSchemaVersion < 70) {
+            changeV09TablesToLCS();
+            updateSchemaVersion(70);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -1272,7 +1276,7 @@ public class SchemaUpgrade {
                 // only create v09_agent_check and v09_last_capture_time tables if needed
                 if (insertV09AgentCheckPS == null) {
                     dropTableIfExists("v09_last_capture_time");
-                    session.execute("create table v09_last_capture_time (one int,"
+                    session.createTableWithLCS("create table v09_last_capture_time (one int,"
                             + " v09_last_capture_time timestamp, v09_fqt_last_expiration_time"
                             + " timestamp, v09_trace_last_expiration_time timestamp,"
                             + " v09_aggregate_last_expiration_time timestamp, primary key (one))");
@@ -1298,8 +1302,8 @@ public class SchemaUpgrade {
                     session.execute(boundStatement);
 
                     dropTableIfExists("v09_agent_check");
-                    session.execute("create table v09_agent_check (one int, agent_id varchar,"
-                            + " primary key (one, agent_id))");
+                    session.createTableWithLCS("create table v09_agent_check (one int, agent_id"
+                            + " varchar, primary key (one, agent_id))");
                     insertV09AgentCheckPS = session.prepare(
                             "insert into v09_agent_check (one, agent_id) values (1, ?)");
                 }
@@ -2249,6 +2253,17 @@ public class SchemaUpgrade {
                         + compactionWindowSize + ", 'unchecked_tombstone_compaction' : true,"
                         + " 'min_sstable_size' : " + (5 * 1024 * 1024) + ", 'bucket_high' : 2 }");
             }
+        }
+    }
+
+    private void changeV09TablesToLCS() throws Exception {
+        if (tableExists("v09_last_capture_time")) {
+            session.execute("alter table v09_last_capture_time with compaction = { 'class'"
+                    + " : 'LeveledCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
+        }
+        if (tableExists("v09_agent_check")) {
+            session.execute("alter table v09_agent_check with compaction = { 'class'"
+                    + " : 'LeveledCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
         }
     }
 

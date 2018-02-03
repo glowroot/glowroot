@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import javax.mail.internet.MimeMessage;
 import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
@@ -46,6 +47,7 @@ import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common.repo.IncidentRepository;
@@ -113,11 +115,19 @@ public class AlertingService {
 
     public void checkForDeletedAlerts(String agentRollupId) throws Exception {
         Set<AlertCondition> alertConditions = Sets.newHashSet();
-        for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollupId)) {
+        for (AlertConfig alertConfig : getAlertConfigsLeniently(agentRollupId)) {
             alertConditions.add(alertConfig.getCondition());
         }
         for (OpenIncident openIncident : incidentRepository.readOpenIncidents(agentRollupId)) {
             if (!alertConditions.contains(openIncident.condition())) {
+                incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis());
+            }
+        }
+    }
+
+    public void checkForAllDeletedAlerts() throws Exception {
+        for (OpenIncident openIncident : incidentRepository.readAllOpenIncidents()) {
+            if (isDeletedAlert(openIncident)) {
                 incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis());
             }
         }
@@ -153,6 +163,25 @@ public class AlertingService {
                     alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
             sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
                     metricCondition, endTime, false);
+        }
+    }
+
+    private boolean isDeletedAlert(OpenIncident openIncident) throws Exception {
+        for (AlertConfig alertConfig : getAlertConfigsLeniently(openIncident.agentRollupId())) {
+            if (alertConfig.getCondition().equals(openIncident.condition())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private List<AlertConfig> getAlertConfigsLeniently(String agentRollupId) throws Exception {
+        try {
+            return configRepository.getAlertConfigs(agentRollupId);
+        } catch (AgentConfigNotFoundException e) {
+            // be lenient if agent_config table is messed up
+            logger.debug(e.getMessage(), e);
+            return ImmutableList.of();
         }
     }
 

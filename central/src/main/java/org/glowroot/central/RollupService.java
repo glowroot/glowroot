@@ -107,9 +107,11 @@ class RollupService implements Runnable {
             // agent (not rollup) alerts are also checked right after receiving the respective data
             // (aggregate/gauge/heartbeat) from the agent, but need to also check these once a
             // minute in case no data has been received from the agent recently
-            consumeAgentRollups(agentRollup, this::checkForDeletedAlerts);
-            consumeAgentRollups(agentRollup, this::checkAggregateAndGaugeAndHeartbeatAlertsAsync);
+            checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup);
         }
+        // FIXME keep this here as fallback, but also resolve alerts immediately when they are
+        // deleted (or when their condition is updated)
+        centralAlertingService.checkForAllDeletedAlerts();
     }
 
     private void rollupAggregates(AgentRollup agentRollup) throws InterruptedException {
@@ -189,22 +191,13 @@ class RollupService implements Runnable {
         syntheticResultDao.rollup(agentRollupId);
     }
 
-    private void checkForDeletedAlerts(AgentRollup agentRollup) throws InterruptedException {
-        centralAlertingService.checkForDeletedAlerts(agentRollup.id(), agentRollup.display());
-    }
-
     private void checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup)
             throws InterruptedException {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            checkAggregateAndGaugeAndHeartbeatAlertsAsync(childAgentRollup);
+        }
         centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup.id(),
                 agentRollup.display(), clock.currentTimeMillis());
-    }
-
-    private static void consumeAgentRollups(AgentRollup agentRollup,
-            AgentRollupConsumer agentRollupConsumer) throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            consumeAgentRollups(childAgentRollup, agentRollupConsumer);
-        }
-        agentRollupConsumer.accept(agentRollup);
     }
 
     private static <T> List<T> shuffle(List<T> agentRollups) {

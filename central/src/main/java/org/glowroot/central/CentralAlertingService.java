@@ -75,12 +75,19 @@ class CentralAlertingService {
         } catch (InterruptedException e) {
             // probably shutdown requested
             throw e;
-        } catch (AgentConfigNotFoundException e) {
-            // be lenient if agent_config table is messed up
-            logger.debug(e.getMessage(), e);
-            return;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
+        }
+    }
+
+    void checkForAllDeletedAlerts() throws InterruptedException {
+        try {
+            alertingService.checkForAllDeletedAlerts();
+        } catch (InterruptedException e) {
+            // probably shutdown requested
+            throw e;
+        } catch (Exception e) {
+            logger.error("{}", e.getMessage(), e);
         }
     }
 
