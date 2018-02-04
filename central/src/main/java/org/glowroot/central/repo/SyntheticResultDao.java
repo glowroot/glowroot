@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.central.repo;
 
 import javax.annotation.Nullable;
 
+import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.common.repo.SyntheticResultRepository;
 
 public interface SyntheticResultDao extends SyntheticResultRepository {
@@ -26,5 +27,8 @@ public interface SyntheticResultDao extends SyntheticResultRepository {
     void store(String agentRollupId, String syntheticMonitorId, long captureTime,
             long durationNanos, @Nullable String errorMessage) throws Exception;
 
+    @Instrumentation.Transaction(transactionType = "Background",
+            transactionName = "Rollup synthetic results",
+            traceHeadline = "Rollup synthetic results: {{0}}", timer = "rollup synthetic results")
     void rollup(String agentRollupId) throws Exception;
 }

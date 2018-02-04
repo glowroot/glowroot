@@ -121,20 +121,13 @@ class RollupService implements Runnable {
             rollupAggregates(childAgentRollup);
         }
         try {
-            rollupAggregates(agentRollup.id());
+            aggregateDao.rollup(agentRollup.id());
         } catch (InterruptedException e) {
             // probably shutdown requested (see close method above)
             throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
         }
-    }
-
-    @Instrumentation.Transaction(transactionType = "Background",
-            transactionName = "Rollup aggregates", traceHeadline = "Rollup aggregates: {{0}}",
-            timer = "rollup aggregates")
-    private void rollupAggregates(String agentRollupId) throws Exception {
-        aggregateDao.rollup(agentRollupId);
     }
 
     // returns true on success, false on failure
@@ -153,7 +146,7 @@ class RollupService implements Runnable {
             return false;
         }
         try {
-            rollupGauges(agentRollup.id());
+            gaugeValueDao.rollup(agentRollup.id());
             return true;
         } catch (InterruptedException e) {
             // probably shutdown requested (see close method above)
@@ -164,31 +157,18 @@ class RollupService implements Runnable {
         }
     }
 
-    @Instrumentation.Transaction(transactionType = "Background", transactionName = "Rollup gauges",
-            traceHeadline = "Rollup gauges: {{0}}", timer = "rollup gauges")
-    private void rollupGauges(String agentRollupId) throws Exception {
-        gaugeValueDao.rollup(agentRollupId);
-    }
-
     private void rollupSyntheticMonitors(AgentRollup agentRollup) throws Exception {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
             rollupSyntheticMonitors(childAgentRollup);
         }
         try {
-            rollupSyntheticMonitors(agentRollup.id());
+            syntheticResultDao.rollup(agentRollup.id());
         } catch (InterruptedException e) {
             // probably shutdown requested (see close method above)
             throw e;
         } catch (Exception e) {
             logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
         }
-    }
-
-    @Instrumentation.Transaction(transactionType = "Background",
-            transactionName = "Rollup synthetic results",
-            traceHeadline = "Rollup synthetic results: {{0}}", timer = "rollup synthetic results")
-    private void rollupSyntheticMonitors(String agentRollupId) throws Exception {
-        syntheticResultDao.rollup(agentRollupId);
     }
 
     private void checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup)
