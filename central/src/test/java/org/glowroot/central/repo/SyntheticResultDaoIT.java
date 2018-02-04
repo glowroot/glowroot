@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,7 @@ public class SyntheticResultDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession());
-        session.createKeyspaceIfNotExists("glowroot_unit_tests");
-        session.execute("use glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests");
         KeyspaceMetadata keyspaceMetadata =
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 

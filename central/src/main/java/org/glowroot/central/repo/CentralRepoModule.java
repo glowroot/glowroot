@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,8 +125,8 @@ public class CentralRepoModule {
             syntheticResultDao = new SyntheticResultDaoWithV09Support(agentRollupIdsWithV09Data,
                     v09LastCaptureTime, clock, syntheticResultDaoImpl);
         }
-        TraceDaoImpl traceDaoImpl = new TraceDaoImpl(session, transactionTypeDao,
-                fullQueryTextDao, traceAttributeNameDao, configRepository, clock);
+        TraceDaoImpl traceDaoImpl = new TraceDaoImpl(session, transactionTypeDao, fullQueryTextDao,
+                traceAttributeNameDao, configRepository, clock);
         if (v09TraceLastExpirationTime < clock.currentTimeMillis()) {
             traceDao = traceDaoImpl;
         } else {

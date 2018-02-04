@@ -16,6 +16,7 @@
 package org.glowroot.common.repo;
 
 import java.util.List;
+import java.util.Map;
 
 import org.immutables.value.Value;
 
@@ -34,6 +35,16 @@ public interface RepoAdmin {
     void deleteAllData() throws Exception;
 
     void resizeIfNeeded() throws Exception;
+
+    List<CassandraWriteTotals> getCassandraWriteTotalsPerTable(int limit);
+
+    List<CassandraWriteTotals> getCassandraWriteTotalsPerAgentRollup(String tableName, int limit);
+
+    List<CassandraWriteTotals> getCassandraWriteTotalsPerTransactionType(String tableName,
+            String agentRollupId, int limit);
+
+    List<CassandraWriteTotals> getCassandraWriteTotalsPerTransactionName(String tableName,
+            String agentRollupId, String transactionType, int limit);
 
     @Value.Immutable
     interface H2Table {
@@ -61,5 +72,14 @@ public interface RepoAdmin {
         String transactionName();
         long count();
         long errorCount();
+    }
+
+    @Value.Immutable
+    interface CassandraWriteTotals {
+        String display();
+        long rowsWritten();
+        long bytesWritten(); // only includes varchar and blob columns
+        Map<String, Long> bytesWrittenPerColumn(); // only includes varchar and blob columns
+        boolean drilldown();
     }
 }

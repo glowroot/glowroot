@@ -83,9 +83,7 @@ public class AggregateDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession());
-        session.createKeyspaceIfNotExists("glowroot_unit_tests");
-        session.execute("use glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests");
         KeyspaceMetadata keyspaceMetadata =
                 cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 

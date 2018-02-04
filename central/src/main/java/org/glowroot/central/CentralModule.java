@@ -63,7 +63,6 @@ import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
-import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.HttpClient;
 import org.glowroot.common.repo.util.MailService;
@@ -225,7 +224,7 @@ public class CentralModule {
                     .gaugeValueRepository(repos.getGaugeValueDao())
                     .syntheticResultRepository(repos.getSyntheticResultDao())
                     .incidentRepository(repos.getIncidentDao())
-                    .repoAdmin(new NopRepoAdmin())
+                    .repoAdmin(new RepoAdminImpl(session.getCassandraWriteMetrics()))
                     .rollupLevelService(rollupLevelService)
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
@@ -617,14 +616,13 @@ public class CentralModule {
         NoHostAvailableException lastException = null;
         while (stopwatch.elapsed(MINUTES) < 30) {
             try {
+                String keyspace = centralConfig.cassandraKeyspace();
                 if (session == null) {
                     session = new Session(
-                            createCluster(centralConfig, defaultTimestampGenerator).connect());
+                            createCluster(centralConfig, defaultTimestampGenerator).connect(),
+                            keyspace);
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
-                String keyspace = centralConfig.cassandraKeyspace();
-                session.createKeyspaceIfNotExists(keyspace);
-                session.execute("use " + keyspace);
                 KeyspaceMetadata keyspaceMetadata =
                         checkNotNull(session.getCluster().getMetadata().getKeyspace(keyspace));
                 String replicationFactor =
@@ -810,37 +808,6 @@ public class CentralModule {
         }
 
         abstract Map<String, String> jgroupsProperties();
-    }
-
-    private static class NopRepoAdmin implements RepoAdmin {
-        @Override
-        public void defragH2Data() {
-            throw new UnsupportedOperationException();
-        }
-        @Override
-        public void compactH2Data() {
-            throw new UnsupportedOperationException();
-        }
-        @Override
-        public long getH2DataFileSize() {
-            throw new UnsupportedOperationException();
-        }
-        @Override
-        public List<H2Table> analyzeH2DiskSpace() {
-            throw new UnsupportedOperationException();
-        }
-        @Override
-        public TraceCounts analyzeTraceCounts() {
-            throw new UnsupportedOperationException();
-        }
-        @Override
-        public void deleteAllData() {
-            throw new UnsupportedOperationException();
-        }
-        @Override
-        public void resizeIfNeeded() {
-            throw new UnsupportedOperationException();
-        }
     }
 
     private static class RateLimitedLogger {

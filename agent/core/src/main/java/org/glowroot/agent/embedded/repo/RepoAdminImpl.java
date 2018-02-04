@@ -133,6 +133,29 @@ class RepoAdminImpl implements RepoAdmin {
                 configRepository.getEmbeddedStorageConfig().traceCappedDatabaseSizeMb() * 1024);
     }
 
+    @Override
+    public List<CassandraWriteTotals> getCassandraWriteTotalsPerTable(int limit) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<CassandraWriteTotals> getCassandraWriteTotalsPerAgentRollup(String tableName,
+            int limit) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<CassandraWriteTotals> getCassandraWriteTotalsPerTransactionType(String tableName,
+            String agentRollupId, int limit) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<CassandraWriteTotals> getCassandraWriteTotalsPerTransactionName(String tableName,
+            String agentRollupId, String transactionType, int limit) {
+        throw new UnsupportedOperationException();
+    }
+
     private class TraceOverallCountQuery implements JdbcQuery<List<TraceOverallCount>> {
 
         @Override

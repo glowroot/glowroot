@@ -55,8 +55,19 @@ public class Session {
         }
     };
 
-    public Session(com.datastax.driver.core.Session wrappedSession) {
+    private final CassandraWriteMetrics cassandraWriteMetrics;
+
+    public Session(com.datastax.driver.core.Session wrappedSession, String keyspace) {
         this.wrappedSession = wrappedSession;
+        cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspace);
+
+        wrappedSession.execute("create keyspace if not exists " + keyspace + " with replication"
+                + " = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+        wrappedSession.execute("use " + keyspace);
+    }
+
+    public CassandraWriteMetrics getCassandraWriteMetrics() {
+        return cassandraWriteMetrics;
     }
 
     public PreparedStatement prepare(String query) {
@@ -86,7 +97,12 @@ public class Session {
     }
 
     public ListenableFuture<ResultSet> executeAsync(Statement statement) throws Exception {
-        return throttle(() -> wrappedSession.executeAsync(statement));
+        return throttle(() -> {
+            // for now, need to record metrics in the same method because CassandraWriteMetrics
+            // relies on some thread locals
+            cassandraWriteMetrics.recordMetrics(statement);
+            return wrappedSession.executeAsync(statement);
+        });
     }
 
     private ListenableFuture<ResultSet> executeAsync(String query) throws Exception {
@@ -99,11 +115,6 @@ public class Session {
 
     public void close() {
         wrappedSession.close();
-    }
-
-    public void createKeyspaceIfNotExists(String keyspace) {
-        wrappedSession.execute("create keyspace if not exists " + keyspace + " with replication"
-                + " = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
     }
 
     public void createTableWithTWCS(String createTableQuery, int expirationHours) {

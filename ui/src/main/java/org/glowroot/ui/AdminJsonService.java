@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -573,6 +574,27 @@ class AdminJsonService {
         liveAggregateRepository.clearInMemoryAggregate();
     }
 
+    @GET(path = "/backend/admin/cassandra-write-totals", permission = "admin:view:storage")
+    String getCassandraWriteTotals(@BindRequest CassandraWriteTotalsRequest request)
+            throws JsonProcessingException {
+        String tableName = request.tableName();
+        String agentRollupId = request.agentRollupId();
+        String transactionType = request.transactionType();
+        int limit = request.limit();
+        if (tableName == null) {
+            return mapper.writeValueAsString(repoAdmin.getCassandraWriteTotalsPerTable(limit));
+        } else if (agentRollupId == null) {
+            return mapper.writeValueAsString(
+                    repoAdmin.getCassandraWriteTotalsPerAgentRollup(tableName, limit));
+        } else if (transactionType == null) {
+            return mapper.writeValueAsString(repoAdmin
+                    .getCassandraWriteTotalsPerTransactionType(tableName, agentRollupId, limit));
+        } else {
+            return mapper.writeValueAsString(repoAdmin.getCassandraWriteTotalsPerTransactionName(
+                    tableName, agentRollupId, transactionType, limit));
+        }
+    }
+
     private @Nullable File getConfFile(String fileName) {
         File confFile = new File(confDir, fileName);
         if (confFile.exists()) {
@@ -709,6 +731,17 @@ class AdminJsonService {
     interface LdapConfigResponse {
         LdapConfigDto config();
         List<String> allGlowrootRoles();
+    }
+
+    @Value.Immutable
+    interface CassandraWriteTotalsRequest {
+        @Nullable
+        String tableName();
+        @Nullable
+        String agentRollupId();
+        @Nullable
+        String transactionType();
+        int limit();
     }
 
     @Value.Immutable

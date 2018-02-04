@@ -44,6 +44,7 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import org.immutables.value.Value;
 
+import org.glowroot.central.util.CassandraWriteMetrics;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
@@ -502,6 +503,21 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     public void store(String agentId, List<String> agentRollupIds,
+            List<String> agentRollupIdsForMeta, Trace trace) throws Exception {
+        CassandraWriteMetrics cassandraWriteMetrics = session.getCassandraWriteMetrics();
+        cassandraWriteMetrics.setCurrTransactionType(trace.getHeader().getTransactionType());
+        cassandraWriteMetrics.setCurrTransactionName(trace.getHeader().getTransactionName());
+        cassandraWriteMetrics.setPartialTrace(trace.getHeader().getPartial());
+        try {
+            storeInternal(agentId, agentRollupIds, agentRollupIdsForMeta, trace);
+        } finally {
+            cassandraWriteMetrics.setCurrTransactionType(null);
+            cassandraWriteMetrics.setCurrTransactionName(null);
+            cassandraWriteMetrics.setPartialTrace(false);
+        }
+    }
+
+    private void storeInternal(String agentId, List<String> agentRollupIds,
             List<String> agentRollupIdsForMeta, Trace trace) throws Exception {
         String traceId = trace.getId();
         Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId) : null;
