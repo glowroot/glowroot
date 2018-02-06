@@ -53,6 +53,7 @@ import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.repo.util.RollupLevelService;
+import org.glowroot.common.repo.util.RollupLevelService.DataKind;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.ui.AggregateMerging.MergedAggregate;
@@ -88,7 +89,7 @@ class TransactionJsonService {
     String getOverview(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
             throws Exception {
-        TransactionQuery query = toChartQuery(request);
+        TransactionQuery query = toChartQuery(request, DataKind.GENERAL);
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates =
                 transactionCommonService.getOverviewAggregates(agentRollupId, query, autoRefresh);
@@ -124,7 +125,7 @@ class TransactionJsonService {
     String getPercentiles(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionPercentileRequest request, @BindAutoRefresh boolean autoRefresh)
             throws Exception {
-        TransactionQuery query = toChartQuery(request);
+        TransactionQuery query = toChartQuery(request, DataKind.GENERAL);
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates =
                 transactionCommonService.getPercentileAggregates(agentRollupId, query, autoRefresh);
@@ -150,7 +151,7 @@ class TransactionJsonService {
     String getThroughput(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
             throws Exception {
-        TransactionQuery query = toChartQuery(request);
+        TransactionQuery query = toChartQuery(request, DataKind.GENERAL);
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
                 transactionCommonService.getThroughputAggregates(agentRollupId, query, autoRefresh);
@@ -183,7 +184,7 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/queries", permission = "agent:transaction:queries")
     String getQueries(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
-        TransactionQuery query = toQuery(request);
+        TransactionQuery query = toQuery(request, DataKind.QUERY);
         Map<String, List<MutableQuery>> queries =
                 transactionCommonService.getMergedQueries(agentRollupId, query);
         List<Query> queryList = Lists.newArrayList();
@@ -236,7 +237,7 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/service-calls", permission = "agent:transaction:serviceCalls")
     String getServiceCalls(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
-        TransactionQuery query = toQuery(request);
+        TransactionQuery query = toQuery(request, DataKind.SERVICE_CALL);
         Map<String, List<MutableServiceCall>> serviceCalls =
                 transactionCommonService.getMergedServiceCalls(agentRollupId, query);
         List<ServiceCall> serviceCallList = Lists.newArrayList();
@@ -274,7 +275,7 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/profile", permission = "agent:transaction:profile")
     String getProfile(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionProfileRequest request) throws Exception {
-        TransactionQuery query = toQuery(request);
+        TransactionQuery query = toQuery(request, DataKind.PROFILE);
         MutableProfile profile =
                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
                         request.include(), request.exclude(), request.truncateBranchPercentage());
@@ -324,7 +325,8 @@ class TransactionJsonService {
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
-                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
+                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to(),
+                        DataKind.GENERAL))
                 .build();
         OverallSummary overallSummary =
                 transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh);
@@ -349,15 +351,16 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/flame-graph", permission = "agent:transaction:profile")
     String getFlameGraph(@BindAgentRollupId String agentRollupId,
             @BindRequest FlameGraphRequest request) throws Exception {
-        TransactionQuery query = toQuery(request);
+        TransactionQuery query = toQuery(request, DataKind.PROFILE);
         MutableProfile profile =
                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
                         request.include(), request.exclude(), request.truncateBranchPercentage());
         return profile.toFlameGraphJson();
     }
 
-    private TransactionQuery toChartQuery(RequestBase request) throws Exception {
-        int rollupLevel = rollupLevelService.getRollupLevelForView(request.from(), request.to());
+    private TransactionQuery toChartQuery(RequestBase request, DataKind dataKind) throws Exception {
+        int rollupLevel =
+                rollupLevelService.getRollupLevelForView(request.from(), request.to(), dataKind);
         long rollupIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         // read the closest rollup to the left and right of chart, in order to display line sloping
@@ -373,13 +376,14 @@ class TransactionJsonService {
                 .build();
     }
 
-    private TransactionQuery toQuery(RequestBase request) throws Exception {
+    private TransactionQuery toQuery(RequestBase request, DataKind dataKind) throws Exception {
         return ImmutableTransactionQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
                 .to(request.to())
-                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
+                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to(),
+                        dataKind))
                 .build();
     }
 
@@ -406,8 +410,8 @@ class TransactionJsonService {
                             .build())
                     .build();
         }
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime,
-                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to()));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime, rollupLevelService
+                .getDataPointIntervalMillis(request.from(), request.to(), DataKind.GENERAL));
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (double percentile : percentiles) {
             dataSeriesList
@@ -473,8 +477,8 @@ class TransactionJsonService {
         if (throughputAggregates.isEmpty()) {
             return Lists.newArrayList();
         }
-        long dataPointIntervalMillis =
-                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to());
+        long dataPointIntervalMillis = rollupLevelService.getDataPointIntervalMillis(request.from(),
+                request.to(), DataKind.GENERAL);
         DataSeriesHelper dataSeriesHelper =
                 new DataSeriesHelper(liveCaptureTime, dataPointIntervalMillis);
         DataSeries dataSeries = new DataSeries("throughput");
@@ -506,8 +510,8 @@ class TransactionJsonService {
 
     private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
             List<StackedPoint> stackedPoints, long liveCaptureTime) throws Exception {
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime,
-                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to()));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime, rollupLevelService
+                .getDataPointIntervalMillis(request.from(), request.to(), DataKind.GENERAL));
         final int topX = 5;
         List<String> timerNames = getTopTimerNames(stackedPoints, topX + 1);
         List<DataSeries> dataSeriesList = Lists.newArrayList();

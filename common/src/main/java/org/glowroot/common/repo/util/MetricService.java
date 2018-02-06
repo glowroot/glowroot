@@ -29,6 +29,7 @@ import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common.repo.util.RollupLevelService.DataKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
@@ -81,7 +82,8 @@ class MetricService {
     private @Nullable Double getTransactionDurationPercentile(String agentRollupId,
             String transactionType, @Nullable String transactionName, double percentile,
             long startTime, long endTime) throws Exception {
-        int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
+        int rollupLevel =
+                rollupLevelService.getRollupLevelForView(startTime, endTime, DataKind.GENERAL);
         // startTime + 1 in order to not include the aggregate value at startTime
         List<PercentileAggregate> aggregates =
                 aggregateRepository.readPercentileAggregates(agentRollupId,
@@ -188,7 +190,8 @@ class MetricService {
     private List<ThroughputAggregate> getThroughputAggregates(String agentRollupId,
             String transactionType, @Nullable String transactionName, long startTime, long endTime)
             throws Exception {
-        int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
+        int rollupLevel =
+                rollupLevelService.getRollupLevelForView(startTime, endTime, DataKind.GENERAL);
         // startTime + 1 in order to not include the aggregate at startTime
         return aggregateRepository.readThroughputAggregates(agentRollupId,
                 ImmutableTransactionQuery.builder()
@@ -203,7 +206,8 @@ class MetricService {
     private List<OverviewAggregate> getOverviewAggregates(String agentRollupId,
             String transactionType, @Nullable String transactionName, long startTime, long endTime)
             throws Exception {
-        int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
+        int rollupLevel =
+                rollupLevelService.getRollupLevelForView(startTime, endTime, DataKind.GENERAL);
         // startTime + 1 in order to not include the aggregate at startTime
         return aggregateRepository.readOverviewAggregates(agentRollupId,
                 ImmutableTransactionQuery.builder()

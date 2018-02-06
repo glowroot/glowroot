@@ -36,6 +36,8 @@ public interface RepoAdmin {
 
     void resizeIfNeeded() throws Exception;
 
+    int updateCassandraTwcsWindowSizes() throws Exception;
+
     List<CassandraWriteTotals> getCassandraWriteTotalsPerTable(int limit);
 
     List<CassandraWriteTotals> getCassandraWriteTotalsPerAgentRollup(String tableName, int limit);

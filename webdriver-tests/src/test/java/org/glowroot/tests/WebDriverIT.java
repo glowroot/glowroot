@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,9 +163,10 @@ public abstract class WebDriverIT {
         resetCentralConfigAdmin("web", "{\"sessionTimeoutMinutes\":30,"
                 + "\"sessionCookieName\":\"GLOWROOT_SESSION_ID\","
                 + "\"version\":\"$version\"}");
-        resetCentralConfigAdmin("storage", "{\"rollupExpirationHours\":[72,336,2160,17520],"
+        resetCentralConfigAdmin("storage", "{\"rollupExpirationHours\":[48,336,2160,17520],"
+                + "\"queryAndServiceCallRollupExpirationHours\":[48,168,720,720],"
+                + "\"profileRollupExpirationHours\":[48,168,720,720],"
                 + "\"traceExpirationHours\":336,"
-                + "\"fullQueryTextExpirationHours\":336,"
                 + "\"version\":\"$version\"}");
         resetCentralConfigAdmin("smtp", "{\"host\":\"\","
                 + "\"username\":\"\","

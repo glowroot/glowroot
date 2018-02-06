@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,15 @@ import static java.util.concurrent.TimeUnit.HOURS;
 @Value.Immutable
 public abstract class CentralStorageConfig implements StorageConfig {
 
-    // 3 days, 2 weeks, 3 months, 2 years
+    // 30-min data is extra valuable because it allows daily reports in (almost) any time zone
+
+    // 2 days, 2 weeks, 3 months, 1 year
     private static final ImmutableList<Integer> DEFAULT_ROLLUP_EXPIRATION_HOURS =
-            ImmutableList.of(24 * 3, 24 * 14, 24 * 90, 24 * 365 * 2);
+            ImmutableList.of(24 * 2, 24 * 14, 24 * 90, 24 * 365);
+
+    // 2 days, 1 week, 1 month, 1 month
+    private static final ImmutableList<Integer> DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS =
+            ImmutableList.of(24 * 2, 24 * 7, 24 * 30, 24 * 30);
 
     // TODO revisit this comment
     //
@@ -43,14 +49,19 @@ public abstract class CentralStorageConfig implements StorageConfig {
 
     @Override
     @Value.Default
-    public int traceExpirationHours() {
-        // 2 weeks
-        return 24 * 14;
+    public ImmutableList<Integer> queryAndServiceCallRollupExpirationHours() {
+        return DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS;
     }
 
     @Override
     @Value.Default
-    public int fullQueryTextExpirationHours() {
+    public ImmutableList<Integer> profileRollupExpirationHours() {
+        return DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS;
+    }
+
+    @Override
+    @Value.Default
+    public int traceExpirationHours() {
         // 2 weeks
         return 24 * 14;
     }
@@ -62,7 +73,11 @@ public abstract class CentralStorageConfig implements StorageConfig {
     }
 
     public boolean hasListIssues() {
-        return rollupExpirationHours().size() != DEFAULT_ROLLUP_EXPIRATION_HOURS.size();
+        return rollupExpirationHours().size() != DEFAULT_ROLLUP_EXPIRATION_HOURS.size()
+                || queryAndServiceCallRollupExpirationHours()
+                        .size() != DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS.size()
+                || profileRollupExpirationHours().size() != DEFAULT_DETAIL_ROLLUP_EXPIRATION_HOURS
+                        .size();
     }
 
     @Value.Derived

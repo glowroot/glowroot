@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.glowroot.common.util.Versions;
 @Value.Immutable
 public abstract class EmbeddedStorageConfig implements StorageConfig {
 
-    // 3 days, 2 weeks, 3 months, 3 months
+    // 2 days, 2 weeks, 3 months, 3 months
     private static final ImmutableList<Integer> DEFAULT_ROLLUP_EXPIRATION_HOURS =
             ImmutableList.of(24 * 3, 24 * 14, 24 * 90, 24 * 90);
 
@@ -42,13 +42,26 @@ public abstract class EmbeddedStorageConfig implements StorageConfig {
     }
 
     @Override
+    @JsonIgnore
+    @Value.Derived
+    public ImmutableList<Integer> queryAndServiceCallRollupExpirationHours() {
+        return rollupExpirationHours();
+    }
+
+    @Override
+    @JsonIgnore
+    @Value.Derived
+    public ImmutableList<Integer> profileRollupExpirationHours() {
+        return rollupExpirationHours();
+    }
+
+    @Override
     @Value.Default
     public int traceExpirationHours() {
         // 2 weeks
         return 24 * 14;
     }
 
-    @Override
     @Value.Default
     public int fullQueryTextExpirationHours() {
         // 2 weeks

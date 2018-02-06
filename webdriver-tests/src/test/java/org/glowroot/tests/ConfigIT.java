@@ -216,9 +216,9 @@ public class ConfigIT extends WebDriverIT {
         }
         page.getTraceExpirationTextField().clear();
         page.getTraceExpirationTextField().sendKeys("66");
-        page.getFullQueryTextExpirationTextField().clear();
-        page.getFullQueryTextExpirationTextField().sendKeys("77");
         if (!WebDriverSetup.useCentral) {
+            page.getFullQueryTextExpirationTextField().clear();
+            page.getFullQueryTextExpirationTextField().sendKeys("77");
             for (int i = 0; i < 3; i++) {
                 page.getRollupCappedDatabaseSizeTextField(i).clear();
                 page.getRollupCappedDatabaseSizeTextField(i).sendKeys("88" + i);
@@ -239,9 +239,9 @@ public class ConfigIT extends WebDriverIT {
                     .isEqualTo("44" + i);
         }
         assertThat(page.getTraceExpirationTextField().getAttribute("value")).isEqualTo("66");
-        assertThat(page.getFullQueryTextExpirationTextField().getAttribute("value"))
-                .isEqualTo("77");
         if (!WebDriverSetup.useCentral) {
+            assertThat(page.getFullQueryTextExpirationTextField().getAttribute("value"))
+                    .isEqualTo("77");
             for (int i = 0; i < 3; i++) {
                 assertThat(page.getRollupCappedDatabaseSizeTextField(i).getAttribute("value"))
                         .isEqualTo("88" + i);

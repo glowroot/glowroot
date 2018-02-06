@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ import org.glowroot.common.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.repo.util.RollupLevelService;
+import org.glowroot.common.repo.util.RollupLevelService.DataKind;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.ui.HttpSessionManager.Authentication;
@@ -252,7 +253,8 @@ class ReportJsonService {
     private List<DataSeries> getTransactionReport(ReportRequest request, TimeZone timeZone,
             Date from, Date to, RollupCaptureTimeFn rollupCaptureTimeFn, double gapMillis)
             throws Exception {
-        int rollupLevel = rollupLevelService.getRollupLevelForReport(from.getTime());
+        int rollupLevel =
+                rollupLevelService.getRollupLevelForReport(from.getTime(), DataKind.GENERAL);
         // level 2 (30 min intervals) is the minimum level needed
         rollupLevel = Math.max(rollupLevel, 2);
         if (rollupLevel == 3) {

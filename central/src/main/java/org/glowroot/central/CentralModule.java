@@ -59,7 +59,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.repo.CentralRepoModule;
 import org.glowroot.central.repo.ConfigRepositoryImpl.AgentConfigListener;
+import org.glowroot.central.repo.RepoAdminImpl;
 import org.glowroot.central.repo.SchemaUpgrade;
+import org.glowroot.central.repo.Tools;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
@@ -224,7 +226,8 @@ public class CentralModule {
                     .gaugeValueRepository(repos.getGaugeValueDao())
                     .syntheticResultRepository(repos.getSyntheticResultDao())
                     .incidentRepository(repos.getIncidentDao())
-                    .repoAdmin(new RepoAdminImpl(session.getCassandraWriteMetrics()))
+                    .repoAdmin(new RepoAdminImpl(session, keyspace, repos.getConfigRepository(),
+                            session.getCassandraWriteMetrics()))
                     .rollupLevelService(rollupLevelService)
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
@@ -381,12 +384,25 @@ public class CentralModule {
                         "setup-admin-user requires two args (username and password), exiting");
                 return;
             }
-            command = CentralRepoModule::setupAdminUser;
+            command = Tools::setupAdminUser;
+        } else if (commandName.equals("execute-range-deletes")) {
+            if (args.size() != 2) {
+                startupLogger.error("execute-range-deletes requires two args (partial table name"
+                        + " and rollup level), exiting");
+                return;
+            }
+            String partialTableName = args.get(0);
+            if (!partialTableName.equals("query") && !partialTableName.equals("service_call")
+                    && !partialTableName.equals("profile")) {
+                startupLogger.error("partial table name must be one of \"query\", \"service_call\""
+                        + " or \"profile\", exiting");
+                return;
+            }
+            command = Tools::executeDeletes;
         } else {
             startupLogger.error("unexpected command '{}', exiting", commandName);
             return;
         }
-        startupLogger.info("running {}", commandName);
 
         String version = Version.getVersion(CentralModule.class);
         startupLogger.info("Glowroot version: {}", version);
@@ -426,7 +442,8 @@ public class CentralModule {
                 schemaUpgrade.updateSchemaVersionToCurent();
                 startupLogger.info("glowroot central schema created");
             }
-            success = command.run(repos, args);
+            startupLogger.info("running {}", commandName);
+            success = command.run(new Tools(session, repos), args);
         } finally {
             if (session != null) {
                 session.close();
@@ -830,6 +847,6 @@ public class CentralModule {
     }
 
     private interface Command {
-        boolean run(CentralRepoModule repos, List<String> args) throws Exception;
+        boolean run(Tools tools, List<String> args) throws Exception;
     }
 }

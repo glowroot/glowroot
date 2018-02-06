@@ -99,7 +99,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 70;
+    private static final int CURR_SCHEMA_VERSION = 71;
 
     private final Session session;
     private final KeyspaceMetadata keyspaceMetadata;
@@ -440,6 +440,10 @@ public class SchemaUpgrade {
             changeV09TablesToLCS();
             updateSchemaVersion(70);
         }
+        if (initialSchemaVersion < 71) {
+            updateCentralStorageConfig();
+            updateSchemaVersion(71);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded glowroot central schema from version {} to version {}",
@@ -462,7 +466,6 @@ public class SchemaUpgrade {
             throws Exception {
         List<String> snappyTableNames = Lists.newArrayList();
         List<String> dtcsTableNames = Lists.newArrayList();
-        List<String> twcsTableNames = Lists.newArrayList();
         for (TableMetadata table : keyspaceMetadata.getTables()) {
             String compressionClass = table.getOptions().getCompression().get("class");
             if (compressionClass != null && compressionClass
@@ -479,24 +482,6 @@ public class SchemaUpgrade {
                             "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")) {
                 // these need to be updated to TWCS also
                 dtcsTableNames.add(table.getName());
-            }
-            if (compactionClass != null && compactionClass
-                    .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
-                String windowUnit =
-                        table.getOptions().getCompaction().get("compaction_window_unit");
-                String windowSize =
-                        table.getOptions().getCompaction().get("compaction_window_size");
-
-                int expirationHours = getExpirationHoursForTable(table.getName(), storageConfig);
-                if (expirationHours == -1) {
-                    // warning already logged above inside getExpirationHoursForTable()
-                } else {
-                    int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
-                    if (!"HOURS".equals(windowUnit)
-                            || !Integer.toString(windowSizeHours).equals(windowSize)) {
-                        twcsTableNames.add(table.getName());
-                    }
-                }
             }
         }
 
@@ -516,7 +501,8 @@ public class SchemaUpgrade {
         int dtcsUpdatedCount = 0;
         for (String tableName : dtcsTableNames) {
             try {
-                int expirationHours = getExpirationHoursForTable(tableName, storageConfig);
+                int expirationHours =
+                        RepoAdminImpl.getExpirationHoursForTable(tableName, storageConfig);
                 if (expirationHours == -1) {
                     // warning already logged above inside getExpirationHoursForTable()
                     continue;
@@ -536,30 +522,9 @@ public class SchemaUpgrade {
                 break;
             }
         }
-        int twcsUpdatedCount = 0;
-        for (String tableName : twcsTableNames) {
-            int expirationHours = getExpirationHoursForTable(tableName, storageConfig);
-            if (expirationHours == -1) {
-                // warning already logged above inside getExpirationHoursForTable()
-                continue;
-            }
-            int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
-            if (twcsUpdatedCount++ == 0) {
-                startupLogger.info("updating TimeWindowCompactionStrategy compaction windows ...");
-            }
-            session.execute("alter table " + tableName + " with compaction = { 'class'"
-                    + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : " + windowSizeHours + ","
-                    + " 'unchecked_tombstone_compaction' : true }");
-        }
         if (dtcsUpdatedCount > 0) {
             startupLogger.info("upgraded {} tables from DateTieredCompactionStrategy to"
                     + " TimeWindowCompactionStrategy compaction", dtcsUpdatedCount);
-        }
-        if (twcsUpdatedCount > 0) {
-            startupLogger.info(
-                    "updated TimeWindowCompactionStrategy compaction window on {} tables",
-                    twcsUpdatedCount);
         }
     }
 
@@ -1269,6 +1234,7 @@ public class SchemaUpgrade {
     }
 
     private void populateV09AgentCheckTable() throws Exception {
+        int fullQueryTextExpirationHours = getFullQueryTextExpirationHours();
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
         PreparedStatement insertV09AgentCheckPS = null;
         for (V09AgentRollup v09AgentRollup : v09AgentRollups.values()) {
@@ -1288,8 +1254,8 @@ public class SchemaUpgrade {
                     long nextDailyRollup = RollupLevelService.getCeilRollupTime(
                             clock.currentTimeMillis(), DAYS.toMillis(1));
                     CentralStorageConfig storageConfig = getCentralStorageConfig(session);
-                    long v09FqtLastExpirationTime = addExpirationHours(nextDailyRollup,
-                            storageConfig.fullQueryTextExpirationHours());
+                    long v09FqtLastExpirationTime =
+                            addExpirationHours(nextDailyRollup, fullQueryTextExpirationHours);
                     long v09TraceLastExpirationTime = addExpirationHours(nextDailyRollup,
                             storageConfig.traceExpirationHours());
                     long v09AggregateLastExpirationTime = addExpirationHours(nextDailyRollup,
@@ -1311,6 +1277,32 @@ public class SchemaUpgrade {
                 boundStatement.setString(0, v09AgentRollup.agentRollupId());
                 session.execute(boundStatement);
             }
+        }
+    }
+
+    private int getFullQueryTextExpirationHours() throws Exception {
+        // since fullQueryTextExpirationHours is no longer part of CentralStorageConfig (starting
+        // with 0.10.3, it must be pulled from json
+        ResultSet results =
+                session.execute("select value from central_config where key = 'storage'");
+        Row row = results.one();
+        if (row == null) {
+            // 2 weeks was the default
+            return 24 * 14;
+        }
+        String storageConfigText = row.getString(0);
+        if (storageConfigText == null) {
+            // 2 weeks was the default
+            return 24 * 14;
+        }
+        try {
+            JsonNode node = mapper.readTree(storageConfigText);
+            // 2 weeks was the default
+            return node.path("fullQueryTextExpirationHours").asInt(24 * 14);
+        } catch (IOException e) {
+            logger.warn(e.getMessage(), e);
+            // 2 weeks was the default
+            return 24 * 14;
         }
     }
 
@@ -2267,6 +2259,35 @@ public class SchemaUpgrade {
         }
     }
 
+    private void updateCentralStorageConfig() throws Exception {
+        ResultSet results =
+                session.execute("select value from central_config where key = 'storage'");
+        Row row = results.one();
+        if (row == null) {
+            return;
+        }
+        String storageConfigText = row.getString(0);
+        if (storageConfigText == null) {
+            return;
+        }
+        CentralStorageConfig storageConfig;
+        try {
+            ObjectNode node = (ObjectNode) mapper.readTree(storageConfigText);
+            node.remove("fullQueryTextExpirationHours");
+            storageConfig = mapper.readValue(mapper.treeAsTokens(node),
+                    ImmutableCentralStorageConfig.class);
+        } catch (IOException e) {
+            logger.warn(e.getMessage(), e);
+            return;
+        }
+        PreparedStatement insertPS =
+                session.prepare("insert into central_config (key, value) values (?, ?)");
+        BoundStatement boundStatement = insertPS.bind();
+        boundStatement.setString(0, "storage");
+        boundStatement.setString(1, mapper.writeValueAsString(storageConfig));
+        session.execute(boundStatement);
+    }
+
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
             throws Exception {
         if (!columnExists(tableName, columnName)) {
@@ -2370,44 +2391,6 @@ public class SchemaUpgrade {
         return HeartbeatCondition.newBuilder()
                 .setTimePeriodSeconds(oldAlertConfig.getTimePeriodSeconds())
                 .build();
-    }
-
-    private static int getExpirationHoursForTable(String tableName,
-            CentralStorageConfig storageConfig) {
-        if (tableName.startsWith("trace_")) {
-            return storageConfig.traceExpirationHours();
-        } else if (tableName.startsWith("gauge_value_rollup_")) {
-            int rollupLevel = Integer.parseInt(tableName.substring(tableName.lastIndexOf('_') + 1));
-            if (rollupLevel == 0) {
-                return storageConfig.rollupExpirationHours().get(rollupLevel);
-            } else {
-                return storageConfig.rollupExpirationHours().get(rollupLevel - 1);
-            }
-        } else if (tableName.startsWith("aggregate_") || tableName.startsWith("synthetic_")) {
-            int rollupLevel = Integer.parseInt(tableName.substring(tableName.lastIndexOf('_') + 1));
-            return storageConfig.rollupExpirationHours().get(rollupLevel);
-        } else if (tableName.equals("gauge_name") || tableName.equals("agent")) {
-            return getMaxRollupExpirationHours(storageConfig);
-        } else if (tableName.equals("heartbeat")) {
-            return HeartbeatDao.EXPIRATION_HOURS;
-        } else if (tableName.equals("resolved_incident")) {
-            return StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS;
-        } else {
-            logger.warn("unexpected table: {}", tableName);
-            return -1;
-        }
-    }
-
-    private static int getMaxRollupExpirationHours(CentralStorageConfig storageConfig) {
-        int maxRollupExpirationHours = 0;
-        for (int expirationHours : storageConfig.rollupExpirationHours()) {
-            if (expirationHours == 0) {
-                // zero value expiration/TTL means never expire
-                return 0;
-            }
-            maxRollupExpirationHours = Math.max(maxRollupExpirationHours, expirationHours);
-        }
-        return maxRollupExpirationHours;
     }
 
     @VisibleForTesting

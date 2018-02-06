@@ -517,8 +517,15 @@ public class ConfigRepositoryIT {
                 .addRollupExpirationHours(2)
                 .addRollupExpirationHours(3)
                 .addRollupExpirationHours(4)
+                .addQueryAndServiceCallRollupExpirationHours(5)
+                .addQueryAndServiceCallRollupExpirationHours(6)
+                .addQueryAndServiceCallRollupExpirationHours(7)
+                .addQueryAndServiceCallRollupExpirationHours(8)
+                .addProfileRollupExpirationHours(9)
+                .addProfileRollupExpirationHours(10)
+                .addProfileRollupExpirationHours(11)
+                .addProfileRollupExpirationHours(12)
                 .traceExpirationHours(100)
-                .fullQueryTextExpirationHours(100)
                 .build();
 
         // when

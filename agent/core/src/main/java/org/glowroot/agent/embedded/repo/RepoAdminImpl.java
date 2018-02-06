@@ -134,6 +134,11 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
+    public int updateCassandraTwcsWindowSizes() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<CassandraWriteTotals> getCassandraWriteTotalsPerTable(int limit) {
         throw new UnsupportedOperationException();
     }

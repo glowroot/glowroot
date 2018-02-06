@@ -41,17 +41,39 @@ glowroot.controller('AdminStorageCtrl', [
       }
     });
 
+    if ($scope.layout.central) {
+      $scope.$watchCollection('page.queryAndServiceCallRollupExpirationDays', function (newValue) {
+        if ($scope.config) {
+          $scope.config.queryAndServiceCallRollupExpirationHours = [];
+          angular.forEach(newValue, function (days) {
+            $scope.config.queryAndServiceCallRollupExpirationHours.push(days * 24);
+          });
+        }
+      });
+
+      $scope.$watchCollection('page.profileRollupExpirationDays', function (newValue) {
+        if ($scope.config) {
+          $scope.config.profileRollupExpirationHours = [];
+          angular.forEach(newValue, function (days) {
+            $scope.config.profileRollupExpirationHours.push(days * 24);
+          });
+        }
+      });
+    }
+
     $scope.$watchCollection('page.traceExpirationDays', function (newValue) {
       if ($scope.config) {
         $scope.config.traceExpirationHours = newValue * 24;
       }
     });
 
-    $scope.$watchCollection('page.fullQueryTextExpirationDays', function (newValue) {
-      if ($scope.config) {
-        $scope.config.fullQueryTextExpirationHours = newValue * 24;
-      }
-    });
+    if (!$scope.layout.central) {
+      $scope.$watchCollection('page.fullQueryTextExpirationDays', function (newValue) {
+        if ($scope.config) {
+          $scope.config.fullQueryTextExpirationHours = newValue * 24;
+        }
+      });
+    }
 
     function onNewData(data) {
       $scope.loaded = true;
@@ -62,8 +84,20 @@ glowroot.controller('AdminStorageCtrl', [
       angular.forEach(data.rollupExpirationHours, function (hours) {
         $scope.page.rollupExpirationDays.push(hours / 24);
       });
+      if ($scope.layout.central) {
+        $scope.page.queryAndServiceCallRollupExpirationDays = [];
+        angular.forEach(data.queryAndServiceCallRollupExpirationHours, function (hours) {
+          $scope.page.queryAndServiceCallRollupExpirationDays.push(hours / 24);
+        });
+        $scope.page.profileRollupExpirationDays = [];
+        angular.forEach(data.profileRollupExpirationHours, function (hours) {
+          $scope.page.profileRollupExpirationDays.push(hours / 24);
+        });
+      }
       $scope.page.traceExpirationDays = data.traceExpirationHours / 24;
-      $scope.page.fullQueryTextExpirationDays = data.fullQueryTextExpirationHours / 24;
+      if (!$scope.layout.central) {
+        $scope.page.fullQueryTextExpirationDays = data.fullQueryTextExpirationHours / 24;
+      }
     }
 
     $scope.save = function (deferred) {
@@ -73,6 +107,16 @@ glowroot.controller('AdminStorageCtrl', [
           .then(function (response) {
             onNewData(response.data);
             deferred.resolve('Saved');
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
+    };
+
+    $scope.updateCassandraTwcsWindowSizes = function (deferred) {
+      $http.post('backend/admin/update-cassandra-twcs-window-sizes')
+          .then(function (response) {
+            var updatedTableCount = response.data;
+            deferred.resolve('Updated ' + updatedTableCount + ' table' + (updatedTableCount === 1 ? '' : 's'));
           }, function (response) {
             httpErrors.handle(response, $scope, deferred);
           });

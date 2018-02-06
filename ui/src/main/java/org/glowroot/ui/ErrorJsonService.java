@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import org.glowroot.common.repo.TraceRepository.ErrorMessagePoint;
 import org.glowroot.common.repo.TraceRepository.ErrorMessageResult;
 import org.glowroot.common.repo.TraceRepository.TraceQuery;
 import org.glowroot.common.repo.util.RollupLevelService;
+import org.glowroot.common.repo.util.RollupLevelService.DataKind;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
@@ -92,8 +93,8 @@ class ErrorJsonService {
                 .transactionName(request.transactionName())
                 .from(request.from())
                 .to(request.to())
-                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(),
-                        request.to()))
+                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to(),
+                        DataKind.GENERAL))
                 .build();
         ErrorMessageFilter filter = ImmutableErrorMessageFilter.builder()
                 .addAllIncludes(request.include())
@@ -114,8 +115,8 @@ class ErrorJsonService {
         if (!throughputAggregates.isEmpty()) {
             long maxCaptureTime =
                     throughputAggregates.get(throughputAggregates.size() - 1).captureTime();
-            long resolutionMillis =
-                    rollupLevelService.getDataPointIntervalMillis(query.from(), query.to());
+            long resolutionMillis = rollupLevelService.getDataPointIntervalMillis(query.from(),
+                    query.to(), DataKind.GENERAL);
             ErrorMessageResult result = traceRepository.readErrorMessages(agentRollupId,
                     ImmutableTraceQuery.builder().copyFrom(query).to(maxCaptureTime).build(),
                     filter, resolutionMillis, request.errorMessageLimit());
@@ -161,7 +162,8 @@ class ErrorJsonService {
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
-                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
+                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to(),
+                        DataKind.GENERAL))
                 .build();
         OverallErrorSummary overallSummary =
                 errorCommonService.readOverallErrorSummary(agentRollupId, query, autoRefresh);
@@ -186,8 +188,8 @@ class ErrorJsonService {
     private void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,
             DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra, long liveCaptureTime)
             throws Exception {
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime,
-                rollupLevelService.getDataPointIntervalMillis(query.from(), query.to()));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime, rollupLevelService
+                .getDataPointIntervalMillis(query.from(), query.to(), DataKind.GENERAL));
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {

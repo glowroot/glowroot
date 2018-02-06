@@ -15,7 +15,6 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.List;
 import java.util.Set;
 
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -23,8 +22,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -32,15 +29,11 @@ import org.glowroot.central.v09support.AggregateDaoWithV09Support;
 import org.glowroot.central.v09support.GaugeValueDaoWithV09Support;
 import org.glowroot.central.v09support.SyntheticResultDaoWithV09Support;
 import org.glowroot.central.v09support.TraceDaoWithV09Support;
-import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.util.Clock;
-import org.glowroot.ui.PasswordHash;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CentralRepoModule {
-
-    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private final AgentConfigDao agentConfigDao;
     private final UserDao userDao;
@@ -137,26 +130,16 @@ public class CentralRepoModule {
         v09AgentRollupDao = new V09AgentRollupDao(session, clusterManager);
     }
 
-    public boolean setupAdminUser(List<String> args) throws Exception {
-        String username = args.get(0);
-        String password = args.get(1);
-        if (roleDao.read("Administrator") == null) {
-            startupLogger.error("Administrator role does not exist, exiting");
-            return false;
-        }
-        // not using insertIfNotExists in case this command fails on the next line for some reason
-        // (while deleting anonymous user) and the command needs to be re-run
-        userDao.insert(ImmutableUserConfig.builder()
-                .username(username)
-                .passwordHash(PasswordHash.createHash(password))
-                .addRoles("Administrator")
-                .build());
-        userDao.delete("anonymous");
-        return true;
-    }
-
     public AgentConfigDao getAgentConfigDao() {
         return agentConfigDao;
+    }
+
+    public UserDao getUserDao() {
+        return userDao;
+    }
+
+    public RoleDao getRoleDao() {
+        return roleDao;
     }
 
     public ConfigRepositoryImpl getConfigRepository() {

@@ -26,6 +26,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -38,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
+import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.util.Styles;
 
@@ -270,14 +272,18 @@ class FullQueryTextDao {
     }
 
     private int getTTL() throws Exception {
+        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
+        int queryRollupExpirationHours =
+                Iterables.getLast(storageConfig.queryAndServiceCallRollupExpirationHours());
+        int expirationHours =
+                Math.max(queryRollupExpirationHours, storageConfig.traceExpirationHours());
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         RollupConfig lastRollupConfig = rollupConfigs.get(rollupConfigs.size() - 1);
         // adding largest rollup interval to account for query being retained longer by rollups
         long ttl = MILLISECONDS.toSeconds(lastRollupConfig.intervalMillis())
                 // adding 1 day to account for rateLimiter
                 + DAYS.toSeconds(1)
-                + HOURS.toSeconds(
-                        configRepository.getCentralStorageConfig().fullQueryTextExpirationHours());
+                + HOURS.toSeconds(expirationHours);
         return Ints.saturatedCast(ttl);
     }
 

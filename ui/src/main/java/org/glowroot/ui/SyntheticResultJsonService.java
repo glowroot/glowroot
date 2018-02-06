@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.SyntheticResultRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.repo.util.RollupLevelService;
+import org.glowroot.common.repo.util.RollupLevelService.DataKind;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.ui.ChartMarking.ChartMarkingInterval;
@@ -68,7 +69,8 @@ class SyntheticResultJsonService {
     @GET(path = "/backend/synthetic-monitor/results", permission = "agent:syntheticMonitor")
     String getSyntheticResults(@BindAgentRollupId String agentRollupId,
             @BindRequest SyntheticResultRequest request) throws Exception {
-        int rollupLevel = rollupLevelService.getRollupLevelForView(request.from(), request.to());
+        int rollupLevel = rollupLevelService.getRollupLevelForView(request.from(), request.to(),
+                DataKind.GENERAL);
         long intervalMillis = configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         double gapMillis = intervalMillis * 1.5;
         long revisedFrom = request.from() - intervalMillis;

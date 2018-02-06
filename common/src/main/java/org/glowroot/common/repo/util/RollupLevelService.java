@@ -17,6 +17,7 @@ package org.glowroot.common.repo.util;
 
 import java.util.List;
 
+import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.util.Clock;
@@ -33,11 +34,10 @@ public class RollupLevelService {
         this.clock = clock;
     }
 
-    public int getRollupLevelForView(long from, long to) throws Exception {
+    public int getRollupLevelForView(long from, long to, DataKind dataKind) throws Exception {
         long millis = to - from;
         long timeAgoMillis = clock.currentTimeMillis() - from;
-        List<Integer> rollupExpirationHours =
-                configRepository.getStorageConfig().rollupExpirationHours();
+        List<Integer> rollupExpirationHours = getRollupExpirationHours(dataKind);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
             RollupConfig nextRollupConfig = rollupConfigs.get(i + 1);
@@ -50,10 +50,9 @@ public class RollupLevelService {
         return rollupConfigs.size() - 1;
     }
 
-    public int getRollupLevelForReport(long from) throws Exception {
+    public int getRollupLevelForReport(long from, DataKind dataKind) throws Exception {
         long timeAgoMillis = clock.currentTimeMillis() - from;
-        List<Integer> rollupExpirationHours =
-                configRepository.getStorageConfig().rollupExpirationHours();
+        List<Integer> rollupExpirationHours = getRollupExpirationHours(dataKind);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
             int expirationHours = rollupExpirationHours.get(i);
@@ -109,11 +108,10 @@ public class RollupLevelService {
         return rollupConfigs.size();
     }
 
-    public long getDataPointIntervalMillis(long from, long to) throws Exception {
+    public long getDataPointIntervalMillis(long from, long to, DataKind dataKind) throws Exception {
         long millis = to - from;
         long timeAgoMillis = clock.currentTimeMillis() - from;
-        List<Integer> rollupExpirationHours =
-                configRepository.getStorageConfig().rollupExpirationHours();
+        List<Integer> rollupExpirationHours = getRollupExpirationHours(dataKind);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
             RollupConfig currRollupConfig = rollupConfigs.get(i);
@@ -127,6 +125,22 @@ public class RollupLevelService {
         return rollupConfigs.get(rollupConfigs.size() - 1).intervalMillis();
     }
 
+    private List<Integer> getRollupExpirationHours(DataKind dataKind) throws Exception {
+        StorageConfig storageConfig = configRepository.getStorageConfig();
+        switch (dataKind) {
+            case GENERAL:
+                return storageConfig.rollupExpirationHours();
+            case QUERY:
+                return storageConfig.queryAndServiceCallRollupExpirationHours();
+            case SERVICE_CALL:
+                return storageConfig.queryAndServiceCallRollupExpirationHours();
+            case PROFILE:
+                return storageConfig.profileRollupExpirationHours();
+            default:
+                throw new Exception("Unexpected data kind: " + dataKind);
+        }
+    }
+
     public static long getSafeRollupTime(long safeCurrentTime, long intervalMillis) {
         return getFloorRollupTime(safeCurrentTime, intervalMillis);
     }
@@ -137,5 +151,9 @@ public class RollupLevelService {
 
     public static long getCeilRollupTime(long captureTime, long intervalMillis) {
         return (long) Math.ceil(captureTime / (double) intervalMillis) * intervalMillis;
+    }
+
+    public static enum DataKind {
+        GENERAL, QUERY, SERVICE_CALL, PROFILE
     }
 }

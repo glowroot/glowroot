@@ -45,7 +45,6 @@ import org.glowroot.common.config.HttpProxyConfig;
 import org.glowroot.common.config.ImmutableCentralAdminGeneralConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralWebConfig;
-import org.glowroot.common.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common.config.ImmutableHttpProxyConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
 import org.glowroot.common.config.ImmutablePagerDutyConfig;
@@ -1162,12 +1161,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     private static CentralStorageConfig withCorrectedLists(CentralStorageConfig config) {
-        EmbeddedStorageConfig defaultConfig = ImmutableEmbeddedStorageConfig.builder().build();
-        ImmutableList<Integer> rollupExpirationHours =
-                fix(config.rollupExpirationHours(), defaultConfig.rollupExpirationHours());
+        CentralStorageConfig defaultConfig = ImmutableCentralStorageConfig.builder().build();
         return ImmutableCentralStorageConfig.builder()
                 .copyFrom(config)
-                .rollupExpirationHours(rollupExpirationHours)
+                .rollupExpirationHours(
+                        fix(config.rollupExpirationHours(), defaultConfig.rollupExpirationHours()))
+                .queryAndServiceCallRollupExpirationHours(
+                        fix(config.queryAndServiceCallRollupExpirationHours(),
+                                defaultConfig.queryAndServiceCallRollupExpirationHours()))
+                .profileRollupExpirationHours(fix(config.profileRollupExpirationHours(),
+                        defaultConfig.profileRollupExpirationHours()))
                 .build();
     }
 

@@ -574,6 +574,12 @@ class AdminJsonService {
         liveAggregateRepository.clearInMemoryAggregate();
     }
 
+    @POST(path = "/backend/admin/update-cassandra-twcs-window-sizes",
+            permission = "admin:edit:storage")
+    String updateCassandraTwcsWindowSizes() throws Exception {
+        return Integer.toString(repoAdmin.updateCassandraTwcsWindowSizes());
+    }
+
     @GET(path = "/backend/admin/cassandra-write-totals", permission = "admin:view:storage")
     String getCassandraWriteTotals(@BindRequest CassandraWriteTotalsRequest request)
             throws JsonProcessingException {
@@ -878,23 +884,28 @@ class AdminJsonService {
     abstract static class CentralStorageConfigDto {
 
         abstract ImmutableList<Integer> rollupExpirationHours();
+        abstract ImmutableList<Integer> queryAndServiceCallRollupExpirationHours();
+        abstract ImmutableList<Integer> profileRollupExpirationHours();
         abstract int traceExpirationHours();
-        abstract int fullQueryTextExpirationHours();
         abstract String version();
 
         private CentralStorageConfig convert() {
             return ImmutableCentralStorageConfig.builder()
                     .rollupExpirationHours(rollupExpirationHours())
+                    .queryAndServiceCallRollupExpirationHours(
+                            queryAndServiceCallRollupExpirationHours())
+                    .profileRollupExpirationHours(profileRollupExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
-                    .fullQueryTextExpirationHours(fullQueryTextExpirationHours())
                     .build();
         }
 
         private static CentralStorageConfigDto create(CentralStorageConfig config) {
             return ImmutableCentralStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
+                    .addAllQueryAndServiceCallRollupExpirationHours(
+                            config.queryAndServiceCallRollupExpirationHours())
+                    .addAllProfileRollupExpirationHours(config.profileRollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
-                    .fullQueryTextExpirationHours(config.fullQueryTextExpirationHours())
                     .version(config.version())
                     .build();
         }
