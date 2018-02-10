@@ -123,7 +123,7 @@ public class UiModule {
                 configRepository, ticker, clock));
         jsonServices.add(new TraceJsonService(traceCommonService));
         jsonServices.add(new ErrorJsonService(errorCommonService, transactionCommonService,
-                traceRepository, rollupLevelService, clock));
+                traceRepository, configRepository, rollupLevelService, clock));
         jsonServices.add(new GaugeValueJsonService(gaugeValueRepository, rollupLevelService,
                 configRepository));
         jsonServices

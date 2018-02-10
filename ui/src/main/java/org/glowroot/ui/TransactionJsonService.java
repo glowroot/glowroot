@@ -92,6 +92,12 @@ class TransactionJsonService {
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates =
                 transactionCommonService.getOverviewAggregates(agentRollupId, query, autoRefresh);
+        if (overviewAggregates.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = withLargestRollupLevel(query);
+            overviewAggregates = transactionCommonService.getOverviewAggregates(agentRollupId,
+                    query, autoRefresh);
+        }
         List<DataSeries> dataSeriesList =
                 getDataSeriesForTimerChart(request, overviewAggregates, liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
@@ -128,6 +134,12 @@ class TransactionJsonService {
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates =
                 transactionCommonService.getPercentileAggregates(agentRollupId, query, autoRefresh);
+        if (percentileAggregates.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = withLargestRollupLevel(query);
+            percentileAggregates = transactionCommonService.getPercentileAggregates(agentRollupId,
+                    query, autoRefresh);
+        }
         PercentileData percentileData = getDataSeriesForPercentileChart(request,
                 percentileAggregates, request.percentile(), liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts2(percentileAggregates);
@@ -154,6 +166,12 @@ class TransactionJsonService {
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
                 transactionCommonService.getThroughputAggregates(agentRollupId, query, autoRefresh);
+        if (throughputAggregates.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = withLargestRollupLevel(query);
+            throughputAggregates = transactionCommonService.getThroughputAggregates(agentRollupId,
+                    query, autoRefresh);
+        }
         List<DataSeries> dataSeriesList =
                 getDataSeriesForThroughputChart(request, throughputAggregates, liveCaptureTime);
         // TODO more precise aggregate when from/to not on rollup grid
@@ -186,6 +204,11 @@ class TransactionJsonService {
         TransactionQuery query = toQuery(request, DataKind.QUERY);
         Map<String, List<MutableQuery>> queries =
                 transactionCommonService.getMergedQueries(agentRollupId, query);
+        if (queries.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = withLargestRollupLevel(query);
+            queries = transactionCommonService.getMergedQueries(agentRollupId, query);
+        }
         List<Query> queryList = Lists.newArrayList();
         for (Map.Entry<String, List<MutableQuery>> entry : queries.entrySet()) {
             for (MutableQuery loopQuery : entry.getValue()) {
@@ -239,6 +262,11 @@ class TransactionJsonService {
         TransactionQuery query = toQuery(request, DataKind.SERVICE_CALL);
         Map<String, List<MutableServiceCall>> serviceCalls =
                 transactionCommonService.getMergedServiceCalls(agentRollupId, query);
+        if (serviceCalls.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = withLargestRollupLevel(query);
+            serviceCalls = transactionCommonService.getMergedServiceCalls(agentRollupId, query);
+        }
         List<ServiceCall> serviceCallList = Lists.newArrayList();
         for (Map.Entry<String, List<MutableServiceCall>> entry : serviceCalls.entrySet()) {
             for (MutableServiceCall loopServiceCall : entry.getValue()) {
@@ -278,6 +306,13 @@ class TransactionJsonService {
         MutableProfile profile =
                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
                         request.include(), request.exclude(), request.truncateBranchPercentage());
+        if (profile.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = withLargestRollupLevel(query);
+            profile = transactionCommonService.getMergedProfile(agentRollupId, query,
+                    request.auxiliary(), request.include(), request.exclude(),
+                    request.truncateBranchPercentage());
+        }
         boolean hasUnfilteredMainThreadProfile;
         boolean hasUnfilteredAuxThreadProfile;
         if (request.auxiliary()) {
@@ -329,10 +364,18 @@ class TransactionJsonService {
                 .build();
         OverallSummary overallSummary =
                 transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh);
+        if (overallSummary.transactionCount() == 0) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = ImmutableOverallQuery.builder()
+                    .copyFrom(query)
+                    .rollupLevel(getLargestRollupLevel())
+                    .build();
+            overallSummary =
+                    transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh);
+        }
         Result<TransactionSummary> queryResult = transactionCommonService
                 .readTransactionSummaries(agentRollupId, query, request.sortOrder(),
                         request.limit(), autoRefresh);
-
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
@@ -354,6 +397,13 @@ class TransactionJsonService {
         MutableProfile profile =
                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
                         request.include(), request.exclude(), request.truncateBranchPercentage());
+        if (profile.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = withLargestRollupLevel(query);
+            profile = transactionCommonService.getMergedProfile(agentRollupId, query,
+                    request.auxiliary(), request.include(), request.exclude(),
+                    request.truncateBranchPercentage());
+        }
         return profile.toFlameGraphJson();
     }
 
@@ -384,6 +434,17 @@ class TransactionJsonService {
                 .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to(),
                         dataKind))
                 .build();
+    }
+
+    private TransactionQuery withLargestRollupLevel(TransactionQuery query) {
+        return ImmutableTransactionQuery.builder()
+                .copyFrom(query)
+                .rollupLevel(getLargestRollupLevel())
+                .build();
+    }
+
+    private int getLargestRollupLevel() {
+        return configRepository.getRollupConfigs().size() - 1;
     }
 
     private List<DataSeries> getDataSeriesForTimerChart(TransactionDataRequest request,

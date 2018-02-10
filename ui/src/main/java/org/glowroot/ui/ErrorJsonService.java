@@ -39,6 +39,7 @@ import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummar
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErrorSummary;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ImmutableErrorMessageFilter;
 import org.glowroot.common.repo.ImmutableTraceQuery;
 import org.glowroot.common.repo.TraceRepository;
@@ -66,15 +67,17 @@ class ErrorJsonService {
     private final ErrorCommonService errorCommonService;
     private final TransactionCommonService transactionCommonService;
     private final TraceRepository traceRepository;
+    private final ConfigRepository configRepository;
     private final RollupLevelService rollupLevelService;
     private final Clock clock;
 
     ErrorJsonService(ErrorCommonService errorCommonService,
             TransactionCommonService transactionCommonService, TraceRepository traceRepository,
-            RollupLevelService rollupLevelService, Clock clock) {
+            ConfigRepository configRepository, RollupLevelService rollupLevelService, Clock clock) {
         this.errorCommonService = errorCommonService;
         this.transactionCommonService = transactionCommonService;
         this.traceRepository = traceRepository;
+        this.configRepository = configRepository;
         this.rollupLevelService = rollupLevelService;
         this.clock = clock;
     }
@@ -104,6 +107,13 @@ class ErrorJsonService {
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates = transactionCommonService
                 .getThroughputAggregates(agentRollupId, transactionQuery, autoRefresh);
+        if (throughputAggregates.isEmpty()
+                && transactionQuery.rollupLevel() < getLargestRollupLevel()) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            transactionQuery = withLargestRollupLevel(transactionQuery);
+            throughputAggregates = transactionCommonService.getThroughputAggregates(agentRollupId,
+                    transactionQuery, autoRefresh);
+        }
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         Map<Long, Long> transactionCountMap = Maps.newHashMap();
@@ -167,10 +177,18 @@ class ErrorJsonService {
                 .build();
         OverallErrorSummary overallSummary =
                 errorCommonService.readOverallErrorSummary(agentRollupId, query, autoRefresh);
+        if (overallSummary.transactionCount() == 0) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            query = ImmutableOverallQuery.builder()
+                    .copyFrom(query)
+                    .rollupLevel(getLargestRollupLevel())
+                    .build();
+            overallSummary =
+                    errorCommonService.readOverallErrorSummary(agentRollupId, query, autoRefresh);
+        }
         Result<TransactionErrorSummary> queryResult =
                 errorCommonService.readTransactionErrorSummaries(agentRollupId, query,
                         request.sortOrder(), request.limit(), autoRefresh);
-
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
@@ -183,6 +201,17 @@ class ErrorJsonService {
             jg.close();
         }
         return sb.toString();
+    }
+
+    private TransactionQuery withLargestRollupLevel(TransactionQuery query) {
+        return ImmutableTransactionQuery.builder()
+                .copyFrom(query)
+                .rollupLevel(getLargestRollupLevel())
+                .build();
+    }
+
+    private int getLargestRollupLevel() {
+        return configRepository.getRollupConfigs().size() - 1;
     }
 
     private void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,
