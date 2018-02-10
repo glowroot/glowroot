@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -217,7 +216,7 @@ public class Schemas {
             closer.close();
         }
         ImmutableSet.Builder<Index> indexes = ImmutableSet.builder();
-        for (Entry</*@Untainted*/ String, Collection</*@Untainted*/ String>> entry : indexColumns
+        for (Map.Entry</*@Untainted*/ String, Collection</*@Untainted*/ String>> entry : indexColumns
                 .asMap().entrySet()) {
             String name = entry.getKey().toLowerCase(Locale.ENGLISH);
             List<String> columns = Lists.newArrayList();

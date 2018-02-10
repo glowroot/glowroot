@@ -26,7 +26,6 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -241,7 +240,7 @@ public class CommonHandler {
     }
 
     private @Nullable HttpService getHttpService(String path) {
-        for (Entry<Pattern, HttpService> entry : httpServices.entrySet()) {
+        for (Map.Entry<Pattern, HttpService> entry : httpServices.entrySet()) {
             Matcher matcher = entry.getKey().matcher(path);
             if (matcher.matches()) {
                 return entry.getValue();

@@ -20,7 +20,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -383,7 +383,7 @@ public class AlertingService {
         } else if (connectionSecurity == ConnectionSecurity.STARTTLS) {
             props.put("mail.smtp.starttls.enable", true);
         }
-        for (Entry<String, String> entry : smtpConfig.additionalProperties().entrySet()) {
+        for (Map.Entry<String, String> entry : smtpConfig.additionalProperties().entrySet()) {
             props.put(entry.getKey(), entry.getValue());
         }
         Authenticator authenticator = null;

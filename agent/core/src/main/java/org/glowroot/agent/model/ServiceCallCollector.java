@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -48,12 +47,13 @@ public class ServiceCallCollector {
             return ImmutableList.of();
         }
         List<Aggregate.ServiceCallsByType> proto = Lists.newArrayList();
-        for (Entry<String, Map<String, MutableServiceCall>> outerEntry : serviceCalls.entrySet()) {
+        for (Map.Entry<String, Map<String, MutableServiceCall>> outerEntry : serviceCalls
+                .entrySet()) {
             Map<String, MutableServiceCall> innerMap = outerEntry.getValue();
             // + 1 is for possible limit exceeded bucket added at the end before final sorting
             List<Aggregate.ServiceCall> serviceCalls =
                     Lists.newArrayListWithCapacity(innerMap.values().size() + 1);
-            for (Entry<String, MutableServiceCall> innerEntry : innerMap.entrySet()) {
+            for (Map.Entry<String, MutableServiceCall> innerEntry : innerMap.entrySet()) {
                 serviceCalls.add(innerEntry.getValue().toAggregateProto(innerEntry.getKey()));
             }
             // need to check equality in case maxMultiplierWhileBuilding is 1
@@ -102,14 +102,15 @@ public class ServiceCallCollector {
     }
 
     public void mergeServiceCallsInto(ServiceCallCollector collector) {
-        for (Entry<String, Map<String, MutableServiceCall>> outerEntry : serviceCalls.entrySet()) {
-            for (Entry<String, MutableServiceCall> entry : outerEntry.getValue().entrySet()) {
+        for (Map.Entry<String, Map<String, MutableServiceCall>> outerEntry : serviceCalls
+                .entrySet()) {
+            for (Map.Entry<String, MutableServiceCall> entry : outerEntry.getValue().entrySet()) {
                 MutableServiceCall serviceCall = entry.getValue();
                 collector.mergeServiceCall(outerEntry.getKey(), entry.getKey(),
                         serviceCall.getTotalDurationNanos(), serviceCall.getExecutionCount());
             }
         }
-        for (Entry<String, MutableServiceCall> limitExceededBucket : limitExceededBuckets
+        for (Map.Entry<String, MutableServiceCall> limitExceededBucket : limitExceededBuckets
                 .entrySet()) {
             collector.mergeLimitExceededBucket(limitExceededBucket.getKey(),
                     limitExceededBucket.getValue());
@@ -117,14 +118,15 @@ public class ServiceCallCollector {
     }
 
     public void mergeServiceCallsInto(org.glowroot.common.model.ServiceCallCollector collector) {
-        for (Entry<String, Map<String, MutableServiceCall>> outerEntry : serviceCalls.entrySet()) {
-            for (Entry<String, MutableServiceCall> entry : outerEntry.getValue().entrySet()) {
+        for (Map.Entry<String, Map<String, MutableServiceCall>> outerEntry : serviceCalls
+                .entrySet()) {
+            for (Map.Entry<String, MutableServiceCall> entry : outerEntry.getValue().entrySet()) {
                 MutableServiceCall serviceCall = entry.getValue();
                 collector.mergeServiceCall(outerEntry.getKey(), entry.getKey(),
                         serviceCall.getTotalDurationNanos(), serviceCall.getExecutionCount());
             }
         }
-        for (Entry<String, MutableServiceCall> limitExceededBucket : limitExceededBuckets
+        for (Map.Entry<String, MutableServiceCall> limitExceededBucket : limitExceededBuckets
                 .entrySet()) {
             MutableServiceCall serviceCall = limitExceededBucket.getValue();
             collector.mergeServiceCall(limitExceededBucket.getKey(), LIMIT_EXCEEDED_BUCKET,

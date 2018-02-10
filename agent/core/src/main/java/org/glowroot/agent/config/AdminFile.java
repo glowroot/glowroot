@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -95,7 +94,7 @@ class AdminFile {
     }
 
     void writeAdmin(Map<String, Object> config, ObjectMapper mapper) throws IOException {
-        for (Entry<String, Object> entry : config.entrySet()) {
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
             adminRootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
         }
         ConfigFile.writeToFileIfNeeded(file, adminRootObjectNode, keyOrder);

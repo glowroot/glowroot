@@ -24,7 +24,6 @@ import java.security.CodeSource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -232,7 +231,7 @@ public class AnalyzedWorld {
             boolean remove) {
         List<Class<?>> classes = Lists.newArrayList();
         ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses = getAnalyzedClasses(loader);
-        for (Entry<String, AnalyzedClass> innerEntry : loaderAnalyzedClasses.entrySet()) {
+        for (Map.Entry<String, AnalyzedClass> innerEntry : loaderAnalyzedClasses.entrySet()) {
             if (innerEntry.getValue().hasReweavableAdvice()) {
                 try {
                     classes.add(Class.forName(innerEntry.getKey(), false, loader));

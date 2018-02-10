@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.agent.tests.plugin;
 
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
@@ -51,7 +50,7 @@ public class TraceGeneratorAspect {
             TraceEntry traceEntry = context.startTransaction(transactionType, transactionName,
                     MessageSupplier.create(headline), timerName);
             if (attributes != null) {
-                for (Entry<String, String> entry : attributes.entrySet()) {
+                for (Map.Entry<String, String> entry : attributes.entrySet()) {
                     context.addTransactionAttribute(entry.getKey(), entry.getValue());
                 }
             }

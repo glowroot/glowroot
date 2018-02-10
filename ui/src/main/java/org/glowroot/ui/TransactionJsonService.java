@@ -20,7 +20,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -188,7 +187,7 @@ class TransactionJsonService {
         Map<String, List<MutableQuery>> queries =
                 transactionCommonService.getMergedQueries(agentRollupId, query);
         List<Query> queryList = Lists.newArrayList();
-        for (Entry<String, List<MutableQuery>> entry : queries.entrySet()) {
+        for (Map.Entry<String, List<MutableQuery>> entry : queries.entrySet()) {
             for (MutableQuery loopQuery : entry.getValue()) {
                 queryList.add(ImmutableQuery.builder()
                         .queryType(entry.getKey())
@@ -241,7 +240,7 @@ class TransactionJsonService {
         Map<String, List<MutableServiceCall>> serviceCalls =
                 transactionCommonService.getMergedServiceCalls(agentRollupId, query);
         List<ServiceCall> serviceCallList = Lists.newArrayList();
-        for (Entry<String, List<MutableServiceCall>> entry : serviceCalls.entrySet()) {
+        for (Map.Entry<String, List<MutableServiceCall>> entry : serviceCalls.entrySet()) {
             for (MutableServiceCall loopServiceCall : entry.getValue()) {
                 serviceCallList.add(ImmutableServiceCall.builder()
                         .type(entry.getKey())
@@ -601,23 +600,25 @@ class TransactionJsonService {
     private static List<String> getTopTimerNames(List<StackedPoint> stackedPoints, int topX) {
         MutableDoubleMap<String> timerTotals = new MutableDoubleMap<String>();
         for (StackedPoint stackedPoint : stackedPoints) {
-            for (Entry<String, MutableDouble> entry : stackedPoint.getStackedTimers().entrySet()) {
+            for (Map.Entry<String, MutableDouble> entry : stackedPoint.getStackedTimers()
+                    .entrySet()) {
                 timerTotals.add(entry.getKey(), entry.getValue().doubleValue());
             }
         }
-        Ordering<Entry<String, MutableDouble>> valueOrdering =
-                Ordering.natural().onResultOf(new Function<Entry<String, MutableDouble>, Double>() {
-                    @Override
-                    public Double apply(@Nullable Entry<String, MutableDouble> entry) {
-                        checkNotNull(entry);
-                        return entry.getValue().doubleValue();
-                    }
-                });
+        Ordering<Map.Entry<String, MutableDouble>> valueOrdering =
+                Ordering.natural()
+                        .onResultOf(new Function<Map.Entry<String, MutableDouble>, Double>() {
+                            @Override
+                            public Double apply(@Nullable Map.Entry<String, MutableDouble> entry) {
+                                checkNotNull(entry);
+                                return entry.getValue().doubleValue();
+                            }
+                        });
         List<String> timerNames = Lists.newArrayList();
         @SuppressWarnings("assignment.type.incompatible")
-        List<Entry<String, MutableDouble>> topTimerTotals =
+        List<Map.Entry<String, MutableDouble>> topTimerTotals =
                 valueOrdering.greatestOf(timerTotals.entrySet(), topX);
-        for (Entry<String, MutableDouble> entry : topTimerTotals) {
+        for (Map.Entry<String, MutableDouble> entry : topTimerTotals) {
             timerNames.add(entry.getKey());
         }
         return timerNames;

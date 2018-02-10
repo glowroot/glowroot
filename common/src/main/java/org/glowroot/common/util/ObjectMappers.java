@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.Map.Entry;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -86,9 +86,9 @@ public class ObjectMappers {
     }
 
     public static void stripEmptyContainerNodes(ObjectNode objectNode) {
-        Iterator<Entry<String, JsonNode>> i = objectNode.fields();
+        Iterator<Map.Entry<String, JsonNode>> i = objectNode.fields();
         while (i.hasNext()) {
-            Entry<String, JsonNode> entry = i.next();
+            Map.Entry<String, JsonNode> entry = i.next();
             JsonNode value = entry.getValue();
             if (value instanceof ContainerNode && ((ContainerNode<?>) value).size() == 0) {
                 // remove empty nodes, e.g. unused "smtp" and "alerts" nodes

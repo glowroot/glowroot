@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -2418,7 +2417,7 @@ public class SchemaUpgrade {
         if (!needsUpgrade) {
             return null;
         }
-        for (Entry<String, List<String>> entry : Multimaps.asMap(agentPermissions).entrySet()) {
+        for (Map.Entry<String, List<String>> entry : Multimaps.asMap(agentPermissions).entrySet()) {
             List<String> perms = entry.getValue();
             PermissionParser.upgradeAgentPermissionsFrom_0_9_1_to_0_9_2(perms);
             for (String perm : perms) {

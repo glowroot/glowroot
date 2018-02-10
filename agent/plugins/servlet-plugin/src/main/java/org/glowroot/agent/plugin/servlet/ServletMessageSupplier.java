@@ -20,7 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
@@ -210,7 +209,8 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
         sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
         // add empty values into initial values for any updated attributes that are not
         // already present in initial values nested detail map
-        for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap.entrySet()) {
+        for (Map.Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
+                .entrySet()) {
             if (!sessionAttributeInitialValueMap.containsKey(entry.getKey())) {
                 sessionAttributeInitialValuePlusMap.put(entry.getKey(), null);
             }
@@ -284,7 +284,7 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
             return requestParameters;
         }
         Map<String, Object> maskedRequestParameters = new LinkedHashMap<String, Object>();
-        for (Entry<String, Object> entry : requestParameters.entrySet()) {
+        for (Map.Entry<String, Object> entry : requestParameters.entrySet()) {
             String name = entry.getKey();
             // converted to lower case for case-insensitive matching (patterns are lower case)
             String keyLowerCase = name.toLowerCase(Locale.ENGLISH);

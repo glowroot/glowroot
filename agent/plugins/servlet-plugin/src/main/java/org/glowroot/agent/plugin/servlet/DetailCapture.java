@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import org.glowroot.agent.plugin.api.checker.Nullable;
@@ -45,7 +44,7 @@ class DetailCapture {
             Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> requestParameters) {
         List<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();
         Map<String, Object> map = new HashMap<String, Object>();
-        for (Entry</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> entry : requestParameters
+        for (Map.Entry</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> entry : requestParameters
                 .entrySet()) {
             String name = entry.getKey();
             if (name == null) {

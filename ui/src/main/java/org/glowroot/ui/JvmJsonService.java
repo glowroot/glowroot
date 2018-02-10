@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -193,7 +192,7 @@ class JvmJsonService {
                 allThreads.add(thread);
             }
             jg.writeArrayFieldStart("unmatchedThreadsByStackTrace");
-            for (Entry<ThreadDump.Thread, Collection<ThreadDump.Thread>> entry : unmatchedThreadsGroupedByStackTrace
+            for (Map.Entry<ThreadDump.Thread, Collection<ThreadDump.Thread>> entry : unmatchedThreadsGroupedByStackTrace
                     .asMap().entrySet()) {
                 jg.writeStartArray();
                 for (ThreadDump.Thread thread : entry.getValue()) {
@@ -445,7 +444,8 @@ class JvmJsonService {
         try {
             jg.writeStartObject();
             jg.writeArrayFieldStart("properties");
-            for (Entry<String, String> entry : ImmutableSortedMap.copyOf(properties).entrySet()) {
+            for (Map.Entry<String, String> entry : ImmutableSortedMap.copyOf(properties)
+                    .entrySet()) {
                 jg.writeStartObject();
                 String propertyName = entry.getKey();
                 jg.writeStringField("name", propertyName);
@@ -636,7 +636,7 @@ class JvmJsonService {
         Map<Long, ThreadDump.Thread> remainingBlockedThreads = Maps.newHashMap(blockedThreads);
         List<ThreadDump.Thread> cycleRoots = Lists.newArrayList();
         while (!remainingBlockedThreads.isEmpty()) {
-            Iterator<Entry<Long, ThreadDump.Thread>> i =
+            Iterator<Map.Entry<Long, ThreadDump.Thread>> i =
                     remainingBlockedThreads.entrySet().iterator();
             Map.Entry<Long, ThreadDump.Thread> entry = i.next();
             long currThreadId = entry.getKey();

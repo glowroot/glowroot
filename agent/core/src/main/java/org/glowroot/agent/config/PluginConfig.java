@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.glowroot.agent.config;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -50,7 +49,7 @@ public abstract class PluginConfig {
     @JsonIgnore
     ImmutableMap<String, Boolean> booleanProperties() {
         Map<String, Boolean> booleanProperties = Maps.newHashMap();
-        for (Entry<String, PropertyValue> entry : properties().entrySet()) {
+        for (Map.Entry<String, PropertyValue> entry : properties().entrySet()) {
             PropertyValue propertyValue = entry.getValue();
             Object value = propertyValue.value();
             if (value instanceof Boolean) {
@@ -64,7 +63,7 @@ public abstract class PluginConfig {
     @JsonIgnore
     ImmutableMap<String, String> stringProperties() {
         Map<String, String> stringProperties = Maps.newHashMap();
-        for (Entry<String, PropertyValue> entry : properties().entrySet()) {
+        for (Map.Entry<String, PropertyValue> entry : properties().entrySet()) {
             PropertyValue propertyValue = entry.getValue();
             Object value = propertyValue.value();
             if (value instanceof String) {
@@ -78,7 +77,7 @@ public abstract class PluginConfig {
     @JsonIgnore
     ImmutableMap<String, Optional<Double>> doubleProperties() {
         Map<String, Optional<Double>> doubleProperties = Maps.newHashMap();
-        for (Entry<String, PropertyValue> entry : properties().entrySet()) {
+        for (Map.Entry<String, PropertyValue> entry : properties().entrySet()) {
             PropertyValue propertyValue = entry.getValue();
             Object value = propertyValue.value();
             if (value == null) {
@@ -109,7 +108,7 @@ public abstract class PluginConfig {
         AgentConfig.PluginConfig.Builder builder = AgentConfig.PluginConfig.newBuilder()
                 .setId(id())
                 .setName(pluginDescriptor().name());
-        for (Entry<String, PropertyValue> entry : properties().entrySet()) {
+        for (Map.Entry<String, PropertyValue> entry : properties().entrySet()) {
             PropertyDescriptor propertyDescriptor = getPropertyDescriptor(entry.getKey());
             PluginProperty.Builder property = PluginProperty.newBuilder()
                     .setName(entry.getKey())

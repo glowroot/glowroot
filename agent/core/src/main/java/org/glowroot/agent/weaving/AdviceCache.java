@@ -21,7 +21,6 @@ import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -101,7 +100,7 @@ public class AdviceCache {
             lazyAdvisors.putAll(AdviceGenerator.createAdvisors(instrumentationConfigs,
                     pluginDescriptor.id(), false));
         }
-        for (Entry<Advice, LazyDefinedClass> entry : lazyAdvisors.entrySet()) {
+        for (Map.Entry<Advice, LazyDefinedClass> entry : lazyAdvisors.entrySet()) {
             pluginAdvisors.add(entry.getKey());
         }
         if (instrumentation == null) {

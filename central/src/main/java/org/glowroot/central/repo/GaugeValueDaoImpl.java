@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -205,7 +205,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
 
         // insert into gauge_needs_rollup_1
         SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
-        for (Entry<Long, Set<String>> entry : Multimaps.asMap(rollupCaptureTimes).entrySet()) {
+        for (Map.Entry<Long, Set<String>> entry : Multimaps.asMap(rollupCaptureTimes).entrySet()) {
             BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
             Long captureTime = entry.getKey();
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
@@ -312,7 +312,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             long captureTime = needsRollupFromChildren.getCaptureTime();
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
             List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
-            for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
+            for (Map.Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys()
+                    .asMap()
                     .entrySet()) {
                 String gaugeName = entry.getKey();
                 Collection<String> childAgentRollupIds = entry.getValue();

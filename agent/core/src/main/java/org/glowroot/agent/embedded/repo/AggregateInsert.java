@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -274,7 +274,7 @@ class AggregateInsert implements JdbcUpdate {
             return ImmutableList.of();
         }
         List<Stored.QueriesByType> queries = Lists.newArrayList();
-        for (Entry<String, List<MutableQuery>> entry : collector.getSortedAndTruncatedQueries()
+        for (Map.Entry<String, List<MutableQuery>> entry : collector.getSortedAndTruncatedQueries()
                 .entrySet()) {
             Stored.QueriesByType.Builder queriesByType = Stored.QueriesByType.newBuilder()
                     .setType(entry.getKey());
@@ -302,7 +302,7 @@ class AggregateInsert implements JdbcUpdate {
             return ImmutableList.of();
         }
         List<Aggregate.ServiceCallsByType> serviceCalls = Lists.newArrayList();
-        for (Entry<String, List<MutableServiceCall>> entry : collector
+        for (Map.Entry<String, List<MutableServiceCall>> entry : collector
                 .getSortedAndTruncatedServiceCalls().entrySet()) {
             Aggregate.ServiceCallsByType.Builder serviceCallsByType =
                     Aggregate.ServiceCallsByType.newBuilder().setType(entry.getKey());

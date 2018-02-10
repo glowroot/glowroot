@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -332,7 +331,7 @@ class ClassAnalyzer {
         removeAdviceAlreadyWovenIntoSuperClass(matchingAdvisorSets);
         removeMethodsThatWouldOverridePublicFinalMethodsFromSuperClass(matchingAdvisorSets);
         List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice = Lists.newArrayList();
-        for (Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
+        for (Map.Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
             AnalyzedMethod inheritedMethod = checkNotNull(entry.getKey().analyzedMethod());
             Set<Advice> advisors = entry.getValue();
             if (!advisors.isEmpty()) {

@@ -17,7 +17,6 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
@@ -123,13 +122,13 @@ public class SessionAspect {
                 if (val == null) {
                     messageSupplier.putSessionAttributeChangedValue(fullPath, null);
                 } else if (val instanceof Map<?, ?>) {
-                    for (Entry<?, ?> entry : ((Map<?, ?>) val).entrySet()) {
+                    for (Map.Entry<?, ?> entry : ((Map<?, ?>) val).entrySet()) {
                         Object v = entry.getValue();
                         messageSupplier.putSessionAttributeChangedValue(
                                 fullPath + "." + entry.getKey(), v == null ? null : v.toString());
                     }
                 } else {
-                    for (Entry<String, String> entry : Beans.propertiesAsText(val).entrySet()) {
+                    for (Map.Entry<String, String> entry : Beans.propertiesAsText(val).entrySet()) {
                         messageSupplier.putSessionAttributeChangedValue(
                                 fullPath + "." + entry.getKey(), entry.getValue());
                     }

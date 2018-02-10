@@ -17,7 +17,6 @@ package org.glowroot.ui;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -88,7 +87,7 @@ class SyntheticResultJsonService {
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         List<Map<Long, Long>> executionCountsList = Lists.newArrayList();
         List<List<MultiErrorInterval>> multiErrorIntervalsList = Lists.newArrayList();
-        for (Entry<String, List<SyntheticResult>> entry : map.entrySet()) {
+        for (Map.Entry<String, List<SyntheticResult>> entry : map.entrySet()) {
             String syntheticMonitorId = entry.getKey();
             SyntheticMonitorConfig config =
                     configRepository.getSyntheticMonitorConfig(agentRollupId, syntheticMonitorId);
@@ -180,7 +179,7 @@ class SyntheticResultJsonService {
                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         Map<K, Long> manualRollupCaptureTimes = Maps.newHashMap();
         long maxCaptureTime = Long.MIN_VALUE;
-        for (Entry<K, List<SyntheticResult>> entry : map.entrySet()) {
+        for (Map.Entry<K, List<SyntheticResult>> entry : map.entrySet()) {
             List<SyntheticResult> syntheticResults = entry.getValue();
             if (syntheticResults.isEmpty()) {
                 continue;
@@ -198,7 +197,7 @@ class SyntheticResultJsonService {
         }
         long maxRollupCaptureTime = Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
         long maxDiffToSync = Math.min(fixedIntervalMillis / 5, 60000);
-        for (Entry<K, Long> entry : manualRollupCaptureTimes.entrySet()) {
+        for (Map.Entry<K, Long> entry : manualRollupCaptureTimes.entrySet()) {
             Long captureTime = entry.getValue();
             if (Utils.getRollupCaptureTime(captureTime,
                     fixedIntervalMillis) != maxRollupCaptureTime) {
@@ -304,7 +303,7 @@ class SyntheticResultJsonService {
             ImmutableChartMarking.Builder chartMarking = ImmutableChartMarking.builder()
                     .from(groupedMultiErrorInterval.from())
                     .to(groupedMultiErrorInterval.to());
-            for (Entry<String, List<ErrorInterval>> entry : groupedMultiErrorInterval
+            for (Map.Entry<String, List<ErrorInterval>> entry : groupedMultiErrorInterval
                     .errorIntervals().entrySet()) {
                 chartMarking.putIntervals(entry.getKey(),
                         toChartMarkingIntervals(entry.getValue()));

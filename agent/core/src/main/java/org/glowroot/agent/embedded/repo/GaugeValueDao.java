@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLongArray;
 
@@ -237,7 +236,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            for (Entry<GaugeValue, Long> entry : gaugeValueIdMap.entrySet()) {
+            for (Map.Entry<GaugeValue, Long> entry : gaugeValueIdMap.entrySet()) {
                 GaugeValue gaugeValue = entry.getKey();
                 long gaugeId = entry.getValue();
                 int i = 1;

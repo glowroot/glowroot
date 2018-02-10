@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -54,12 +53,12 @@ public class QueryCollector {
             return ImmutableList.of();
         }
         List<Aggregate.QueriesByType> proto = Lists.newArrayList();
-        for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
+        for (Map.Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
             Map<String, MutableQuery> innerMap = outerEntry.getValue();
             // + 1 is for possible limit exceeded bucket added at the end before final sorting
             List<Aggregate.Query> queries =
                     Lists.newArrayListWithCapacity(innerMap.values().size() + 1);
-            for (Entry<String, MutableQuery> innerEntry : innerMap.entrySet()) {
+            for (Map.Entry<String, MutableQuery> innerEntry : innerMap.entrySet()) {
                 queries.add(innerEntry.getValue().toAggregateProto(innerEntry.getKey(),
                         sharedQueryTextCollector));
             }
@@ -110,23 +109,24 @@ public class QueryCollector {
     }
 
     public void mergeQueriesInto(QueryCollector collector) {
-        for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
-            for (Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
+        for (Map.Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
+            for (Map.Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
                 MutableQuery query = entry.getValue();
                 collector.mergeQuery(outerEntry.getKey(), entry.getKey(),
                         query.getTotalDurationNanos(), query.getExecutionCount(),
                         query.hasTotalRows(), query.getTotalRows());
             }
         }
-        for (Entry<String, MutableQuery> limitExceededBucket : limitExceededBuckets.entrySet()) {
+        for (Map.Entry<String, MutableQuery> limitExceededBucket : limitExceededBuckets
+                .entrySet()) {
             collector.mergeLimitExceededBucket(limitExceededBucket.getKey(),
                     limitExceededBucket.getValue());
         }
     }
 
     public void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector) {
-        for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
-            for (Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
+        for (Map.Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
+            for (Map.Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
                 String fullQueryText = entry.getKey();
                 String truncatedQueryText;
                 String fullQueryTextSha1;
@@ -145,7 +145,8 @@ public class QueryCollector {
                         query.hasTotalRows(), query.getTotalRows());
             }
         }
-        for (Entry<String, MutableQuery> limitExceededBucket : limitExceededBuckets.entrySet()) {
+        for (Map.Entry<String, MutableQuery> limitExceededBucket : limitExceededBuckets
+                .entrySet()) {
             MutableQuery query = limitExceededBucket.getValue();
             collector.mergeQuery(limitExceededBucket.getKey(), LIMIT_EXCEEDED_BUCKET, null,
                     query.getTotalDurationNanos(), query.getExecutionCount(), query.hasTotalRows(),
@@ -154,7 +155,7 @@ public class QueryCollector {
     }
 
     public @Nullable String getFullQueryText(String fullQueryTextSha1) {
-        for (Entry<String, Map<String, MutableQuery>> entry : queries.entrySet()) {
+        for (Map.Entry<String, Map<String, MutableQuery>> entry : queries.entrySet()) {
             for (String fullQueryText : entry.getValue().keySet()) {
                 if (fullQueryText.length() <= StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
                     continue;

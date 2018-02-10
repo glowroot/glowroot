@@ -17,7 +17,6 @@ package org.glowroot.ui;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,7 +80,7 @@ class GaugeValueJsonService {
             syncManualRollupCaptureTimes(map, rollupLevel);
         }
         List<DataSeries> dataSeriesList = Lists.newArrayList();
-        for (Entry<String, List<GaugeValue>> entry : map.entrySet()) {
+        for (Map.Entry<String, List<GaugeValue>> entry : map.entrySet()) {
             dataSeriesList
                     .add(convertToDataSeriesWithGaps(entry.getKey(), entry.getValue(), gapMillis));
         }
@@ -130,7 +129,7 @@ class GaugeValueJsonService {
                 configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
         Map<K, Long> manualRollupCaptureTimes = Maps.newHashMap();
         long maxCaptureTime = Long.MIN_VALUE;
-        for (Entry<K, List<GaugeValue>> entry : map.entrySet()) {
+        for (Map.Entry<K, List<GaugeValue>> entry : map.entrySet()) {
             List<GaugeValue> gaugeValues = entry.getValue();
             if (gaugeValues.isEmpty()) {
                 continue;
@@ -147,7 +146,7 @@ class GaugeValueJsonService {
         }
         long maxRollupCaptureTime = Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
         long maxDiffToSync = Math.min(fixedIntervalMillis / 5, 60000);
-        for (Entry<K, Long> entry : manualRollupCaptureTimes.entrySet()) {
+        for (Map.Entry<K, Long> entry : manualRollupCaptureTimes.entrySet()) {
             Long captureTime = entry.getValue();
             if (Utils.getRollupCaptureTime(captureTime,
                     fixedIntervalMillis) != maxRollupCaptureTime) {

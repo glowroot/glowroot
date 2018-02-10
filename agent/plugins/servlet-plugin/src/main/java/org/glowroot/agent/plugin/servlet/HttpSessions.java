@@ -20,7 +20,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Beans;
@@ -104,13 +103,13 @@ class HttpSessions {
         Object value = getSessionAttribute(session, attributePath);
         if (value instanceof Map<?, ?>) {
             String fullPath = attributePath.getFullPath();
-            for (Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
                 Object val = entry.getValue();
                 captureMap.put(fullPath + "." + entry.getKey(), val == null ? "" : val.toString());
             }
         } else if (value != null) {
             String fullPath = attributePath.getFullPath();
-            for (Entry<String, String> entry : Beans.propertiesAsText(value).entrySet()) {
+            for (Map.Entry<String, String> entry : Beans.propertiesAsText(value).entrySet()) {
                 captureMap.put(fullPath + "." + entry.getKey(), entry.getValue());
             }
         }

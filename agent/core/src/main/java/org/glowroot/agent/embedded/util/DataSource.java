@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -201,10 +200,12 @@ public class DataSource {
                 throw new SQLException("Could not delete file: " + dbFile.getAbsolutePath());
             }
             connection = createConnection(dbFile);
-            for (Entry</*@Untainted*/ String, ImmutableList<Column>> entry : tables.entrySet()) {
+            for (Map.Entry</*@Untainted*/ String, ImmutableList<Column>> entry : tables
+                    .entrySet()) {
                 syncTable(entry.getKey(), entry.getValue());
             }
-            for (Entry</*@Untainted*/ String, ImmutableList<Index>> entry : indexes.entrySet()) {
+            for (Map.Entry</*@Untainted*/ String, ImmutableList<Index>> entry : indexes
+                    .entrySet()) {
                 syncIndexes(entry.getKey(), entry.getValue());
             }
             for (String schemaVersionRow : schemaVersionRows) {

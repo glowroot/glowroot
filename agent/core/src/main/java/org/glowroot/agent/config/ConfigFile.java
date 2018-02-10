@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -103,7 +102,7 @@ class ConfigFile {
     }
 
     void writeConfig(Map<String, Object> config, ObjectMapper mapper) throws IOException {
-        for (Entry<String, Object> entry : config.entrySet()) {
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
             configRootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
         }
         writeToFileIfNeeded(file, configRootObjectNode, keyOrder);
@@ -169,13 +168,13 @@ class ConfigFile {
 
     private static ObjectNode getOrderedObjectNode(ObjectNode objectNode, List<String> keyOrder) {
         Map<String, JsonNode> map = Maps.newHashMap();
-        Iterator<Entry<String, JsonNode>> i = objectNode.fields();
+        Iterator<Map.Entry<String, JsonNode>> i = objectNode.fields();
         while (i.hasNext()) {
-            Entry<String, JsonNode> entry = i.next();
+            Map.Entry<String, JsonNode> entry = i.next();
             map.put(entry.getKey(), entry.getValue());
         }
         ObjectNode orderedObjectNode = mapper.createObjectNode();
-        for (Entry<String, JsonNode> entry : new ExplicitOrdering(keyOrder)
+        for (Map.Entry<String, JsonNode> entry : new ExplicitOrdering(keyOrder)
                 .sortedCopy(map.entrySet())) {
             orderedObjectNode.set(entry.getKey(), entry.getValue());
         }
@@ -268,7 +267,7 @@ class ConfigFile {
         }
     }
 
-    private static class ExplicitOrdering extends Ordering<Entry<String, JsonNode>> {
+    private static class ExplicitOrdering extends Ordering<Map.Entry<String, JsonNode>> {
 
         private final List<String> ordering;
 
@@ -277,7 +276,7 @@ class ConfigFile {
         }
 
         @Override
-        public int compare(Entry<String, JsonNode> left, Entry<String, JsonNode> right) {
+        public int compare(Map.Entry<String, JsonNode> left, Map.Entry<String, JsonNode> right) {
             String leftKey = left.getKey();
             String rightKey = right.getKey();
             int compare = Ints.compare(getIndex(leftKey), getIndex(rightKey));

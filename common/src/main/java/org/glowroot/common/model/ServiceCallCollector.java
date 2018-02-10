@@ -18,7 +18,6 @@ package org.glowroot.common.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -48,7 +47,8 @@ public class ServiceCallCollector {
 
     public Map<String, List<MutableServiceCall>> getSortedAndTruncatedServiceCalls() {
         Map<String, List<MutableServiceCall>> sortedServiceCalls = Maps.newHashMap();
-        for (Entry<String, Map<String, MutableServiceCall>> outerEntry : serviceCalls.entrySet()) {
+        for (Map.Entry<String, Map<String, MutableServiceCall>> outerEntry : serviceCalls
+                .entrySet()) {
             Map<String, MutableServiceCall> innerMap = outerEntry.getValue();
             if (innerMap.size() > limitPerServiceCallType) {
                 MutableServiceCall limitExceededBucket = innerMap.get(LIMIT_EXCEEDED_BUCKET);

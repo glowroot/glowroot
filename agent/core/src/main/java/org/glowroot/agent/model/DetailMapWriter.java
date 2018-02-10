@@ -17,7 +17,6 @@ package org.glowroot.agent.model;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -44,7 +43,7 @@ public class DetailMapWriter {
 
     private static List<Trace.DetailEntry> writeMap(Map<?, ?> detail) {
         List<Trace.DetailEntry> entries = Lists.newArrayListWithCapacity(detail.size());
-        for (Entry<?, ?> entry : detail.entrySet()) {
+        for (Map.Entry<?, ?> entry : detail.entrySet()) {
             Object key = entry.getKey();
             if (key == null) {
                 // skip invalid data

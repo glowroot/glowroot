@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package org.glowroot.agent.impl;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -143,7 +143,7 @@ public class TraceCreator {
         builder.setTransactionName(transaction.getTransactionName());
         builder.setHeadline(transaction.getHeadline());
         builder.setUser(transaction.getUser());
-        for (Entry<String, Collection<String>> entry : transaction.getAttributes().asMap()
+        for (Map.Entry<String, Collection<String>> entry : transaction.getAttributes().asMap()
                 .entrySet()) {
             builder.addAttributeBuilder()
                     .setName(entry.getKey())

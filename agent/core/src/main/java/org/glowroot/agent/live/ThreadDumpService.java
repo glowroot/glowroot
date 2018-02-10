@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -108,7 +107,7 @@ class ThreadDumpService {
             transactionThreadInfo.threadInfos.add(threadInfo);
         }
         List<ThreadDump.Transaction> transactions = Lists.newArrayList();
-        for (Entry<String, TransactionThreadInfo> entry : transactionThreadInfos.entrySet()) {
+        for (Map.Entry<String, TransactionThreadInfo> entry : transactionThreadInfos.entrySet()) {
             TransactionThreadInfo value = entry.getValue();
             ThreadDump.Transaction.Builder builder = ThreadDump.Transaction.newBuilder()
                     .setHeadline(value.headline)

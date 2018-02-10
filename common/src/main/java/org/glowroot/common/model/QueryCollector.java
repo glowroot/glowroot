@@ -18,7 +18,6 @@ package org.glowroot.common.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -52,7 +51,7 @@ public class QueryCollector {
 
     public Map<String, List<MutableQuery>> getSortedAndTruncatedQueries() {
         Map<String, List<MutableQuery>> sortedQueries = Maps.newHashMap();
-        for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
+        for (Map.Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
             Map<String, MutableQuery> innerMap = outerEntry.getValue();
             if (innerMap.size() > limitPerQueryType) {
                 MutableQuery limitExceededBucket = innerMap.get(LIMIT_EXCEEDED_BUCKET);

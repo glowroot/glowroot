@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.agent.impl;
 
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.google.common.collect.Maps;
 import org.junit.Test;
@@ -38,11 +37,11 @@ public class NestedTimerMapTest {
             uniqueTimers.put(ImmutableTimerNameImpl.of("timer-" + i, false), mock(TimerImpl.class));
         }
         // when
-        for (Entry<TimerNameImpl, TimerImpl> entry : uniqueTimers.entrySet()) {
+        for (Map.Entry<TimerNameImpl, TimerImpl> entry : uniqueTimers.entrySet()) {
             map.put(entry.getKey(), entry.getValue());
         }
         // then
-        for (Entry<TimerNameImpl, TimerImpl> entry : uniqueTimers.entrySet()) {
+        for (Map.Entry<TimerNameImpl, TimerImpl> entry : uniqueTimers.entrySet()) {
             assertThat(map.get(entry.getKey())).isEqualTo(entry.getValue());
         }
     }

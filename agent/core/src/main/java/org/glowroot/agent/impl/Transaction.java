@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -361,7 +360,7 @@ public class Transaction {
             if (aggregateAsyncTimers == null) {
                 return;
             }
-            for (Entry<String, AggregateAsyncTimer> entry : aggregateAsyncTimers.entrySet()) {
+            for (Map.Entry<String, AggregateAsyncTimer> entry : aggregateAsyncTimers.entrySet()) {
                 AggregateAsyncTimer value = entry.getValue();
                 rootTimers.mergeRootTimer(
                         new SimpleTimerImpl(entry.getKey(), value.totalNanos, value.count));

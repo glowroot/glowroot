@@ -16,7 +16,6 @@
 package org.glowroot.agent.impl;
 
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -350,7 +349,7 @@ public class AggregateIntervalCollector {
             synchronized (lock) {
                 SharedQueryTextCollector sharedQueryTextCollector = new SharedQueryTextCollector();
                 ScratchBuffer scratchBuffer = new ScratchBuffer();
-                for (Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
+                for (Map.Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
                     String transactionType = e.getKey();
                     IntervalTypeCollector intervalTypeCollector = e.getValue();
                     Aggregate overallAggregate = intervalTypeCollector.overallAggregateCollector
@@ -358,7 +357,7 @@ public class AggregateIntervalCollector {
                     aggregateVisitor.visitOverallAggregate(transactionType,
                             sharedQueryTextCollector.getAndClearLastestSharedQueryTexts(),
                             overallAggregate);
-                    for (Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
+                    for (Map.Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
                             .entrySet()) {
                         Aggregate transactionAggregate =
                                 f.getValue().build(sharedQueryTextCollector, scratchBuffer);

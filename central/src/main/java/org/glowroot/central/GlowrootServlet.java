@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -96,7 +95,7 @@ public class GlowrootServlet extends HttpServlet {
             throw new ServletException(e);
         }
         response.setStatus(commonResponse.getStatus().code());
-        for (Entry<String, String> entry : commonResponse.getHeaders()) {
+        for (Map.Entry<String, String> entry : commonResponse.getHeaders()) {
             response.addHeader(entry.getKey(), entry.getValue());
         }
         Object content = commonResponse.getContent();
@@ -201,7 +200,7 @@ public class GlowrootServlet extends HttpServlet {
         @Override
         public Map<String, List<String>> getParameters() {
             Map<String, List<String>> parameters = new HashMap<>();
-            for (Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
+            for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
                 parameters.put(entry.getKey(), Arrays.asList(entry.getValue()));
             }
             return parameters;

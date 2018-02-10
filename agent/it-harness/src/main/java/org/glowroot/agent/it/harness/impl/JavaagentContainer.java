@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import java.lang.management.RuntimeMXBean;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.jar.JarEntry;
@@ -450,7 +450,7 @@ public class JavaagentContainer implements Container {
         }
         // leave as much memory as possible to old gen
         command.add("-XX:NewRatio=20");
-        for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
+        for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
             Object keyObject = entry.getKey();
             if (!(keyObject instanceof String)) {
                 continue;

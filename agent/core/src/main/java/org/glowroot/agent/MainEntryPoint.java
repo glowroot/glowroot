@@ -28,7 +28,6 @@ import java.net.URLClassLoader;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
@@ -224,7 +223,7 @@ public class MainEntryPoint {
         } else {
             addProperties(sharedConfDir, properties);
         }
-        for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
+        for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
             if (entry.getKey() instanceof String && entry.getValue() instanceof String
                     && ((String) entry.getKey()).startsWith("glowroot.")) {
                 String key = (String) entry.getKey();

@@ -19,7 +19,6 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -118,7 +117,7 @@ public class PluginServiceImpl implements PluginService {
         static Map<String, String> propertiesAsText(Object obj) {
             Map<String, String> properties = Maps.newHashMap();
             Map<String, Method> allGettersForObj = wildcardGetters.getUnchecked(obj.getClass());
-            for (Entry<String, Method> entry : allGettersForObj.entrySet()) {
+            for (Map.Entry<String, Method> entry : allGettersForObj.entrySet()) {
                 try {
                     Object value = entry.getValue().invoke(obj);
                     if (value != null) {
