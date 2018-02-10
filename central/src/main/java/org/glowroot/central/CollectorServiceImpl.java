@@ -16,14 +16,14 @@
 package org.glowroot.central;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -164,7 +164,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             sharedQueryTexts = request.getSharedQueryTextList();
         } else {
             // handle agents prior to 0.9.3
-            sharedQueryTexts = Lists.newArrayList();
+            sharedQueryTexts = new ArrayList<>();
             for (String oldSharedQueryText : oldSharedQueryTexts) {
                 sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
                         .setFullText(oldSharedQueryText)
@@ -439,8 +439,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
         private final StreamObserver<AggregateResponseMessage> responseObserver;
         private @MonotonicNonNull AggregateStreamHeader streamHeader;
-        private List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
-        private Map<String, OldAggregatesByType.Builder> aggregatesByTypeMap = Maps.newHashMap();
+        private List<Aggregate.SharedQueryText> sharedQueryTexts = new ArrayList<>();
+        private Map<String, OldAggregatesByType.Builder> aggregatesByTypeMap = new HashMap<>();
 
         private AggregateStreamObserver(StreamObserver<AggregateResponseMessage> responseObserver) {
             this.responseObserver = responseObserver;
@@ -493,7 +493,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         @Override
         public void onCompleted() {
             checkNotNull(streamHeader);
-            List<OldAggregatesByType> aggregatesByTypeList = Lists.newArrayList();
+            List<OldAggregatesByType> aggregatesByTypeList = new ArrayList<>();
             for (OldAggregatesByType.Builder aggregatesByType : aggregatesByTypeMap.values()) {
                 aggregatesByTypeList.add(aggregatesByType.build());
             }
@@ -516,9 +516,9 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
         private final StreamObserver<EmptyMessage> responseObserver;
         private @MonotonicNonNull TraceStreamHeader streamHeader;
-        private List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        private List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         private @MonotonicNonNull Trace trace;
-        private List<Trace.Entry> entries = Lists.newArrayList();
+        private List<Trace.Entry> entries = new ArrayList<>();
         private @MonotonicNonNull Profile mainThreadProfile;
         private @MonotonicNonNull Profile auxThreadProfile;
         private Trace. /*@MonotonicNonNull*/ Header header;

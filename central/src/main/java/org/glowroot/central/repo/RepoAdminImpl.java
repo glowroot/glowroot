@@ -15,11 +15,11 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.TableMetadata;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +88,7 @@ public class RepoAdminImpl implements RepoAdmin {
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         KeyspaceMetadata keyspaceMetadata =
                 checkNotNull(session.getCluster().getMetadata().getKeyspace(keyspace));
-        List<String> tableNames = Lists.newArrayList();
+        List<String> tableNames = new ArrayList<>();
         for (TableMetadata table : keyspaceMetadata.getTables()) {
             String compactionClass = table.getOptions().getCompaction().get("class");
             if (compactionClass == null || !compactionClass

@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -96,9 +97,9 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 .newArrayList(configRepository.getCentralStorageConfig().rollupExpirationHours());
         rollupExpirationHours.add(0, rollupExpirationHours.get(0));
 
-        List<PreparedStatement> insertValuePS = Lists.newArrayList();
-        List<PreparedStatement> readValuePS = Lists.newArrayList();
-        List<PreparedStatement> readValueForRollupPS = Lists.newArrayList();
+        List<PreparedStatement> insertValuePS = new ArrayList<>();
+        List<PreparedStatement> readValuePS = new ArrayList<>();
+        List<PreparedStatement> readValueForRollupPS = new ArrayList<>();
         for (int i = 0; i <= count; i++) {
             // name already has "[counter]" suffix when it is a counter
             session.createTableWithTWCS("create table if not exists gauge_value_rollup_" + i
@@ -131,9 +132,9 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
         long needsRollupGcGraceSeconds = HOURS.toSeconds(4);
 
-        List<PreparedStatement> insertNeedsRollup = Lists.newArrayList();
-        List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
-        List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
+        List<PreparedStatement> insertNeedsRollup = new ArrayList<>();
+        List<PreparedStatement> readNeedsRollup = new ArrayList<>();
+        List<PreparedStatement> deleteNeedsRollup = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
             session.createTableWithLCS("create table if not exists gauge_needs_rollup_" + i
                     + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
@@ -178,7 +179,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         }
         int ttl = getTTLs().get(0);
         long maxCaptureTime = 0;
-        List<Future<?>> futures = Lists.newArrayList();
+        List<Future<?>> futures = new ArrayList<>();
         for (GaugeValue gaugeValue : gaugeValues) {
             BoundStatement boundStatement = insertValuePS.get(0).bind();
             String gaugeName = gaugeValue.getGaugeName();
@@ -230,7 +231,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
 
     @Override
     public List<Gauge> getGauges(String agentRollupId, long from, long to) throws Exception {
-        List<Gauge> gauges = Lists.newArrayList();
+        List<Gauge> gauges = new ArrayList<>();
         for (String gaugeName : gaugeNameDao.getGaugeNames(agentRollupId, from, to)) {
             gauges.add(Gauges.getGauge(gaugeName));
         }
@@ -248,7 +249,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
         ResultSet results = session.execute(boundStatement);
-        List<GaugeValue> gaugeValues = Lists.newArrayList();
+        List<GaugeValue> gaugeValues = new ArrayList<>();
         for (Row row : results) {
             i = 0;
             gaugeValues.add(GaugeValue.newBuilder()
@@ -310,7 +311,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
             long captureTime = needsRollupFromChildren.getCaptureTime();
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
-            List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+            List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
             for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
                     .entrySet()) {
                 String gaugeName = entry.getKey();
@@ -359,7 +360,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             long from = captureTime - rollupIntervalMillis;
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
             Set<String> gaugeNames = needsRollup.getKeys();
-            List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+            List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
             for (String gaugeName : gaugeNames) {
                 futures.add(rollupOne(rollupLevel, agentRollupId, gaugeName, from, captureTime,
                         adjustedTTL));
@@ -404,7 +405,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     private ListenableFuture<ResultSet> rollupOneFromChildren(int rollupLevel, String agentRollupId,
             String gaugeName, List<String> childAgentRollupIds, long captureTime, int adjustedTTL)
             throws Exception {
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (String childAgentRollupId : childAgentRollupIds) {
             BoundStatement boundStatement = readValueForRollupFromChildPS.bind();
             int i = 0;
@@ -420,7 +421,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                     public ListenableFuture<ResultSet> apply(@Nullable List<ResultSet> results)
                             throws Exception {
                         checkNotNull(results);
-                        List<Row> rows = Lists.newArrayList();
+                        List<Row> rows = new ArrayList<>();
                         for (int i = 0; i < results.size(); i++) {
                             Row row = results.get(i).one();
                             if (row == null) {
@@ -511,7 +512,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         List<Integer> rollupExpirationHours = Lists
                 .newArrayList(configRepository.getCentralStorageConfig().rollupExpirationHours());
         rollupExpirationHours.add(0, rollupExpirationHours.get(0));
-        List<Integer> ttls = Lists.newArrayList();
+        List<Integer> ttls = new ArrayList<>();
         for (long expirationHours : rollupExpirationHours) {
             ttls.add(Ints.saturatedCast(HOURS.toSeconds(expirationHours)));
         }

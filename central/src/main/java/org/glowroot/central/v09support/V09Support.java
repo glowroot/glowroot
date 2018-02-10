@@ -15,12 +15,12 @@
  */
 package org.glowroot.central.v09support;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 class V09Support {
@@ -30,7 +30,7 @@ class V09Support {
     // its direct parent is index 1
     // etc...
     static List<String> getAgentRollupIdsV09(String agentId) {
-        List<String> agentRollupIds = Lists.newArrayList();
+        List<String> agentRollupIds = new ArrayList<>();
         int nextFoundIndex = agentId.lastIndexOf("::", agentId.length() - 3);
         if (nextFoundIndex == -1) {
             agentRollupIds.add(agentId);

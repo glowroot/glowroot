@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -35,7 +36,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public class CassandraWriteMetrics {
     private final Session session;
     private final String keyspace;
 
-    private final Map<String, WriteMetrics> writeMetrics = Maps.newConcurrentMap();
+    private final Map<String, WriteMetrics> writeMetrics = new ConcurrentHashMap<>();
 
     private final ThreadLocal</*@Nullable*/ String> currTransactionType = new ThreadLocal<>();
     private final ThreadLocal</*@Nullable*/ String> currTransactionName = new ThreadLocal<>();
@@ -333,8 +333,8 @@ public class CassandraWriteMetrics {
         private final String display;
         private final AtomicLong rowsWritten = new AtomicLong();
         private final AtomicLong bytesWritten = new AtomicLong();
-        private final Map<String, AtomicLong> bytesWrittenPerColumn = Maps.newConcurrentMap();
-        private final Map<String, WriteMetrics> nestedWriteMetricsMap = Maps.newConcurrentMap();
+        private final Map<String, AtomicLong> bytesWrittenPerColumn = new ConcurrentHashMap<>();
+        private final Map<String, WriteMetrics> nestedWriteMetricsMap = new ConcurrentHashMap<>();
 
         private WriteMetrics(String display) {
             this.display = display;

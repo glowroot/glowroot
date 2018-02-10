@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.datastax.driver.core.Cluster;
@@ -144,7 +145,7 @@ public class GaugeValueDaoIT {
     }
 
     private static List<GaugeValue> createData(int captureTime) {
-        List<GaugeValue> gaugeValues = Lists.newArrayList();
+        List<GaugeValue> gaugeValues = new ArrayList<>();
         gaugeValues.add(GaugeValue.newBuilder()
                 .setGaugeName("the gauge:attr1")
                 .setCaptureTime(captureTime)

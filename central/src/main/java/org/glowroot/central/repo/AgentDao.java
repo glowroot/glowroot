@@ -15,9 +15,11 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
@@ -31,9 +33,7 @@ import com.datastax.driver.core.Row;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
@@ -97,7 +97,7 @@ public class AgentDao implements AgentRollupRepository {
         boundStatement.setTimestamp(0, new Date(rolledUpFrom));
         boundStatement.setTimestamp(1, new Date(rolledUpTo));
         ResultSet results = session.execute(boundStatement);
-        Set<String> topLevelAgentRollupIds = Sets.newHashSet();
+        Set<String> topLevelAgentRollupIds = new HashSet<>();
         Multimap<String, String> childMultimap = HashMultimap.create();
         for (Row row : results) {
             String agentId = checkNotNull(row.getString(0));
@@ -112,7 +112,7 @@ public class AgentDao implements AgentRollupRepository {
                 }
             }
         }
-        List<AgentRollup> agentRollups = Lists.newArrayList();
+        List<AgentRollup> agentRollups = new ArrayList<>();
         for (String topLevelAgentRollupId : topLevelAgentRollupIds) {
             agentRollups.add(createAgentRollup(topLevelAgentRollupId, childMultimap));
         }
@@ -129,7 +129,7 @@ public class AgentDao implements AgentRollupRepository {
     @Override
     public List<String> readAgentRollupDisplayParts(String agentRollupId) throws Exception {
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
-        List<String> displayParts = Lists.newArrayList();
+        List<String> displayParts = new ArrayList<>();
         for (ListIterator<String> i = agentRollupIds.listIterator(agentRollupIds.size()); i
                 .hasPrevious();) {
             displayParts.add(readAgentRollupLastDisplayPart(i.previous()));
@@ -166,7 +166,7 @@ public class AgentDao implements AgentRollupRepository {
                 .id(agentRollupId)
                 .display(Joiner.on(" :: ").join(agentRollupDisplayParts))
                 .lastDisplayPart(Iterables.getLast(agentRollupDisplayParts));
-        List<AgentRollup> childAgentRollups = Lists.newArrayList();
+        List<AgentRollup> childAgentRollups = new ArrayList<>();
         for (String childAgentRollupId : childAgentRollupIds) {
             childAgentRollups.add(createAgentRollup(childAgentRollupId, parentChildMap));
         }

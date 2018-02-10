@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 package org.glowroot.central.v09support;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import com.google.common.collect.Lists;
 
 import org.glowroot.central.repo.AgentRollupIds;
 import org.glowroot.central.repo.GaugeValueDao;
@@ -53,8 +52,8 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
             delegate.store(agentId, gaugeValues);
             return;
         }
-        List<GaugeValue> gaugeValuesV09 = Lists.newArrayList();
-        List<GaugeValue> gaugeValuesPostV09 = Lists.newArrayList();
+        List<GaugeValue> gaugeValuesV09 = new ArrayList<>();
+        List<GaugeValue> gaugeValuesPostV09 = new ArrayList<>();
         for (GaugeValue gaugeValue : gaugeValues) {
             if (gaugeValue.getCaptureTime() <= v09LastCaptureTime) {
                 gaugeValuesV09.add(gaugeValue);
@@ -97,7 +96,7 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
             return delegate.readGaugeValues(queryV09.agentRollupId(), gaugeName, queryV09.from(),
                     queryV09.to(), rollupLevel);
         } else {
-            List<GaugeValue> gaugeValues = Lists.newArrayList();
+            List<GaugeValue> gaugeValues = new ArrayList<>();
             gaugeValues.addAll(delegate.readGaugeValues(queryV09.agentRollupId(), gaugeName,
                     queryV09.from(), queryV09.to(), rollupLevel));
             gaugeValues.addAll(delegate.readGaugeValues(queryPostV09.agentRollupId(), gaugeName,

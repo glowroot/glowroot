@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
  */
 package org.glowroot.central.v09support;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
-import com.google.common.collect.Lists;
 
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.repo.SyntheticResultDaoImpl;
@@ -78,7 +77,7 @@ public class SyntheticResultDaoWithV09Support implements SyntheticResultDao {
             return delegate.readSyntheticResults(queryV09.agentRollupId(), syntheticMonitorId,
                     queryV09.from(), queryV09.to(), rollupLevel);
         } else {
-            List<SyntheticResult> list = Lists.newArrayList();
+            List<SyntheticResult> list = new ArrayList<>();
             list.addAll(delegate.readSyntheticResults(queryV09.agentRollupId(), syntheticMonitorId,
                     queryV09.from(), queryV09.to(), rollupLevel));
             list.addAll(delegate.readSyntheticResults(queryPostV09.agentRollupId(),

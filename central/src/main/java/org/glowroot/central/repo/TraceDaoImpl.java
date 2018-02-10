@@ -20,6 +20,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
@@ -36,10 +39,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import org.immutables.value.Value;
@@ -523,9 +523,9 @@ public class TraceDaoImpl implements TraceDao {
         Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId) : null;
         Trace.Header header = trace.getHeader();
 
-        List<Future<?>> futures = Lists.newArrayList();
+        List<Future<?>> futures = new ArrayList<>();
 
-        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         for (Trace.SharedQueryText sharedQueryText : trace.getSharedQueryTextList()) {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
@@ -848,8 +848,8 @@ public class TraceDaoImpl implements TraceDao {
         }
         ResultSet results = session.execute(boundStatement);
         // rows are already in order by captureTime, so saving sort step by using linked hash map
-        Map<Long, MutableLong> pointCounts = Maps.newLinkedHashMap();
-        Map<String, MutableLong> messageCounts = Maps.newHashMap();
+        Map<Long, MutableLong> pointCounts = new LinkedHashMap<>();
+        Map<String, MutableLong> messageCounts = new HashMap<>();
         for (Row row : results) {
             long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
             String errorMessage = checkNotNull(row.getString(1));
@@ -912,7 +912,7 @@ public class TraceDaoImpl implements TraceDao {
     public Entries readEntriesForExport(String agentId, String traceId) throws Exception {
         ImmutableEntries.Builder entries = ImmutableEntries.builder()
                 .addAllEntries(readEntriesInternal(agentId, traceId));
-        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         for (Trace.SharedQueryText sharedQueryText : readSharedQueryTexts(agentId, traceId)) {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
@@ -1016,7 +1016,7 @@ public class TraceDaoImpl implements TraceDao {
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
         ResultSet results = session.execute(boundStatement);
-        List<Trace.Entry> entries = Lists.newArrayList();
+        List<Trace.Entry> entries = new ArrayList<>();
         while (!results.isExhausted()) {
             Row row = results.one();
             int i = 0;
@@ -1075,7 +1075,7 @@ public class TraceDaoImpl implements TraceDao {
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
         ResultSet results = session.execute(boundStatement);
-        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         while (!results.isExhausted()) {
             Row row = results.one();
             int i = 0;
@@ -1179,7 +1179,7 @@ public class TraceDaoImpl implements TraceDao {
 
     private static List<TracePoint> processPoints(ResultSet results, TracePointFilter filter,
             boolean partial, boolean errorPoints) throws IOException {
-        List<TracePoint> tracePoints = Lists.newArrayList();
+        List<TracePoint> tracePoints = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
             String agentId = checkNotNull(row.getString(i++));
@@ -1248,7 +1248,7 @@ public class TraceDaoImpl implements TraceDao {
             List<TracePoint> partialPoints) {
         // remove duplicates (partially stored traces) since there is (small) window between updated
         // insert (with new capture time) and the delete of prior insert (with prior capture time)
-        Set<TraceKey> traceKeys = Sets.newHashSet();
+        Set<TraceKey> traceKeys = new HashSet<>();
         for (TracePoint completedPoint : completedPoints) {
             traceKeys.add(TraceKey.from(completedPoint));
         }

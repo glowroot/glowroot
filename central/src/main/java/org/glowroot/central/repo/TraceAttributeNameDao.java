@@ -26,7 +26,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
@@ -124,7 +123,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         public Map<String, Map<String, List<String>>> load(String key) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             ResultSet results = session.execute(boundStatement);
-            Map<String, Map<String, List<String>>> traceAttributeNames = Maps.newHashMap();
+            Map<String, Map<String, List<String>>> traceAttributeNames = new HashMap<>();
             for (Row row : results) {
                 int i = 0;
                 String agentRollup = checkNotNull(row.getString(i++));

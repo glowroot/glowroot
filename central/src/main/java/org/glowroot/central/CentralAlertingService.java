@@ -15,12 +15,12 @@
  */
 package org.glowroot.central;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +107,7 @@ class CentralAlertingService {
             logger.error("{} - {}", agentDisplay, e.getMessage(), e);
             return;
         }
-        List<AlertConfig> aggregateAlertConfigs = Lists.newArrayList();
+        List<AlertConfig> aggregateAlertConfigs = new ArrayList<>();
         for (AlertConfig alertConfig : alertConfigs) {
             AlertCondition condition = alertConfig.getCondition();
             if (isAggregateMetricCondition(condition)) {
@@ -133,7 +133,7 @@ class CentralAlertingService {
             logger.error("{} - {}", agentDisplay, e.getMessage(), e);
             return;
         }
-        List<AlertConfig> gaugeAndHeartbeatAlertConfigs = Lists.newArrayList();
+        List<AlertConfig> gaugeAndHeartbeatAlertConfigs = new ArrayList<>();
         for (AlertConfig alertConfig : alertConfigs) {
             AlertCondition condition = alertConfig.getCondition();
             if (isGaugeMetricCondition(condition)
@@ -160,7 +160,7 @@ class CentralAlertingService {
             logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
             return;
         }
-        List<AlertConfig> aggregateAndGaugeAndHeartbeatAlertConfigs = Lists.newArrayList();
+        List<AlertConfig> aggregateAndGaugeAndHeartbeatAlertConfigs = new ArrayList<>();
         for (AlertConfig alertConfig : alertConfigs) {
             AlertCondition condition = alertConfig.getCondition();
             if (condition.getValCase() == AlertCondition.ValCase.METRIC_CONDITION

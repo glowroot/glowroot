@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -26,7 +27,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 
@@ -79,7 +79,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     List<Future<?>> store(List<String> agentRollups, String transactionType) throws Exception {
-        List<Future<?>> futures = Lists.newArrayList();
+        List<Future<?>> futures = new ArrayList<>();
         for (String agentRollupId : agentRollups) {
             TransactionTypeKey rateLimiterKey =
                     ImmutableTransactionTypeKey.of(agentRollupId, transactionType);
@@ -125,7 +125,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
 
             ImmutableMap.Builder<String, List<String>> builder = ImmutableMap.builder();
             String currAgentRollup = null;
-            List<String> currTransactionTypes = Lists.newArrayList();
+            List<String> currTransactionTypes = new ArrayList<>();
             for (Row row : results) {
                 String agentRollupId = checkNotNull(row.getString(0));
                 String transactionType = checkNotNull(row.getString(1));
@@ -135,7 +135,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
                 if (!agentRollupId.equals(currAgentRollup)) {
                     builder.put(currAgentRollup, ImmutableList.copyOf(currTransactionTypes));
                     currAgentRollup = agentRollupId;
-                    currTransactionTypes = Lists.newArrayList();
+                    currTransactionTypes = new ArrayList<>();
                 }
                 currTransactionTypes.add(transactionType);
             }

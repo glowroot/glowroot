@@ -19,7 +19,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,8 +50,6 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
@@ -464,8 +465,8 @@ public class SchemaUpgrade {
 
     public void updateToMoreRecentCassandraOptions(CentralStorageConfig storageConfig)
             throws Exception {
-        List<String> snappyTableNames = Lists.newArrayList();
-        List<String> dtcsTableNames = Lists.newArrayList();
+        List<String> snappyTableNames = new ArrayList<>();
+        List<String> dtcsTableNames = new ArrayList<>();
         for (TableMetadata table : keyspaceMetadata.getTables()) {
             String compressionClass = table.getOptions().getCompression().get("class");
             if (compressionClass != null && compressionClass
@@ -709,7 +710,7 @@ public class SchemaUpgrade {
                 session.execute("select agent_id, agent_rollup from agent_one");
         PreparedStatement insertPS = session.prepare("insert into agent_rollup (one,"
                 + " agent_rollup_id, parent_agent_rollup_id, agent) values (1, ?, ?, ?)");
-        Set<String> parentAgentRollupIds = Sets.newHashSet();
+        Set<String> parentAgentRollupIds = new HashSet<>();
         for (Row row : results) {
             String agentRollupId = row.getString(0);
             String parentAgentRollupId = row.getString(1);
@@ -739,7 +740,7 @@ public class SchemaUpgrade {
     }
 
     private static List<String> getAgentRollupIds(String agentRollupId) {
-        List<String> agentRollupIds = Lists.newArrayList();
+        List<String> agentRollupIds = new ArrayList<>();
         int lastFoundIndex = -1;
         int nextFoundIndex;
         while ((nextFoundIndex = agentRollupId.indexOf('/', lastFoundIndex + 1)) != -1) {
@@ -766,7 +767,7 @@ public class SchemaUpgrade {
 
         ResultSet results =
                 session.execute("select agent_rollup_id, agent from agent_rollup where one = 1");
-        List<String> agentIds = Lists.newArrayList();
+        List<String> agentIds = new ArrayList<>();
         for (Row row : results) {
             if (row.getBool(1)) {
                 agentIds.add(checkNotNull(row.getString(0)));
@@ -812,7 +813,7 @@ public class SchemaUpgrade {
     private void initialPopulationOfConfigForRollups() throws Exception {
         ResultSet results = session.execute("select agent_rollup_id,"
                 + " parent_agent_rollup_id, agent from agent_rollup where one = 1");
-        List<String> agentRollupIds = Lists.newArrayList();
+        List<String> agentRollupIds = new ArrayList<>();
         Multimap<String, String> childAgentIds = ArrayListMultimap.create();
         for (Row row : results) {
             int i = 0;
@@ -1027,7 +1028,7 @@ public class SchemaUpgrade {
             String name = row.getString(0);
             Set<String> permissions = row.getSet(1, String.class);
             boolean updated = false;
-            Set<String> upgradedPermissions = Sets.newHashSet();
+            Set<String> upgradedPermissions = new HashSet<>();
             for (String permission : permissions) {
                 PermissionParser parser = new PermissionParser(permission);
                 parser.parse();
@@ -1177,7 +1178,7 @@ public class SchemaUpgrade {
                     ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
         }
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
         for (long captureTime : sortedCaptureTimes) {
@@ -1354,7 +1355,7 @@ public class SchemaUpgrade {
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(agentIdsPerCaptureTime.keySet());
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (long captureTime : sortedCaptureTimes) {
             int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
             for (String agentId : agentIdsPerCaptureTime.get(captureTime)) {
@@ -1639,7 +1640,7 @@ public class SchemaUpgrade {
                     logger.warn("found agent permission without any agents: {}", v09Permission);
                     continue;
                 }
-                List<String> agentRollupIds = Lists.newArrayList();
+                List<String> agentRollupIds = new ArrayList<>();
                 for (String v09AgentRollupId : v09AgentRollupIds) {
                     V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
                     if (v09AgentRollup == null) {
@@ -1683,7 +1684,7 @@ public class SchemaUpgrade {
         PreparedStatement insertTempPS = session.prepare("insert into heartbeat_temp (agent_id,"
                 + " central_capture_time) values (?, ?)");
         ResultSet results = session.execute("select agent_id, central_capture_time from heartbeat");
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind();
             boundStatement.setString(0, row.getString(0));
@@ -1710,7 +1711,7 @@ public class SchemaUpgrade {
         int ttl = Ints.saturatedCast(HOURS.toSeconds(HeartbeatDao.EXPIRATION_HOURS));
         ResultSet results =
                 session.execute("select agent_id, central_capture_time from heartbeat_temp");
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -1843,7 +1844,7 @@ public class SchemaUpgrade {
                 + " (agent_rollup_id, capture_time, gauge_name) values (?, ?, ?) using ttl ?");
         ResultSet results =
                 session.execute("select agent_rollup_id, capture_time, gauge_name from gauge_name");
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind();
             boundStatement.setString(0, row.getString(0));
@@ -1873,7 +1874,7 @@ public class SchemaUpgrade {
         int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
         ResultSet results = session
                 .execute("select agent_rollup_id, capture_time, gauge_name from gauge_name_temp");
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -1922,7 +1923,7 @@ public class SchemaUpgrade {
     }
 
     private Map<String, V09AgentRollup> getV09AgentRollupsFromAgentRollupTable() throws Exception {
-        Map<String, V09AgentRollup> v09AgentRollupIds = Maps.newHashMap();
+        Map<String, V09AgentRollup> v09AgentRollupIds = new HashMap<>();
         ResultSet results = session.execute("select agent_rollup_id, parent_agent_rollup_id, agent"
                 + " from agent_rollup where one = 1");
         for (Row row : results) {
@@ -1998,7 +1999,7 @@ public class SchemaUpgrade {
         ResultSet results = session.execute("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id, duration_nanos, error, headline, user, attributes, partial"
                 + " from trace_tt_slow_point");
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
@@ -2058,7 +2059,7 @@ public class SchemaUpgrade {
                 + " and trace_id = ?");
         ResultSet results = session.execute("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id from trace_tt_slow_count_partial");
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
@@ -2110,7 +2111,7 @@ public class SchemaUpgrade {
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id, duration_nanos, error,"
                 + " headline, user, attributes, partial from trace_tn_slow_point");
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
@@ -2173,7 +2174,7 @@ public class SchemaUpgrade {
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id from"
                 + " trace_tn_slow_count_partial");
-        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
@@ -2395,7 +2396,7 @@ public class SchemaUpgrade {
 
     @VisibleForTesting
     static @Nullable Set<String> upgradePermissions(Set<String> permissions) {
-        Set<String> updatedPermissions = Sets.newHashSet();
+        Set<String> updatedPermissions = new HashSet<>();
         ListMultimap<String, String> agentPermissions = ArrayListMultimap.create();
         boolean needsUpgrade = false;
         for (String permission : permissions) {
@@ -2436,7 +2437,7 @@ public class SchemaUpgrade {
 
     @VisibleForTesting
     static Set<String> upgradePermissions2(Set<String> permissions) {
-        Set<String> permissionsToBeAdded = Sets.newHashSet();
+        Set<String> permissionsToBeAdded = new HashSet<>();
         for (String permission : permissions) {
             if (!permission.startsWith("agent:")) {
                 continue;

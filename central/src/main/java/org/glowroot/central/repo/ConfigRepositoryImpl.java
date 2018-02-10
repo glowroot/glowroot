@@ -15,6 +15,8 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
@@ -225,7 +227,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // central supports alert configs on rollups
     public List<AlertConfig> getAlertConfigsForSyntheticMonitorId(String agentRollupId,
             String syntheticMonitorId) throws Exception {
-        List<AlertConfig> configs = Lists.newArrayList();
+        List<AlertConfig> configs = new ArrayList<>();
         for (AlertConfig config : getAlertConfigs(agentRollupId)) {
             AlertCondition alertCondition = config.getCondition();
             if (alertCondition.getValCase() == AlertCondition.ValCase.SYNTHETIC_MONITOR_CONDITION
@@ -1071,8 +1073,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion)
             throws Exception {
         // check for duplicate integration key / display
-        Set<String> integrationKeys = Sets.newHashSet();
-        Set<String> integrationDisplays = Sets.newHashSet();
+        Set<String> integrationKeys = new HashSet<>();
+        Set<String> integrationDisplays = new HashSet<>();
         for (PagerDutyIntegrationKey integrationKey : config.integrationKeys()) {
             if (!integrationKeys.add(integrationKey.key())) {
                 throw new DuplicatePagerDutyIntegrationKeyException();

@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,6 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -647,7 +647,7 @@ public class AggregateDaoIT {
     }
 
     private static List<OldAggregatesByType> createData() {
-        List<OldAggregatesByType> aggregatesByType = Lists.newArrayList();
+        List<OldAggregatesByType> aggregatesByType = new ArrayList<>();
         aggregatesByType.add(OldAggregatesByType.newBuilder()
                 .setTransactionType("tt0")
                 .setOverallAggregate(createOverallAggregate())

@@ -15,7 +15,10 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,9 +36,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 
 import org.glowroot.central.util.MoreFutures;
@@ -83,7 +84,7 @@ class Common {
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
         boundStatement.setString(0, agentRollupId);
         ResultSet results = session.execute(boundStatement);
-        Map<Long, NeedsRollup> needsRollupMap = Maps.newLinkedHashMap();
+        Map<Long, NeedsRollup> needsRollupMap = new LinkedHashMap<>();
         for (Row row : results) {
             int i = 0;
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
@@ -123,7 +124,7 @@ class Common {
         BoundStatement boundStatement = readNeedsRollupFromChild.bind();
         boundStatement.setString(0, agentRollupId);
         ResultSet results = session.execute(boundStatement);
-        Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = Maps.newLinkedHashMap();
+        Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = new LinkedHashMap<>();
         for (Row row : results) {
             int i = 0;
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
@@ -167,7 +168,7 @@ class Common {
             // intentionally not async, see method-level comment
             session.execute(boundStatement);
         }
-        List<Future<?>> futures = Lists.newArrayList();
+        List<Future<?>> futures = new ArrayList<>();
         for (UUID uniqueness : uniquenessKeysForDeletion) {
             BoundStatement boundStatement = deleteNeedsRollup.bind();
             int i = 0;
@@ -182,8 +183,8 @@ class Common {
     static class NeedsRollup {
 
         private final long captureTime;
-        private final Set<String> keys = Sets.newHashSet(); // transaction types or gauge names
-        private final Set<UUID> uniquenessKeysForDeletion = Sets.newHashSet();
+        private final Set<String> keys = new HashSet<>(); // transaction types or gauge names
+        private final Set<UUID> uniquenessKeysForDeletion = new HashSet<>();
 
         private NeedsRollup(long captureTime) {
             this.captureTime = captureTime;
@@ -208,7 +209,7 @@ class Common {
         // map keys are transaction types or gauge names
         // map values are childAgentRollupIds
         private final Multimap<String, String> keys = HashMultimap.create();
-        private final Set<UUID> uniquenessKeysForDeletion = Sets.newHashSet();
+        private final Set<UUID> uniquenessKeysForDeletion = new HashSet<>();
 
         private NeedsRollupFromChildren(long captureTime) {
             this.captureTime = captureTime;

@@ -15,13 +15,13 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -80,7 +80,7 @@ public class CentralRepoModule {
             v09TraceLastExpirationTime = 0;
             v09AggregateLastExpirationTime = 0;
         } else {
-            agentRollupIdsWithV09Data = Sets.newHashSet();
+            agentRollupIdsWithV09Data = new HashSet<>();
             ResultSet results =
                     session.execute("select agent_id from v09_agent_check where one = 1");
             for (Row row : results) {

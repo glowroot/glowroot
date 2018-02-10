@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -26,7 +27,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
 import org.glowroot.central.util.Session;
@@ -132,7 +132,7 @@ public class IncidentDao implements IncidentRepository {
         BoundStatement boundStatement = readOpenIncidentsPS.bind();
         boundStatement.setString(0, agentRollupId);
         ResultSet results = session.execute(boundStatement);
-        List<OpenIncident> openIncidents = Lists.newArrayList();
+        List<OpenIncident> openIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
             AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getBytes(i++)));
@@ -156,7 +156,7 @@ public class IncidentDao implements IncidentRepository {
     public List<OpenIncident> readAllOpenIncidents() throws Exception {
         BoundStatement boundStatement = readAllOpenIncidentsPS.bind();
         ResultSet results = session.execute(boundStatement);
-        List<OpenIncident> openIncidents = Lists.newArrayList();
+        List<OpenIncident> openIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
             String agentRollupId = checkNotNull(row.getString(i++));
@@ -212,7 +212,7 @@ public class IncidentDao implements IncidentRepository {
         BoundStatement boundStatement = readRecentResolvedIncidentsPS.bind();
         boundStatement.setTimestamp(0, new Date(from));
         ResultSet results = session.execute(boundStatement);
-        List<ResolvedIncident> resolvedIncidents = Lists.newArrayList();
+        List<ResolvedIncident> resolvedIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
             long resolveTime = checkNotNull(row.getTimestamp(i++)).getTime();

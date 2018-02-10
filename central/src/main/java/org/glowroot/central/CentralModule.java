@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -46,7 +47,6 @@ import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.RateLimiter;
@@ -470,7 +470,7 @@ public class CentralModule {
         }
         Properties props = PropertiesFiles.load(propFile);
 
-        Map<String, String> upgradePropertyNames = Maps.newHashMap();
+        Map<String, String> upgradePropertyNames = new HashMap<>();
         // upgrade from 0.9.4 to 0.9.5
         if (props.containsKey("cassandra.contact.points")) {
             upgradePropertyNames.put("cassandra.contact.points=", "cassandra.contactPoints=");

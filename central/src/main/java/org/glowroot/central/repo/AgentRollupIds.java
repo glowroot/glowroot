@@ -15,11 +15,10 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
-import com.google.common.collect.Lists;
 
 public class AgentRollupIds {
 
@@ -30,7 +29,7 @@ public class AgentRollupIds {
     // its direct parent is index 1
     // etc...
     public static List<String> getAgentRollupIds(String agentRollupId) {
-        List<String> agentRollupIds = Lists.newArrayList();
+        List<String> agentRollupIds = new ArrayList<>();
         agentRollupIds.add(agentRollupId);
         int separatorLen = "::".length();
         int lastFoundIndex;

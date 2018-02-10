@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -26,7 +27,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
@@ -164,7 +164,7 @@ class RoleDao {
         @Override
         public List<RoleConfig> load(String dummy) throws Exception {
             ResultSet results = session.execute(readPS.bind());
-            List<RoleConfig> users = Lists.newArrayList();
+            List<RoleConfig> users = new ArrayList<>();
             for (Row row : results) {
                 users.add(buildRole(row));
             }

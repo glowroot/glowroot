@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -23,7 +24,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.google.common.collect.Maps;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
@@ -78,7 +78,7 @@ public class V09AgentRollupDao {
         public Map<String, String> load(String key) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             ResultSet results = session.execute(boundStatement);
-            Map<String, String> agentRollupIds = Maps.newHashMap();
+            Map<String, String> agentRollupIds = new HashMap<>();
             for (Row row : results) {
                 int i = 0;
                 String v09AgentId = checkNotNull(row.getString(i++));

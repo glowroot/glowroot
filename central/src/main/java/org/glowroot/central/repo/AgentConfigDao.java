@@ -16,6 +16,8 @@
 package org.glowroot.central.repo;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -29,8 +31,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 
@@ -98,11 +98,11 @@ public class AgentConfigDao {
                     .build();
         } else {
             // sync list of plugin properties, central property values win
-            Map<String, PluginConfig> existingPluginConfigs = Maps.newHashMap();
+            Map<String, PluginConfig> existingPluginConfigs = new HashMap<>();
             for (PluginConfig existingPluginConfig : existingAgentConfig.getPluginConfigList()) {
                 existingPluginConfigs.put(existingPluginConfig.getId(), existingPluginConfig);
             }
-            List<PluginConfig> pluginConfigs = Lists.newArrayList();
+            List<PluginConfig> pluginConfigs = new ArrayList<>();
             for (PluginConfig agentPluginConfig : agentConfig.getPluginConfigList()) {
                 PluginConfig existingPluginConfig =
                         existingPluginConfigs.get(agentPluginConfig.getId());
@@ -110,11 +110,11 @@ public class AgentConfigDao {
                     pluginConfigs.add(agentPluginConfig);
                     continue;
                 }
-                Map<String, PluginProperty> existingProperties = Maps.newHashMap();
+                Map<String, PluginProperty> existingProperties = new HashMap<>();
                 for (PluginProperty existingProperty : existingPluginConfig.getPropertyList()) {
                     existingProperties.put(existingProperty.getName(), existingProperty);
                 }
-                List<PluginProperty> properties = Lists.newArrayList();
+                List<PluginProperty> properties = new ArrayList<>();
                 for (PluginProperty agentProperty : agentPluginConfig.getPropertyList()) {
                     PluginProperty existingProperty =
                             existingProperties.get(agentProperty.getName());

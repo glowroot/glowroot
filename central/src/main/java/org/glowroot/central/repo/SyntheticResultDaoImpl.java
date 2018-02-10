@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -29,7 +30,6 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
@@ -84,9 +84,9 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         List<Integer> rollupExpirationHours =
                 configRepository.getCentralStorageConfig().rollupExpirationHours();
 
-        List<PreparedStatement> insertResultPS = Lists.newArrayList();
-        List<PreparedStatement> readResultPS = Lists.newArrayList();
-        List<PreparedStatement> readResultForRollupPS = Lists.newArrayList();
+        List<PreparedStatement> insertResultPS = new ArrayList<>();
+        List<PreparedStatement> readResultPS = new ArrayList<>();
+        List<PreparedStatement> readResultForRollupPS = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             // total_duration_nanos and execution_count only represent successful results
             session.createTableWithTWCS("create table if not exists synthetic_result_rollup_" + i
@@ -119,9 +119,9 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
         long needsRollupGcGraceSeconds = HOURS.toSeconds(4);
 
-        List<PreparedStatement> insertNeedsRollup = Lists.newArrayList();
-        List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
-        List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
+        List<PreparedStatement> insertNeedsRollup = new ArrayList<>();
+        List<PreparedStatement> readNeedsRollup = new ArrayList<>();
+        List<PreparedStatement> deleteNeedsRollup = new ArrayList<>();
         for (int i = 1; i < count; i++) {
             session.createTableWithLCS("create table if not exists synthetic_needs_rollup_" + i
                     + " (agent_rollup_id varchar, capture_time timestamp, uniqueness timeuuid,"
@@ -202,14 +202,14 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
         ResultSet results = session.execute(boundStatement);
-        List<SyntheticResult> syntheticResults = Lists.newArrayList();
+        List<SyntheticResult> syntheticResults = new ArrayList<>();
         for (Row row : results) {
             i = 0;
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             double totalDurationNanos = row.getDouble(i++);
             long executionCount = row.getLong(i++);
             ByteBuffer errorIntervalsBytes = row.getBytes(i++);
-            List<ErrorInterval> errorIntervals = Lists.newArrayList();
+            List<ErrorInterval> errorIntervals = new ArrayList<>();
             if (errorIntervalsBytes != null) {
                 List<Stored.ErrorInterval> storedErrorIntervals = Messages
                         .parseDelimitedFrom(errorIntervalsBytes, Stored.ErrorInterval.parser());
@@ -259,7 +259,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             long from = captureTime - rollupIntervalMillis;
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
             Set<String> syntheticMonitorIds = needsRollup.getKeys();
-            List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
+            List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
             for (String syntheticMonitorId : syntheticMonitorIds) {
                 futures.add(rollupOne(rollupLevel, agentRollupId, syntheticMonitorId, from,
                         captureTime, adjustedTTL));
@@ -361,7 +361,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     }
 
     private List<Integer> getTTLs() throws Exception {
-        List<Integer> ttls = Lists.newArrayList();
+        List<Integer> ttls = new ArrayList<>();
         List<Integer> rollupExpirationHours =
                 configRepository.getCentralStorageConfig().rollupExpirationHours();
         for (long expirationHours : rollupExpirationHours) {
@@ -381,7 +381,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     }
 
     private static List<ErrorInterval> fromProto(List<Stored.ErrorInterval> storedErrorIntervals) {
-        List<ErrorInterval> errorIntervals = Lists.newArrayList();
+        List<ErrorInterval> errorIntervals = new ArrayList<>();
         for (Stored.ErrorInterval storedErrorInterval : storedErrorIntervals) {
             errorIntervals.add(ImmutableErrorInterval.builder()
                     .from(storedErrorInterval.getFrom())
@@ -396,7 +396,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     }
 
     private static List<Stored.ErrorInterval> toProto(List<ErrorInterval> errorIntervals) {
-        List<Stored.ErrorInterval> storedErrorIntervals = Lists.newArrayList();
+        List<Stored.ErrorInterval> storedErrorIntervals = new ArrayList<>();
         for (ErrorInterval errorInterval : errorIntervals) {
             storedErrorIntervals.add(Stored.ErrorInterval.newBuilder()
                     .setFrom(errorInterval.from())

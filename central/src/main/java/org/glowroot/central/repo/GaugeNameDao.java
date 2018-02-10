@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -25,7 +26,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.RateLimiter;
@@ -73,7 +73,7 @@ class GaugeNameDao {
         boundStatement.setTimestamp(1, new Date(rolledUpFrom));
         boundStatement.setTimestamp(2, new Date(rolledUpTo));
         ResultSet results = session.execute(boundStatement);
-        Set<String> gaugeNames = Sets.newHashSet();
+        Set<String> gaugeNames = new HashSet<>();
         for (Row row : results) {
             gaugeNames.add(checkNotNull(row.getString(0)));
         }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,7 +28,6 @@ import java.util.concurrent.Executors;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.rauschig.jarchivelib.ArchiveFormat;
 import org.rauschig.jarchivelib.Archiver;
@@ -113,7 +113,7 @@ class CassandraWrapper {
     }
 
     private static List<String> buildCommandLine(File cassandraDir) {
-        List<String> command = Lists.newArrayList();
+        List<String> command = new ArrayList<>();
         String javaExecutable =
                 System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         command.add(javaExecutable);

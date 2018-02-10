@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,13 @@ package org.glowroot.central.util;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -28,7 +31,6 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
 import org.infinispan.configuration.cache.CacheMode;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfiguration;
@@ -154,7 +156,7 @@ public abstract class ClusterManager {
 
         private static <V> V doWithSystemProperties(Map<String, String> properties,
                 Supplier<V> supplier) {
-            Map<String, String> priorSystemProperties = Maps.newHashMap();
+            Map<String, String> priorSystemProperties = new HashMap<>();
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 String key = entry.getKey();
                 String priorValue = System.getProperty(key);
@@ -183,19 +185,19 @@ public abstract class ClusterManager {
         @Override
         public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createCache(
                 String cacheName, CacheLoader<K, V> loader) {
-            return new NonClusterCacheImpl<K, V>(Maps.newConcurrentMap(), loader);
+            return new NonClusterCacheImpl<K, V>(new ConcurrentHashMap<>(), loader);
         }
 
         @Override
         public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> DistributedExecutionMap<K, V> createDistributedExecutionMap(
                 String cacheName) {
-            return new NonClusterDistributedExecutionMapImpl<>(Maps.newConcurrentMap());
+            return new NonClusterDistributedExecutionMapImpl<>(new ConcurrentHashMap<>());
         }
 
         @Override
         public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Serializable> ConcurrentMap<K, V> createReplicatedMap(
                 String mapName) {
-            return Maps.newConcurrentMap();
+            return new ConcurrentHashMap<>();
         }
 
         @Override
@@ -368,7 +370,7 @@ public abstract class ClusterManager {
     private static class CollectingConsumer<V extends /*@NonNull*/ Object>
             implements TriConsumer<Address, /*@Nullable*/ Optional<V>, /*@Nullable*/ Throwable> {
 
-        private final Queue<V> values = Queues.newConcurrentLinkedQueue();
+        private final Queue<V> values = new ConcurrentLinkedQueue<>();
         private volatile boolean logStackTrace;
 
         @Override

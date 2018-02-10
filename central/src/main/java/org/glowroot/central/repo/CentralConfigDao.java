@@ -17,6 +17,7 @@ package org.glowroot.central.repo;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
@@ -26,7 +27,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +54,7 @@ class CentralConfigDao {
 
     private final Cache<String, Optional<Object>> centralConfigCache;
 
-    private final Map<String, Class<?>> keyTypes = Maps.newConcurrentMap();
+    private final Map<String, Class<?>> keyTypes = new ConcurrentHashMap<>();
 
     CentralConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;

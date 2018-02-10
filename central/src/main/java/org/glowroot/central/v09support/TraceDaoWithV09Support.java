@@ -15,7 +15,9 @@
  */
 package org.glowroot.central.v09support;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,8 +25,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import org.immutables.value.Value;
 
@@ -63,7 +63,7 @@ public class TraceDaoWithV09Support implements TraceDao {
         this.v09FqtLastExpirationTime = v09FqtLastExpirationTime;
         this.clock = clock;
         this.delegate = delegate;
-        convertToPostV09AgentIds = Maps.newHashMap();
+        convertToPostV09AgentIds = new HashMap<>();
         for (String agentRollupIdWithV09Data : agentRollupIdsWithV09Data) {
             if (!agentRollupIdWithV09Data.endsWith("::")) {
                 convertToPostV09AgentIds.put(V09Support.convertToV09(agentRollupIdWithV09Data),
@@ -187,7 +187,7 @@ public class TraceDaoWithV09Support implements TraceDao {
             Result<TracePoint> resultV09 =
                     convertFromV09(action.result(V09Support.convertToV09(agentRollupId), queryV09));
             Result<TracePoint> resultPostV09 = action.result(agentRollupId, queryPostV09);
-            List<TracePoint> tracePoints = Lists.newArrayList();
+            List<TracePoint> tracePoints = new ArrayList<>();
             tracePoints.addAll(resultV09.records());
             tracePoints.addAll(resultPostV09.records());
             if (tracePoints.size() > limit) {
@@ -204,7 +204,7 @@ public class TraceDaoWithV09Support implements TraceDao {
     }
 
     private Result<TracePoint> convertFromV09(Result<TracePoint> resultV09) {
-        List<TracePoint> tracePoints = Lists.newArrayList();
+        List<TracePoint> tracePoints = new ArrayList<>();
         for (TracePoint tracePoint : resultV09.records()) {
             String agentId = convertToPostV09AgentIds.get(tracePoint.agentId());
             if (agentId == null) {
@@ -235,10 +235,10 @@ public class TraceDaoWithV09Support implements TraceDao {
             ErrorMessageResult resultV09 =
                     action.result(V09Support.convertToV09(agentRollupId), queryV09);
             ErrorMessageResult resultPostV09 = action.result(agentRollupId, queryPostV09);
-            List<ErrorMessagePoint> points = Lists.newArrayList();
+            List<ErrorMessagePoint> points = new ArrayList<>();
             points.addAll(resultV09.points());
             points.addAll(resultPostV09.points());
-            Map<String, MutableLong> messageCounts = Maps.newHashMap();
+            Map<String, MutableLong> messageCounts = new HashMap<>();
             Result<ErrorMessageCount> countsV09 = resultV09.counts();
             Result<ErrorMessageCount> countsPostV09 = resultPostV09.counts();
             for (ErrorMessageCount errorMessageCount : countsV09.records()) {
