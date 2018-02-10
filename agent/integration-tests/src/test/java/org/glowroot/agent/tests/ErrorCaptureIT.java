@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.agent.tests;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -108,10 +107,6 @@ public class ErrorCaptureIT {
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(1);
         assertThat(entry.getError().getMessage()).isNotEmpty();
-        List<Proto.StackTraceElement> stackTraceElements = entry.getLocationStackTraceElementList();
-        assertThat(stackTraceElements.get(0).getClassName()).isEqualTo(LogError.class.getName());
-        assertThat(stackTraceElements.get(0).getMethodName()).isEqualTo("addNestedErrorEntry");
-        assertThat(stackTraceElements.get(0).getFileName()).isEqualTo("LogError.java");
 
         assertThat(i.hasNext()).isFalse();
     }

@@ -160,9 +160,6 @@ public class JavaHttpServerPluginIT {
         assertThat(entry.getError().getMessage())
                 .isEqualTo("sendResponseHeaders, HTTP status code 500");
         assertThat(entry.getError().hasException()).isFalse();
-        assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
-        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
-                .isEqualTo("sendResponseHeaders");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -197,9 +194,6 @@ public class JavaHttpServerPluginIT {
         assertThat(entry.getError().getMessage())
                 .isEqualTo("sendResponseHeaders, HTTP status code 400");
         assertThat(entry.getError().hasException()).isFalse();
-        assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
-        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
-                .isEqualTo("sendResponseHeaders");
 
         assertThat(i.hasNext()).isFalse();
     }

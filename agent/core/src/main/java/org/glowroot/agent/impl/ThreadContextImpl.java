@@ -1039,16 +1039,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             long currTick = ticker.read();
             ErrorMessage errorMessage =
                     ErrorMessage.create(message, t, transaction.getThrowableFrameLimitCounter());
-            org.glowroot.agent.impl.TraceEntryImpl entry =
-                    addErrorEntry(currTick, currTick, null, null, errorMessage);
-            if (t == null) {
-                StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
-                // strip up through this method, plus 2 additional methods:
-                // ThreadContextImpl.addErrorEntry() and the plugin advice method
-                int index = getNormalizedStartIndex(locationStackTrace, "addErrorEntryInternal", 2);
-                entry.setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
-                        locationStackTrace.length));
-            }
+            addErrorEntry(currTick, currTick, null, null, errorMessage);
         }
     }
 
@@ -1156,17 +1147,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 ErrorMessage errorMessage = ErrorMessage.create(message, t,
                         transaction.getThrowableFrameLimitCounter());
                 // entry won't be nested properly, but at least the error will get captured
-                org.glowroot.agent.impl.TraceEntryImpl entry = addErrorEntry(startTick, endTick,
-                        messageSupplier, getQueryData(), errorMessage);
-                if (t == null) {
-                    StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
-                    // strip up through this method, plus 2 additional methods:
-                    // DummyTraceEntryOrQuery.endWithError() and the plugin advice method
-                    int index =
-                            getNormalizedStartIndex(locationStackTrace, "endWithErrorInternal", 2);
-                    entry.setLocationStackTrace(ImmutableList.copyOf(locationStackTrace)
-                            .subList(index, locationStackTrace.length));
-                }
+                addErrorEntry(startTick, endTick, messageSupplier, getQueryData(), errorMessage);
             }
         }
 

@@ -372,17 +372,6 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         ErrorMessage errorMessage = ErrorMessage.create(message, t,
                 threadContext.getTransaction().getThrowableFrameLimitCounter());
         endInternal(ticker.read(), errorMessage);
-        // it is not helpful to capture stack trace at end of async trace entry since it is
-        // ended by a different thread (and by not capturing, it reduces thread safety needs)
-        if (!isAsync() && t == null) {
-            StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
-            // strip up through this method, plus 2 additional methods:
-            // TraceEntryImpl.endWithError() and the plugin advice method
-            int index = ThreadContextImpl.getNormalizedStartIndex(locationStackTrace,
-                    "endWithErrorInternal", 2);
-            setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
-                    locationStackTrace.length));
-        }
     }
 
     private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {

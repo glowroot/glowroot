@@ -283,10 +283,6 @@ public interface ThreadContext {
      * the error attribute on the transaction, which must be done with {@link #setTransactionError}
      * or with {@code endWithError} on the root entry.
      * 
-     * Since there is no throwable passed to this variant, a stack trace is captured and displayed
-     * in the UI as a location stack trace (as opposed to an exception stack trace), similar to
-     * {@link TraceEntry#endWithLocationStackTrace(long, TimeUnit)}.
-     * 
      * This method bypasses the regular {@code maxTraceEntriesPerTransaction} check so that errors
      * after {@code maxTraceEntriesPerTransaction} will still be included in the trace. A hard cap (
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of entries is still applied,

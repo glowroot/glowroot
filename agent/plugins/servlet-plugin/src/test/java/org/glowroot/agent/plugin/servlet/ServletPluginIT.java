@@ -167,9 +167,6 @@ public class ServletPluginIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getError().getMessage()).isEqualTo("sendError, HTTP status code 500");
         assertThat(entry.getError().hasException()).isFalse();
-        assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
-        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
-                .isEqualTo("sendError");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -189,8 +186,6 @@ public class ServletPluginIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getError().getMessage()).isEqualTo("setStatus, HTTP status code 500");
         assertThat(entry.getError().hasException()).isFalse();
-        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
-                .isEqualTo("setStatus");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -234,9 +229,6 @@ public class ServletPluginIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getError().getMessage()).isEqualTo("sendError, HTTP status code 400");
         assertThat(entry.getError().hasException()).isFalse();
-        assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
-        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
-                .isEqualTo("sendError");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -260,8 +252,6 @@ public class ServletPluginIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getError().getMessage()).isEqualTo("setStatus, HTTP status code 400");
         assertThat(entry.getError().hasException()).isFalse();
-        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
-                .isEqualTo("setStatus");
 
         assertThat(i.hasNext()).isFalse();
     }
