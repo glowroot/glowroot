@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -158,7 +159,7 @@ class SyntheticResultJsonService {
         }
         long nonRolledUpFrom = from;
         if (!syntheticResults.isEmpty()) {
-            long lastRolledUpTime = syntheticResults.get(syntheticResults.size() - 1).captureTime();
+            long lastRolledUpTime = Iterables.getLast(syntheticResults).captureTime();
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<SyntheticResult> orderedNonRolledUpSyntheticResults = Lists.newArrayList();
@@ -184,7 +185,7 @@ class SyntheticResultJsonService {
             if (syntheticResults.isEmpty()) {
                 continue;
             }
-            SyntheticResult lastSyntheticResult = syntheticResults.get(syntheticResults.size() - 1);
+            SyntheticResult lastSyntheticResult = Iterables.getLast(syntheticResults);
             long lastCaptureTime = lastSyntheticResult.captureTime();
             maxCaptureTime = Math.max(maxCaptureTime, lastCaptureTime);
             if (lastCaptureTime % fixedIntervalMillis != 0) {
@@ -211,7 +212,7 @@ class SyntheticResultJsonService {
             List<SyntheticResult> syntheticResults = checkNotNull(map.get(key));
             // make copy in case ImmutableList
             syntheticResults = Lists.newArrayList(syntheticResults);
-            SyntheticResult lastSyntheticResult = syntheticResults.get(syntheticResults.size() - 1);
+            SyntheticResult lastSyntheticResult = Iterables.getLast(syntheticResults);
             syntheticResults.set(syntheticResults.size() - 1, ImmutableSyntheticResult.builder()
                     .copyFrom(lastSyntheticResult)
                     .captureTime(maxCaptureTime)
@@ -254,8 +255,8 @@ class SyntheticResultJsonService {
         }
         if (executionCount > 0) {
             // roll up final one
-            long lastCaptureTime = orderedNonRolledUpSyntheticResults
-                    .get(orderedNonRolledUpSyntheticResults.size() - 1).captureTime();
+            long lastCaptureTime =
+                    Iterables.getLast(orderedNonRolledUpSyntheticResults).captureTime();
             rolledUpSyntheticResults.add(ImmutableSyntheticResult.builder()
                     .captureTime(lastCaptureTime)
                     .totalDurationNanos(totalDurationNanos)

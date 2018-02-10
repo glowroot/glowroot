@@ -30,6 +30,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -104,7 +105,7 @@ public class AgentDao implements AgentRollupRepository {
             if (agentRollupIds.size() == 1) {
                 topLevelAgentRollupIds.add(agentId);
             } else {
-                String topLevelAgentId = agentRollupIds.get(agentRollupIds.size() - 1);
+                String topLevelAgentId = Iterables.getLast(agentRollupIds);
                 topLevelAgentRollupIds.add(topLevelAgentId);
                 for (int i = 1; i < agentRollupIds.size(); i++) {
                     childMultimap.put(agentRollupIds.get(i), agentRollupIds.get(i - 1));
@@ -164,7 +165,7 @@ public class AgentDao implements AgentRollupRepository {
         ImmutableAgentRollup.Builder builder = ImmutableAgentRollup.builder()
                 .id(agentRollupId)
                 .display(Joiner.on(" :: ").join(agentRollupDisplayParts))
-                .lastDisplayPart(agentRollupDisplayParts.get(agentRollupDisplayParts.size() - 1));
+                .lastDisplayPart(Iterables.getLast(agentRollupDisplayParts));
         List<AgentRollup> childAgentRollups = Lists.newArrayList();
         for (String childAgentRollupId : childAgentRollupIds) {
             childAgentRollups.add(createAgentRollup(childAgentRollupId, parentChildMap));

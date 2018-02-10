@@ -31,6 +31,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -66,7 +67,7 @@ class Common {
         if (adjustedTTL == 0) {
             return 0;
         }
-        long maxRollupInterval = rollupConfigs.get(rollupConfigs.size() - 1).intervalMillis();
+        long maxRollupInterval = Iterables.getLast(rollupConfigs).intervalMillis();
         // reduced by an extra 1 hour to make sure that once needs rollup record is retrieved,
         // there is plenty of time to read the all of the data records in the interval before they
         // expire (reading partially expired interval can lead to non-idempotent rollups)
@@ -100,7 +101,7 @@ class Common {
             return ImmutableList.of();
         }
         List<NeedsRollup> needsRollupList = Lists.newArrayList(needsRollupMap.values());
-        NeedsRollup lastNeedsRollup = needsRollupList.get(needsRollupList.size() - 1);
+        NeedsRollup lastNeedsRollup = Iterables.getLast(needsRollupList);
         if (lastNeedsRollup.getCaptureTime() > clock.currentTimeMillis() - rollupIntervalMillis) {
             // normally, the last "needs rollup" capture time is in the near future, so don't roll
             // it up since it is likely still being added to

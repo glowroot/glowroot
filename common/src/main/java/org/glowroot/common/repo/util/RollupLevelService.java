@@ -17,6 +17,8 @@ package org.glowroot.common.repo.util;
 
 import java.util.List;
 
+import com.google.common.collect.Iterables;
+
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
@@ -122,7 +124,7 @@ public class RollupLevelService {
                 return currRollupConfig.intervalMillis();
             }
         }
-        return rollupConfigs.get(rollupConfigs.size() - 1).intervalMillis();
+        return Iterables.getLast(rollupConfigs).intervalMillis();
     }
 
     private List<Integer> getRollupExpirationHours(DataKind dataKind) throws Exception {

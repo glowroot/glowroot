@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
@@ -107,7 +108,7 @@ class LayoutService {
         FilteredAgentRollup agentRollup = ImmutableFilteredAgentRollup.builder()
                 .id(agentRollupId)
                 .display(Joiner.on(" :: ").join(agentRollupDisplayParts))
-                .lastDisplayPart(agentRollupDisplayParts.get(agentRollupDisplayParts.size() - 1))
+                .lastDisplayPart(Iterables.getLast(agentRollupDisplayParts))
                 .permissions(permissions)
                 .build();
         return buildAgentRollupLayout(agentRollup, transactionTypeRepository.read(),

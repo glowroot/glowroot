@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -109,7 +110,7 @@ class GaugeValueJsonService {
         }
         long nonRolledUpFrom = from;
         if (!gaugeValues.isEmpty()) {
-            long lastRolledUpTime = gaugeValues.get(gaugeValues.size() - 1).getCaptureTime();
+            long lastRolledUpTime = Iterables.getLast(gaugeValues).getCaptureTime();
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<GaugeValue> orderedNonRolledUpGaugeValues = Lists.newArrayList();
@@ -134,8 +135,7 @@ class GaugeValueJsonService {
             if (gaugeValues.isEmpty()) {
                 continue;
             }
-            GaugeValue lastGaugeValue = gaugeValues.get(gaugeValues.size() - 1);
-            long lastCaptureTime = lastGaugeValue.getCaptureTime();
+            long lastCaptureTime = Iterables.getLast(gaugeValues).getCaptureTime();
             maxCaptureTime = Math.max(maxCaptureTime, lastCaptureTime);
             if (lastCaptureTime % fixedIntervalMillis != 0) {
                 manualRollupCaptureTimes.put(entry.getKey(), lastCaptureTime);
@@ -161,7 +161,7 @@ class GaugeValueJsonService {
             List<GaugeValue> gaugeValues = checkNotNull(map.get(key));
             // make copy in case ImmutableList
             gaugeValues = Lists.newArrayList(gaugeValues);
-            GaugeValue lastGaugeValue = gaugeValues.get(gaugeValues.size() - 1);
+            GaugeValue lastGaugeValue = Iterables.getLast(gaugeValues);
             gaugeValues.set(gaugeValues.size() - 1, lastGaugeValue.toBuilder()
                     .setCaptureTime(maxCaptureTime)
                     .build());
@@ -194,8 +194,8 @@ class GaugeValueJsonService {
         }
         if (currWeight > 0) {
             // roll up final one
-            long lastCaptureTime = orderedNonRolledUpGaugeValues
-                    .get(orderedNonRolledUpGaugeValues.size() - 1).getCaptureTime();
+            long lastCaptureTime =
+                    Iterables.getLast(orderedNonRolledUpGaugeValues).getCaptureTime();
             rolledUpGaugeValues.add(GaugeValue.newBuilder()
                     .setGaugeName(gaugeName)
                     .setCaptureTime(lastCaptureTime)

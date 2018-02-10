@@ -32,6 +32,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
@@ -311,7 +312,7 @@ class ReportJsonService {
         if (aggregates.isEmpty()) {
             return dataSeries;
         }
-        OverviewAggregate lastAggregate = aggregates.get(aggregates.size() - 1);
+        OverviewAggregate lastAggregate = Iterables.getLast(aggregates);
         long lastCaptureTime = lastAggregate.captureTime();
         long lastRollupCaptureTime = rollupCaptureTimeFn.apply(lastCaptureTime);
         if (lastCaptureTime != lastRollupCaptureTime) {
@@ -357,7 +358,7 @@ class ReportJsonService {
         if (aggregates.isEmpty()) {
             return dataSeries;
         }
-        PercentileAggregate lastAggregate = aggregates.get(aggregates.size() - 1);
+        PercentileAggregate lastAggregate = Iterables.getLast(aggregates);
         long lastCaptureTime = lastAggregate.captureTime();
         long lastRollupCaptureTime = rollupCaptureTimeFn.apply(lastCaptureTime);
         if (lastCaptureTime != lastRollupCaptureTime) {
@@ -400,7 +401,7 @@ class ReportJsonService {
         if (aggregates.isEmpty()) {
             return dataSeries;
         }
-        ThroughputAggregate lastAggregate = aggregates.get(aggregates.size() - 1);
+        ThroughputAggregate lastAggregate = Iterables.getLast(aggregates);
         long lastCaptureTime = lastAggregate.captureTime();
         long lastRollupCaptureTime = rollupCaptureTimeFn.apply(lastCaptureTime);
         if (lastCaptureTime != lastRollupCaptureTime) {
@@ -445,7 +446,7 @@ class ReportJsonService {
         if (gaugeValues.isEmpty()) {
             return dataSeries;
         }
-        GaugeValue lastGaugeValue = gaugeValues.get(gaugeValues.size() - 1);
+        GaugeValue lastGaugeValue = Iterables.getLast(gaugeValues);
         long lastCaptureTime = lastGaugeValue.getCaptureTime();
         long lastRollupCaptureTime = rollupCaptureTimeFn.apply(lastCaptureTime);
         if (lastCaptureTime != lastRollupCaptureTime) {

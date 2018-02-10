@@ -278,7 +278,7 @@ class FullQueryTextDao {
         int expirationHours =
                 Math.max(queryRollupExpirationHours, storageConfig.traceExpirationHours());
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
-        RollupConfig lastRollupConfig = rollupConfigs.get(rollupConfigs.size() - 1);
+        RollupConfig lastRollupConfig = Iterables.getLast(rollupConfigs);
         // adding largest rollup interval to account for query being retained longer by rollups
         long ttl = MILLISECONDS.toSeconds(lastRollupConfig.intervalMillis())
                 // adding 1 day to account for rateLimiter

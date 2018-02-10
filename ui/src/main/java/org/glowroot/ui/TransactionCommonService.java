@@ -21,6 +21,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import org.glowroot.common.config.ConfigDefaults;
@@ -156,7 +157,7 @@ class TransactionCommonService {
         }
         long nonRolledUpFrom = revisedQuery.from();
         if (!aggregates.isEmpty()) {
-            long lastRolledUpTime = aggregates.get(aggregates.size() - 1).captureTime();
+            long lastRolledUpTime = Iterables.getLast(aggregates).captureTime();
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<OverviewAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
@@ -214,7 +215,7 @@ class TransactionCommonService {
         }
         long nonRolledUpFrom = revisedQuery.from();
         if (!aggregates.isEmpty()) {
-            long lastRolledUpTime = aggregates.get(aggregates.size() - 1).captureTime();
+            long lastRolledUpTime = Iterables.getLast(aggregates).captureTime();
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<PercentileAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
@@ -272,7 +273,7 @@ class TransactionCommonService {
         }
         long nonRolledUpFrom = revisedQuery.from();
         if (!aggregates.isEmpty()) {
-            long lastRolledUpTime = aggregates.get(aggregates.size() - 1).captureTime();
+            long lastRolledUpTime = Iterables.getLast(aggregates).captureTime();
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<ThroughputAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();

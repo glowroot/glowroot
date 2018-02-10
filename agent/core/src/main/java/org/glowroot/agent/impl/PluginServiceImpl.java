@@ -17,7 +17,6 @@ package org.glowroot.agent.impl;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -32,6 +31,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +116,7 @@ public class PluginServiceImpl implements PluginService {
 
         @VisibleForTesting
         static Map<String, String> propertiesAsText(Object obj) {
-            Map<String, String> properties = new HashMap<String, String>();
+            Map<String, String> properties = Maps.newHashMap();
             Map<String, Method> allGettersForObj = wildcardGetters.getUnchecked(obj.getClass());
             for (Entry<String, Method> entry : allGettersForObj.entrySet()) {
                 try {
@@ -141,7 +141,7 @@ public class PluginServiceImpl implements PluginService {
                 extends CacheLoader<Class<?>, Map<String, Method>> {
             @Override
             public Map<String, Method> load(Class<?> clazz) {
-                Map<String, Method> propertyNames = new HashMap<String, Method>();
+                Map<String, Method> propertyNames = Maps.newHashMap();
                 for (Method method : clazz.getMethods()) {
                     String propertyName = getPropertyName(method);
                     if (propertyName == null) {

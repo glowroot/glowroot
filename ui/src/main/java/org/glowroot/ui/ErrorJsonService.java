@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
@@ -113,8 +114,7 @@ class ErrorJsonService {
         List<ErrorMessageCount> records = Lists.newArrayList();
         boolean moreAvailable = false;
         if (!throughputAggregates.isEmpty()) {
-            long maxCaptureTime =
-                    throughputAggregates.get(throughputAggregates.size() - 1).captureTime();
+            long maxCaptureTime = Iterables.getLast(throughputAggregates).captureTime();
             long resolutionMillis = rollupLevelService.getDataPointIntervalMillis(query.from(),
                     query.to(), DataKind.GENERAL);
             ErrorMessageResult result = traceRepository.readErrorMessages(agentRollupId,

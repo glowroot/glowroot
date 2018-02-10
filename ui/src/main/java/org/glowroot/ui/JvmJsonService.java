@@ -35,6 +35,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -391,7 +392,7 @@ class JvmJsonService {
                 node = node.getOrCreateNode(propertyValues.get(i));
             }
             String name = objectName.toString();
-            String value = propertyValues.get(propertyValues.size() - 1);
+            String value = Iterables.getLast(propertyValues);
             if (request.expanded().contains(name)) {
                 node.addLeafNode(new MBeanTreeLeafNode(value, name, true,
                         getSortedAttributeMap(mbeanInfo.getAttributeList())));
