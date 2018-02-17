@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.glowroot.common.util.OnlyUsedByTests;
 
 // DO NOT USE ANY GUAVA CLASSES HERE because they trigger loading of jul
 // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
-class Directories {
+public class Directories {
 
     // windows filename reserved characters
     // cannot use guava CharMatcher as that triggers loading of jul (org.glowroot.agent.jul.Logger)
@@ -49,7 +49,7 @@ class Directories {
     private final @Nullable String agentId;
     private final LazyDefaultBaseDir lazyDefaultBaseDir;
 
-    Directories(@Nullable File glowrootJarFile) throws IOException {
+    public Directories(@Nullable File glowrootJarFile) throws IOException {
         glowrootDir = getGlowrootDir(glowrootJarFile);
 
         // check for glowroot.properties file in glowrootDir
@@ -118,19 +118,19 @@ class Directories {
     }
 
     @Nullable
-    File getSharedConfDir() {
+    public File getSharedConfDir() {
         return sharedConfDir;
     }
 
-    File getConfDir() {
+    public File getConfDir() {
         return confDir;
     }
 
-    File getLogDir() {
+    public File getLogDir() {
         return logDir;
     }
 
-    File getTmpDir() {
+    public File getTmpDir() {
         return tmpDir;
     }
 
@@ -139,8 +139,35 @@ class Directories {
         return glowrootJarFile;
     }
 
+    @Nullable
+    File getEmbeddedCollectorJarFile() {
+        if (glowrootJarFile == null) {
+            return null;
+        }
+        File libDir = new File(glowrootJarFile.getParentFile(), "lib");
+        if (!libDir.exists() || !libDir.isDirectory()) {
+            return null;
+        }
+        File jarFile = new File(libDir, "glowroot-embedded-collector.jar");
+        return jarFile.exists() ? jarFile : null;
+    }
+
+    @Nullable
+    File getCentralCollectorHttpsJarFile(String normalizedOsName) {
+        if (glowrootJarFile == null) {
+            return null;
+        }
+        File libDir = new File(glowrootJarFile.getParentFile(), "lib");
+        if (!libDir.exists() || !libDir.isDirectory()) {
+            return null;
+        }
+        File jarFile =
+                new File(libDir, "glowroot-central-collector-https-" + normalizedOsName + ".jar");
+        return jarFile.exists() ? jarFile : null;
+    }
+
     // only used by embedded agent
-    File getDataDir() throws IOException {
+    public File getDataDir() throws IOException {
         File dataDir = getAgentDir("data", props, agentId);
         if (dataDir == null) {
             return lazyDefaultBaseDir.getSubDir("data");

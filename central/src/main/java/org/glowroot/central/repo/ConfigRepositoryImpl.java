@@ -35,33 +35,33 @@ import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
 
 import org.glowroot.central.repo.AgentConfigDao.AgentConfigUpdater;
-import org.glowroot.common.config.CentralAdminGeneralConfig;
-import org.glowroot.common.config.CentralStorageConfig;
-import org.glowroot.common.config.CentralWebConfig;
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.config.EmbeddedAdminGeneralConfig;
-import org.glowroot.common.config.EmbeddedStorageConfig;
-import org.glowroot.common.config.EmbeddedWebConfig;
-import org.glowroot.common.config.HealthchecksIoConfig;
-import org.glowroot.common.config.HttpProxyConfig;
-import org.glowroot.common.config.ImmutableCentralAdminGeneralConfig;
-import org.glowroot.common.config.ImmutableCentralStorageConfig;
-import org.glowroot.common.config.ImmutableCentralWebConfig;
-import org.glowroot.common.config.ImmutableHttpProxyConfig;
-import org.glowroot.common.config.ImmutableLdapConfig;
-import org.glowroot.common.config.ImmutablePagerDutyConfig;
-import org.glowroot.common.config.ImmutableSmtpConfig;
-import org.glowroot.common.config.LdapConfig;
-import org.glowroot.common.config.PagerDutyConfig;
-import org.glowroot.common.config.PagerDutyConfig.PagerDutyIntegrationKey;
-import org.glowroot.common.config.RoleConfig;
-import org.glowroot.common.config.SmtpConfig;
-import org.glowroot.common.config.StorageConfig;
-import org.glowroot.common.config.UserConfig;
-import org.glowroot.common.config.WebConfig;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.util.LazySecretKey;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.config.CentralAdminGeneralConfig;
+import org.glowroot.common2.config.CentralStorageConfig;
+import org.glowroot.common2.config.CentralWebConfig;
+import org.glowroot.common2.config.EmbeddedAdminGeneralConfig;
+import org.glowroot.common2.config.EmbeddedStorageConfig;
+import org.glowroot.common2.config.EmbeddedWebConfig;
+import org.glowroot.common2.config.HealthchecksIoConfig;
+import org.glowroot.common2.config.HttpProxyConfig;
+import org.glowroot.common2.config.ImmutableCentralAdminGeneralConfig;
+import org.glowroot.common2.config.ImmutableCentralStorageConfig;
+import org.glowroot.common2.config.ImmutableCentralWebConfig;
+import org.glowroot.common2.config.ImmutableHttpProxyConfig;
+import org.glowroot.common2.config.ImmutableLdapConfig;
+import org.glowroot.common2.config.ImmutablePagerDutyConfig;
+import org.glowroot.common2.config.ImmutableSmtpConfig;
+import org.glowroot.common2.config.LdapConfig;
+import org.glowroot.common2.config.MoreConfigDefaults;
+import org.glowroot.common2.config.PagerDutyConfig;
+import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
+import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SmtpConfig;
+import org.glowroot.common2.config.StorageConfig;
+import org.glowroot.common2.config.UserConfig;
+import org.glowroot.common2.config.WebConfig;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -570,10 +570,10 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 // check for duplicate display
-                String display = ConfigDefaults.getDisplayOrDefault(config);
+                String display = MoreConfigDefaults.getDisplayOrDefault(config);
                 for (SyntheticMonitorConfig loopConfig : agentConfig
                         .getSyntheticMonitorConfigList()) {
-                    if (ConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
+                    if (MoreConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
                         throw new DuplicateSyntheticMonitorDisplayException();
                     }
                 }
@@ -607,7 +607,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         }
                         i.set(config);
                         found = true;
-                    } else if (ConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
+                    } else if (MoreConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
                         throw new DuplicateSyntheticMonitorDisplayException();
                     }
                 }

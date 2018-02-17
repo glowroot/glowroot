@@ -18,7 +18,12 @@
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-it-harness</artifactId>
+      <artifactId>glowroot-agent-it-harness-unshaded</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-embedded-unshaded</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

@@ -36,13 +36,21 @@
     <module>build/error-prone-jdk6</module>
     <module>build/multi-lib-tests</module>
     <module>common</module>
+    <module>common2</module>
     <module>wire-api</module>
     <module>ui</module>
     <module>agent/api</module>
     <module>agent/plugin-api</module>
     <module>agent/bytecode-api</module>
     <module>agent/core</module>
+    <module>agent/embedded</module>
     <module>agent/it-harness</module>
+    <module>agent/shaded/embedded</module>
+    <module>agent/shaded/core</module>
+    <module>agent/shaded/it-harness</module>
+    <module>agent/shaded/central-https-linux</module>
+    <module>agent/shaded/central-https-windows</module>
+    <module>agent/shaded/central-https-osx</module>
     <module>agent/integration-tests</module>
     <module>agent/plugins/cassandra-plugin</module>
     <module>agent/plugins/elasticsearch-plugin</module>
@@ -427,6 +435,7 @@
                 <Implementation-Version>${project.version}</Implementation-Version>
                 <Build-Commit>${glowroot.build.commit}</Build-Commit>
               </manifestEntries>
+              <addMavenDescriptor>false</addMavenDescriptor>
             </archive>
           </configuration>
         </plugin>
@@ -469,6 +478,11 @@
               makes it difficult to diagnose sporadic travis build failures -->
             <trimStackTrace>false</trimStackTrace>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>com.github.wvengen</groupId>
+          <artifactId>proguard-maven-plugin</artifactId>
+          <version>2.0.14</version>
         </plugin>
         <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>

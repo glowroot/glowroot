@@ -18,8 +18,8 @@ package org.glowroot.central.repo;
 import java.util.List;
 
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 

@@ -18,7 +18,7 @@ package org.glowroot.agent.config;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.ConfigDefaults;
+import org.glowroot.common.ConfigDefaults;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 @Value.Immutable

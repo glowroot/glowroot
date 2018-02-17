@@ -30,11 +30,11 @@ import com.datastax.driver.core.Row;
 import com.google.common.primitives.Ints;
 
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.StorageConfig;
-import org.glowroot.common.repo.ImmutableOpenIncident;
-import org.glowroot.common.repo.ImmutableResolvedIncident;
-import org.glowroot.common.repo.IncidentRepository;
+import org.glowroot.common.Constants;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.ImmutableOpenIncident;
+import org.glowroot.common2.repo.ImmutableResolvedIncident;
+import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
@@ -68,7 +68,7 @@ public class IncidentDao implements IncidentRepository {
                 + " resolve_time timestamp, agent_rollup_id varchar, condition blob, severity"
                 + " varchar, notification blob, open_time timestamp, primary key (one,"
                 + " resolve_time, agent_rollup_id, condition)) with clustering order by"
-                + " (resolve_time desc)", StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS, true);
+                + " (resolve_time desc)", Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS, true);
 
         insertOpenIncidentPS = session.prepare("insert into open_incident (one, agent_rollup_id,"
                 + " condition, severity, notification, open_time) values (1, ?, ?, ?, ?, ?)");
@@ -181,7 +181,7 @@ public class IncidentDao implements IncidentRepository {
     public void resolveIncident(OpenIncident openIncident, long resolveTime) throws Exception {
         int adjustedTTL = Common.getAdjustedTTL(
                 Ints.saturatedCast(
-                        HOURS.toSeconds(StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS)),
+                        HOURS.toSeconds(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS)),
                 resolveTime, clock);
 
         BoundStatement boundStatement = insertResolvedIncidentPS.bind();

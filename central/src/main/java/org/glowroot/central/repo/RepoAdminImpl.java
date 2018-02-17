@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.CassandraWriteMetrics;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.CentralStorageConfig;
-import org.glowroot.common.config.StorageConfig;
-import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.Constants;
+import org.glowroot.common2.config.CentralStorageConfig;
+import org.glowroot.common2.repo.RepoAdmin;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -184,7 +184,7 @@ public class RepoAdminImpl implements RepoAdmin {
         } else if (tableName.equals("heartbeat")) {
             return HeartbeatDao.EXPIRATION_HOURS;
         } else if (tableName.equals("resolved_incident")) {
-            return StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS;
+            return Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS;
         } else {
             logger.warn("unexpected table: {}", tableName);
             return -1;

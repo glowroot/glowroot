@@ -40,8 +40,8 @@ import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.repo.ImmutableCassandraWriteTotals;
-import org.glowroot.common.repo.RepoAdmin.CassandraWriteTotals;
+import org.glowroot.common2.repo.ImmutableCassandraWriteTotals;
+import org.glowroot.common2.repo.RepoAdmin.CassandraWriteTotals;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;

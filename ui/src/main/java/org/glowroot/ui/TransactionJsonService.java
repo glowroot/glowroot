@@ -48,13 +48,14 @@ import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
-import org.glowroot.common.repo.AggregateRepository;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.RollupLevelService;
-import org.glowroot.common.repo.util.RollupLevelService.DataKind;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.repo.AggregateRepository;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.Utils;
+import org.glowroot.common2.repo.util.RollupLevelService;
+import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 import org.glowroot.ui.AggregateMerging.MergedAggregate;
 import org.glowroot.ui.AggregateMerging.PercentileValue;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -555,7 +556,7 @@ class TransactionJsonService {
             }
             long from = throughputAggregate.captureTime() - dataPointIntervalMillis;
             // this math is to deal with live aggregate
-            from = Utils.getRollupCaptureTime(from, dataPointIntervalMillis);
+            from = CaptureTimes.getRollup(from, dataPointIntervalMillis);
             double transactionsPerMin = 60000.0 * throughputAggregate.transactionCount()
                     / (throughputAggregate.captureTime() - from);
             dataSeries.add(throughputAggregate.captureTime(), transactionsPerMin);

@@ -18,7 +18,7 @@ package org.glowroot.central.repo;
 import java.util.List;
 
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 public interface GaugeValueDao extends GaugeValueRepository {

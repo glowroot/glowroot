@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.central.v09support.AggregateDaoWithV09Support;
-import org.glowroot.common.config.ConfigDefaults;
+import org.glowroot.common.ConfigDefaults;
 import org.glowroot.common.live.ImmutableOverallQuery;
 import org.glowroot.common.live.ImmutableTransactionQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;

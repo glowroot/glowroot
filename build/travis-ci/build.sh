@@ -15,9 +15,9 @@ then
   # MaxPermSize bump is needed for running grails plugin tests
   surefire_jvm_args="$surefire_jvm_args -XX:MaxPermSize=128m"
 fi
-if [[ "$SKIP_SHADING" == "true" ]]
+if [[ "$TEST_SHADED" == "true" ]]
 then
-  skip_shading_opt=-Dglowroot.shade.skip
+  test_shaded_opt=-Dglowroot.test.shaded
 fi
 
 test1_excluded_plugin_modules="!:glowroot-agent-cassandra-plugin"
@@ -53,24 +53,24 @@ case "$1" in
                fi
                mvn clean install -pl $exclude_modules \
                                  -DargLine="$surefire_jvm_args" \
-                                 $skip_shading_opt \
+                                 $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
                ;;
 
       "test2") mvn clean install -DargLine="$surefire_jvm_args" \
                                  -DskipTests \
-                                 $skip_shading_opt \
+                                 $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
 
                activate_profiles="netty-4.x"
-               if [[ "$SKIP_SHADING" != "true" ]]
+               if [[ "$TEST_SHADED" == "true" ]]
                then
                  # async-http-client, elasticsearch and play tests all require shading
                  if [[ "$java_version" > "1.8" ]]
                  then
-                   # latest versions of async-http-client, elasticsearch and play all require Java 8
+                   # latest versions of async-http-client, elasticsearch and play all require Java 8+
                    activate_profiles="$activate_profiles,async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x"
                  else
                    activate_profiles="$activate_profiles,async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
@@ -81,26 +81,26 @@ case "$1" in
                                  -P $activate_profiles \
                                  -Denforcer.skip \
                                  -DargLine="$surefire_jvm_args" \
-                                 $skip_shading_opt \
+                                 $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
-                                $skip_shading_opt \
+                                $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
                                 --no-snapshot-updates \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
-                                $skip_shading_opt \
+                                $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
                                 --no-snapshot-updates \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
-                                $skip_shading_opt \
+                                $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
                                 --no-snapshot-updates \
@@ -111,7 +111,7 @@ case "$1" in
                  # depend on weaving bootstrap classes (e.g. java.sql.Statement)
                  mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                   -DargLine="$surefire_jvm_args" \
-                                  $skip_shading_opt \
+                                  $test_shaded_opt \
                                   -Dglowroot.it.harness=javaagent \
                                   -Dglowroot.test.jdbcConnectionType=GLASSFISH_JDBC_POOL_WRAPPED \
                                   --no-snapshot-updates \
@@ -121,12 +121,12 @@ case "$1" in
 
       "test3") if [[ "$java_version" < "1.8" ]]
                then
-                 echo test3 target requires Java 8
+                 echo test3 target requires Java 8+
                  exit 1
                fi
                mvn clean install -DargLine="$surefire_jvm_args" \
                                  -DskipTests \
-                                 $skip_shading_opt \
+                                 $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
 
@@ -140,15 +140,14 @@ case "$1" in
                                 -B
                ;;
 
-      "test4") if [[ "$java_version" < "1.8" || "$SKIP_SHADING" != "true" ]]
+      "test4") if [[ "$java_version" < "1.8" ]]
                then
-                 # webdriver tests against central need to run against unshaded it-harness to avoid shading complications
-                 echo test4 target requires Java 8 and SKIP_SHADING=true
+                 echo test4 target requires Java 8+
                  exit 1
                fi
                mvn clean install -DargLine="$surefire_jvm_args" \
                                  -DskipTests \
-                                 $skip_shading_opt \
+                                 $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
 
@@ -199,7 +198,6 @@ case "$1" in
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                 -Dglowroot.shade.skip \
                                  -B
                  # intentionally calling failsafe plugin directly in order to skip surefire (unit test) execution
                  #
@@ -216,21 +214,18 @@ case "$1" in
                                  -Djacoco.destFile=$PWD/jacoco-combined-it.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -Djacoco.append=true \
-                                 -Dglowroot.shade.skip \
                                  -Dglowroot.it.harness=javaagent"
                  # run integration tests
                  mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
-                 # install unshaded to run webdriver tests against the central collector
-                 mvn clean install -Dglowroot.shade.skip -DskipTests -B
+                 # install to run additional tests
+                 mvn clean install -DskipTests -B
                  # run webdriver tests against the central collector
                  rm -rf webdriver-tests/cassandra
                  mvn $common_mvn_args -pl :glowroot-webdriver-tests \
                                       -Dglowroot.internal.webdriver.useCentral=true \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
-                 # install shaded in order to run certain plugin tests
-                 mvn clean install -DskipTests -B
                  # enforcer.skip is needed for remaining tests
                  common_mvn_args="$common_mvn_args \
                                   -Denforcer.skip"
@@ -238,66 +233,78 @@ case "$1" in
                  mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
                                       -P elasticsearch-5.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # elasticsearch 2.x
                  mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
                                       -P elasticsearch-2.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # async-http-client 2.x (AsyncHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-2.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # async-http-client 1.x (AsyncHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-1.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # okhttp prior to 2.2.0 (OkHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -Dokhttpclient.version=2.1.0 \
                                       -Dit.test=OkHttpClientPluginIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # LogbackIT (only runs against shaded agent)
                  mvn $common_mvn_args -pl agent/plugins/logger-plugin \
                                       -Dit.test=LogbackIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # LogbackIT prior to 0.9.16
                  mvn $common_mvn_args -pl agent/plugins/logger-plugin \
                                       -P logback-old \
                                       -Dit.test=LogbackIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # netty 4.x
                  mvn $common_mvn_args -pl agent/plugins/netty-plugin \
                                       -P netty-4.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # netty 3.x
                  mvn $common_mvn_args -pl agent/plugins/netty-plugin \
                                       -P netty-3.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # play 2.4.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-2.4.x,play-2.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # play 2.2.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-2.2.x,play-2.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # TODO Play 2.0.x and 2.1.x require Java 7
                  # play 1.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-1.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
                                       -B
                  # the sonar.login system property is set in the pom.xml using the
                  # environment variable SONAR_LOGIN (instead of setting the system
@@ -308,7 +315,6 @@ case "$1" in
                                    -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
                                    -Dsonar.jacoco.itReportPath=$PWD/jacoco-combined-it.exec \
                                    -DargLine="$surefire_jvm_args" \
-                                   -Dglowroot.shade.skip \
                                    -B
                else
                  echo SONAR_LOGIN token missing

@@ -39,20 +39,20 @@ import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummar
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErrorSummary;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ImmutableErrorMessageFilter;
-import org.glowroot.common.repo.ImmutableTraceQuery;
-import org.glowroot.common.repo.TraceRepository;
-import org.glowroot.common.repo.TraceRepository.ErrorMessageCount;
-import org.glowroot.common.repo.TraceRepository.ErrorMessageFilter;
-import org.glowroot.common.repo.TraceRepository.ErrorMessagePoint;
-import org.glowroot.common.repo.TraceRepository.ErrorMessageResult;
-import org.glowroot.common.repo.TraceRepository.TraceQuery;
-import org.glowroot.common.repo.util.RollupLevelService;
-import org.glowroot.common.repo.util.RollupLevelService.DataKind;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ImmutableErrorMessageFilter;
+import org.glowroot.common2.repo.ImmutableTraceQuery;
+import org.glowroot.common2.repo.TraceRepository;
+import org.glowroot.common2.repo.TraceRepository.ErrorMessageCount;
+import org.glowroot.common2.repo.TraceRepository.ErrorMessageFilter;
+import org.glowroot.common2.repo.TraceRepository.ErrorMessagePoint;
+import org.glowroot.common2.repo.TraceRepository.ErrorMessageResult;
+import org.glowroot.common2.repo.TraceRepository.TraceQuery;
+import org.glowroot.common2.repo.util.RollupLevelService;
+import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 
 @JsonService
 class ErrorJsonService {

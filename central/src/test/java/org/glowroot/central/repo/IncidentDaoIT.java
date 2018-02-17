@@ -24,9 +24,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.IncidentRepository.OpenIncident;
-import org.glowroot.common.repo.IncidentRepository.ResolvedIncident;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
+import org.glowroot.common2.repo.IncidentRepository.ResolvedIncident;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-// NOTE this is mostly a copy of IncidentDaoTest in glowroot-agent-core
+// NOTE this is mostly a copy of IncidentDaoTest in glowroot-agent-embedded
 public class IncidentDaoIT {
 
     private static final String AGENT_ID = "xyz";

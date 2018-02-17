@@ -48,11 +48,11 @@ import org.glowroot.central.repo.Common.NeedsRollupFromChildren;
 import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.ConfigRepository.RollupConfig;
-import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.Gauges;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common2.repo.util.Gauges;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -295,7 +295,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             String gaugeName = gaugeValue.getGaugeName();
             long captureTime = gaugeValue.getCaptureTime();
             long intervalMillis = rollupConfigs.get(0).intervalMillis();
-            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
+            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
             rollupCaptureTimes.put(rollupCaptureTime, gaugeName);
         }
         return rollupCaptureTimes;

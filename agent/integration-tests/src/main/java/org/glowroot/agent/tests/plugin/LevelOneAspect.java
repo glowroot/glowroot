@@ -15,10 +15,8 @@
  */
 package org.glowroot.agent.tests.plugin;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Message;
@@ -70,10 +68,10 @@ public class LevelOneAspect {
                 @Override
                 public Message get() {
                     if (arg1.equals("useArg2AsKeyAndValue")) {
-                        Map<Object, Object> map = Maps.newLinkedHashMap();
+                        Map<Object, Object> map = new LinkedHashMap<Object, Object>();
                         map.put("arg1", arg1);
                         map.put(arg2, arg2);
-                        Map<Object, Object> nestedMap = Maps.newLinkedHashMap();
+                        Map<Object, Object> nestedMap = new LinkedHashMap<Object, Object>();
                         nestedMap.put("nestedkey11", arg1);
                         nestedMap.put(arg2, arg2);
                         map.put("nested1", nestedMap);
@@ -83,14 +81,21 @@ public class LevelOneAspect {
                         return Message.create(headlineFinal, detail);
                     }
                     Optional<Object> optionalArg2 = Optional.fromNullable(arg2);
-                    Map<String, ?> detail =
-                            ImmutableMap.of("arg1", arg1, "arg2", optionalArg2, "nested1",
-                                    ImmutableMap.of("nestedkey11", arg1, "nestedkey12",
-                                            optionalArg2, "subnested1",
-                                            ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2",
-                                                    optionalArg2)),
-                                    "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22",
-                                            optionalArg2));
+                    Map<String, Object> detail = new LinkedHashMap<String, Object>();
+                    detail.put("arg1", arg1);
+                    detail.put("arg2", optionalArg2);
+                    Map<Object, Object> nestedMap = new LinkedHashMap<Object, Object>();
+                    nestedMap.put("nestedkey11", arg1);
+                    nestedMap.put("nestedkey12", optionalArg2);
+                    detail.put("nested1", nestedMap);
+                    Map<Object, Object> subNestedMap = new LinkedHashMap<Object, Object>();
+                    subNestedMap.put("subnestedkey1", arg1);
+                    subNestedMap.put("subnestedkey2", optionalArg2);
+                    nestedMap.put("subnested1", subNestedMap);
+                    Map<Object, Object> nestedMap2 = new LinkedHashMap<Object, Object>();
+                    nestedMap2.put("nestedkey21", arg1);
+                    nestedMap2.put("nestedkey22", optionalArg2);
+                    detail.put("nested2", nestedMap2);
                     return Message.create(headlineFinal, detail);
                 }
             };

@@ -49,15 +49,15 @@ import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.repo.AgentRollupRepository;
-import org.glowroot.common.repo.AggregateRepository;
-import org.glowroot.common.repo.GaugeValueRepository;
-import org.glowroot.common.repo.GaugeValueRepository.Gauge;
-import org.glowroot.common.repo.TransactionTypeRepository;
-import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.RollupLevelService;
-import org.glowroot.common.repo.util.RollupLevelService.DataKind;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.repo.AgentRollupRepository;
+import org.glowroot.common2.repo.AggregateRepository;
+import org.glowroot.common2.repo.GaugeValueRepository;
+import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common2.repo.TransactionTypeRepository;
+import org.glowroot.common2.repo.util.RollupLevelService;
+import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.LayoutService.FilteredAgentRollup;
@@ -604,7 +604,7 @@ class ReportJsonService {
             Calendar calendar;
             switch (rollup) {
                 case HOURLY:
-                    return Utils.getRollupCaptureTime(captureTime, HOURS.toMillis(1), timeZone);
+                    return CaptureTimes.getRollup(captureTime, HOURS.toMillis(1), timeZone);
                 case DAILY:
                     return getDailyRollupCaptureTime(captureTime).getTimeInMillis();
                 case WEEKLY:

@@ -19,7 +19,7 @@
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-core</artifactId>
+      <artifactId>glowroot-agent-core-unshaded</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

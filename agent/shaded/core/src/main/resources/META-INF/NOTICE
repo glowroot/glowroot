@@ -1,0 +1,71 @@
+Glowroot
+Copyright 2011-2018 Glowroot contributors
+
+Glowroot includes the following software:
+
+ASM
+Copyright 2000-2011 INRIA, France Telecom
+http://asm.ow2.org
+BSD 3-Clause License
+
+Error Prone (annotations)
+Copyright 2011-2017 Google Inc.
+https://github.com/google/error-prone
+Apache License, Version 2.0
+
+gRPC
+Copyright 2014 Google Inc.
+https://github.com/grpc/grpc-java
+BSD 3-Clause License
+
+Gson
+Copyright 2008 Google Inc.
+https://github.com/google/gson
+Apache License, Version 2.0
+
+Guava
+Copyright The Guava Authors
+https://github.com/google/guava
+Apache License, Version 2.0
+
+HdrHistogram
+Copyright 2012, 2013, 2014 Gil Tene
+Copyright 2014 Michael Barker
+Copyright 2014 Matt Warren
+https://github.com/HdrHistogram/HdrHistogram
+BSD 2-Clause License
+
+Immutables
+Copyright 2013-2014 Immutables.org authors
+https://github.com/immutables/immutables
+Apache License, Version 2.0
+
+Jackson
+Copyright 2007- Tatu Saloranta, tatu.saloranta@iki.fi
+https://github.com/FasterXML/jackson
+Apache License, Version 2.0
+
+Logback
+Copyright 1999-2015 QOS.ch
+https://github.com/qos-ch/logback
+Eclipse Public License, Version 1.0
+
+Netty
+Copyright 2014 The Netty Project
+https://github.com/netty/netty
+Apache License, Version 2.0
+
+OpenCensus
+Copyright 2017 OpenCensus Authors
+https://github.com/census-instrumentation/opencensus-java
+Apache License, Version 2.0
+
+Protocol Buffers
+Copyright 2014 Google Inc.
+https://github.com/google/protobuf
+BSD 3-Clause License
+
+SLF4J
+Copyright 2004-2014 QOS.ch
+https://github.com/qos-ch/slf4j
+MIT License

@@ -24,7 +24,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import org.glowroot.common.config.ConfigDefaults;
+import org.glowroot.common.ConfigDefaults;
 import org.glowroot.common.live.ImmutableOverallQuery;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
 import org.glowroot.common.live.ImmutableTransactionQuery;
@@ -47,12 +47,12 @@ import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
-import org.glowroot.common.repo.AggregateRepository;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
-import org.glowroot.common.repo.MutableAggregate;
-import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.AggregateRepository;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
+import org.glowroot.common2.repo.MutableAggregate;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 
 class TransactionCommonService {
@@ -599,7 +599,7 @@ class TransactionCommonService {
 
         @Override
         public Long apply(Long captureTime) {
-            return Utils.getRollupCaptureTime(captureTime, fixedIntervalMillis);
+            return CaptureTimes.getRollup(captureTime, fixedIntervalMillis);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AgentConfigDao;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
-import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 

@@ -72,17 +72,17 @@ import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.util.MoreFutures;
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.config.HttpProxyConfig;
-import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
-import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
-import org.glowroot.common.repo.IncidentRepository.OpenIncident;
-import org.glowroot.common.repo.util.AlertingService;
-import org.glowroot.common.repo.util.Compilations;
-import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Version;
+import org.glowroot.common2.config.HttpProxyConfig;
+import org.glowroot.common2.config.MoreConfigDefaults;
+import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
+import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
+import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
+import org.glowroot.common2.repo.util.AlertingService;
+import org.glowroot.common2.repo.util.Compilations;
+import org.glowroot.common2.repo.util.Encryption;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
@@ -493,9 +493,9 @@ class SyntheticMonitorService implements Runnable {
             SyntheticMonitorCondition condition, long endTime, boolean ok,
             @Nullable String errorMessage) throws Exception {
         // subject is the same between initial and ok messages so they will be threaded by gmail
-        String subject = ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig);
+        String subject = MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig);
         StringBuilder sb = new StringBuilder();
-        sb.append(ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig));
+        sb.append(MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig));
         if (errorMessage == null) {
             sb.append(" time");
             sb.append(AlertingService.getPreUpperBoundText(ok));

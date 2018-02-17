@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,6 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.weaving.Advice.AdviceParameter;
 import org.glowroot.agent.weaving.Advice.ParameterKind;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
-import org.glowroot.common.util.Patterns;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -296,14 +295,21 @@ class AdviceBuilder {
         if (maybePattern.contains("|")) {
             String[] parts = maybePattern.split("\\|");
             for (int i = 0; i < parts.length; i++) {
-                parts[i] = Patterns.buildSimplePattern(parts[i]);
+                parts[i] = buildSimplePattern(parts[i]);
             }
             return Pattern.compile(Joiner.on('|').join(parts));
         }
         if (maybePattern.contains("*")) {
-            return Pattern.compile(Patterns.buildSimplePattern(maybePattern));
+            return Pattern.compile(buildSimplePattern(maybePattern));
         }
         return null;
+    }
+
+    private static String buildSimplePattern(String part) {
+        // convert * into .* and quote the rest of the text using \Q...\E
+        String pattern = "\\Q" + part.replace("*", "\\E.*\\Q") + "\\E";
+        // strip off unnecessary \\Q\\E in case * appeared at beginning or end of part
+        return pattern.replace("\\Q\\E", "");
     }
 
     private static List<AdviceParameter> getAdviceParameters(Annotation[][] parameterAnnotations,

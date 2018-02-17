@@ -26,15 +26,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
-import org.glowroot.common.repo.GaugeValueRepository;
-import org.glowroot.common.repo.GaugeValueRepository.Gauge;
-import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.config.MoreConfigDefaults;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
+import org.glowroot.common2.repo.GaugeValueRepository;
+import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
@@ -277,7 +277,8 @@ class ConfigJsonService {
         private static GeneralConfigDto create(GeneralConfig config, String agentRollupId) {
             return ImmutableGeneralConfigDto.builder()
                     .display(config.getDisplay())
-                    .defaultDisplay(ConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId))
+                    .defaultDisplay(
+                            MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId))
                     .version(Versions.getVersion(config))
                     .build();
         }

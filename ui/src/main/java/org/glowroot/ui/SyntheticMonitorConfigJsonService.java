@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,15 +34,15 @@ import com.google.common.io.CharStreams;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.util.Compilations;
-import org.glowroot.common.repo.util.Compilations.CompilationException;
-import org.glowroot.common.repo.util.Encryption;
-import org.glowroot.common.repo.util.LazySecretKey;
-import org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.config.MoreConfigDefaults;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.util.Compilations;
+import org.glowroot.common2.repo.util.Compilations.CompilationException;
+import org.glowroot.common2.repo.util.Encryption;
+import org.glowroot.common2.repo.util.LazySecretKey;
+import org.glowroot.common2.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig.SyntheticMonitorKind;
 
@@ -60,8 +60,8 @@ class SyntheticMonitorConfigJsonService {
             new Ordering<SyntheticMonitorConfig>() {
                 @Override
                 public int compare(SyntheticMonitorConfig left, SyntheticMonitorConfig right) {
-                    return ConfigDefaults.getDisplayOrDefault(left)
-                            .compareToIgnoreCase(ConfigDefaults.getDisplayOrDefault(right));
+                    return MoreConfigDefaults.getDisplayOrDefault(left)
+                            .compareToIgnoreCase(MoreConfigDefaults.getDisplayOrDefault(right));
                 }
             };
 
@@ -205,7 +205,7 @@ class SyntheticMonitorConfigJsonService {
 
         private static SyntheticMonitorConfigListDto create(SyntheticMonitorConfig config) {
             return ImmutableSyntheticMonitorConfigListDto.builder()
-                    .display(ConfigDefaults.getDisplayOrDefault(config))
+                    .display(MoreConfigDefaults.getDisplayOrDefault(config))
                     .id(config.getId())
                     .build();
         }

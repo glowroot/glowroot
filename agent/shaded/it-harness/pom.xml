@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
+    <version>0.10.3-SNAPSHOT</version>
+    <relativePath>../../..</relativePath>
+  </parent>
+
+  <artifactId>glowroot-agent-it-harness</artifactId>
+
+  <name>Glowroot Agent Integration Test Harness (Shaded)</name>
+  <description>Glowroot Agent Integration Test Harness (Shaded)</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-it-harness-unshaded</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- excluding unshaded core because including shaded core below -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-core-unshaded</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-core</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- exclusion is needed due to https://issues.apache.org/jira/browse/MSHADE-206 -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-core-unshaded</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- exclusion is needed due to https://issues.apache.org/jira/browse/MSHADE-206 -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-embedded</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- use LICENSE and NOTICE under src/main/resources -->
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <!-- not using maven-resources-plugin:copy-resources because it generates m2e warning about
+          accessing "directory outside of project base directory" -->
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <configuration>
+              <target>
+                <copy todir="${project.build.outputDirectory}/META-INF">
+                  <fileset dir="../..">
+                    <include name="LICENSE" />
+                    <include name="NOTICE" />
+                  </fileset>
+                </copy>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
+          <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
+          <artifactSet>
+            <excludes>
+              <!-- leveraging these same artifacts already shaded inside of glowroot-agent-core so
+                that they can share same logback and same logback configuration file -->
+              <exclude>org.slf4j:slf4j-api</exclude>
+              <exclude>ch.qos.logback:logback-classic</exclude>
+            </excludes>
+          </artifactSet>
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/maven/**</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.google.guava:guava</artifact>
+              <excludes>
+                <exclude>META-INF/beans.xml</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.google.protobuf:protobuf-java</artifact>
+              <excludes>
+                <exclude>google/protobuf/*.proto</exclude>
+                <exclude>google/protobuf/compiler/*.proto</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.grpc:grpc-netty</artifact>
+              <excludes>
+                <exclude>META-INF/services/io.grpc.ManagedChannelProvider</exclude>
+                <exclude>META-INF/services/io.grpc.ServerProvider</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.netty:netty-*</artifact>
+              <excludes>
+                <exclude>META-INF/io.netty.versions.properties</exclude>
+              </excludes>
+            </filter>
+          </filters>
+          <relocations>
+            <relocation>
+              <!-- can't share same libary already shaded in glowroot-agent-core because of
+                proguard some classes/methods may not be available -->
+              <pattern>com.google</pattern>
+              <shadedPattern>org.glowroot.agent.it.harness.shaded.com.google</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- can't share same libary already shaded in glowroot-agent-core because of
+                proguard some classes/methods may not be available -->
+              <pattern>io.grpc</pattern>
+              <shadedPattern>org.glowroot.agent.it.harness.shaded.io.grpc</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- can't share same libary already shaded in glowroot-agent-core because of
+                proguard some classes/methods may not be available -->
+              <pattern>io.opencensus</pattern>
+              <shadedPattern>org.glowroot.agent.it.harness.shaded.io.opencensus</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- can't share same libary already shaded in glowroot-agent-core because of
+                proguard some classes/methods may not be available -->
+              <pattern>io.netty</pattern>
+              <shadedPattern>org.glowroot.agent.it.harness.shaded.io.netty</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- leveraging slf4j shaded in glowroot-agent-core so that they can share same
+                logback and same logback configuration file (see next relocation below) -->
+              <pattern>org.slf4j</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.slf4j</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- this shades guava's internal use of java util logging so that it will share same
+               glowroot.logback.xml configuration file (don't want to use jul-to-slf4j because that
+               will affect the whole JVM under test) -->
+              <pattern>java.util.logging</pattern>
+              <shadedPattern>org.glowroot.agent.jul</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- leveraging logback shaded in glowroot-agent-core so that they can share same
+                glowroot.logback.xml configuration file -->
+              <pattern>ch.qos.logback</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.ch.qos.logback</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>javax.annotation</pattern>
+              <shadedPattern>org.glowroot.agent.it.harness.shaded.javax.annotation</shadedPattern>
+            </relocation>
+            <!-- not relocating glowroot-wire-api since it-harness api exposes glowroot-wire-api
+              unshaded for use by plugin integration tests -->
+          </relocations>
+          <transformers>
+            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+          </transformers>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifestEntries>
+                <Build-Time>${maven.build.timestamp}</Build-Time>
+                <Premain-Class>org.glowroot.agent.AgentPremain</Premain-Class>
+                <Main-Class>org.glowroot.agent.ToolMain</Main-Class>
+                <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                <Can-Retransform-Classes>true</Can-Retransform-Classes>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <excludePackageNames>org.glowroot.agent.it.harness.impl</excludePackageNames>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

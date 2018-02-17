@@ -29,18 +29,18 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.model.ErrorIntervalCollector;
-import org.glowroot.common.model.ImmutableSyntheticResult;
-import org.glowroot.common.model.SyntheticResult;
-import org.glowroot.common.model.SyntheticResult.ErrorInterval;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.SyntheticResultRepository;
-import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.RollupLevelService;
-import org.glowroot.common.repo.util.RollupLevelService.DataKind;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.config.MoreConfigDefaults;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ErrorIntervalCollector;
+import org.glowroot.common2.repo.ImmutableSyntheticResult;
+import org.glowroot.common2.repo.SyntheticResult;
+import org.glowroot.common2.repo.SyntheticResult.ErrorInterval;
+import org.glowroot.common2.repo.SyntheticResultRepository;
+import org.glowroot.common2.repo.util.RollupLevelService;
+import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 import org.glowroot.ui.ChartMarking.ChartMarkingInterval;
 import org.glowroot.ui.MultiErrorIntervalCollector.MultiErrorInterval;
 import org.glowroot.ui.MultiErrorIntervalMerger.GroupedMultiErrorInterval;
@@ -97,7 +97,7 @@ class SyntheticResultJsonService {
             }
             List<SyntheticResult> syntheticResults = entry.getValue();
             dataSeriesList.add(convertToDataSeriesWithGaps(
-                    ConfigDefaults.getDisplayOrDefault(config), syntheticResults, gapMillis));
+                    MoreConfigDefaults.getDisplayOrDefault(config), syntheticResults, gapMillis));
             Map<Long, Long> executionCounts = Maps.newHashMap();
             executionCountsList.add(executionCounts);
             for (SyntheticResult syntheticResult : syntheticResults) {
@@ -142,7 +142,7 @@ class SyntheticResultJsonService {
                 configRepository.getSyntheticMonitorConfigs(agentRollupId);
         for (SyntheticMonitorConfig config : configs) {
             syntheticMonitors.add(ImmutableSyntheticMonitor.of(config.getId(),
-                    ConfigDefaults.getDisplayOrDefault(config)));
+                    MoreConfigDefaults.getDisplayOrDefault(config)));
         }
         ImmutableList<SyntheticMonitor> sortedSyntheticMonitors =
                 new SyntheticMonitorOrdering().immutableSortedCopy(syntheticMonitors);
@@ -195,11 +195,11 @@ class SyntheticResultJsonService {
             // nothing to sync
             return;
         }
-        long maxRollupCaptureTime = Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
+        long maxRollupCaptureTime = CaptureTimes.getRollup(maxCaptureTime, fixedIntervalMillis);
         long maxDiffToSync = Math.min(fixedIntervalMillis / 5, 60000);
         for (Map.Entry<K, Long> entry : manualRollupCaptureTimes.entrySet()) {
             Long captureTime = entry.getValue();
-            if (Utils.getRollupCaptureTime(captureTime,
+            if (CaptureTimes.getRollup(captureTime,
                     fixedIntervalMillis) != maxRollupCaptureTime) {
                 continue;
             }
@@ -353,7 +353,7 @@ class SyntheticResultJsonService {
 
         @Override
         public Long apply(Long captureTime) {
-            return Utils.getRollupCaptureTime(captureTime, fixedIntervalMillis);
+            return CaptureTimes.getRollup(captureTime, fixedIntervalMillis);
         }
     }
 

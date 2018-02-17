@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -37,20 +36,17 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.PropertyValue.PropertyType;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.JavaVersion;
-import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 public class ConfigService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigService.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
     private final ConfigFile configFile;
-    private final AdminFile adminFile;
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
 
@@ -85,72 +81,68 @@ public class ConfigService {
 
     private ConfigService(File confDir, List<PluginDescriptor> pluginDescriptors) {
         configFile = new ConfigFile(new File(confDir, "config.json"));
-        adminFile = new AdminFile(new File(confDir, "admin.json"));
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         TransactionConfig transactionConfig =
-                configFile.getConfigNode("transactions", ImmutableTransactionConfig.class, mapper);
+                configFile.getConfig("transactions", ImmutableTransactionConfig.class);
         if (transactionConfig == null) {
             this.transactionConfig = ImmutableTransactionConfig.builder().build();
         } else {
             this.transactionConfig = transactionConfig;
         }
-        JvmConfig jvmConfig = configFile.getConfigNode("jvm", ImmutableJvmConfig.class, mapper);
+        JvmConfig jvmConfig = configFile.getConfig("jvm", ImmutableJvmConfig.class);
         if (jvmConfig == null) {
             this.jvmConfig = ImmutableJvmConfig.builder().build();
         } else {
             this.jvmConfig = jvmConfig;
         }
-        UiConfig uiConfig = configFile.getConfigNode("ui", ImmutableUiConfig.class, mapper);
+        UiConfig uiConfig = configFile.getConfig("ui", ImmutableUiConfig.class);
         if (uiConfig == null) {
             this.uiConfig = ImmutableUiConfig.builder().build();
         } else {
             this.uiConfig = uiConfig;
         }
         UserRecordingConfig userRecordingConfig =
-                configFile.getConfigNode("userRecording", ImmutableUserRecordingConfig.class,
-                        mapper);
+                configFile.getConfig("userRecording", ImmutableUserRecordingConfig.class);
         if (userRecordingConfig == null) {
             this.userRecordingConfig = ImmutableUserRecordingConfig.builder().build();
         } else {
             this.userRecordingConfig = userRecordingConfig;
         }
         AdvancedConfig advancedConfig =
-                configFile.getConfigNode("advanced", ImmutableAdvancedConfig.class, mapper);
+                configFile.getConfig("advanced", ImmutableAdvancedConfig.class);
         if (advancedConfig == null) {
             this.advancedConfig = ImmutableAdvancedConfig.builder().build();
         } else {
             this.advancedConfig = advancedConfig;
         }
-        List<ImmutableGaugeConfig> gaugeConfigs = configFile.getConfigNode("gauges",
-                new TypeReference<List<ImmutableGaugeConfig>>() {}, mapper);
+        List<ImmutableGaugeConfig> gaugeConfigs =
+                configFile.getConfig("gauges", new TypeReference<List<ImmutableGaugeConfig>>() {});
         if (gaugeConfigs == null) {
             this.gaugeConfigs = getDefaultGaugeConfigs();
         } else {
             this.gaugeConfigs = ImmutableList.<GaugeConfig>copyOf(gaugeConfigs);
         }
-        List<ImmutableSyntheticMonitorConfig> syntheticMonitorConfigs =
-                configFile.getConfigNode("syntheticMonitors",
-                        new TypeReference<List<ImmutableSyntheticMonitorConfig>>() {}, mapper);
+        List<ImmutableSyntheticMonitorConfig> syntheticMonitorConfigs = configFile.getConfig(
+                "syntheticMonitors", new TypeReference<List<ImmutableSyntheticMonitorConfig>>() {});
         if (syntheticMonitorConfigs == null) {
             this.syntheticMonitorConfigs = ImmutableList.of();
         } else {
             this.syntheticMonitorConfigs =
                     ImmutableList.<SyntheticMonitorConfig>copyOf(syntheticMonitorConfigs);
         }
-        List<ImmutableAlertConfig> alertConfigs = configFile.getConfigNode("alerts",
-                new TypeReference<List<ImmutableAlertConfig>>() {}, mapper);
+        List<ImmutableAlertConfig> alertConfigs =
+                configFile.getConfig("alerts", new TypeReference<List<ImmutableAlertConfig>>() {});
         if (alertConfigs == null) {
             this.alertConfigs = ImmutableList.of();
         } else {
             this.alertConfigs = ImmutableList.<AlertConfig>copyOf(alertConfigs);
         }
-        List<ImmutablePluginConfigTemp> pluginConfigs = configFile.getConfigNode("plugins",
-                new TypeReference<List<ImmutablePluginConfigTemp>>() {}, mapper);
+        List<ImmutablePluginConfigTemp> pluginConfigs = configFile.getConfig("plugins",
+                new TypeReference<List<ImmutablePluginConfigTemp>>() {});
         this.pluginConfigs = fixPluginConfigs(pluginConfigs, pluginDescriptors);
 
-        List<ImmutableInstrumentationConfig> instrumentationConfigs =
-                configFile.getConfigNode("instrumentation",
-                        new TypeReference<List<ImmutableInstrumentationConfig>>() {}, mapper);
+        List<ImmutableInstrumentationConfig> instrumentationConfigs = configFile.getConfig(
+                "instrumentation", new TypeReference<List<ImmutableInstrumentationConfig>>() {});
         if (instrumentationConfigs == null) {
             this.instrumentationConfigs = ImmutableList.of();
         } else {
@@ -246,86 +238,68 @@ public class ConfigService {
         pluginConfigListeners.add(listener);
     }
 
-    public void updateTransactionConfig(TransactionConfig updatedConfig) throws IOException {
-        configFile.writeConfig("transactions", updatedConfig, mapper);
-        transactionConfig = updatedConfig;
+    public void updateTransactionConfig(TransactionConfig config) throws IOException {
+        configFile.writeConfig("transactions", config);
+        transactionConfig = config;
         notifyConfigListeners();
     }
 
-    public void updateGaugeConfigs(List<GaugeConfig> updatedConfigs) throws IOException {
-        configFile.writeConfig("gauges", updatedConfigs, mapper);
-        gaugeConfigs = ImmutableList.copyOf(updatedConfigs);
+    public void updateGaugeConfigs(List<GaugeConfig> configs) throws IOException {
+        configFile.writeConfig("gauges", configs);
+        gaugeConfigs = ImmutableList.copyOf(configs);
         notifyConfigListeners();
     }
 
-    public void updateJvmConfig(JvmConfig updatedConfig) throws IOException {
-        configFile.writeConfig("jvm", updatedConfig, mapper);
-        jvmConfig = updatedConfig;
+    public void updateJvmConfig(JvmConfig config) throws IOException {
+        configFile.writeConfig("jvm", config);
+        jvmConfig = config;
         notifyConfigListeners();
     }
 
-    public void updateSyntheticMonitorConfigs(List<SyntheticMonitorConfig> updatedConfigs)
+    public void updateSyntheticMonitorConfigs(List<SyntheticMonitorConfig> configs)
             throws IOException {
-        configFile.writeConfig("syntheticMonitors", updatedConfigs, mapper);
-        syntheticMonitorConfigs = ImmutableList.copyOf(updatedConfigs);
+        configFile.writeConfig("syntheticMonitors", configs);
+        syntheticMonitorConfigs = ImmutableList.copyOf(configs);
         notifyConfigListeners();
     }
 
-    public void updateAlertConfigs(List<AlertConfig> updatedConfigs) throws IOException {
-        configFile.writeConfig("alerts", updatedConfigs, mapper);
-        alertConfigs = ImmutableList.copyOf(updatedConfigs);
+    public void updateAlertConfigs(List<AlertConfig> configs) throws IOException {
+        configFile.writeConfig("alerts", configs);
+        alertConfigs = ImmutableList.copyOf(configs);
         notifyConfigListeners();
     }
 
-    public void updateUiConfig(UiConfig updatedConfig) throws IOException {
-        configFile.writeConfig("ui", updatedConfig, mapper);
-        uiConfig = updatedConfig;
+    public void updateUiConfig(UiConfig config) throws IOException {
+        configFile.writeConfig("ui", config);
+        uiConfig = config;
         notifyConfigListeners();
     }
 
-    public void updatePluginConfigs(List<PluginConfig> updatedConfigs) throws IOException {
+    public void updatePluginConfigs(List<PluginConfig> configs) throws IOException {
         ImmutableList<PluginConfig> sortedConfigs =
-                new PluginConfigOrdering().immutableSortedCopy(updatedConfigs);
-        configFile.writeConfig("plugins", sortedConfigs, mapper);
+                new PluginConfigOrdering().immutableSortedCopy(configs);
+        configFile.writeConfig("plugins", sortedConfigs);
         pluginConfigs = sortedConfigs;
         notifyAllPluginConfigListeners();
     }
 
-    public void updateInstrumentationConfigs(List<InstrumentationConfig> updatedConfigs)
+    public void updateInstrumentationConfigs(List<InstrumentationConfig> configs)
             throws IOException {
-        configFile.writeConfig("instrumentation", updatedConfigs, mapper);
-        instrumentationConfigs = ImmutableList.copyOf(updatedConfigs);
+        configFile.writeConfig("instrumentation", configs);
+        instrumentationConfigs = ImmutableList.copyOf(configs);
         notifyConfigListeners();
     }
 
-    public void updateUserRecordingConfig(UserRecordingConfig updatedConfig) throws IOException {
-        configFile.writeConfig("userRecording", updatedConfig, mapper);
-        userRecordingConfig = updatedConfig;
+    public void updateUserRecordingConfig(UserRecordingConfig config) throws IOException {
+        configFile.writeConfig("userRecording", config);
+        userRecordingConfig = config;
         notifyConfigListeners();
     }
 
-    public void updateAdvancedConfig(AdvancedConfig updatedConfig) throws IOException {
-        configFile.writeConfig("advanced", updatedConfig, mapper);
-        advancedConfig = updatedConfig;
+    public void updateAdvancedConfig(AdvancedConfig config) throws IOException {
+        configFile.writeConfig("advanced", config);
+        advancedConfig = config;
         notifyConfigListeners();
-    }
-
-    public <T extends /*@NonNull*/ Object> /*@Nullable*/ T getAdminConfig(String key,
-            Class<T> clazz) {
-        return adminFile.getAdminNode(key, clazz, mapper);
-    }
-
-    public <T extends /*@NonNull*/ Object> /*@Nullable*/ T getAdminConfig(String key,
-            TypeReference<T> typeReference) {
-        return adminFile.getAdminNode(key, typeReference, mapper);
-    }
-
-    public void updateAdminConfig(String key, Object config) throws IOException {
-        adminFile.writeAdmin(key, config, mapper);
-    }
-
-    public void updateAdminConfigs(Map<String, Object> configs) throws IOException {
-        adminFile.writeAdmin(configs, mapper);
     }
 
     public boolean readMemoryBarrier() {
@@ -394,7 +368,7 @@ public class ConfigService {
         configs.put("alerts", alertConfigs);
         configs.put("plugins", pluginConfigs);
         configs.put("instrumentation", instrumentationConfigs);
-        configFile.writeConfig(configs, mapper);
+        configFile.writeConfigs(configs);
     }
 
     private static ImmutableList<GaugeConfig> getDefaultGaugeConfigs() {

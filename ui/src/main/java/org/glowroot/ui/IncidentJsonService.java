@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
-import org.glowroot.common.repo.AgentRollupRepository;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.IncidentRepository;
-import org.glowroot.common.repo.IncidentRepository.OpenIncident;
-import org.glowroot.common.repo.IncidentRepository.ResolvedIncident;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.repo.AgentRollupRepository;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.IncidentRepository;
+import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
+import org.glowroot.common2.repo.IncidentRepository.ResolvedIncident;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 

@@ -36,8 +36,8 @@ import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.repo.TraceAttributeNameRepository;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;

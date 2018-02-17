@@ -31,15 +31,15 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.config.ImmutableRoleConfig;
-import org.glowroot.common.config.PermissionParser;
-import org.glowroot.common.config.RoleConfig;
-import org.glowroot.common.repo.AgentRollupRepository;
-import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ConfigRepository.CannotDeleteLastRoleException;
-import org.glowroot.common.repo.ConfigRepository.DuplicateRoleNameException;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.config.ImmutableRoleConfig;
+import org.glowroot.common2.config.PermissionParser;
+import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.repo.AgentRollupRepository;
+import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigRepository.CannotDeleteLastRoleException;
+import org.glowroot.common2.repo.ConfigRepository.DuplicateRoleNameException;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 

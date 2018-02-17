@@ -41,7 +41,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
-import com.google.common.reflect.Reflection;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
@@ -69,10 +68,6 @@ public class JavaagentContainer implements Container {
     private static final boolean XDEBUG = Boolean.getBoolean("glowroot.test.xdebug");
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
-
-    static {
-        Reflection.initialize(InitLogging.class);
-    }
 
     private final File testDir;
     private final boolean deleteTestDirOnClose;
@@ -339,71 +334,110 @@ public class JavaagentContainer implements Container {
         String classpath = Strings.nullToEmpty(StandardSystemProperty.JAVA_CLASS_PATH.value());
         List<String> bootPaths = Lists.newArrayList();
         List<String> paths = Lists.newArrayList();
-        List<String> maybeShadedInsideAgentJars = Lists.newArrayList();
-        List<String> maybeBootstrapJar = Lists.newArrayList();
+        List<String> maybeBootPaths = Lists.newArrayList();
         File javaagentJarFile = null;
         for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
             File file = new File(path);
             String name = file.getName();
-            boolean agentClasses = false;
-            if (name.equals("classes") && !file.getAbsolutePath().endsWith(File.separator
-                    + "it-harness" + File.separator + "target" + File.separator + "classes")) {
-                agentClasses = true;
-            }
-            if (name.matches("glowroot-agent-core-[0-9.]+(-SNAPSHOT)?.jar")) {
+            String targetClasses = File.separator + "target" + File.separator + "classes";
+            if (name.matches("glowroot-agent-core(-unshaded)?-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
                 javaagentJarFile = file;
             } else if (name.matches("glowroot-common-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-wire-api-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-agent-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-plugin-api-[0-9.]+(-SNAPSHOT)?.jar")) {
-                // these artifacts should not be present since glowroot-agent-core shades them
-                // but maven 3.3.1/3.3.3 are not using the dependency reduced pom during downstream
-                // module builds, which causes the glowroot artifacts to be included
-                // when running "mvn clean install" from the project root, see MSHADE-206
-                maybeShadedInsideAgentJars.add(path);
-            } else if (agentClasses) {
-                bootPaths.add(path);
-            } else if (name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?\\.jar")) {
-                paths.add(path);
-            } else if (file.getAbsolutePath().endsWith(File.separator + "it-harness"
-                    + File.separator + "target" + File.separator + "classes")) {
-                paths.add(path);
-            } else if (name.endsWith(".jar") && file.getAbsolutePath()
-                    .endsWith(File.separator + "target" + File.separator + name)) {
-                bootPaths.add(path);
-            } else if (name.matches("glowroot-.*\\.jar")) {
-                bootPaths.add(path);
-            } else if (name.matches("guava-.*\\.jar")) {
-                // several plugins use guava
-                bootPaths.add(path);
+                    || name.matches("glowroot-agent-plugin-api-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-agent-bytecode-api-[0-9.]+(-SNAPSHOT)?.jar")) {
+                // these are glowroot-agent-core-unshaded transitive dependencies
+                maybeBootPaths.add(path);
+            } else if (file.getAbsolutePath().endsWith(File.separator + "common" + targetClasses)
+                    || file.getAbsolutePath().endsWith(File.separator + "wire-api" + targetClasses)
+                    || file.getAbsolutePath().endsWith(File.separator + "api" + targetClasses)
+                    || file.getAbsolutePath()
+                            .endsWith(File.separator + "plugin-api" + targetClasses)
+                    || file.getAbsolutePath()
+                            .endsWith(File.separator + "bytecode-api" + targetClasses)) {
+                // these are glowroot-agent-core-unshaded transitive dependencies
+                maybeBootPaths.add(path);
             } else if (name.matches("asm-.*\\.jar")
-                    || name.matches("compress-lzf-.*\\.jar")
                     || name.matches("grpc-.*\\.jar")
                     || name.matches("opencensus-.*\\.jar")
                     || name.matches("guava-.*\\.jar")
-                    || name.matches("h2-.*\\.jar")
                     || name.matches("HdrHistogram-.*\\.jar")
                     || name.matches("instrumentation-api-.*\\.jar")
                     || name.matches("jackson-.*\\.jar")
-                    || name.matches("javax.servlet-api-.*\\.jar")
-                    || name.matches("jzlib-.*\\.jar")
                     || name.matches("logback-.*\\.jar")
-                    || name.matches("mailapi-.*\\.jar")
-                    || name.matches("netty-.*\\.jar")
+                    // javax.servlet-api is needed because logback-classic has
+                    // META-INF/services/javax.servlet.ServletContainerInitializer
+                    || name.matches("javax.servlet-api-.*\\.jar")
+                    || name.matches("netty-buffer-.*\\.jar")
+                    || name.matches("netty-codec-.*\\.jar")
+                    || name.matches("netty-codec-http2-.*\\.jar")
+                    || name.matches("netty-codec-http-.*\\.jar")
+                    || name.matches("netty-codec-socks-.*\\.jar")
+                    || name.matches("netty-common-.*\\.jar")
+                    || name.matches("netty-handler-.*\\.jar")
+                    || name.matches("netty-handler-proxy-.*\\.jar")
+                    || name.matches("netty-resolver-.*\\.jar")
+                    || name.matches("netty-transport-.*\\.jar")
                     || name.matches("protobuf-java-.*\\.jar")
                     || name.matches("slf4j-api-.*\\.jar")
-                    || name.matches("smtp-.*\\.jar")
                     || name.matches("value-.*\\.jar")
                     || name.matches("error_prone_annotations-.*\\.jar")
                     || name.matches("jsr305-.*\\.jar")) {
-                // these are glowroot-agent-core transitive dependencies
-                maybeBootstrapJar.add(path);
+                // these are glowroot-agent-core-unshaded transitive dependencies
+                maybeBootPaths.add(path);
+            } else if (name.matches("glowroot-common2-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-ui-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches(
+                            "glowroot-agent-embedded(-unshaded)?-[0-9.]+(-SNAPSHOT)?.jar")) {
+                // these are glowroot-agent-embedded-unshaded transitive dependencies
+                paths.add(path);
+            } else if (file.getAbsolutePath().endsWith(File.separator + "common2" + targetClasses)
+                    || file.getAbsolutePath().endsWith(File.separator + "ui" + targetClasses)
+                    || file.getAbsolutePath()
+                            .endsWith(File.separator + "embedded" + targetClasses)) {
+                // these are glowroot-agent-embedded-unshaded transitive dependencies
+                paths.add(path);
+            } else if (name.matches("compress-.*\\.jar")
+                    || name.matches("h2-.*\\.jar")
+                    || name.matches("jzlib-.*\\.jar")
+                    || name.matches("mailapi-.*\\.jar")
+                    || name.matches("smtp-.*\\.jar")) {
+                // these are glowroot-agent-embedded-unshaded transitive dependencies
+                paths.add(path);
+            } else if (name.matches("glowroot-agent-it-harness-unshaded-[0-9.]+(-SNAPSHOT)?.jar")) {
+                // this is integration test harness, needs to be in bootstrap class loader when it
+                // it is shaded (because then it contains glowroot-agent-core), and for consistency
+                // putting it in bootstrap class loader at other times as well
+                bootPaths.add(path);
+            } else if (file.getAbsolutePath()
+                    .endsWith(File.separator + "it-harness" + targetClasses)) {
+                // this is integration test harness, needs to be in bootstrap class loader when it
+                // it is shaded (because then it contains glowroot-agent-core), and for consistency
+                // putting it in bootstrap class loader at other times as well
+                bootPaths.add(path);
+            } else if (name.endsWith(".jar") && file.getAbsolutePath()
+                    .endsWith(File.separator + "target" + File.separator + name)) {
+                // this is the plugin under test
+                bootPaths.add(path);
+            } else if (name.matches("glowroot-agent-[a-z-]+-plugin-[0-9.]+(-SNAPSHOT)?.jar")) {
+                // this another (core) plugin that it depends on, e.g. the executor plugin
+                bootPaths.add(path);
+            } else if (file.getAbsolutePath().endsWith(targetClasses)) {
+                // this is the plugin under test
+                bootPaths.add(path);
+            } else if (file.getAbsolutePath()
+                    .endsWith(File.separator + "target" + File.separator + "test-classes")) {
+                // this is the plugin test classes
+                paths.add(path);
             } else {
+                // these are plugin test dependencies
                 paths.add(path);
             }
         }
         if (javaagentJarFile == null) {
-            bootPaths.addAll(maybeBootstrapJar);
+            bootPaths.addAll(maybeBootPaths);
         } else {
             boolean shaded = false;
             JarInputStream jarIn = new JarInputStream(new FileInputStream(javaagentJarFile));
@@ -419,17 +453,16 @@ public class JavaagentContainer implements Container {
                 jarIn.close();
             }
             if (shaded) {
-                paths.addAll(maybeBootstrapJar);
+                paths.addAll(maybeBootPaths);
             } else {
-                bootPaths.addAll(maybeBootstrapJar);
-                bootPaths.addAll(maybeShadedInsideAgentJars);
+                bootPaths.addAll(maybeBootPaths);
             }
         }
         command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(bootPaths));
         command.add("-classpath");
         command.add(Joiner.on(File.pathSeparatorChar).join(paths));
         if (javaagentJarFile == null) {
-            // create jar file in data dir since that gets cleaned up at end of test already
+            // create jar file in test dir since that gets cleaned up at end of test already
             javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(testDir);
             command.add("-javaagent:" + javaagentJarFile);
             command.add("-DdelegateJavaagent=" + AgentPremain.class.getName());

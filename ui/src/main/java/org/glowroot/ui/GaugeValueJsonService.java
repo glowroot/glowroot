@@ -29,12 +29,12 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.GaugeValueRepository;
-import org.glowroot.common.repo.GaugeValueRepository.Gauge;
-import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.RollupLevelService;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.GaugeValueRepository;
+import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -144,11 +144,11 @@ class GaugeValueJsonService {
             // nothing to sync
             return;
         }
-        long maxRollupCaptureTime = Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
+        long maxRollupCaptureTime = CaptureTimes.getRollup(maxCaptureTime, fixedIntervalMillis);
         long maxDiffToSync = Math.min(fixedIntervalMillis / 5, 60000);
         for (Map.Entry<K, Long> entry : manualRollupCaptureTimes.entrySet()) {
             Long captureTime = entry.getValue();
-            if (Utils.getRollupCaptureTime(captureTime,
+            if (CaptureTimes.getRollup(captureTime,
                     fixedIntervalMillis) != maxRollupCaptureTime) {
                 continue;
             }
@@ -251,7 +251,7 @@ class GaugeValueJsonService {
 
         @Override
         public Long apply(Long captureTime) {
-            return Utils.getRollupCaptureTime(captureTime, fixedIntervalMillis);
+            return CaptureTimes.getRollup(captureTime, fixedIntervalMillis);
         }
     }
 }

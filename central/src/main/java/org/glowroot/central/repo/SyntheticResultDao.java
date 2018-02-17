@@ -18,7 +18,7 @@ package org.glowroot.central.repo;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.common.repo.SyntheticResultRepository;
+import org.glowroot.common2.repo.SyntheticResultRepository;
 
 public interface SyntheticResultDao extends SyntheticResultRepository {
 

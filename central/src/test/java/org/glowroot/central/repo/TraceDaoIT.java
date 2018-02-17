@@ -31,15 +31,15 @@ import org.junit.runners.Parameterized.Parameters;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.central.v09support.TraceDaoWithV09Support;
-import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.live.ImmutableTracePointFilter;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.repo.ImmutableTraceQuery;
-import org.glowroot.common.repo.TraceRepository.TraceQuery;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.config.ImmutableCentralStorageConfig;
+import org.glowroot.common2.repo.ImmutableTraceQuery;
+import org.glowroot.common2.repo.TraceRepository.TraceQuery;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;

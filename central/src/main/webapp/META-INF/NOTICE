@@ -1,7 +1,7 @@
-Glowroot Server
+Glowroot Central Collector
 Copyright 2011-2016 Glowroot contributors
 
-Glowroot Server includes the following software:
+Glowroot Central Collector includes the following software:
 
 AngularJS
 Copyright 2010-2015 Google, Inc
@@ -219,6 +219,11 @@ Apache License, Version 2.0
 Open Sans Font
 Copyright 2010-2011 Google Corporation
 https://www.google.com/fonts/specimen/Open+Sans
+Apache License, Version 2.0
+
+OpenCensus
+Copyright 2017 OpenCensus Authors
+https://github.com/census-instrumentation/opencensus-java
 Apache License, Version 2.0
 
 Protocol Buffers

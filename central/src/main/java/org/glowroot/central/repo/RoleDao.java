@@ -32,9 +32,9 @@ import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.ImmutableRoleConfig;
-import org.glowroot.common.config.RoleConfig;
-import org.glowroot.common.repo.ConfigRepository.DuplicateRoleNameException;
+import org.glowroot.common2.config.ImmutableRoleConfig;
+import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.repo.ConfigRepository.DuplicateRoleNameException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

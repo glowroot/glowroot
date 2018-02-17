@@ -51,8 +51,8 @@ import org.glowroot.central.repo.Common.NeedsRollupFromChildren;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.config.StorageConfig;
+import org.glowroot.common.ConfigDefaults;
+import org.glowroot.common.Constants;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
@@ -76,16 +76,16 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
-import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
-import org.glowroot.common.repo.ConfigRepository.RollupConfig;
-import org.glowroot.common.repo.MutableAggregate;
-import org.glowroot.common.repo.MutableThreadStats;
-import org.glowroot.common.repo.MutableTimer;
-import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.ThreadStatsCreator;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common2.repo.MutableAggregate;
+import org.glowroot.common2.repo.MutableThreadStats;
+import org.glowroot.common2.repo.MutableTimer;
+import org.glowroot.common2.repo.util.ThreadStatsCreator;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
@@ -427,7 +427,7 @@ public class AggregateDaoImpl implements AggregateDao {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
-                if (fullText.length() > StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
+                if (fullText.length() > Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
                     fullTextSha1 = SHA_1.hashString(fullText, Charsets.UTF_8).toString();
                     futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
                     for (int i = 1; i < agentRollupIds.size(); i++) {
@@ -436,7 +436,7 @@ public class AggregateDaoImpl implements AggregateDao {
                     }
                     sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
                             .setTruncatedText(fullText.substring(0,
-                                    StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE))
+                                    Constants.AGGREGATE_QUERY_TEXT_TRUNCATE))
                             .setFullTextSha1(fullTextSha1)
                             .build());
                 } else {
@@ -507,7 +507,7 @@ public class AggregateDaoImpl implements AggregateDao {
         }
         // insert into aggregate_needs_rollup_1
         long intervalMillis = rollupConfigs.get(1).intervalMillis();
-        long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
+        long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
         BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
         int i = 0;
         boundStatement.setString(i++, agentId);

@@ -31,15 +31,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.repo.AgentRollupRepository;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
-import org.glowroot.common.repo.ConfigRepository.RollupConfig;
-import org.glowroot.common.repo.TraceAttributeNameRepository;
-import org.glowroot.common.repo.TransactionTypeRepository;
+import org.glowroot.common.ConfigDefaults;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.repo.AgentRollupRepository;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common2.repo.TraceAttributeNameRepository;
+import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 

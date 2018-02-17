@@ -25,9 +25,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.immutables.value.Value;
 
-import org.glowroot.common.repo.AgentRollupRepository;
-import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.repo.AgentRollupRepository;
+import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.LayoutService.AgentRollupLayout;
 import org.glowroot.ui.LayoutService.FilteredAgentRollup;

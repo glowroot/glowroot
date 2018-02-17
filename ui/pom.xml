@@ -30,6 +30,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-common2</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <!-- this is used to instrument the glowroot UI itself -->
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-api</artifactId>

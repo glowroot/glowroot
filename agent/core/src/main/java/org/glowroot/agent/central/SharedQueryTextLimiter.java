@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 
-import org.glowroot.common.config.StorageConfig;
+import org.glowroot.common.Constants;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -40,7 +40,7 @@ class SharedQueryTextLimiter {
             .build();
 
     Aggregate.SharedQueryText buildAggregateSharedQueryText(String fullText) {
-        if (fullText.length() > StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
+        if (fullText.length() > Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
             String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
             if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
                 // need to send full text
@@ -51,7 +51,7 @@ class SharedQueryTextLimiter {
                 // ok to just send truncated text
                 return Aggregate.SharedQueryText.newBuilder()
                         .setTruncatedText(
-                                fullText.substring(0, StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE))
+                                fullText.substring(0, Constants.AGGREGATE_QUERY_TEXT_TRUNCATE))
                         .setFullTextSha1(fullTextSha1)
                         .build();
             }
@@ -63,7 +63,7 @@ class SharedQueryTextLimiter {
     }
 
     Trace.SharedQueryText buildTraceSharedQueryText(String fullText) {
-        if (fullText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
+        if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
             String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
             if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
                 // need to send full text
@@ -74,9 +74,9 @@ class SharedQueryTextLimiter {
                 // ok to just send truncated text
                 return Trace.SharedQueryText.newBuilder()
                         .setTruncatedText(
-                                fullText.substring(0, StorageConfig.TRACE_QUERY_TEXT_TRUNCATE))
+                                fullText.substring(0, Constants.TRACE_QUERY_TEXT_TRUNCATE))
                         .setTruncatedEndText(fullText.substring(
-                                fullText.length() - StorageConfig.TRACE_QUERY_TEXT_TRUNCATE,
+                                fullText.length() - Constants.TRACE_QUERY_TEXT_TRUNCATE,
                                 fullText.length()))
                         .setFullTextSha1(fullTextSha1)
                         .build();
@@ -97,7 +97,7 @@ class SharedQueryTextLimiter {
             checkState(sharedQueryText.getTruncatedEndText().isEmpty());
             checkState(sharedQueryText.getFullTextSha1().isEmpty());
             String fullText = sharedQueryText.getFullText();
-            if (fullText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
+            if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
                 String fullTextSha1 =
                         Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
                 if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
@@ -107,9 +107,9 @@ class SharedQueryTextLimiter {
                     // ok to just send truncated text
                     updatedSharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
                             .setTruncatedText(
-                                    fullText.substring(0, StorageConfig.TRACE_QUERY_TEXT_TRUNCATE))
+                                    fullText.substring(0, Constants.TRACE_QUERY_TEXT_TRUNCATE))
                             .setTruncatedEndText(fullText.substring(
-                                    fullText.length() - StorageConfig.TRACE_QUERY_TEXT_TRUNCATE,
+                                    fullText.length() - Constants.TRACE_QUERY_TEXT_TRUNCATE,
                                     fullText.length()))
                             .setFullTextSha1(fullTextSha1)
                             .build());

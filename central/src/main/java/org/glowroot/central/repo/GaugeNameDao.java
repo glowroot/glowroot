@@ -30,7 +30,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 
@@ -66,8 +66,8 @@ class GaugeNameDao {
     }
 
     Set<String> getGaugeNames(String agentRollupId, long from, long to) throws Exception {
-        long rolledUpFrom = Utils.getRollupCaptureTime(from, DAYS.toMillis(1));
-        long rolledUpTo = Utils.getRollupCaptureTime(to, DAYS.toMillis(1));
+        long rolledUpFrom = CaptureTimes.getRollup(from, DAYS.toMillis(1));
+        long rolledUpTo = CaptureTimes.getRollup(to, DAYS.toMillis(1));
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setTimestamp(1, new Date(rolledUpFrom));
@@ -82,7 +82,7 @@ class GaugeNameDao {
 
     List<Future<?>> insert(String agentRollupId, long captureTime, String gaugeName)
             throws Exception {
-        long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, DAYS.toMillis(1));
+        long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
         GaugeKey rateLimiterKey = ImmutableGaugeKey.of(agentRollupId, rollupCaptureTime, gaugeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();

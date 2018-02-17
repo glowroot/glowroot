@@ -13,8 +13,8 @@
   <!-- need to use default jar packaging, otherwise jar gets installed with war extension and
     webdriver tests cannot find it -->
 
-  <name>Glowroot Central</name>
-  <description>Glowroot Central</description>
+  <name>Glowroot Central Collector</name>
+  <description>Glowroot Central Collector</description>
 
   <dependencies>
     <dependency>
@@ -25,6 +25,11 @@
     <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-common2</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -414,13 +419,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <!-- use LICENSE and NOTICE under src/main/resources -->
-        <artifactId>maven-remote-resources-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>com.github.os72</groupId>
         <artifactId>protoc-jar-maven-plugin</artifactId>

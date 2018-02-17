@@ -36,10 +36,10 @@ import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.repo.ImmutableErrorMessageCount;
-import org.glowroot.common.repo.ImmutableErrorMessageResult;
-import org.glowroot.common.repo.ImmutableTraceQuery;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.ImmutableErrorMessageCount;
+import org.glowroot.common2.repo.ImmutableErrorMessageResult;
+import org.glowroot.common2.repo.ImmutableTraceQuery;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 

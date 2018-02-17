@@ -1,0 +1,202 @@
+Glowroot
+Copyright 2011-2018 Glowroot contributors
+
+Glowroot includes the following software:
+
+AngularJS
+Copyright 2010-2015 Google, Inc
+https://github.com/angular/angular.js
+MIT License
+
+AngularUI Bootstrap
+Copyright 2012-2015 The AngularUI Team
+https://github.com/angular-ui/bootstrap
+MIT License
+
+AngularUI UI.CodeMirror
+Copyright 2012 the AngularUI Team
+https://github.com/angular-ui/ui-codemirror
+MIT License
+
+AngularUI Router
+Copyright 2013-2015 The AngularUI Team, Karsten Sperling
+https://github.com/angular-ui/ui-router
+MIT License
+
+AngularUI Select
+Copyright 2013-2014 AngularUI
+https://github.com/angular-ui/ui-select
+MIT License
+
+ASM
+Copyright 2000-2011 INRIA, France Telecom
+http://asm.ow2.org
+BSD 3-Clause License
+
+Bootstrap
+Copyright 2011-2015 Twitter, Inc
+https://github.com/twbs/bootstrap
+MIT License
+
+bootstrap-datetimepicker
+Copyright 2015 Jonathan Peterson (@Eonasdan)
+https://github.com/Eonasdan/bootstrap-datetimepicker
+MIT License
+
+bootstrap-select
+Copyright 2013-2015 bootstrap-select
+https://github.com/silviomoreto/bootstrap-select
+MIT License
+
+CodeMirror
+Copyright 2017 by Marijn Haverbeke <marijnh@gmail.com> and others
+https://github.com/codemirror/CodeMirror
+MIT License
+
+D3
+Copyright 2010-2015 Michael Bostock
+https://github.com/mbostock/d3
+BSD 3-Clause License
+
+d3-flame-graph
+Copyright 2015 Martin Spier
+https://github.com/spiermar/d3-flame-graph
+Apache License, Version 2.0
+
+d3.tip
+Copyright 2013 Justin Palmer
+https://github.com/Caged/d3-tip
+MIT License
+
+Error Prone (annotations)
+Copyright 2011-2017 Google Inc.
+https://github.com/google/error-prone
+Apache License, Version 2.0
+
+Flot
+Copyright 2007-2014 IOLA and Ole Laursen
+https://github.com/flot/flot
+MIT License
+
+Flot Tooltip
+Copyright 2011-2014 Krzysztof Urbas (@krzysu) & Evan Steinkerchner (@Roundaround)
+https://github.com/krzysu/flot.tooltip
+MIT License
+
+Font Awesome
+Copyright @davegandy
+https://github.com/FortAwesome/Font-Awesome
+SIL Open Font License 1.1 (font)
+MIT License (code)
+
+gRPC
+Copyright 2014 Google Inc.
+https://github.com/grpc/grpc-java
+BSD 3-Clause License
+
+Gson
+Copyright 2008 Google Inc.
+https://github.com/google/gson
+Apache License, Version 2.0
+
+Guava
+Copyright The Guava Authors
+https://github.com/google/guava
+Apache License, Version 2.0
+
+H2
+Copyright H2 Group
+http://www.h2database.com
+Eclipse Public License, Version 1.0
+
+handlebars
+Copyright 2011-2015 Yehuda Katz
+https://github.com/wycats/handlebars.js
+MIT License
+
+HdrHistogram
+Copyright 2012, 2013, 2014 Gil Tene
+Copyright 2014 Michael Barker
+Copyright 2014 Matt Warren
+https://github.com/HdrHistogram/HdrHistogram
+BSD 2-Clause License
+
+Immutables
+Copyright 2013-2014 Immutables.org authors
+https://github.com/immutables/immutables
+Apache License, Version 2.0
+
+Jackson
+Copyright 2007- Tatu Saloranta, tatu.saloranta@iki.fi
+https://github.com/FasterXML/jackson
+Apache License, Version 2.0
+
+JavaMail API
+Copyright 1997-2014 Oracle and/or its affiliates
+https://javamail.java.net
+Common Development and Distribution License, Version 1.0
+
+jQuery
+Copyright 2005, 2014 jQuery Foundation, Inc. and other contributors
+https://github.com/jquery/jquery
+MIT License
+
+jQuery Mouse Wheel
+Copyright 2013 Brandon Aaron (http://brandonaaron.net)
+https://github.com/brandonaaron/jquery-mousewheel
+MIT License
+
+Logback
+Copyright 1999-2015 QOS.ch
+https://github.com/qos-ch/logback
+Eclipse Public License, Version 1.0
+
+Moment.js
+Copyright JS Foundation and other contributors
+https://github.com/moment/moment
+MIT License
+
+Moment Timezone
+Copyright JS Foundation and other contributors
+https://github.com/moment/moment-timezone
+MIT License
+
+Netty
+Copyright 2014 The Netty Project
+https://github.com/netty/netty
+Apache License, Version 2.0
+
+Ning Compress
+Copyright 2009-2010 Ning, Inc
+http://github.com/ning/compress
+Apache License, Version 2.0
+
+Open Sans Font
+Copyright 2010-2011 Google Corporation
+https://www.google.com/fonts/specimen/Open+Sans
+Apache License, Version 2.0
+
+Protocol Buffers
+Copyright 2014 Google Inc.
+https://github.com/google/protobuf
+BSD 3-Clause License
+
+SequelJS
+Copyright 2015 Camilo Díaz Repka
+https://github.com/camilojd/sequeljs
+MIT License
+
+SLF4J
+Copyright 2004-2014 QOS.ch
+https://github.com/qos-ch/slf4j
+MIT License
+
+spin.js
+Copyright 2011-2014 Felix Gnass [fgnass at neteye dot de]
+https://github.com/fgnass/spin.js
+MIT License
+
+ZeroClipboard
+Copyright 2009-2014 Jon Rohan, James M. Greene
+https://github.com/zeroclipboard/zeroclipboard
+MIT License

@@ -48,7 +48,7 @@ import org.glowroot.central.util.CassandraWriteMetrics;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.StorageConfig;
+import org.glowroot.common.Constants;
 import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
@@ -56,12 +56,12 @@ import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.repo.ImmutableErrorMessageCount;
-import org.glowroot.common.repo.ImmutableErrorMessagePoint;
-import org.glowroot.common.repo.ImmutableErrorMessageResult;
-import org.glowroot.common.repo.ImmutableHeaderPlus;
-import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.ImmutableErrorMessageCount;
+import org.glowroot.common2.repo.ImmutableErrorMessagePoint;
+import org.glowroot.common2.repo.ImmutableErrorMessageResult;
+import org.glowroot.common2.repo.ImmutableHeaderPlus;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.Proto.StackTraceElement;
@@ -530,7 +530,7 @@ public class TraceDaoImpl implements TraceDao {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
-                if (fullText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
+                if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
                     fullTextSha1 = SHA_1.hashString(fullText, Charsets.UTF_8).toString();
                     futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
                     for (int i = 1; i < agentRollupIds.size(); i++) {
@@ -539,9 +539,9 @@ public class TraceDaoImpl implements TraceDao {
                     }
                     sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
                             .setTruncatedText(
-                                    fullText.substring(0, StorageConfig.TRACE_QUERY_TEXT_TRUNCATE))
+                                    fullText.substring(0, Constants.TRACE_QUERY_TEXT_TRUNCATE))
                             .setTruncatedEndText(fullText.substring(
-                                    fullText.length() - StorageConfig.TRACE_QUERY_TEXT_TRUNCATE,
+                                    fullText.length() - Constants.TRACE_QUERY_TEXT_TRUNCATE,
                                     fullText.length()))
                             .setFullTextSha1(fullTextSha1)
                             .build());
@@ -856,7 +856,7 @@ public class TraceDaoImpl implements TraceDao {
             if (!matches(filter, errorMessage)) {
                 continue;
             }
-            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, resolutionMillis);
+            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, resolutionMillis);
             pointCounts.computeIfAbsent(rollupCaptureTime, k -> new MutableLong()).increment();
             messageCounts.computeIfAbsent(errorMessage, k -> new MutableLong()).increment();
         }

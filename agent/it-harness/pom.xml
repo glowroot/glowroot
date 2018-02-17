@@ -10,20 +10,17 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <artifactId>glowroot-agent-it-harness</artifactId>
+  <artifactId>glowroot-agent-it-harness-unshaded</artifactId>
 
-  <name>Glowroot Agent Integration Test Harness</name>
-  <description>Glowroot Agent Integration Test Harness</description>
+  <name>Glowroot Agent Integration Test Harness (Unshaded)</name>
+  <description>Glowroot Agent Integration Test Harness (Unshaded)</description>
 
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-core</artifactId>
+      <artifactId>glowroot-agent-core-unshaded</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- do not include glowroot-agent-api or glowroot-agent-plugin-api since want to either get
-      them transitively from glowroot-agent (during mvn test) or get them from shaded glowroot-agent
-      (during mvn package) -->
     <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-wire-api</artifactId>
@@ -87,11 +84,6 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jul-to-slf4j</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -167,128 +159,6 @@
           <optional>true</optional>
         </dependency>
       </dependencies>
-    </profile>
-    <profile>
-      <id>shade</id>
-      <activation>
-        <property>
-          <name>!glowroot.shade.skip</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-shade-plugin</artifactId>
-            <configuration>
-              <dependencyReducedPomLocation>
-                ${project.build.directory}/dependency-reduced-pom.xml
-              </dependencyReducedPomLocation>
-              <createSourcesJar>true</createSourcesJar>
-              <shadeSourcesContent>true</shadeSourcesContent>
-              <artifactSet>
-                <includes>
-                  <!-- need to shade netty so glowroot-agent-netty-plugin can test against all netty
-                    versions without causing conflicts -->
-                  <include>io.netty:*</include>
-                  <!-- need to shade grpc so it uses shaded netty -->
-                  <include>io.grpc:*</include>
-                  <!-- need to shade opencensus-api so it uses shaded grpc -->
-                  <include>io.opencensus:opencensus-api</include>
-                  <include>io.opencensus:opencensus-contrib-grpc-metrics</include>
-                  <!-- need to shade instrumentation-api so it uses shaded grpc -->
-                  <include>com.google.instrumentation:instrumentation-api</include>
-                  <!-- need to shade glowroot-wire-api so it uses shaded grpc -->
-                  <include>org.glowroot:glowroot-wire-api</include>
-                </includes>
-              </artifactSet>
-              <relocations>
-                <relocation>
-                  <pattern>io.netty</pattern>
-                  <shadedPattern>org.glowroot.agent.it.harness.shaded.io.netty</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>io.grpc</pattern>
-                  <shadedPattern>org.glowroot.agent.it.harness.shaded.io.grpc</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>io.opencensus</pattern>
-                  <shadedPattern>org.glowroot.agent.it.harness.shaded.io.opencensus</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.google.instrumentation</pattern>
-                  <shadedPattern>org.glowroot.agent.it.harness.shaded.com.google.instrumentation</shadedPattern>
-                </relocation>
-                <!-- not relocating glowroot-wire-api since it-harness api exposes glowroot-wire-api
-                  unshaded for use by plugin integration tests -->
-              </relocations>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-              </transformers>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>shade</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <!-- this profile is needed because can't include glowroot-agent-core as part of normal build
-        due to https://issues.apache.org/jira/browse/MSHADE-206 -->
-      <id>release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-remote-resources-plugin</artifactId>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-          <plugin>
-            <!-- not using maven-resources-plugin:copy-resources because it generates m2e warning
-              about accessing "directory outside of project base directory" -->
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-              <execution>
-                <phase>generate-sources</phase>
-                <configuration>
-                  <target>
-                    <copy todir="${project.build.outputDirectory}/META-INF">
-                      <fileset dir="../..">
-                        <include name="LICENSE" />
-                        <include name="NOTICE" />
-                      </fileset>
-                    </copy>
-                  </target>
-                </configuration>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <artifactId>maven-shade-plugin</artifactId>
-            <configuration>
-              <artifactSet>
-                <includes>
-                  <include>io.netty:*</include>
-                  <include>io.grpc:*</include>
-                  <include>io.opencensus:opencensus-api</include>
-                  <include>io.opencensus:opencensus-contrib-grpc-metrics</include>
-                  <include>com.google.instrumentation:instrumentation-api</include>
-                  <include>org.glowroot:glowroot-wire-api</include>
-                  <include>org.glowroot:glowroot-agent-core</include>
-                </includes>
-              </artifactSet>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
   </profiles>
 </project>

@@ -25,8 +25,8 @@ import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.repo.SyntheticResultDaoImpl;
 import org.glowroot.central.v09support.V09Support.Query;
 import org.glowroot.central.v09support.V09Support.QueryPlan;
-import org.glowroot.common.model.SyntheticResult;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.SyntheticResult;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;

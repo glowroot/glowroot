@@ -33,18 +33,18 @@ import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.config.PagerDutyConfig.PagerDutyIntegrationKey;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.GaugeValueRepository;
-import org.glowroot.common.repo.GaugeValueRepository.Gauge;
-import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.AlertingService;
-import org.glowroot.common.repo.util.Gauges;
-import org.glowroot.common.util.Formatting;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.config.MoreConfigDefaults;
+import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.GaugeValueRepository;
+import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common2.repo.Utils;
+import org.glowroot.common2.repo.util.AlertingService;
+import org.glowroot.common2.repo.util.Formatting;
+import org.glowroot.common2.repo.util.Gauges;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
@@ -171,7 +171,7 @@ class AlertConfigJsonService {
         for (SyntheticMonitorConfig config : configRepository
                 .getSyntheticMonitorConfigs(agentRollupId)) {
             items.add(ImmutableSyntheticMonitorItem.of(config.getId(),
-                    ConfigDefaults.getDisplayOrDefault(config)));
+                    MoreConfigDefaults.getDisplayOrDefault(config)));
         }
         return items;
     }
@@ -273,7 +273,7 @@ class AlertConfigJsonService {
         if (syntheticMonitorConfig == null) {
             sb.append("<NOT FOUND>");
         } else {
-            sb.append(ConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig));
+            sb.append(MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig));
         }
         sb.append(" exceeds ");
         sb.append(AlertingService.getWithUnit(condition.getThresholdMillis(), "millisecond"));

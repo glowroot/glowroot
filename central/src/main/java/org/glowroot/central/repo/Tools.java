@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.ImmutableUserConfig;
+import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.ui.PasswordHash;
 
 import static com.google.common.base.Preconditions.checkNotNull;

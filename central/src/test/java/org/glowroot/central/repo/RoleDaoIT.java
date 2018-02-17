@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.ImmutableRoleConfig;
-import org.glowroot.common.config.RoleConfig;
+import org.glowroot.common2.config.ImmutableRoleConfig;
+import org.glowroot.common2.config.RoleConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

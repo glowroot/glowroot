@@ -41,9 +41,9 @@ import com.google.common.primitives.Ints;
 
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.ConfigRepository.RollupConfig;
-import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -156,7 +156,7 @@ class Common {
             int needsRollupAdjustedTTL, Session session) throws Exception {
         if (nextRollupIntervalMillis != null) {
             checkNotNull(insertNeedsRollup);
-            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime,
+            long rollupCaptureTime = CaptureTimes.getRollup(captureTime,
                     nextRollupIntervalMillis);
             BoundStatement boundStatement = insertNeedsRollup.bind();
             int i = 0;

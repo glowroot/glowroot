@@ -31,8 +31,8 @@ import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.SyntheticResultDao;
-import org.glowroot.common.repo.AgentRollupRepository.AgentRollup;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 

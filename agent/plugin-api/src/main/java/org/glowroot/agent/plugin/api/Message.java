@@ -21,9 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.checker.PolyNull;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
@@ -80,7 +77,7 @@ public abstract class Message {
     // it (obviously) accessible to plugin implementations
     private static class MessageImpl extends Message implements ReadableMessage {
 
-        private static final Logger logger = LoggerFactory.getLogger(MessageImpl.class);
+        private static final Logger logger = Logger.getLogger(MessageImpl.class);
 
         private final @Nullable String template;
         private final @Nullable String[] args;

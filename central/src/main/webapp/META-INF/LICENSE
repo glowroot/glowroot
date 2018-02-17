@@ -203,12 +203,12 @@
 
 
 ================================================================================
-Glowroot Server subcomponents
+Glowroot Central Collector subcomponents
 ================================================================================
 
-Glowroot Server includes a number of subcomponents with separate copyright
-notices and license terms. Your use of these subcomponents is subject to the
-terms and conditions of the following licenses.
+Glowroot Central Collector includes a number of subcomponents with separate
+copyright notices and license terms. Your use of these subcomponents is subject
+to the terms and conditions of the following licenses.
 
 
 ================================================================================
@@ -1129,6 +1129,15 @@ License for Open Sans Font
 ================================================================================
 
 Copyright 2010-2011 Google Corporation
+
+Licensed under the Apache License, Version 2.0
+
+
+================================================================================
+License for OpenCensus
+================================================================================
+
+Copyright 2017 OpenCensus Authors
 
 Licensed under the Apache License, Version 2.0
 

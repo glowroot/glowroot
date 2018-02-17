@@ -26,9 +26,9 @@ import org.junit.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.ImmutableCentralStorageConfig;
-import org.glowroot.common.model.SyntheticResult;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.config.ImmutableCentralStorageConfig;
+import org.glowroot.common2.repo.SyntheticResult;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;

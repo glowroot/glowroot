@@ -62,18 +62,18 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.CentralStorageConfig;
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.config.ImmutableCentralStorageConfig;
-import org.glowroot.common.config.ImmutableCentralWebConfig;
-import org.glowroot.common.config.PermissionParser;
-import org.glowroot.common.config.StorageConfig;
-import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.RollupLevelService;
+import org.glowroot.common.ConfigDefaults;
+import org.glowroot.common.Constants;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.config.CentralStorageConfig;
+import org.glowroot.common2.config.ImmutableCentralStorageConfig;
+import org.glowroot.common2.config.ImmutableCentralWebConfig;
+import org.glowroot.common2.config.PermissionParser;
+import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -1158,7 +1158,7 @@ public class SchemaUpgrade {
             String gaugeName = checkNotNull(row.getString(i++));
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             long millisPerDay = DAYS.toMillis(1);
-            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, millisPerDay);
+            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             rowsPerCaptureTime.put(rollupCaptureTime,
                     ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
         }
@@ -1172,7 +1172,7 @@ public class SchemaUpgrade {
             String gaugeName = checkNotNull(row.getString(i++));
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             long millisPerDay = DAYS.toMillis(1);
-            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, millisPerDay);
+            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             rowsPerCaptureTime.put(rollupCaptureTime,
                     ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
         }
@@ -1331,7 +1331,7 @@ public class SchemaUpgrade {
             String agentId = v09AgentRollup.agentRollupId();
             long captureTime = checkNotNull(row.getTimestamp(1)).getTime();
             long millisPerDay = DAYS.toMillis(1);
-            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, millisPerDay);
+            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             agentIdsPerCaptureTime.put(rollupCaptureTime, agentId);
         }
         // read from 1-min aggregates to get not-yet-rolled-up data
@@ -1348,7 +1348,7 @@ public class SchemaUpgrade {
             String agentId = v09AgentRollup.agentRollupId();
             long captureTime = checkNotNull(row.getTimestamp(1)).getTime();
             long millisPerDay = DAYS.toMillis(1);
-            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, millisPerDay);
+            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             agentIdsPerCaptureTime.put(rollupCaptureTime, agentId);
         }
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
@@ -1554,13 +1554,13 @@ public class SchemaUpgrade {
                 + " timestamp, agent_rollup_id varchar, condition blob, severity varchar,"
                 + " notification blob, open_time timestamp, primary key (one, resolve_time,"
                 + " agent_rollup_id, condition)) with clustering order by (resolve_time desc)",
-                StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS, true);
+                Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS, true);
         PreparedStatement insertPS = session.prepare("insert into resolved_incident (one,"
                 + " resolve_time, agent_rollup_id, condition, severity, notification,"
                 + " open_time) values (1, ?, ?, ?, ?, ?, ?) using ttl ?");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
         int ttl = Ints.saturatedCast(
-                HOURS.toSeconds(StorageConfig.RESOLVED_INCIDENT_EXPIRATION_HOURS));
+                HOURS.toSeconds(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS));
         ResultSet results = session.execute("select resolve_time, agent_rollup_id, condition,"
                 + " severity, notification, open_time from resolved_incident_temp where one = 1");
         for (Row row : results) {

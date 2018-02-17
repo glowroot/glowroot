@@ -38,8 +38,8 @@ import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
-import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public class AggregateIntervalCollector {
@@ -60,7 +60,7 @@ public class AggregateIntervalCollector {
     AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
             int maxAggregateTransactionsPerType, int maxAggregateQueriesPerType,
             int maxAggregateServiceCallsPerType, Clock clock) {
-        captureTime = Utils.getRollupCaptureTime(currentTime, aggregateIntervalMillis);
+        captureTime = CaptureTimes.getRollup(currentTime, aggregateIntervalMillis);
         this.maxAggregateTransactionsPerType = maxAggregateTransactionsPerType;
         this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
         this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;

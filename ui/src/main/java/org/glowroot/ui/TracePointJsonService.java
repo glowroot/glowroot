@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,11 @@ import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ImmutableTraceQuery;
-import org.glowroot.common.repo.TraceRepository;
-import org.glowroot.common.repo.TraceRepository.TraceQuery;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ImmutableTraceQuery;
+import org.glowroot.common2.repo.TraceRepository;
+import org.glowroot.common2.repo.TraceRepository.TraceQuery;
 import org.glowroot.ui.TransactionJsonService.TransactionDataRequest;
 
 import static java.util.concurrent.TimeUnit.HOURS;

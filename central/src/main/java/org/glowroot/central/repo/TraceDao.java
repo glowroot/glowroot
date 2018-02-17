@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.glowroot.central.repo;
 
-import org.glowroot.common.repo.TraceRepository;
+import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceDao extends TraceRepository {

@@ -16,41 +16,53 @@ cache:
 matrix:
   include:
     - jdk: oraclejdk8
-      env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
+      env: TARGET=test1 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
     - jdk: oraclejdk8
-      env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
+      env: TARGET=test2 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
     - jdk: oraclejdk8
-      env: TARGET=test3 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
-    - jdk: openjdk7
-      env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
-    - jdk: openjdk7
-      env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
+      env: TARGET=test3 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk8
+      env: TARGET=test4 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
     - jdk: oraclejdk8
       env: TARGET=deploy
     - jdk: oraclejdk8
       env: TARGET=checker
+    - jdk: oraclejdk9
+      env: TARGET=test1 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk9
+      env: TARGET=test2 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk9
+      env: TARGET=test3 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
+    - jdk: oraclejdk9
+      env: TARGET=test4 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
+    - jdk: openjdk7
+      env: TARGET=test1 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
+    - jdk: openjdk7
+      env: TARGET=test2 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
     - jdk: oraclejdk8
-      env: TARGET=test1 SKIP_SHADING=false GLOWROOT_HARNESS=local
+      env: TARGET=test1 TEST_SHADED=false GLOWROOT_HARNESS=javaagent
     - jdk: oraclejdk8
-      env: TARGET=test2 SKIP_SHADING=false GLOWROOT_HARNESS=local
+      env: TARGET=test2 TEST_SHADED=false GLOWROOT_HARNESS=javaagent
     - jdk: oraclejdk8
-      env: TARGET=test3 SKIP_SHADING=false GLOWROOT_HARNESS=local
+      env: TARGET=test3 TEST_SHADED=false GLOWROOT_HARNESS=javaagent
     - jdk: oraclejdk8
-      env: TARGET=test1 SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
+      env: TARGET=test4 TEST_SHADED=false GLOWROOT_HARNESS=javaagent
     - jdk: oraclejdk8
-      env: TARGET=test2 SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
+      env: TARGET=test1 TEST_SHADED=true GLOWROOT_HARNESS=local
     - jdk: oraclejdk8
-      env: TARGET=test3 SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
+      env: TARGET=test2 TEST_SHADED=true GLOWROOT_HARNESS=local
     - jdk: oraclejdk8
-      env: TARGET=test4 SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
+      env: TARGET=test3 TEST_SHADED=true GLOWROOT_HARNESS=local
     - jdk: oraclejdk8
-      env: TARGET=test1 SKIP_SHADING=true GLOWROOT_HARNESS=local
+      env: TARGET=test4 TEST_SHADED=true GLOWROOT_HARNESS=local
     - jdk: oraclejdk8
-      env: TARGET=test2 SKIP_SHADING=true GLOWROOT_HARNESS=local
+      env: TARGET=test1 TEST_SHADED=false GLOWROOT_HARNESS=local
     - jdk: oraclejdk8
-      env: TARGET=test3 SKIP_SHADING=true GLOWROOT_HARNESS=local
+      env: TARGET=test2 TEST_SHADED=false GLOWROOT_HARNESS=local
     - jdk: oraclejdk8
-      env: TARGET=test4 SKIP_SHADING=true GLOWROOT_HARNESS=local
+      env: TARGET=test3 TEST_SHADED=false GLOWROOT_HARNESS=local
+    - jdk: oraclejdk8
+      env: TARGET=test4 TEST_SHADED=false GLOWROOT_HARNESS=local
       # chrome
     - jdk: oraclejdk8
       env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=

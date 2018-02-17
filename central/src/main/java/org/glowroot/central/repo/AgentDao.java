@@ -41,12 +41,12 @@ import org.immutables.value.Value;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.repo.AgentRollupRepository;
-import org.glowroot.common.repo.ImmutableAgentRollup;
-import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.config.MoreConfigDefaults;
+import org.glowroot.common2.repo.AgentRollupRepository;
+import org.glowroot.common2.repo.ImmutableAgentRollup;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -91,8 +91,8 @@ public class AgentDao implements AgentRollupRepository {
 
     @Override
     public List<AgentRollup> readAgentRollups(long from, long to) throws Exception {
-        long rolledUpFrom = Utils.getRollupCaptureTime(from, DAYS.toMillis(1));
-        long rolledUpTo = Utils.getRollupCaptureTime(to, DAYS.toMillis(1));
+        long rolledUpFrom = CaptureTimes.getRollup(from, DAYS.toMillis(1));
+        long rolledUpTo = CaptureTimes.getRollup(to, DAYS.toMillis(1));
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setTimestamp(0, new Date(rolledUpFrom));
         boundStatement.setTimestamp(1, new Date(rolledUpTo));
@@ -147,7 +147,7 @@ public class AgentDao implements AgentRollupRepository {
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return Futures.immediateFuture(null);
         }
-        long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, DAYS.toMillis(1));
+        long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
@@ -178,11 +178,11 @@ public class AgentDao implements AgentRollupRepository {
     private String readAgentRollupLastDisplayPart(String agentRollupId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
-            return ConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
         }
         String display = agentConfig.getGeneralConfig().getDisplay();
         if (display.isEmpty()) {
-            return ConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
         }
         return display;
     }

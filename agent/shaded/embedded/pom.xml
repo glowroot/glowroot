@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
+    <version>0.10.3-SNAPSHOT</version>
+    <relativePath>../../..</relativePath>
+  </parent>
+
+  <artifactId>glowroot-agent-embedded</artifactId>
+
+  <name>Glowroot Embedded Collector (Shaded)</name>
+  <description>Glowroot Embedded Collector (Shaded)</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-embedded-unshaded</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- use LICENSE and NOTICE under src/main/resources -->
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
+          <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
+          <artifactSet>
+            <includes>
+              <include>org.glowroot:glowroot-agent-embedded-unshaded</include>
+              <include>org.glowroot:glowroot-common2</include>
+              <include>org.glowroot:glowroot-ui</include>
+              <include>com.h2database:h2</include>
+              <include>com.ning:compress-lzf</include>
+              <include>com.jcraft:jzlib</include>
+              <include>com.sun.mail:mailapi</include>
+              <include>com.sun.mail:smtp</include>
+            </includes>
+          </artifactSet>
+          <filters>
+            <filter>
+              <artifact>com.h2database:h2</artifact>
+              <excludes>
+                <exclude>META-INF/services/java.sql.Driver</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.sun.mail:mailapi</artifact>
+              <excludes>
+                <exclude>META-INF/gfprobe-provider.xml</exclude>
+                <exclude>META-INF/javamail.charset.map</exclude>
+                <exclude>META-INF/mailcap</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
+                <!-- pom.xml is only present in sources jar -->
+                <exclude>pom.xml</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.sun.mail:smtp</artifact>
+              <excludes>
+                <!-- javamail.address.map and javamail.providers are replaced with
+                  glowroot.javamail.address.map and glowroot.javamail.providers -->
+                <exclude>META-INF/javamail.address.map</exclude>
+                <exclude>META-INF/javamail.providers</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
+                <!-- pom.xml is only present in sources jar -->
+                <exclude>pom.xml</exclude>
+              </excludes>
+            </filter>
+          </filters>
+          <relocations>
+            <!-- need to shade glowroot modules so they can be used in glowroot-central without
+              conflict, while central itself is being monitored by glowroot-agent -->
+            <relocation>
+              <pattern>org.glowroot.common2</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.org.glowroot.common2</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.glowroot.common</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.glowroot.common</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.glowroot.wire.api</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.glowroot.wire.api</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.glowroot.ui</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.org.glowroot.ui</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.google</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.com.google</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.HdrHistogram</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.HdrHistogram</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.fasterxml.jackson</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.com.fasterxml.jackson</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>io.netty</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.io.netty</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.slf4j</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.slf4j</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>ch.qos.logback</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.ch.qos.logback</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.h2</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.org.h2</shadedPattern>
+              <excludes>
+                <!-- these resource files are actually read from org/h2/util/data.zip whose
+                  internals do not get shaded -->
+                <exclude>/org/h2/res/*</exclude>
+                <exclude>/org/h2/server/web/res/*</exclude>
+              </excludes>
+            </relocation>
+            <relocation>
+              <!-- shade thread names to make it easy to identify glowroot threads -->
+              <rawString>true</rawString>
+              <pattern>H2 File Lock Watchdog</pattern>
+              <shadedPattern>Glowroot-H2 File Lock Watchdog</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shade thread names to make it easy to identify glowroot threads -->
+              <rawString>true</rawString>
+              <pattern>H2 Log Writer</pattern>
+              <shadedPattern>Glowroot-H2 Log Writer</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shade thread names to make it easy to identify glowroot threads -->
+              <rawString>true</rawString>
+              <pattern>Generate Seed</pattern>
+              <shadedPattern>Glowroot-H2 Generate Seed</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- this is needed to prevent H2 from initializing java.sql.DriverManager which
+                then initializes jdbc drivers via META-INF/services/java.sql.Driver -->
+              <pattern>java.sql.DriverManager</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.DriverManager</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- SQLException uses DriverManager, so this is needed for the same reason as
+                above -->
+              <pattern>java.sql.SQLException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.ning.compress</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.com.ning.compress</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.jcraft.jzlib</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.com.jcraft.jzlib</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due
+                to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+              <pattern>org.checkerframework.checker</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.checkerframework.checker</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due
+                to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+              <pattern>javax.annotation</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.javax.annotation</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>javax.mail</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.javax.mail</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.sun.mail</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.com.sun.mail</shadedPattern>
+            </relocation>
+            <relocation>
+              <rawString>true</rawString>
+              <pattern>^/META-INF/javamail.default.address.map$</pattern>
+              <shadedPattern>/META-INF/glowroot.javamail.default.address.map</shadedPattern>
+            </relocation>
+            <relocation>
+              <rawString>true</rawString>
+              <pattern>^/META-INF/javamail.default.providers$</pattern>
+              <shadedPattern>/META-INF/glowroot.javamail.default.providers</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shade to non-existent file so it doesn't pick up file from monitored app -->
+              <rawString>true</rawString>
+              <pattern>^META-INF/javamail.address.map$</pattern>
+              <shadedPattern>META-INF/glowroot.javamail.address.map</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shade to non-existent file so it doesn't pick up file from monitored app -->
+              <rawString>true</rawString>
+              <pattern>^META-INF/javamail.providers$</pattern>
+              <shadedPattern>META-INF/glowroot.javamail.providers</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.github.wvengen</groupId>
+        <artifactId>proguard-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>proguard</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <includeDependency>false</includeDependency>
+          <obfuscate>false</obfuscate>
+          <libs>
+            <!-- see auto-activated-mac and auto-activated-not-mac profiles below for ${rt.jar.path}
+              definition -->
+            <lib>${rt.jar.path}</lib>
+          </libs>
+          <options>
+            <option>-dontoptimize</option>
+            <option>-dontnote **</option>
+            <option>-dontwarn **</option>
+            <option>-keep class !org.glowroot.agent.embedded.shaded.** { *; }</option>
+            <option>-keep class org.glowroot.agent.embedded.shaded.org.glowroot.** { *; }</option>
+            <option>
+              -keep class org.glowroot.agent.embedded.shaded.com.sun.mail.smtp.** { *; }
+            </option>
+            <!-- keep special enumeration methods (see "Processing enumeration classes" section at
+              http://proguard.sourceforge.net/manual/examples.html) -->
+            <option>
+              -keepclassmembers,allowoptimization enum * {
+              public static **[] values();
+              public
+              static ** valueOf(java.lang.String);
+              }
+            </option>
+          </options>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>net.sf.proguard</groupId>
+            <artifactId>proguard-base</artifactId>
+            <version>5.3.3</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>auto-activated-skip-proguard-under-java-9</id>
+      <activation>
+        <!-- proguard doesn't currently work on jdk 9 -->
+        <jdk>[9,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>com.github.wvengen</groupId>
+              <artifactId>proguard-maven-plugin</artifactId>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>auto-activated-not-mac</id>
+      <activation>
+        <os>
+          <family>!mac</family>
+        </os>
+      </activation>
+      <properties>
+        <rt.jar.path>${java.home}/lib/rt.jar</rt.jar.path>
+      </properties>
+    </profile>
+    <profile>
+      <id>auto-activated-mac</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <properties>
+        <rt.jar.path>${java.home}/../Classes/classes.jar</rt.jar.path>
+      </properties>
+    </profile>
+  </profiles>
+</project>

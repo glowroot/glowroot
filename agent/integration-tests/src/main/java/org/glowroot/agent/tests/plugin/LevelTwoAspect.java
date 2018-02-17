@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  */
 package org.glowroot.agent.tests.plugin;
 
-import com.google.common.collect.ImmutableMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Message;
@@ -44,7 +45,10 @@ public class LevelTwoAspect {
             return context.startTraceEntry(new MessageSupplier() {
                 @Override
                 public Message get() {
-                    return Message.create("Level Two", ImmutableMap.of("arg1", arg1, "arg2", arg2));
+                    Map<String, String> detail = new LinkedHashMap<String, String>();
+                    detail.put("arg1", arg1);
+                    detail.put("arg2", arg2);
+                    return Message.create("Level Two", detail);
                 }
             }, timerName);
         }

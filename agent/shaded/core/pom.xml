@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
+    <version>0.10.3-SNAPSHOT</version>
+    <relativePath>../../..</relativePath>
+  </parent>
+
+  <artifactId>glowroot-agent-core</artifactId>
+
+  <name>Glowroot Agent Core (Shaded)</name>
+  <description>Glowroot Agent Core (Shaded)</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-core-unshaded</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <!-- need to include embedded agent for proguard step, but then it is stripped out after -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-embedded</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- exclusion is needed due to https://issues.apache.org/jira/browse/MSHADE-206 -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-embedded-unshaded</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <!-- need to include https support for proguard step, but then it is stripped out after -->
+      <groupId>io.netty</groupId>
+      <artifactId>netty-tcnative-boringssl-static</artifactId>
+      <version>2.0.7.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- use LICENSE and NOTICE under src/main/resources -->
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
+          <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/maven/**</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.google.guava:guava</artifact>
+              <excludes>
+                <exclude>META-INF/beans.xml</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.google.protobuf:protobuf-java</artifact>
+              <excludes>
+                <exclude>google/protobuf/*.proto</exclude>
+                <exclude>google/protobuf/compiler/*.proto</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.grpc:grpc-netty</artifact>
+              <excludes>
+                <exclude>META-INF/services/io.grpc.ManagedChannelProvider</exclude>
+                <exclude>META-INF/services/io.grpc.ServerProvider</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.netty:netty-*</artifact>
+              <excludes>
+                <exclude>META-INF/io.netty.versions.properties</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.netty:netty-tcnative-boringssl-static</artifact>
+              <excludes>
+                <exclude>META-INF/native/*</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.core:jackson-core</artifact>
+              <excludes>
+                <exclude>META-INF/services/com.fasterxml.jackson.core.JsonFactory</exclude>
+                <exclude>META-INF/LICENSE</exclude>
+                <exclude>META-INF/NOTICE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.core:jackson-databind</artifact>
+              <excludes>
+                <exclude>META-INF/services/com.fasterxml.jackson.core.ObjectCodec</exclude>
+                <exclude>META-INF/LICENSE</exclude>
+                <exclude>META-INF/NOTICE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.core:jackson-annotations</artifact>
+              <excludes>
+                <exclude>META-INF/LICENSE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.datatype:jackson-datatype-guava</artifact>
+              <excludes>
+                <exclude>META-INF/services/com.fasterxml.jackson.databind.Module</exclude>
+                <exclude>META-INF/LICENSE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>ch.qos.logback:logback-classic</artifact>
+              <excludes>
+                <exclude>META-INF/services/javax.servlet.ServletContainerInitializer</exclude>
+              </excludes>
+            </filter>
+          </filters>
+          <relocations>
+            <!-- need to shade glowroot modules so they can be used in glowroot-central without
+              conflict, while central itself is being monitored by glowroot-agent -->
+            <relocation>
+              <pattern>org.glowroot.common</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.glowroot.common</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.glowroot.wire.api</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.glowroot.wire.api</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.glowroot.ui</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.glowroot.ui</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.objectweb.asm</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.objectweb.asm</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.google</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.com.google</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>io.grpc</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.io.grpc</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- environment variable checked in io.grpc.netty.NettyChannelBuilder -->
+              <rawString>true</rawString>
+              <pattern>^GRPC_PROXY_EXP$</pattern>
+              <shadedPattern>GLOWROOT_GRPC_PROXY_EXP</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>io.opencensus</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.io.opencensus</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.HdrHistogram</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.HdrHistogram</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.fasterxml.jackson</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.com.fasterxml.jackson</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>io.netty</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.io.netty</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- this is to shade usage inside of io.grpc.netty.JettyTlsUtil, just in case Jetty
+                ALPN happens to be on classpath -->
+              <pattern>org.eclipse.jetty.alpn</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.eclipse.jetty.alpn</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- this is to shade usage inside of io.grpc.netty.JettyTlsUtil, just in case Jetty
+                NPN happens to be on classpath -->
+              <pattern>org.eclipse.jetty.npn</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.eclipse.jetty.npn</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.slf4j</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.slf4j</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- this shades guava's internal use of java util logging which is needed to prevent
+                java util logging from being initialized early (e.g. in the case of wildfly which
+                wants to do some setup before jul is initialized) -->
+              <pattern>java.util.logging</pattern>
+              <shadedPattern>org.glowroot.agent.jul</shadedPattern>
+              <excludes>
+                <!-- don't shade the system property key "java.util.logging.manager" (unshaded
+                  string is needed in LazyPlatformMBeanServer) -->
+                <exclude>java.util.logging.manager</exclude>
+              </excludes>
+            </relocation>
+            <relocation>
+              <pattern>ch.qos.logback</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.ch.qos.logback</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- logback internal constant, see
+                ch.qos.logback.classic.util.ContextInitializer -->
+              <rawString>true</rawString>
+              <pattern>^logback.configurationFile$</pattern>
+              <shadedPattern>glowroot.logback.configurationFile</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shades logback internal constant, see
+                ch.qos.logback.classic.util.ContextInitializer -->
+              <rawString>true</rawString>
+              <pattern>^logback.groovy$</pattern>
+              <shadedPattern>glowroot.logback.groovy</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
+              <rawString>true</rawString>
+              <pattern>^logback(-test)?.xml$</pattern>
+              <shadedPattern>glowroot.logback$1.xml</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
+              <rawString>true</rawString>
+              <pattern>^logback.ContextSelector$</pattern>
+              <shadedPattern>glowroot.logback.ContextSelector</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
+              <rawString>true</rawString>
+              <pattern>^java:comp/env/logback/configuration-resource$</pattern>
+              <shadedPattern>java:comp/env/glowroot.logback/configuration-resource</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
+              <rawString>true</rawString>
+              <pattern>^java:comp/env/logback/context-name$</pattern>
+              <shadedPattern>java:comp/env/glowroot.logback/context-name</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
+                http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+              <pattern>org.checkerframework.checker</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.checkerframework.checker</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
+                http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+              <pattern>javax.annotation</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.javax.annotation</shadedPattern>
+            </relocation>
+          </relocations>
+          <transformers>
+            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+          </transformers>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.github.wvengen</groupId>
+        <artifactId>proguard-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>proguard</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <includeDependency>false</includeDependency>
+          <obfuscate>false</obfuscate>
+          <libs>
+            <!-- see auto-activated-mac and auto-activated-not-mac profiles below for ${rt.jar.path}
+              definition -->
+            <lib>${rt.jar.path}</lib>
+          </libs>
+          <options>
+            <option>-dontoptimize</option>
+            <option>-dontnote **</option>
+            <option>-dontwarn **</option>
+            <option>
+              -keep class !org.glowroot.agent.shaded.**,!org.glowroot.agent.embedded.shaded.**
+              { *; }
+            </option>
+            <option>-keep class org.glowroot.agent.embedded.shaded.org.glowroot.** { *; }</option>
+            <option>-keep class org.glowroot.agent.shaded.org.glowroot.common.** { *; }</option>
+            <option>-keep class org.glowroot.agent.shaded.org.glowroot.ui.** { *; }</option>
+            <!-- even though these classes will be stripped out in assembly plugin below, this will
+              retain the netty classes that they depend on -->
+            <option>
+              -keep class org.glowroot.agent.shaded.io.netty.internal.tcnative.** { *; }
+            </option>
+            <!-- keep all logback appenders -->
+            <option>
+              -keep class * extends org.glowroot.agent.shaded.ch.qos.logback.** { *; }
+            </option>
+            <!-- keep special enumeration methods (see "Processing enumeration classes" section at
+              http://proguard.sourceforge.net/manual/examples.html) -->
+            <option>
+              -keepclassmembers,allowoptimization enum * {
+              public static **[] values();
+              public
+              static ** valueOf(java.lang.String);
+              }
+            </option>
+          </options>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>net.sf.proguard</groupId>
+            <artifactId>proguard-base</artifactId>
+            <version>5.3.3</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <configuration>
+              <!-- maven-shade-plugin changes ${basedir} to point wherever the dependency reduced
+                pom is written, see https://issues.apache.org/jira/browse/MSHADE-124,
+                so cannot use simple relative path "dist.xml" here -->
+              <descriptors>
+                <descriptor>${project.build.directory}/../dist.xml</descriptor>
+              </descriptors>
+              <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifestEntries>
+                  <Build-Time>${maven.build.timestamp}</Build-Time>
+                  <Premain-Class>org.glowroot.agent.AgentPremain</Premain-Class>
+                  <Main-Class>org.glowroot.agent.ToolMain</Main-Class>
+                  <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                  <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                </manifestEntries>
+              </archive>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- maven-failsafe-plugin is used to execute JarFileShadingIT since it needs to run after
+          the packaging phase so that glowroot-agent-core.jar will be available -->
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>auto-activated-skip-proguard-under-java-9</id>
+      <activation>
+        <!-- proguard doesn't currently work on jdk 9 -->
+        <jdk>[9,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>com.github.wvengen</groupId>
+              <artifactId>proguard-maven-plugin</artifactId>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>auto-activated-not-mac</id>
+      <activation>
+        <os>
+          <family>!mac</family>
+        </os>
+      </activation>
+      <properties>
+        <rt.jar.path>${java.home}/lib/rt.jar</rt.jar.path>
+      </properties>
+    </profile>
+    <profile>
+      <id>auto-activated-mac</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <properties>
+        <rt.jar.path>${java.home}/../Classes/classes.jar</rt.jar.path>
+      </properties>
+    </profile>
+  </profiles>
+</project>

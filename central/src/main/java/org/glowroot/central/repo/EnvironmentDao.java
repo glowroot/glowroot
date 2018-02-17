@@ -24,7 +24,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 
 import org.glowroot.central.util.Session;
-import org.glowroot.common.repo.EnvironmentRepository;
+import org.glowroot.common2.repo.EnvironmentRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;

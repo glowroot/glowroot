@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,13 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
+import com.google.common.reflect.Reflection;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.EventLoopGroup;
+
+import org.glowroot.agent.it.harness.Container;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -32,16 +35,9 @@ class JavaagentMain {
 
     public static void main(String[] args) throws Exception {
 
-        try {
-            Class.forName("org.slf4j.bridge.SLF4JBridgeHandler")
-                    .getMethod("removeHandlersForRootLogger").invoke(null);
-            Class.forName("org.slf4j.bridge.SLF4JBridgeHandler")
-                    .getMethod("install").invoke(null);
-        } catch (ClassNotFoundException e) {
-            // this is needed when running logger plugin tests against old logback versions
-        } catch (NoSuchMethodException e) {
-            // this is needed when running logger plugin tests against old logback versions
-        }
+        // this is needed on Java 9+ now that sun.boot.class.path no longer exists, so that
+        // instrumentation config auto complete can find this class in InstrumentationConfigIT
+        Reflection.initialize(Container.class);
 
         int port = Integer.parseInt(args[0]);
         final SocketHeartbeat socketHeartbeat = new SocketHeartbeat(port);

@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.config.CentralStorageConfig;
-import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.config.CentralStorageConfig;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;

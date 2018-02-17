@@ -53,13 +53,13 @@ import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationExceptio
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.ConfigRepository.AgentConfigNotFoundException;
-import org.glowroot.common.repo.EnvironmentRepository;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.SystemProperties;
-import org.glowroot.common.util.UsedByJsonSerialization;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
+import org.glowroot.common2.repo.EnvironmentRepository;
+import org.glowroot.common2.repo.util.UsedByJsonSerialization;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.JavaInfo;

@@ -44,15 +44,15 @@ import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
-import org.glowroot.common.model.ErrorIntervalCollector;
-import org.glowroot.common.model.ImmutableErrorInterval;
-import org.glowroot.common.model.ImmutableSyntheticResult;
-import org.glowroot.common.model.SyntheticResult;
-import org.glowroot.common.model.SyntheticResult.ErrorInterval;
-import org.glowroot.common.repo.ConfigRepository.RollupConfig;
-import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common2.repo.ErrorIntervalCollector;
+import org.glowroot.common2.repo.ImmutableErrorInterval;
+import org.glowroot.common2.repo.ImmutableSyntheticResult;
+import org.glowroot.common2.repo.SyntheticResult;
+import org.glowroot.common2.repo.SyntheticResult.ErrorInterval;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -178,7 +178,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         // insert into synthetic_needs_rollup_1
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long intervalMillis = rollupConfigs.get(1).intervalMillis();
-        long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
+        long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
         int needsRollupAdjustedTTL =
                 Common.getNeedsRollupAdjustedTTL(adjustedTTL, configRepository.getRollupConfigs());
         boundStatement = insertNeedsRollup.get(0).bind();

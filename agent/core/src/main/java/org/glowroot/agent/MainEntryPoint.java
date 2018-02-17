@@ -27,9 +27,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.jar.JarFile;
 
 import javax.annotation.Nullable;
 
@@ -51,9 +53,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
-import org.glowroot.agent.embedded.init.EmbeddedGlowrootAgentInit;
 import org.glowroot.agent.init.AgentDirsLocking.AgentDirsLockedException;
 import org.glowroot.agent.init.GlowrootAgentInit;
+import org.glowroot.agent.init.GlowrootAgentInitFactory;
 import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.JavaVersion;
@@ -134,7 +136,8 @@ public class MainEntryPoint {
         }
     }
 
-    static void runViewer(Directories directories) throws InterruptedException {
+    public static void runViewer(Directories directories,
+            GlowrootAgentInitFactory glowrootAgentInitFactory) throws InterruptedException {
         // initLogging() already called by OfflineViewer.main()
         checkNotNull(startupLogger);
         String version;
@@ -144,7 +147,7 @@ public class MainEntryPoint {
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
-            new EmbeddedGlowrootAgentInit(directories.getDataDir(), true)
+            glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), true)
                     .init(directories.getPluginsDir(), directories.getConfDir(),
                             directories.getSharedConfDir(), directories.getLogDir(),
                             directories.getTmpDir(), directories.getGlowrootJarFile(), properties,
@@ -162,7 +165,7 @@ public class MainEntryPoint {
     }
 
     @EnsuresNonNull("startupLogger")
-    static void initLogging(File confDir, @Nullable File sharedConfDir, File logDir) {
+    public static void initLogging(File confDir, @Nullable File sharedConfDir, File logDir) {
         File logbackXmlOverride = new File(confDir, "glowroot.logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("glowroot.logback.configurationFile",
@@ -198,21 +201,69 @@ public class MainEntryPoint {
         String version = Version.getVersion(MainEntryPoint.class);
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
-        String collectorAddress = properties.get("glowroot.collector.address");
-        Collector customCollector = loadCustomCollector(directories.getGlowrootDir());
-        if (Strings.isNullOrEmpty(collectorAddress) && customCollector == null) {
-            glowrootAgentInit = new EmbeddedGlowrootAgentInit(directories.getDataDir(), false);
-        } else {
-            if (customCollector != null) {
-                startupLogger.info("using collector: {}", customCollector.getClass().getName());
-            }
-            String collectorAuthority = properties.get("glowroot.collector.authority");
-            glowrootAgentInit = new NonEmbeddedGlowrootAgentInit(collectorAddress,
-                    collectorAuthority, customCollector);
-        }
+        glowrootAgentInit = createGlowrootAgentInit(directories, properties, instrumentation);
         glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDir(),
                 directories.getSharedConfDir(), directories.getLogDir(), directories.getTmpDir(),
                 directories.getGlowrootJarFile(), properties, instrumentation, version);
+    }
+
+    @RequiresNonNull("startupLogger")
+    private static GlowrootAgentInit createGlowrootAgentInit(Directories directories,
+            Map<String, String> properties, @Nullable Instrumentation instrumentation)
+            throws Exception {
+        String collectorAddress = properties.get("glowroot.collector.address");
+        if (collectorAddress != null) {
+            collectorAddress = collectorAddress.trim();
+        }
+        Collector customCollector = loadCustomCollector(directories.getGlowrootDir());
+        if (customCollector != null) {
+            startupLogger.info("using collector: {}", customCollector.getClass().getName());
+            return new NonEmbeddedGlowrootAgentInit(null, null, customCollector);
+        }
+        if (Strings.isNullOrEmpty(collectorAddress)) {
+            File embeddedCollectorJarFile = directories.getEmbeddedCollectorJarFile();
+            if (embeddedCollectorJarFile != null && instrumentation != null) {
+                instrumentation
+                        .appendToSystemClassLoaderSearch(new JarFile(embeddedCollectorJarFile));
+            }
+            Class<?> factoryClass;
+            try {
+                factoryClass = Class.forName(
+                        "org.glowroot.agent.embedded.init.EmbeddedGlowrootAgentInitFactory", true,
+                        ClassLoader.getSystemClassLoader());
+            } catch (ClassNotFoundException e) {
+                if (embeddedCollectorJarFile == null) {
+                    startupLogger.error("missing lib/glowroot-embedded-collector.jar");
+                }
+                throw e;
+            }
+            GlowrootAgentInitFactory glowrootAgentInitFactory =
+                    (GlowrootAgentInitFactory) factoryClass.newInstance();
+            return glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), false);
+        }
+        if (collectorAddress.startsWith("https://") && instrumentation != null) {
+            String normalizedOsName = getNormalizedOsName();
+            if (normalizedOsName == null) {
+                throw new IllegalStateException("HTTPS connection to central collector is only"
+                        + " supported on linux, windows and osx, detected os.name: "
+                        + System.getProperty("os.name"));
+            }
+            File centralCollectorHttpsJarFile =
+                    directories.getCentralCollectorHttpsJarFile(normalizedOsName);
+            if (centralCollectorHttpsJarFile == null) {
+                throw new IllegalStateException("Missing lib/glowroot-central-collector-https-"
+                        + normalizedOsName + ".jar");
+            }
+            instrumentation
+                    .appendToBootstrapClassLoaderSearch(new JarFile(centralCollectorHttpsJarFile));
+            // also need to add to system class loader, otherwise native libraries under
+            // META-INF/native are not found
+            instrumentation
+                    .appendToSystemClassLoaderSearch(new JarFile(centralCollectorHttpsJarFile));
+        }
+        String collectorAuthority = properties.get("glowroot.collector.authority");
+        return new NonEmbeddedGlowrootAgentInit(collectorAddress, collectorAuthority,
+                customCollector);
     }
 
     private static ImmutableMap<String, String> getGlowrootProperties(File confDir,
@@ -319,6 +370,23 @@ public class MainEntryPoint {
             return null;
         }
         return i.next();
+    }
+
+    private static @Nullable String getNormalizedOsName() {
+        String osName = System.getProperty("os.name");
+        if (osName == null) {
+            return null;
+        }
+        String lowerOsName = osName.toLowerCase(Locale.ENGLISH);
+        if (lowerOsName.startsWith("linux")) {
+            return "linux";
+        } else if (lowerOsName.startsWith("windows")) {
+            return "windows";
+        } else if (lowerOsName.startsWith("macosx") || lowerOsName.startsWith("osx")) {
+            return "linux";
+        } else {
+            return null;
+        }
     }
 
     private static void upgradeToCollectorAddressIfNeeded(File propFile) throws IOException {
@@ -456,6 +524,7 @@ public class MainEntryPoint {
             out.close();
         }
     }
+
     @OnlyUsedByTests
     public static void start(Map<String, String> properties) throws Exception {
         String testDirPath = properties.get("glowroot.test.dir");
