@@ -82,8 +82,9 @@ public class ServletAspect {
         @Nullable
         String getHeader(String name);
 
+        // the map values should be String[], but typing as Object to be safe
         @Nullable
-        Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> getParameterMap();
+        Map</*@Nullable*/ String, /*@Nullable*/ Object> getParameterMap();
 
         @Nullable
         Enumeration<? extends /*@Nullable*/ Object> getParameterNames();

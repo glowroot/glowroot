@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -145,6 +146,18 @@ public class RequestParameterIT {
     }
 
     @Test
+    public void testAnotherBadRequestParameterMap() throws Exception {
+        // when
+        Trace trace = container.execute(GetAnotherBadParameterMap.class, "Web");
+
+        // then
+        Map<String, Object> requestParameters =
+                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+        assertThat(requestParameters).hasSize(1);
+        assertThat(requestParameters.get("n")).isEqualTo("x");
+    }
+
+    @Test
     public void testLargeRequestParameters() throws Exception {
         // when
         Trace trace = container.execute(GetLargeParameter.class, "Web");
@@ -238,6 +251,21 @@ public class RequestParameterIT {
     }
 
     @SuppressWarnings("serial")
+    public static class GetAnotherBadParameterMap extends TestServlet {
+        @Override
+        public void executeApp() throws Exception {
+            MockHttpServletRequest request =
+                    new AnotherBadMockHttpServletRequest("GET", "/testservlet");
+            MockHttpServletResponse response = new PatchedMockHttpServletResponse();
+            service((ServletRequest) request, (ServletResponse) response);
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getParameterValues("z");
+        }
+    }
+
+    @SuppressWarnings("serial")
     public static class GetLargeParameter extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
@@ -303,6 +331,24 @@ public class RequestParameterIT {
                 return new String[] {null, "x"};
             }
             return new String[0];
+        }
+    }
+
+    public static class AnotherBadMockHttpServletRequest extends MockHttpServletRequest {
+
+        public AnotherBadMockHttpServletRequest(String method, String requestURI) {
+            super(method, requestURI);
+        }
+
+        @Override
+        public Map<String, String[]> getParameterMap() {
+            Map<Object, Object> parameterMap = new HashMap<Object, Object>();
+            parameterMap.put("m", new Object());
+            parameterMap.put("n", new String[] {"x"});
+            @SuppressWarnings("unchecked")
+            Map<String, String[]> badParameterMap =
+                    (Map<String, String[]>) ((Map<?, ?>) parameterMap);
+            return badParameterMap;
         }
     }
 }

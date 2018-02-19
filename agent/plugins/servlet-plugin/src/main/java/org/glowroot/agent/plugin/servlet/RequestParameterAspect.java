@@ -58,7 +58,7 @@ public class RequestParameterAspect {
                         DetailCapture.captureRequestParameters(request));
                 return;
             }
-            Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> parameterMap;
+            Map</*@Nullable*/ String, /*@Nullable*/ Object> parameterMap;
             try {
                 parameterMap = request.getParameterMap();
             } catch (Exception e) {

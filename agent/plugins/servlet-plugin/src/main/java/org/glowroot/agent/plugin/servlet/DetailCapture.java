@@ -41,10 +41,10 @@ class DetailCapture {
     private DetailCapture() {}
 
     static Map<String, Object> captureRequestParameters(
-            Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> requestParameters) {
+            Map</*@Nullable*/ String, /*@Nullable*/ Object> requestParameters) {
         List<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();
         Map<String, Object> map = new HashMap<String, Object>();
-        for (Map.Entry</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/ []> entry : requestParameters
+        for (Map.Entry</*@Nullable*/ String, /*@Nullable*/ Object> entry : requestParameters
                 .entrySet()) {
             String name = entry.getKey();
             if (name == null) {
@@ -56,9 +56,9 @@ class DetailCapture {
                 continue;
             }
             @Nullable
-            String[] values = entry.getValue();
-            if (values != null) {
-                set(map, name, values);
+            Object values = entry.getValue();
+            if (values instanceof String[]) {
+                set(map, name, (String[]) values);
             }
         }
         return ImmutableMap.copyOf(map);
