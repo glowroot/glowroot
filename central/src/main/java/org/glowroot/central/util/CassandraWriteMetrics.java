@@ -346,7 +346,7 @@ public class CassandraWriteMetrics {
                     .rowsWritten(rowsWritten.get())
                     .bytesWritten(bytesWritten.get())
                     .bytesWrittenPerColumn(bytesWrittenPerColumn.entrySet().stream()
-                            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get())))
+                            .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().get())))
                     .drilldown(!nestedWriteMetricsMap.isEmpty())
                     .build();
         }

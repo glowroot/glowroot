@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,13 +47,14 @@ public class JAXWS {
             run2x("2.7." + i, "3.2.18.RELEASE");
         }
         for (int i = 0; i <= 15; i++) {
-            runJava7("3.0." + i, "4.3.11.RELEASE");
+            runJava7("3.0." + i, "4.3.14.RELEASE");
         }
-        for (int i = 0; i <= 13; i++) {
-            runJava7("3.1." + i, "4.3.11.RELEASE");
+        for (int i = 0; i <= 16; i++) {
+            runJava7("3.1." + i, "4.3.14.RELEASE");
         }
-        runJava8("3.2.0", "4.3.11.RELEASE");
-        runJava8("3.2.1", "4.3.12.RELEASE");
+        runJava8("3.2.0", "4.3.14.RELEASE");
+        runJava8("3.2.1", "4.3.14.RELEASE");
+        runJava8("3.2.2", "4.3.14.RELEASE");
     }
 
     private static void run2x(String cxfVersion, String springVersion) throws Exception {

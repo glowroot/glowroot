@@ -48,12 +48,13 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.2." + i + ".RELEASE");
         }
-        for (int i = 0; i <= 13; i++) {
+        for (int i = 0; i <= 14; i++) {
             run("4.3." + i + ".RELEASE");
         }
         runJava8("5.0.0.RELEASE");
         runJava8("5.0.1.RELEASE");
         runJava8("5.0.2.RELEASE");
+        runJava8("5.0.3.RELEASE");
     }
 
     private static void run(String version, String... profiles) throws Exception {

@@ -22,7 +22,7 @@
     <cxf.version>3.1.13</cxf.version>
     <!-- need to use a spring version that is supported by cxf.version version above
       (see cxf-parent pom.xml for supported spring version range) -->
-    <spring.version>4.3.13.RELEASE</spring.version>
+    <spring.version>4.3.14.RELEASE</spring.version>
   </properties>
 
   <dependencies>

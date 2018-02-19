@@ -22,7 +22,7 @@
     "grunt-usemin": "3.1.1",
     "jshint-stylish": "2.2.1",
     "load-grunt-tasks": "3.5.2",
-    "serve-static": "1.13.1",
+    "serve-static": "1.13.2",
     "time-grunt": "1.4.0"
   }
 }

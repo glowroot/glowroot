@@ -92,6 +92,9 @@ public class HttpClient {
         updateLibVersion("apache.httpclient.version", "4.5.4");
         updateLibVersion("apache.httpcore.version", "4.4.7");
         run(test);
+        updateLibVersion("apache.httpclient.version", "4.5.5");
+        updateLibVersion("apache.httpcore.version", "4.4.9");
+        run(test);
     }
 
     private static void apacheHttpAsyncClient() throws Exception {
@@ -231,6 +234,8 @@ public class HttpClient {
         runJava8(test);
         updateLibVersion("cxf.version", "3.2.1");
         runJava8(test);
+        updateLibVersion("cxf.version", "3.2.2");
+        runJava8(test);
     }
 
     private static void httpUrlConnection() throws Exception {
@@ -287,13 +292,14 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 13; i++) {
+        for (int i = 0; i <= 14; i++) {
             updateLibVersion("spring.version", "4.3." + i + ".RELEASE");
             run(test);
         }
         updateLibVersion("spring.version", "5.0.0.RELEASE");
         updateLibVersion("spring.version", "5.0.1.RELEASE");
         updateLibVersion("spring.version", "5.0.2.RELEASE");
+        updateLibVersion("spring.version", "5.0.3.RELEASE");
     }
 
     private static void runAsyncHttpClient1x(String asyncHttpClientVersion) throws Exception {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,9 +47,9 @@ class CassandraWrapper {
         if (System.getProperty("os.name").startsWith("Windows")) {
             // Cassandra 2.1 has issues on Windows
             // see https://issues.apache.org/jira/browse/CASSANDRA-10673
-            CASSANDRA_VERSION = "2.2.11";
+            CASSANDRA_VERSION = "2.2.12";
         } else {
-            CASSANDRA_VERSION = "2.1.19";
+            CASSANDRA_VERSION = "2.1.20";
         }
         if (StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6")) {
             JAVA_7_OR_LATER_HOME = System.getProperty("java7.home");
@@ -86,6 +86,7 @@ class CassandraWrapper {
 
     static void stop() throws Exception {
         process.destroy();
+        process.waitFor();
         consolePipeExecutorService.shutdown();
         if (!consolePipeExecutorService.awaitTermination(30, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");

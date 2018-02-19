@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ class ElasticsearchWrapper {
             elasticsearch5x = false;
         }
         if (elasticsearch5x) {
-            ELASTICSEARCH_VERSION = "5.6.4";
+            ELASTICSEARCH_VERSION = "5.6.7";
         } else {
             ELASTICSEARCH_VERSION = "2.4.6";
         }
@@ -80,6 +80,7 @@ class ElasticsearchWrapper {
 
     static void stop() throws Exception {
         process.destroy();
+        process.waitFor();
         consolePipeExecutorService.shutdown();
         if (!consolePipeExecutorService.awaitTermination(30, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");

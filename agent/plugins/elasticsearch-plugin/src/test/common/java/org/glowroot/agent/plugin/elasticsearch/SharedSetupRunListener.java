@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,7 @@ public class SharedSetupRunListener extends RunListener {
     public static Container getContainer() throws Exception {
         if (sharedContainer == null) {
             startElasticsearch();
-            if (Containers.useJavaagent()) {
-                // this is needed to avoid exception
-                // see org.elasticsearch.transport.netty4.Netty4Utils.setAvailableProcessors()
-                return JavaagentContainer.createWithExtraJvmArgs(
-                        ImmutableList.of("-Des.set.netty.runtime.available.processors=false"));
-            } else {
-                return Containers.createLocal();
-            }
+            return createContainer();
         }
         return sharedContainer;
     }
@@ -53,7 +46,7 @@ public class SharedSetupRunListener extends RunListener {
     @Override
     public void testRunStarted(Description description) throws Exception {
         startElasticsearch();
-        sharedContainer = Containers.create();
+        sharedContainer = createContainer();
     }
 
     @Override
@@ -64,5 +57,16 @@ public class SharedSetupRunListener extends RunListener {
 
     private static void startElasticsearch() throws Exception {
         ElasticsearchWrapper.start();
+    }
+
+    private static Container createContainer() throws Exception {
+        if (Containers.useJavaagent()) {
+            // this is needed to avoid exception
+            // see org.elasticsearch.transport.netty4.Netty4Utils.setAvailableProcessors()
+            return JavaagentContainer.createWithExtraJvmArgs(
+                    ImmutableList.of("-Des.set.netty.runtime.available.processors=false"));
+        } else {
+            return Containers.createLocal();
+        }
     }
 }

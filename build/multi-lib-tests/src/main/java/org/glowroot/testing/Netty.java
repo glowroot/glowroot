@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,13 +51,13 @@ public class Netty {
         for (int i = 0; i <= 6; i++) {
             runNetty("3.10." + i + ".Final", "netty-3.x");
         }
-        for (int i = 0; i <= 53; i++) {
+        for (int i = 0; i <= 56; i++) {
             runNetty("4.0." + i + ".Final", "netty-4.x");
         }
         for (int i = 1; i <= 7; i++) {
             runNetty("4.1.0.CR" + i, "netty-4.x");
         }
-        for (int i = 0; i <= 17; i++) {
+        for (int i = 0; i <= 21; i++) {
             runNetty("4.1." + i + ".Final", "netty-4.x");
         }
     }
@@ -91,6 +91,8 @@ public class Netty {
         runVertxJava8("3.4.0", "4.1.8.Final", "vertx-3.x");
         runVertxJava8("3.4.1", "4.1.8.Final", "vertx-3.x");
         runVertxJava8("3.4.2", "4.1.8.Final", "vertx-3.x");
+        runVertxJava8("3.5.0", "4.1.15.Final", "vertx-3.x");
+        runVertxJava8("3.5.1", "4.1.19.Final", "vertx-3.x");
     }
 
     private static void runNetty(String version, String... profile) throws Exception {

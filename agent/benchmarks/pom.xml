@@ -36,7 +36,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.13.RELEASE</version>
+      <version>4.3.14.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>org.openjdk.jmh</groupId>

@@ -45,9 +45,9 @@ class CassandraWrapper {
         if (System.getProperty("os.name").startsWith("Windows")) {
             // Cassandra 2.1 has issues on Windows
             // see https://issues.apache.org/jira/browse/CASSANDRA-10673
-            CASSANDRA_VERSION = "2.2.11";
+            CASSANDRA_VERSION = "2.2.12";
         } else {
-            CASSANDRA_VERSION = "2.1.19";
+            CASSANDRA_VERSION = "2.1.20";
         }
     }
 
@@ -74,6 +74,7 @@ class CassandraWrapper {
 
     static void stop() throws Exception {
         process.destroy();
+        process.waitFor();
         consolePipeExecutorService.shutdown();
         if (!consolePipeExecutorService.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");

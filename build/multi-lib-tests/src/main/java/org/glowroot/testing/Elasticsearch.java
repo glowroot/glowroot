@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,10 @@ public class Elasticsearch {
             run2x("2.4." + i);
         }
 
-        // for log4j version, see e.g.
-        // https://www.elastic.co/guide/en/elasticsearch/client/java-api/5.6/_log4j_2_logger.html
-        run5x("5.0.0", "4.1.5.Final", "2.7");
-        run5x("5.0.1", "4.1.5.Final", "2.7");
-        run5x("5.0.2", "4.1.5.Final", "2.7");
+        // for log4j version, see optional dependency of org.elasticsearch:elasticsearch
+        run5x("5.0.0", "4.1.5.Final", "2.6.2");
+        run5x("5.0.1", "4.1.5.Final", "2.6.2");
+        run5x("5.0.2", "4.1.5.Final", "2.6.2");
         // there is no 5.1.0 in maven central
         run5x("5.1.1", "4.1.6.Final", "2.7");
         run5x("5.1.2", "4.1.6.Final", "2.7");
@@ -64,7 +63,12 @@ public class Elasticsearch {
         run5x("5.5.3", "4.1.11.Final", "2.8.2");
         run5x("5.6.0", "4.1.13.Final", "2.9.0");
         run5x("5.6.1", "4.1.13.Final", "2.9.0");
-        run5x("5.6.2", "4.1.13.Final", "2.9.0");
+        run5x("5.6.2", "4.1.13.Final", "2.9.1");
+        run5x("5.6.3", "4.1.13.Final", "2.9.1");
+        run5x("5.6.4", "4.1.13.Final", "2.9.1");
+        run5x("5.6.5", "4.1.13.Final", "2.9.1");
+        run5x("5.6.6", "4.1.13.Final", "2.9.1");
+        run5x("5.6.7", "4.1.13.Final", "2.9.1");
     }
 
     private static void run2x(String version) throws Exception {

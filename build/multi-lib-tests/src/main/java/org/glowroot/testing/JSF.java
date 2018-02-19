@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,7 @@ public class JSF {
         run("2.2.13");
         run("2.2.14");
         run("2.2.15");
+        run("2.2.16");
     }
 
     private static void run(String version) throws Exception {
