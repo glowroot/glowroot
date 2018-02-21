@@ -99,8 +99,10 @@ class TransactionJsonService {
             overviewAggregates = transactionCommonService.getOverviewAggregates(agentRollupId,
                     query, autoRefresh);
         }
-        List<DataSeries> dataSeriesList =
-                getDataSeriesForTimerChart(request, overviewAggregates, liveCaptureTime);
+        long dataPointIntervalMillis =
+                configRepository.getRollupConfigs().get(query.rollupLevel()).intervalMillis();
+        List<DataSeries> dataSeriesList = getDataSeriesForTimerChart(request, overviewAggregates,
+                dataPointIntervalMillis, liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
         // TODO more precise aggregate when from/to not on rollup grid
         List<OverviewAggregate> overviewAggregatesForMerging = Lists.newArrayList();
@@ -118,6 +120,7 @@ class TransactionJsonService {
         try {
             jg.writeStartObject();
             jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeNumberField("dataPointIntervalMillis", dataPointIntervalMillis);
             jg.writeObjectField("transactionCounts", transactionCounts);
             jg.writeObjectField("mergedAggregate", mergedAggregate);
             jg.writeEndObject();
@@ -141,8 +144,11 @@ class TransactionJsonService {
             percentileAggregates = transactionCommonService.getPercentileAggregates(agentRollupId,
                     query, autoRefresh);
         }
-        PercentileData percentileData = getDataSeriesForPercentileChart(request,
-                percentileAggregates, request.percentile(), liveCaptureTime);
+        long dataPointIntervalMillis =
+                configRepository.getRollupConfigs().get(query.rollupLevel()).intervalMillis();
+        PercentileData percentileData =
+                getDataSeriesForPercentileChart(request, percentileAggregates, request.percentile(),
+                        dataPointIntervalMillis, liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts2(percentileAggregates);
 
         StringBuilder sb = new StringBuilder();
@@ -150,6 +156,7 @@ class TransactionJsonService {
         try {
             jg.writeStartObject();
             jg.writeObjectField("dataSeries", percentileData.dataSeriesList());
+            jg.writeNumberField("dataPointIntervalMillis", dataPointIntervalMillis);
             jg.writeObjectField("transactionCounts", transactionCounts);
             jg.writeObjectField("mergedAggregate", percentileData.mergedAggregate());
             jg.writeEndObject();
@@ -173,8 +180,10 @@ class TransactionJsonService {
             throughputAggregates = transactionCommonService.getThroughputAggregates(agentRollupId,
                     query, autoRefresh);
         }
-        List<DataSeries> dataSeriesList =
-                getDataSeriesForThroughputChart(request, throughputAggregates, liveCaptureTime);
+        long dataPointIntervalMillis =
+                configRepository.getRollupConfigs().get(query.rollupLevel()).intervalMillis();
+        List<DataSeries> dataSeriesList = getDataSeriesForThroughputChart(request,
+                throughputAggregates, dataPointIntervalMillis, liveCaptureTime);
         // TODO more precise aggregate when from/to not on rollup grid
         long transactionCount = 0;
         for (ThroughputAggregate throughputAggregate : throughputAggregates) {
@@ -189,6 +198,7 @@ class TransactionJsonService {
         try {
             jg.writeStartObject();
             jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeNumberField("dataPointIntervalMillis", dataPointIntervalMillis);
             jg.writeNumberField("transactionCount", transactionCount);
             jg.writeNumberField("transactionsPerMin",
                     60000.0 * transactionCount / (request.to() - request.from()));
@@ -448,21 +458,10 @@ class TransactionJsonService {
         return configRepository.getRollupConfigs().size() - 1;
     }
 
-    private List<DataSeries> getDataSeriesForTimerChart(TransactionDataRequest request,
-            List<OverviewAggregate> aggregates, long liveCaptureTime) throws Exception {
-        if (aggregates.isEmpty()) {
-            return Lists.newArrayList();
-        }
-        List<StackedPoint> stackedPoints = Lists.newArrayList();
-        for (OverviewAggregate aggregate : aggregates) {
-            stackedPoints.add(StackedPoint.create(aggregate));
-        }
-        return getTimerDataSeries(request, stackedPoints, liveCaptureTime);
-    }
-
-    private PercentileData getDataSeriesForPercentileChart(TransactionPercentileRequest request,
-            List<PercentileAggregate> percentileAggregates, List<Double> percentiles,
-            long liveCaptureTime) throws Exception {
+    private static PercentileData getDataSeriesForPercentileChart(
+            TransactionPercentileRequest request, List<PercentileAggregate> percentileAggregates,
+            List<Double> percentiles, long dataPointIntervalMillis, long liveCaptureTime)
+            throws Exception {
         if (percentileAggregates.isEmpty()) {
             return ImmutablePercentileData.builder()
                     .mergedAggregate(ImmutablePercentileMergedAggregate.builder()
@@ -471,8 +470,8 @@ class TransactionJsonService {
                             .build())
                     .build();
         }
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime, rollupLevelService
-                .getDataPointIntervalMillis(request.from(), request.to(), DataKind.GENERAL));
+        DataSeriesHelper dataSeriesHelper =
+                new DataSeriesHelper(liveCaptureTime, dataPointIntervalMillis);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (double percentile : percentiles) {
             dataSeriesList
@@ -534,12 +533,11 @@ class TransactionJsonService {
     }
 
     private List<DataSeries> getDataSeriesForThroughputChart(TransactionDataRequest request,
-            List<ThroughputAggregate> throughputAggregates, long liveCaptureTime) throws Exception {
+            List<ThroughputAggregate> throughputAggregates, long dataPointIntervalMillis,
+            long liveCaptureTime) throws Exception {
         if (throughputAggregates.isEmpty()) {
             return Lists.newArrayList();
         }
-        long dataPointIntervalMillis = rollupLevelService.getDataPointIntervalMillis(request.from(),
-                request.to(), DataKind.GENERAL);
         DataSeriesHelper dataSeriesHelper =
                 new DataSeriesHelper(liveCaptureTime, dataPointIntervalMillis);
         DataSeries dataSeries = new DataSeries("throughput");
@@ -569,10 +567,37 @@ class TransactionJsonService {
         return dataSeriesList;
     }
 
-    private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
-            List<StackedPoint> stackedPoints, long liveCaptureTime) throws Exception {
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime, rollupLevelService
-                .getDataPointIntervalMillis(request.from(), request.to(), DataKind.GENERAL));
+    private boolean isProfileOverwritten(TransactionProfileRequest request, String agentRollupId,
+            TransactionQuery query) throws Exception {
+        if (request.auxiliary()
+                && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query)) {
+            return true;
+        }
+        if (!request.auxiliary()
+                && aggregateRepository.shouldHaveMainThreadProfile(agentRollupId, query)) {
+            return true;
+        }
+        return false;
+    }
+
+    private static List<DataSeries> getDataSeriesForTimerChart(TransactionDataRequest request,
+            List<OverviewAggregate> aggregates, long dataPointIntervalMillis, long liveCaptureTime)
+            throws Exception {
+        if (aggregates.isEmpty()) {
+            return Lists.newArrayList();
+        }
+        List<StackedPoint> stackedPoints = Lists.newArrayList();
+        for (OverviewAggregate aggregate : aggregates) {
+            stackedPoints.add(StackedPoint.create(aggregate));
+        }
+        return getTimerDataSeries(request, stackedPoints, dataPointIntervalMillis, liveCaptureTime);
+    }
+
+    private static List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
+            List<StackedPoint> stackedPoints, long dataPointIntervalMillis, long liveCaptureTime)
+            throws Exception {
+        DataSeriesHelper dataSeriesHelper =
+                new DataSeriesHelper(liveCaptureTime, dataPointIntervalMillis);
         final int topX = 5;
         List<String> timerNames = getTopTimerNames(stackedPoints, topX + 1);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
@@ -623,19 +648,6 @@ class TransactionJsonService {
         }
         dataSeriesList.add(otherDataSeries);
         return dataSeriesList;
-    }
-
-    private boolean isProfileOverwritten(TransactionProfileRequest request, String agentRollupId,
-            TransactionQuery query) throws Exception {
-        if (request.auxiliary()
-                && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query)) {
-            return true;
-        }
-        if (!request.auxiliary()
-                && aggregateRepository.shouldHaveMainThreadProfile(agentRollupId, query)) {
-            return true;
-        }
-        return false;
     }
 
     private static Map<Long, Long> getTransactionCounts(

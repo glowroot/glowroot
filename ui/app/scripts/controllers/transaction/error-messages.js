@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ glowroot.controller('ErrorMessagesCtrl', [
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             chartState.plot.getAxes().xaxis.options.min = query.from;
             chartState.plot.getAxes().xaxis.options.max = query.to;
-            chartState.dataPointIntervalMillis = charts.getDataPointIntervalMillis(query.from, query.to);
+            chartState.dataPointIntervalMillis = data.dataPointIntervalMillis;
             if (data.dataSeries.data.length) {
               chartState.plot.setData([{data: data.dataSeries.data}]);
             } else {

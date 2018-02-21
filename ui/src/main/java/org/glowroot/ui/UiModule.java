@@ -130,8 +130,9 @@ public class UiModule {
                 .add(new JvmJsonService(environmentRepository, configRepository, liveJvmService));
         jsonServices.add(new IncidentJsonService(central, incidentRepository, configRepository,
                 agentRollupRepository, clock));
-        jsonServices.add(new ReportJsonService(agentRollupRepository, transactionTypeRepository,
-                aggregateRepository, gaugeValueRepository, rollupLevelService));
+        jsonServices.add(new ReportJsonService(configRepository, agentRollupRepository,
+                transactionTypeRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService));
         jsonServices.add(new ConfigJsonService(transactionTypeRepository, gaugeValueRepository,
                 configRepository));
         jsonServices

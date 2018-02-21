@@ -71,10 +71,11 @@ class SyntheticResultJsonService {
             @BindRequest SyntheticResultRequest request) throws Exception {
         int rollupLevel = rollupLevelService.getRollupLevelForView(request.from(), request.to(),
                 DataKind.GENERAL);
-        long intervalMillis = configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
-        double gapMillis = intervalMillis * 1.5;
-        long revisedFrom = request.from() - intervalMillis;
-        long revisedTo = request.to() + intervalMillis;
+        long dataPointIntervalMillis =
+                configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
+        double gapMillis = dataPointIntervalMillis * 1.5;
+        long revisedFrom = request.from() - dataPointIntervalMillis;
+        long revisedTo = request.to() + dataPointIntervalMillis;
 
         Map<String, List<SyntheticResult>> map = Maps.newLinkedHashMap();
         for (String syntheticMonitorId : request.syntheticMonitorId()) {
@@ -126,6 +127,7 @@ class SyntheticResultJsonService {
         try {
             jg.writeStartObject();
             jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeNumberField("dataPointIntervalMillis", dataPointIntervalMillis);
             jg.writeObjectField("executionCounts", executionCountsList);
             jg.writeObjectField("markings", markings);
             jg.writeEndObject();

@@ -53,6 +53,7 @@ import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.repo.AgentRollupRepository;
 import org.glowroot.common2.repo.AggregateRepository;
+import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.TransactionTypeRepository;
@@ -77,16 +78,19 @@ class ReportJsonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private final ConfigRepository configRepository;
     private final AgentRollupRepository agentRollupRepository;
     private final TransactionTypeRepository transactionTypeRepository;
     private final AggregateRepository aggregateRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final RollupLevelService rollupLevelService;
 
-    ReportJsonService(AgentRollupRepository agentRollupRepository,
+    ReportJsonService(ConfigRepository configRepository,
+            AgentRollupRepository agentRollupRepository,
             TransactionTypeRepository transactionTypeRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
             RollupLevelService rollupLevelService) {
+        this.configRepository = configRepository;
         this.agentRollupRepository = agentRollupRepository;
         this.transactionTypeRepository = transactionTypeRepository;
         this.aggregateRepository = aggregateRepository;
@@ -188,21 +192,37 @@ class ReportJsonService {
         }
 
         List<DataSeries> dataSeriesList;
+        long dataPointIntervalMillis;
         if (metric.startsWith("transaction:") || metric.startsWith("error:")) {
-            dataSeriesList = getTransactionReport(request, timeZone, from, to, rollupCaptureTimeFn,
-                    gapMillis);
+            int rollupLevel =
+                    rollupLevelService.getRollupLevelForReport(from.getTime(), DataKind.GENERAL);
+            // level 2 (30 min intervals) is the minimum level needed
+            rollupLevel = Math.max(rollupLevel, 2);
+            if (rollupLevel == 3) {
+                verifyFourHourAggregateTimeZone(timeZone);
+            }
+            dataSeriesList = getTransactionReport(request, timeZone, from, to, rollupLevel,
+                    rollupCaptureTimeFn, gapMillis);
+            dataPointIntervalMillis =
+                    configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         } else if (metric.startsWith("gauge:")) {
+            int rollupLevel = rollupLevelService.getGaugeRollupLevelForReport(from.getTime());
+            // level 3 (30 min intervals) is the minimum level needed
+            rollupLevel = Math.max(rollupLevel, 3);
+            if (rollupLevel == 4) {
+                verifyFourHourAggregateTimeZone(timeZone);
+            }
             String gaugeName = metric.substring("gauge:".length());
             dataSeriesList = Lists.newArrayList();
             for (String agentRollupId : request.agentRollupIds()) {
-                int rollupLevel = rollupLevelService.getGaugeRollupLevelForReport(from.getTime());
-                // level 3 (30 min intervals) is the minimum level needed
-                rollupLevel = Math.max(rollupLevel, 3);
-                if (rollupLevel == 4) {
-                    verifyFourHourAggregateTimeZone(timeZone);
-                }
                 dataSeriesList.add(getDataSeriesForGauge(agentRollupId, gaugeName, from, to,
                         rollupLevel, rollupCaptureTimeFn, request.rollup(), timeZone, gapMillis));
+            }
+            if (rollupLevel == 0) {
+                dataPointIntervalMillis = configRepository.getGaugeCollectionIntervalMillis();
+            } else {
+                dataPointIntervalMillis =
+                        configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
             }
         } else {
             throw new IllegalStateException("Unexpected metric: " + metric);
@@ -213,6 +233,7 @@ class ReportJsonService {
         try {
             jg.writeStartObject();
             jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeNumberField("dataPointIntervalMillis", dataPointIntervalMillis);
             jg.writeEndObject();
         } finally {
             jg.close();
@@ -252,15 +273,8 @@ class ReportJsonService {
     }
 
     private List<DataSeries> getTransactionReport(ReportRequest request, TimeZone timeZone,
-            Date from, Date to, RollupCaptureTimeFn rollupCaptureTimeFn, double gapMillis)
-            throws Exception {
-        int rollupLevel =
-                rollupLevelService.getRollupLevelForReport(from.getTime(), DataKind.GENERAL);
-        // level 2 (30 min intervals) is the minimum level needed
-        rollupLevel = Math.max(rollupLevel, 2);
-        if (rollupLevel == 3) {
-            verifyFourHourAggregateTimeZone(timeZone);
-        }
+            Date from, Date to, int rollupLevel, RollupCaptureTimeFn rollupCaptureTimeFn,
+            double gapMillis) throws Exception {
         TransactionQuery query = ImmutableTransactionQuery.builder()
                 .transactionType(checkNotNull(request.transactionType()))
                 .transactionName(Strings.emptyToNull(checkNotNull(request.transactionName())))

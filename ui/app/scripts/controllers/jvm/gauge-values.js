@@ -537,9 +537,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
           var rollupConfig0 = $scope.layout.rollupConfigs[0];
-          var dataPointIntervalMillis =
-              charts.getDataPointIntervalMillis($scope.range.chartFrom, $scope.range.chartTo, true);
-          if (dataPointIntervalMillis === rollupConfig0.intervalMillis
+          if (chartState.dataPointIntervalMillis === rollupConfig0.intervalMillis
               && $scope.range.chartTo - $scope.range.chartFrom < 4 * rollupConfig0.viewThresholdMillis) {
             var nonScaledValue = yvalMaps[label][xval];
             var tooltip = '<table class="gt-chart-tooltip">';

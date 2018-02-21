@@ -60,27 +60,29 @@ class GaugeValueJsonService {
             @BindRequest GaugeValueRequest request) throws Exception {
         int rollupLevel = rollupLevelService.getGaugeRollupLevelForView(request.from(),
                 request.to(), agentRollupId.endsWith("::"));
-        long intervalMillis;
+        long dataPointIntervalMillis;
         if (rollupLevel == 0) {
-            intervalMillis = configRepository.getGaugeCollectionIntervalMillis();
+            dataPointIntervalMillis = configRepository.getGaugeCollectionIntervalMillis();
         } else {
-            intervalMillis =
+            dataPointIntervalMillis =
                     configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
         }
-        double gapMillis = intervalMillis * 1.5;
-        long revisedFrom = request.from() - intervalMillis;
-        long revisedTo = request.to() + intervalMillis;
-
-        Map<String, List<GaugeValue>> map = Maps.newLinkedHashMap();
-        for (String gaugeName : request.gaugeName()) {
-            map.put(gaugeName,
-                    getGaugeValues(agentRollupId, revisedFrom, revisedTo, gaugeName, rollupLevel));
+        Map<String, List<GaugeValue>> gaugeValues =
+                getGaugeValues(agentRollupId, request, rollupLevel, dataPointIntervalMillis);
+        if (isEmpty(gaugeValues)) {
+            // fall back to largest aggregates in case expiration settings have recently changed
+            rollupLevel = getLargestRollupLevel();
+            dataPointIntervalMillis =
+                    configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
+            gaugeValues =
+                    getGaugeValues(agentRollupId, request, rollupLevel, dataPointIntervalMillis);
         }
         if (rollupLevel != 0) {
-            syncManualRollupCaptureTimes(map, rollupLevel);
+            syncManualRollupCaptureTimes(gaugeValues, rollupLevel);
         }
+        double gapMillis = dataPointIntervalMillis * 1.5;
         List<DataSeries> dataSeriesList = Lists.newArrayList();
-        for (Map.Entry<String, List<GaugeValue>> entry : map.entrySet()) {
+        for (Map.Entry<String, List<GaugeValue>> entry : gaugeValues.entrySet()) {
             dataSeriesList
                     .add(convertToDataSeriesWithGaps(entry.getKey(), entry.getValue(), gapMillis));
         }
@@ -92,12 +94,27 @@ class GaugeValueJsonService {
         try {
             jg.writeStartObject();
             jg.writeObjectField("dataSeries", dataSeriesList);
+            jg.writeNumberField("dataPointIntervalMillis", dataPointIntervalMillis);
             jg.writeObjectField("allGauges", sortedGauges);
             jg.writeEndObject();
         } finally {
             jg.close();
         }
         return sb.toString();
+    }
+
+    private Map<String, List<GaugeValue>> getGaugeValues(String agentRollupId,
+            GaugeValueRequest request,
+            int rollupLevel, long dataPointIntervalMillis) throws Exception {
+        long revisedFrom = request.from() - dataPointIntervalMillis;
+        long revisedTo = request.to() + dataPointIntervalMillis;
+        Map<String, List<GaugeValue>> map = Maps.newLinkedHashMap();
+        for (String gaugeName : request.gaugeName()) {
+            List<GaugeValue> gaugeValues =
+                    getGaugeValues(agentRollupId, revisedFrom, revisedTo, gaugeName, rollupLevel);
+            map.put(gaugeName, gaugeValues);
+        }
+        return map;
     }
 
     private List<GaugeValue> getGaugeValues(String agentRollupId, long from, long to,
@@ -166,6 +183,19 @@ class GaugeValueJsonService {
                     .build());
             map.put(key, gaugeValues);
         }
+    }
+
+    private boolean isEmpty(Map<String, List<GaugeValue>> map) {
+        for (List<GaugeValue> values : map.values()) {
+            if (!values.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private int getLargestRollupLevel() {
+        return configRepository.getRollupConfigs().size();
     }
 
     static List<GaugeValue> rollUpGaugeValues(List<GaugeValue> orderedNonRolledUpGaugeValues,

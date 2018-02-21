@@ -114,6 +114,8 @@ class ErrorJsonService {
             throughputAggregates = transactionCommonService.getThroughputAggregates(agentRollupId,
                     transactionQuery, autoRefresh);
         }
+        long dataPointIntervalMillis = configRepository.getRollupConfigs()
+                .get(transactionQuery.rollupLevel()).intervalMillis();
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         Map<Long, Long> transactionCountMap = Maps.newHashMap();
@@ -125,11 +127,9 @@ class ErrorJsonService {
         boolean moreAvailable = false;
         if (!throughputAggregates.isEmpty()) {
             long maxCaptureTime = Iterables.getLast(throughputAggregates).captureTime();
-            long resolutionMillis = rollupLevelService.getDataPointIntervalMillis(query.from(),
-                    query.to(), DataKind.GENERAL);
             ErrorMessageResult result = traceRepository.readErrorMessages(agentRollupId,
                     ImmutableTraceQuery.builder().copyFrom(query).to(maxCaptureTime).build(),
-                    filter, resolutionMillis, request.errorMessageLimit());
+                    filter, dataPointIntervalMillis, request.errorMessageLimit());
             List<ErrorPoint> errorPoints = Lists.newArrayList();
             for (ErrorMessagePoint traceErrorPoint : result.points()) {
                 long captureTime = traceErrorPoint.captureTime();
@@ -145,7 +145,8 @@ class ErrorJsonService {
                             traceErrorPoint.errorCount(), transactionCount));
                 }
             }
-            populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra, liveCaptureTime);
+            populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra,
+                    dataPointIntervalMillis, liveCaptureTime);
             records = result.counts().records();
             moreAvailable = result.counts().moreAvailable();
         }
@@ -154,6 +155,7 @@ class ErrorJsonService {
         try {
             jg.writeStartObject();
             jg.writeObjectField("dataSeries", dataSeries);
+            jg.writeNumberField("dataPointIntervalMillis", dataPointIntervalMillis);
             jg.writeObjectField("dataSeriesExtra", dataSeriesExtra);
             jg.writeObjectField("errorMessages", records);
             jg.writeBooleanField("moreErrorMessagesAvailable", moreAvailable);
@@ -215,10 +217,10 @@ class ErrorJsonService {
     }
 
     private void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,
-            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra, long liveCaptureTime)
-            throws Exception {
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime, rollupLevelService
-                .getDataPointIntervalMillis(query.from(), query.to(), DataKind.GENERAL));
+            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra, long dataPointIntervalMillis,
+            long liveCaptureTime) throws Exception {
+        DataSeriesHelper dataSeriesHelper =
+                new DataSeriesHelper(liveCaptureTime, dataPointIntervalMillis);
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {

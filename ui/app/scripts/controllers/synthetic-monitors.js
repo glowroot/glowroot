@@ -253,8 +253,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
           var rollupConfig0 = $scope.layout.rollupConfigs[0];
-          var dataPointIntervalMillis = charts.getDataPointIntervalMillis($scope.range.chartFrom, $scope.range.chartTo);
-          if (dataPointIntervalMillis === rollupConfig0.intervalMillis) {
+          if (chartState.dataPointIntervalMillis === rollupConfig0.intervalMillis) {
             var tooltip = '<table class="gt-chart-tooltip">';
             tooltip += '<tr><td colspan="2" style="font-weight: 600;">' + label;
             tooltip += '</td></tr><tr><td style="padding-right: 10px;">Time:</td><td style="font-weight: 400;">';

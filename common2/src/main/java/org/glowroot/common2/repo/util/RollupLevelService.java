@@ -17,8 +17,6 @@ package org.glowroot.common2.repo.util;
 
 import java.util.List;
 
-import com.google.common.collect.Iterables;
-
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.repo.ConfigRepository;
@@ -108,23 +106,6 @@ public class RollupLevelService {
             }
         }
         return rollupConfigs.size();
-    }
-
-    public long getDataPointIntervalMillis(long from, long to, DataKind dataKind) throws Exception {
-        long millis = to - from;
-        long timeAgoMillis = clock.currentTimeMillis() - from;
-        List<Integer> rollupExpirationHours = getRollupExpirationHours(dataKind);
-        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
-        for (int i = 0; i < rollupConfigs.size() - 1; i++) {
-            RollupConfig currRollupConfig = rollupConfigs.get(i);
-            RollupConfig nextRollupConfig = rollupConfigs.get(i + 1);
-            int expirationHours = rollupExpirationHours.get(i);
-            if (millis < nextRollupConfig.viewThresholdMillis()
-                    && (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis)) {
-                return currRollupConfig.intervalMillis();
-            }
-        }
-        return Iterables.getLast(rollupConfigs).intervalMillis();
     }
 
     private List<Integer> getRollupExpirationHours(DataKind dataKind) throws Exception {
