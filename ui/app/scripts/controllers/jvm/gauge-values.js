@@ -67,6 +67,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       $location.search($scope.buildQueryObject());
       if (locationReplace) {
         $location.replace();
+        locationReplace = false;
       }
       if ($scope.gaugeNames.length) {
         refreshData(autoRefresh);
