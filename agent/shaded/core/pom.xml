@@ -351,6 +351,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
+            <id>default</id>
             <configuration>
               <!-- maven-shade-plugin changes ${basedir} to point wherever the dependency reduced
                 pom is written, see https://issues.apache.org/jira/browse/MSHADE-124,
@@ -368,6 +369,21 @@
                   <Can-Retransform-Classes>true</Can-Retransform-Classes>
                 </manifestEntries>
               </archive>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>sources</id>
+            <configuration>
+              <!-- maven-shade-plugin changes ${basedir} to point wherever the dependency reduced
+                pom is written, see https://issues.apache.org/jira/browse/MSHADE-124,
+                so cannot use simple relative path "dist.xml" here -->
+              <descriptors>
+                <descriptor>${project.build.directory}/../dist-sources.xml</descriptor>
+              </descriptors>
             </configuration>
             <phase>package</phase>
             <goals>
