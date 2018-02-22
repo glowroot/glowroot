@@ -97,7 +97,8 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <!-- jetty 9 uses Servlet API 3.1.0 which conflicts with Tomcat 7 (which uses 3.0) -->
-      <version>8.2.0.v20160908</version>
+      <!-- jetty 8.2 requires Java 7+ which causes "force-java6" profile below to fail -->
+      <version>8.1.22.v20160922</version>
       <scope>test</scope>
     </dependency>
     <dependency>
