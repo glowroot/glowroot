@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,12 +59,11 @@ public class StackTraceCollector {
         processingThread.start();
 
         configService.addConfigListener(new ConfigListener() {
-            private int currIntervalMillis;
             @Override
             public void onChange() {
                 int intervalMillis = configService.getTransactionConfig().profilingIntervalMillis();
-                if (intervalMillis != currIntervalMillis) {
-                    currIntervalMillis = intervalMillis;
+                // TODO report checker framework issue that occurs without checkNotNull
+                if (intervalMillis != checkNotNull(runnable).currIntervalMillis) {
                     checkNotNull(processingThread);
                     processingThread.interrupt();
                 }
@@ -105,6 +104,7 @@ public class StackTraceCollector {
 
     private class InternalRunnable implements Runnable {
 
+        private volatile int currIntervalMillis;
         private volatile boolean closed;
 
         @Override
@@ -112,8 +112,8 @@ public class StackTraceCollector {
             // delay for first
             long remainingInInterval = 0;
             while (!closed) {
-                int intervalMillis = configService.getTransactionConfig().profilingIntervalMillis();
-                if (intervalMillis <= 0) {
+                currIntervalMillis = configService.getTransactionConfig().profilingIntervalMillis();
+                if (currIntervalMillis <= 0) {
                     try {
                         Thread.sleep(Long.MAX_VALUE);
                     } catch (InterruptedException e) {
@@ -124,7 +124,8 @@ public class StackTraceCollector {
                         continue;
                     }
                 }
-                long randomDelayFromIntervalStart = (long) (random.nextFloat() * intervalMillis);
+                long randomDelayFromIntervalStart =
+                        (long) (random.nextFloat() * currIntervalMillis);
                 try {
                     Thread.sleep(remainingInInterval + randomDelayFromIntervalStart);
                 } catch (InterruptedException e) {
@@ -134,7 +135,7 @@ public class StackTraceCollector {
                     remainingInInterval = 0;
                     continue;
                 }
-                remainingInInterval = intervalMillis - randomDelayFromIntervalStart;
+                remainingInInterval = currIntervalMillis - randomDelayFromIntervalStart;
                 try {
                     runInternal();
                 } catch (Throwable t) {
