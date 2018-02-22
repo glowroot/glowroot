@@ -37,11 +37,10 @@
           </a>
         </div>
         <div style="margin: 20px 60px 0 0;" ng-if="dirty">
-          <strong>Restart the JVM to apply changes.</strong>
-          <span style="font-style: italic;" ng-if="jvmRetransformClassesSupported"
-                ng-if="agentRollup.permissions.config.edit.instrumentation">
-            Feeling lucky? Try the red button.
-          </span>
+          <strong>
+            Restart the JVM to apply changes<span ng-if="showApplyChangesButton()">, or use the
+            "Apply changes without restart" button below.</span><span ng-if="!showApplyChangesButton()">.</span>
+          </strong>
         </div>
         <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
              before it gets pushed down by existing instrumentation -->
@@ -70,11 +69,11 @@
               Delete all
             </button>
             <div gt-button
-                 gt-btn-class="btn-danger"
-                 gt-label="Apply changes to running JVM"
+                 gt-btn-class="btn-warning"
+                 gt-label="Apply changes without restart"
                  gt-click="retransformClasses(deferred)"
-                 gt-confirm-header="Apply changes to running JVM?"
-                 gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
+                 gt-confirm-header="Apply changes without restart?"
+                 gt-confirm-body="Warning: This has chance of crashing the JVM (especially on older JVMs)."
                  ng-if="dirty && jvmRetransformClassesSupported"
                  class="gt-inline-block">
             </div>
