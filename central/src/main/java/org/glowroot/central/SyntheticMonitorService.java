@@ -206,13 +206,19 @@ class SyntheticMonitorService implements Runnable {
 
     void close() throws Exception {
         closed = true;
-        // shutdownNow() is needed here to send interrupt to SyntheticMonitorService check threads
+        // shutdownNow() is needed to send interrupt to SyntheticMonitorService user test threads
+        syntheticUserTestExecutor.shutdownNow();
+        if (!syntheticUserTestExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException(
+                    "Timed out waiting for synthetic user test threads to terminate");
+        }
+        // shutdownNow() is needed to send interrupt to SyntheticMonitorService check threads
         checkExecutor.shutdownNow();
         if (!checkExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException(
                     "Timed out waiting for synthetic monitor check threads to terminate");
         }
-        // shutdownNow() is needed here to send interrupt to SyntheticMonitorService main thread
+        // shutdownNow() is needed to send interrupt to SyntheticMonitorService main thread
         mainLoopExecutor.shutdownNow();
         if (!mainLoopExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException(

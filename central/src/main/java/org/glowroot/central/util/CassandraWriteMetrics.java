@@ -37,6 +37,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,8 +79,12 @@ public class CassandraWriteMetrics {
         // clear metrics once a day (midnight UTC) to make sure the map of agent rollup ids doesn't
         // grow unbounded, and also so map of transaction names doesn't become stagnant once it
         // reaches limit
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(writeMetrics::clear,
-                millisUntilNextMidnightUTC, DAYS.toMillis(1), MILLISECONDS);
+        Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .build())
+                .scheduleAtFixedRate(writeMetrics::clear,
+                        millisUntilNextMidnightUTC, DAYS.toMillis(1), MILLISECONDS);
     }
 
     public void setCurrTransactionType(@Nullable String transactionType) {

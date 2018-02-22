@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,10 +118,20 @@ class GrpcServer {
 
         // shutdown to prevent new grpc requests
         if (httpsServer != null) {
-            shutdown(httpsServer);
+            // stop accepting new requests
+            httpsServer.shutdown();
         }
         if (httpServer != null) {
-            shutdown(httpServer);
+            // stop accepting new requests
+            httpServer.shutdown();
+        }
+        // wait for existing requests to complete
+        Thread.sleep(5000);
+        if (httpsServer != null) {
+            shutdownNow(httpsServer);
+        }
+        if (httpServer != null) {
+            shutdownNow(httpServer);
         }
     }
 
@@ -142,7 +152,7 @@ class GrpcServer {
         }
     }
 
-    private static void shutdown(Server server) throws InterruptedException {
+    private static void shutdownNow(Server server) throws InterruptedException {
         // TODO shutdownNow() has been needed to interrupt grpc threads since grpc-java 1.7.0
         server.shutdownNow();
         if (!server.awaitTermination(10, SECONDS)) {

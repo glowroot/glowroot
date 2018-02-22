@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,13 @@ public class Procrun {
         if (args[0].equals("start")) {
             centralModule = CentralModule.create();
         } else if (args[0].equals("stop")) {
-            if (centralModule != null) {
+            if (centralModule == null) {
+                // has not finished starting up
+                System.exit(0);
+            } else {
                 centralModule.shutdown();
+                // in case there are any stray non-daemon threads
+                System.exit(0);
             }
         } else {
             throw new IllegalStateException("Unexpected arg: " + args[0]);

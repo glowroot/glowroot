@@ -319,6 +319,16 @@ public class CentralModule {
             clusterManager.close();
             if (startupLogger != null) {
                 startupLogger.info("shutdown complete");
+                for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces()
+                        .entrySet()) {
+                    Thread thread = entry.getKey();
+                    StackTraceElement[] stackTrace = entry.getValue();
+                    if (!thread.isDaemon() && thread != Thread.currentThread()
+                            && stackTrace.length != 0) {
+                        startupLogger.info("Found non-daemon thread after shutdown: {}\n    {}",
+                                thread.getName(), Joiner.on("\n    ").join(stackTrace));
+                    }
+                }
             }
         } catch (Throwable t) {
             if (startupLogger == null) {
@@ -667,14 +677,14 @@ public class CentralModule {
             } catch (RuntimeException e) {
                 // clean up
                 if (session != null) {
-                    session.close();
+                    session.getCluster().close();
                 }
                 throw e;
             }
         }
         // clean up
         if (session != null) {
-            session.close();
+            session.getCluster().close();
         }
         checkNotNull(lastException);
         throw lastException;
