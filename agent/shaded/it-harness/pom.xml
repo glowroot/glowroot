@@ -12,8 +12,8 @@
 
   <artifactId>glowroot-agent-it-harness</artifactId>
 
-  <name>Glowroot Agent Integration Test Harness (Shaded)</name>
-  <description>Glowroot Agent Integration Test Harness (Shaded)</description>
+  <name>Glowroot Agent Integration Test Harness</name>
+  <description>Glowroot Agent Integration Test Harness</description>
 
   <dependencies>
     <dependency>

@@ -12,8 +12,8 @@
 
   <artifactId>glowroot-agent-core</artifactId>
 
-  <name>Glowroot Agent Core (Shaded)</name>
-  <description>Glowroot Agent Core (Shaded)</description>
+  <name>Glowroot Agent Core</name>
+  <description>Glowroot Agent Core</description>
 
   <dependencies>
     <dependency>

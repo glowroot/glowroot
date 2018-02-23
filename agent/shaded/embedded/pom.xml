@@ -12,8 +12,8 @@
 
   <artifactId>glowroot-agent-embedded</artifactId>
 
-  <name>Glowroot Embedded Collector (Shaded)</name>
-  <description>Glowroot Embedded Collector (Shaded)</description>
+  <name>Glowroot Embedded Collector</name>
+  <description>Glowroot Embedded Collector</description>
 
   <dependencies>
     <dependency>
