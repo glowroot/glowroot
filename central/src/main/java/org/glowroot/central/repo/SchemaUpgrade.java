@@ -99,7 +99,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 71;
+    private static final int CURR_SCHEMA_VERSION = 73;
 
     private final Session session;
     private final KeyspaceMetadata keyspaceMetadata;
@@ -443,6 +443,15 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 71) {
             updateCentralStorageConfig();
             updateSchemaVersion(71);
+        }
+        // 0.10.3 to 0.10.4
+        if (initialSchemaVersion < 72) {
+            rewriteV09AgentRollupPart1();
+            updateSchemaVersion(72);
+        }
+        if (initialSchemaVersion < 73) {
+            rewriteV09AgentRollupPart2();
+            updateSchemaVersion(73);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2286,6 +2295,45 @@ public class SchemaUpgrade {
         boundStatement.setString(0, "storage");
         boundStatement.setString(1, mapper.writeValueAsString(storageConfig));
         session.execute(boundStatement);
+    }
+
+    private void rewriteV09AgentRollupPart1() throws Exception {
+        dropTableIfExists("v09_agent_rollup_temp");
+        session.createTableWithLCS("create table if not exists v09_agent_rollup_temp (one int,"
+                + " v09_agent_id varchar, v09_agent_rollup_id varchar, primary key (one,"
+                + " v09_agent_id))");
+        PreparedStatement insertTempPS = session.prepare("insert into v09_agent_rollup_temp (one,"
+                + " v09_agent_id, v09_agent_rollup_id) values (1, ?, ?)");
+        ResultSet results = session.execute(
+                "select v09_agent_id, v09_agent_rollup_id from v09_agent_rollup where one = 1");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setString(1, row.getString(1));
+            session.execute(boundStatement);
+        }
+    }
+
+    private void rewriteV09AgentRollupPart2() throws Exception {
+        if (!tableExists("v09_agent_rollup_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTableIfExists("v09_agent_rollup");
+        session.createTableWithLCS("create table if not exists v09_agent_rollup (one int,"
+                + " v09_agent_id varchar, v09_agent_rollup_id varchar, primary key (one,"
+                + " v09_agent_id))");
+        PreparedStatement insertPS = session.prepare("insert into v09_agent_rollup (one,"
+                + " v09_agent_id, v09_agent_rollup_id) values (1, ?, ?)");
+        ResultSet results = session.execute("select v09_agent_id, v09_agent_rollup_id from"
+                + " v09_agent_rollup_temp where one = 1");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setString(1, row.getString(1));
+            session.execute(boundStatement);
+        }
+        dropTableIfExists("v09_agent_rollup_temp");
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

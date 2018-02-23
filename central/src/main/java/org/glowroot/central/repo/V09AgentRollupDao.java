@@ -49,7 +49,7 @@ public class V09AgentRollupDao {
 
         session.createTableWithLCS("create table if not exists v09_agent_rollup (one int,"
                 + " v09_agent_id varchar, v09_agent_rollup_id varchar, primary key (one,"
-                + " v09_agent_id, v09_agent_rollup_id))");
+                + " v09_agent_id))");
 
         insertPS = session.prepare("insert into v09_agent_rollup (one, v09_agent_id,"
                 + " v09_agent_rollup_id) values (1, ?, ?)");
