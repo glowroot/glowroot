@@ -116,6 +116,17 @@ case "$1" in
                                   -Dglowroot.test.jdbcConnectionType=GLASSFISH_JDBC_POOL_WRAPPED \
                                   --no-snapshot-updates \
                                   -B
+                 if [[ "$TEST_SHADED" == "true" ]]
+                 then
+                   mvn clean verify -pl :glowroot-agent-logger-plugin \
+                                    -DargLine="$surefire_jvm_args" \
+                                    $test_shaded_opt \
+                                    -Dglowroot.it.harness=javaagent \
+                                    -Dglowroot.test.julManager=org.jboss.logmanager.LogManager \
+                                    -Dtest.it=JavaLoggingIT \
+                                    --no-snapshot-updates \
+                                    -B
+                 fi
                fi
                ;;
 

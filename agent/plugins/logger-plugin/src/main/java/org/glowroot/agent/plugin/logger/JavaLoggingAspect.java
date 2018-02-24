@@ -61,20 +61,7 @@ public class JavaLoggingAspect {
                 // Logger.log(LogRecord) was called directly
                 return null;
             }
-            // cannot check Logger.getFilter().isLoggable(LogRecord) because the Filter object
-            // could be stateful and might alter its state (e.g.
-            // com.sun.mail.util.logging.DurationFilter)
-            String formattedMessage = nullToEmpty(formatter.formatMessage(record));
-            int lvl = level.intValue();
-            Throwable t = record.getThrown();
-            if (LoggerPlugin.markTraceAsError(lvl >= Level.SEVERE.intValue(),
-                    lvl >= Level.WARNING.intValue(), t != null)) {
-                context.setTransactionError(formattedMessage, t);
-            }
-            TraceEntry traceEntry =
-                    context.startTraceEntry(new LogMessageSupplier(level.getName().toLowerCase(),
-                            record.getLoggerName(), formattedMessage), timerName);
-            return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
+            return onBeforeCommon(context, record, level);
         }
 
         @OnAfter
@@ -97,8 +84,46 @@ public class JavaLoggingAspect {
             }
         }
 
+        private static LogAdviceTraveler onBeforeCommon(ThreadContext context, LogRecord record,
+                Level level) {
+            // cannot check Logger.getFilter().isLoggable(LogRecord) because the Filter object
+            // could be stateful and might alter its state (e.g.
+            // com.sun.mail.util.logging.DurationFilter)
+            String formattedMessage = nullToEmpty(formatter.formatMessage(record));
+            int lvl = level.intValue();
+            Throwable t = record.getThrown();
+            if (LoggerPlugin.markTraceAsError(lvl >= Level.SEVERE.intValue(),
+                    lvl >= Level.WARNING.intValue(), t != null)) {
+                context.setTransactionError(formattedMessage, t);
+            }
+            TraceEntry traceEntry =
+                    context.startTraceEntry(new LogMessageSupplier(level.getName().toLowerCase(),
+                            record.getLoggerName(), formattedMessage), timerName);
+            return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
+        }
+
         private static String nullToEmpty(@Nullable String s) {
             return s == null ? "" : s;
+        }
+    }
+
+    @Pointcut(className = "org.jboss.logmanager.LoggerNode", methodName = "publish",
+            methodParameterTypes = {"org.jboss.logmanager.ExtLogRecord"}, nestingGroup = "logging",
+            timerName = TIMER_NAME)
+    public static class JBossLogAdvice {
+
+        @OnBefore
+        public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
+                @BindParameter @Nullable LogRecord record) {
+            if (record == null) {
+                return null;
+            }
+            return LogAdvice.onBeforeCommon(context, record, record.getLevel());
+        }
+
+        @OnAfter
+        public static void onAfter(@BindTraveler @Nullable LogAdviceTraveler traveler) {
+            LogAdvice.onAfter(traveler);
         }
     }
 

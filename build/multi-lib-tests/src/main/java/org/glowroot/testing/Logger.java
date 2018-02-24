@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ public class Logger {
         logback();
         log4j();
         log4j2x();
+        jbossLogging();
     }
 
     private static void logback() throws Exception {
@@ -189,6 +190,30 @@ public class Logger {
         runJava7(test);
     }
 
+    private static void jbossLogging() throws Exception {
+        final String test = "JavaLoggingIT";
+        for (int i = 0; i <= 2; i++) {
+            updateLibVersion("jboss.logging.version", "1.2." + i + ".GA");
+            runJBossLogging(test);
+        }
+        for (int i = 0; i <= 2; i++) {
+            updateLibVersion("jboss.logging.version", "1.3." + i + ".Final");
+            runJBossLogging(test);
+        }
+        for (int i = 0; i <= 3; i++) {
+            updateLibVersion("jboss.logging.version", "1.4." + i + ".Final");
+            runJBossLogging(test);
+        }
+        for (int i = 0; i <= 9; i++) {
+            updateLibVersion("jboss.logging.version", "1.5." + i + ".Final");
+            runJBossLoggingJava7(test);
+        }
+        for (int i = 0; i <= 9; i++) {
+            updateLibVersion("jboss.logging.version", "2.0." + i + ".Final");
+            runJBossLoggingJava7(test);
+        }
+    }
+
     private static void updateLibVersion(String property, String version) throws IOException {
         Util.updateLibVersion(MODULE_PATH, property, version);
     }
@@ -203,5 +228,13 @@ public class Logger {
 
     private static void runJava7(String test) throws Exception {
         Util.runTest(MODULE_PATH, test, JAVA7, JAVA8);
+    }
+
+    private static void runJBossLogging(String test) throws Exception {
+        Util.runTest(MODULE_PATH, test, "jboss-logging", JAVA6, JAVA7, JAVA8);
+    }
+
+    private static void runJBossLoggingJava7(String test) throws Exception {
+        Util.runTest(MODULE_PATH, test, "jboss-logging", JAVA7, JAVA8);
     }
 }

@@ -22,6 +22,7 @@
     <log4j.version>1.2.17</log4j.version>
     <log4j2x.version>2.10.0</log4j2x.version>
     <commons.logging.version>1.2</commons.logging.version>
+    <jboss.logging.version>2.0.9.Final</jboss.logging.version>
   </properties>
 
   <dependencies>
@@ -39,6 +40,11 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -91,6 +97,12 @@
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
       <version>${commons.logging.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.logmanager</groupId>
+      <artifactId>jboss-logmanager</artifactId>
+      <version>${jboss.logging.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -198,6 +210,21 @@
             </plugin>
           </plugins>
         </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>jboss-logging</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+                <glowroot.test.julManager>org.jboss.logmanager.LogManager</glowroot.test.julManager>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
       </build>
     </profile>
     <profile>

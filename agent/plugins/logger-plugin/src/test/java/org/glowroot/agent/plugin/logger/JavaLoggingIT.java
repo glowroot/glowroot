@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,13 @@
  */
 package org.glowroot.agent.plugin.logger;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import com.google.common.base.Strings;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -28,8 +30,8 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +46,13 @@ public class JavaLoggingIT {
     public static void setUp() throws Exception {
         Assume.assumeFalse(isBridged());
         Assume.assumeTrue(isShaded());
-        container = Containers.createJavaagent();
+        String julManager = System.getProperty("glowroot.test.julManager");
+        if (Strings.isNullOrEmpty(julManager)) {
+            container = JavaagentContainer.create();
+        } else {
+            container = JavaagentContainer.createWithExtraJvmArgs(
+                    Arrays.asList("-Djava.util.logging.manager=" + julManager));
+        }
     }
 
     private static boolean isBridged() {
@@ -212,8 +220,7 @@ public class JavaLoggingIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("log info: null - cde__");
+        assertThat(entry.getMessage()).isEqualTo("log info: null - cde__");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
@@ -222,8 +229,7 @@ public class JavaLoggingIT {
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("log severe: null - efg__");
+        assertThat(entry.getMessage()).isEqualTo("log severe: null - efg__");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -481,10 +487,6 @@ public class JavaLoggingIT {
             try {
                 logger.log(null, "abc__");
             } catch (NullPointerException e) {
-                // re-throw if it does not originate from JUL
-                if (!e.getStackTrace()[0].getClassName().startsWith("java.util.logging.")) {
-                    throw e;
-                }
             }
             logger.log(Level.FINEST, "vwx__");
             logger.log(Level.FINER, "wxy__");
@@ -509,10 +511,6 @@ public class JavaLoggingIT {
             try {
                 logger.log(null, "abc___", new IllegalStateException("123_"));
             } catch (NullPointerException e) {
-                // re-throw if it does not originate from JUL
-                if (!e.getStackTrace()[0].getClassName().startsWith("java.util.logging.")) {
-                    throw e;
-                }
             }
             logger.log(Level.FINEST, "vwx___", new IllegalStateException("111_"));
             logger.log(Level.FINER, "wxy___", new IllegalStateException("222_"));
