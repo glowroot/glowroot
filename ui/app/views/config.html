@@ -33,7 +33,8 @@
           <option ng-repeat="agentRollup in agentRollups"
                   data-href="{{agentRollupUrl(agentRollup.id)}}"
                   data-tokens="{{agentRollup.display}}"
-                  value="{{agentRollup.id}}">
+                  value="{{agentRollup.id}}"
+                  ng-disabled="agentRollup.disabled">
             {{agentRollup.indentedDisplay}}
           </option>
           <option disabled

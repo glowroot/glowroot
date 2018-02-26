@@ -86,17 +86,17 @@ class LayoutJsonService {
         for (AgentRollup agentRollup : agentRollups) {
             Permissions permissions =
                     LayoutService.getPermissions(authentication, agentRollup.id());
-            if (filterFn.apply(permissions)) {
+            List<FilteredAgentRollup> children =
+                    filter(agentRollup.children(), authentication, filterFn);
+            boolean visible = filterFn.apply(permissions);
+            if (visible || !children.isEmpty()) {
                 filtered.add(ImmutableFilteredAgentRollup.builder()
                         .id(agentRollup.id())
                         .display(agentRollup.display())
                         .lastDisplayPart(agentRollup.lastDisplayPart())
-                        .addAllChildren(filter(agentRollup.children(), authentication, filterFn))
+                        .addAllChildren(children)
                         .permissions(permissions)
                         .build());
-            } else {
-                // move children (if they are accessible themselves) up to this level
-                filtered.addAll(filter(agentRollup.children(), authentication, filterFn));
             }
         }
         // re-sort in case any children were moved up to this level
@@ -109,6 +109,7 @@ class LayoutJsonService {
                 .id(agentRollup.id())
                 .display(agentRollup.display())
                 .lastDisplayPart(agentRollup.lastDisplayPart())
+                .disabled(!agentRollup.permissions().hasSomeAccess())
                 .depth(depth)
                 .build();
         dropdown.add(agentRollupLayout);
@@ -122,6 +123,7 @@ class LayoutJsonService {
         String id();
         String display();
         String lastDisplayPart();
+        boolean disabled();
         int depth();
     }
 
