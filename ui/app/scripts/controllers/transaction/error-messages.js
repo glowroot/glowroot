@@ -117,7 +117,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     }
 
     $scope.tracesQueryString = function (errorMessage) {
-      var query = $scope.buildQueryObject();
+      var query = $scope.buildQueryObject({});
       if (errorMessage.message.length <= 1000) {
         query.errorMessageComparator = 'equals';
         query.errorMessage = errorMessage.message;
