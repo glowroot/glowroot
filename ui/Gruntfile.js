@@ -71,6 +71,8 @@ module.exports = function (grunt) {
             context: '/backend',
             host: 'localhost',
             port: 4000
+            // if backend is served over https, use
+            // protocol: 'https:'
           },
           {
             context: '/export',
@@ -309,7 +311,7 @@ module.exports = function (grunt) {
         },
         blockReplacements: {
           // this is workaround for grunt-usemin issue #391
-          js: function (block){
+          js: function (block) {
             if (block.dest === 'scripts/vendor-flame-graph.js') {
               return '<script async src="' + block.dest + '"><\/script>';
             } else {
