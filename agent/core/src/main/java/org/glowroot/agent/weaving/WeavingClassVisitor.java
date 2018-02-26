@@ -102,6 +102,8 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private final AnalyzedWorld analyzedWorld;
 
+    private final Set<String> shimMethods;
+
     private @MonotonicNonNull Type type;
 
     // these are for handling class and method metas
@@ -123,6 +125,14 @@ class WeavingClassVisitor extends ClassVisitor {
         this.mixinTypes = mixinTypes;
         this.methodAdvisors = methodAdvisors;
         this.analyzedWorld = analyzedWorld;
+
+        shimMethods = Sets.newHashSet();
+        for (ShimType shimType : shimTypes) {
+            for (java.lang.reflect.Method shimMethod : shimType.shimMethods()) {
+                Method method = Method.getMethod(shimMethod);
+                shimMethods.add(method.getName() + method.getDescriptor());
+            }
+        }
 
         // cannot store ClassNode in MixinType and re-use across MethodClassVisitors because
         // MethodNode.accept() cannot be called multiple times (at least not across multiple
@@ -162,6 +172,10 @@ class WeavingClassVisitor extends ClassVisitor {
             return cw.visitMethod(access, name, desc, signature, exceptions);
         }
         if (isMixinProxy(name, desc)) {
+            return null;
+        }
+        if (shimMethods.contains(name + desc)) {
+            // ignore proxy implementations of shim methods (they will be implemented in visitEnd())
             return null;
         }
         List<Advice> matchingAdvisors = methodAdvisors.get(name + desc);
