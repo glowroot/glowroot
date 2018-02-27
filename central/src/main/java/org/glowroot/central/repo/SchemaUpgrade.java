@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -1186,7 +1187,8 @@ public class SchemaUpgrade {
                     ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
         }
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
         for (long captureTime : sortedCaptureTimes) {
@@ -1199,6 +1201,7 @@ public class SchemaUpgrade {
                 boundStatement.setString(i++, row.gaugeName());
                 boundStatement.setInt(i++, adjustedTTL);
                 futures.add(session.executeAsync(boundStatement));
+                waitForSome(futures);
             }
         }
         MoreFutures.waitForAll(futures);
@@ -1363,7 +1366,8 @@ public class SchemaUpgrade {
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(agentIdsPerCaptureTime.keySet());
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         for (long captureTime : sortedCaptureTimes) {
             int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
             for (String agentId : agentIdsPerCaptureTime.get(captureTime)) {
@@ -1373,6 +1377,7 @@ public class SchemaUpgrade {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setInt(i++, adjustedTTL);
                 futures.add(session.executeAsync(boundStatement));
+                waitForSome(futures);
             }
         }
         MoreFutures.waitForAll(futures);
@@ -1692,12 +1697,14 @@ public class SchemaUpgrade {
         PreparedStatement insertTempPS = session.prepare("insert into heartbeat_temp (agent_id,"
                 + " central_capture_time) values (?, ?)");
         ResultSet results = session.execute("select agent_id, central_capture_time from heartbeat");
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind();
             boundStatement.setString(0, row.getString(0));
             boundStatement.setTimestamp(1, row.getTimestamp(1));
             futures.add(session.executeAsync(boundStatement));
+            waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
         logger.info("rewriting heartbeat table (part 1) - complete");
@@ -1719,7 +1726,8 @@ public class SchemaUpgrade {
         int ttl = Ints.saturatedCast(HOURS.toSeconds(HeartbeatDao.EXPIRATION_HOURS));
         ResultSet results =
                 session.execute("select agent_id, central_capture_time from heartbeat_temp");
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -1736,6 +1744,7 @@ public class SchemaUpgrade {
             boundStatement.setTimestamp(i++, centralCaptureDate);
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
+            waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
         dropTableIfExists("heartbeat_temp");
@@ -1852,13 +1861,15 @@ public class SchemaUpgrade {
                 + " (agent_rollup_id, capture_time, gauge_name) values (?, ?, ?) using ttl ?");
         ResultSet results =
                 session.execute("select agent_rollup_id, capture_time, gauge_name from gauge_name");
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind();
             boundStatement.setString(0, row.getString(0));
             boundStatement.setTimestamp(1, row.getTimestamp(1));
             boundStatement.setString(2, row.getString(2));
             futures.add(session.executeAsync(boundStatement));
+            waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
         logger.info("rewriting gauge_name table (part 1) - complete");
@@ -1882,7 +1893,8 @@ public class SchemaUpgrade {
         int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
         ResultSet results = session
                 .execute("select agent_rollup_id, capture_time, gauge_name from gauge_name_temp");
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -1899,6 +1911,7 @@ public class SchemaUpgrade {
             boundStatement.setString(2, row.getString(2));
             boundStatement.setInt(3, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
+            waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
         dropTableIfExists("gauge_name_temp");
@@ -2007,7 +2020,8 @@ public class SchemaUpgrade {
         ResultSet results = session.execute("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id, duration_nanos, error, headline, user, attributes, partial"
                 + " from trace_tt_slow_point");
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
@@ -2048,6 +2062,7 @@ public class SchemaUpgrade {
                 logger.info("processed {} records", rowCount);
                 stopwatch.reset().start();
             }
+            waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
         logger.info("populating trace_tt_slow_count_partial and trace_tt_slow_point_partial tables"
@@ -2067,7 +2082,8 @@ public class SchemaUpgrade {
                 + " and trace_id = ?");
         ResultSet results = session.execute("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id from trace_tt_slow_count_partial");
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
@@ -2086,6 +2102,7 @@ public class SchemaUpgrade {
             copyString(row, boundStatement, i++); // agent_id
             copyString(row, boundStatement, i++); // trace_id
             futures.add(session.executeAsync(boundStatement));
+            waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
         dropColumnIfExists("trace_tt_slow_point", "partial");
@@ -2119,7 +2136,8 @@ public class SchemaUpgrade {
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id, duration_nanos, error,"
                 + " headline, user, attributes, partial from trace_tn_slow_point");
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
@@ -2162,6 +2180,7 @@ public class SchemaUpgrade {
                 logger.info("processed {} records", rowCount);
                 stopwatch.reset().start();
             }
+            waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
         logger.info("populating trace_tn_slow_count_partial and trace_tn_slow_point_partial tables"
@@ -2182,7 +2201,8 @@ public class SchemaUpgrade {
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id from"
                 + " trace_tn_slow_count_partial");
-        List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
@@ -2203,6 +2223,7 @@ public class SchemaUpgrade {
             copyString(row, boundStatement, i++); // agent_id
             copyString(row, boundStatement, i++); // trace_id
             futures.add(session.executeAsync(boundStatement));
+            waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
         dropColumnIfExists("trace_tn_slow_point", "partial");
@@ -2372,6 +2393,15 @@ public class SchemaUpgrade {
         }
         // try one last time and let exception bubble up
         session.execute("drop table if exists " + tableName);
+    }
+
+    // this is needed to prevent OOM due to ever expanding list of futures (and the result sets that
+    // they retain)
+    private static void waitForSome(LinkedList<ListenableFuture<ResultSet>> futures)
+            throws Exception {
+        while (futures.size() > Session.MAX_CONCURRENT_QUERIES) {
+            futures.removeFirst().get();
+        }
     }
 
     public static AgentConfig upgradeOldAgentConfig(AgentConfig oldAgentConfig) {
