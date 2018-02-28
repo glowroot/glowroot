@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.init;
 
+import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
@@ -48,9 +50,11 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.GaugeConfig;
 import org.glowroot.agent.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.agent.config.ImmutableMBeanAttribute;
+import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
 import org.glowroot.agent.util.ThreadFactories;
+import org.glowroot.agent.weaving.Java9;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.common.util.Styles;
@@ -82,7 +86,8 @@ class GaugeCollector extends ScheduledRunnable {
     private @MonotonicNonNull Map<String, RawCounterValue> priorRawCounterValues;
 
     GaugeCollector(ConfigService configService, Collector collector,
-            LazyPlatformMBeanServer lazyPlatformMBeanServer, Clock clock, Ticker ticker) {
+            LazyPlatformMBeanServer lazyPlatformMBeanServer,
+            final @Nullable Instrumentation instrumentation, Clock clock, Ticker ticker) {
         this.configService = configService;
         this.collector = collector;
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
@@ -97,6 +102,10 @@ class GaugeCollector extends ScheduledRunnable {
             @Override
             public void postInit(MBeanServer mbeanServer) {
                 try {
+                    if (JavaVersion.isGreaterThanOrEqualToJava9() && instrumentation != null) {
+                        Java9.grantAccess(instrumentation, "org.glowroot.agent.init.GaugeCollector",
+                                "sun.management.ManagementFactoryHelper", true);
+                    }
                     Class<?> sunManagementFactoryHelperClass =
                             Class.forName("sun.management.ManagementFactoryHelper");
                     Method registerInternalMBeansMethod = sunManagementFactoryHelperClass

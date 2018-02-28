@@ -194,6 +194,9 @@ public class AgentModule {
             logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation);
         }
 
+        ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
+        ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
+
         // need to initialize some classes while still single threaded in order to prevent possible
         // deadlock later on
         try {
@@ -249,6 +252,14 @@ public class AgentModule {
         transactionService.setTransactionCollector(transactionCollector);
 
         lazyPlatformMBeanServer = LazyPlatformMBeanServer.create();
+        bytecodeService.setOnExitingGetPlatformMBeanServer(new Runnable() {
+            @Override
+            public void run() {
+                // TODO report checker framework issue that occurs without checkNotNull
+                checkNotNull(lazyPlatformMBeanServer);
+                lazyPlatformMBeanServer.setPlatformMBeanServerAvailable();
+            }
+        });
         File[] roots = File.listRoots();
         if (roots != null) {
             for (File root : roots) {
@@ -262,7 +273,7 @@ public class AgentModule {
             }
         }
         gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
-                clock, ticker);
+                instrumentation, clock, ticker);
         // using fixed rate to keep gauge collections close to on the second mark
         long gaugeCollectionIntervalMillis = configService.getGaugeCollectionIntervalMillis();
         gaugeCollector.scheduleWithFixedDelay(gaugeCollectionIntervalMillis, MILLISECONDS);
@@ -326,6 +337,7 @@ public class AgentModule {
         List<String> runnableCallableClasses = Lists.newArrayList();
         boolean julLoggerLoaded = false;
         Set<String> hackClassNames = ImmutableSet.of(
+                Weaver.MANAGEMENT_FACTORY_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.JBOSS_WELD_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.JBOSS_MODULES_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.FELIX_OSGI_HACK_CLASS_NAME.replace('/', '.'),

@@ -44,6 +44,9 @@ public class BytecodeServiceImpl implements BytecodeService {
     private volatile @MonotonicNonNull OnEnteringMain onEnteringMain;
     private final AtomicBoolean hasRunOnEnteringMain = new AtomicBoolean();
 
+    private volatile @MonotonicNonNull Runnable onExitingGetPlatformMBeanServer;
+    private final AtomicBoolean hasRunOnExitingGetPlatformMBeanServer = new AtomicBoolean();
+
     public BytecodeServiceImpl(TransactionRegistry transactionRegistry,
             TransactionService transactionService) {
         this.transactionRegistry = transactionRegistry;
@@ -52,6 +55,10 @@ public class BytecodeServiceImpl implements BytecodeService {
 
     public void setOnEnteringMain(OnEnteringMain onEnteringMain) {
         this.onEnteringMain = onEnteringMain;
+    }
+
+    public void setOnExitingGetPlatformMBeanServer(Runnable onExitingGetPlatformMBeanServer) {
+        this.onExitingGetPlatformMBeanServer = onExitingGetPlatformMBeanServer;
     }
 
     @Override
@@ -64,6 +71,21 @@ public class BytecodeServiceImpl implements BytecodeService {
         }
         try {
             onEnteringMain.run();
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
+        }
+    }
+
+    @Override
+    public void exitingGetPlatformMBeanServer() {
+        if (onExitingGetPlatformMBeanServer == null) {
+            return;
+        }
+        if (hasRunOnExitingGetPlatformMBeanServer.getAndSet(true)) {
+            return;
+        }
+        try {
+            onExitingGetPlatformMBeanServer.run();
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
         }

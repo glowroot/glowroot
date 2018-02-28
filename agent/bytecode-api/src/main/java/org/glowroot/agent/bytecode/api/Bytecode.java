@@ -32,6 +32,10 @@ public class Bytecode {
         service.enteringMain();
     }
 
+    public static void exitingGetPlatformMBeanServer() {
+        service.exitingGetPlatformMBeanServer();
+    }
+
     public static ThreadContextThreadLocal.Holder getCurrentThreadContextHolder() {
         return service.getCurrentThreadContextHolder();
     }

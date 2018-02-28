@@ -26,6 +26,8 @@ public interface BytecodeService {
 
     void enteringMain();
 
+    void exitingGetPlatformMBeanServer();
+
     ThreadContextThreadLocal.Holder getCurrentThreadContextHolder();
 
     ThreadContextPlus createOptionalThreadContext(

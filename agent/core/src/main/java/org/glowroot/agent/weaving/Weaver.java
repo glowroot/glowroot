@@ -42,6 +42,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.util.ASMifier;
@@ -49,6 +50,7 @@ import org.objectweb.asm.util.TraceClassVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.bytecode.api.Bytecode;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.ThreadContextImpl;
 import org.glowroot.agent.impl.TimerImpl;
@@ -68,6 +70,8 @@ import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 
 public class Weaver {
 
+    public static final String MANAGEMENT_FACTORY_HACK_CLASS_NAME =
+            "java/lang/management/ManagementFactory";
     public static final String JBOSS_WELD_HACK_CLASS_NAME = "org/jboss/weld/util/Decorators";
     public static final String JBOSS_MODULES_HACK_CLASS_NAME = "org/jboss/modules/Module";
     public static final String FELIX_OSGI_HACK_CLASS_NAME =
@@ -178,7 +182,13 @@ public class Weaver {
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         byte[] maybeProcessedBytes = null;
-        if (className.equals(JBOSS_WELD_HACK_CLASS_NAME)) {
+        if (className.equals(MANAGEMENT_FACTORY_HACK_CLASS_NAME)) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new ManagementFactoryHackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals(JBOSS_WELD_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossWeldHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
@@ -378,6 +388,44 @@ public class Weaver {
             MethodVisitor mv =
                     checkNotNull(cv).visitMethod(access, name, desc, signature, exceptions);
             return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
+        }
+    }
+
+    private static class ManagementFactoryHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        ManagementFactoryHackClassVisitor(ClassWriter cw) {
+            super(ASM6, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            if (name.equals("getPlatformMBeanServer")
+                    && desc.equals("()Ljavax/management/MBeanServer;")) {
+                return new ManagementFactoryHackMethodVisitor(mv, access, name, desc);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class ManagementFactoryHackMethodVisitor extends AdviceAdapter {
+
+        private ManagementFactoryHackMethodVisitor(MethodVisitor mv, int access,
+                String name, String desc) {
+            super(ASM6, mv, access, name, desc);
+        }
+
+        @Override
+        protected void onMethodExit(int opcode) {
+            if (opcode != ATHROW) {
+                visitMethodInsn(INVOKESTATIC, Type.getType(Bytecode.class).getInternalName(),
+                        "exitingGetPlatformMBeanServer", "()V", false);
+            }
         }
     }
 

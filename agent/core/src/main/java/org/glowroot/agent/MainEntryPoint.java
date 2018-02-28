@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -102,8 +101,6 @@ public class MainEntryPoint {
                 Java9.grantAccessToGlowroot(instrumentation, baseModule);
                 Java9.grantAccess(instrumentation, "org.glowroot.agent.weaving.ClassLoaders",
                         "java.lang.ClassLoader", false);
-                Java9.grantAccess(instrumentation, "org.glowroot.agent.init.GaugeCollector",
-                        "sun.management.ManagementFactoryHelper", true);
                 Java9.grantAccess(instrumentation, "io.netty.util.internal.ReflectionUtil",
                         "java.nio.DirectByteBuffer", false);
                 Java9.grantAccess(instrumentation, "io.netty.util.internal.ReflectionUtil",
@@ -196,8 +193,6 @@ public class MainEntryPoint {
     @RequiresNonNull("startupLogger")
     private static void start(Directories directories, Map<String, String> properties,
             @Nullable Instrumentation instrumentation) throws Exception {
-        ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
-        ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion(MainEntryPoint.class);
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
