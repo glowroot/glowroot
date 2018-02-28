@@ -24,6 +24,8 @@ import org.glowroot.agent.plugin.api.TraceEntry;
 
 public interface BytecodeService {
 
+    void enteringMain();
+
     ThreadContextThreadLocal.Holder getCurrentThreadContextHolder();
 
     ThreadContextPlus createOptionalThreadContext(

@@ -28,6 +28,10 @@ public class Bytecode {
 
     private Bytecode() {}
 
+    public static void enteringMainMethod() {
+        service.enteringMain();
+    }
+
     public static ThreadContextThreadLocal.Holder getCurrentThreadContextHolder() {
         return service.getCurrentThreadContextHolder();
     }

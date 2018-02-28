@@ -16,8 +16,13 @@
 package org.glowroot.agent.impl;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
+
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.BytecodeService;
 import org.glowroot.agent.bytecode.api.MessageTemplate;
@@ -29,15 +34,39 @@ import org.glowroot.agent.weaving.BootstrapMetaHolders;
 import org.glowroot.agent.weaving.GenericMessageSupplier;
 import org.glowroot.agent.weaving.MessageTemplateImpl;
 
-public class WeavingServiceImpl implements BytecodeService {
+public class BytecodeServiceImpl implements BytecodeService {
+
+    private static final Logger logger = LoggerFactory.getLogger(BytecodeServiceImpl.class);
 
     private final TransactionRegistry transactionRegistry;
     private final TransactionService transactionService;
 
-    public WeavingServiceImpl(TransactionRegistry transactionRegistry,
+    private volatile @MonotonicNonNull OnEnteringMain onEnteringMain;
+    private final AtomicBoolean hasRunOnEnteringMain = new AtomicBoolean();
+
+    public BytecodeServiceImpl(TransactionRegistry transactionRegistry,
             TransactionService transactionService) {
         this.transactionRegistry = transactionRegistry;
         this.transactionService = transactionService;
+    }
+
+    public void setOnEnteringMain(OnEnteringMain onEnteringMain) {
+        this.onEnteringMain = onEnteringMain;
+    }
+
+    @Override
+    public void enteringMain() {
+        if (onEnteringMain == null) {
+            return;
+        }
+        if (hasRunOnEnteringMain.getAndSet(true)) {
+            return;
+        }
+        try {
+            onEnteringMain.run();
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
+        }
     }
 
     @Override
@@ -84,5 +113,9 @@ public class WeavingServiceImpl implements BytecodeService {
     @Override
     public void updateWithReturnValue(TraceEntry traceEntry, @Nullable Object returnValue) {
         GenericMessageSupplier.updateWithReturnValue(traceEntry, returnValue);
+    }
+
+    public interface OnEnteringMain {
+        void run() throws Exception;
     }
 }

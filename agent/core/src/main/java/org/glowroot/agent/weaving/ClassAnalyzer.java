@@ -65,6 +65,7 @@ class ClassAnalyzer {
     private final ImmutableList<AnalyzedClass> superAnalyzedClasses;
     private final ImmutableList<ShimType> matchedShimTypes;
     private final ImmutableList<MixinType> matchedMixinTypes;
+    private final boolean hasMainMethod;
 
     private final ImmutableSet<String> superClassNames;
 
@@ -110,6 +111,7 @@ class ClassAnalyzer {
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
+            hasMainMethod = false;
         } else {
             List<AnalyzedClass> superAnalyzedHierarchy =
                     analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext);
@@ -118,6 +120,7 @@ class ClassAnalyzer {
                     interfaceAnalyzedHierarchy);
             matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, superAnalyzedHierarchy,
                     interfaceAnalyzedHierarchy);
+            hasMainMethod = hasMainMethod(thinClass.nonBridgeMethods());
         }
         analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
         analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
@@ -174,7 +177,7 @@ class ClassAnalyzer {
             return !methodAdvisors.isEmpty() || !matchedMixinTypes.isEmpty();
         }
         return !methodAdvisors.isEmpty() || !methodsThatOnlyNowFulfillAdvice.isEmpty()
-                || !matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty();
+                || !matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty() || hasMainMethod;
     }
 
     ImmutableList<ShimType> getMatchedShimTypes() {
@@ -458,6 +461,15 @@ class ClassAnalyzer {
             }
         }
         return ImmutableList.copyOf(matchedMixinTypes);
+    }
+
+    private static boolean hasMainMethod(List<ThinMethod> methods) {
+        for (ThinMethod method : methods) {
+            if (method.name().equals("main") && method.desc().equals("([Ljava/lang/String;)V")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean hasSuperAdvice(List<AnalyzedClass> superAnalyzedClasses) {

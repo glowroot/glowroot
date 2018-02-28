@@ -50,6 +50,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.bytecode.api.Bytecode;
 import org.glowroot.agent.bytecode.api.Util;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 
@@ -85,7 +86,8 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
 
-    private static final Type generatedBytecodeUtilType = Type.getType(Util.class);
+    private static final Type bytecodeType = Type.getType(Bytecode.class);
+    private static final Type bytecodeUtilType = Type.getType(Util.class);
 
     private static final AtomicLong metaHolderCounter = new AtomicLong();
 
@@ -187,10 +189,15 @@ class WeavingClassVisitor extends ClassVisitor {
         if (isInitWithMixins(name)) {
             return visitInitWithMixins(access, name, desc, signature, exceptions, matchingAdvisors);
         }
-        if (matchingAdvisors.isEmpty()) {
-            return cw.visitMethod(access, name, desc, signature, exceptions);
+        MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+        if (name.equals("main") && desc.equals("([Ljava/lang/String;)V")) {
+            mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(), "enteringMainMethod",
+                    "()V", false);
         }
-        return visitMethodWithAdvice(access, name, desc, signature, exceptions, matchingAdvisors);
+        if (matchingAdvisors.isEmpty()) {
+            return mv;
+        }
+        return visitMethodWithAdvice(mv, access, name, desc, matchingAdvisors);
     }
 
     private boolean isMixinProxy(String name, String desc) {
@@ -386,7 +393,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private static void loadArrayType(MethodVisitor mv, Type type, Type ownerType) {
         loadType(mv, type.getElementType(), ownerType);
         mv.visitLdcInsn(type.getDimensions());
-        mv.visitMethodInsn(INVOKESTATIC, generatedBytecodeUtilType.getInternalName(),
+        mv.visitMethodInsn(INVOKESTATIC, bytecodeUtilType.getInternalName(),
                 "getArrayClass", "(Ljava/lang/Class;I)Ljava/lang/Class;", false);
     }
 
@@ -445,12 +452,10 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @RequiresNonNull("type")
-    private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
-            @Nullable String signature, String /*@Nullable*/ [] exceptions,
-            Iterable<Advice> matchingAdvisors) {
+    private MethodVisitor visitMethodWithAdvice(MethodVisitor mv, int access, String name,
+            String desc, Iterable<Advice> matchingAdvisors) {
         // FIXME remove superseded advisors
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
-        MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
         return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
                 metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
     }
@@ -538,8 +543,10 @@ class WeavingClassVisitor extends ClassVisitor {
             exceptions[i] = ClassNames.toInternalName(inheritedMethod.exceptions().get(i));
         }
         List<Advice> advisors = removeSuperseded(inheritedMethod.advisors());
-        MethodVisitor mv = visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.name(),
-                inheritedMethod.getDesc(), inheritedMethod.signature(), exceptions, advisors);
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, inheritedMethod.name(),
+                inheritedMethod.getDesc(), inheritedMethod.signature(), exceptions);
+        mv = visitMethodWithAdvice(mv, ACC_PUBLIC, inheritedMethod.name(),
+                inheritedMethod.getDesc(), advisors);
         checkNotNull(mv);
         GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.name(),
                 inheritedMethod.getDesc());

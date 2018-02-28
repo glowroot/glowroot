@@ -29,22 +29,23 @@ import java.util.jar.JarFile;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.internal.GlowrootService;
 import org.glowroot.agent.api.internal.GlowrootServiceHolder;
-import org.glowroot.agent.bytecode.api.BytecodeService;
 import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.impl.Aggregator;
+import org.glowroot.agent.impl.BytecodeServiceImpl;
+import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.agent.impl.ConfigServiceImpl;
 import org.glowroot.agent.impl.GlowrootServiceImpl;
 import org.glowroot.agent.impl.PluginServiceImpl;
@@ -55,7 +56,6 @@ import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionService;
 import org.glowroot.agent.impl.UserProfileScheduler;
-import org.glowroot.agent.impl.WeavingServiceImpl;
 import org.glowroot.agent.live.LiveAggregateRepositoryImpl;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
@@ -96,37 +96,45 @@ public class AgentModule {
     private static final String SHADE_PROOF_JUL_LOGGER_CLASS_NAME =
             "_java.util.logging.Logger".substring(1);
 
+    private final Clock clock;
+    private final Ticker ticker;
+
     private final ConfigService configService;
-    private final AnalyzedWorld analyzedWorld;
     private final TransactionRegistry transactionRegistry;
     private final AdviceCache adviceCache;
+    private final AnalyzedWorld analyzedWorld;
+    private final Weaver weaver;
+    private final Random random;
 
-    private final DeadlockedActiveWeavingRunnable deadlockedActiveWeavingRunnable;
-    private final Aggregator aggregator;
-    private final TransactionCollector transactionCollector;
+    private final UserProfileScheduler userProfileScheduler;
+    private final TransactionService transactionService;
+    private final BytecodeServiceImpl bytecodeService;
 
-    private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
+    private volatile @MonotonicNonNull DeadlockedActiveWeavingRunnable deadlockedActiveWeavingRunnable;
+    private volatile @MonotonicNonNull Aggregator aggregator;
+    private volatile @MonotonicNonNull TransactionCollector transactionCollector;
 
-    private final GaugeCollector gaugeCollector;
-    private final StackTraceCollector stackTraceCollector;
+    private volatile @MonotonicNonNull LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
-    private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
+    private volatile @MonotonicNonNull GaugeCollector gaugeCollector;
+    private volatile @MonotonicNonNull StackTraceCollector stackTraceCollector;
+
+    private volatile @MonotonicNonNull ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
 
     private final boolean jvmRetransformClassesSupported;
 
-    private final LiveTraceRepositoryImpl liveTraceRepository;
-    private final LiveAggregateRepositoryImpl liveAggregateRepository;
-    private final LiveWeavingServiceImpl liveWeavingService;
-    private final LiveJvmServiceImpl liveJvmService;
+    private volatile @MonotonicNonNull LiveTraceRepositoryImpl liveTraceRepository;
+    private volatile @MonotonicNonNull LiveAggregateRepositoryImpl liveAggregateRepository;
+    private volatile @MonotonicNonNull LiveWeavingServiceImpl liveWeavingService;
+    private volatile @MonotonicNonNull LiveJvmServiceImpl liveJvmService;
 
     // accepts @Nullable Ticker to deal with shading issues when called from GlowrootModule
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, final PluginCache pluginCache,
-            final ConfigService configService,
-            Supplier<ScheduledExecutorService> backgroundExecutorSupplier, Collector collector,
-            @Nullable Instrumentation instrumentation, File tmpDir, @Nullable File glowrootJarFile)
-            throws Exception {
+            final ConfigService configService, @Nullable Instrumentation instrumentation,
+            File tmpDir) throws Exception {
 
-        Ticker ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
+        this.clock = clock;
+        this.ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
         this.configService = configService;
         transactionRegistry = new TransactionRegistry();
 
@@ -141,7 +149,7 @@ public class AgentModule {
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes());
         TimerNameCache timerNameCache = new TimerNameCache();
 
-        Weaver weaver = new Weaver(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
+        weaver = new Weaver(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
                 adviceCache.getMixinTypes(), analyzedWorld, transactionRegistry, ticker,
                 timerNameCache, configService);
 
@@ -152,22 +160,18 @@ public class AgentModule {
         ConfigServiceFactory configServiceFactory = new ConfigServiceFactory() {
             @Override
             public org.glowroot.agent.plugin.api.config.ConfigService create(String pluginId) {
-                checkNotNull(configService);
-                checkNotNull(pluginCache);
                 return ConfigServiceImpl.create(configService, pluginCache.pluginDescriptors(),
                         pluginId);
             }
         };
         PluginService pluginService = new PluginServiceImpl(timerNameCache, configServiceFactory);
         PluginServiceHolder.set(pluginService);
-        Random random = new Random();
-        UserProfileScheduler userProfileScheduler =
-                new UserProfileScheduler(configService, random);
-        TransactionService transactionService = TransactionService.create(transactionRegistry,
-                configService, timerNameCache, userProfileScheduler, ticker, clock);
-        BytecodeService weavingService =
-                new WeavingServiceImpl(transactionRegistry, transactionService);
-        BytecodeServiceHolder.set(weavingService);
+        random = new Random();
+        userProfileScheduler = new UserProfileScheduler(configService, random);
+        transactionService = TransactionService.create(transactionRegistry, configService,
+                timerNameCache, userProfileScheduler, ticker, clock);
+        bytecodeService = new BytecodeServiceImpl(transactionRegistry, transactionService);
+        BytecodeServiceHolder.set(bytecodeService);
 
         if (instrumentation == null) {
             // instrumentation is null when debugging with LocalContainer
@@ -199,8 +203,38 @@ public class AgentModule {
             logger.debug(e.getMessage(), e);
         }
 
-        // now that instrumentation is set up, it is safe to create scheduled executor
-        ScheduledExecutorService backgroundExecutor = backgroundExecutorSupplier.get();
+        // verify initialization of glowroot-agent-api, glowroot-agent-plugin-api and
+        // glowroot-weaving-api services
+        Exception getterCalledTooEarlyLocation =
+                GlowrootServiceHolder.getRetrievedTooEarlyLocation();
+        if (getterCalledTooEarlyLocation != null) {
+            logger.error("Glowroot Agent API was called too early", getterCalledTooEarlyLocation);
+        }
+
+        initPlugins(pluginCache.pluginDescriptors());
+
+        List<PluginDescriptor> pluginDescriptors = pluginCache.pluginDescriptors();
+        List<String> pluginNames = Lists.newArrayList();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            pluginNames.add(pluginDescriptor.name());
+        }
+        if (!pluginNames.isEmpty()) {
+            startupLogger.info("plugins loaded: {}", Joiner.on(", ").join(pluginNames));
+        }
+        if (instrumentation == null) {
+            // this is for tests
+            bytecodeService.enteringMain();
+        }
+    }
+
+    public void setOnEnteringMain(OnEnteringMain onEnteringMain) {
+        bytecodeService.setOnEnteringMain(onEnteringMain);
+    }
+
+    public void onEnteringMain(ScheduledExecutorService backgroundExecutor, Collector collector,
+            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile)
+            throws Exception {
+
         deadlockedActiveWeavingRunnable = new DeadlockedActiveWeavingRunnable(weaver);
         deadlockedActiveWeavingRunnable.scheduleWithFixedDelay(backgroundExecutor, 5, 5, SECONDS);
 
@@ -213,14 +247,6 @@ public class AgentModule {
         transactionCollector =
                 new TransactionCollector(configService, collector, aggregator, clock, ticker);
         transactionService.setTransactionCollector(transactionCollector);
-
-        // verify initialization of glowroot-agent-api, glowroot-agent-plugin-api and
-        // glowroot-weaving-api services
-        Exception getterCalledTooEarlyLocation =
-                GlowrootServiceHolder.getRetrievedTooEarlyLocation();
-        if (getterCalledTooEarlyLocation != null) {
-            logger.error("Glowroot Agent API was called too early", getterCalledTooEarlyLocation);
-        }
 
         lazyPlatformMBeanServer = LazyPlatformMBeanServer.create();
         File[] roots = File.listRoots();
@@ -255,17 +281,6 @@ public class AgentModule {
         liveJvmService = new LiveJvmServiceImpl(lazyPlatformMBeanServer, transactionRegistry,
                 transactionCollector, threadAllocatedBytes.getAvailability(), configService,
                 glowrootJarFile);
-
-        initPlugins(pluginCache.pluginDescriptors());
-
-        List<PluginDescriptor> pluginDescriptors = pluginCache.pluginDescriptors();
-        List<String> pluginNames = Lists.newArrayList();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            pluginNames.add(pluginDescriptor.name());
-        }
-        if (!pluginNames.isEmpty()) {
-            startupLogger.info("plugins loaded: {}", Joiner.on(", ").join(pluginNames));
-        }
     }
 
     public ConfigService getConfigService() {
@@ -273,22 +288,37 @@ public class AgentModule {
     }
 
     public LazyPlatformMBeanServer getLazyPlatformMBeanServer() {
+        if (lazyPlatformMBeanServer == null) {
+            throw new IllegalStateException("onEnteringMain() was never called");
+        }
         return lazyPlatformMBeanServer;
     }
 
     public LiveTraceRepositoryImpl getLiveTraceRepository() {
+        if (liveTraceRepository == null) {
+            throw new IllegalStateException("onEnteringMain() was never called");
+        }
         return liveTraceRepository;
     }
 
     public LiveAggregateRepositoryImpl getLiveAggregateRepository() {
+        if (liveAggregateRepository == null) {
+            throw new IllegalStateException("onEnteringMain() was never called");
+        }
         return liveAggregateRepository;
     }
 
     public LiveWeavingServiceImpl getLiveWeavingService() {
+        if (liveWeavingService == null) {
+            throw new IllegalStateException("onEnteringMain() was never called");
+        }
         return liveWeavingService;
     }
 
     public LiveJvmServiceImpl getLiveJvmService() {
+        if (liveJvmService == null) {
+            throw new IllegalStateException("onEnteringMain() was never called");
+        }
         return liveJvmService;
     }
 
@@ -403,13 +433,27 @@ public class AgentModule {
 
     @OnlyUsedByTests
     public void close() throws Exception {
-        immedateTraceStoreWatcher.cancel();
-        stackTraceCollector.close();
-        gaugeCollector.close();
-        lazyPlatformMBeanServer.close();
-        transactionCollector.close();
-        aggregator.close();
-        deadlockedActiveWeavingRunnable.cancel();
+        if (immedateTraceStoreWatcher != null) {
+            immedateTraceStoreWatcher.cancel();
+        }
+        if (stackTraceCollector != null) {
+            stackTraceCollector.close();
+        }
+        if (gaugeCollector != null) {
+            gaugeCollector.close();
+        }
+        if (lazyPlatformMBeanServer != null) {
+            lazyPlatformMBeanServer.close();
+        }
+        if (transactionCollector != null) {
+            transactionCollector.close();
+        }
+        if (aggregator != null) {
+            aggregator.close();
+        }
+        if (deadlockedActiveWeavingRunnable != null) {
+            deadlockedActiveWeavingRunnable.cancel();
+        }
     }
 
     private static class DeadlockedActiveWeavingRunnable extends ScheduledRunnable {

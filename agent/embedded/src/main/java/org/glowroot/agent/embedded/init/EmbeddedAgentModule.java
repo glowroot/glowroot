@@ -24,13 +24,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -45,13 +45,14 @@ import org.glowroot.agent.embedded.repo.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.repo.PlatformMBeanServerLifecycle;
 import org.glowroot.agent.embedded.repo.SimpleRepoModule;
 import org.glowroot.agent.embedded.util.DataSource;
+import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.agent.init.AgentDirsLocking;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.EnvironmentCreator;
 import org.glowroot.agent.init.JRebelWorkaround;
-import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
+import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.util.Clock;
@@ -80,41 +81,71 @@ class EmbeddedAgentModule {
     private final @Nullable File sharedConfDir;
     private final Ticker ticker;
     private final Clock clock;
-    // only null in viewer mode
-    private final @Nullable ScheduledExecutorService backgroundExecutor;
-    private volatile @MonotonicNonNull SimpleRepoModule simpleRepoModule;
+
+    private final Closeable agentDirsLockingCloseable;
+    private final PluginCache pluginCache;
+
     private final @Nullable AgentModule agentModule;
     private final @Nullable ViewerAgentModule viewerAgentModule;
 
-    private final Closeable agentDirsLockingCloseable;
-
     private final String version;
+
+    private volatile @MonotonicNonNull ScheduledExecutorService backgroundExecutor;
+    private volatile @MonotonicNonNull SimpleRepoModule simpleRepoModule;
 
     private volatile @MonotonicNonNull UiModule uiModule;
 
     private final CountDownLatch simpleRepoModuleInit = new CountDownLatch(1);
 
-    EmbeddedAgentModule(@Nullable File pluginsDir, final File confDir,
-            final @Nullable File sharedConfDir, File logDir, final File dataDir, File tmpDir,
-            @Nullable File glowrootJarFile, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, final String glowrootVersion,
-            boolean offline) throws Exception {
+    EmbeddedAgentModule(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir,
+            File logDir, File tmpDir, @Nullable Instrumentation instrumentation,
+            String glowrootVersion, boolean offline) throws Exception {
 
         agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
 
         ticker = Ticker.systemTicker();
         clock = Clock.systemClock();
 
+        // need to perform jrebel workaround prior to loading any jackson classes
+        JRebelWorkaround.perform();
+        pluginCache = PluginCache.create(pluginsDir, false);
+        if (offline) {
+            agentModule = null;
+            viewerAgentModule = new ViewerAgentModule(pluginsDir, confDir);
+        } else {
+            // agent module needs to be started as early as possible, so that weaving will be
+            // applied to as many classes as possible
+            // in particular, it needs to be started before SimpleRepoModule which uses shaded H2,
+            // which loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
+            // services/java.sql.Driver, and those drivers need to be woven
+            ConfigService configService =
+                    ConfigService.create(confDir, pluginCache.pluginDescriptors());
+            agentModule = new AgentModule(clock, null, pluginCache, configService, instrumentation,
+                    tmpDir);
+            viewerAgentModule = null;
+            PreInitializeStorageShutdownClasses.preInitializeClasses();
+        }
+        this.confDir = confDir;
+        this.sharedConfDir = sharedConfDir;
+        this.logDir = logDir;
+        this.version = glowrootVersion;
+    }
+
+    void setOnEnteringMain(OnEnteringMain onEnteringMain) {
+        checkNotNull(agentModule);
+        agentModule.setOnEnteringMain(onEnteringMain);
+    }
+
+    void onEnteringMain(final File confDir, final @Nullable File sharedConfDir, final File dataDir,
+            @Nullable File glowrootJarFile, Map<String, String> properties,
+            @Nullable Instrumentation instrumentation, final String glowrootVersion)
+            throws Exception {
+
         // mem db is only used for testing (by glowroot-agent-it-harness)
         final boolean h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
 
-        // need to perform jrebel workaround prior to loading any jackson classes
-        JRebelWorkaround.perform();
-        PluginCache pluginCache = PluginCache.create(pluginsDir, false);
-        if (offline) {
-            viewerAgentModule = new ViewerAgentModule(pluginsDir, confDir);
-            backgroundExecutor = null;
-            agentModule = null;
+        if (agentModule == null) {
+            checkNotNull(viewerAgentModule);
             ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDir,
                     viewerAgentModule.getConfigService(), pluginCache);
             DataSource dataSource = createDataSource(h2MemDb, dataDir);
@@ -122,26 +153,12 @@ class EmbeddedAgentModule {
                     configRepository, null);
             simpleRepoModuleInit.countDown();
         } else {
-            // trace module needs to be started as early as possible, so that weaving will be
-            // applied to as many classes as possible
-            // in particular, it needs to be started before StorageModule which uses shaded H2,
-            // which loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
-            // services/java.sql.Driver, and those drivers need to be woven
+            backgroundExecutor = Executors.newScheduledThreadPool(2,
+                    ThreadFactories.create("Glowroot-Background-%d"));
             final CollectorProxy collectorProxy = new CollectorProxy();
-            ConfigService configService =
-                    ConfigService.create(confDir, pluginCache.pluginDescriptors());
-
-            // need to delay creation of the scheduled executor until instrumentation is set up
-            Supplier<ScheduledExecutorService> backgroundExecutorSupplier =
-                    NonEmbeddedGlowrootAgentInit.createBackgroundExecutorSupplier();
-
-            agentModule = new AgentModule(clock, null, pluginCache, configService,
-                    backgroundExecutorSupplier, collectorProxy, instrumentation, tmpDir,
+            agentModule.onEnteringMain(backgroundExecutor, collectorProxy, instrumentation,
                     glowrootJarFile);
 
-            backgroundExecutor = backgroundExecutorSupplier.get();
-
-            PreInitializeStorageShutdownClasses.preInitializeClasses();
             final ConfigRepositoryImpl configRepository =
                     new ConfigRepositoryImpl(confDir, agentModule.getConfigService(), pluginCache);
             Thread thread = new Thread(new Runnable() {
@@ -149,8 +166,6 @@ class EmbeddedAgentModule {
                 public void run() {
                     try {
                         // TODO report checker framework issue that occurs without checkNotNull
-                        checkNotNull(clock);
-                        checkNotNull(ticker);
                         checkNotNull(agentModule);
                         DataSource dataSource = createDataSource(h2MemDb, dataDir);
                         if (needToAddAlertPermission(dataSource)) {
@@ -180,8 +195,7 @@ class EmbeddedAgentModule {
                     } catch (Throwable t) {
                         startupLogger.error("Glowroot cannot start: {}", t.getMessage(), t);
                     } finally {
-                        // TODO report checker framework issue that occurs without checkNotNull
-                        checkNotNull(simpleRepoModuleInit).countDown();
+                        simpleRepoModuleInit.countDown();
                     }
                 }
             });
@@ -193,12 +207,7 @@ class EmbeddedAgentModule {
             // data due to limits in CollectorProxy, but don't wait too long as first launch after
             // upgrade when adding new columns to large H2 database can take some time
             simpleRepoModuleInit.await(5, SECONDS);
-            viewerAgentModule = null;
         }
-        this.confDir = confDir;
-        this.sharedConfDir = sharedConfDir;
-        this.logDir = logDir;
-        this.version = glowrootVersion;
     }
 
     void initEmbeddedServer() throws Exception {
