@@ -191,7 +191,7 @@ public class AgentModule {
                 instrumentation.addTransformer(transformer);
                 jvmRetransformClassesSupported = false;
             }
-            logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation);
+            logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation.getAllLoadedClasses(), false);
         }
 
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
@@ -333,7 +333,8 @@ public class AgentModule {
         return liveJvmService;
     }
 
-    private static void logJavaClassAlreadyLoadedWarningIfNeeded(Instrumentation instrumentation) {
+    public static boolean logJavaClassAlreadyLoadedWarningIfNeeded(Class<?>[] allLoadedClasses,
+            boolean preCheck) {
         List<String> runnableCallableClasses = Lists.newArrayList();
         boolean julLoggerLoaded = false;
         Set<String> hackClassNames = ImmutableSet.of(
@@ -344,10 +345,12 @@ public class AgentModule {
                 Weaver.FELIX3_OSGI_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.ECLIPSE_OSGI_HACK_CLASS_NAME.replace('/', '.'),
                 Weaver.JBOSS4_HACK_CLASS_NAME.replace('/', '.'));
-        for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
+        boolean someAlreadyLoaded = false;
+        for (Class<?> clazz : allLoadedClasses) {
             String className = clazz.getName();
             if (hackClassNames.contains(className)) {
-                logHackClassWarning(className);
+                logHackClassWarning(className, preCheck);
+                someAlreadyLoaded = true;
                 // intentionally falling through here
             }
             if (clazz.isInterface()) {
@@ -363,26 +366,41 @@ public class AgentModule {
             }
         }
         if (!runnableCallableClasses.isEmpty()) {
-            logRunnableCallableClassWarning(runnableCallableClasses);
+            logRunnableCallableClassWarning(runnableCallableClasses, preCheck);
+            someAlreadyLoaded = true;
         }
         if (julLoggerLoaded && isShaded()) {
-            logger.warn("java.util.logging.Logger was loaded before Glowroot instrumentation could"
-                    + " be applied to it. This may prevent Glowroot from capturing JUL logging.");
+            startupLogger.warn("java.util.logging.Logger was loaded before Glowroot instrumentation"
+                    + " could be applied to it. This may prevent Glowroot from capturing JUL"
+                    + " logging.");
+            someAlreadyLoaded = true;
+        }
+        return someAlreadyLoaded;
+    }
+
+    private static void logHackClassWarning(String specialClassName, boolean preCheck) {
+        if (preCheck) {
+            startupLogger.warn("{} was loaded before Glowroot startup", specialClassName);
+        } else {
+            startupLogger.warn("{} was loaded before Glowroot instrumentation could be applied to"
+                    + " it. {}This will likely prevent Glowroot from functioning properly.",
+                    specialClassName, getExtraExplanation());
         }
     }
 
-    private static void logHackClassWarning(String specialClassName) {
-        logger.warn("{} was loaded before Glowroot instrumentation could be applied to it. {}This"
-                + " will likely prevent Glowroot from functioning properly.", specialClassName,
-                getExtraExplanation());
-    }
-
-    private static void logRunnableCallableClassWarning(List<String> runnableCallableClasses) {
-        logger.warn("one or more java.lang.Runnable or java.util.concurrent.Callable"
-                + " implementations were loaded before Glowroot instrumentation could be applied to"
-                + " them: {}. {}This may prevent Glowroot from capturing async requests that span"
-                + " multiple threads.", Joiner.on(", ").join(runnableCallableClasses),
-                getExtraExplanation());
+    private static void logRunnableCallableClassWarning(List<String> runnableCallableClasses,
+            boolean preCheck) {
+        if (preCheck) {
+            startupLogger.warn("one or more java.lang.Runnable or java.util.concurrent.Callable"
+                    + " implementations were loaded before Glowroot startup: {}",
+                    Joiner.on(", ").join(runnableCallableClasses), getExtraExplanation());
+        } else {
+            startupLogger.warn("one or more java.lang.Runnable or java.util.concurrent.Callable"
+                    + " implementations were loaded before Glowroot instrumentation could be"
+                    + " applied to them: {}. {}This may prevent Glowroot from capturing async"
+                    + " requests that span multiple threads.",
+                    Joiner.on(", ").join(runnableCallableClasses), getExtraExplanation());
+        }
     }
 
     private static String getExtraExplanation() {

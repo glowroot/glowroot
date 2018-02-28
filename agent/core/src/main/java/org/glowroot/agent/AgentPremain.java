@@ -34,6 +34,7 @@ public class AgentPremain {
     public static void premain(@SuppressWarnings("unused") String agentArgs,
             Instrumentation instrumentation) {
         try {
+            Class<?>[] allPriorLoadedClasses = instrumentation.getAllLoadedClasses();
             CodeSource codeSource = AgentPremain.class.getProtectionDomain().getCodeSource();
             // suppress warnings is used instead of annotating this method with @Nullable
             // just to avoid dependencies on other classes (in this case the @Nullable annotation)
@@ -45,9 +46,9 @@ public class AgentPremain {
             }
             mainEntryPointClass = Class.forName("org.glowroot.agent.MainEntryPoint", true,
                     AgentPremain.class.getClassLoader());
-            Method premainMethod =
-                    mainEntryPointClass.getMethod("premain", Instrumentation.class, File.class);
-            premainMethod.invoke(null, instrumentation, glowrootJarFile);
+            Method premainMethod = mainEntryPointClass.getMethod("premain", Instrumentation.class,
+                    Class[].class, File.class);
+            premainMethod.invoke(null, instrumentation, allPriorLoadedClasses, glowrootJarFile);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             System.err.println("Glowroot not started: " + t.getMessage());

@@ -24,6 +24,7 @@ import java.lang.instrument.Instrumentation;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.init.AgentDirsLocking.AgentDirsLockedException;
+import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInitFactory;
 import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
@@ -67,6 +69,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MainEntryPoint {
 
+    private static final boolean LOG_ALL_PRIOR_LOADED_CLASSES =
+            Boolean.getBoolean("glowroot.internal.logAllPriorLoadedClasses");
+
     // need to wait to init logger until after establishing logDir
     private static volatile @MonotonicNonNull Logger startupLogger;
 
@@ -75,7 +80,8 @@ public class MainEntryPoint {
 
     private MainEntryPoint() {}
 
-    public static void premain(Instrumentation instrumentation, @Nullable File glowrootJarFile) {
+    public static void premain(Instrumentation instrumentation, Class<?>[] allPriorLoadedClasses,
+            @Nullable File glowrootJarFile) {
         if (startupLogger != null) {
             // glowroot is already running, probably due to multiple glowroot -javaagent JVM args
             return;
@@ -94,6 +100,18 @@ public class MainEntryPoint {
             System.err.println("Glowroot not started: " + t.getMessage());
             t.printStackTrace();
             return;
+        }
+        if (AgentModule.logJavaClassAlreadyLoadedWarningIfNeeded(allPriorLoadedClasses, true)
+                || LOG_ALL_PRIOR_LOADED_CLASSES) {
+            List<String> classNames = Lists.newArrayList();
+            for (Class<?> clazz : allPriorLoadedClasses) {
+                String className = clazz.getName();
+                if (!className.startsWith("[")) {
+                    classNames.add(className);
+                }
+            }
+            Collections.sort(classNames);
+            startupLogger.warn("Classes already loaded: {}", Joiner.on(", ").join(classNames));
         }
         if (JavaVersion.isGreaterThanOrEqualToJava9()) {
             try {
