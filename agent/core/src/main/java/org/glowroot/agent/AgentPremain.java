@@ -28,13 +28,21 @@ import java.util.jar.JarFile;
 // the rest of glowroot will live in the bootstrap class loader
 public class AgentPremain {
 
+    private static final boolean PRE_CHECK_LOADED_CLASSES =
+            Boolean.getBoolean("glowroot.debug.preCheckLoadedClasses");
+
     private AgentPremain() {}
 
     // javaagent entry point
     public static void premain(@SuppressWarnings("unused") String agentArgs,
             Instrumentation instrumentation) {
         try {
-            Class<?>[] allPriorLoadedClasses = instrumentation.getAllLoadedClasses();
+            Class<?>[] allPriorLoadedClasses;
+            if (PRE_CHECK_LOADED_CLASSES) {
+                allPriorLoadedClasses = instrumentation.getAllLoadedClasses();
+            } else {
+                allPriorLoadedClasses = new Class<?>[0];
+            }
             CodeSource codeSource = AgentPremain.class.getProtectionDomain().getCodeSource();
             // suppress warnings is used instead of annotating this method with @Nullable
             // just to avoid dependencies on other classes (in this case the @Nullable annotation)

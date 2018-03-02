@@ -70,18 +70,6 @@ import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 
 public class Weaver {
 
-    public static final String MANAGEMENT_FACTORY_HACK_CLASS_NAME =
-            "java/lang/management/ManagementFactory";
-    public static final String JBOSS_WELD_HACK_CLASS_NAME = "org/jboss/weld/util/Decorators";
-    public static final String JBOSS_MODULES_HACK_CLASS_NAME = "org/jboss/modules/Module";
-    public static final String FELIX_OSGI_HACK_CLASS_NAME =
-            "org/apache/felix/framework/BundleWiringImpl";
-    public static final String FELIX3_OSGI_HACK_CLASS_NAME =
-            "org/apache/felix/framework/ModuleImpl";
-    public static final String ECLIPSE_OSGI_HACK_CLASS_NAME =
-            "org/eclipse/osgi/internal/framework/EquinoxContainer";
-    public static final String JBOSS4_HACK_CLASS_NAME = "org/jboss/system/server/ServerImpl";
-
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 
     // useful for debugging java.lang.VerifyErrors
@@ -182,38 +170,38 @@ public class Weaver {
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         byte[] maybeProcessedBytes = null;
-        if (className.equals(MANAGEMENT_FACTORY_HACK_CLASS_NAME)) {
+        if (className.equals(ImportantClassNames.MANAGEMENT_FACTORY_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new ManagementFactoryHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(JBOSS_WELD_HACK_CLASS_NAME)) {
+        } else if (className.equals(ImportantClassNames.JBOSS_WELD_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossWeldHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(JBOSS_MODULES_HACK_CLASS_NAME)) {
+        } else if (className.equals(ImportantClassNames.JBOSS_MODULES_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossModulesHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(FELIX_OSGI_HACK_CLASS_NAME)
-                || className.equals(FELIX3_OSGI_HACK_CLASS_NAME)) {
+        } else if (className.equals(ImportantClassNames.FELIX_OSGI_HACK_CLASS_NAME)
+                || className.equals(ImportantClassNames.FELIX3_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ECLIPSE_OSGI_HACK_CLASS_NAME)) {
+        } else if (className.equals(ImportantClassNames.ECLIPSE_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new EclipseOsgiHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(JBOSS4_HACK_CLASS_NAME)) {
+        } else if (className.equals(ImportantClassNames.JBOSS4_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBoss4HackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
@@ -603,7 +591,8 @@ public class Weaver {
             visitInsn(ICONST_1);
             visitInsn(IRETURN);
             visitLabel(label);
-            Object[] locals = new Object[] {ECLIPSE_OSGI_HACK_CLASS_NAME, "java/lang/String"};
+            Object[] locals = new Object[] {ImportantClassNames.ECLIPSE_OSGI_HACK_CLASS_NAME,
+                    "java/lang/String"};
             visitFrame(F_NEW, locals.length, locals, 0, new Object[0]);
         }
     }

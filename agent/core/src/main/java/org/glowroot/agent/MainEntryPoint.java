@@ -58,6 +58,7 @@ import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInitFactory;
 import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
+import org.glowroot.agent.init.PreCheckLoadedClasses.DebugClassFileTransformer;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.weaving.Java9;
@@ -69,8 +70,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MainEntryPoint {
 
-    private static final boolean LOG_ALL_PRIOR_LOADED_CLASSES =
-            Boolean.getBoolean("glowroot.internal.logAllPriorLoadedClasses");
+    private static final boolean PRE_CHECK_LOADED_CLASSES =
+            Boolean.getBoolean("glowroot.debug.preCheckLoadedClasses");
 
     // need to wait to init logger until after establishing logDir
     private static volatile @MonotonicNonNull Logger startupLogger;
@@ -85,6 +86,11 @@ public class MainEntryPoint {
         if (startupLogger != null) {
             // glowroot is already running, probably due to multiple glowroot -javaagent JVM args
             return;
+        }
+        DebugClassFileTransformer debugClassFileTransformer = null;
+        if (PRE_CHECK_LOADED_CLASSES) {
+            debugClassFileTransformer = new DebugClassFileTransformer();
+            instrumentation.addTransformer(debugClassFileTransformer);
         }
         // DO NOT USE ANY GUAVA CLASSES before initLogging() because they trigger loading of jul
         // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
@@ -101,17 +107,22 @@ public class MainEntryPoint {
             t.printStackTrace();
             return;
         }
-        if (AgentModule.logJavaClassAlreadyLoadedWarningIfNeeded(allPriorLoadedClasses, true)
-                || LOG_ALL_PRIOR_LOADED_CLASSES) {
-            List<String> classNames = Lists.newArrayList();
-            for (Class<?> clazz : allPriorLoadedClasses) {
-                String className = clazz.getName();
-                if (!className.startsWith("[")) {
-                    classNames.add(className);
+        if (PRE_CHECK_LOADED_CLASSES) {
+            if (AgentModule.logJavaClassAlreadyLoadedWarningIfNeeded(allPriorLoadedClasses,
+                    glowrootJarFile, true)) {
+                List<String> classNames = Lists.newArrayList();
+                for (Class<?> clazz : allPriorLoadedClasses) {
+                    String className = clazz.getName();
+                    if (!className.startsWith("[")) {
+                        classNames.add(className);
+                    }
                 }
+                Collections.sort(classNames);
+                startupLogger.warn("PRE-CHECK: full list of classes already loaded: {}",
+                        Joiner.on(", ").join(classNames));
+            } else {
+                startupLogger.info("PRE-CHECK: successful");
             }
-            Collections.sort(classNames);
-            startupLogger.warn("Classes already loaded: {}", Joiner.on(", ").join(classNames));
         }
         if (JavaVersion.isGreaterThanOrEqualToJava9()) {
             try {
@@ -142,7 +153,7 @@ public class MainEntryPoint {
             }
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
-            start(directories, properties, instrumentation);
+            start(directories, properties, instrumentation, debugClassFileTransformer);
         } catch (AgentDirsLockedException e) {
             logAgentDirsLockedException(directories.getConfDir(), e.getLockFile());
         } catch (Throwable t) {
@@ -166,7 +177,7 @@ public class MainEntryPoint {
                     .init(directories.getPluginsDir(), directories.getConfDir(),
                             directories.getSharedConfDir(), directories.getLogDir(),
                             directories.getTmpDir(), directories.getGlowrootJarFile(), properties,
-                            null, version);
+                            null, null, version);
         } catch (AgentDirsLockedException e) {
             logAgentDirsLockedException(directories.getConfDir(), e.getLockFile());
             return;
@@ -210,14 +221,16 @@ public class MainEntryPoint {
 
     @RequiresNonNull("startupLogger")
     private static void start(Directories directories, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation) throws Exception {
+            @Nullable Instrumentation instrumentation,
+            @Nullable ClassFileTransformer preCheckClassFileTransformer) throws Exception {
         String version = Version.getVersion(MainEntryPoint.class);
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
         glowrootAgentInit = createGlowrootAgentInit(directories, properties, instrumentation);
         glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDir(),
                 directories.getSharedConfDir(), directories.getLogDir(), directories.getTmpDir(),
-                directories.getGlowrootJarFile(), properties, instrumentation, version);
+                directories.getGlowrootJarFile(), properties, instrumentation,
+                preCheckClassFileTransformer, version);
     }
 
     @RequiresNonNull("startupLogger")
@@ -546,7 +559,7 @@ public class MainEntryPoint {
         // init logger as early as possible
         initLogging(testDir, null, testDir);
         Directories directories = new Directories(testDir, false);
-        start(directories, properties, null);
+        start(directories, properties, null, null);
     }
 
     @OnlyUsedByTests

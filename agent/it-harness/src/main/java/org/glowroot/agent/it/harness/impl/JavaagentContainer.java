@@ -473,6 +473,7 @@ public class JavaagentContainer implements Container {
         if (collectorPort != 0) {
             command.add("-Dglowroot.collector.address=localhost:" + collectorPort);
         }
+        command.add("-Dglowroot.debug.preCheckLoadedClasses=true");
         // this is used inside low-entropy docker containers
         String sourceOfRandomness = System.getProperty("java.security.egd");
         if (sourceOfRandomness != null) {

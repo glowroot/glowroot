@@ -18,6 +18,7 @@ package org.glowroot.agent.init;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -73,8 +74,9 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     public void init(@Nullable File pluginsDir, final File confDir,
             final @Nullable File sharedConfDir, File logDir, File tmpDir,
             final @Nullable File glowrootJarFile, final Map<String, String> properties,
-            final @Nullable Instrumentation instrumentation, final String glowrootVersion)
-            throws Exception {
+            final @Nullable Instrumentation instrumentation,
+            @Nullable ClassFileTransformer preCheckClassFileTransformer,
+            final String glowrootVersion) throws Exception {
 
         agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
         Ticker ticker = Tickers.getTicker();
@@ -94,8 +96,8 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
         collectorLogbackAppender.start();
         attachAppender(collectorLogbackAppender);
 
-        agentModule =
-                new AgentModule(clock, ticker, pluginCache, configService, instrumentation, tmpDir);
+        agentModule = new AgentModule(clock, ticker, pluginCache, configService, instrumentation,
+                glowrootJarFile, tmpDir, preCheckClassFileTransformer);
         OnEnteringMain onEnteringMain = new OnEnteringMain() {
             @Override
             public void run() throws Exception {

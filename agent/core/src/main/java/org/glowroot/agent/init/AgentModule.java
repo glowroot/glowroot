@@ -21,8 +21,6 @@ import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.jar.JarFile;
 
@@ -30,7 +28,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
@@ -62,6 +60,7 @@ import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
 import org.glowroot.agent.plugin.api.internal.PluginService;
 import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
+import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.OptionalService;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
@@ -91,10 +90,6 @@ public class AgentModule {
     // 1 minute
     private static final long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", MINUTES.toMillis(1));
-
-    // java.util.logging is shaded to org.glowroot.agent.jul
-    private static final String SHADE_PROOF_JUL_LOGGER_CLASS_NAME =
-            "_java.util.logging.Logger".substring(1);
 
     private final Clock clock;
     private final Ticker ticker;
@@ -131,7 +126,8 @@ public class AgentModule {
     // accepts @Nullable Ticker to deal with shading issues when called from GlowrootModule
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, final PluginCache pluginCache,
             final ConfigService configService, @Nullable Instrumentation instrumentation,
-            File tmpDir) throws Exception {
+            @Nullable File glowrootJarFile, File tmpDir,
+            @Nullable ClassFileTransformer preCheckClassFileTransformer) throws Exception {
 
         this.clock = clock;
         this.ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
@@ -191,7 +187,11 @@ public class AgentModule {
                 instrumentation.addTransformer(transformer);
                 jvmRetransformClassesSupported = false;
             }
-            logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation.getAllLoadedClasses(), false);
+            if (preCheckClassFileTransformer != null) {
+                instrumentation.removeTransformer(preCheckClassFileTransformer);
+            }
+            logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation.getAllLoadedClasses(),
+                    glowrootJarFile, false);
         }
 
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
@@ -334,105 +334,66 @@ public class AgentModule {
     }
 
     public static boolean logJavaClassAlreadyLoadedWarningIfNeeded(Class<?>[] allLoadedClasses,
-            boolean preCheck) {
-        List<String> runnableCallableClasses = Lists.newArrayList();
-        boolean julLoggerLoaded = false;
-        Set<String> hackClassNames = ImmutableSet.of(
-                Weaver.MANAGEMENT_FACTORY_HACK_CLASS_NAME.replace('/', '.'),
-                Weaver.JBOSS_WELD_HACK_CLASS_NAME.replace('/', '.'),
-                Weaver.JBOSS_MODULES_HACK_CLASS_NAME.replace('/', '.'),
-                Weaver.FELIX_OSGI_HACK_CLASS_NAME.replace('/', '.'),
-                Weaver.FELIX3_OSGI_HACK_CLASS_NAME.replace('/', '.'),
-                Weaver.ECLIPSE_OSGI_HACK_CLASS_NAME.replace('/', '.'),
-                Weaver.JBOSS4_HACK_CLASS_NAME.replace('/', '.'));
-        boolean someAlreadyLoaded = false;
+            @Nullable File glowrootJarFile, boolean preCheck) {
+        List<String> loadedImportantClassNames = Lists.newArrayList();
         for (Class<?> clazz : allLoadedClasses) {
             String className = clazz.getName();
-            if (hackClassNames.contains(className)) {
-                logHackClassWarning(className, preCheck);
-                someAlreadyLoaded = true;
-                // intentionally falling through here
-            }
-            if (clazz.isInterface()) {
-                continue;
-            }
-            if (className.startsWith("java.util.concurrent.")
-                    && (Runnable.class.isAssignableFrom(clazz)
-                            || Callable.class.isAssignableFrom(clazz))) {
-                runnableCallableClasses.add(clazz.getName());
-            }
-            if (className.equals(SHADE_PROOF_JUL_LOGGER_CLASS_NAME)) {
-                julLoggerLoaded = true;
+            if (PreCheckLoadedClasses.isImportantClass(className, clazz)) {
+                loadedImportantClassNames.add(className);
             }
         }
-        if (!runnableCallableClasses.isEmpty()) {
-            logRunnableCallableClassWarning(runnableCallableClasses, preCheck);
-            someAlreadyLoaded = true;
-        }
-        if (julLoggerLoaded && isShaded()) {
-            startupLogger.warn("java.util.logging.Logger was loaded before Glowroot instrumentation"
-                    + " could be applied to it. This may prevent Glowroot from capturing JUL"
-                    + " logging.");
-            someAlreadyLoaded = true;
-        }
-        return someAlreadyLoaded;
-    }
-
-    private static void logHackClassWarning(String specialClassName, boolean preCheck) {
-        if (preCheck) {
-            startupLogger.warn("{} was loaded before Glowroot startup", specialClassName);
+        if (loadedImportantClassNames.isEmpty()) {
+            return false;
         } else {
-            startupLogger.warn("{} was loaded before Glowroot instrumentation could be applied to"
-                    + " it. {}This will likely prevent Glowroot from functioning properly.",
-                    specialClassName, getExtraExplanation());
+            logLoadedImportantClassWarning(loadedImportantClassNames, glowrootJarFile, preCheck);
+            return true;
         }
     }
 
-    private static void logRunnableCallableClassWarning(List<String> runnableCallableClasses,
-            boolean preCheck) {
+    private static void logLoadedImportantClassWarning(List<String> loadedImportantClassNames,
+            @Nullable File glowrootJarFile, boolean preCheck) {
         if (preCheck) {
-            startupLogger.warn("one or more java.lang.Runnable or java.util.concurrent.Callable"
-                    + " implementations were loaded before Glowroot startup: {}",
-                    Joiner.on(", ").join(runnableCallableClasses), getExtraExplanation());
+            // this is only logged with -Dglowroot.debug.preCheckLoadedClasses=true
+            startupLogger.warn("PRE-CHECK: one or more important classes were loaded before"
+                    + " Glowroot startup: {}", Joiner.on(", ").join(loadedImportantClassNames));
         } else {
-            startupLogger.warn("one or more java.lang.Runnable or java.util.concurrent.Callable"
-                    + " implementations were loaded before Glowroot instrumentation could be"
-                    + " applied to them: {}. {}This may prevent Glowroot from capturing async"
-                    + " requests that span multiple threads.",
-                    Joiner.on(", ").join(runnableCallableClasses), getExtraExplanation());
+            List<String> agentArgsBeforeGlowroot = getAgentArgsBeforeGlowroot(glowrootJarFile);
+            if (agentArgsBeforeGlowroot.isEmpty()) {
+                startupLogger.warn("one or more important classes were loaded before Glowroot"
+                        + " instrumentation could be applied to them: {}",
+                        Joiner.on(", ").join(loadedImportantClassNames));
+            } else {
+                startupLogger.warn("one or more important classes were loaded before Glowroot"
+                        + " instrumentation could be applied to them: {}. This likely occurred"
+                        + " because one or more other agents are listed in the JVM args prior to"
+                        + " the Glowroot agent ({}) which gives them a higher loading precedence."
+                        + " Your best chance at happiness is to list the Glowroot agent first.",
+                        Joiner.on(", ").join(loadedImportantClassNames),
+                        Joiner.on(" ").join(agentArgsBeforeGlowroot));
+            }
         }
     }
 
-    private static String getExtraExplanation() {
-        List<String> nonGlowrootAgents = Lists.newArrayList();
+    private static List<String> getAgentArgsBeforeGlowroot(@Nullable File glowrootJarFile) {
+        if (glowrootJarFile == null) {
+            return ImmutableList.of();
+        }
+        List<String> agentArgsBeforeGlowroot = Lists.newArrayList();
         for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
-            if (jvmArg.startsWith("-javaagent:") && !jvmArg.endsWith("glowroot.jar")
-                    || jvmArg.startsWith("-agentpath:")) {
-                nonGlowrootAgents.add(jvmArg);
+            if (jvmArg.startsWith("-javaagent:") && jvmArg.endsWith(glowrootJarFile.getName())) {
+                break;
+            }
+            if (jvmArg.startsWith("-javaagent:") || jvmArg.startsWith("-agentpath:")
+                    || isIbmHealthcenterArg(jvmArg)) {
+                agentArgsBeforeGlowroot.add(jvmArg);
             }
         }
-        if (nonGlowrootAgents.isEmpty()) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder("This likely occurred because there");
-        if (nonGlowrootAgents.size() == 1) {
-            sb.append(" is another agent");
-        } else {
-            sb.append(" are other agents");
-        }
-        sb.append(" listed in the JVM args prior to the Glowroot agent (");
-        for (int i = 0; i < nonGlowrootAgents.size(); i++) {
-            if (i > 0) {
-                sb.append(" ");
-            }
-            sb.append(nonGlowrootAgents.get(i));
-        }
-        sb.append(") which gives the other agent");
-        if (nonGlowrootAgents.size() != 1) {
-            sb.append("s");
-        }
-        sb.append(" higher loading precedence. ");
-        return sb.toString();
+        return agentArgsBeforeGlowroot;
+    }
+
+    private static boolean isIbmHealthcenterArg(String jvmArg) {
+        return AppServerDetection.isIbmJvm()
+                && (jvmArg.equals("-Xhealthcenter") || jvmArg.startsWith("-Xhealthcenter:"));
     }
 
     // now init plugins to give them a chance to do something in their static initializer
@@ -447,17 +408,6 @@ public class AgentModule {
                     logger.debug(e.getMessage(), e);
                 }
             }
-        }
-    }
-
-    private static boolean isShaded() {
-        try {
-            Class.forName("org.glowroot.agent.shaded.org.slf4j.Logger");
-            return true;
-        } catch (ClassNotFoundException e) {
-            // log exception at trace level
-            logger.trace(e.getMessage(), e);
-            return false;
         }
     }
 

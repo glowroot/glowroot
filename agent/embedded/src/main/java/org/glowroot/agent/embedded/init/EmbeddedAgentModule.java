@@ -18,6 +18,7 @@ package org.glowroot.agent.embedded.init;
 import java.io.Closeable;
 import java.io.File;
 import java.io.Serializable;
+import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.sql.SQLException;
 import java.util.List;
@@ -99,7 +100,9 @@ class EmbeddedAgentModule {
 
     EmbeddedAgentModule(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir,
             File logDir, File tmpDir, @Nullable Instrumentation instrumentation,
-            String glowrootVersion, boolean offline) throws Exception {
+            @Nullable ClassFileTransformer preCheckClassFileTransformer,
+            @Nullable File glowrootJarFile, String glowrootVersion, boolean offline)
+            throws Exception {
 
         agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
 
@@ -121,7 +124,7 @@ class EmbeddedAgentModule {
             ConfigService configService =
                     ConfigService.create(confDir, pluginCache.pluginDescriptors());
             agentModule = new AgentModule(clock, null, pluginCache, configService, instrumentation,
-                    tmpDir);
+                    glowrootJarFile, tmpDir, preCheckClassFileTransformer);
             viewerAgentModule = null;
             PreInitializeStorageShutdownClasses.preInitializeClasses();
         }

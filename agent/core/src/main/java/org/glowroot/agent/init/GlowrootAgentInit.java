@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.agent.init;
 
 import java.io.File;
+import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
 
@@ -27,7 +28,9 @@ public interface GlowrootAgentInit {
 
     void init(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir, File logDir,
             File tmpDir, @Nullable File glowrootJarFile, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String glowrootVersion) throws Exception;
+            @Nullable Instrumentation instrumentation,
+            @Nullable ClassFileTransformer preCheckClassFileTransformer, String glowrootVersion)
+            throws Exception;
 
     @OnlyUsedByTests
     void setSlowThresholdToZero() throws Exception;
