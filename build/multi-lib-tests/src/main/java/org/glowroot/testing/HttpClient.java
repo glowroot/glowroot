@@ -296,10 +296,10 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.3." + i + ".RELEASE");
             run(test);
         }
-        updateLibVersion("spring.version", "5.0.0.RELEASE");
-        updateLibVersion("spring.version", "5.0.1.RELEASE");
-        updateLibVersion("spring.version", "5.0.2.RELEASE");
-        updateLibVersion("spring.version", "5.0.3.RELEASE");
+        for (int i = 0; i <= 4; i++) {
+            updateLibVersion("spring.version", "5.0." + i + ".RELEASE");
+            runJava8(test);
+        }
     }
 
     private static void runAsyncHttpClient1x(String asyncHttpClientVersion) throws Exception {

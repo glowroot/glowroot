@@ -57,7 +57,7 @@ public class Netty {
         for (int i = 1; i <= 7; i++) {
             runNetty("4.1.0.CR" + i, "netty-4.x");
         }
-        for (int i = 0; i <= 21; i++) {
+        for (int i = 0; i <= 22; i++) {
             runNetty("4.1." + i + ".Final", "netty-4.x");
         }
     }

@@ -735,7 +735,7 @@
         </property>
       </activation>
       <properties>
-        <checker.version>2.3.2</checker.version>
+        <checker.version>2.4.0</checker.version>
       </properties>
       <dependencies>
         <dependency>

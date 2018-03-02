@@ -69,7 +69,7 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.1.6.Final</version>
+      <version>9.2.0.Final</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>

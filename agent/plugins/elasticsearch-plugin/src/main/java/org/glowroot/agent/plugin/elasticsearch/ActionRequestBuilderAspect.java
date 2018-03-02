@@ -36,7 +36,7 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
-import org.glowroot.agent.plugin.elasticsearch.ListenableActionFutureAspect.ListenableActionFutureMixin;
+import org.glowroot.agent.plugin.elasticsearch.ActionFutureAspect.ActionFutureMixin;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -184,7 +184,7 @@ public class ActionRequestBuilderAspect {
                     getQueryMessageSupplier(actionRequestBuilder), timerName);
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable ListenableActionFutureMixin future,
+        public static void onReturn(@BindReturn @Nullable ActionFutureMixin future,
                 @BindTraveler @Nullable AsyncQueryEntry asyncQueryEntry) {
             if (asyncQueryEntry == null) {
                 return;

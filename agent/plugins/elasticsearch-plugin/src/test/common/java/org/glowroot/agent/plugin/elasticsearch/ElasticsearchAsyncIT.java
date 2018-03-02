@@ -23,7 +23,6 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -282,9 +281,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             transactionMarker();
             client.close();
         }
@@ -305,9 +302,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             IndexResponse response = client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
                     .get();
@@ -331,9 +326,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             IndexResponse response = client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
                     .get();
@@ -358,9 +351,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             IndexResponse response = client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
                     .get();
@@ -384,9 +375,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
                     .get();
@@ -410,9 +399,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
                     .get();
@@ -436,9 +423,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
                     .get();
@@ -461,9 +446,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
                     .get();
@@ -486,9 +469,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
                     .get();
@@ -514,9 +495,7 @@ public class ElasticsearchAsyncIT {
 
         @Override
         public void executeApp() throws Exception {
-            client = Util.client();
-            client.addTransportAddress(
-                    new InetSocketTransportAddress(new InetSocketAddress("127.0.0.1", 9300)));
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
             client.prepareIndex("testindex", "testtype")
                     .setSource("abc", 11, "xyz", "some text")
                     .get();

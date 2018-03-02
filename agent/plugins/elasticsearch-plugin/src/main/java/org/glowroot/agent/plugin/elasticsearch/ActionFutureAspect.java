@@ -29,11 +29,11 @@ import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
-public class ListenableActionFutureAspect {
+public class ActionFutureAspect {
 
     // the field and method names are verbose since they will be mixed in to existing classes
-    @Mixin("org.elasticsearch.action.ListenableActionFuture")
-    public static class ListenableActionFutureImpl implements ListenableActionFutureMixin {
+    @Mixin("org.elasticsearch.action.ActionFuture")
+    public static class ActionFutureImpl implements ActionFutureMixin {
 
         private volatile boolean glowroot$completed;
         private volatile @Nullable Throwable glowroot$exception;
@@ -71,7 +71,7 @@ public class ListenableActionFutureAspect {
     }
 
     // the method names are verbose since they will be mixed in to existing classes
-    public interface ListenableActionFutureMixin {
+    public interface ActionFutureMixin {
 
         void glowroot$setCompleted();
 
@@ -89,20 +89,19 @@ public class ListenableActionFutureAspect {
     }
 
     @Pointcut(className = "java.util.concurrent.Future",
-            subTypeRestriction = "org.elasticsearch.action.ListenableActionFuture",
+            subTypeRestriction = "org.elasticsearch.action.ActionFuture",
             methodName = "get", methodParameterTypes = {".."}, suppressionKey = "wait-on-future")
     public static class FutureGetAdvice {
         @IsEnabled
-        public static boolean isEnabled(
-                @BindReceiver ListenableActionFutureMixin listenableActionFuture) {
-            return listenableActionFuture.glowroot$getAsyncQueryEntry() != null;
+        public static boolean isEnabled(@BindReceiver ActionFutureMixin actionFuture) {
+            return actionFuture.glowroot$getAsyncQueryEntry() != null;
         }
         @OnBefore
         public static Timer onBefore(ThreadContext threadContext,
-                @BindReceiver ListenableActionFutureMixin listenableActionFuture) {
+                @BindReceiver ActionFutureMixin actionFuture) {
             @SuppressWarnings("nullness") // just checked above in isEnabled()
             @NonNull
-            AsyncQueryEntry asyncQueryEntry = listenableActionFuture.glowroot$getAsyncQueryEntry();
+            AsyncQueryEntry asyncQueryEntry = actionFuture.glowroot$getAsyncQueryEntry();
             return asyncQueryEntry.extendSyncTimer(threadContext);
         }
         @OnAfter
@@ -111,35 +110,14 @@ public class ListenableActionFutureAspect {
         }
     }
 
-    // waiting on async result
-    @Pointcut(className = "org.elasticsearch.action.ListenableActionFuture",
-            methodName = "getUninterruptibly", methodParameterTypes = {".."})
-    public static class FutureGetUninterruptiblyAdvice {
-        @IsEnabled
-        public static boolean isEnabled(
-                @BindReceiver ListenableActionFutureMixin listenableActionFuture) {
-            return FutureGetAdvice.isEnabled(listenableActionFuture);
-        }
-        @OnBefore
-        public static Timer onBefore(ThreadContext threadContext,
-                @BindReceiver ListenableActionFutureMixin listenableActionFuture) {
-            return FutureGetAdvice.onBefore(threadContext, listenableActionFuture);
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler Timer timer) {
-            FutureGetAdvice.onAfter(timer);
-        }
-    }
-
     @Pointcut(className = "org.elasticsearch.common.util.concurrent.BaseFuture",
-            subTypeRestriction = "org.elasticsearch.action.ListenableActionFuture",
+            subTypeRestriction = "org.elasticsearch.action.ActionFuture",
             methodName = "setException", methodParameterTypes = {"java.lang.Throwable"})
     public static class FutureSetExceptionAdvice {
         // using @OnBefore instead of @OnReturn to ensure that async trace entry is ended prior to
         // an overall transaction that may be waiting on this future has a chance to end
         @OnBefore
-        public static void onBefore(
-                @BindReceiver ListenableActionFutureMixin listenableActionFuture,
+        public static void onBefore(@BindReceiver ActionFutureMixin actionFuture,
                 @BindParameter @Nullable Throwable t) {
             if (t == null) {
                 return;
@@ -147,9 +125,9 @@ public class ListenableActionFutureAspect {
             // to prevent race condition, setting completed/exception status before getting async
             // query entry, and the converse is done when setting async query entry
             // ok if end() happens to get called twice
-            listenableActionFuture.glowroot$setCompleted();
-            listenableActionFuture.glowroot$setException(t);
-            AsyncQueryEntry asyncQueryEntry = listenableActionFuture.glowroot$getAsyncQueryEntry();
+            actionFuture.glowroot$setCompleted();
+            actionFuture.glowroot$setException(t);
+            AsyncQueryEntry asyncQueryEntry = actionFuture.glowroot$getAsyncQueryEntry();
             if (asyncQueryEntry != null) {
                 asyncQueryEntry.endWithError(t);
             }
@@ -157,19 +135,18 @@ public class ListenableActionFutureAspect {
     }
 
     @Pointcut(className = "org.elasticsearch.common.util.concurrent.BaseFuture",
-            subTypeRestriction = "org.elasticsearch.action.ListenableActionFuture",
+            subTypeRestriction = "org.elasticsearch.action.ActionFuture",
             methodName = "set", methodParameterTypes = {"java.lang.Object"})
     public static class FutureSetAdvice {
         // using @OnBefore instead of @OnReturn to ensure that async trace entry is ended prior to
         // an overall transaction that may be waiting on this future has a chance to end
         @OnBefore
-        public static void onBefore(
-                @BindReceiver ListenableActionFutureMixin listenableActionFuture) {
+        public static void onBefore(@BindReceiver ActionFutureMixin actionFuture) {
             // to prevent race condition, setting completed status before getting async query entry,
             // and the converse is done when setting async query entry
             // ok if end() happens to get called twice
-            listenableActionFuture.glowroot$setCompleted();
-            AsyncQueryEntry asyncQueryEntry = listenableActionFuture.glowroot$getAsyncQueryEntry();
+            actionFuture.glowroot$setCompleted();
+            AsyncQueryEntry asyncQueryEntry = actionFuture.glowroot$getAsyncQueryEntry();
             if (asyncQueryEntry != null) {
                 asyncQueryEntry.end();
             }

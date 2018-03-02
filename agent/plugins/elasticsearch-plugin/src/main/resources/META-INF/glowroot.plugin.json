@@ -12,6 +12,6 @@
   ],
   "aspects": [
     "org.glowroot.agent.plugin.elasticsearch.ActionRequestBuilderAspect",
-    "org.glowroot.agent.plugin.elasticsearch.ListenableActionFutureAspect"
+    "org.glowroot.agent.plugin.elasticsearch.ActionFutureAspect"
   ]
 }
