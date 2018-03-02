@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -321,7 +320,7 @@ class ClassAnalyzer {
 
     private List<AnalyzedMethod> getMethodsThatOnlyNowFulfillAdvice(AnalyzedClass analyzedClass) {
         if (analyzedClass.isAbstract()) {
-            ImmutableMap.of();
+            return ImmutableList.of();
         }
         Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets =
                 getInheritedInterfaceMethodsWithAdvice();

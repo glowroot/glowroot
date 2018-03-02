@@ -224,10 +224,8 @@ class WeavingClassVisitor extends ClassVisitor {
                 addMixin(mixinClassNode);
             }
         }
-        if (!analyzedClass.isAbstract()) {
-            for (AnalyzedMethod methodThatOnlyNowFulfillAdvice : methodsThatOnlyNowFulfillAdvice) {
-                overrideAndWeaveInheritedMethod(methodThatOnlyNowFulfillAdvice);
-            }
+        for (AnalyzedMethod methodThatOnlyNowFulfillAdvice : methodsThatOnlyNowFulfillAdvice) {
+            overrideAndWeaveInheritedMethod(methodThatOnlyNowFulfillAdvice);
         }
         // handle metas at end, since handleInheritedMethodsThatNowFulfillAdvice()
         // above could add new metas
