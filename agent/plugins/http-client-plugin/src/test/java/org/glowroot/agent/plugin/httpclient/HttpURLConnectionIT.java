@@ -95,6 +95,7 @@ public class HttpURLConnectionIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .matches("http client request: GET " + protocol + "://localhost:\\d+/hello1/");
+        assertThat(entry.getActive()).isFalse();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -111,6 +112,7 @@ public class HttpURLConnectionIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).matches(
                 "http client request: GET " + protocol + "://localhost:\\d+/hello1\\?abc=xyz");
+        assertThat(entry.getActive()).isFalse();
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -127,6 +129,7 @@ public class HttpURLConnectionIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .matches("http client request: POST " + protocol + "://localhost:\\d+/hello1/");
+        assertThat(entry.getActive()).isFalse();
 
         assertThat(i.hasNext()).isFalse();
     }

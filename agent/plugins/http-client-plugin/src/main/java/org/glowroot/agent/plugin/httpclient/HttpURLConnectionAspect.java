@@ -88,6 +88,38 @@ public class HttpURLConnectionAspect {
         boolean glowroot$hasTraceEntry();
     }
 
+    private static class TraceEntryOrTimer {
+
+        private final @Nullable TraceEntry traceEntry;
+        private final @Nullable Timer timer;
+
+        private TraceEntryOrTimer(TraceEntry traceEntry) {
+            this.traceEntry = traceEntry;
+            timer = null;
+        }
+
+        private TraceEntryOrTimer(Timer timer) {
+            this.timer = timer;
+            traceEntry = null;
+        }
+
+        private void onReturn() {
+            if (traceEntry != null) {
+                traceEntry.end();
+            } else if (timer != null) {
+                timer.stop();
+            }
+        }
+
+        private void onThrow(Throwable t) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(t);
+            } else if (timer != null) {
+                timer.stop();
+            }
+        }
+    }
+
     @Pointcut(className = "java.net.URLConnection",
             subTypeRestriction = "java.net.HttpURLConnection", methodName = "connect",
             methodParameterTypes = {}, nestingGroup = "http-client", timerName = "http client")
@@ -99,30 +131,26 @@ public class HttpURLConnectionAspect {
             return onBefore(threadContext, httpURLConnection, false);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable Object entryOrTimer) {
-            if (entryOrTimer instanceof TraceEntry) {
-                ((TraceEntry) entryOrTimer).end();
-            } else if (entryOrTimer instanceof Timer) {
-                ((Timer) entryOrTimer).stop();
+        public static void onReturn(@BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
+            if (entryOrTimer != null) {
+                entryOrTimer.onReturn();
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable Object entryOrTimer) {
-            if (entryOrTimer instanceof TraceEntry) {
-                ((TraceEntry) entryOrTimer).endWithError(t);
-            } else if (entryOrTimer instanceof Timer) {
-                ((Timer) entryOrTimer).stop();
+                @BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
+            if (entryOrTimer != null) {
+                entryOrTimer.onThrow(t);
             }
         }
-        private static @Nullable Object onBefore(ThreadContext threadContext,
+        private static @Nullable TraceEntryOrTimer onBefore(ThreadContext threadContext,
                 Object httpURLConnectionObj, boolean overrideGetWithPost) {
             if (!(httpURLConnectionObj instanceof HasTraceEntry)) {
                 return null;
             }
             TraceEntry traceEntry = ((HasTraceEntry) httpURLConnectionObj).glowroot$getTraceEntry();
             if (traceEntry != null) {
-                return traceEntry.extend();
+                return new TraceEntryOrTimer(traceEntry.extend());
             }
             HttpURLConnection httpURLConnection = (HttpURLConnection) httpURLConnectionObj;
             String method = httpURLConnection.getRequestMethod();
@@ -146,7 +174,7 @@ public class HttpURLConnectionAspect {
                     method + Uris.stripQueryString(url),
                     MessageSupplier.create("http client request: {}{}", method, url), timerName);
             ((HasTraceEntry) httpURLConnectionObj).glowroot$setTraceEntry(traceEntry);
-            return traceEntry;
+            return new TraceEntryOrTimer(traceEntry);
         }
     }
 
@@ -155,14 +183,14 @@ public class HttpURLConnectionAspect {
             methodParameterTypes = {}, nestingGroup = "http-client")
     public static class GetInputStreamAdvice {
         @OnBefore
-        public static @Nullable Object onBefore(ThreadContext threadContext,
+        public static @Nullable TraceEntryOrTimer onBefore(ThreadContext threadContext,
                 @BindReceiver Object httpURLConnection) {
             return ConnectAdvice.onBefore(threadContext, httpURLConnection, false);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object returnValue,
                 @BindReceiver Object httpURLConnection,
-                @BindTraveler @Nullable Object entryOrTimer) {
+                @BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
             if (httpURLConnection instanceof HasTraceEntry) {
                 if (returnValue instanceof HasTraceEntry) {
                     TraceEntry traceEntry =
@@ -178,7 +206,7 @@ public class HttpURLConnectionAspect {
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable Object entryOrTimer) {
+                @BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
             ConnectAdvice.onThrow(t, entryOrTimer);
         }
     }
@@ -188,14 +216,14 @@ public class HttpURLConnectionAspect {
             methodParameterTypes = {}, nestingGroup = "http-client")
     public static class GetOutputStreamAdvice {
         @OnBefore
-        public static @Nullable Object onBefore(ThreadContext threadContext,
+        public static @Nullable TraceEntryOrTimer onBefore(ThreadContext threadContext,
                 @BindReceiver Object httpURLConnection) {
             return ConnectAdvice.onBefore(threadContext, httpURLConnection, true);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object returnValue,
                 @BindReceiver Object httpURLConnection,
-                @BindTraveler @Nullable Object entryOrTimer) {
+                @BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
             if (httpURLConnection instanceof HasTraceEntry) {
                 if (returnValue instanceof HasTraceEntry) {
                     TraceEntry traceEntry =
@@ -211,7 +239,7 @@ public class HttpURLConnectionAspect {
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable Object entryOrTimer) {
+                @BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
             ConnectAdvice.onThrow(t, entryOrTimer);
         }
     }
