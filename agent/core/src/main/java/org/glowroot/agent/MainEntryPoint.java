@@ -15,9 +15,11 @@
  */
 package org.glowroot.agent;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
@@ -203,16 +205,34 @@ public class MainEntryPoint {
                         logbackXmlOverride.getAbsolutePath());
             }
         }
-        String prior = System.getProperty("glowroot.log.dir");
+        String priorProperty = System.getProperty("glowroot.log.dir");
         System.setProperty("glowroot.log.dir", logDir.getPath());
+        ClassLoader priorLoader = Thread.currentThread().getContextClassLoader();
+        // setting the context class loader to only load from bootstrap class loader (by specifying
+        // null parent class loader), otherwise logback will pick up and use a SAX parser on the
+        // system classpath because SAXParserFactory.newInstance() checks the thread context class
+        // loader for resource named META-INF/services/javax.xml.parsers.SAXParserFactory
+        // (see the xerces dependency in glowroot-agent-integration-tests for testing this)
+        Thread.currentThread().setContextClassLoader(new ClassLoader(null) {
+            // overriding getResourceAsStream() is needed for JDK 6 since it still manages to
+            // fallback and find the resource on the system class path otherwise
+            @Override
+            public @Nullable InputStream getResourceAsStream(String name) {
+                if (name.equals("META-INF/services/javax.xml.parsers.SAXParserFactory")) {
+                    return new ByteArrayInputStream(new byte[0]);
+                }
+                return null;
+            }
+        });
         try {
             startupLogger = LoggerFactory.getLogger("org.glowroot");
         } finally {
+            Thread.currentThread().setContextClassLoader(priorLoader);
             System.clearProperty("glowroot.logback.configurationFile");
-            if (prior == null) {
+            if (priorProperty == null) {
                 System.clearProperty("glowroot.log.dir");
             } else {
-                System.setProperty("glowroot.log.dir", prior);
+                System.setProperty("glowroot.log.dir", priorProperty);
             }
         }
         // TODO report checker framework issue that occurs without checkNotNull

@@ -65,6 +65,16 @@
       <version>1.4.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- this dependency exists here just to test that glowroot's logback (in the bootstrap
+        class loader) doesn't use the SAX parser from this dependency (in the system class loader)
+        which causes problems, e.g. java.net.HttpURLConnection to be loaded early (see code and
+        comment in MainEntryPoint.initLogging() -->
+      <groupId>xerces</groupId>
+      <artifactId>xercesImpl</artifactId>
+      <version>2.9.1</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
