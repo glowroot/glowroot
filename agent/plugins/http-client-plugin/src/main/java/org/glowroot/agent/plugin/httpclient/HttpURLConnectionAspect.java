@@ -56,7 +56,9 @@ public class HttpURLConnectionAspect {
     @Mixin({"java.net.HttpURLConnection",
             "sun.net.www.protocol.http.HttpURLConnection$HttpInputStream",
             "sun.net.www.protocol.http.HttpURLConnection$StreamingOutputStream",
-            "sun.net.www.http.PosterOutputStream"})
+            "sun.net.www.http.PosterOutputStream",
+            "weblogic.net.http.KeepAliveStream",
+            "weblogic.utils.io.UnsyncByteArrayOutputStream"})
     public static class HasTraceEntryImpl implements HasTraceEntry {
 
         private @Nullable TraceEntry glowroot$traceEntry;
@@ -245,7 +247,8 @@ public class HttpURLConnectionAspect {
     }
 
     @Pointcut(className = "java.io.InputStream",
-            subTypeRestriction = "sun.net.www.protocol.http.HttpURLConnection$HttpInputStream",
+            subTypeRestriction = "sun.net.www.protocol.http.HttpURLConnection$HttpInputStream"
+                    + "|weblogic.net.http.KeepAliveStream",
             methodName = "*", methodParameterTypes = {".."})
     public static class HttpInputStreamAdvice {
         @OnBefore
@@ -269,7 +272,8 @@ public class HttpURLConnectionAspect {
 
     @Pointcut(className = "java.io.OutputStream",
             subTypeRestriction = "sun.net.www.protocol.http.HttpURLConnection$StreamingOutputStream"
-                    + "|sun.net.www.http.PosterOutputStream",
+                    + "|sun.net.www.http.PosterOutputStream"
+                    + "|weblogic.utils.io.UnsyncByteArrayOutputStream",
             methodName = "*", methodParameterTypes = {".."})
     public static class StreamingOutputStreamAdvice {
         @OnBefore
