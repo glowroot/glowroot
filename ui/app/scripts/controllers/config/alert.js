@@ -129,8 +129,16 @@ glowroot.controller('ConfigAlertCtrl', [
       return metric && (metric.lastIndexOf('transaction:', 0) === 0 || metric.lastIndexOf('error:', 0) === 0);
     }
 
+    function showMinTransactionCount(metric) {
+      return showTransactionTypeAndName(metric) && metric !== 'transaction:count' && metric !== 'error:count';
+    }
+
     $scope.showTransactionTypeAndName = function () {
       return showTransactionTypeAndName($scope.config.condition.metric);
+    };
+
+    $scope.showMinTransactionCount = function () {
+      return showMinTransactionCount($scope.config.condition.metric);
     };
 
     $scope.$watch('config.condition.metric', function (newValue, oldValue) {
@@ -147,6 +155,13 @@ glowroot.controller('ConfigAlertCtrl', [
       } else {
         delete $scope.config.condition.transactionType;
         delete $scope.config.condition.transactionName;
+      }
+      if (showMinTransactionCount(newValue)) {
+        if ($scope.config.condition.minTransactionCount === undefined) {
+          $scope.config.condition.minTransactionCount = '';
+        }
+      } else {
+        delete $scope.config.condition.minTransactionCount;
       }
       if (newValue !== 'transaction:x-percentile') {
         delete $scope.config.condition.percentile;

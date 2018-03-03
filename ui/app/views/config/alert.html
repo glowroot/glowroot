@@ -218,7 +218,7 @@
                gt-required="loaded"
                gt-disabled="!agentRollup.permissions.config.edit.alert"
                gt-width="7em"
-               ng-if="showTransactionTypeAndName() && config.condition.metric !== 'transaction:count' && config.condition.metric !== 'error:count'">
+               ng-if="showMinTransactionCount()">
             <div class="help-block">
               Time periods with very few transactions have much less meaningful metrics, so this can be used to
               suppress alerts from being generated unless the time period has a minimum transaction count.

@@ -124,7 +124,7 @@ class MetricService {
         return totalDurationNanos / (totalTransactionCount * NANOSECONDS_PER_MILLISECOND);
     }
 
-    private long getTransactionCount(String agentRollupId, String transactionType,
+    public long getTransactionCount(String agentRollupId, String transactionType,
             @Nullable String transactionName, long startTime, long endTime) throws Exception {
         List<ThroughputAggregate> throughputAggregates = getThroughputAggregates(agentRollupId,
                 transactionType, transactionName, startTime, endTime);

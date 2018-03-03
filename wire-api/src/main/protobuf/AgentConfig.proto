@@ -136,7 +136,8 @@ message AgentConfig {
         double threshold = 100;
         bool lower_bound_threshold = 101;
         int32 time_period_seconds = 102;
-        int64 min_transaction_count = 103;
+        int64 min_transaction_count = 103; // not applicable for all metric conditions
+                                           // see AlertingService.hasMinTransactionCount()
         // OptionalInt32 consecutive_time_periods = 104; // e.g. two consecutive time periods
       }
 

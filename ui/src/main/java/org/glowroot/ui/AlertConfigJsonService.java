@@ -419,18 +419,19 @@ class AlertConfigJsonService {
                 AlertConfig.AlertCondition.MetricCondition condition) {
             ImmutableMetricConditionDto.Builder builder = ImmutableMetricConditionDto.builder()
                     .metric(condition.getMetric());
-            if (condition.getMetric().startsWith("transaction:")
-                    || condition.getMetric().startsWith("error:")) {
+            if (AlertingService.hasTransactionTypeAndName(condition.getMetric())) {
                 builder.transactionType(condition.getTransactionType());
                 builder.transactionName(condition.getTransactionName());
             }
             if (condition.hasPercentile()) {
                 builder.percentile(condition.getPercentile().getValue());
             }
+            if (AlertingService.hasMinTransactionCount(condition.getMetric())) {
+                builder.minTransactionCount(condition.getMinTransactionCount());
+            }
             return builder.threshold(condition.getThreshold())
                     .lowerBoundThreshold(condition.getLowerBoundThreshold())
                     .timePeriodSeconds(condition.getTimePeriodSeconds())
-                    .minTransactionCount(condition.getMinTransactionCount())
                     .build();
         }
 
@@ -454,22 +455,20 @@ class AlertConfigJsonService {
             AlertConfig.AlertCondition.MetricCondition.Builder builder =
                     AlertConfig.AlertCondition.MetricCondition.newBuilder()
                             .setMetric(condition.metric());
-            String transactionType = condition.transactionType();
-            if (transactionType != null) {
-                builder.setTransactionType(transactionType);
-            }
-            String transactionName = condition.transactionName();
-            if (transactionName != null) {
-                builder.setTransactionName(transactionName);
+            if (AlertingService.hasTransactionTypeAndName(condition.metric())) {
+                builder.setTransactionType(checkNotNull(condition.transactionType()));
+                builder.setTransactionName(checkNotNull(condition.transactionName()));
             }
             Double percentile = condition.percentile();
             if (percentile != null) {
                 builder.setPercentile(OptionalDouble.newBuilder().setValue(percentile));
             }
+            if (AlertingService.hasMinTransactionCount(condition.metric())) {
+                builder.setMinTransactionCount(checkNotNull(condition.minTransactionCount()));
+            }
             return builder.setThreshold(condition.threshold())
                     .setLowerBoundThreshold(condition.lowerBoundThreshold())
                     .setTimePeriodSeconds(condition.timePeriodSeconds())
-                    .setMinTransactionCount(condition.minTransactionCount())
                     .build();
         }
 
@@ -509,11 +508,7 @@ class AlertConfigJsonService {
                 return false;
             }
             abstract int timePeriodSeconds();
-            @Value.Default
-            @JsonInclude(value = Include.NON_EMPTY)
-            long minTransactionCount() {
-                return 0;
-            }
+            abstract @Nullable Long minTransactionCount();
         }
 
         @Value.Immutable

@@ -37,6 +37,7 @@ import javax.mail.internet.MimeMessage;
 import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
@@ -135,8 +136,19 @@ public class AlertingService {
     public void checkMetricAlert(String centralDisplay, String agentRollupId,
             String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
             long endTime) throws Exception {
-        AlertCondition alertCondition = alertConfig.getCondition();
         long startTime = endTime - SECONDS.toMillis(metricCondition.getTimePeriodSeconds());
+        if (hasMinTransactionCount(metricCondition.getMetric())) {
+            long minTransactionCount = metricCondition.getMinTransactionCount();
+            if (minTransactionCount != 0) {
+                long transactionCount = metricService.getTransactionCount(agentRollupId,
+                        metricCondition.getTransactionType(),
+                        Strings.emptyToNull(metricCondition.getTransactionName()), startTime,
+                        endTime);
+                if (transactionCount < minTransactionCount) {
+                    return;
+                }
+            }
+        }
         Number value =
                 metricService.getMetricValue(agentRollupId, metricCondition, startTime, endTime);
         if (value == null) {
@@ -150,6 +162,7 @@ public class AlertingService {
         } else {
             currentlyTriggered = value.doubleValue() > metricCondition.getThreshold();
         }
+        AlertCondition alertCondition = alertConfig.getCondition();
         OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
                 alertCondition, alertConfig.getSeverity());
         if (openIncident != null && !currentlyTriggered) {
@@ -353,6 +366,15 @@ public class AlertingService {
             text += "s";
         }
         return text;
+    }
+
+    public static boolean hasTransactionTypeAndName(String metric) {
+        return metric.startsWith("transaction:") || metric.startsWith("error:");
+    }
+
+    public static boolean hasMinTransactionCount(String metric) {
+        return hasTransactionTypeAndName(metric) && !metric.equals("transaction:count")
+                && !metric.equals("error:count");
     }
 
     private static String getPreLowerBoundText(boolean ok) {
