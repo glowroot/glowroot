@@ -73,8 +73,16 @@ public class Weaver {
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 
     // useful for debugging java.lang.VerifyErrors
-    private static final @Nullable String DEBUG_CLASS_NAME =
-            System.getProperty("glowroot.weaving.debugClassName");
+    private static final @Nullable String DEBUG_CLASS_NAME;
+
+    static {
+        String debugClassName = System.getProperty("glowroot.weaving.debugClassName");
+        if (debugClassName == null) {
+            DEBUG_CLASS_NAME = null;
+        } else {
+            DEBUG_CLASS_NAME = ClassNames.toInternalName(debugClassName);
+        }
+    }
 
     private final Supplier<List<Advice>> advisors;
     private final ImmutableList<ShimType> shimTypes;
