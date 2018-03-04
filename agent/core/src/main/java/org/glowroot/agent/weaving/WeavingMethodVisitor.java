@@ -695,29 +695,56 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void weaveOnReturnAdvice(int opcode, Advice advice, Method onReturnAdvice) {
-        boolean leaveReturnValueOnStack = onReturnAdvice.getReturnType().getSort() == Type.VOID;
         if (onReturnAdvice.getArgumentTypes().length > 0) {
             // @BindReturn must be the first argument to @OnReturn (if present)
-            int startIndex = 0;
+            int startIndex;
+            Object[] stack;
             AdviceParameter parameter = advice.onReturnParameters().get(0);
+            boolean leaveReturnValueOnStack = onReturnAdvice.getReturnType().getSort() == Type.VOID;
             switch (parameter.kind()) {
                 case RETURN:
                     loadNonOptionalReturnValue(opcode, parameter, leaveReturnValueOnStack);
                     startIndex = 1;
+                    if (leaveReturnValueOnStack && opcode != RETURN) {
+                        stack = new Object[] {convert(returnType), convert(parameter.type())};
+                    } else {
+                        stack = new Object[] {convert(parameter.type())};
+                    }
                     break;
                 case OPTIONAL_RETURN:
                     loadOptionalReturnValue(opcode, leaveReturnValueOnStack);
                     startIndex = 1;
+                    if (leaveReturnValueOnStack && opcode != RETURN) {
+                        stack = new Object[] {convert(returnType), convert(parameter.type())};
+                    } else {
+                        stack = new Object[] {convert(parameter.type())};
+                    }
                     break;
                 default:
-                    // first argument is not @BindReturn
+                    // first argument is not @BindReturn (which means there is no @BindReturn)
+                    startIndex = 0;
+                    if (opcode == RETURN) {
+                        stack = new Object[] {};
+                    } else {
+                        if (onReturnAdvice.getReturnType().getSort() == Type.VOID) {
+                            stack = new Object[] {convert(returnType)};
+                        } else {
+                            pop();
+                            stack = new Object[] {};
+                        }
+                    }
                     break;
             }
             loadMethodParameters(advice.onReturnParameters(), startIndex,
-                    travelerLocals.get(advice), advice.adviceType(), OnReturn.class, true);
+                    travelerLocals.get(advice), advice.adviceType(), OnReturn.class, true, stack);
+        } else if (onReturnAdvice.getReturnType().getSort() != Type.VOID && opcode != RETURN) {
+            pop();
         }
         visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                 onReturnAdvice.getName(), onReturnAdvice.getDescriptor(), false);
+        if (onReturnAdvice.getReturnType().getSort() != Type.VOID && opcode == RETURN) {
+            pop();
+        }
     }
 
     private void loadNonOptionalReturnValue(int opcode, AdviceParameter parameter, boolean dup) {
@@ -769,25 +796,23 @@ class WeavingMethodVisitor extends AdviceAdapter {
             loadLocal(enabledLocal);
             visitJumpInsn(IFEQ, onThrowBlockEnd);
         }
-        if (onThrowAdvice.getArgumentTypes().length == 0) {
-            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
-                    onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
-        } else {
-            int startIndex = 0;
+        if (onThrowAdvice.getArgumentTypes().length > 0) {
+            int startIndex;
             Object[] stack;
             if (advice.onThrowParameters().get(0).kind() == ParameterKind.THROWABLE) {
                 // @BindThrowable must be the first argument to @OnThrow (if present)
                 visitInsn(DUP);
-                startIndex++;
+                startIndex = 1;
                 stack = new Object[] {"java/lang/Throwable", "java/lang/Throwable"};
             } else {
+                startIndex = 0;
                 stack = new Object[] {"java/lang/Throwable"};
             }
             loadMethodParameters(advice.onThrowParameters(), startIndex, travelerLocals.get(advice),
                     advice.adviceType(), OnThrow.class, true, stack);
-            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
-                    onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
         }
+        visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
         if (onThrowBlockEnd != null) {
             visitLabel(onThrowBlockEnd);
             visitImplicitFrame("java/lang/Throwable");

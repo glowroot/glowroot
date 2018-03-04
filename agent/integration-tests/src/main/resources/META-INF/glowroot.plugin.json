@@ -144,6 +144,7 @@
     "org.glowroot.agent.tests.plugin.TraceGeneratorAspect",
     "org.glowroot.agent.tests.plugin.MixinAspect",
     "org.glowroot.agent.tests.plugin.MatchAllTypesAspect",
-    "org.glowroot.agent.tests.plugin.BeanDescriptorAspect"
+    "org.glowroot.agent.tests.plugin.BeanDescriptorAspect",
+    "org.glowroot.agent.tests.plugin.SimpleAspect"
   ]
 }

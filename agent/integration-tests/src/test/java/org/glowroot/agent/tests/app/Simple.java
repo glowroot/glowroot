@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,11 @@
  */
 package org.glowroot.agent.tests.app;
 
-public class LevelOne {
+class Simple {
 
-    private final RuntimeException exception;
-
-    public LevelOne() {
-        this(null);
+    Object run() {
+        return null;
     }
 
-    public LevelOne(RuntimeException e) {
-        this.exception = e;
-    }
-
-    // this method corresponds to LevelOneAspect
-    public void call(Object arg1, Object arg2) {
-        new LevelTwo(exception).call(arg1 + "x", arg2 + "x");
-        new Simple().run();
-        new Simple().run2();
-    }
+    void run2() {}
 }
