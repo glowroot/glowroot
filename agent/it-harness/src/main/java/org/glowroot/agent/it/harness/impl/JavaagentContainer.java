@@ -461,6 +461,11 @@ public class JavaagentContainer implements Container {
         command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(bootPaths));
         command.add("-classpath");
         command.add(Joiner.on(File.pathSeparatorChar).join(paths));
+        if (XDEBUG) {
+            // the -agentlib arg needs to come before the -javaagent arg
+            command.add("-Xdebug");
+            command.add("-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=y");
+        }
         if (javaagentJarFile == null) {
             // create jar file in test dir since that gets cleaned up at end of test already
             javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(testDir);
@@ -493,10 +498,6 @@ public class JavaagentContainer implements Container {
             if (key.startsWith("glowroot.internal.") || key.startsWith("glowroot.test.")) {
                 command.add("-D" + key + "=" + entry.getValue());
             }
-        }
-        if (XDEBUG) {
-            command.add("-Xdebug");
-            command.add("-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=y");
         }
         command.add(JavaagentMain.class.getName());
         command.add(Integer.toString(heartbeatPort));
