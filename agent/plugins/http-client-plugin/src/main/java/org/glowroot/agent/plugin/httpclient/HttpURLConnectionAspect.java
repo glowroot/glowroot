@@ -128,7 +128,7 @@ public class HttpURLConnectionAspect {
     public static class ConnectAdvice {
         private static final TimerName timerName = Agent.getTimerName(ConnectAdvice.class);
         @OnBefore
-        public static @Nullable Object onBefore(ThreadContext threadContext,
+        public static @Nullable TraceEntryOrTimer onBefore(ThreadContext threadContext,
                 @BindReceiver Object httpURLConnection) {
             return onBefore(threadContext, httpURLConnection, false);
         }
