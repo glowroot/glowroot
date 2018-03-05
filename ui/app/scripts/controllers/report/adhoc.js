@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,7 +162,15 @@ glowroot.controller('ReportAdhocCtrl', [
                 }
                 agentRollup.indentedDisplay = indent + agentRollup.lastDisplayPart;
               });
-
+              if ($scope.allAgentRollups.length === 0) {
+                $scope.allAgentRollups = [{
+                  id: '',
+                  display: 'No active agents in this time period',
+                  indentedDisplay: 'No active agents in this time period',
+                  disabled: true,
+                  italic: true
+                }];
+              }
             }, function (response) {
               // FIXME equivalent of $scope.showChartSpinner--;
               httpErrors.handle(response, $scope);
