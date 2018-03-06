@@ -27,6 +27,7 @@ import java.lang.management.ThreadMXBean;
 import java.security.CodeSource;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -35,6 +36,7 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.primitives.Longs;
 import org.objectweb.asm.ClassReader;
@@ -132,7 +134,8 @@ public class Weaver {
     }
 
     byte /*@Nullable*/ [] weave(byte[] classBytes, String className,
-            @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
+            @Nullable Class<?> classBeingRedefined, @Nullable CodeSource codeSource,
+            @Nullable ClassLoader loader) {
         if (weavingDisabledForLoggingDeadlock) {
             return null;
         }
@@ -142,7 +145,8 @@ public class Weaver {
                 activeWeavings.add(new ActiveWeaving(Thread.currentThread().getId(), startTick));
         try {
             logger.trace("transform(): className={}", className);
-            byte[] transformedBytes = weaveUnderTimer(classBytes, className, codeSource, loader);
+            byte[] transformedBytes =
+                    weaveUnderTimer(classBytes, className, classBeingRedefined, codeSource, loader);
             if (transformedBytes != null) {
                 logger.debug("transform(): transformed {}", className);
             }
@@ -172,7 +176,8 @@ public class Weaver {
     }
 
     private byte /*@Nullable*/ [] weaveUnderTimer(byte[] classBytes, String className,
-            @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
+            @Nullable Class<?> classBeingRedefined, @Nullable CodeSource codeSource,
+            @Nullable ClassLoader loader) {
         List<Advice> advisors = analyzedWorld.mergeInstrumentationAnnotations(this.advisors.get(),
                 classBytes, loader, className);
         ThinClassVisitor accv = new ThinClassVisitor();
@@ -223,12 +228,34 @@ public class Weaver {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
             return maybeProcessedBytes;
         }
+        List<ShimType> matchedShimTypes = classAnalyzer.getMatchedShimTypes();
+        List<MixinType> matchedMixinTypes = classAnalyzer.getMatchedMixinTypes();
+        if (classBeingRedefined != null
+                && (!matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty())) {
+            Set<String> interfaceNames = Sets.newHashSet();
+            for (Class<?> iface : classBeingRedefined.getInterfaces()) {
+                interfaceNames.add(iface.getName());
+            }
+            for (ShimType matchedShimType : shimTypes) {
+                if (!interfaceNames.contains(matchedShimType.iface().getClassName())) {
+                    // re-weaving would fail with "attempted to change superclass or interfaces"
+                    return null;
+                }
+            }
+            for (MixinType matchedMixinType : mixinTypes) {
+                for (Type mixinInterface : matchedMixinType.interfaces()) {
+                    if (!interfaceNames.contains(mixinInterface.getClassName())) {
+                        // re-weaving would fail with "attempted to change superclass or interfaces"
+                        return null;
+                    }
+                }
+            }
+        }
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         WeavingClassVisitor cv =
                 new WeavingClassVisitor(cw, loader, classAnalyzer.getAnalyzedClass(),
-                        classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(),
-                        classAnalyzer.getMatchedShimTypes(), classAnalyzer.getMatchedMixinTypes(),
-                        classAnalyzer.getMethodAdvisors(), analyzedWorld);
+                        classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(), matchedShimTypes,
+                        matchedMixinTypes, classAnalyzer.getMethodAdvisors(), analyzedWorld);
         ClassReader cr =
                 new ClassReader(maybeProcessedBytes == null ? classBytes : maybeProcessedBytes);
         try {

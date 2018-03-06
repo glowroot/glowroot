@@ -92,7 +92,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         // be woven by executor plugin
         String nonNullClassName = className == null ? "unnamed" : className;
         try {
-            return transformInternal(loader, nonNullClassName, protectionDomain, bytes);
+            return transformInternal(loader, nonNullClassName, classBeingRedefined,
+                    protectionDomain, bytes);
         } catch (Throwable t) {
             // see method-level comment
             logger.error("error weaving {}: {}", nonNullClassName, t.getMessage(), t);
@@ -101,7 +102,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     }
 
     private byte /*@Nullable*/ [] transformInternal(@Nullable ClassLoader loader, String className,
-            @Nullable ProtectionDomain protectionDomain, byte[] bytes) {
+            @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
+            byte[] bytes) {
         if (ignoreClass(className)) {
             return null;
         }
@@ -113,7 +115,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             return null;
         }
         CodeSource codeSource = protectionDomain == null ? null : protectionDomain.getCodeSource();
-        return weaver.weave(bytes, className, codeSource, loader);
+        return weaver.weave(bytes, className, classBeingRedefined, codeSource, loader);
     }
 
     private static boolean ignoreClass(String className) {
