@@ -61,9 +61,9 @@ import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.ui.HttpSessionManager.Authentication;
+import org.glowroot.ui.LayoutJsonService.AgentRollupSmall;
 import org.glowroot.ui.LayoutService.FilteredAgentRollup;
 import org.glowroot.ui.LayoutService.Permissions;
-import org.glowroot.ui.RoleConfigJsonService.FlattenedAgentRollup;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -114,11 +114,11 @@ class ReportJsonService {
                                 && permissions.error().overview() && permissions.jvm().gauges();
                     }
                 });
-        List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
+        List<AgentRollupSmall> dropdown = Lists.newArrayList();
         for (FilteredAgentRollup agentRollup : agentRollups) {
-            flattenedAgentRollups.addAll(getFlattenedAgentRollups(agentRollup, 0));
+            LayoutJsonService.process(agentRollup, 0, dropdown);
         }
-        return mapper.writeValueAsString(flattenedAgentRollups);
+        return mapper.writeValueAsString(dropdown);
     }
 
     // permission is checked based on agentRollupIds in the request
@@ -255,21 +255,6 @@ class ReportJsonService {
                 .from(from)
                 .to(to)
                 .build();
-    }
-
-    private static List<FlattenedAgentRollup> getFlattenedAgentRollups(
-            FilteredAgentRollup agentRollup, int depth) {
-        List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
-        flattenedAgentRollups.add(ImmutableFlattenedAgentRollup.builder()
-                .id(agentRollup.id())
-                .display(agentRollup.display())
-                .lastDisplayPart(agentRollup.lastDisplayPart())
-                .depth(depth)
-                .build());
-        for (FilteredAgentRollup childAgentRollup : agentRollup.children()) {
-            flattenedAgentRollups.addAll(getFlattenedAgentRollups(childAgentRollup, depth + 1));
-        }
-        return flattenedAgentRollups;
     }
 
     private List<DataSeries> getTransactionReport(ReportRequest request, TimeZone timeZone,

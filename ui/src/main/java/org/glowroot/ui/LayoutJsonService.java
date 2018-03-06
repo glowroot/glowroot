@@ -103,7 +103,7 @@ class LayoutJsonService {
         return new FilteredAgentRollupOrdering().sortedCopy(filtered);
     }
 
-    private static void process(FilteredAgentRollup agentRollup, int depth,
+    static void process(FilteredAgentRollup agentRollup, int depth,
             List<AgentRollupSmall> dropdown) throws Exception {
         AgentRollupSmall agentRollupLayout = ImmutableAgentRollupSmall.builder()
                 .id(agentRollup.id())
