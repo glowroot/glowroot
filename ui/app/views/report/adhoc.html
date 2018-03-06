@@ -21,6 +21,24 @@
        name="formCtrl"
        style="padding-top: 15px;">
 
+    <div class="form-group">
+      <label class="col-lg-3 control-label"
+             for="reportFromDate">
+        From
+      </label>
+      <div class="col-lg-9">
+        <div gt-date-picker gt-model="report.fromDate" gt-id="reportFromDate"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="col-lg-3 control-label"
+             for="reportToDate">
+        To
+      </label>
+      <div class="col-lg-9">
+        <div gt-date-picker gt-model="report.toDate" gt-id="reportToDate"></div>
+      </div>
+    </div>
     <div class="form-group"
          ng-class="{'has-error': !report.agentRollupIds.length}"
          ng-if="layout.central">
@@ -111,24 +129,6 @@
          gt-addon="percentile"
          gt-required="report.metric === 'transaction:x-percentile'"
          ng-if="report.metric === 'transaction:x-percentile'">
-    </div>
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
-             for="reportFromDate">
-        From
-      </label>
-      <div class="col-lg-9">
-        <div gt-date-picker gt-model="report.fromDate" gt-id="reportFromDate"></div>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
-             for="reportToDate">
-        To
-      </label>
-      <div class="col-lg-9">
-        <div gt-date-picker gt-model="report.toDate" gt-id="reportToDate"></div>
-      </div>
     </div>
     <div class="form-group">
       <label class="col-lg-3 control-label"
