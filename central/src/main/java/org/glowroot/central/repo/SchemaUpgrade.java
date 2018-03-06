@@ -429,6 +429,7 @@ public class SchemaUpgrade {
             updateLcsUncheckedTombstoneCompaction();
             updateSchemaVersion(67);
         }
+        // 0.10.2 to 0.10.3
         if (initialSchemaVersion < 68) {
             updateStcsUncheckedTombstoneCompaction();
             updateSchemaVersion(68);
