@@ -100,7 +100,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 73;
+    private static final int CURR_SCHEMA_VERSION = 74;
 
     private final Session session;
     private final KeyspaceMetadata keyspaceMetadata;
@@ -455,6 +455,11 @@ public class SchemaUpgrade {
             rewriteV09AgentRollupPart2();
             updateSchemaVersion(73);
         }
+        // 0.10.4 to 0.10.5
+        if (initialSchemaVersion >= 69 && initialSchemaVersion < 74) {
+            optimizeTwcsTables();
+            updateSchemaVersion(74);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded glowroot central schema from version {} to version {}",
@@ -518,11 +523,7 @@ public class SchemaUpgrade {
                     // warning already logged above inside getExpirationHoursForTable()
                     continue;
                 }
-                int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
-                session.execute("alter table " + tableName + " with compaction = { 'class'"
-                        + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                        + " 'compaction_window_size' : " + windowSizeHours + ","
-                        + " 'unchecked_tombstone_compaction' : true }");
+                session.updateTableTwcsProperties(tableName, expirationHours);
                 if (dtcsUpdatedCount++ == 0) {
                     startupLogger.info("upgrading from DateTieredCompactionStrategy to"
                             + " TimeWindowCompactionStrategy compression ...");
@@ -2262,19 +2263,24 @@ public class SchemaUpgrade {
                     .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
                 String compactionWindowUnit = compaction.get("compaction_window_unit");
                 if (compactionWindowUnit == null) {
-                    logger.warn("compaction_window_unit missing for table: " + table.getName());
+                    logger.warn("compaction_window_unit missing for table: {}", table.getName());
                     continue;
                 }
-                String compactionWindowSize = compaction.get("compaction_window_size");
-                if (compactionWindowSize == null) {
-                    logger.warn("compaction_window_size missing for table: " + table.getName());
+                String compactionWindowSizeText = compaction.get("compaction_window_size");
+                if (compactionWindowSizeText == null) {
+                    logger.warn("compaction_window_size missing for table: {}", table.getName());
                     continue;
                 }
-                session.execute("alter table " + table.getName() + " with compaction = { 'class'"
-                        + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : '"
-                        + compactionWindowUnit + "', 'compaction_window_size' : "
-                        + compactionWindowSize + ", 'unchecked_tombstone_compaction' : true,"
-                        + " 'min_sstable_size' : " + (5 * 1024 * 1024) + ", 'bucket_high' : 2 }");
+                int compactionWindowSize;
+                try {
+                    compactionWindowSize = Integer.parseInt(compactionWindowSizeText);
+                } catch (NumberFormatException e) {
+                    logger.warn("unable to parse compaction_window_size value: {}",
+                            compactionWindowSizeText);
+                    continue;
+                }
+                session.updateTableTwcsProperties(table.getName(), compactionWindowUnit,
+                        compactionWindowSize);
             }
         }
     }

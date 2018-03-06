@@ -151,11 +151,8 @@ public class Session {
             // bucket_high is increased a bit to compensate for lower min_sstable_size so that worst
             // case number of sstables will be three 5mb sstables, three 10mb sstables, three 20mb
             // sstables, three 40mb sstables, etc
-            wrappedSession.execute(createTableQuery + " " + term + " compaction = { 'class' :"
-                    + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : " + getCompactionWindowSizeHours(expirationHours)
-                    + ", 'unchecked_tombstone_compaction' : true, 'min_sstable_size' : "
-                    + (5 * 1024 * 1024) + ", 'bucket_high' : 2 } and gc_grace_seconds = "
+            wrappedSession.execute(createTableQuery + " " + term + " "
+                    + getTwcsCompactionClause(expirationHours) + " and gc_grace_seconds = "
                     + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
@@ -171,6 +168,17 @@ public class Session {
                         + gcGraceSeconds);
             }
         }
+    }
+
+    public void updateTableTwcsProperties(String tableName, int expirationHours) {
+        wrappedSession.execute(
+                "alter table " + tableName + " with " + getTwcsCompactionClause(expirationHours));
+    }
+
+    public void updateTableTwcsProperties(String tableName, String compactionWindowUnit,
+            int compactionWindowSize) {
+        wrappedSession.execute("alter table " + tableName + " with "
+                + getTwcsCompactionClause(compactionWindowUnit, compactionWindowSize));
     }
 
     public void createTableWithLCS(String createTableQuery) {
@@ -237,6 +245,27 @@ public class Session {
             // one month buckets seems like a sensible maximum
             return Math.min(expirationHours / 24, 30 * 24);
         }
+    }
+
+    private static String getTwcsCompactionClause(String compactionWindowUnit,
+            int compactionWindowSize) {
+        // tombstone_threshold = 0.8 is recommended by Jeff Jirsa, see
+        // https://www.slideshare.net/JeffJirsa1/using-time-window-compaction-strategy-for-time-series-workloads
+        // (related, by setting this it enables single-sstable tombstone compaction, see
+        // https://issues.apache.org/jira/browse/CASSANDRA-9234 and
+        // https://github.com/apache/cassandra/blob/cassandra-3.11.1/src/java/org/apache/cassandra/db/compaction/TimeWindowCompactionStrategy.java#L62,
+        // which helps keep things orderly, e.g. if expiration is temporarily set to large value,
+        // then that data will prevent all newer data from being collected until it expires without
+        // single sstable tombstone, and other reasons)
+        return "compaction = { 'class' : 'TimeWindowCompactionStrategy', 'compaction_window_unit'"
+                + " : '" + compactionWindowUnit + "', 'compaction_window_size' : "
+                + compactionWindowSize + ", 'unchecked_tombstone_compaction' : true,"
+                + " 'tombstone_threshold' : 0.8, 'min_sstable_size' : " + (5 * 1024 * 1024)
+                + ", 'bucket_high' : 2 }";
+    }
+
+    private static String getTwcsCompactionClause(int expirationHours) {
+        return getTwcsCompactionClause("HOURS", getCompactionWindowSizeHours(expirationHours));
     }
 
     private static void propagateCauseIfPossible(ExecutionException e) throws Exception {

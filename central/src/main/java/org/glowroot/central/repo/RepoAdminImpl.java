@@ -118,11 +118,7 @@ public class RepoAdminImpl implements RepoAdmin {
                 // warning already logged above inside getExpirationHoursForTable()
                 continue;
             }
-            int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
-            session.execute("alter table " + tableName + " with compaction = { 'class'"
-                    + " : 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : " + windowSizeHours + ","
-                    + " 'unchecked_tombstone_compaction' : true }");
+            session.updateTableTwcsProperties(tableName, expirationHours);
             updatedTableCount++;
         }
         return updatedTableCount;
