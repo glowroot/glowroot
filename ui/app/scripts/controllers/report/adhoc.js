@@ -349,8 +349,11 @@ glowroot.controller('ReportAdhocCtrl', [
         appliedReport.fromDate = moment(appliedReport.fromDate).valueOf();
         appliedReport.toDate = moment(appliedReport.toDate).valueOf();
       } else {
-        appliedReport.fromDate = moment().startOf('day').subtract(7, 'days').valueOf();
-        appliedReport.toDate = moment().startOf('day').subtract(1, 'days').valueOf();
+        // match the default time period of "last 4 hours" used on other pages
+        // (partly because when viewing last 4 hours on another page, there is no criteria in the query and so it
+        // doesn't get passed over when clicking on the Report header link)
+        appliedReport.fromDate = moment().subtract(4, 'hours').startOf('day').valueOf();
+        appliedReport.toDate = moment().startOf('day').valueOf();
       }
       appliedReport.rollup = $location.search().rollup || 'daily';
       appliedReport.timeZoneId = $location.search()['time-zone-id'] || browserTimeZone;

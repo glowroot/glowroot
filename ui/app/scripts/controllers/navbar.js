@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, moment */
 
 glowroot.controller('NavbarCtrl', [
   '$scope',
@@ -55,6 +55,26 @@ glowroot.controller('NavbarCtrl', [
           // need floor/ceil when on trace point chart which allows second granularity
           query.from = Math.floor(from / 60000) * 60000;
           query.to = Math.ceil(to / 60000) * 60000;
+        }
+      }
+      return queryStrings.encodeObject(query);
+    };
+
+    $scope.reportQueryString = function () {
+      var query = {};
+      var last = $location.search().last;
+      var from, to;
+      if (last) {
+        to = moment();
+        from = moment(to).subtract(last, 'ms');
+        query.fromDate = from.format('YYYYMMDD');
+        query.toDate = to.format('YYYYMMDD');
+      } else {
+        from = $location.search().from;
+        to = $location.search().to;
+        if (from !== undefined && to !== undefined) {
+          query.fromDate = moment(from).format('YYYYMMDD');
+          query.toDate = moment(to).format('YYYYMMDD');
         }
       }
       return queryStrings.encodeObject(query);

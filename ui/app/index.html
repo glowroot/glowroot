@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Copyright 2012-2017 the original author or authors.
+  Copyright 2012-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -146,7 +146,7 @@
           <div gt-navbar-item
                gt-display="Reporting"
                gt-item-name="report"
-               gt-url="report/ad-hoc"
+               gt-url="report/ad-hoc{{reportQueryString()}}"
                ng-if="layout.showNavbarReport">
           </div>
         </ul>
