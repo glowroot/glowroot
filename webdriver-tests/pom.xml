@@ -16,7 +16,7 @@
   <description>Glowroot WebDriver Tests</description>
 
   <properties>
-    <selenium.version>3.9.1</selenium.version>
+    <selenium.version>3.10.0</selenium.version>
     <jetty.version>9.4.8.v20171121</jetty.version>
   </properties>
 

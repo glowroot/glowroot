@@ -87,12 +87,12 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
-      <version>3.9.1</version>
+      <version>3.10.0</version>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
-      <version>3.9.1</version>
+      <version>3.10.0</version>
     </dependency>
     <dependency>
       <groupId>com.machinepublishers</groupId>
@@ -375,7 +375,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
-      <version>1.7.10</version>
+      <version>1.7.11</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
