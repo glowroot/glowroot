@@ -380,7 +380,7 @@ glowroot.controller('AdminRoleCtrl', [
       });
       angular.forEach(permissionBlock.agentRollupIds, function (agentRollupId) {
         if (!activeAgentRollupIds[agentRollupId]) {
-          var display = agentRollupId + ' (not active in the past 30 days)';
+          var display = agentRollupId + ' (not active in the past 7 days)';
           permissionBlock.allActiveAgentRollupsPlus.push({
             depth: 0,
             id: agentRollupId,
