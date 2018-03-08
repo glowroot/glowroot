@@ -256,9 +256,9 @@ public class CommonHandler {
             // service does not require any permission
             return httpService.handleRequest(request, authentication);
         }
-        List<String> agentRollupIds = request.getParameters("agent-rollup-id");
-        String agentRollupId = agentRollupIds.isEmpty() ? "" : agentRollupIds.get(0);
-        if (!authentication.isPermitted(agentRollupId, permission)) {
+        List<String> agentIds = request.getParameters("agent-id");
+        String agentId = agentIds.isEmpty() ? "" : agentIds.get(0);
+        if (!authentication.isPermitted(agentId, permission)) {
             return handleNotAuthorized(request, authentication);
         }
         return httpService.handleRequest(request, authentication);
