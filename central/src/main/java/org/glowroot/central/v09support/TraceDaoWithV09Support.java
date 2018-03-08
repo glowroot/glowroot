@@ -128,7 +128,7 @@ public class TraceDaoWithV09Support implements TraceDao {
     public Entries readEntries(String agentId, String traceId) throws Exception {
         Entries entries = delegate.readEntries(agentId, traceId);
         if (entries.entries().isEmpty() && checkV09(agentId, traceId)) {
-            return delegate.readEntries(agentId, traceId);
+            return delegate.readEntries(V09Support.convertToV09(agentId), traceId);
         }
         return entries;
     }
@@ -138,7 +138,7 @@ public class TraceDaoWithV09Support implements TraceDao {
         Entries entries = delegate.readEntriesForExport(agentId, traceId);
         if (entries.entries().isEmpty() && clock.currentTimeMillis() < v09FqtLastExpirationTime
                 && checkV09(agentId, traceId)) {
-            return delegate.readEntriesForExport(agentId, traceId);
+            return delegate.readEntriesForExport(V09Support.convertToV09(agentId), traceId);
         }
         return entries;
     }
