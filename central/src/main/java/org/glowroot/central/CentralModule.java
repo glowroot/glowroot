@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URISyntaxException;
+import java.security.CodeSource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +99,8 @@ public class CentralModule {
     private final UiModule uiModule;
 
     public static CentralModule create() throws Exception {
-        return new CentralModule(new File("."), false);
+        CodeSource codeSource = CentralModule.class.getProtectionDomain().getCodeSource();
+        return new CentralModule(getCentralDir(codeSource), false);
     }
 
     static CentralModule createForServletContainer(File centralDir) throws Exception {
@@ -336,6 +339,25 @@ public class CentralModule {
             } else {
                 startupLogger.error("error during shutdown: {}", t.getMessage(), t);
             }
+        }
+    }
+
+    private static File getCentralDir(@Nullable CodeSource codeSource) throws URISyntaxException {
+        if (codeSource == null) {
+            // this should only happen under test
+            return new File(".");
+        }
+        File codeSourceFile = new File(codeSource.getLocation().toURI());
+        if (codeSourceFile.getName().endsWith(".jar")) {
+            File centralDir = codeSourceFile.getParentFile();
+            if (centralDir == null) {
+                return new File(".");
+            } else {
+                return centralDir;
+            }
+        } else {
+            // this should only happen under test
+            return new File(".");
         }
     }
 
