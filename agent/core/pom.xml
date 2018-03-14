@@ -192,30 +192,6 @@
   </dependencies>
 
   <build>
-    <plugins>
-      <plugin>
-        <groupId>com.github.os72</groupId>
-        <artifactId>protoc-jar-maven-plugin</artifactId>
-        <version>3.5.1.1</version>
-        <configuration>
-          <protocVersion>${protoc.version}</protocVersion>
-          <outputTargets>
-            <outputTarget>
-              <type>java</type>
-              <outputDirectory>target/generated-sources/protobuf-java</outputDirectory>
-            </outputTarget>
-          </outputTargets>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>

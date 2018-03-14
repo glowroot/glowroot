@@ -146,7 +146,6 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             return false;
         }
         return className.startsWith("org/glowroot/common/")
-                || className.startsWith("org/glowroot/ui/")
                 || className.startsWith("org/glowroot/wire/api/")
                 || className.startsWith("org/glowroot/agent/api/")
                 || className.startsWith("org/glowroot/agent/plugin/api/")
@@ -154,16 +153,13 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                 || className.startsWith("org/glowroot/agent/central/")
                 || className.startsWith("org/glowroot/agent/collector/")
                 || className.startsWith("org/glowroot/agent/config/")
-                || className.startsWith("org/glowroot/agent/embedded/init/")
-                || className.startsWith("org/glowroot/agent/embedded/repo/")
-                || className.startsWith("org/glowroot/agent/embedded/util/")
+                || className.startsWith("org/glowroot/agent/embedded/")
                 || className.startsWith("org/glowroot/agent/impl/")
                 || className.startsWith("org/glowroot/agent/init/")
                 || className.startsWith("org/glowroot/agent/jul/")
                 || className.startsWith("org/glowroot/agent/live/")
                 || className.startsWith("org/glowroot/agent/model/")
                 || className.startsWith("org/glowroot/agent/shaded/")
-                || className.startsWith("org/glowroot/agent/sql/")
                 || className.startsWith("org/glowroot/agent/util/")
                 || className.startsWith("org/glowroot/agent/weaving/");
     }
