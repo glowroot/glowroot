@@ -122,6 +122,13 @@
               <shadedPattern>org.glowroot.agent.shaded.org.slf4j</shadedPattern>
             </relocation>
             <relocation>
+              <!-- this shades javax.mail and com.sun.mail internal use of java util logging which
+                is needed to prevent java util logging from being initialized early (e.g. in the
+                case of wildfly which wants to do some setup before jul is initialized) -->
+              <pattern>java.util.logging</pattern>
+              <shadedPattern>org.glowroot.agent.jul</shadedPattern>
+            </relocation>
+            <relocation>
               <pattern>ch.qos.logback</pattern>
               <shadedPattern>org.glowroot.agent.shaded.ch.qos.logback</shadedPattern>
             </relocation>
