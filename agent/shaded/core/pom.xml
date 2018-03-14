@@ -35,6 +35,12 @@
       </exclusions>
     </dependency>
     <dependency>
+      <!-- optional netty dependency that is required by HttpContentCompressor, need to include in
+       core so that it is in bootstrap class loader since netty is -->
+      <groupId>com.jcraft</groupId>
+      <artifactId>jzlib</artifactId>
+    </dependency>
+    <dependency>
       <!-- need to include https support for proguard step, but then it is stripped out after -->
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
@@ -192,6 +198,10 @@
             <relocation>
               <pattern>io.netty</pattern>
               <shadedPattern>org.glowroot.agent.shaded.io.netty</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.jcraft.jzlib</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.com.jcraft.jzlib</shadedPattern>
             </relocation>
             <relocation>
               <!-- this is to shade usage inside of io.grpc.netty.JettyTlsUtil, just in case Jetty

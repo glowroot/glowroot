@@ -47,7 +47,6 @@
               <include>org.glowroot:glowroot-ui</include>
               <include>com.h2database:h2</include>
               <include>com.ning:compress-lzf</include>
-              <include>com.jcraft:jzlib</include>
               <include>com.sun.mail:mailapi</include>
               <include>com.sun.mail:smtp</include>
             </includes>
@@ -169,10 +168,6 @@
             <relocation>
               <pattern>com.ning.compress</pattern>
               <shadedPattern>org.glowroot.agent.embedded.shaded.com.ning.compress</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.jcraft.jzlib</pattern>
-              <shadedPattern>org.glowroot.agent.embedded.shaded.com.jcraft.jzlib</shadedPattern>
             </relocation>
             <relocation>
               <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due
