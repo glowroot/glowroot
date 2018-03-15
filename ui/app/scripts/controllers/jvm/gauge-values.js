@@ -20,10 +20,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
   '$scope',
   '$location',
   '$filter',
-  '$http',
   'locationChanges',
   'charts',
-  function ($scope, $location, $filter, $http, locationChanges, charts) {
+  function ($scope, $location, $filter, locationChanges, charts) {
 
     $scope.$parent.heading = 'Gauges';
 
