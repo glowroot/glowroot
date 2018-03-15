@@ -28,8 +28,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.common.util.OnlyUsedByTests;
 
-// DO NOT USE ANY GUAVA CLASSES HERE because they trigger loading of jul
-// (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
+// LIMIT DEPENDENCY USAGE IN THIS CLASS SO IT DOESN'T TRIGGER ANY CLASS LOADING ON ITS OWN
 public class Directories {
 
     // windows filename reserved characters

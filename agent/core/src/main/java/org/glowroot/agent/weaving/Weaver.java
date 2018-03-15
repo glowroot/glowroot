@@ -438,8 +438,8 @@ public class Weaver {
 
     private static class ManagementFactoryHackMethodVisitor extends AdviceAdapter {
 
-        private ManagementFactoryHackMethodVisitor(MethodVisitor mv, int access,
-                String name, String desc) {
+        private ManagementFactoryHackMethodVisitor(MethodVisitor mv, int access, String name,
+                String desc) {
             super(ASM6, mv, access, name, desc);
         }
 

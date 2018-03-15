@@ -49,7 +49,7 @@ public class ToolMain {
         File glowrootJarFile = getGlowrootJarFile(codeSource);
         Directories directories = new Directories(glowrootJarFile);
         MainEntryPoint.initLogging(directories.getConfDir(), directories.getSharedConfDir(),
-                directories.getLogDir());
+                directories.getLogDir(), null);
         startupLogger = LoggerFactory.getLogger("org.glowroot");
 
         if (args.length == 0) {

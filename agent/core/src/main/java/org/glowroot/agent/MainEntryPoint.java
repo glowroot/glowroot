@@ -101,7 +101,7 @@ public class MainEntryPoint {
             directories = new Directories(glowrootJarFile);
             // init logger as early as possible
             initLogging(directories.getConfDir(), directories.getSharedConfDir(),
-                    directories.getLogDir());
+                    directories.getLogDir(), instrumentation);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             // also, don't use logger since not initialized yet
@@ -193,7 +193,14 @@ public class MainEntryPoint {
     }
 
     @EnsuresNonNull("startupLogger")
-    public static void initLogging(File confDir, @Nullable File sharedConfDir, File logDir) {
+    public static void initLogging(File confDir, @Nullable File sharedConfDir, File logDir,
+            @Nullable Instrumentation instrumentation) {
+        ClassFileTransformer transformer = null;
+        if (JavaVersion.isJava6() && "IBM J9 VM".equals(System.getProperty("java.vm.name"))
+                && instrumentation != null) {
+            transformer = new IbmJava6HackClassFileTransformer2();
+            instrumentation.addTransformer(transformer);
+        }
         File logbackXmlOverride = new File(confDir, "glowroot.logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("glowroot.logback.configurationFile",
@@ -228,11 +235,15 @@ public class MainEntryPoint {
             startupLogger = LoggerFactory.getLogger("org.glowroot");
         } finally {
             Thread.currentThread().setContextClassLoader(priorLoader);
-            System.clearProperty("glowroot.logback.configurationFile");
             if (priorProperty == null) {
                 System.clearProperty("glowroot.log.dir");
             } else {
                 System.setProperty("glowroot.log.dir", priorProperty);
+            }
+            System.clearProperty("glowroot.logback.configurationFile");
+            if (transformer != null) {
+                // checkNotNull is safe b/c instrumentation is non-null when transformer is non-null
+                checkNotNull(instrumentation).removeTransformer(transformer);
             }
         }
         // TODO report checker framework issue that occurs without checkNotNull
@@ -577,7 +588,7 @@ public class MainEntryPoint {
         checkNotNull(testDirPath);
         File testDir = new File(testDirPath);
         // init logger as early as possible
-        initLogging(testDir, null, testDir);
+        initLogging(testDir, null, testDir, null);
         Directories directories = new Directories(testDir, false);
         start(directories, properties, null, null);
     }

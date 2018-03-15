@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,17 @@ package org.glowroot.agent.util;
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.StandardSystemProperty;
 
+// LIMIT DEPENDENCY USAGE IN THIS CLASS SO IT DOESN'T TRIGGER ANY CLASS LOADING ON ITS OWN
 public class JavaVersion {
 
     private static final boolean IS_JAVA_6;
     private static final boolean IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9;
 
     static {
-        IS_JAVA_6 = parseIsJava6(StandardSystemProperty.JAVA_VERSION.value());
-        IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9 =
-                parseIsGreaterThanOrEqualToJava9(StandardSystemProperty.JAVA_VERSION.value());
+        String javaVersion = System.getProperty("java.version");
+        IS_JAVA_6 = parseIsJava6(javaVersion);
+        IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9 = parseIsGreaterThanOrEqualToJava9(javaVersion);
     }
 
     private JavaVersion() {}
