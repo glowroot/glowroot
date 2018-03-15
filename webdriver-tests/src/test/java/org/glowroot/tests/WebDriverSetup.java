@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,7 +260,9 @@ public class WebDriverSetup {
     }
 
     private static CentralModule createCentralModule(int uiPort, int grpcPort) throws Exception {
-        PrintWriter props = new PrintWriter("glowroot-central.properties");
+        File centralDir = new File("target");
+        File propsFile = new File(centralDir, "glowroot-central.properties");
+        PrintWriter props = new PrintWriter(propsFile);
         props.println("cassandra.keyspace=glowroot_unit_tests");
         byte[] bytes = new byte[16];
         new SecureRandom().nextBytes(bytes);
@@ -271,8 +273,8 @@ public class WebDriverSetup {
         props.close();
         String prior = System.getProperty("glowroot.log.dir");
         try {
-            System.setProperty("glowroot.log.dir", ".");
-            return CentralModule.create();
+            System.setProperty("glowroot.log.dir", "target");
+            return CentralModule.create(centralDir);
         } finally {
             if (prior == null) {
                 System.clearProperty("glowroot.log.dir");

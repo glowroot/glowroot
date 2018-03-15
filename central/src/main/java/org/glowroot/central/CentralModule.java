@@ -41,6 +41,7 @@ import com.datastax.driver.core.TimestampGenerator;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
 import com.datastax.driver.core.policies.Policies;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
@@ -100,7 +101,12 @@ public class CentralModule {
 
     public static CentralModule create() throws Exception {
         CodeSource codeSource = CentralModule.class.getProtectionDomain().getCodeSource();
-        return new CentralModule(getCentralDir(codeSource), false);
+        return create(getCentralDir(codeSource));
+    }
+
+    @VisibleForTesting
+    public static CentralModule create(File centralDir) throws Exception {
+        return new CentralModule(centralDir, false);
     }
 
     static CentralModule createForServletContainer(File centralDir) throws Exception {
