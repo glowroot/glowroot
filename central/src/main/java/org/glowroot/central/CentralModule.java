@@ -50,6 +50,7 @@ import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.RateLimiter;
@@ -139,7 +140,8 @@ public class CentralModule {
                     extra = ", this can be changed by adding the JVM arg -Dglowroot.central.dir=..."
                             + " to your servlet container startup";
                 }
-                startupLogger.info("Glowroot home: {} (location for glowroot.properties file{})",
+                startupLogger.info(
+                        "Glowroot home: {} (location for glowroot-central.properties file{})",
                         centralDir.getAbsolutePath(), extra);
             }
 
@@ -376,10 +378,7 @@ public class CentralModule {
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
 
-        File propFile = new File(centralDir, "glowroot-central.properties");
-        Properties props = PropertiesFiles.load(propFile);
-        CentralConfiguration centralConfig = getCentralConfiguration(props);
-
+        CentralConfiguration centralConfig = getCentralConfiguration(centralDir);
         Session session = null;
         Cluster cluster = null;
         String keyspace;
@@ -446,10 +445,7 @@ public class CentralModule {
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
 
-        File propFile = new File(centralDir, "glowroot-central.properties");
-        Properties props = PropertiesFiles.load(propFile);
-        CentralConfiguration centralConfig = getCentralConfiguration(props);
-
+        CentralConfiguration centralConfig = getCentralConfiguration(centralDir);
         Session session = null;
         Cluster cluster = null;
         boolean success;
@@ -497,12 +493,97 @@ public class CentralModule {
 
     private static CentralConfiguration getCentralConfiguration(File centralDir)
             throws IOException {
+        Map<String, String> properties = getPropertiesFromConfigFile(centralDir);
+        properties = overlayAnySystemProperties(properties);
+        ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
+        String cassandraContactPoints = properties.get("glowroot.cassandra.contactPoints");
+        if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
+            builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
+                    .splitToList(cassandraContactPoints));
+        }
+        String cassandraKeyspace = properties.get("glowroot.cassandra.keyspace");
+        if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
+            builder.cassandraKeyspace(cassandraKeyspace);
+        }
+        String cassandraConsistencyLevel = properties.get("glowroot.cassandra.consistencyLevel");
+        if (!Strings.isNullOrEmpty(cassandraConsistencyLevel)) {
+            ConsistencyLevel consistencyLevel = ConsistencyLevel.valueOf(cassandraConsistencyLevel);
+            builder.cassandraConsistencyLevel(consistencyLevel);
+        }
+        String cassandraSymmetricEncryptionKey =
+                properties.get("glowroot.cassandra.symmetricEncryptionKey");
+        if (!Strings.isNullOrEmpty(cassandraSymmetricEncryptionKey)) {
+            if (!cassandraSymmetricEncryptionKey.matches("[0-9a-fA-F]{32}")) {
+                throw new IllegalStateException("Invalid cassandra.symmetricEncryptionKey value,"
+                        + " it must be a 32 character hex string");
+            }
+            builder.cassandraSymmetricEncryptionKey(cassandraSymmetricEncryptionKey);
+        }
+        String cassandraUsername = properties.get("glowroot.cassandra.username");
+        if (!Strings.isNullOrEmpty(cassandraUsername)) {
+            builder.cassandraUsername(cassandraUsername);
+        }
+        String cassandraPassword = properties.get("glowroot.cassandra.password");
+        if (!Strings.isNullOrEmpty(cassandraPassword)) {
+            builder.cassandraPassword(cassandraPassword);
+        }
+        String grpcBindAddress = properties.get("glowroot.grpc.bindAddress");
+        if (!Strings.isNullOrEmpty(grpcBindAddress)) {
+            builder.grpcBindAddress(grpcBindAddress);
+        }
+        String grpcHttpPortText = properties.get("glowroot.grpc.httpPort");
+        if (!Strings.isNullOrEmpty(grpcHttpPortText)) {
+            if (grpcHttpPortText.trim().equalsIgnoreCase("none")) {
+                builder.grpcHttpPort(null);
+            } else {
+                builder.grpcHttpPort(Integer.parseInt(grpcHttpPortText));
+            }
+        }
+        String grpcHttpsPortText = properties.get("glowroot.grpc.httpsPort");
+        if (!Strings.isNullOrEmpty(grpcHttpsPortText)) {
+            if (grpcHttpsPortText.trim().equalsIgnoreCase("none")) {
+                builder.grpcHttpsPort(null);
+            } else {
+                builder.grpcHttpsPort(Integer.parseInt(grpcHttpsPortText));
+            }
+        }
+        String uiBindAddress = properties.get("glowroot.ui.bindAddress");
+        if (!Strings.isNullOrEmpty(uiBindAddress)) {
+            builder.uiBindAddress(uiBindAddress);
+        }
+        String uiPortText = properties.get("glowroot.ui.port");
+        if (!Strings.isNullOrEmpty(uiPortText)) {
+            builder.uiPort(Integer.parseInt(uiPortText));
+        }
+        String uiHttpsText = properties.get("glowroot.ui.https");
+        if (!Strings.isNullOrEmpty(uiHttpsText)) {
+            builder.uiHttps(Boolean.parseBoolean(uiHttpsText));
+        }
+        String uiContextPath = properties.get("glowroot.ui.contextPath");
+        if (!Strings.isNullOrEmpty(uiContextPath)) {
+            builder.uiContextPath(uiContextPath);
+        }
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            String propertyName = entry.getKey();
+            if (propertyName.startsWith("glowroot.jgroups.")) {
+                String propertyValue = entry.getValue();
+                if (!Strings.isNullOrEmpty(propertyValue)) {
+                    builder.putJgroupsProperties(propertyName.substring("glowroot.".length()),
+                            propertyValue);
+                }
+            }
+        }
+        return builder.build();
+    }
+
+    private static Map<String, String> getPropertiesFromConfigFile(File centralDir)
+            throws IOException {
         File propFile = new File(centralDir, "glowroot-central.properties");
         if (!propFile.exists()) {
             // upgrade from 0.9.5 to 0.9.6
             File oldPropFile = new File(centralDir, "glowroot-server.properties");
             if (!oldPropFile.exists()) {
-                return ImmutableCentralConfiguration.builder().build();
+                return ImmutableMap.of();
             }
             java.nio.file.Files.copy(oldPropFile.toPath(), propFile.toPath());
         }
@@ -570,87 +651,27 @@ public class CentralModule {
                 }
             }
         }
-        return getCentralConfiguration(props);
+        Map<String, String> properties = new HashMap<>();
+        for (String key : props.stringPropertyNames()) {
+            String value = props.getProperty(key);
+            if (value != null) {
+                properties.put("glowroot." + key, value);
+            }
+        }
+        return properties;
     }
 
-    private static CentralConfiguration getCentralConfiguration(Properties props) {
-        ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
-        String cassandraContactPoints = props.getProperty("cassandra.contactPoints");
-        if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
-            builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
-                    .splitToList(cassandraContactPoints));
-        }
-        String cassandraKeyspace = props.getProperty("cassandra.keyspace");
-        if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
-            builder.cassandraKeyspace(cassandraKeyspace);
-        }
-        String cassandraConsistencyLevel = props.getProperty("cassandra.consistencyLevel");
-        if (!Strings.isNullOrEmpty(cassandraConsistencyLevel)) {
-            ConsistencyLevel consistencyLevel = ConsistencyLevel.valueOf(cassandraConsistencyLevel);
-            builder.cassandraConsistencyLevel(consistencyLevel);
-        }
-        String cassandraSymmetricEncryptionKey =
-                props.getProperty("cassandra.symmetricEncryptionKey");
-        if (!Strings.isNullOrEmpty(cassandraSymmetricEncryptionKey)) {
-            if (!cassandraSymmetricEncryptionKey.matches("[0-9a-fA-F]{32}")) {
-                throw new IllegalStateException("Invalid cassandra.symmetricEncryptionKey value,"
-                        + " it must be a 32 character hex string");
-            }
-            builder.cassandraSymmetricEncryptionKey(cassandraSymmetricEncryptionKey);
-        }
-        String cassandraUsername = props.getProperty("cassandra.username");
-        if (!Strings.isNullOrEmpty(cassandraUsername)) {
-            builder.cassandraUsername(cassandraUsername);
-        }
-        String cassandraPassword = props.getProperty("cassandra.password");
-        if (!Strings.isNullOrEmpty(cassandraPassword)) {
-            builder.cassandraPassword(cassandraPassword);
-        }
-        String grpcBindAddress = props.getProperty("grpc.bindAddress");
-        if (!Strings.isNullOrEmpty(grpcBindAddress)) {
-            builder.grpcBindAddress(grpcBindAddress);
-        }
-        String grpcHttpPortText = props.getProperty("grpc.httpPort");
-        if (!Strings.isNullOrEmpty(grpcHttpPortText)) {
-            if (grpcHttpPortText.trim().equalsIgnoreCase("none")) {
-                builder.grpcHttpPort(null);
-            } else {
-                builder.grpcHttpPort(Integer.parseInt(grpcHttpPortText));
+    private static Map<String, String> overlayAnySystemProperties(Map<String, String> props)
+            throws IOException {
+        Map<String, String> properties = Maps.newHashMap(props);
+        for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
+            if (entry.getKey() instanceof String && entry.getValue() instanceof String
+                    && ((String) entry.getKey()).startsWith("glowroot.")) {
+                String key = (String) entry.getKey();
+                properties.put(key, (String) entry.getValue());
             }
         }
-        String grpcHttpsPortText = props.getProperty("grpc.httpsPort");
-        if (!Strings.isNullOrEmpty(grpcHttpsPortText)) {
-            if (grpcHttpsPortText.trim().equalsIgnoreCase("none")) {
-                builder.grpcHttpsPort(null);
-            } else {
-                builder.grpcHttpsPort(Integer.parseInt(grpcHttpsPortText));
-            }
-        }
-        String uiBindAddress = props.getProperty("ui.bindAddress");
-        if (!Strings.isNullOrEmpty(uiBindAddress)) {
-            builder.uiBindAddress(uiBindAddress);
-        }
-        String uiPortText = props.getProperty("ui.port");
-        if (!Strings.isNullOrEmpty(uiPortText)) {
-            builder.uiPort(Integer.parseInt(uiPortText));
-        }
-        String uiHttpsText = props.getProperty("ui.https");
-        if (!Strings.isNullOrEmpty(uiHttpsText)) {
-            builder.uiHttps(Boolean.parseBoolean(uiHttpsText));
-        }
-        String uiContextPath = props.getProperty("ui.contextPath");
-        if (!Strings.isNullOrEmpty(uiContextPath)) {
-            builder.uiContextPath(uiContextPath);
-        }
-        for (String propName : props.stringPropertyNames()) {
-            if (propName.startsWith("jgroups.")) {
-                String propValue = props.getProperty(propName);
-                if (!Strings.isNullOrEmpty(propValue)) {
-                    builder.putJgroupsProperties(propName, propValue);
-                }
-            }
-        }
-        return builder.build();
+        return properties;
     }
 
     @RequiresNonNull("startupLogger")
