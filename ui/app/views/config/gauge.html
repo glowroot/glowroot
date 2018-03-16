@@ -123,8 +123,9 @@
             </tr>
           </table>
           <div
-              ng-show="!allMBeanAttributes.length && !mbeanUnavailable && !mbeanUnmatched && config.selectedMBeanObjectName"
-              class="gt-red">
+              ng-show="!allMBeanAttributes.length && !mbeanUnavailable && !mbeanUnmatched && selectedMBeanObjectName"
+              class="gt-red"
+              style="padding-top: 7px;">
             There are no number-valued attributes for this MBean
           </div>
           <div ng-show="config.mbeanAttributes.length"
