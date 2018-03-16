@@ -17,6 +17,7 @@ package org.glowroot.ui;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +27,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
@@ -34,6 +36,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common2.repo.ImmutableGauge;
 import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
@@ -89,6 +92,7 @@ class GaugeValueJsonService {
         List<Gauge> gauges =
                 gaugeValueRepository.getGauges(agentRollupId, request.from(), request.to());
         List<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
+        sortedGauges = addCounterSuffixesIfAndWhereNeeded(sortedGauges);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
@@ -248,6 +252,32 @@ class GaugeValueJsonService {
             lastGaugeValue = gaugeValue;
         }
         return dataSeries;
+    }
+
+    private static List<Gauge> addCounterSuffixesIfAndWhereNeeded(List<Gauge> gauges) {
+        Set<String> nonCounterGaugeNames = Sets.newHashSet();
+        for (Gauge gauge : gauges) {
+            if (!gauge.counter()) {
+                nonCounterGaugeNames.add(gauge.name());
+            }
+        }
+        List<Gauge> updatedGauges = Lists.newArrayList();
+        for (Gauge gauge : gauges) {
+            if (gauge.counter() && nonCounterGaugeNames.contains(
+                    gauge.name().substring(0, gauge.name().length() - "[counter]".length()))) {
+                List<String> displayParts = Lists.newArrayList(gauge.displayParts());
+                displayParts.set(displayParts.size() - 1,
+                        displayParts.get(displayParts.size() - 1) + " (Counter)");
+                updatedGauges.add(ImmutableGauge.builder()
+                        .copyFrom(gauge)
+                        .display(gauge.display() + " (Counter)")
+                        .displayParts(displayParts)
+                        .build());
+            } else {
+                updatedGauges.add(gauge);
+            }
+        }
+        return updatedGauges;
     }
 
     @Value.Immutable
