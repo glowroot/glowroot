@@ -83,7 +83,7 @@
           </div>
         </div>
       </div>
-      <div class="form-group gt-form-group-without-help-block">
+      <div class="form-group">
         <label class="col-lg-3 control-label">
           MBean attributes
         </label>
@@ -126,6 +126,14 @@
               ng-show="!allMBeanAttributes.length && !mbeanUnavailable && !mbeanUnmatched && config.selectedMBeanObjectName"
               class="gt-red">
             There are no number-valued attributes for this MBean
+          </div>
+          <div ng-show="config.mbeanAttributes.length"
+               class="help-block">
+            MBean attributes can be marked as counters when they represent monotonically increasing values (e.g. the
+            total garbage collection time since JVM startup). When an mbean attribute is marked as a counter, the deltas
+            are captured and displayed instead of the raw values (e.g. the total garbage collection time since the last
+            capture). Also, when rolling up mbean attributes that are marked as counters, the (delta) values are
+            weighted by the time between captures instead of a straight average.
           </div>
         </div>
       </div>
