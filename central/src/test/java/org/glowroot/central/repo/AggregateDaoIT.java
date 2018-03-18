@@ -17,7 +17,6 @@ package org.glowroot.central.repo;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -66,10 +65,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class AggregateDaoIT {
 
     private static final AdvancedConfig DEFAULT_ADVANCED_CONFIG = AdvancedConfig.newBuilder()
-            .setMaxAggregateQueriesPerType(OptionalInt32.newBuilder()
-                    .setValue(ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE))
-            .setMaxAggregateServiceCallsPerType(OptionalInt32.newBuilder()
-                    .setValue(ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE))
+            .setMaxQueryAggregates(OptionalInt32.newBuilder()
+                    .setValue(ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES))
+            .setMaxServiceCallAggregates(OptionalInt32.newBuilder()
+                    .setValue(ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES))
             .build();
 
     private static Cluster cluster;
@@ -205,11 +204,10 @@ public class AggregateDaoIT {
 
         QueryCollector queryCollector = new QueryCollector(1000);
         aggregateDao.mergeQueriesInto("one", transactionQuery, queryCollector);
-        Map<String, List<MutableQuery>> queries = queryCollector.getSortedAndTruncatedQueries();
+        List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
-        List<MutableQuery> queriesByType = queries.get("sqlo");
-        assertThat(queriesByType).hasSize(1);
-        MutableQuery query = queriesByType.get(0);
+        MutableQuery query = queries.get(0);
+        assertThat(query.getType()).isEqualTo("sqlo");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -280,9 +278,8 @@ public class AggregateDaoIT {
         aggregateDao.mergeQueriesInto("one", transactionQuery, queryCollector);
         queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
-        queriesByType = queries.get("sqlo");
-        assertThat(queriesByType).hasSize(1);
-        query = queriesByType.get(0);
+        query = queries.get(0);
+        assertThat(query.getType()).isEqualTo("sqlo");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -383,11 +380,10 @@ public class AggregateDaoIT {
 
         QueryCollector queryCollector = new QueryCollector(1000);
         aggregateDao.mergeQueriesInto("the parent::", transactionQuery, queryCollector);
-        Map<String, List<MutableQuery>> queries = queryCollector.getSortedAndTruncatedQueries();
+        List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
-        List<MutableQuery> queriesByType = queries.get("sqlo");
-        assertThat(queriesByType).hasSize(1);
-        MutableQuery query = queriesByType.get(0);
+        MutableQuery query = queries.get(0);
+        assertThat(query.getType()).isEqualTo("sqlo");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -458,9 +454,8 @@ public class AggregateDaoIT {
         aggregateDao.mergeQueriesInto("the parent::", transactionQuery, queryCollector);
         queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
-        queriesByType = queries.get("sqlo");
-        assertThat(queriesByType).hasSize(1);
-        query = queriesByType.get(0);
+        query = queries.get(0);
+        assertThat(query.getType()).isEqualTo("sqlo");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -561,11 +556,10 @@ public class AggregateDaoIT {
 
         QueryCollector queryCollector = new QueryCollector(1000);
         aggregateDao.mergeQueriesInto("the gp::", transactionQuery, queryCollector);
-        Map<String, List<MutableQuery>> queries = queryCollector.getSortedAndTruncatedQueries();
+        List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
-        List<MutableQuery> queriesByType = queries.get("sqlo");
-        assertThat(queriesByType).hasSize(1);
-        MutableQuery query = queriesByType.get(0);
+        MutableQuery query = queries.get(0);
+        assertThat(query.getType()).isEqualTo("sqlo");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -635,9 +629,8 @@ public class AggregateDaoIT {
         aggregateDao.mergeQueriesInto("the gp::", transactionQuery, queryCollector);
         queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
-        queriesByType = queries.get("sqlo");
-        assertThat(queriesByType).hasSize(1);
-        query = queriesByType.get(0);
+        query = queries.get(0);
+        assertThat(query.getType()).isEqualTo("sqlo");
         assertThat(query.getTruncatedText()).isEqualTo("select 1");
         assertThat(query.getFullTextSha1()).isNull();
         assertThat(query.getTotalDurationNanos()).isEqualTo(14);
@@ -680,13 +673,12 @@ public class AggregateDaoIT {
                         .setName("mnm")
                         .setTotalNanos(999)
                         .setCount(3))
-                .addQueriesByType(Aggregate.QueriesByType.newBuilder()
+                .addQuery(Aggregate.Query.newBuilder()
                         .setType("sqlo")
-                        .addQuery(Aggregate.Query.newBuilder()
-                                .setSharedQueryTextIndex(0)
-                                .setTotalDurationNanos(7)
-                                .setTotalRows(OptionalInt64.newBuilder().setValue(5))
-                                .setExecutionCount(2)))
+                        .setSharedQueryTextIndex(0)
+                        .setTotalDurationNanos(7)
+                        .setTotalRows(OptionalInt64.newBuilder().setValue(5))
+                        .setExecutionCount(2))
                 .build();
     }
 
@@ -708,13 +700,12 @@ public class AggregateDaoIT {
                                 .setName("mnm")
                                 .setTotalNanos(333)
                                 .setCount(1))
-                        .addQueriesByType(Aggregate.QueriesByType.newBuilder()
+                        .addQuery(Aggregate.Query.newBuilder()
                                 .setType("sqlo")
-                                .addQuery(Aggregate.Query.newBuilder()
-                                        .setSharedQueryTextIndex(0)
-                                        .setTotalDurationNanos(7)
-                                        .setTotalRows(OptionalInt64.newBuilder().setValue(5))
-                                        .setExecutionCount(2))))
+                                .setSharedQueryTextIndex(0)
+                                .setTotalDurationNanos(7)
+                                .setTotalRows(OptionalInt64.newBuilder().setValue(5))
+                                .setExecutionCount(2)))
                 .build();
     }
 

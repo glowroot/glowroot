@@ -128,8 +128,8 @@ public class Transaction {
     private volatile @Nullable ErrorMessage errorMessage;
 
     private final int maxTraceEntriesPerTransaction;
-    private final int maxAggregateQueriesPerType;
-    private final int maxAggregateServiceCallsPerType;
+    private final int maxQueryAggregates;
+    private final int maxServiceCallAggregates;
 
     private final TransactionRegistry transactionRegistry;
     private final TransactionService transactionService;
@@ -210,8 +210,7 @@ public class Transaction {
 
     Transaction(long startTime, long startTick, String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName, boolean captureThreadStats,
-            int maxTraceEntriesPerTransaction, int maxAggregateQueriesPerType,
-            int maxAggregateServiceCallsPerType,
+            int maxTraceEntriesPerTransaction, int maxQueryAggregates, int maxServiceCallAggregates,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             CompletionCallback completionCallback, Ticker ticker,
             TransactionRegistry transactionRegistry, TransactionService transactionService,
@@ -222,8 +221,8 @@ public class Transaction {
         this.transactionType = transactionType;
         this.transactionName = transactionName;
         this.maxTraceEntriesPerTransaction = maxTraceEntriesPerTransaction;
-        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
-        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
+        this.maxQueryAggregates = maxQueryAggregates;
+        this.maxServiceCallAggregates = maxServiceCallAggregates;
         this.completionCallback = completionCallback;
         this.ticker = ticker;
         this.userProfileScheduler = userProfileScheduler;
@@ -231,9 +230,9 @@ public class Transaction {
         this.transactionService = transactionService;
         this.configService = configService;
         mainThreadContext = new ThreadContextImpl(castInitialized(this), null, null,
-                messageSupplier, timerName, startTick, captureThreadStats,
-                maxAggregateQueriesPerType, maxAggregateServiceCallsPerType, threadAllocatedBytes,
-                false, ticker, threadContextHolder, null);
+                messageSupplier, timerName, startTick, captureThreadStats, maxQueryAggregates,
+                maxServiceCallAggregates, threadAllocatedBytes, false, ticker, threadContextHolder,
+                null);
     }
 
     long getStartTime() {
@@ -665,17 +664,15 @@ public class Transaction {
                 auxThreadContext = new ThreadContextImpl(this, parentTraceEntry,
                         parentThreadContextPriorEntry, AuxThreadRootMessageSupplier.INSTANCE,
                         auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
-                        maxAggregateQueriesPerType, maxAggregateServiceCallsPerType,
-                        threadAllocatedBytes, false, ticker, threadContextHolder,
-                        servletRequestInfo);
+                        maxQueryAggregates, maxServiceCallAggregates, threadAllocatedBytes, false,
+                        ticker, threadContextHolder, servletRequestInfo);
                 auxThreadContexts.add(auxThreadContext);
             } else {
                 auxThreadContext = new ThreadContextImpl(this, mainThreadContext.getRootEntry(),
                         mainThreadContext.getTailEntry(), AuxThreadRootMessageSupplier.INSTANCE,
                         auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
-                        maxAggregateQueriesPerType, maxAggregateServiceCallsPerType,
-                        threadAllocatedBytes, true, ticker, threadContextHolder,
-                        servletRequestInfo);
+                        maxQueryAggregates, maxServiceCallAggregates, threadAllocatedBytes, true,
+                        ticker, threadContextHolder, servletRequestInfo);
                 if (unmergedLimitExceededAuxThreadContexts == null) {
                     unmergedLimitExceededAuxThreadContexts = Sets.newHashSet();
                 }
@@ -900,11 +897,11 @@ public class Transaction {
             alreadyMergedAuxThreadStats = new ThreadStatsCollectorImpl();
         }
         if (alreadyMergedAuxQueries == null) {
-            alreadyMergedAuxQueries = new QueryCollector(maxAggregateQueriesPerType,
+            alreadyMergedAuxQueries = new QueryCollector(maxQueryAggregates,
                     AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER);
         }
         if (alreadyMergedAuxServiceCalls == null) {
-            alreadyMergedAuxServiceCalls = new ServiceCallCollector(maxAggregateServiceCallsPerType,
+            alreadyMergedAuxServiceCalls = new ServiceCallCollector(maxServiceCallAggregates,
                     AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER);
         }
     }

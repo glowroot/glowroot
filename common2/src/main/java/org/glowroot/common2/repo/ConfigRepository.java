@@ -89,8 +89,7 @@ public interface ConfigRepository {
 
     UserRecordingConfig getUserRecordingConfig(String agentId) throws Exception;
 
-    // central supports advanced config on rollups
-    // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
+    // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception;
 
     List<GaugeConfig> getGaugeConfigs(String agentId) throws Exception;
@@ -222,8 +221,7 @@ public interface ConfigRepository {
     void updateUserRecordingConfig(String agentId, UserRecordingConfig config, String priorVersion)
             throws Exception;
 
-    // central supports advanced config on rollups
-    // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
+    // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion)
             throws Exception;
 

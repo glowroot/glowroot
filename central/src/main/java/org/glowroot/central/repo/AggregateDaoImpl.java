@@ -1479,7 +1479,8 @@ public class AggregateDaoImpl implements AggregateDao {
 
     private List<Future<?>> rollupQueriesFromRows(RollupParams rollup, TransactionQuery query,
             Iterable<Row> rows) throws Exception {
-        QueryCollector collector = new QueryCollector(rollup.maxAggregateQueriesPerType());
+        QueryCollector collector =
+                new QueryCollector(rollup.maxQueryAggregatesPerTransactionAggregate());
         for (Row row : rows) {
             int i = 0;
             String queryType = checkNotNull(row.getString(i++));
@@ -1519,7 +1520,7 @@ public class AggregateDaoImpl implements AggregateDao {
     private List<Future<?>> rollupServiceCallsFromRows(RollupParams rollup, TransactionQuery query,
             Iterable<Row> rows) throws Exception {
         ServiceCallCollector collector =
-                new ServiceCallCollector(rollup.maxAggregateServiceCallsPerType());
+                new ServiceCallCollector(rollup.maxServiceCallAggregatesPerTransactionAggregate());
         for (Row row : rows) {
             int i = 0;
             String serviceCallType = checkNotNull(row.getString(i++));
@@ -1681,9 +1682,9 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement.setInt(i++, adjustedTTL.profileTTL());
             futures.add(session.executeAsync(boundStatement));
         }
-        futures.addAll(insertQueries(aggregate.getQueriesByTypeList(), sharedQueryTexts,
-                rollupLevel, agentRollupId, transactionType, null, captureTime, adjustedTTL));
-        futures.addAll(insertServiceCalls(aggregate.getServiceCallsByTypeList(), rollupLevel,
+        futures.addAll(insertQueries(getQueries(aggregate), sharedQueryTexts, rollupLevel,
+                agentRollupId, transactionType, null, captureTime, adjustedTTL));
+        futures.addAll(insertServiceCallsProto(getServiceCalls(aggregate), rollupLevel,
                 agentRollupId, transactionType, null, captureTime, adjustedTTL));
         return futures;
     }
@@ -1751,10 +1752,9 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement.setInt(i++, adjustedTTL.profileTTL());
             futures.add(session.executeAsync(boundStatement));
         }
-        futures.addAll(
-                insertQueries(aggregate.getQueriesByTypeList(), sharedQueryTexts, rollupLevel,
-                        agentRollupId, transactionType, transactionName, captureTime, adjustedTTL));
-        futures.addAll(insertServiceCalls(aggregate.getServiceCallsByTypeList(), rollupLevel,
+        futures.addAll(insertQueries(getQueries(aggregate), sharedQueryTexts, rollupLevel,
+                agentRollupId, transactionType, transactionName, captureTime, adjustedTTL));
+        futures.addAll(insertServiceCallsProto(getServiceCalls(aggregate), rollupLevel,
                 agentRollupId, transactionType, transactionName, captureTime, adjustedTTL));
         return futures;
     }
@@ -1792,147 +1792,138 @@ public class AggregateDaoImpl implements AggregateDao {
         return futures;
     }
 
-    private List<Future<?>> insertQueries(List<Aggregate.QueriesByType> queriesByTypeList,
+    private List<Future<?>> insertQueries(List<Aggregate.Query> queries,
             List<Aggregate.SharedQueryText> sharedQueryTexts, int rollupLevel, String agentRollupId,
             String transactionType, @Nullable String transactionName, long captureTime,
             TTL adjustedTTL) throws Exception {
         List<Future<?>> futures = new ArrayList<>();
-        for (Aggregate.QueriesByType queriesByType : queriesByTypeList) {
-            for (Aggregate.Query query : queriesByType.getQueryList()) {
-                Aggregate.SharedQueryText sharedQueryText =
-                        sharedQueryTexts.get(query.getSharedQueryTextIndex());
-                BoundStatement boundStatement;
-                if (transactionName == null) {
-                    boundStatement = getInsertOverallPS(queryTable, rollupLevel).bind();
-                } else {
-                    boundStatement = getInsertTransactionPS(queryTable, rollupLevel).bind();
-                }
-                int i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, transactionType);
-                if (transactionName != null) {
-                    boundStatement.setString(i++, transactionName);
-                }
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setString(i++, queriesByType.getType());
-                String fullTextSha1 = sharedQueryText.getFullTextSha1();
-                if (fullTextSha1.isEmpty()) {
-                    boundStatement.setString(i++, sharedQueryText.getFullText());
-                    // full_query_text_sha1 cannot be null since it is used in clustering key
-                    boundStatement.setString(i++, "");
-                } else {
-                    boundStatement.setString(i++, sharedQueryText.getTruncatedText());
-                    boundStatement.setString(i++, fullTextSha1);
-                }
-                boundStatement.setDouble(i++, query.getTotalDurationNanos());
-                boundStatement.setLong(i++, query.getExecutionCount());
-                if (query.hasTotalRows()) {
-                    boundStatement.setLong(i++, query.getTotalRows().getValue());
-                } else {
-                    boundStatement.setToNull(i++);
-                }
-                boundStatement.setInt(i++, adjustedTTL.queryTTL());
-                futures.add(session.executeAsync(boundStatement));
+        for (Aggregate.Query query : queries) {
+            Aggregate.SharedQueryText sharedQueryText =
+                    sharedQueryTexts.get(query.getSharedQueryTextIndex());
+            BoundStatement boundStatement;
+            if (transactionName == null) {
+                boundStatement = getInsertOverallPS(queryTable, rollupLevel).bind();
+            } else {
+                boundStatement = getInsertTransactionPS(queryTable, rollupLevel).bind();
             }
-        }
-        return futures;
-    }
-
-    private List<Future<?>> insertQueries(Map<String, List<MutableQuery>> map, int rollupLevel,
-            String agentRollupId, String transactionType, @Nullable String transactionName,
-            long captureTime, TTL adjustedTTL) throws Exception {
-        List<Future<?>> futures = new ArrayList<>();
-        for (Map.Entry<String, List<MutableQuery>> entry : map.entrySet()) {
-            for (MutableQuery query : entry.getValue()) {
-                BoundStatement boundStatement;
-                if (transactionName == null) {
-                    boundStatement = getInsertOverallPS(queryTable, rollupLevel).bind();
-                } else {
-                    boundStatement = getInsertTransactionPS(queryTable, rollupLevel).bind();
-                }
-                String fullTextSha1 = query.getFullTextSha1();
-                int i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, transactionType);
-                if (transactionName != null) {
-                    boundStatement.setString(i++, transactionName);
-                }
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setString(i++, entry.getKey());
-                boundStatement.setString(i++, query.getTruncatedText());
+            int i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setString(i++, transactionType);
+            if (transactionName != null) {
+                boundStatement.setString(i++, transactionName);
+            }
+            boundStatement.setTimestamp(i++, new Date(captureTime));
+            boundStatement.setString(i++, query.getType());
+            String fullTextSha1 = sharedQueryText.getFullTextSha1();
+            if (fullTextSha1.isEmpty()) {
+                boundStatement.setString(i++, sharedQueryText.getFullText());
                 // full_query_text_sha1 cannot be null since it is used in clustering key
-                boundStatement.setString(i++, Strings.nullToEmpty(fullTextSha1));
-                boundStatement.setDouble(i++, query.getTotalDurationNanos());
-                boundStatement.setLong(i++, query.getExecutionCount());
-                if (query.hasTotalRows()) {
-                    boundStatement.setLong(i++, query.getTotalRows());
-                } else {
-                    boundStatement.setToNull(i++);
-                }
-                boundStatement.setInt(i++, adjustedTTL.queryTTL());
-                futures.add(session.executeAsync(boundStatement));
+                boundStatement.setString(i++, "");
+            } else {
+                boundStatement.setString(i++, sharedQueryText.getTruncatedText());
+                boundStatement.setString(i++, fullTextSha1);
             }
+            boundStatement.setDouble(i++, query.getTotalDurationNanos());
+            boundStatement.setLong(i++, query.getExecutionCount());
+            if (query.hasTotalRows()) {
+                boundStatement.setLong(i++, query.getTotalRows().getValue());
+            } else {
+                boundStatement.setToNull(i++);
+            }
+            boundStatement.setInt(i++, adjustedTTL.queryTTL());
+            futures.add(session.executeAsync(boundStatement));
         }
         return futures;
     }
 
-    private List<Future<?>> insertServiceCalls(
-            List<Aggregate.ServiceCallsByType> serviceCallsByTypeList, int rollupLevel,
+    private List<Future<?>> insertQueries(List<MutableQuery> queries, int rollupLevel,
             String agentRollupId, String transactionType, @Nullable String transactionName,
             long captureTime, TTL adjustedTTL) throws Exception {
         List<Future<?>> futures = new ArrayList<>();
-        for (Aggregate.ServiceCallsByType serviceCallsByType : serviceCallsByTypeList) {
-            for (Aggregate.ServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
-                BoundStatement boundStatement;
-                if (transactionName == null) {
-                    boundStatement = getInsertOverallPS(serviceCallTable, rollupLevel).bind();
-                } else {
-                    boundStatement = getInsertTransactionPS(serviceCallTable, rollupLevel).bind();
-                }
-                int i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, transactionType);
-                if (transactionName != null) {
-                    boundStatement.setString(i++, transactionName);
-                }
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setString(i++, serviceCallsByType.getType());
-                boundStatement.setString(i++, serviceCall.getText());
-                boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
-                boundStatement.setLong(i++, serviceCall.getExecutionCount());
-                boundStatement.setInt(i++, adjustedTTL.serviceCallTTL());
-                futures.add(session.executeAsync(boundStatement));
+        for (MutableQuery query : queries) {
+            BoundStatement boundStatement;
+            if (transactionName == null) {
+                boundStatement = getInsertOverallPS(queryTable, rollupLevel).bind();
+            } else {
+                boundStatement = getInsertTransactionPS(queryTable, rollupLevel).bind();
             }
+            String fullTextSha1 = query.getFullTextSha1();
+            int i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setString(i++, transactionType);
+            if (transactionName != null) {
+                boundStatement.setString(i++, transactionName);
+            }
+            boundStatement.setTimestamp(i++, new Date(captureTime));
+            boundStatement.setString(i++, query.getType());
+            boundStatement.setString(i++, query.getTruncatedText());
+            // full_query_text_sha1 cannot be null since it is used in clustering key
+            boundStatement.setString(i++, Strings.nullToEmpty(fullTextSha1));
+            boundStatement.setDouble(i++, query.getTotalDurationNanos());
+            boundStatement.setLong(i++, query.getExecutionCount());
+            if (query.hasTotalRows()) {
+                boundStatement.setLong(i++, query.getTotalRows());
+            } else {
+                boundStatement.setToNull(i++);
+            }
+            boundStatement.setInt(i++, adjustedTTL.queryTTL());
+            futures.add(session.executeAsync(boundStatement));
         }
         return futures;
     }
 
-    private List<Future<?>> insertServiceCalls(Map<String, List<MutableServiceCall>> map,
+    private List<Future<?>> insertServiceCallsProto(List<Aggregate.ServiceCall> serviceCalls,
             int rollupLevel, String agentRollupId, String transactionType,
             @Nullable String transactionName, long captureTime, TTL adjustedTTL) throws Exception {
         List<Future<?>> futures = new ArrayList<>();
-        for (Map.Entry<String, List<MutableServiceCall>> entry : map.entrySet()) {
-            for (MutableServiceCall serviceCall : entry.getValue()) {
-                BoundStatement boundStatement;
-                if (transactionName == null) {
-                    boundStatement = getInsertOverallPS(serviceCallTable, rollupLevel).bind();
-                } else {
-                    boundStatement = getInsertTransactionPS(serviceCallTable, rollupLevel).bind();
-                }
-                int i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, transactionType);
-                if (transactionName != null) {
-                    boundStatement.setString(i++, transactionName);
-                }
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setString(i++, entry.getKey());
-                boundStatement.setString(i++, serviceCall.getText());
-                boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
-                boundStatement.setLong(i++, serviceCall.getExecutionCount());
-                boundStatement.setInt(i++, adjustedTTL.serviceCallTTL());
-                futures.add(session.executeAsync(boundStatement));
+        for (Aggregate.ServiceCall serviceCall : serviceCalls) {
+            BoundStatement boundStatement;
+            if (transactionName == null) {
+                boundStatement = getInsertOverallPS(serviceCallTable, rollupLevel).bind();
+            } else {
+                boundStatement = getInsertTransactionPS(serviceCallTable, rollupLevel).bind();
             }
+            int i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setString(i++, transactionType);
+            if (transactionName != null) {
+                boundStatement.setString(i++, transactionName);
+            }
+            boundStatement.setTimestamp(i++, new Date(captureTime));
+            boundStatement.setString(i++, serviceCall.getType());
+            boundStatement.setString(i++, serviceCall.getText());
+            boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
+            boundStatement.setLong(i++, serviceCall.getExecutionCount());
+            boundStatement.setInt(i++, adjustedTTL.serviceCallTTL());
+            futures.add(session.executeAsync(boundStatement));
+        }
+        return futures;
+    }
+
+    private List<Future<?>> insertServiceCalls(List<MutableServiceCall> serviceCalls,
+            int rollupLevel, String agentRollupId, String transactionType,
+            @Nullable String transactionName, long captureTime, TTL adjustedTTL) throws Exception {
+        List<Future<?>> futures = new ArrayList<>();
+        for (MutableServiceCall serviceCall : serviceCalls) {
+            BoundStatement boundStatement;
+            if (transactionName == null) {
+                boundStatement = getInsertOverallPS(serviceCallTable, rollupLevel).bind();
+            } else {
+                boundStatement = getInsertTransactionPS(serviceCallTable, rollupLevel).bind();
+            }
+            int i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setString(i++, transactionType);
+            if (transactionName != null) {
+                boundStatement.setString(i++, transactionName);
+            }
+            boundStatement.setTimestamp(i++, new Date(captureTime));
+            boundStatement.setString(i++, serviceCall.getType());
+            boundStatement.setString(i++, serviceCall.getText());
+            boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
+            boundStatement.setLong(i++, serviceCall.getExecutionCount());
+            boundStatement.setInt(i++, adjustedTTL.serviceCallTTL());
+            futures.add(session.executeAsync(boundStatement));
         }
         return futures;
     }
@@ -2035,9 +2026,10 @@ public class AggregateDaoImpl implements AggregateDao {
                 .agentRollupId(agentRollupId)
                 .rollupLevel(rollupLevel)
                 .adjustedTTL(adjustedTTL)
-                .maxAggregateQueriesPerType(getMaxAggregateQueriesPerType(agentRollupIdForMeta))
-                .maxAggregateServiceCallsPerType(
-                        getMaxAggregateServiceCallsPerType(agentRollupIdForMeta))
+                .maxQueryAggregatesPerTransactionAggregate(
+                        getMaxQueryAggregatesPerTransactionAggregate(agentRollupIdForMeta))
+                .maxServiceCallAggregatesPerTransactionAggregate(
+                        getMaxServiceCallAggregatesPerTransactionAggregate(agentRollupIdForMeta))
                 .build();
     }
 
@@ -2142,6 +2134,46 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement.setString(i++, transactionName);
         }
         boundStatement.setTimestamp(i++, new Date(query.to()));
+    }
+
+    private static List<Aggregate.Query> getQueries(Aggregate aggregate) {
+        List<Aggregate.OldQueriesByType> queriesByTypeList = aggregate.getOldQueriesByTypeList();
+        if (queriesByTypeList.isEmpty()) {
+            return aggregate.getQueryList();
+        }
+        List<Aggregate.Query> queries = new ArrayList<>();
+        for (Aggregate.OldQueriesByType queriesByType : queriesByTypeList) {
+            for (Aggregate.OldQuery query : queriesByType.getQueryList()) {
+                queries.add(Aggregate.Query.newBuilder()
+                        .setType(queriesByType.getType())
+                        .setSharedQueryTextIndex(query.getSharedQueryTextIndex())
+                        .setTotalDurationNanos(query.getTotalDurationNanos())
+                        .setExecutionCount(query.getExecutionCount())
+                        .setTotalRows(query.getTotalRows())
+                        .build());
+            }
+        }
+        return queries;
+    }
+
+    private static List<Aggregate.ServiceCall> getServiceCalls(Aggregate aggregate) {
+        List<Aggregate.OldServiceCallsByType> serviceCallsByTypeList =
+                aggregate.getOldServiceCallsByTypeList();
+        if (serviceCallsByTypeList.isEmpty()) {
+            return aggregate.getServiceCallList();
+        }
+        List<Aggregate.ServiceCall> serviceCalls = new ArrayList<>();
+        for (Aggregate.OldServiceCallsByType serviceCallsByType : serviceCallsByTypeList) {
+            for (Aggregate.OldServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
+                serviceCalls.add(Aggregate.ServiceCall.newBuilder()
+                        .setType(serviceCallsByType.getType())
+                        .setText(serviceCall.getText())
+                        .setTotalDurationNanos(serviceCall.getTotalDurationNanos())
+                        .setExecutionCount(serviceCall.getExecutionCount())
+                        .build());
+            }
+        }
+        return serviceCalls;
     }
 
     private static String createTableQuery(Table table, boolean transaction, int i) {
@@ -2384,31 +2416,33 @@ public class AggregateDaoImpl implements AggregateDao {
         return ByteBuffer.wrap(message.toByteArray());
     }
 
-    private int getMaxAggregateQueriesPerType(String agentRollupId) throws Exception {
+    private int getMaxQueryAggregatesPerTransactionAggregate(String agentRollupId)
+            throws Exception {
         AdvancedConfig advancedConfig;
         try {
             advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
         } catch (AgentConfigNotFoundException e) {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES;
         }
-        if (advancedConfig.hasMaxAggregateQueriesPerType()) {
-            return advancedConfig.getMaxAggregateQueriesPerType().getValue();
+        if (advancedConfig.hasMaxQueryAggregates()) {
+            return advancedConfig.getMaxQueryAggregates().getValue();
         } else {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES;
         }
     }
 
-    private int getMaxAggregateServiceCallsPerType(String agentRollupId) throws Exception {
+    private int getMaxServiceCallAggregatesPerTransactionAggregate(String agentRollupId)
+            throws Exception {
         AdvancedConfig advancedConfig;
         try {
             advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
         } catch (AgentConfigNotFoundException e) {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES;
         }
-        if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
-            return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
+        if (advancedConfig.hasMaxServiceCallAggregates()) {
+            return advancedConfig.getMaxServiceCallAggregates().getValue();
         } else {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES;
         }
     }
 
@@ -2442,8 +2476,8 @@ public class AggregateDaoImpl implements AggregateDao {
         String agentRollupId();
         int rollupLevel();
         TTL adjustedTTL();
-        int maxAggregateQueriesPerType();
-        int maxAggregateServiceCallsPerType();
+        int maxQueryAggregatesPerTransactionAggregate();
+        int maxServiceCallAggregatesPerTransactionAggregate();
     }
 
     @Value.Immutable

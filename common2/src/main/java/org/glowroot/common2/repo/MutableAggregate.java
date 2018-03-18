@@ -56,12 +56,12 @@ public class MutableAggregate {
     private @MonotonicNonNull MutableProfile mainThreadProfile;
     private @MonotonicNonNull MutableProfile auxThreadProfile;
 
-    private final int maxAggregateQueriesPerType;
-    private final int maxAggregateServiceCallsPerType;
+    private final int maxQueryAggregates;
+    private final int maxServiceCallAggregates;
 
-    public MutableAggregate(int maxAggregateQueriesPerType, int maxAggregateServiceCallsPerType) {
-        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
-        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
+    public MutableAggregate(int maxQueryAggregates, int maxServiceCallAggregates) {
+        this.maxQueryAggregates = maxQueryAggregates;
+        this.maxServiceCallAggregates = maxServiceCallAggregates;
     }
 
     public double getTotalDurationNanos() {
@@ -229,7 +229,7 @@ public class MutableAggregate {
             @Nullable String fullQueryTextSha1, double totalDurationNanos, long executionCount,
             boolean hasTotalRows, long totalRows) {
         if (queries == null) {
-            queries = new QueryCollector(maxAggregateQueriesPerType);
+            queries = new QueryCollector(maxQueryAggregates);
         }
         queries.mergeQuery(queryType, truncatedQueryText, fullQueryTextSha1, totalDurationNanos,
                 executionCount, hasTotalRows, totalRows);
@@ -238,7 +238,7 @@ public class MutableAggregate {
     public void mergeServiceCall(String serviceCallType, String serviceCallText,
             double totalDurationNanos, long executionCount) {
         if (serviceCalls == null) {
-            serviceCalls = new ServiceCallCollector(maxAggregateServiceCallsPerType);
+            serviceCalls = new ServiceCallCollector(maxServiceCallAggregates);
         }
         serviceCalls.mergeServiceCall(serviceCallType, serviceCallText, totalDurationNanos,
                 executionCount);

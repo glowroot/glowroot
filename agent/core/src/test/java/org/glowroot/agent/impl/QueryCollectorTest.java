@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,18 +45,15 @@ public class QueryCollectorTest {
         test(queries);
     }
 
-    private void test(QueryCollector queries) {
+    private void test(QueryCollector collector) {
         // when
         SharedQueryTextCollector sharedQueryTextCollector = new SharedQueryTextCollector();
-        List<Aggregate.QueriesByType> queriesByTypeList =
-                queries.toAggregateProto(sharedQueryTextCollector);
+        List<Aggregate.Query> queries = collector.toAggregateProto(sharedQueryTextCollector);
         // then
         List<String> sharedQueryTexts =
                 sharedQueryTextCollector.getAndClearLastestSharedQueryTexts();
-        assertThat(queriesByTypeList).hasSize(1);
-        Aggregate.QueriesByType queriesByType = queriesByTypeList.get(0);
-        assertThat(queriesByType.getQueryList()).hasSize(101);
-        Aggregate.Query topQuery = queriesByType.getQueryList().get(0);
+        assertThat(queries).hasSize(101);
+        Aggregate.Query topQuery = queries.get(0);
         assertThat(sharedQueryTexts.get(topQuery.getSharedQueryTextIndex()))
                 .isEqualTo("LIMIT EXCEEDED BUCKET");
         int limitExceededBucketTotalNanos = 0;
@@ -64,7 +61,7 @@ public class QueryCollectorTest {
             limitExceededBucketTotalNanos += i;
         }
         assertThat(topQuery.getTotalDurationNanos()).isEqualTo(limitExceededBucketTotalNanos);
-        assertThat(queriesByType.getQueryList().get(1).getTotalDurationNanos()).isEqualTo(300);
-        assertThat(queriesByType.getQueryList().get(100).getTotalDurationNanos()).isEqualTo(201);
+        assertThat(queries.get(1).getTotalDurationNanos()).isEqualTo(300);
+        assertThat(queries.get(100).getTotalDurationNanos()).isEqualTo(201);
     }
 }

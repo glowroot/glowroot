@@ -64,10 +64,17 @@ class MutableQuery {
         addToTotalRows(query.hasTotalRows, query.totalRows);
     }
 
-    Aggregate.Query toAggregateProto(String queryText,
+    void add(Aggregate.Query query) {
+        addToTotalDurationNanos(query.getTotalDurationNanos());
+        addToExecutionCount(query.getExecutionCount());
+        addToTotalRows(query.hasTotalRows(), query.getTotalRows().getValue());
+    }
+
+    Aggregate.Query toAggregateProto(String queryType, String queryText,
             SharedQueryTextCollector sharedQueryTextCollector) {
         int sharedQueryTextIndex = sharedQueryTextCollector.getIndex(queryText);
         Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
+                .setType(queryType)
                 .setSharedQueryTextIndex(sharedQueryTextIndex)
                 .setTotalDurationNanos(totalDurationNanos)
                 .setExecutionCount(executionCount);

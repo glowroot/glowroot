@@ -43,8 +43,14 @@ class MutableServiceCall {
         addToExecutionCount(serviceCall.executionCount);
     }
 
-    Aggregate.ServiceCall toAggregateProto(String serviceCallText) {
+    void add(Aggregate.ServiceCall serviceCall) {
+        addToTotalDurationNanos(serviceCall.getTotalDurationNanos());
+        addToExecutionCount(serviceCall.getExecutionCount());
+    }
+
+    Aggregate.ServiceCall toAggregateProto(String serviceCallType, String serviceCallText) {
         Aggregate.ServiceCall.Builder builder = Aggregate.ServiceCall.newBuilder()
+                .setType(serviceCallType)
                 .setText(serviceCallText)
                 .setTotalDurationNanos(totalDurationNanos)
                 .setExecutionCount(executionCount);

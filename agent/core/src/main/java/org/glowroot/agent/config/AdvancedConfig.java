@@ -45,22 +45,22 @@ public abstract class AdvancedConfig {
 
     // used to limit memory requirement
     @Value.Default
-    public int maxAggregateTransactionsPerType() {
-        return ConfigDefaults.ADVANCED_MAX_AGGREGATE_TRANSACTIONS_PER_TYPE;
+    public int maxTransactionAggregates() {
+        return ConfigDefaults.ADVANCED_MAX_TRANSACTION_AGGREGATES;
     }
 
     // used to limit memory requirement
     // applied to individual traces, transaction aggregates and overall aggregates
     @Value.Default
-    public int maxAggregateQueriesPerType() {
-        return ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE;
+    public int maxQueryAggregates() {
+        return ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES;
     }
 
     // used to limit memory requirement
     // applied to individual traces, transaction aggregates and overall aggregates
     @Value.Default
-    public int maxAggregateServiceCallsPerType() {
-        return ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+    public int maxServiceCallAggregates() {
+        return ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES;
     }
 
     // used to limit memory requirement, also used to help limit trace capture size
@@ -85,9 +85,9 @@ public abstract class AdvancedConfig {
                 .setWeavingTimer(weavingTimer())
                 .setImmediatePartialStoreThresholdSeconds(
                         of(immediatePartialStoreThresholdSeconds()))
-                .setMaxAggregateTransactionsPerType(of(maxAggregateTransactionsPerType()))
-                .setMaxAggregateQueriesPerType(of(maxAggregateQueriesPerType()))
-                .setMaxAggregateServiceCallsPerType(of(maxAggregateServiceCallsPerType()))
+                .setMaxTransactionAggregates(of(maxTransactionAggregates()))
+                .setMaxQueryAggregates(of(maxQueryAggregates()))
+                .setMaxServiceCallAggregates(of(maxServiceCallAggregates()))
                 .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
                 .setMaxStackTraceSamplesPerTransaction(of(maxStackTraceSamplesPerTransaction()))
                 .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
@@ -101,16 +101,14 @@ public abstract class AdvancedConfig {
             builder.immediatePartialStoreThresholdSeconds(
                     config.getImmediatePartialStoreThresholdSeconds().getValue());
         }
-        if (config.hasMaxAggregateTransactionsPerType()) {
-            builder.maxAggregateTransactionsPerType(
-                    config.getMaxAggregateTransactionsPerType().getValue());
+        if (config.hasMaxTransactionAggregates()) {
+            builder.maxTransactionAggregates(config.getMaxTransactionAggregates().getValue());
         }
-        if (config.hasMaxAggregateQueriesPerType()) {
-            builder.maxAggregateQueriesPerType(config.getMaxAggregateQueriesPerType().getValue());
+        if (config.hasMaxQueryAggregates()) {
+            builder.maxQueryAggregates(config.getMaxQueryAggregates().getValue());
         }
-        if (config.hasMaxAggregateServiceCallsPerType()) {
-            builder.maxAggregateServiceCallsPerType(
-                    config.getMaxAggregateServiceCallsPerType().getValue());
+        if (config.hasMaxServiceCallAggregates()) {
+            builder.maxServiceCallAggregates(config.getMaxServiceCallAggregates().getValue());
         }
         if (config.hasMaxTraceEntriesPerTransaction()) {
             builder.maxTraceEntriesPerTransaction(

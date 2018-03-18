@@ -346,11 +346,11 @@ public class AggregateDao implements AggregateRepository {
         long captureTime = Long.MIN_VALUE;
         for (CappedId cappedId : cappedIds) {
             captureTime = Math.max(captureTime, cappedId.captureTime());
-            List<Aggregate.ServiceCallsByType> serviceCalls =
+            List<Stored.ServiceCallsByType> serviceCalls =
                     rollupCappedDatabases.get(query.rollupLevel()).readMessages(cappedId.cappedId(),
-                            Aggregate.ServiceCallsByType.parser());
-            for (Aggregate.ServiceCallsByType toBeMergedServiceCalls : serviceCalls) {
-                for (Aggregate.ServiceCall toBeMergedQuery : toBeMergedServiceCalls
+                            Stored.ServiceCallsByType.parser());
+            for (Stored.ServiceCallsByType toBeMergedServiceCalls : serviceCalls) {
+                for (Stored.ServiceCall toBeMergedQuery : toBeMergedServiceCalls
                         .getServiceCallList()) {
                     collector.mergeServiceCall(toBeMergedServiceCalls.getType(),
                             toBeMergedQuery.getText(), toBeMergedQuery.getTotalDurationNanos(),
@@ -521,13 +521,12 @@ public class AggregateDao implements AggregateRepository {
             }
         }
         if (serviceCallsCappedId != null) {
-            List<Aggregate.ServiceCallsByType> serviceCalls =
+            List<Stored.ServiceCallsByType> serviceCalls =
                     rollupCappedDatabases.get(fromRollupLevel).readMessages(serviceCallsCappedId,
-                            Aggregate.ServiceCallsByType.parser());
+                            Stored.ServiceCallsByType.parser());
             if (serviceCalls != null) {
-                for (Aggregate.ServiceCallsByType serviceCallsByType : serviceCalls) {
-                    for (Aggregate.ServiceCall serviceCall : serviceCallsByType
-                            .getServiceCallList()) {
+                for (Stored.ServiceCallsByType serviceCallsByType : serviceCalls) {
+                    for (Stored.ServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
                         mergedAggregate.mergeServiceCall(serviceCallsByType.getType(),
                                 serviceCall.getText(), serviceCall.getTotalDurationNanos(),
                                 serviceCall.getExecutionCount());
@@ -551,21 +550,21 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private int getMaxAggregateQueriesPerType() {
+    private int getMaxQueryAggregates() {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID);
-        if (advancedConfig.hasMaxAggregateQueriesPerType()) {
-            return advancedConfig.getMaxAggregateQueriesPerType().getValue();
+        if (advancedConfig.hasMaxQueryAggregates()) {
+            return advancedConfig.getMaxQueryAggregates().getValue();
         } else {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES;
         }
     }
 
-    private int getMaxAggregateServiceCallsPerType() {
+    private int getMaxServiceCallAggregates() {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID);
-        if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
-            return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
+        if (advancedConfig.hasMaxServiceCallAggregates()) {
+            return advancedConfig.getMaxServiceCallAggregates().getValue();
         } else {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES;
         }
     }
 
@@ -1026,8 +1025,8 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public @Nullable Void processResultSet(ResultSet resultSet) throws Exception {
-            int maxAggregateQueriesPerType = getMaxAggregateQueriesPerType();
-            int maxAggregateServiceCallsPerType = getMaxAggregateServiceCallsPerType();
+            int maxQueryAggregates = getMaxQueryAggregates();
+            int maxServiceCallAggregates = getMaxServiceCallAggregates();
             CappedDatabase cappedDatabase = rollupCappedDatabases.get(toRollupLevel);
             MutableOverallAggregate curr = null;
             while (resultSet.next()) {
@@ -1039,8 +1038,7 @@ public class AggregateDao implements AggregateRepository {
                                 cappedDatabase, scratchBuffer));
                     }
                     curr = ImmutableMutableOverallAggregate.of(transactionType,
-                            new MutableAggregate(maxAggregateQueriesPerType,
-                                    maxAggregateServiceCallsPerType));
+                            new MutableAggregate(maxQueryAggregates, maxServiceCallAggregates));
                 }
                 merge(curr.aggregate(), resultSet, 2, fromRollupLevel);
             }
@@ -1097,8 +1095,8 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public @Nullable Void processResultSet(ResultSet resultSet) throws Exception {
-            int maxAggregateQueriesPerType = getMaxAggregateQueriesPerType();
-            int maxAggregateServiceCallsPerType = getMaxAggregateServiceCallsPerType();
+            int maxQueryAggregates = getMaxQueryAggregates();
+            int maxServiceCallAggregates = getMaxServiceCallAggregates();
             CappedDatabase cappedDatabase = rollupCappedDatabases.get(toRollupLevel);
             ScratchBuffer scratchBuffer = new ScratchBuffer();
             MutableTransactionAggregate curr = null;
@@ -1114,8 +1112,7 @@ public class AggregateDao implements AggregateRepository {
                                 toRollupLevel, cappedDatabase, scratchBuffer));
                     }
                     curr = ImmutableMutableTransactionAggregate.of(transactionType, transactionName,
-                            new MutableAggregate(maxAggregateQueriesPerType,
-                                    maxAggregateServiceCallsPerType));
+                            new MutableAggregate(maxQueryAggregates, maxServiceCallAggregates));
                 }
                 merge(curr.aggregate(), resultSet, i++, fromRollupLevel);
             }

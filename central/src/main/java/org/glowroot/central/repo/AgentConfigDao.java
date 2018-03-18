@@ -168,10 +168,9 @@ public class AgentConfigDao {
                 boundStatement.setBytes(i++, ByteBuffer.wrap(AgentConfig.newBuilder()
                         .setUiConfig(updatedAgentConfig.getUiConfig())
                         .setAdvancedConfig(AdvancedConfig.newBuilder()
-                                .setMaxAggregateQueriesPerType(
-                                        advancedConfig.getMaxAggregateQueriesPerType())
-                                .setMaxAggregateServiceCallsPerType(
-                                        advancedConfig.getMaxAggregateServiceCallsPerType()))
+                                .setMaxQueryAggregates(advancedConfig.getMaxQueryAggregates())
+                                .setMaxServiceCallAggregates(
+                                        advancedConfig.getMaxServiceCallAggregates()))
                         .build()
                         .toByteArray()));
                 boundStatement.setBool(i++, false);

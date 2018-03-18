@@ -38,8 +38,8 @@ import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
-import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.CaptureTimes;
+import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public class AggregateIntervalCollector {
@@ -47,9 +47,9 @@ public class AggregateIntervalCollector {
     private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
     private final long captureTime;
-    private final int maxAggregateTransactionsPerType;
-    private final int maxAggregateQueriesPerType;
-    private final int maxAggregateServiceCallsPerType;
+    private final int maxTransactionAggregates;
+    private final int maxQueryAggregates;
+    private final int maxServiceCallAggregates;
     private final Clock clock;
 
     @GuardedBy("lock")
@@ -58,12 +58,12 @@ public class AggregateIntervalCollector {
     private final Object lock = new Object();
 
     AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
-            int maxAggregateTransactionsPerType, int maxAggregateQueriesPerType,
-            int maxAggregateServiceCallsPerType, Clock clock) {
+            int maxTransactionAggregates, int maxQueryAggregates, int maxServiceCallAggregates,
+            Clock clock) {
         captureTime = CaptureTimes.getRollup(currentTime, aggregateIntervalMillis);
-        this.maxAggregateTransactionsPerType = maxAggregateTransactionsPerType;
-        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
-        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
+        this.maxTransactionAggregates = maxTransactionAggregates;
+        this.maxQueryAggregates = maxQueryAggregates;
+        this.maxServiceCallAggregates = maxServiceCallAggregates;
         this.clock = clock;
     }
 
@@ -267,8 +267,8 @@ public class AggregateIntervalCollector {
                 Maps.newConcurrentMap();
 
         private IntervalTypeCollector() {
-            overallAggregateCollector = new AggregateCollector(null, maxAggregateQueriesPerType,
-                    maxAggregateServiceCallsPerType);
+            overallAggregateCollector =
+                    new AggregateCollector(null, maxQueryAggregates, maxServiceCallAggregates);
         }
 
         private void add(Transaction transaction) {
@@ -276,7 +276,7 @@ public class AggregateIntervalCollector {
             AggregateCollector transactionAggregateCollector =
                     transactionAggregateCollectors.get(transaction.getTransactionName());
             if (transactionAggregateCollector == null) {
-                if (transactionAggregateCollectors.size() < maxAggregateTransactionsPerType) {
+                if (transactionAggregateCollectors.size() < maxTransactionAggregates) {
                     transactionAggregateCollector =
                             createTransactionAggregateCollector(transaction.getTransactionName());
                 } else {
@@ -293,7 +293,7 @@ public class AggregateIntervalCollector {
 
         private AggregateCollector createTransactionAggregateCollector(String transactionName) {
             AggregateCollector transactionAggregateCollector = new AggregateCollector(
-                    transactionName, maxAggregateQueriesPerType, maxAggregateServiceCallsPerType);
+                    transactionName, maxQueryAggregates, maxServiceCallAggregates);
             transactionAggregateCollectors.put(transactionName, transactionAggregateCollector);
             return transactionAggregateCollector;
         }

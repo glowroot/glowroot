@@ -28,9 +28,9 @@ public final class ConfigDefaults {
     public static final ImmutableList<String> UI_DEFAULT_GAUGE_NAMES =
             ImmutableList.of("java.lang:type=Memory:HeapMemoryUsage.used");
 
-    public static final int ADVANCED_MAX_AGGREGATE_TRANSACTIONS_PER_TYPE = 500;
-    public static final int ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE = 500;
-    public static final int ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE = 500;
+    public static final int ADVANCED_MAX_TRANSACTION_AGGREGATES = 500;
+    public static final int ADVANCED_MAX_QUERY_AGGREGATES = 500;
+    public static final int ADVANCED_MAX_SERVICE_CALL_AGGREGATES = 500;
 
     private ConfigDefaults() {}
 }

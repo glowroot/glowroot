@@ -20,6 +20,18 @@ message Query {
   OptionalInt64 total_rows = 5;
 }
 
+message ServiceCallsByType {
+  // e.g. "HTTP"
+  string type = 1;
+  repeated ServiceCall service_call = 2;
+}
+
+message ServiceCall {
+  string text = 1;
+  double total_duration_nanos = 2;
+  int64 execution_count = 3;
+}
+
 message OptionalInt64 {
   int64 value = 1;
 }

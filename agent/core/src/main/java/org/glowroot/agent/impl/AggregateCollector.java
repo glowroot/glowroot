@@ -79,14 +79,14 @@ class AggregateCollector {
     private @MonotonicNonNull MutableProfile mainThreadProfile;
     private @MonotonicNonNull MutableProfile auxThreadProfile;
 
-    private final int maxAggregateQueriesPerType;
-    private final int maxAggregateServiceCallsPerType;
+    private final int maxQueryAggregates;
+    private final int maxServiceCallAggregates;
 
-    AggregateCollector(@Nullable String transactionName, int maxAggregateQueriesPerType,
-            int maxAggregateServiceCallsPerType) {
+    AggregateCollector(@Nullable String transactionName, int maxQueryAggregates,
+            int maxServiceCallAggregates) {
         this.transactionName = transactionName;
-        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
-        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
+        this.maxQueryAggregates = maxQueryAggregates;
+        this.maxServiceCallAggregates = maxServiceCallAggregates;
     }
 
     void add(Transaction transaction) {
@@ -132,22 +132,21 @@ class AggregateCollector {
 
     QueryCollector getQueryCollector() {
         if (queries == null) {
-            int queriesHardLimitMultiplierWhileBuilding = transactionName == null
+            int hardLimitMultiplierWhileBuilding = transactionName == null
                     ? AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER
                     : AdvancedConfig.TRANSACTION_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
-            queries = new QueryCollector(maxAggregateQueriesPerType,
-                    queriesHardLimitMultiplierWhileBuilding);
+            queries = new QueryCollector(maxQueryAggregates, hardLimitMultiplierWhileBuilding);
         }
         return queries;
     }
 
     ServiceCallCollector getServiceCallCollector() {
         if (serviceCalls == null) {
-            int serviceCallsHardLimitMultiplierWhileBuilding = transactionName == null
+            int hardLimitMultiplierWhileBuilding = transactionName == null
                     ? AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER
                     : AdvancedConfig.TRANSACTION_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER;
-            serviceCalls = new ServiceCallCollector(maxAggregateServiceCallsPerType,
-                    serviceCallsHardLimitMultiplierWhileBuilding);
+            serviceCalls = new ServiceCallCollector(maxServiceCallAggregates,
+                    hardLimitMultiplierWhileBuilding);
         }
         return serviceCalls;
     }
@@ -170,10 +169,10 @@ class AggregateCollector {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         if (queries != null) {
-            builder.addAllQueriesByType(queries.toAggregateProto(sharedQueryTextCollector));
+            builder.addAllQuery(queries.toAggregateProto(sharedQueryTextCollector));
         }
         if (serviceCalls != null) {
-            builder.addAllServiceCallsByType(serviceCalls.toAggregateProto());
+            builder.addAllServiceCall(serviceCalls.toAggregateProto());
         }
         if (mainThreadProfile != null) {
             builder.setMainThreadProfile(mainThreadProfile.toProto());

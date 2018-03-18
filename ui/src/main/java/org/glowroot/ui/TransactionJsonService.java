@@ -213,7 +213,7 @@ class TransactionJsonService {
     String getQueries(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request, DataKind.QUERY);
-        Map<String, List<MutableQuery>> queries =
+        List<MutableQuery> queries =
                 transactionCommonService.getMergedQueries(agentRollupId, query);
         if (queries.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
             // fall back to largest aggregates in case expiration settings have recently changed
@@ -221,17 +221,15 @@ class TransactionJsonService {
             queries = transactionCommonService.getMergedQueries(agentRollupId, query);
         }
         List<Query> queryList = Lists.newArrayList();
-        for (Map.Entry<String, List<MutableQuery>> entry : queries.entrySet()) {
-            for (MutableQuery loopQuery : entry.getValue()) {
-                queryList.add(ImmutableQuery.builder()
-                        .queryType(entry.getKey())
-                        .truncatedQueryText(loopQuery.getTruncatedText())
-                        .fullQueryTextSha1(loopQuery.getFullTextSha1())
-                        .totalDurationNanos(loopQuery.getTotalDurationNanos())
-                        .executionCount(loopQuery.getExecutionCount())
-                        .totalRows(loopQuery.hasTotalRows() ? loopQuery.getTotalRows() : null)
-                        .build());
-            }
+        for (MutableQuery loopQuery : queries) {
+            queryList.add(ImmutableQuery.builder()
+                    .queryType(loopQuery.getType())
+                    .truncatedQueryText(loopQuery.getTruncatedText())
+                    .fullQueryTextSha1(loopQuery.getFullTextSha1())
+                    .totalDurationNanos(loopQuery.getTotalDurationNanos())
+                    .executionCount(loopQuery.getExecutionCount())
+                    .totalRows(loopQuery.hasTotalRows() ? loopQuery.getTotalRows() : null)
+                    .build());
         }
         if (queryList.isEmpty() && aggregateRepository.shouldHaveQueries(agentRollupId, query)) {
             return "{\"overwritten\":true}";
@@ -271,7 +269,7 @@ class TransactionJsonService {
     String getServiceCalls(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request, DataKind.SERVICE_CALL);
-        Map<String, List<MutableServiceCall>> serviceCalls =
+        List<MutableServiceCall> serviceCalls =
                 transactionCommonService.getMergedServiceCalls(agentRollupId, query);
         if (serviceCalls.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
             // fall back to largest aggregates in case expiration settings have recently changed
@@ -279,15 +277,13 @@ class TransactionJsonService {
             serviceCalls = transactionCommonService.getMergedServiceCalls(agentRollupId, query);
         }
         List<ServiceCall> serviceCallList = Lists.newArrayList();
-        for (Map.Entry<String, List<MutableServiceCall>> entry : serviceCalls.entrySet()) {
-            for (MutableServiceCall loopServiceCall : entry.getValue()) {
-                serviceCallList.add(ImmutableServiceCall.builder()
-                        .type(entry.getKey())
-                        .text(loopServiceCall.getText())
-                        .totalDurationNanos(loopServiceCall.getTotalDurationNanos())
-                        .executionCount(loopServiceCall.getExecutionCount())
-                        .build());
-            }
+        for (MutableServiceCall loopServiceCall : serviceCalls) {
+            serviceCallList.add(ImmutableServiceCall.builder()
+                    .type(loopServiceCall.getType())
+                    .text(loopServiceCall.getText())
+                    .totalDurationNanos(loopServiceCall.getTotalDurationNanos())
+                    .executionCount(loopServiceCall.getExecutionCount())
+                    .build());
         }
         Collections.sort(serviceCallList, new Comparator<ServiceCall>() {
             @Override

@@ -161,8 +161,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return agentConfig.getUserRecordingConfig();
     }
 
-    // central supports advanced config on rollups
-    // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
+    // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     @Override
     public AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);

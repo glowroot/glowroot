@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,9 +83,9 @@ public class Aggregator {
                 .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Aggregate-Flushing"));
         activeIntervalCollector =
                 new AggregateIntervalCollector(clock.currentTimeMillis(), aggregateIntervalMillis,
-                        configService.getAdvancedConfig().maxAggregateTransactionsPerType(),
-                        configService.getAdvancedConfig().maxAggregateQueriesPerType(),
-                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
+                        configService.getAdvancedConfig().maxTransactionAggregates(),
+                        configService.getAdvancedConfig().maxQueryAggregates(),
+                        configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
         processingExecutor.execute(new TransactionProcessor());
     }
 
@@ -202,9 +202,9 @@ public class Aggregator {
                 flushActiveIntervalCollector();
                 activeIntervalCollector = new AggregateIntervalCollector(
                         pendingTransaction.captureTime, aggregateIntervalMillis,
-                        configService.getAdvancedConfig().maxAggregateTransactionsPerType(),
-                        configService.getAdvancedConfig().maxAggregateQueriesPerType(),
-                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
+                        configService.getAdvancedConfig().maxTransactionAggregates(),
+                        configService.getAdvancedConfig().maxQueryAggregates(),
+                        configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
             }
             activeIntervalCollector.add(transaction);
         }
@@ -228,9 +228,9 @@ public class Aggregator {
                 flushActiveIntervalCollector();
                 activeIntervalCollector = new AggregateIntervalCollector(currentTime,
                         aggregateIntervalMillis,
-                        configService.getAdvancedConfig().maxAggregateTransactionsPerType(),
-                        configService.getAdvancedConfig().maxAggregateQueriesPerType(),
-                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
+                        configService.getAdvancedConfig().maxTransactionAggregates(),
+                        configService.getAdvancedConfig().maxQueryAggregates(),
+                        configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
             }
         }
 

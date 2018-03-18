@@ -29,6 +29,7 @@ public class MutableQuery {
         }
     };
 
+    private final String type;
     private final String truncatedText;
     private final @Nullable String fullTextSha1;
 
@@ -38,9 +39,14 @@ public class MutableQuery {
     private boolean hasTotalRows;
     private long totalRows;
 
-    MutableQuery(String truncatedText, @Nullable String fullTextSha1) {
+    MutableQuery(String type, String truncatedText, @Nullable String fullTextSha1) {
+        this.type = type;
         this.truncatedText = truncatedText;
         this.fullTextSha1 = fullTextSha1;
+    }
+
+    public String getType() {
+        return type;
     }
 
     public String getTruncatedText() {

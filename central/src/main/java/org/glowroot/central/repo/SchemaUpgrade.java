@@ -844,10 +844,10 @@ public class SchemaUpgrade {
                         .setDefaultTransactionType(ConfigDefaults.UI_DEFAULT_TRANSACTION_TYPE)
                         .addAllDefaultPercentile(ConfigDefaults.UI_DEFAULT_PERCENTILES))
                 .setAdvancedConfig(AdvancedConfig.newBuilder()
-                        .setMaxAggregateQueriesPerType(OptionalInt32.newBuilder()
-                                .setValue(ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE))
-                        .setMaxAggregateServiceCallsPerType(OptionalInt32.newBuilder().setValue(
-                                ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE)))
+                        .setMaxQueryAggregates(OptionalInt32.newBuilder()
+                                .setValue(ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES))
+                        .setMaxServiceCallAggregates(OptionalInt32.newBuilder()
+                                .setValue(ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES)))
                 .build();
 
         PreparedStatement readPS =
@@ -881,10 +881,9 @@ public class SchemaUpgrade {
                     AgentConfig updatedAgentConfig = AgentConfig.newBuilder()
                             .setUiConfig(agentConfig.getUiConfig())
                             .setAdvancedConfig(AdvancedConfig.newBuilder()
-                                    .setMaxAggregateQueriesPerType(
-                                            advancedConfig.getMaxAggregateQueriesPerType())
-                                    .setMaxAggregateServiceCallsPerType(
-                                            advancedConfig.getMaxAggregateServiceCallsPerType()))
+                                    .setMaxQueryAggregates(advancedConfig.getMaxQueryAggregates())
+                                    .setMaxServiceCallAggregates(
+                                            advancedConfig.getMaxServiceCallAggregates()))
                             .build();
                     boundStatement.setBytes(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
                 } catch (InvalidProtocolBufferException e) {

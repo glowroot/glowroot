@@ -30,12 +30,18 @@ public class MutableServiceCall {
                 }
             };
 
+    private final String type;
     private final String text;
     private double totalDurationNanos;
     private long executionCount;
 
-    public MutableServiceCall(String text) {
+    public MutableServiceCall(String type, String text) {
+        this.type = type;
         this.text = text;
+    }
+
+    public String getType() {
+        return type;
     }
 
     public String getText() {
@@ -65,6 +71,7 @@ public class MutableServiceCall {
 
     Aggregate.ServiceCall toProto() {
         return Aggregate.ServiceCall.newBuilder()
+                .setType(type)
                 .setText(text)
                 .setTotalDurationNanos(totalDurationNanos)
                 .setExecutionCount(executionCount)

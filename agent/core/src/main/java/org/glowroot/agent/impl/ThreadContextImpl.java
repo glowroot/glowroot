@@ -105,11 +105,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private @MonotonicNonNull QueryDataMap serviceCallsForFirstType;
     private @MonotonicNonNull Map<String, QueryDataMap> allServiceCallTypesMap;
 
-    private int aggregateQueryLimitCounter;
-    private int aggregateServiceCallLimitCounter;
+    private int queryAggregateCounter;
+    private int serviceCallAggregateCounter;
 
-    private final int maxAggregateQueriesPerType;
-    private final int maxAggregateServiceCallsPerType;
+    private final int maxQueryAggregates;
+    private final int maxServiceCallAggregates;
 
     private final long threadId;
 
@@ -137,7 +137,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, MessageSupplier messageSupplier,
             TimerName rootTimerName, long startTick, boolean captureThreadStats,
-            int maxAggregateQueriesPerType, int maxAggregateServiceCallsPerType,
+            int maxQueryAggregates, int maxServiceCallAggregates,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             boolean limitExceededAuxThreadContext, Ticker ticker,
             ThreadContextThreadLocal.Holder threadContextHolder,
@@ -152,8 +152,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         threadId = Thread.currentThread().getId();
         threadStatsComponent =
                 captureThreadStats ? new ThreadStatsComponent(threadAllocatedBytes) : null;
-        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
-        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
+        this.maxQueryAggregates = maxQueryAggregates;
+        this.maxServiceCallAggregates = maxServiceCallAggregates;
         this.limitExceededAuxThreadContext = limitExceededAuxThreadContext;
         this.ticker = ticker;
         this.threadContextHolder = threadContextHolder;
@@ -293,7 +293,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private QueryData createQueryData(QueryDataMap queriesForCurrentType, String queryType,
             String queryText, boolean bypassLimit) {
-        if (allowAnotherAggregateQuery(bypassLimit)) {
+        if (allowAnotherQueryAggregate(bypassLimit)) {
             return createQueryData(queriesForCurrentType, queryType, queryText);
         } else {
             QueryData limitExceededBucket = queriesForCurrentType.get(LIMIT_EXCEEDED_BUCKET);
@@ -317,7 +317,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private @Nullable QueryData getOrCreateServiceCallDataIfPossible(String serviceCallType,
             String serviceCallText) {
         if (headServiceCallData == null) {
-            if (!allowAnotherAggregateServiceCall()) {
+            if (!allowAnotherServiceCallAggregate()) {
                 // this only occurs if maxAggregateServiceCallsPerType is set to 0
                 return null;
             }
@@ -333,7 +333,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         QueryData serviceCallData = serviceCallsForCurrentType.get(serviceCallText);
         if (serviceCallData == null) {
-            if (allowAnotherAggregateServiceCall()) {
+            if (allowAnotherServiceCallAggregate()) {
                 serviceCallData = createServiceCallData(serviceCallType, serviceCallText,
                         serviceCallsForCurrentType);
             } else {
@@ -360,8 +360,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     // this method has side effect of incrementing counter
-    private boolean allowAnotherAggregateQuery(boolean bypassLimit) {
-        if (aggregateQueryLimitCounter++ < maxAggregateQueriesPerType
+    private boolean allowAnotherQueryAggregate(boolean bypassLimit) {
+        if (queryAggregateCounter++ < maxQueryAggregates
                 * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER) {
             return true;
         }
@@ -369,8 +369,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     // this method has side effect of incrementing counter
-    private boolean allowAnotherAggregateServiceCall() {
-        return aggregateServiceCallLimitCounter++ < maxAggregateServiceCallsPerType
+    private boolean allowAnotherServiceCallAggregate() {
+        return serviceCallAggregateCounter++ < maxServiceCallAggregates
                 * AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER;
     }
 

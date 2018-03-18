@@ -54,6 +54,7 @@ class ConfigFile {
             rootObjectNode = ConfigFileUtil.getRootObjectNode(file);
             upgradeAlertsIfNeeded(rootObjectNode);
             upgradeUiIfNeeded(rootObjectNode);
+            upgradeAdvancedIfNeeded(rootObjectNode);
         } else {
             rootObjectNode = mapper.createObjectNode();
         }
@@ -178,6 +179,29 @@ class ConfigFile {
             // upgrade from 0.9.28 to 0.10.0
             uiObjectNode.set("defaultPercentiles",
                     uiObjectNode.remove("defaultDisplayedPercentiles"));
+        }
+    }
+
+    private static void upgradeAdvancedIfNeeded(ObjectNode configRootObjectNode) {
+        JsonNode advancedNode = configRootObjectNode.get("advanced");
+        if (advancedNode == null || !advancedNode.isObject()) {
+            return;
+        }
+        ObjectNode advancedObjectNode = (ObjectNode) advancedNode;
+        if (advancedObjectNode.has("maxAggregateTransactionsPerType")) {
+            // upgrade from 0.10.5 to 0.10.6
+            advancedObjectNode.set("maxTransactionAggregates",
+                    advancedObjectNode.remove("maxAggregateTransactionsPerType"));
+        }
+        if (advancedObjectNode.has("maxAggregateQueriesPerType")) {
+            // upgrade from 0.10.5 to 0.10.6
+            advancedObjectNode.set("maxQueryAggregates",
+                    advancedObjectNode.remove("maxAggregateQueriesPerType"));
+        }
+        if (advancedObjectNode.has("maxAggregateServiceCallsPerType")) {
+            // upgrade from 0.10.5 to 0.10.6
+            advancedObjectNode.set("maxServiceCallAggregates",
+                    advancedObjectNode.remove("maxAggregateServiceCallsPerType"));
         }
     }
 }

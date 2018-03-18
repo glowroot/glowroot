@@ -136,8 +136,7 @@ class ConfigJsonService {
         return mapper.writeValueAsString(UserRecordingConfigDto.create(config));
     }
 
-    // central supports advanced config on rollups
-    // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
+    // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     @GET(path = "/backend/config/advanced", permission = "agent:config:view:advanced")
     String getAdvancedConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         AdvancedConfig config = configRepository.getAdvancedConfig(agentRollupId);
@@ -220,8 +219,7 @@ class ConfigJsonService {
         return getUserRecordingConfig(agentId);
     }
 
-    // central supports advanced config on rollups
-    // (maxAggregateQueriesPerType and maxAggregateServiceCallsPerType)
+    // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     @POST(path = "/backend/config/advanced", permission = "agent:config:edit:advanced")
     String updateAdvancedConfig(@BindAgentRollupId String agentRollupId,
             @BindRequest AdvancedConfigDto configDto) throws Exception {
@@ -533,9 +531,9 @@ class ConfigJsonService {
 
         abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
-        abstract int maxAggregateTransactionsPerType();
-        abstract int maxAggregateQueriesPerType();
-        abstract int maxAggregateServiceCallsPerType();
+        abstract int maxTransactionAggregates();
+        abstract int maxQueryAggregates();
+        abstract int maxServiceCallAggregates();
         abstract int maxTraceEntriesPerTransaction();
         abstract int maxStackTraceSamplesPerTransaction();
         abstract int mbeanGaugeNotFoundDelaySeconds();
@@ -546,9 +544,9 @@ class ConfigJsonService {
                     .setWeavingTimer(weavingTimer())
                     .setImmediatePartialStoreThresholdSeconds(
                             of(immediatePartialStoreThresholdSeconds()))
-                    .setMaxAggregateTransactionsPerType(of(maxAggregateTransactionsPerType()))
-                    .setMaxAggregateQueriesPerType(of(maxAggregateQueriesPerType()))
-                    .setMaxAggregateServiceCallsPerType(of(maxAggregateServiceCallsPerType()))
+                    .setMaxTransactionAggregates(of(maxTransactionAggregates()))
+                    .setMaxQueryAggregates(of(maxQueryAggregates()))
+                    .setMaxServiceCallAggregates(of(maxServiceCallAggregates()))
                     .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
                     .setMaxStackTraceSamplesPerTransaction(of(maxStackTraceSamplesPerTransaction()))
                     .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
@@ -560,12 +558,9 @@ class ConfigJsonService {
                     .weavingTimer(config.getWeavingTimer())
                     .immediatePartialStoreThresholdSeconds(
                             config.getImmediatePartialStoreThresholdSeconds().getValue())
-                    .maxAggregateTransactionsPerType(
-                            config.getMaxAggregateTransactionsPerType().getValue())
-                    .maxAggregateQueriesPerType(
-                            config.getMaxAggregateQueriesPerType().getValue())
-                    .maxAggregateServiceCallsPerType(
-                            config.getMaxAggregateServiceCallsPerType().getValue())
+                    .maxTransactionAggregates(config.getMaxTransactionAggregates().getValue())
+                    .maxQueryAggregates(config.getMaxQueryAggregates().getValue())
+                    .maxServiceCallAggregates(config.getMaxServiceCallAggregates().getValue())
                     .maxTraceEntriesPerTransaction(
                             config.getMaxTraceEntriesPerTransaction().getValue())
                     .maxStackTraceSamplesPerTransaction(

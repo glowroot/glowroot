@@ -16,7 +16,6 @@
 package org.glowroot.ui;
 
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -305,10 +304,12 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    Map<String, List<MutableQuery>> getMergedQueries(String agentRollupId,
-            TransactionQuery query) throws Exception {
-        int maxAggregateQueriesPerType = getMaxAggregateQueriesPerType(agentRollupId);
-        QueryCollector queryCollector = new QueryCollector(maxAggregateQueriesPerType);
+    List<MutableQuery> getMergedQueries(String agentRollupId, TransactionQuery query)
+            throws Exception {
+        int maxQueryAggregatesPerTransactionAggregate =
+                getMaxQueryAggregatesPerTransactionAggregate(agentRollupId);
+        QueryCollector queryCollector =
+                new QueryCollector(maxQueryAggregatesPerTransactionAggregate);
         long revisedFrom = query.from();
         long revisedTo =
                 liveAggregateRepository.mergeInQueries(agentRollupId, query, queryCollector);
@@ -342,13 +343,12 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    Map<String, List<MutableServiceCall>> getMergedServiceCalls(String agentRollupId,
-            TransactionQuery query)
+    List<MutableServiceCall> getMergedServiceCalls(String agentRollupId, TransactionQuery query)
             throws Exception {
-        int maxAggregateServiceCallsPerType =
-                getMaxAggregateServiceCallsPerType(agentRollupId);
+        int maxServiceCallAggregatesPerTransactionAggregate =
+                getMaxServiceCallAggregatesPerTransactionAggregate(agentRollupId);
         ServiceCallCollector serviceCallCollector =
-                new ServiceCallCollector(maxAggregateServiceCallsPerType);
+                new ServiceCallCollector(maxServiceCallAggregatesPerTransactionAggregate);
         long revisedFrom = query.from();
         long revisedTo = liveAggregateRepository.mergeInServiceCalls(agentRollupId, query,
                 serviceCallCollector);
@@ -561,31 +561,33 @@ class TransactionCommonService {
         return collector.getProfile();
     }
 
-    private int getMaxAggregateQueriesPerType(String agentRollupId) throws Exception {
+    private int getMaxQueryAggregatesPerTransactionAggregate(String agentRollupId)
+            throws Exception {
         AdvancedConfig advancedConfig;
         try {
             advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
         } catch (AgentConfigNotFoundException e) {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES;
         }
-        if (advancedConfig.hasMaxAggregateQueriesPerType()) {
-            return advancedConfig.getMaxAggregateQueriesPerType().getValue();
+        if (advancedConfig.hasMaxQueryAggregates()) {
+            return advancedConfig.getMaxQueryAggregates().getValue();
         } else {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_QUERIES_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES;
         }
     }
 
-    private int getMaxAggregateServiceCallsPerType(String agentRollupId) throws Exception {
+    private int getMaxServiceCallAggregatesPerTransactionAggregate(String agentRollupId)
+            throws Exception {
         AdvancedConfig advancedConfig;
         try {
             advancedConfig = configRepository.getAdvancedConfig(agentRollupId);
         } catch (AgentConfigNotFoundException e) {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES;
         }
-        if (advancedConfig.hasMaxAggregateServiceCallsPerType()) {
-            return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
+        if (advancedConfig.hasMaxServiceCallAggregates()) {
+            return advancedConfig.getMaxServiceCallAggregates().getValue();
         } else {
-            return ConfigDefaults.ADVANCED_MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+            return ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES;
         }
     }
 

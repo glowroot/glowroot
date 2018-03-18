@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.protobuf.AbstractMessage;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
@@ -90,9 +91,9 @@ class AggregateInsert implements JdbcUpdate {
         asyncTransactions = aggregate.getAsyncTransactions();
 
         queriesCappedId = writeQueries(cappedDatabase,
-                convertToStored(aggregate.getQueriesByTypeList(), truncatedQueryTexts));
+                toStored(aggregate.getQueryList(), truncatedQueryTexts));
         serviceCallsCappedId =
-                writeServiceCalls(cappedDatabase, aggregate.getServiceCallsByTypeList());
+                writeServiceCalls(cappedDatabase, toStored(aggregate.getServiceCallList()));
         if (aggregate.hasMainThreadProfile()) {
             mainThreadProfileCappedId =
                     writeProfile(cappedDatabase, aggregate.getMainThreadProfile());
@@ -149,9 +150,9 @@ class AggregateInsert implements JdbcUpdate {
         errorCount = aggregate.getErrorCount();
         asyncTransactions = aggregate.isAsyncTransactions();
 
-        queriesCappedId = writeQueries(cappedDatabase, toProto(aggregate.getQueries()));
+        queriesCappedId = writeQueries(cappedDatabase, toStored(aggregate.getQueries()));
         serviceCallsCappedId =
-                writeServiceCalls(cappedDatabase, toProto(aggregate.getServiceCalls()));
+                writeServiceCalls(cappedDatabase, toStored(aggregate.getServiceCalls()));
         mainThreadProfileCappedId = writeProfile(cappedDatabase, aggregate.getMainThreadProfile());
         auxThreadProfileCappedId = writeProfile(cappedDatabase, aggregate.getAuxThreadProfile());
         mainThreadRootTimers = toByteArray(aggregate.getMainThreadRootTimersProto());
@@ -243,77 +244,116 @@ class AggregateInsert implements JdbcUpdate {
         preparedStatement.setBytes(i++, durationNanosHistogramBytes);
     }
 
-    private static List<Stored.QueriesByType> convertToStored(List<Aggregate.QueriesByType> queries,
+    private static List<Stored.QueriesByType> toStored(List<Aggregate.Query> aggregateQueries,
             List<TruncatedQueryText> truncatedQueryTexts) {
-        List<Stored.QueriesByType> storedQueries = Lists.newArrayList();
-        for (Aggregate.QueriesByType loopQueriesByType : queries) {
-            Stored.QueriesByType.Builder storedQueryByType = Stored.QueriesByType.newBuilder()
-                    .setType(loopQueriesByType.getType());
-            for (Aggregate.Query loopQuery : loopQueriesByType.getQueryList()) {
-                TruncatedQueryText truncatedQueryText =
-                        truncatedQueryTexts.get(loopQuery.getSharedQueryTextIndex());
-                Stored.Query.Builder storedQuery = Stored.Query.newBuilder()
-                        .setTruncatedText(truncatedQueryText.truncatedText())
-                        .setFullTextSha1(Strings.nullToEmpty(truncatedQueryText.fullTextSha1()))
-                        .setTotalDurationNanos(loopQuery.getTotalDurationNanos())
-                        .setExecutionCount(loopQuery.getExecutionCount());
-                if (loopQuery.hasTotalRows()) {
-                    storedQuery.setTotalRows(Stored.OptionalInt64.newBuilder()
-                            .setValue(loopQuery.getTotalRows().getValue())
-                            .build());
-                }
-                storedQueryByType.addQuery(storedQuery.build());
+        Map<String, Stored.QueriesByType.Builder> builders = Maps.newHashMap();
+        for (Aggregate.Query aggregateQuery : aggregateQueries) {
+            TruncatedQueryText truncatedQueryText =
+                    truncatedQueryTexts.get(aggregateQuery.getSharedQueryTextIndex());
+            Stored.Query.Builder query = Stored.Query.newBuilder()
+                    .setTruncatedText(truncatedQueryText.truncatedText())
+                    .setFullTextSha1(Strings.nullToEmpty(truncatedQueryText.fullTextSha1()))
+                    .setTotalDurationNanos(aggregateQuery.getTotalDurationNanos())
+                    .setExecutionCount(aggregateQuery.getExecutionCount());
+            if (aggregateQuery.hasTotalRows()) {
+                query.setTotalRows(Stored.OptionalInt64.newBuilder()
+                        .setValue(aggregateQuery.getTotalRows().getValue())
+                        .build());
             }
-            storedQueries.add(storedQueryByType.build());
-        }
-        return storedQueries;
-    }
-
-    private static List<Stored.QueriesByType> toProto(@Nullable QueryCollector collector) {
-        if (collector == null) {
-            return ImmutableList.of();
+            String queryType = aggregateQuery.getType();
+            Stored.QueriesByType.Builder queriesByType = builders.get(queryType);
+            if (queriesByType == null) {
+                queriesByType = Stored.QueriesByType.newBuilder().setType(queryType);
+                builders.put(queryType, queriesByType);
+            }
+            queriesByType.addQuery(query.build());
         }
         List<Stored.QueriesByType> queries = Lists.newArrayList();
-        for (Map.Entry<String, List<MutableQuery>> entry : collector.getSortedAndTruncatedQueries()
-                .entrySet()) {
-            Stored.QueriesByType.Builder queriesByType = Stored.QueriesByType.newBuilder()
-                    .setType(entry.getKey());
-            for (MutableQuery mutableQuery : entry.getValue()) {
-                Stored.Query.Builder query = Stored.Query.newBuilder()
-                        .setTruncatedText(mutableQuery.getTruncatedText())
-                        .setFullTextSha1(Strings.nullToEmpty(mutableQuery.getFullTextSha1()))
-                        .setTotalDurationNanos(mutableQuery.getTotalDurationNanos())
-                        .setExecutionCount(mutableQuery.getExecutionCount());
-                if (mutableQuery.hasTotalRows()) {
-                    query.setTotalRows(Stored.OptionalInt64.newBuilder()
-                            .setValue(mutableQuery.getTotalRows())
-                            .build());
-                }
-                queriesByType.addQuery(query.build());
-            }
-            queries.add(queriesByType.build());
+        for (Stored.QueriesByType.Builder builder : builders.values()) {
+            queries.add(builder.build());
         }
         return queries;
     }
 
-    private static List<Aggregate.ServiceCallsByType> toProto(
+    private static List<Stored.QueriesByType> toStored(@Nullable QueryCollector collector) {
+        if (collector == null) {
+            return ImmutableList.of();
+        }
+        Map<String, Stored.QueriesByType.Builder> builders = Maps.newHashMap();
+        for (MutableQuery mutableQuery : collector.getSortedAndTruncatedQueries()) {
+            Stored.Query.Builder query = Stored.Query.newBuilder()
+                    .setTruncatedText(mutableQuery.getTruncatedText())
+                    .setFullTextSha1(Strings.nullToEmpty(mutableQuery.getFullTextSha1()))
+                    .setTotalDurationNanos(mutableQuery.getTotalDurationNanos())
+                    .setExecutionCount(mutableQuery.getExecutionCount());
+            if (mutableQuery.hasTotalRows()) {
+                query.setTotalRows(Stored.OptionalInt64.newBuilder()
+                        .setValue(mutableQuery.getTotalRows())
+                        .build());
+            }
+            String queryType = mutableQuery.getType();
+            Stored.QueriesByType.Builder queriesByType = builders.get(queryType);
+            if (queriesByType == null) {
+                queriesByType = Stored.QueriesByType.newBuilder().setType(queryType);
+                builders.put(queryType, queriesByType);
+            }
+            queriesByType.addQuery(query.build());
+        }
+        List<Stored.QueriesByType> queries = Lists.newArrayList();
+        for (Stored.QueriesByType.Builder builder : builders.values()) {
+            queries.add(builder.build());
+        }
+        return queries;
+    }
+
+    private static List<Stored.ServiceCallsByType> toStored(
+            List<Aggregate.ServiceCall> aggregateServiceCalls) {
+        Map<String, Stored.ServiceCallsByType.Builder> builders = Maps.newHashMap();
+        for (Aggregate.ServiceCall aggregateServiceCall : aggregateServiceCalls) {
+            Stored.ServiceCall.Builder serviceCall = Stored.ServiceCall.newBuilder()
+                    .setText(aggregateServiceCall.getText())
+                    .setTotalDurationNanos(aggregateServiceCall.getTotalDurationNanos())
+                    .setExecutionCount(aggregateServiceCall.getExecutionCount());
+            String serviceCallType = aggregateServiceCall.getType();
+            Stored.ServiceCallsByType.Builder serviceCallsByType = builders.get(serviceCallType);
+            if (serviceCallsByType == null) {
+                serviceCallsByType =
+                        Stored.ServiceCallsByType.newBuilder().setType(serviceCallType);
+                builders.put(serviceCallType, serviceCallsByType);
+            }
+            serviceCallsByType.addServiceCall(serviceCall.build());
+        }
+        List<Stored.ServiceCallsByType> serviceCalls = Lists.newArrayList();
+        for (Stored.ServiceCallsByType.Builder builder : builders.values()) {
+            serviceCalls.add(builder.build());
+        }
+        return serviceCalls;
+    }
+
+    private static List<Stored.ServiceCallsByType> toStored(
             @Nullable ServiceCallCollector collector) {
         if (collector == null) {
             return ImmutableList.of();
         }
-        List<Aggregate.ServiceCallsByType> serviceCalls = Lists.newArrayList();
-        for (Map.Entry<String, List<MutableServiceCall>> entry : collector
-                .getSortedAndTruncatedServiceCalls().entrySet()) {
-            Aggregate.ServiceCallsByType.Builder serviceCallsByType =
-                    Aggregate.ServiceCallsByType.newBuilder().setType(entry.getKey());
-            for (MutableServiceCall mutableServiceCall : entry.getValue()) {
-                Aggregate.ServiceCall.Builder serviceCall = Aggregate.ServiceCall.newBuilder()
-                        .setText(mutableServiceCall.getText())
-                        .setTotalDurationNanos(mutableServiceCall.getTotalDurationNanos())
-                        .setExecutionCount(mutableServiceCall.getExecutionCount());
-                serviceCallsByType.addServiceCall(serviceCall.build());
+        Map<String, Stored.ServiceCallsByType.Builder> builders = Maps.newHashMap();
+        for (MutableServiceCall mutableServiceCall : collector
+                .getSortedAndTruncatedServiceCalls()) {
+            Stored.ServiceCall.Builder serviceCall = Stored.ServiceCall.newBuilder()
+                    .setText(mutableServiceCall.getText())
+                    .setTotalDurationNanos(mutableServiceCall.getTotalDurationNanos())
+                    .setExecutionCount(mutableServiceCall.getExecutionCount());
+            String serviceCallType = mutableServiceCall.getType();
+            Stored.ServiceCallsByType.Builder serviceCallsByType = builders.get(serviceCallType);
+            if (serviceCallsByType == null) {
+                serviceCallsByType =
+                        Stored.ServiceCallsByType.newBuilder().setType(serviceCallType);
+                builders.put(serviceCallType, serviceCallsByType);
             }
-            serviceCalls.add(serviceCallsByType.build());
+            serviceCallsByType.addServiceCall(serviceCall.build());
+        }
+        List<Stored.ServiceCallsByType> serviceCalls = Lists.newArrayList();
+        for (Stored.ServiceCallsByType.Builder builder : builders.values()) {
+            serviceCalls.add(builder.build());
         }
         return serviceCalls;
     }
@@ -327,7 +367,7 @@ class AggregateInsert implements JdbcUpdate {
     }
 
     private static @Nullable Long writeServiceCalls(CappedDatabase cappedDatabase,
-            List<Aggregate.ServiceCallsByType> serviceCalls) throws IOException {
+            List<Stored.ServiceCallsByType> serviceCalls) throws IOException {
         if (serviceCalls.isEmpty()) {
             return null;
         }

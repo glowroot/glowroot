@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,8 +205,9 @@ class ConfigServiceImpl implements ConfigService {
         return AdvancedConfig.newBuilder()
                 .setWeavingTimer(false)
                 .setImmediatePartialStoreThresholdSeconds(of(60))
-                .setMaxAggregateTransactionsPerType(of(500))
-                .setMaxAggregateQueriesPerType(of(500))
+                .setMaxTransactionAggregates(of(500))
+                .setMaxQueryAggregates(of(500))
+                .setMaxServiceCallAggregates(of(500))
                 .setMaxTraceEntriesPerTransaction(of(2000))
                 .setMaxStackTraceSamplesPerTransaction(of(10000))
                 .setMbeanGaugeNotFoundDelaySeconds(of(60))
