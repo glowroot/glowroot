@@ -1,0 +1,3 @@
+**
+!docker-entrypoint.sh
+!target/glowroot-central-*-dist.zip
