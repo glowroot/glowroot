@@ -2592,12 +2592,12 @@ public class SchemaUpgrade {
             sb.append("# the certificate and private key to be used must be placed in the same"
                     + " directory as this properties\n");
             sb.append("# file, with filenames \"ui-cert.pem\" and \"ui-key.pem\", where ui-cert.pem"
-                    + " is an X.509 certificate\n");
-            sb.append("# chain file in PEM format, and ui-key.pem is a PKCS#8 private key file in"
-                    + " PEM format without a\n");
-            sb.append("# passphrase (for example, a self signed certificate can be generated at the"
-                    + " command line meeting\n");
-            sb.append("# the above requirements using:\n");
+                    + " is a PEM encoded X.509\n");
+            sb.append("# certificate chain, and ui-key.pem is a PEM encoded PKCS#8 private key"
+                    + " without a passphrase (for\n");
+            sb.append("# example, a self signed certificate can be generated at the command line"
+                    + " meeting the above\n");
+            sb.append("# requirements using:\n");
             sb.append("# \"openssl req -new -x509 -nodes -days 365 -out ui-cert.pem -keyout"
                     + " ui-key.pem\")\n");
             sb.append("ui.https=");

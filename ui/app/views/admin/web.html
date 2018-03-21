@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2017 the original author or authors.
+  Copyright 2013-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -82,8 +82,8 @@
           </div>
           Serve the user interface over HTTPS. The certificate and private key to be used must be placed in the
           {{certificateDir}} directory with filenames <em>ui-cert.pem</em> and <em>ui-key.pem</em> before enabling
-          HTTPS, where ui-cert.pem is an X.509 certificate chain file in PEM format, and ui-key.pem is a PKCS#8 private
-          key file in PEM format without a passphrase.
+          HTTPS, where ui-cert.pem is a PEM encoded X.509 certificate chain, and ui-key.pem is a PEM encoded PKCS#8
+          private key without a passphrase.
           (for example, a self signed certificate can be generated at the command line meeting the above requirements
           using: <em>openssl req -new -x509 -nodes -days 365 -out ui-cert.pem -keyout ui-key.pem</em>)
         </div>
