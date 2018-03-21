@@ -36,6 +36,7 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.model.MutableProfile;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.AgentRollupRepository;
 import org.glowroot.common2.repo.TraceRepository;
@@ -617,16 +618,24 @@ class TraceCommonService {
         jg.writeStartObject();
         if (threadStats.hasTotalCpuNanos()) {
             jg.writeNumberField("totalCpuNanos", threadStats.getTotalCpuNanos().getValue());
+        } else {
+            jg.writeNumberField("totalCpuNanos", NotAvailableAware.NA);
         }
         if (threadStats.hasTotalBlockedNanos()) {
             jg.writeNumberField("totalBlockedNanos", threadStats.getTotalBlockedNanos().getValue());
+        } else {
+            jg.writeNumberField("totalBlockedNanos", NotAvailableAware.NA);
         }
         if (threadStats.hasTotalWaitedNanos()) {
             jg.writeNumberField("totalWaitedNanos", threadStats.getTotalWaitedNanos().getValue());
+        } else {
+            jg.writeNumberField("totalWaitedNanos", NotAvailableAware.NA);
         }
         if (threadStats.hasTotalAllocatedBytes()) {
             jg.writeNumberField("totalAllocatedBytes",
                     threadStats.getTotalAllocatedBytes().getValue());
+        } else {
+            jg.writeNumberField("totalAllocatedBytes", NotAvailableAware.NA);
         }
         jg.writeEndObject();
     }
