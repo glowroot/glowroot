@@ -105,19 +105,19 @@ public class MutableThreadStats {
             totalBlockedNanos = NotAvailableAware.add(totalBlockedNanos,
                     threadStats.getTotalBlockedNanos().getValue());
         } else {
-            totalCpuNanos = NotAvailableAware.NA;
+            totalBlockedNanos = NotAvailableAware.NA;
         }
         if (threadStats.hasTotalWaitedNanos()) {
             totalWaitedNanos = NotAvailableAware.add(totalWaitedNanos,
                     threadStats.getTotalWaitedNanos().getValue());
         } else {
-            totalCpuNanos = NotAvailableAware.NA;
+            totalWaitedNanos = NotAvailableAware.NA;
         }
         if (threadStats.hasTotalAllocatedBytes()) {
             totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
                     threadStats.getTotalAllocatedBytes().getValue());
         } else {
-            totalCpuNanos = NotAvailableAware.NA;
+            totalAllocatedBytes = NotAvailableAware.NA;
         }
         empty = false;
     }
