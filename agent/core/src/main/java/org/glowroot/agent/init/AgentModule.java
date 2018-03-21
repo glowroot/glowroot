@@ -356,39 +356,57 @@ public class AgentModule {
             // this is only logged with -Dglowroot.debug.preCheckLoadedClasses=true
             startupLogger.warn("PRE-CHECK: one or more important classes were loaded before"
                     + " Glowroot startup: {}", Joiner.on(", ").join(loadedImportantClassNames));
-        } else {
-            List<String> agentArgsBeforeGlowroot = getAgentArgsBeforeGlowroot(glowrootJarFile);
-            if (agentArgsBeforeGlowroot.isEmpty()) {
-                startupLogger.warn("one or more important classes were loaded before Glowroot"
-                        + " instrumentation could be applied to them: {}",
-                        Joiner.on(", ").join(loadedImportantClassNames));
-            } else {
-                startupLogger.warn("one or more important classes were loaded before Glowroot"
-                        + " instrumentation could be applied to them: {}. This likely occurred"
-                        + " because one or more other agents are listed in the JVM args prior to"
-                        + " the Glowroot agent ({}) which gives them a higher loading precedence."
-                        + " Your best chance at happiness is to list the Glowroot agent first.",
-                        Joiner.on(", ").join(loadedImportantClassNames),
-                        Joiner.on(" ").join(agentArgsBeforeGlowroot));
-            }
+            return;
         }
+        List<String> javaAgentArgsBeforeGlowroot = getJavaAgentArgsBeforeGlowroot(glowrootJarFile);
+        if (!javaAgentArgsBeforeGlowroot.isEmpty()) {
+            startupLogger.warn("one or more important classes were loaded before Glowroot"
+                    + " instrumentation could be applied to them: {}. This likely occurred because"
+                    + " one or more other javaagents are listed in the JVM args prior to the"
+                    + " Glowroot agent ({}) which gives them a higher loading precedence.",
+                    Joiner.on(", ").join(loadedImportantClassNames),
+                    Joiner.on(" ").join(javaAgentArgsBeforeGlowroot));
+            return;
+        }
+        List<String> nativeAgentArgs = getNativeAgentArgs();
+        if (!nativeAgentArgs.isEmpty()) {
+            startupLogger.warn("one or more important classes were loaded before Glowroot"
+                    + " instrumentation could be applied to them: {}. This likely occurred because"
+                    + " there are one or more native agents listed in the JVM args ({}), and native"
+                    + " agents have higher loading precedence than java agents.",
+                    Joiner.on(", ").join(loadedImportantClassNames),
+                    Joiner.on(" ").join(nativeAgentArgs));
+            return;
+        }
+        startupLogger.warn("one or more important classes were loaded before Glowroot"
+                + " instrumentation could be applied to them: {}",
+                Joiner.on(", ").join(loadedImportantClassNames));
     }
 
-    private static List<String> getAgentArgsBeforeGlowroot(@Nullable File glowrootJarFile) {
+    private static List<String> getNativeAgentArgs() {
+        List<String> nativeAgentArgs = Lists.newArrayList();
+        for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+            if (jvmArg.startsWith("-agentpath:") || jvmArg.startsWith("-agentlib:")) {
+                nativeAgentArgs.add(jvmArg);
+            }
+        }
+        return nativeAgentArgs;
+    }
+
+    private static List<String> getJavaAgentArgsBeforeGlowroot(@Nullable File glowrootJarFile) {
         if (glowrootJarFile == null) {
             return ImmutableList.of();
         }
-        List<String> agentArgsBeforeGlowroot = Lists.newArrayList();
+        List<String> javaAgentArgsBeforeGlowroot = Lists.newArrayList();
         for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
             if (jvmArg.startsWith("-javaagent:") && jvmArg.endsWith(glowrootJarFile.getName())) {
                 break;
             }
-            if (jvmArg.startsWith("-javaagent:") || jvmArg.startsWith("-agentpath:")
-                    || isIbmHealthcenterArg(jvmArg)) {
-                agentArgsBeforeGlowroot.add(jvmArg);
+            if (jvmArg.startsWith("-javaagent:") || isIbmHealthcenterArg(jvmArg)) {
+                javaAgentArgsBeforeGlowroot.add(jvmArg);
             }
         }
-        return agentArgsBeforeGlowroot;
+        return javaAgentArgsBeforeGlowroot;
     }
 
     private static boolean isIbmHealthcenterArg(String jvmArg) {
