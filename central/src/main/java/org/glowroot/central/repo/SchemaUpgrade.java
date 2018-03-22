@@ -2406,7 +2406,7 @@ public class SchemaUpgrade {
     // they retain)
     private static void waitForSome(LinkedList<ListenableFuture<ResultSet>> futures)
             throws Exception {
-        while (futures.size() > Session.MAX_CONCURRENT_QUERIES) {
+        while (futures.size() > 1000) {
             futures.removeFirst().get();
         }
     }

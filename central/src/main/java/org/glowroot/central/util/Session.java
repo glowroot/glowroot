@@ -38,20 +38,16 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class Session {
 
-    public static final int MAX_CONCURRENT_QUERIES = 4096;
-
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
 
     private final com.datastax.driver.core.Session wrappedSession;
 
-    private final Semaphore overallSemaphore = new Semaphore(MAX_CONCURRENT_QUERIES);
-
-    // limit concurrent async queries per thread (mainly so rollup thread doesn't hog all)
+    // limit concurrent async queries per thread (mainly so the rollup thread doesn't hog them all)
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Semaphore> perThreadSemaphores = new ThreadLocal<Semaphore>() {
         @Override
         protected Semaphore initialValue() {
-            return new Semaphore(MAX_CONCURRENT_QUERIES / 8);
+            return new Semaphore(512);
         }
     };
 
@@ -199,13 +195,11 @@ public class Session {
     private ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle) throws Exception {
         Semaphore perThreadSemaphore = perThreadSemaphores.get();
         perThreadSemaphore.acquire();
-        overallSemaphore.acquire();
         SettableFuture<ResultSet> outerFuture = SettableFuture.create();
         ResultSetFuture innerFuture;
         try {
             innerFuture = doUnderThrottle.execute();
         } catch (Throwable t) {
-            overallSemaphore.release();
             perThreadSemaphore.release();
             Throwables.propagateIfPossible(t, Exception.class);
             throw new Exception(t);
@@ -213,13 +207,11 @@ public class Session {
         Futures.addCallback(innerFuture, new FutureCallback<ResultSet>() {
             @Override
             public void onSuccess(ResultSet result) {
-                overallSemaphore.release();
                 perThreadSemaphore.release();
                 outerFuture.set(result);
             }
             @Override
             public void onFailure(Throwable t) {
-                overallSemaphore.release();
                 perThreadSemaphore.release();
                 outerFuture.setException(t);
             }

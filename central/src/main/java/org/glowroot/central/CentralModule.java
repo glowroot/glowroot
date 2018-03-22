@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.HostDistance;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.QueryOptions;
@@ -501,6 +502,14 @@ public class CentralModule {
             builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
                     .splitToList(cassandraContactPoints));
         }
+        String cassandraUsername = properties.get("glowroot.cassandra.username");
+        if (!Strings.isNullOrEmpty(cassandraUsername)) {
+            builder.cassandraUsername(cassandraUsername);
+        }
+        String cassandraPassword = properties.get("glowroot.cassandra.password");
+        if (!Strings.isNullOrEmpty(cassandraPassword)) {
+            builder.cassandraPassword(cassandraPassword);
+        }
         String cassandraKeyspace = properties.get("glowroot.cassandra.keyspace");
         if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
             builder.cassandraKeyspace(cassandraKeyspace);
@@ -519,13 +528,19 @@ public class CentralModule {
             }
             builder.cassandraSymmetricEncryptionKey(cassandraSymmetricEncryptionKey);
         }
-        String cassandraUsername = properties.get("glowroot.cassandra.username");
-        if (!Strings.isNullOrEmpty(cassandraUsername)) {
-            builder.cassandraUsername(cassandraUsername);
+        String cassandraPoolMaxRequestsPerConnection =
+                properties.get("glowroot.cassandra.pool.maxRequestsPerConnection");
+        if (!Strings.isNullOrEmpty(cassandraPoolMaxRequestsPerConnection)) {
+            builder.cassandraPoolMaxRequestsPerConnection(
+                    Integer.parseInt(cassandraPoolMaxRequestsPerConnection));
         }
-        String cassandraPassword = properties.get("glowroot.cassandra.password");
-        if (!Strings.isNullOrEmpty(cassandraPassword)) {
-            builder.cassandraPassword(cassandraPassword);
+        String cassandraPoolMaxQueueSize = properties.get("glowroot.cassandra.pool.maxQueueSize");
+        if (!Strings.isNullOrEmpty(cassandraPoolMaxQueueSize)) {
+            builder.cassandraPoolMaxQueueSize(Integer.parseInt(cassandraPoolMaxQueueSize));
+        }
+        String cassandraPoolTimeoutMillis = properties.get("glowroot.cassandra.pool.timeoutMillis");
+        if (!Strings.isNullOrEmpty(cassandraPoolTimeoutMillis)) {
+            builder.cassandraPoolTimeoutMillis(Integer.parseInt(cassandraPoolTimeoutMillis));
         }
         String grpcBindAddress = properties.get("glowroot.grpc.bindAddress");
         if (!Strings.isNullOrEmpty(grpcBindAddress)) {
@@ -750,10 +765,13 @@ public class CentralModule {
                 .withQueryOptions(new QueryOptions()
                         .setDefaultIdempotence(true)
                         .setConsistencyLevel(centralConfig.cassandraConsistencyLevel()))
-                // central runs lots of parallel async queries and is very spiky since all
-                // aggregates come in right after each minute marker
-                .withPoolingOptions(
-                        new PoolingOptions().setMaxQueueSize(Session.MAX_CONCURRENT_QUERIES))
+                .withPoolingOptions(new PoolingOptions()
+                        .setMaxRequestsPerConnection(HostDistance.LOCAL,
+                                centralConfig.cassandraPoolMaxRequestsPerConnection())
+                        .setMaxRequestsPerConnection(HostDistance.REMOTE,
+                                centralConfig.cassandraPoolMaxRequestsPerConnection())
+                        .setMaxQueueSize(centralConfig.cassandraPoolMaxQueueSize())
+                        .setPoolTimeoutMillis(centralConfig.cassandraPoolTimeoutMillis()))
                 .withTimestampGenerator(defaultTimestampGenerator);
         String cassandraUsername = centralConfig.cassandraUsername();
         if (!cassandraUsername.isEmpty()) {
@@ -844,6 +862,25 @@ public class CentralModule {
         @Value.Default
         String cassandraSymmetricEncryptionKey() {
             return "";
+        }
+
+        @Value.Default
+        int cassandraPoolMaxRequestsPerConnection() {
+            return 1024;
+        }
+
+        @Value.Default
+        int cassandraPoolMaxQueueSize() {
+            // central runs lots of parallel async queries and is very spiky since all aggregates
+            // come in right after each minute marker
+            return 10000;
+        }
+
+        @Value.Default
+        int cassandraPoolTimeoutMillis() {
+            // central runs lots of parallel async queries and is very spiky since all aggregates
+            // come in right after each minute marker
+            return 10000;
         }
 
         @Value.Default
