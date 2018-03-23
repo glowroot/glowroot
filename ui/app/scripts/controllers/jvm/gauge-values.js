@@ -536,9 +536,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       },
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
-          var rollupConfig0 = $scope.layout.rollupConfigs[0];
-          if (chartState.dataPointIntervalMillis === rollupConfig0.intervalMillis
-              && $scope.range.chartTo - $scope.range.chartFrom < 4 * rollupConfig0.viewThresholdMillis) {
+          if (chartState.dataPointIntervalMillis === 5000) {
             var nonScaledValue = yvalMaps[label][xval];
             var tooltip = '<table class="gt-chart-tooltip">';
             tooltip += '<tr><td colspan="2" style="font-weight: 600;">' + gaugeShortDisplayMap[label];
