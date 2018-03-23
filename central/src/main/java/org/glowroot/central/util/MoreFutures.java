@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import com.datastax.driver.core.exceptions.DriverException;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -50,9 +51,13 @@ public class MoreFutures {
                 }
             }
         }
-        if (exception != null) {
-            throw exception;
+        if (exception == null) {
+            return;
         }
+        if (exception instanceof ExecutionException) {
+            throw unwrapDriverException((ExecutionException) exception);
+        }
+        throw exception;
     }
 
     public static <V> CompletableFuture<V> onFailure(ListenableFuture<V> future,
@@ -109,5 +114,15 @@ public class MoreFutures {
             }
         });
         return future;
+    }
+
+    public static Exception unwrapDriverException(ExecutionException e) {
+        Throwable cause = e.getCause();
+        if (cause instanceof DriverException) {
+            // see com.datastax.driver.core.DriverThrowables.propagateCause()
+            return ((DriverException) cause).copy();
+        } else {
+            return e;
+        }
     }
 }

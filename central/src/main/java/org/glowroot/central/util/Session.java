@@ -23,7 +23,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.FutureCallback;
@@ -76,8 +75,7 @@ public class Session {
             // central shutdown to timeout while waiting for executor service to shutdown
             return executeAsync(statement).get();
         } catch (ExecutionException e) {
-            propagateCauseIfPossible(e);
-            throw e; // unusual case (cause is null or cause is not Exception or Error)
+            throw MoreFutures.unwrapDriverException(e);
         }
     }
 
@@ -87,8 +85,7 @@ public class Session {
             // central shutdown to timeout while waiting for executor service to shutdown
             return executeAsync(query).get();
         } catch (ExecutionException e) {
-            propagateCauseIfPossible(e);
-            throw e; // unusual case (cause is null or cause is not Exception or Error)
+            throw MoreFutures.unwrapDriverException(e);
         }
     }
 
@@ -258,18 +255,6 @@ public class Session {
 
     private static String getTwcsCompactionClause(int expirationHours) {
         return getTwcsCompactionClause("HOURS", getCompactionWindowSizeHours(expirationHours));
-    }
-
-    private static void propagateCauseIfPossible(ExecutionException e) throws Exception {
-        Throwable cause = e.getCause();
-        if (cause instanceof DriverException) {
-            // see com.datastax.driver.core.DriverThrowables.propagateCause()
-            throw ((DriverException) cause).copy();
-        } else if (cause instanceof Exception) {
-            throw (Exception) cause;
-        } else if (cause instanceof Error) {
-            throw (Error) cause;
-        }
     }
 
     private interface DoUnderThrottle {
