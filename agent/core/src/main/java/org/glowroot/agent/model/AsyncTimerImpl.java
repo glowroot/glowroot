@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ package org.glowroot.agent.model;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Ticker;
 
 import org.glowroot.agent.util.Tickers;
@@ -31,9 +29,6 @@ public class AsyncTimerImpl implements CommonTimerImpl {
     private final long startTick;
 
     private volatile long totalNanos = -1;
-
-    // this is for maintaining list of async timers
-    private volatile @Nullable AsyncTimerImpl nextAsyncTimer;
 
     public AsyncTimerImpl(TimerNameImpl timerName, long startTick) {
         this.timerName = timerName;
