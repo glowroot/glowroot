@@ -63,7 +63,8 @@ class FullQueryTextDao {
     private final PreparedStatement readPS;
     private final PreparedStatement readTtlPS;
 
-    private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(10000);
+    private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(100000);
+    private final RateLimiter<String> rateLimiterForSha1 = new RateLimiter<>(10000);
 
     FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository) throws Exception {
         this.session = session;
@@ -108,7 +109,26 @@ class FullQueryTextDao {
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
-        return ImmutableList.of(storeInternal(rateLimiterKey, fullText));
+        ListenableFuture<?> future;
+        try {
+            future = storeCheckInternal(rateLimiterKey);
+        } catch (Exception e) {
+            rateLimiter.invalidate(rateLimiterKey);
+            throw e;
+        }
+        if (!rateLimiterForSha1.tryAcquire(fullTextSha1)) {
+            return ImmutableList.of(future);
+        }
+        CompletableFuture<?> future2;
+        try {
+            future2 = storeInternal(rateLimiterKey.fullTextSha1(), fullText);
+        } catch (Exception e) {
+            invalidateBoth(rateLimiterKey);
+            throw e;
+        }
+        return ImmutableList.of(
+                MoreFutures.onFailure(future, () -> invalidateBoth(rateLimiterKey)),
+                MoreFutures.onFailure(future2, () -> invalidateBoth(rateLimiterKey)));
     }
 
     List<Future<?>> updateTTL(String agentRollupId, String fullTextSha1) throws Exception {
@@ -116,17 +136,27 @@ class FullQueryTextDao {
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
-        ListenableFuture<ResultSet> future;
+        ListenableFuture<?> future;
         try {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, fullTextSha1);
-            future = session.executeAsync(boundStatement);
+            future = storeCheckInternal(rateLimiterKey);
         } catch (Exception e) {
             rateLimiter.invalidate(rateLimiterKey);
             throw e;
         }
+        if (!rateLimiterForSha1.tryAcquire(fullTextSha1)) {
+            return ImmutableList.of(future);
+        }
+        ListenableFuture<ResultSet> readFuture;
+        try {
+            BoundStatement boundStatement = readPS.bind();
+            boundStatement.setString(0, fullTextSha1);
+            readFuture = session.executeAsync(boundStatement);
+        } catch (Exception e) {
+            invalidateBoth(rateLimiterKey);
+            throw e;
+        }
         CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
-        Futures.addCallback(future, new FutureCallback<ResultSet>() {
+        Futures.addCallback(readFuture, new FutureCallback<ResultSet>() {
             @Override
             public void onSuccess(ResultSet results) {
                 Row row = results.one();
@@ -139,7 +169,8 @@ class FullQueryTextDao {
                 }
                 String fullText = checkNotNull(row.getString(0));
                 try {
-                    CompletableFuture<?> future = storeInternal(rateLimiterKey, fullText);
+                    CompletableFuture<?> future =
+                            storeInternal(rateLimiterKey.fullTextSha1(), fullText);
                     future.whenComplete((result, t) -> {
                         if (t != null) {
                             chainedFuture.completeExceptionally(t);
@@ -158,9 +189,9 @@ class FullQueryTextDao {
                 chainedFuture.completeExceptionally(t);
             }
         }, MoreExecutors.directExecutor());
-        CompletableFuture<?> chainedFuture2 = MoreFutures.onFailure(chainedFuture,
-                () -> rateLimiter.invalidate(rateLimiterKey));
-        return ImmutableList.of(chainedFuture2);
+        return ImmutableList.of(
+                MoreFutures.onFailure(future, () -> invalidateBoth(rateLimiterKey)),
+                MoreFutures.onFailure(chainedFuture, () -> invalidateBoth(rateLimiterKey)));
     }
 
     List<Future<?>> updateCheckTTL(String agentRollupId, String fullTextSha1) throws Exception {
@@ -170,9 +201,9 @@ class FullQueryTextDao {
         }
         try {
             ListenableFuture<?> future = storeCheckInternal(rateLimiterKey);
-            CompletableFuture<?> chainedFuture =
-                    MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
-            return ImmutableList.of(chainedFuture);
+            return ImmutableList.of(
+                    MoreFutures.onFailure(future,
+                            () -> rateLimiter.invalidate(rateLimiterKey)));
         } catch (Exception e) {
             rateLimiter.invalidate(rateLimiterKey);
             throw e;
@@ -198,11 +229,10 @@ class FullQueryTextDao {
         return row.getString(0);
     }
 
-    private CompletableFuture<?> storeInternal(FullQueryTextKey rateLimiterKey, String fullText)
+    private CompletableFuture<?> storeInternal(String fullTextSha1, String fullText)
             throws Exception {
-        ListenableFuture<?> future = storeCheckInternal(rateLimiterKey);
         BoundStatement boundStatement = readTtlPS.bind();
-        boundStatement.setString(0, rateLimiterKey.fullTextSha1());
+        boundStatement.setString(0, fullTextSha1);
         ListenableFuture<ResultSet> future2 = session.executeAsync(boundStatement);
 
         CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
@@ -237,7 +267,7 @@ class FullQueryTextDao {
                 try {
                     BoundStatement boundStatement = insertPS.bind();
                     int i = 0;
-                    boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
+                    boundStatement.setString(i++, fullTextSha1);
                     boundStatement.setString(i++, fullText);
                     boundStatement.setInt(i++, ttl);
                     ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
@@ -258,7 +288,7 @@ class FullQueryTextDao {
                 }
             }
         }, MoreExecutors.directExecutor());
-        return CompletableFuture.allOf(MoreFutures.toCompletableFuture(future), chainedFuture);
+        return chainedFuture;
     }
 
     private ListenableFuture<?> storeCheckInternal(FullQueryTextKey rateLimiterKey)
@@ -269,6 +299,11 @@ class FullQueryTextDao {
         boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
         boundStatement.setInt(i++, getTTL());
         return session.executeAsync(boundStatement);
+    }
+
+    private void invalidateBoth(FullQueryTextKey rateLimiterKey) {
+        rateLimiter.invalidate(rateLimiterKey);
+        rateLimiterForSha1.invalidate(rateLimiterKey.fullTextSha1());
     }
 
     private int getTTL() throws Exception {
