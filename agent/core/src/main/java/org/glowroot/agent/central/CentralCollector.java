@@ -238,11 +238,7 @@ public class CentralCollector implements Collector {
                     List<String> sharedQueryTexts, Aggregate overallAggregate) {
                 for (String sharedQueryText : sharedQueryTexts) {
                     Aggregate.SharedQueryText aggregateSharedQueryText = sharedQueryTextLimiter
-                            .buildAggregateSharedQueryText(sharedQueryText);
-                    String fullTextSha1 = aggregateSharedQueryText.getFullTextSha1();
-                    if (!fullTextSha1.isEmpty()) {
-                        fullTextSha1s.add(fullTextSha1);
-                    }
+                            .buildAggregateSharedQueryText(sharedQueryText, fullTextSha1s);
                     requestObserver.onNext(AggregateStreamMessage.newBuilder()
                             .setSharedQueryText(aggregateSharedQueryText)
                             .build());
@@ -260,7 +256,7 @@ public class CentralCollector implements Collector {
                 for (String sharedQueryText : sharedQueryTexts) {
                     requestObserver.onNext(AggregateStreamMessage.newBuilder()
                             .setSharedQueryText(sharedQueryTextLimiter
-                                    .buildAggregateSharedQueryText(sharedQueryText))
+                                    .buildAggregateSharedQueryText(sharedQueryText, fullTextSha1s))
                             .build());
                 }
                 requestObserver.onNext(AggregateStreamMessage.newBuilder()
@@ -382,12 +378,8 @@ public class CentralCollector implements Collector {
             }
             sharedQueryTextIndex = sharedQueryTextIndexes.size();
             sharedQueryTextIndexes.put(sharedQueryText, sharedQueryTextIndex);
-            Trace.SharedQueryText traceSharedQueryText =
-                    sharedQueryTextLimiter.buildTraceSharedQueryText(sharedQueryText);
-            String fullTextSha1 = traceSharedQueryText.getFullTextSha1();
-            if (!fullTextSha1.isEmpty()) {
-                fullTextSha1s.add(fullTextSha1);
-            }
+            Trace.SharedQueryText traceSharedQueryText = sharedQueryTextLimiter
+                    .buildTraceSharedQueryText(sharedQueryText, fullTextSha1s);
             requestObserver.onNext(TraceStreamMessage.newBuilder()
                     .setSharedQueryText(traceSharedQueryText)
                     .build());

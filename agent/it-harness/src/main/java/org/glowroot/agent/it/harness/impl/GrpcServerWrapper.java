@@ -17,16 +17,20 @@ package org.glowroot.agent.it.harness.impl;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
@@ -36,6 +40,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Constants;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateResponseMessage;
@@ -144,6 +149,7 @@ class GrpcServerWrapper {
     private class CollectorServiceImpl extends CollectorServiceImplBase {
 
         private final TraceCollector collector;
+        private final Map<String, String> fullTexts = Maps.newConcurrentMap();
 
         private CollectorServiceImpl(TraceCollector collector) {
             this.collector = collector;
@@ -196,7 +202,9 @@ class GrpcServerWrapper {
                         case STREAM_HEADER:
                             break;
                         case SHARED_QUERY_TEXT:
-                            sharedQueryTexts.add(value.getSharedQueryText());
+                            sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                                    .setFullText(resolveFullText(value.getSharedQueryText()))
+                                    .build());
                             break;
                         case ENTRY:
                             entries.add(value.getEntry());
@@ -258,6 +266,25 @@ class GrpcServerWrapper {
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
+        }
+
+        private String resolveFullText(Trace.SharedQueryText sharedQueryText) {
+            String fullTextSha1 = sharedQueryText.getFullTextSha1();
+            if (fullTextSha1.isEmpty()) {
+                String fullText = sharedQueryText.getFullText();
+                if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
+                    fullTextSha1 =
+                            Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+                    fullTexts.put(fullTextSha1, fullText);
+                }
+                return fullText;
+            }
+            String fullText = fullTexts.get(fullTextSha1);
+            if (fullText == null) {
+                throw new IllegalStateException(
+                        "Full text not found for sha1: " + fullTextSha1);
+            }
+            return fullText;
         }
     }
 

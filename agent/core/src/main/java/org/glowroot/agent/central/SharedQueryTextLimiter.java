@@ -39,11 +39,13 @@ class SharedQueryTextLimiter {
             .maximumSize(10000)
             .build();
 
-    Aggregate.SharedQueryText buildAggregateSharedQueryText(String fullText) {
+    Aggregate.SharedQueryText buildAggregateSharedQueryText(String fullText,
+            List<String> fullTextSha1s) {
         if (fullText.length() > Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
             String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
             if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
                 // need to send full text
+                fullTextSha1s.add(fullTextSha1);
                 return Aggregate.SharedQueryText.newBuilder()
                         .setFullText(fullText)
                         .build();
@@ -62,10 +64,11 @@ class SharedQueryTextLimiter {
         }
     }
 
-    Trace.SharedQueryText buildTraceSharedQueryText(String fullText) {
+    Trace.SharedQueryText buildTraceSharedQueryText(String fullText, List<String> fullTextSha1s) {
         if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
             String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
             if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
+                fullTextSha1s.add(fullTextSha1);
                 // need to send full text
                 return Trace.SharedQueryText.newBuilder()
                         .setFullText(fullText)
