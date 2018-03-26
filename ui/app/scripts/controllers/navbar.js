@@ -73,8 +73,8 @@ glowroot.controller('NavbarCtrl', [
         from = $location.search().from;
         to = $location.search().to;
         if (from !== undefined && to !== undefined) {
-          query.fromDate = moment(from).format('YYYYMMDD');
-          query.toDate = moment(to).format('YYYYMMDD');
+          query.fromDate = moment(Number(from)).format('YYYYMMDD');
+          query.toDate = moment(Number(to)).format('YYYYMMDD');
         }
       }
       return queryStrings.encodeObject(query);
