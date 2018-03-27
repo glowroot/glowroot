@@ -619,11 +619,11 @@ HandlebarsRendering = (function () {
     toggleChildren(traceEntry, traceEntry.collapsed);
     var $i = $(this).find('i');
     if (traceEntry.collapsed) {
-      $i.removeClass('fa-minus-square-o');
-      $i.addClass('fa-plus-square-o');
+      $i.removeClass('fa-minus-square');
+      $i.addClass('fa-plus-square');
     } else {
-      $i.removeClass('fa-plus-square-o');
-      $i.addClass('fa-minus-square-o');
+      $i.removeClass('fa-plus-square');
+      $i.addClass('fa-minus-square');
     }
   });
 

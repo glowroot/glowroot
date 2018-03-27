@@ -101,7 +101,7 @@ module.exports = function (grunt) {
               serveStatic('.tmp'),
               connect().use('/bower_components', serveStatic('bower_components')),
               serveStatic(appConfig.app),
-              connect().use('/fonts', serveStatic('bower_components/fontawesome/fonts')),
+              connect().use('/fonts', serveStatic('bower_components/fontawesome/web-fonts-with-css/webfonts')),
               connect().use('/uib/template', serveStatic('bower_components/angular-ui-bootstrap/template'))
             ];
           }
@@ -247,11 +247,12 @@ module.exports = function (grunt) {
           },
           {
             expand: true,
-            cwd: 'bower_components/fontawesome',
-            dest: '<%= yeoman.dist %>',
+            cwd: 'bower_components/fontawesome/web-fonts-with-css/webfonts',
+            dest: '<%= yeoman.dist %>/fonts',
             src: [
               // only supporting IE9+ so only need woff/woff2
-              'fonts/*.woff{,2}'
+              'fa-regular-400.woff{,2}',
+              'fa-solid-900.woff{,2}'
             ]
           },
           {

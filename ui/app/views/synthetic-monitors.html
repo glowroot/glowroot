@@ -77,14 +77,14 @@
         <div ng-show="allSyntheticMonitors.length">
           <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
           <div class="clearfix" style="position: relative; z-index: 800; margin-top: 25px;">
-            <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
+            <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 20px;">
               <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
               <a role="button"
                  class="gt-chart-button"
                  href="#"
                  ng-click="zoomOut()">
                 <span title="Zoom out"
-                      class="fa fa-search-minus"></span><!-- lack of space here is significant
+                      class="fas fa-search-minus"></span><!-- lack of space here is significant
          --></a>
               <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
               <a role="button"
@@ -92,7 +92,7 @@
                  href="#"
                  ng-click="refresh()">
                 <span title="Refresh"
-                      class="fa fa-refresh"></span><!-- lack of space here is significant
+                      class="fas fa-sync"></span><!-- lack of space here is significant
          --></a>
               <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
               <a role="button"
@@ -102,7 +102,7 @@
                  popover-placement="left"
                  popover-trigger="'outsideClick'">
                 <span title="Help"
-                      class="fa fa-question-circle"></span><!-- lack of space here is significant
+                      class="fas fa-question-circle"></span><!-- lack of space here is significant
          --></a>
             </div>
           </div>

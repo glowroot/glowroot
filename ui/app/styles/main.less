@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 // fontawesome is used for gear and sign out icons in top right of navbar and also for help icon
-@import "../../bower_components/fontawesome/less/variables";
-@import "../../bower_components/fontawesome/less/mixins";
-@import "../../bower_components/fontawesome/less/core";
-@import "../../bower_components/fontawesome/less/icons";
+@import "../../bower_components/fontawesome/web-fonts-with-css/less/_variables";
+@import "../../bower_components/fontawesome/web-fonts-with-css/less/_mixins";
+@import "../../bower_components/fontawesome/web-fonts-with-css/less/_core";
+@import "../../bower_components/fontawesome/web-fonts-with-css/less/_icons";
 @import "../../bower_components/bootstrap/less/variables";
 @import "../../bower_components/bootstrap/less/mixins";
 @import "../../bower_components/bootstrap/less/alerts";
@@ -127,11 +127,30 @@
 // (see index.html) in sync when new font-awesome versions are released, and the urls are revved during grunt build
 // already so the versioned url is not needed
 @font-face {
-  font-family: FontAwesome;
-  src: url('../fonts/fontawesome-webfont.woff2') format('woff2'),
-  url('../fonts/fontawesome-webfont.woff') format('woff');
-  font-weight: normal;
+  font-family: 'Font Awesome 5 Free';
+  src: url('../fonts/fa-regular-400.woff2') format('woff2'),
+  url('../fonts/fa-regular-400.woff') format('woff');
+  font-weight: 400;
   font-style: normal;
+}
+
+@font-face {
+  font-family: 'Font Awesome 5 Free';
+  src: url('../fonts/fa-solid-900.woff2') format('woff2'),
+  url('../fonts/fa-solid-900.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+}
+
+.far {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 400;
+}
+
+.fa,
+.fas {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
 }
 
 body {

@@ -11,7 +11,7 @@
   <div style="overflow: hidden; padding-left: {{traceEntryIndentPx .}}px;">
     {{#if childEntries}}
       <div class="gt-width2 gt-trace-entry-toggle" data-gt-index="{{index}}" style="float: left;">
-        <i title="Collapse" class="fa fa-minus-square-o" style="padding: 5px; margin-left: -5px;"></i>
+        <i title="Collapse" class="far fa-minus-square" style="padding: 7px 5px 5px; margin-left: -5px; font-size: 13px;"></i>
       </div>
     {{/if}}
     {{#ifDisplayMessage .}}
@@ -25,7 +25,7 @@
           <!-- only convert newlines to <br>s for long messages -->
           <div class="gt-expanded-content gt-with-clip hide"
                style="position: relative; display: inline-block;">
-            <i class="fa fa-clipboard gt-clip"></i>
+            <i class="fas fa-clipboard gt-clip"></i>
             <div class="gt-break-word gt-pre-wrap gt-monospace gt-clip-text gt-expanded-trace-entry"
                  data-gt-trace-entry-index="{{index}}"><!--
               lack of space here is significant because of gt-pre-wrap
@@ -73,7 +73,7 @@
               <div class="gt-clip-text">
                 {{{exceptionHtml error.exception}}}
               </div>
-              <i class="fa fa-clipboard gt-clip"></i>
+              <i class="fas fa-clipboard gt-clip"></i>
             </div>
           </div>
         {{/if}}
@@ -89,7 +89,7 @@
           <div class="gt-clip-text">
             {{{locationStackTraceHtml locationStackTraceElements}}}
           </div>
-          <i class="fa fa-clipboard gt-clip"></i>
+          <i class="fas fa-clipboard gt-clip"></i>
         </div>
       </div>
     {{/if}}

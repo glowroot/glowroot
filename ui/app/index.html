@@ -70,9 +70,14 @@
           'url(fonts/opensans-bold.woff2) format("woff2"),' +
           ' url(fonts/opensans-bold.woff) format("woff")',
           {weight: '700'}).load();
-      new FontFace('FontAwesome',
-          'url(fonts/fontawesome-webfont.woff2) format("woff2"),' +
-          'url(fonts/fontawesome-webfont.woff) format("woff")').load();
+      new FontFace('Font Awesome 5 Free',
+          'url(fonts/fa-regular-400.woff2) format("woff2"),' +
+          'url(fonts/fa-regular-400.woff) format("woff")',
+          {weight: '400'}).load();
+      new FontFace('Font Awesome 5 Free',
+          'url(fonts/fa-solid-900.woff2) format("woff2"),' +
+          'url(fonts/fa-solid-900.woff) format("woff")',
+          {weight: '900'}).load();
       new FontFace('Cousine',
           'url(fonts/cousine-regular.woff2) format("woff2"),' +
           ' url(fonts/cousine-regular.woff) format("woff")',
@@ -161,7 +166,7 @@
                data-toggle="dropdown"
                href="#"
                id="gtGearsMenuToggle">
-              <span class="fa fa-gears"
+              <span class="fas fa-cogs"
                     style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></span>
             </a>
             <!-- id is used by webdriver tests -->
@@ -199,7 +204,7 @@
                ng-click="signOut()"
                style="padding-top: 14px; padding-bottom: 0; height: 50px;">
               <span title="Sign out"
-                    class="fa fa-sign-out"
+                    class="fas fa-sign-out-alt"
                     style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></span>
             </a>
           </li>

@@ -445,12 +445,12 @@ glowroot.directive('gtDatePicker', [
       link: function (scope, iElement) {
         var dateElement = iElement.find('.date');
         var icons = {
-          time: 'fa fa-clock-o',
-          date: 'fa fa-calendar',
-          up: 'fa fa-chevron-up',
-          down: 'fa fa-chevron-down',
-          previous: 'fa fa-chevron-left',
-          next: 'fa fa-chevron-right'
+          time: 'fas fa-clock',
+          date: 'fas fa-calendar',
+          up: 'fas fa-chevron-up',
+          down: 'fas fa-chevron-down',
+          previous: 'fas fa-chevron-left',
+          next: 'fas fa-chevron-right'
         };
         var dateElementPicker = dateElement.datetimepicker({
           icons: icons,

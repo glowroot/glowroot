@@ -120,7 +120,7 @@
             <plugin>
               <groupId>net.alchim31.maven</groupId>
               <artifactId>scala-maven-plugin</artifactId>
-              <version>3.3.1</version>
+              <version>3.3.2</version>
               <configuration>
                 <skip>true</skip>
               </configuration>
@@ -233,7 +233,7 @@
           <plugin>
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
-            <version>3.3.1</version>
+            <version>3.3.2</version>
             <configuration>
               <scalaVersion>${scala.version}</scalaVersion>
               <testSourceDir>

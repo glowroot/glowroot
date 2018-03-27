@@ -52,9 +52,9 @@ public class JAXWS {
         for (int i = 0; i <= 16; i++) {
             runJava7("3.1." + i, "4.3.14.RELEASE");
         }
-        runJava8("3.2.0", "4.3.14.RELEASE");
-        runJava8("3.2.1", "4.3.14.RELEASE");
-        runJava8("3.2.2", "4.3.14.RELEASE");
+        for (int i = 0; i <= 4; i++) {
+            runJava8("3.2." + i, "4.3.14.RELEASE");
+        }
     }
 
     private static void run2x(String cxfVersion, String springVersion) throws Exception {

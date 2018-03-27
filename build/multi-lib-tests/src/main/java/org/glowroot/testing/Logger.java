@@ -212,6 +212,8 @@ public class Logger {
             updateLibVersion("jboss.logging.version", "2.0." + i + ".Final");
             runJBossLoggingJava7(test);
         }
+        updateLibVersion("jboss.logging.version", "2.1.0.Final");
+        runJBossLoggingJava8(test);
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {
@@ -236,5 +238,9 @@ public class Logger {
 
     private static void runJBossLoggingJava7(String test) throws Exception {
         Util.runTest(MODULE_PATH, test, "jboss-logging", JAVA7, JAVA8);
+    }
+
+    private static void runJBossLoggingJava8(String test) throws Exception {
+        Util.runTest(MODULE_PATH, test, "jboss-logging", JAVA8);
     }
 }

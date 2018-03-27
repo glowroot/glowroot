@@ -19,7 +19,7 @@
     <!-- instrumented libraries -->
     <!-- cxf 3.2.0+ requires Java 8+, which would prevent any jaxws plugin tests from being able to
       run when building with Java 7 -->
-    <cxf.version>3.1.13</cxf.version>
+    <cxf.version>3.1.15</cxf.version>
     <!-- need to use a spring version that is supported by cxf.version version above
       (see cxf-parent pom.xml for supported spring version range) -->
     <spring.version>4.3.14.RELEASE</spring.version>
@@ -123,7 +123,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>6.0</version>
+      <version>6.1.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -226,16 +226,14 @@ public class HttpClient {
             updateLibVersion("cxf.version", "3.0." + i);
             run(test);
         }
-        for (int i = 0; i <= 13; i++) {
+        for (int i = 0; i <= 15; i++) {
             updateLibVersion("cxf.version", "3.1." + i);
             runJava7(test);
         }
-        updateLibVersion("cxf.version", "3.2.0");
-        runJava8(test);
-        updateLibVersion("cxf.version", "3.2.1");
-        runJava8(test);
-        updateLibVersion("cxf.version", "3.2.2");
-        runJava8(test);
+        for (int i = 0; i <= 4; i++) {
+            updateLibVersion("cxf.version", "3.2." + i);
+            runJava8(test);
+        }
     }
 
     private static void httpUrlConnection() throws Exception {

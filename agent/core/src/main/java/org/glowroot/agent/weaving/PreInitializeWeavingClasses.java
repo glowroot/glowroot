@@ -399,6 +399,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.AnnotationVisitor");
         types.add("org.objectweb.asm.AnnotationWriter");
         types.add("org.objectweb.asm.Attribute");
+        types.add("org.objectweb.asm.Attribute$Set");
         types.add("org.objectweb.asm.ByteVector");
         types.add("org.objectweb.asm.ClassReader");
         types.add("org.objectweb.asm.ClassVisitor");
@@ -411,15 +412,18 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Frame");
         types.add("org.objectweb.asm.Handle");
         types.add("org.objectweb.asm.Handler");
-        types.add("org.objectweb.asm.Item");
         types.add("org.objectweb.asm.Label");
         types.add("org.objectweb.asm.MethodVisitor");
         types.add("org.objectweb.asm.MethodWriter");
         types.add("org.objectweb.asm.ModuleVisitor");
         types.add("org.objectweb.asm.ModuleWriter");
         types.add("org.objectweb.asm.Opcodes");
+        types.add("org.objectweb.asm.Symbol");
+        types.add("org.objectweb.asm.SymbolTable");
+        types.add("org.objectweb.asm.SymbolTable$Entry");
         types.add("org.objectweb.asm.Type");
         types.add("org.objectweb.asm.TypePath");
+        types.add("org.objectweb.asm.TypeReference");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
         types.add("org.objectweb.asm.commons.AnnotationRemapper");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
@@ -467,6 +471,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.tree.TryCatchBlockNode");
         types.add("org.objectweb.asm.tree.TypeAnnotationNode");
         types.add("org.objectweb.asm.tree.TypeInsnNode");
+        types.add("org.objectweb.asm.tree.Util");
         types.add("org.objectweb.asm.tree.VarInsnNode");
         types.add("org.objectweb.asm.util.ASMifiable");
         types.add("org.objectweb.asm.util.ASMifier");
