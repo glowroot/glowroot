@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,7 +59,13 @@ class CassandraWrapper {
         File baseDir = new File("cassandra");
         File cassandraDir = new File(baseDir, "apache-cassandra-" + CASSANDRA_VERSION);
         if (!cassandraDir.exists()) {
-            downloadAndExtract(baseDir);
+            try {
+                downloadAndExtract(baseDir);
+            } catch (EOFException e) {
+                // partial download, try again
+                System.out.println("Retrying...");
+                downloadAndExtract(baseDir);
+            }
         }
         List<String> command = buildCommandLine(cassandraDir);
         ProcessBuilder processBuilder = new ProcessBuilder(command);

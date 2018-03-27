@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.elasticsearch;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,7 +64,13 @@ class ElasticsearchWrapper {
         File baseDir = new File("elasticsearch");
         File elasticsearchDir = new File(baseDir, "elasticsearch-" + ELASTICSEARCH_VERSION);
         if (!elasticsearchDir.exists()) {
-            downloadAndExtract(baseDir);
+            try {
+                downloadAndExtract(baseDir);
+            } catch (EOFException e) {
+                // partial download, try again
+                System.out.println("Retrying...");
+                downloadAndExtract(baseDir);
+            }
         }
         List<String> command = buildCommandLine(elasticsearchDir);
         ProcessBuilder processBuilder = new ProcessBuilder(command);

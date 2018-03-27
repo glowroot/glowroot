@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -350,8 +351,16 @@ public class WebDriverSetup {
         File geckoDriverExecutable =
                 new File(targetDir, "geckodriver-" + GECKO_DRIVER_VERSION + optionalExt);
         if (!geckoDriverExecutable.exists()) {
-            downloadAndExtractGeckoDriver(targetDir, downloadFilenameSuffix, downloadFilenameExt,
-                    optionalExt, archiver);
+            try {
+                downloadAndExtractGeckoDriver(targetDir, downloadFilenameSuffix,
+                        downloadFilenameExt,
+                        optionalExt, archiver);
+            } catch (EOFException e) {
+                // partial download, try again
+                System.out.println("Retrying...");
+                downloadAndExtractGeckoDriver(targetDir, downloadFilenameSuffix,
+                        downloadFilenameExt, optionalExt, archiver);
+            }
 
         }
         return geckoDriverExecutable;
