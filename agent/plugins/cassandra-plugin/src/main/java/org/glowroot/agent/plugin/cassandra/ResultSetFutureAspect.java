@@ -115,7 +115,7 @@ public class ResultSetFutureAspect {
             }
             // pass query entry to the result set so it can be used when iterating the result set
             AsyncQueryEntry asyncQueryEntry = resultSetFuture.glowroot$getAsyncQueryEntry();
-            resultSet.glowroot$setLastQueryEntry(asyncQueryEntry);
+            resultSet.glowroot$setQueryEntry(asyncQueryEntry);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Timer timer) {

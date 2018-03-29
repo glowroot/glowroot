@@ -34,21 +34,21 @@ public class ResultSetAspect {
         // needs to be volatile, since ResultSets are thread safe, and therefore app/framework does
         // *not* need to provide visibility when used across threads and so this cannot piggyback
         // (unlike with jdbc ResultSets)
-        private volatile @Nullable QueryEntry glowroot$lastQueryEntry;
+        private volatile @Nullable QueryEntry glowroot$queryEntry;
 
         @Override
-        public @Nullable QueryEntry glowroot$getLastQueryEntry() {
-            return glowroot$lastQueryEntry;
+        public @Nullable QueryEntry glowroot$getQueryEntry() {
+            return glowroot$queryEntry;
         }
 
         @Override
-        public void glowroot$setLastQueryEntry(@Nullable QueryEntry lastQueryEntry) {
-            glowroot$lastQueryEntry = lastQueryEntry;
+        public void glowroot$setQueryEntry(@Nullable QueryEntry queryEntry) {
+            glowroot$queryEntry = queryEntry;
         }
 
         @Override
-        public boolean glowroot$hasLastQueryEntry() {
-            return glowroot$lastQueryEntry != null;
+        public boolean glowroot$hasQueryEntry() {
+            return glowroot$queryEntry != null;
         }
     }
 
@@ -56,11 +56,11 @@ public class ResultSetAspect {
     public interface ResultSet {
 
         @Nullable
-        QueryEntry glowroot$getLastQueryEntry();
+        QueryEntry glowroot$getQueryEntry();
 
-        void glowroot$setLastQueryEntry(@Nullable QueryEntry lastQueryEntry);
+        void glowroot$setQueryEntry(@Nullable QueryEntry queryEntry);
 
-        boolean glowroot$hasLastQueryEntry();
+        boolean glowroot$hasQueryEntry();
     }
 
     @Pointcut(className = "com.datastax.driver.core.ResultSet", methodName = "one",
@@ -69,14 +69,14 @@ public class ResultSetAspect {
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object row,
                 @BindReceiver ResultSet resultSet) {
-            QueryEntry lastQueryEntry = resultSet.glowroot$getLastQueryEntry();
-            if (lastQueryEntry == null) {
+            QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
+            if (queryEntry == null) {
                 return;
             }
             if (row != null) {
-                lastQueryEntry.incrementCurrRow();
+                queryEntry.incrementCurrRow();
             } else {
-                lastQueryEntry.rowNavigationAttempted();
+                queryEntry.rowNavigationAttempted();
             }
         }
     }
@@ -87,12 +87,12 @@ public class ResultSetAspect {
     public static class IteratorAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver ResultSet resultSet) {
-            QueryEntry lastQueryEntry = resultSet.glowroot$getLastQueryEntry();
-            if (lastQueryEntry == null) {
+            QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
+            if (queryEntry == null) {
                 // tracing must be disabled (e.g. exceeded trace entry limit)
                 return;
             }
-            lastQueryEntry.rowNavigationAttempted();
+            queryEntry.rowNavigationAttempted();
         }
     }
 
@@ -103,12 +103,12 @@ public class ResultSetAspect {
     public static class IsExhaustedAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver ResultSet resultSet) {
-            QueryEntry lastQueryEntry = resultSet.glowroot$getLastQueryEntry();
-            if (lastQueryEntry == null) {
+            QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
+            if (queryEntry == null) {
                 // tracing must be disabled (e.g. exceeded trace entry limit)
                 return;
             }
-            lastQueryEntry.rowNavigationAttempted();
+            queryEntry.rowNavigationAttempted();
         }
     }
 }
