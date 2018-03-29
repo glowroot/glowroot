@@ -16,12 +16,10 @@
 package org.glowroot.agent.embedded.repo;
 
 import java.util.List;
-import java.util.Map;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.embedded.util.ImmutableColumn;
@@ -32,8 +30,6 @@ import org.glowroot.common2.repo.TransactionTypeRepository;
 import static java.util.concurrent.TimeUnit.DAYS;
 
 class TransactionTypeDao implements TransactionTypeRepository {
-
-    private static final String AGENT_ID = "";
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
             ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
@@ -55,14 +51,14 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     @Override
-    public Map<String, List<String>> read() throws Exception {
+    public List<String> read(String agentRollupId) throws Exception {
         List<String> transactionTypes = dataSource.queryForStringList(
                 "select transaction_type from transaction_types order by transaction_type");
         if (transactionTypes == null) {
             // data source is closing
-            return ImmutableMap.<String, List<String>>of(AGENT_ID, ImmutableList.<String>of());
+            return ImmutableList.of();
         }
-        return ImmutableMap.of(AGENT_ID, transactionTypes);
+        return transactionTypes;
     }
 
     void updateLastCaptureTime(String transactionType, long captureTime) throws Exception {

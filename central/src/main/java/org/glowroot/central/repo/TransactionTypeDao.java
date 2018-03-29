@@ -17,7 +17,6 @@ package org.glowroot.central.repo;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -25,8 +24,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 
@@ -43,8 +40,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 class TransactionTypeDao implements TransactionTypeRepository {
 
-    private static final String SINGLE_CACHE_KEY = "x";
-
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
 
@@ -53,7 +48,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
 
     private final RateLimiter<TransactionTypeKey> rateLimiter = new RateLimiter<>();
 
-    private final Cache<String, Map<String, List<String>>> transactionTypesCache;
+    private final Cache<String, List<String>> transactionTypesCache;
 
     TransactionTypeDao(Session session, ConfigRepositoryImpl configRepository,
             ClusterManager clusterManager) throws Exception {
@@ -67,15 +62,15 @@ class TransactionTypeDao implements TransactionTypeRepository {
         insertPS = session.prepare("insert into transaction_type (one, agent_rollup,"
                 + " transaction_type) values (1, ?, ?) using ttl ?");
         readPS = session.prepare(
-                "select agent_rollup, transaction_type from transaction_type where one = 1");
+                "select transaction_type from transaction_type where one = 1 and agent_rollup = ?");
 
         transactionTypesCache = clusterManager.createCache("transactionTypesCache",
                 new TransactionTypeCacheLoader());
     }
 
     @Override
-    public Map<String, List<String>> read() throws Exception {
-        return transactionTypesCache.get(SINGLE_CACHE_KEY);
+    public List<String> read(String agentRollupId) throws Exception {
+        return transactionTypesCache.get(agentRollupId);
     }
 
     List<Future<?>> store(List<String> agentRollups, String transactionType) throws Exception {
@@ -98,13 +93,13 @@ class TransactionTypeDao implements TransactionTypeRepository {
                 future = session.executeAsync(boundStatement);
             } catch (Exception e) {
                 rateLimiter.invalidate(rateLimiterKey);
-                transactionTypesCache.invalidate(SINGLE_CACHE_KEY);
+                transactionTypesCache.invalidate(agentRollupId);
                 throw e;
             }
             CompletableFuture<?> chainedFuture =
                     MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
             chainedFuture = chainedFuture.whenComplete(
-                    (result, t) -> transactionTypesCache.invalidate(SINGLE_CACHE_KEY));
+                    (result, t) -> transactionTypesCache.invalidate(agentRollupId));
             futures.add(chainedFuture);
         }
         return futures;
@@ -117,32 +112,17 @@ class TransactionTypeDao implements TransactionTypeRepository {
         String transactionType();
     }
 
-    private class TransactionTypeCacheLoader
-            implements CacheLoader<String, Map<String, List<String>>> {
+    private class TransactionTypeCacheLoader implements CacheLoader<String, List<String>> {
         @Override
-        public Map<String, List<String>> load(String key) throws Exception {
-            ResultSet results = session.execute(readPS.bind());
-
-            ImmutableMap.Builder<String, List<String>> builder = ImmutableMap.builder();
-            String currAgentRollup = null;
-            List<String> currTransactionTypes = new ArrayList<>();
+        public List<String> load(String agentRollupId) throws Exception {
+            BoundStatement boundStatement = readPS.bind();
+            boundStatement.setString(0, agentRollupId);
+            ResultSet results = session.execute(boundStatement);
+            List<String> transactionTypes = new ArrayList<>();
             for (Row row : results) {
-                String agentRollupId = checkNotNull(row.getString(0));
-                String transactionType = checkNotNull(row.getString(1));
-                if (currAgentRollup == null) {
-                    currAgentRollup = agentRollupId;
-                }
-                if (!agentRollupId.equals(currAgentRollup)) {
-                    builder.put(currAgentRollup, ImmutableList.copyOf(currTransactionTypes));
-                    currAgentRollup = agentRollupId;
-                    currTransactionTypes = new ArrayList<>();
-                }
-                currTransactionTypes.add(transactionType);
+                transactionTypes.add(checkNotNull(row.getString(0)));
             }
-            if (currAgentRollup != null) {
-                builder.put(currAgentRollup, ImmutableList.copyOf(currTransactionTypes));
-            }
-            return builder.build();
+            return transactionTypes;
         }
     }
 }

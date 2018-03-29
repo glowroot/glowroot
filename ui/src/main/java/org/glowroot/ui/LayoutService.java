@@ -111,12 +111,12 @@ class LayoutService {
                 .lastDisplayPart(Iterables.getLast(agentRollupDisplayParts))
                 .permissions(permissions)
                 .build();
-        return buildAgentRollupLayout(agentRollup, transactionTypeRepository.read(),
+        return buildAgentRollupLayout(agentRollup, transactionTypeRepository.read(agentRollupId),
                 traceAttributeNameRepository.read());
     }
 
     private @Nullable AgentRollupLayout buildAgentRollupLayout(FilteredAgentRollup agentRollup,
-            Map<String, List<String>> transactionTypesMap,
+            List<String> storedTransactionTypes,
             Map<String, Map<String, List<String>>> traceAttributeNamesMap) throws Exception {
         UiConfig uiConfig;
         try {
@@ -130,11 +130,7 @@ class LayoutService {
         }
         Permissions permissions = agentRollup.permissions();
         String defaultTransactionType = uiConfig.getDefaultTransactionType();
-        Set<String> transactionTypes = Sets.newTreeSet();
-        List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.id());
-        if (storedTransactionTypes != null) {
-            transactionTypes.addAll(storedTransactionTypes);
-        }
+        Set<String> transactionTypes = Sets.newTreeSet(storedTransactionTypes);
         transactionTypes.add(defaultTransactionType);
         Map<String, List<String>> traceAttributeNames =
                 traceAttributeNamesMap.get(agentRollup.id());
@@ -182,7 +178,7 @@ class LayoutService {
         UiConfig uiConfig = configRepository.getUiConfig(AGENT_ID);
         String defaultTransactionType = uiConfig.getDefaultTransactionType();
         Set<String> transactionTypes = Sets.newTreeSet();
-        List<String> storedTransactionTypes = transactionTypeRepository.read().get(AGENT_ID);
+        List<String> storedTransactionTypes = transactionTypeRepository.read(AGENT_ID);
         if (storedTransactionTypes != null) {
             transactionTypes.addAll(storedTransactionTypes);
         }

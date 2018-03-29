@@ -20,7 +20,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
@@ -133,14 +132,10 @@ class ReportJsonService {
         Date from = fromToPair.from();
         Date to = fromToPair.to();
 
-        Map<String, List<String>> transactionTypesMap = transactionTypeRepository.read();
         Set<String> transactionTypes = Sets.newHashSet();
         Set<Gauge> gauges = Sets.newHashSet();
         for (String agentRollupId : request.agentRollupIds()) {
-            List<String> transactionTypesForAgentRollupId = transactionTypesMap.get(agentRollupId);
-            if (transactionTypesForAgentRollupId != null) {
-                transactionTypes.addAll(transactionTypesForAgentRollupId);
-            }
+            transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
             gauges.addAll(
                     gaugeValueRepository.getGauges(agentRollupId, from.getTime(), to.getTime()));
         }

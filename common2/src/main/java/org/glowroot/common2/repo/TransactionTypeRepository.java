@@ -16,9 +16,8 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
-import java.util.Map;
 
 public interface TransactionTypeRepository {
 
-    Map<String, List<String>> read() throws Exception;
+    List<String> read(String agentRollupId) throws Exception;
 }

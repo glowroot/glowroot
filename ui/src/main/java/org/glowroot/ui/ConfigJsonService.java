@@ -75,7 +75,7 @@ class ConfigJsonService {
     @GET(path = "/backend/config/transaction", permission = "agent:config:view:transaction")
     String getTransactionConfig(@BindAgentId String agentId) throws Exception {
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
-        List<String> transactionTypes = transactionTypeRepository.read().get(agentId);
+        List<String> transactionTypes = transactionTypeRepository.read(agentId);
         if (transactionTypes == null) {
             transactionTypes = ImmutableList.of();
         }
@@ -97,7 +97,7 @@ class ConfigJsonService {
     @GET(path = "/backend/config/ui", permission = "agent:config:view:ui")
     String getUiConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         UiConfig config = configRepository.getUiConfig(agentRollupId);
-        List<String> transactionTypes = transactionTypeRepository.read().get(agentRollupId);
+        List<String> transactionTypes = transactionTypeRepository.read(agentRollupId);
         if (transactionTypes == null) {
             transactionTypes = ImmutableList.of();
         }
