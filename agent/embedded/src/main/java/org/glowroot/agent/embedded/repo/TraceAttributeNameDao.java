@@ -26,7 +26,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
@@ -44,8 +43,6 @@ import org.glowroot.common2.repo.TraceAttributeNameRepository;
 import static java.util.concurrent.TimeUnit.DAYS;
 
 class TraceAttributeNameDao implements TraceAttributeNameRepository {
-
-    private static final String AGENT_ID = "";
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
             ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
@@ -73,10 +70,8 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     }
 
     @Override
-    public Map<String, Map<String, List<String>>> read() throws Exception {
-        Map<String, Map<String, List<String>>> traceAttributesNames = Maps.newHashMap();
-        traceAttributesNames.put(AGENT_ID, dataSource.query(new TraceAttributeQuery()));
-        return traceAttributesNames;
+    public Map<String, List<String>> read(String agentRollupId) throws Exception {
+        return dataSource.query(new TraceAttributeQuery());
     }
 
     void updateLastCaptureTime(String transactionType, String traceAttributeName, long captureTime)

@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -112,12 +111,12 @@ class LayoutService {
                 .permissions(permissions)
                 .build();
         return buildAgentRollupLayout(agentRollup, transactionTypeRepository.read(agentRollupId),
-                traceAttributeNameRepository.read());
+                traceAttributeNameRepository.read(agentRollupId));
     }
 
     private @Nullable AgentRollupLayout buildAgentRollupLayout(FilteredAgentRollup agentRollup,
-            List<String> storedTransactionTypes,
-            Map<String, Map<String, List<String>>> traceAttributeNamesMap) throws Exception {
+            List<String> storedTransactionTypes, Map<String, List<String>> traceAttributeNames)
+            throws Exception {
         UiConfig uiConfig;
         try {
             uiConfig = configRepository.getUiConfig(agentRollup.id());
@@ -132,11 +131,6 @@ class LayoutService {
         String defaultTransactionType = uiConfig.getDefaultTransactionType();
         Set<String> transactionTypes = Sets.newTreeSet(storedTransactionTypes);
         transactionTypes.add(defaultTransactionType);
-        Map<String, List<String>> traceAttributeNames =
-                traceAttributeNamesMap.get(agentRollup.id());
-        if (traceAttributeNames == null) {
-            traceAttributeNames = ImmutableMap.of();
-        }
         return ImmutableAgentRollupLayout.builder()
                 .id(agentRollup.id())
                 .display(agentRollup.display())
@@ -184,18 +178,12 @@ class LayoutService {
         }
         transactionTypes.add(defaultTransactionType);
 
-        Map<String, List<String>> traceAttributeNames =
-                traceAttributeNameRepository.read().get(AGENT_ID);
-        if (traceAttributeNames == null) {
-            traceAttributeNames = ImmutableMap.of();
-        }
-
         AgentRollupLayout embeddedAgentRollup = ImmutableAgentRollupLayout.builder()
                 .id(AGENT_ID)
                 .display(getEmbeddedAgentDisplayName())
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypes)
-                .putAllTraceAttributeNames(traceAttributeNames)
+                .putAllTraceAttributeNames(traceAttributeNameRepository.read(AGENT_ID))
                 .defaultTransactionType(defaultTransactionType)
                 .defaultPercentiles(uiConfig.getDefaultPercentileList())
                 .defaultGaugeNames(uiConfig.getDefaultGaugeNameList())

@@ -100,7 +100,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 74;
+    private static final int CURR_SCHEMA_VERSION = 76;
 
     private final Session session;
     private final KeyspaceMetadata keyspaceMetadata;
@@ -459,6 +459,15 @@ public class SchemaUpgrade {
         if (initialSchemaVersion >= 69 && initialSchemaVersion < 74) {
             optimizeTwcsTables();
             updateSchemaVersion(74);
+        }
+        // 0.10.5 to 0.10.6
+        if (initialSchemaVersion < 75) {
+            updateTraceAttributeNamePartitionKeyPart1();
+            updateSchemaVersion(75);
+        }
+        if (initialSchemaVersion < 76) {
+            updateTraceAttributeNamePartitionKeyPart2();
+            updateSchemaVersion(76);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2361,6 +2370,58 @@ public class SchemaUpgrade {
             session.execute(boundStatement);
         }
         dropTableIfExists("v09_agent_rollup_temp");
+    }
+
+    private void updateTraceAttributeNamePartitionKeyPart1() throws Exception {
+        dropTableIfExists("trace_attribute_name_temp");
+        session.execute("create table trace_attribute_name_temp (agent_rollup varchar,"
+                + " transaction_type varchar, trace_attribute_name varchar, primary key"
+                + " (agent_rollup, transaction_type, trace_attribute_name))");
+        PreparedStatement insertTempPS = session.prepare("insert into trace_attribute_name_temp"
+                + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?)");
+        ResultSet results = session.execute("select agent_rollup, transaction_type,"
+                + " trace_attribute_name from trace_attribute_name");
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        for (Row row : results) {
+            BoundStatement boundStatement = insertTempPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setString(1, row.getString(1));
+            boundStatement.setString(2, row.getString(2));
+            futures.add(session.executeAsync(boundStatement));
+            waitForSome(futures);
+        }
+        MoreFutures.waitForAll(futures);
+    }
+
+    private void updateTraceAttributeNamePartitionKeyPart2() throws Exception {
+        if (!tableExists("trace_attribute_name_temp")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        dropTableIfExists("trace_attribute_name");
+        session.createTableWithLCS("create table trace_attribute_name (agent_rollup varchar,"
+                + " transaction_type varchar, trace_attribute_name varchar, primary key"
+                + " (agent_rollup, transaction_type, trace_attribute_name))");
+        PreparedStatement insertPS = session.prepare("insert into trace_attribute_name"
+                + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?) using"
+                + " ttl ?");
+        int ttl = getCentralStorageConfig(session).getTraceTTL();
+        ResultSet results = session.execute("select agent_rollup, transaction_type,"
+                + " trace_attribute_name from trace_attribute_name_temp");
+        // using linked list to make it fast to remove elements from the front
+        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        for (Row row : results) {
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setString(1, row.getString(1));
+            boundStatement.setString(2, row.getString(2));
+            boundStatement.setInt(3, ttl);
+            futures.add(session.executeAsync(boundStatement));
+            waitForSome(futures);
+        }
+        MoreFutures.waitForAll(futures);
+        dropTableIfExists("trace_attribute_name_temp");
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

@@ -15,8 +15,6 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -26,6 +24,9 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
@@ -44,8 +45,6 @@ import static java.util.concurrent.TimeUnit.DAYS;
 
 class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
-    private static final String SINGLE_CACHE_KEY = "x";
-
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
 
@@ -54,7 +53,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
     private final RateLimiter<TraceAttributeNameKey> rateLimiter = new RateLimiter<>();
 
-    private final Cache<String, Map<String, Map<String, List<String>>>> traceAttributeNamesCache;
+    private final Cache<String, Map<String, List<String>>> traceAttributeNamesCache;
 
     TraceAttributeNameDao(Session session, ConfigRepositoryImpl configRepository,
             ClusterManager clusterManager) throws Exception {
@@ -63,20 +62,20 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
         session.createTableWithLCS("create table if not exists trace_attribute_name (agent_rollup"
                 + " varchar, transaction_type varchar, trace_attribute_name varchar, primary key"
-                + " ((agent_rollup, transaction_type), trace_attribute_name))");
+                + " (agent_rollup, transaction_type, trace_attribute_name))");
 
         insertPS = session.prepare("insert into trace_attribute_name (agent_rollup,"
                 + " transaction_type, trace_attribute_name) values (?, ?, ?) using ttl ?");
-        readPS = session.prepare("select agent_rollup, transaction_type, trace_attribute_name"
-                + " from trace_attribute_name");
+        readPS = session.prepare("select transaction_type, trace_attribute_name from"
+                + " trace_attribute_name where agent_rollup = ?");
 
         traceAttributeNamesCache = clusterManager.createCache("traceAttributeNamesCache",
                 new TraceAttributeNameCacheLoader());
     }
 
     @Override
-    public Map<String, Map<String, List<String>>> read() throws Exception {
-        return traceAttributeNamesCache.get(SINGLE_CACHE_KEY);
+    public Map<String, List<String>> read(String agentRollupId) throws Exception {
+        return traceAttributeNamesCache.get(agentRollupId);
     }
 
     void store(String agentRollupId, String transactionType, String traceAttributeName,
@@ -96,7 +95,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         CompletableFuture<?> chainedFuture =
                 MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
         chainedFuture = chainedFuture
-                .whenComplete((result, t) -> traceAttributeNamesCache.invalidate(SINGLE_CACHE_KEY));
+                .whenComplete((result, t) -> traceAttributeNamesCache.invalidate(agentRollupId));
         futures.add(chainedFuture);
     }
 
@@ -118,23 +117,20 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     }
 
     private class TraceAttributeNameCacheLoader
-            implements CacheLoader<String, Map<String, Map<String, List<String>>>> {
+            implements CacheLoader<String, Map<String, List<String>>> {
         @Override
-        public Map<String, Map<String, List<String>>> load(String key) throws Exception {
+        public Map<String, List<String>> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readPS.bind();
+            boundStatement.setString(0, agentRollupId);
             ResultSet results = session.execute(boundStatement);
-            Map<String, Map<String, List<String>>> traceAttributeNames = new HashMap<>();
+            ListMultimap<String, String> traceAttributeNames = ArrayListMultimap.create();
             for (Row row : results) {
                 int i = 0;
-                String agentRollup = checkNotNull(row.getString(i++));
                 String transactionType = checkNotNull(row.getString(i++));
                 String traceAttributeName = checkNotNull(row.getString(i++));
-                Map<String, List<String>> innerMap =
-                        traceAttributeNames.computeIfAbsent(agentRollup, k -> new HashMap<>());
-                innerMap.computeIfAbsent(transactionType, k -> new ArrayList<>())
-                        .add(traceAttributeName);
+                traceAttributeNames.put(transactionType, traceAttributeName);
             }
-            return traceAttributeNames;
+            return Multimaps.asMap(traceAttributeNames);
         }
     }
 }

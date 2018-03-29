@@ -20,5 +20,5 @@ import java.util.Map;
 
 public interface TraceAttributeNameRepository {
 
-    Map<String, Map<String, List<String>>> read() throws Exception;
+    Map<String, List<String>> read(String agentRollupId) throws Exception;
 }
