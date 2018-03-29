@@ -45,11 +45,6 @@ public class ResultSetAspect {
         public void glowroot$setQueryEntry(@Nullable QueryEntry queryEntry) {
             glowroot$queryEntry = queryEntry;
         }
-
-        @Override
-        public boolean glowroot$hasQueryEntry() {
-            return glowroot$queryEntry != null;
-        }
     }
 
     // the method names are verbose since they will be mixed in to existing classes
@@ -59,8 +54,6 @@ public class ResultSetAspect {
         QueryEntry glowroot$getQueryEntry();
 
         void glowroot$setQueryEntry(@Nullable QueryEntry queryEntry);
-
-        boolean glowroot$hasQueryEntry();
     }
 
     @Pointcut(className = "com.datastax.driver.core.ResultSet", methodName = "one",
