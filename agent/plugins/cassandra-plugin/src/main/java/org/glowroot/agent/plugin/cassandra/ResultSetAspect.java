@@ -16,10 +16,14 @@
 package org.glowroot.agent.plugin.cassandra;
 
 import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
+import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
+import org.glowroot.agent.plugin.api.weaving.OnAfter;
+import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
@@ -59,6 +63,13 @@ public class ResultSetAspect {
     @Pointcut(className = "com.datastax.driver.core.ResultSet", methodName = "one",
             methodParameterTypes = {})
     public static class OneAdvice {
+
+        @OnBefore
+        public static @Nullable Timer onBefore(@BindReceiver ResultSet resultSet) {
+            QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
+            return queryEntry == null ? null : queryEntry.extend();
+        }
+
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object row,
                 @BindReceiver ResultSet resultSet) {
@@ -72,12 +83,20 @@ public class ResultSetAspect {
                 queryEntry.rowNavigationAttempted();
             }
         }
+
+        @OnAfter
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
+            }
+        }
     }
 
     @Pointcut(className = "java.lang.Iterable",
             subTypeRestriction = "com.datastax.driver.core.ResultSet",
             methodName = "iterator", methodParameterTypes = {})
     public static class IteratorAdvice {
+
         @OnReturn
         public static void onReturn(@BindReceiver ResultSet resultSet) {
             QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
@@ -94,6 +113,13 @@ public class ResultSetAspect {
             subTypeRestriction = "com.datastax.driver.core.ResultSet",
             methodName = "isExhausted", methodParameterTypes = {})
     public static class IsExhaustedAdvice {
+
+        @OnBefore
+        public static @Nullable Timer onBefore(@BindReceiver ResultSet resultSet) {
+            QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
+            return queryEntry == null ? null : queryEntry.extend();
+        }
+
         @OnReturn
         public static void onReturn(@BindReceiver ResultSet resultSet) {
             QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
@@ -102,6 +128,13 @@ public class ResultSetAspect {
                 return;
             }
             queryEntry.rowNavigationAttempted();
+        }
+
+        @OnAfter
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
+            }
         }
     }
 }

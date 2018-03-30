@@ -22,10 +22,14 @@ import javax.annotation.Nullable;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
+import org.glowroot.agent.bytecode.api.ThreadContextPlus;
+import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.AsyncTimerImpl;
@@ -80,7 +84,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     // only used by transaction thread
     private long locationStackTraceThreshold;
     // only used by transaction thread
-    private @MonotonicNonNull TimerImpl extendedTimer;
+    private @Nullable TimerImpl extendedTimer;
 
     static TraceEntryImpl createCompletedErrorEntry(ThreadContextImpl threadContext,
             TraceEntryImpl parentTraceEntry, @Nullable Object messageSupplier,
@@ -255,44 +259,84 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         endWithErrorInternal(null, t);
     }
 
-    // for async trace entries, extend must be called by the same thread that started the async
-    // trace entry
     @Override
     public Timer extend() {
-        // timer is only null for trace entries added using addEntryEntry(), and these trace entries
-        // are not returned from plugin api so no way for extend() to be called when timer is null
-        checkNotNull(syncTimer);
         if (selfNestingLevel++ == 0) {
-            long priorDurationNanos = endTick - revisedStartTick;
-            long currTick = ticker.read();
-            revisedStartTick = currTick - priorDurationNanos;
-            extendedTimer = syncTimer.extend(currTick);
-            extendQueryData(currTick);
+            if (isAsync()) {
+                extendAsync();
+            } else {
+                extendSync(ticker.read());
+            }
         }
         return this;
+    }
+
+    private void extendSync(long currTick) {
+        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
+        // entries are not returned from plugin api so no way for extend() to be called when
+        // syncTimer is null
+        checkNotNull(syncTimer);
+        long priorDurationNanos = endTick - revisedStartTick;
+        revisedStartTick = currTick - priorDurationNanos;
+        extendedTimer = syncTimer.extend(currTick);
+        extendQueryData(currTick);
+    }
+
+    @RequiresNonNull("asyncTimer")
+    private void extendAsync() {
+        ThreadContextThreadLocal.Holder holder =
+                BytecodeServiceHolder.get().getCurrentThreadContextHolder();
+        ThreadContextPlus currThreadContext = holder.get();
+        long currTick = ticker.read();
+        if (currThreadContext == threadContext) {
+            extendSync(currTick);
+        } else {
+            // set to null since its value is checked in stopAsync()
+            extendedTimer = null;
+            extendQueryData(currTick);
+        }
+        asyncTimer.extend(currTick);
     }
 
     // this is called for stopping an extension
     @Override
     public void stop() {
-        // the timer interface for this class is only expose through return value of extend()
         if (--selfNestingLevel == 0) {
-            endTick = ticker.read();
-            checkNotNull(extendedTimer);
-            extendedTimer.end(endTick);
-            endQueryData(endTick);
-            // it is not helpful to capture stack trace at end of async trace entry since it is
-            // ended by a different thread (and by not capturing, it reduces thread safety needs)
-            if (!isAsync() && locationStackTrace == null && locationStackTraceThreshold != 0
-                    && endTick - revisedStartTick >= locationStackTraceThreshold) {
-                StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
-                // strip up through this method, plus 1 additional method (the plugin advice method)
-                int index =
-                        ThreadContextImpl.getNormalizedStartIndex(locationStackTrace, "stop", 1);
-                setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
-                        locationStackTrace.length));
+            if (isAsync()) {
+                stopAsync();
+            } else {
+                stopSync(ticker.read());
             }
         }
+    }
+
+    private void stopSync(long endTick) {
+        this.endTick = endTick;
+        // the timer interface for this class is only expose through return value of extend()
+        checkNotNull(extendedTimer).end(endTick);
+        endQueryData(endTick);
+        // it is not helpful to capture stack trace at end of async trace entry since it is
+        // ended by a different thread (and by not capturing, it reduces thread safety needs)
+        if (locationStackTrace == null && locationStackTraceThreshold != 0
+                && endTick - revisedStartTick >= locationStackTraceThreshold) {
+            StackTraceElement[] locationStackTrace = Thread.currentThread().getStackTrace();
+            // strip up through this method, plus 1 additional method (the plugin advice method)
+            int index =
+                    ThreadContextImpl.getNormalizedStartIndex(locationStackTrace, "stop", 1);
+            setLocationStackTrace(ImmutableList.copyOf(locationStackTrace).subList(index,
+                    locationStackTrace.length));
+        }
+    }
+
+    @RequiresNonNull("asyncTimer")
+    private void stopAsync() {
+        long endTick = ticker.read();
+        if (extendedTimer == null) {
+            endQueryData(endTick);
+        } else {
+            stopSync(endTick);
+        }
+        asyncTimer.end(endTick);
     }
 
     boolean hasLocationStackTrace() {
@@ -332,6 +376,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         return initialComplete && selfNestingLevel == 0;
     }
 
+    @EnsuresNonNullIf(expression = "asyncTimer", result = true)
     private boolean isAsync() {
         return asyncTimer != null;
     }
@@ -372,19 +417,20 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     }
 
     private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
-        // timer is only null for trace entries added using addEntryEntry(), and these trace entries
-        // are not returned from plugin api so no way for end...() to be called
+        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
+        // entries are not returned from plugin api so no way for end...() to be called
         checkNotNull(syncTimer);
-        if (asyncTimer == null) {
-            syncTimer.end(endTick);
-        } else {
+        if (isAsync()) {
             asyncTimer.end(endTick);
+        } else {
+            syncTimer.end(endTick);
         }
         endQueryData(endTick);
         this.errorMessage = errorMessage;
         this.endTick = endTick;
         if (isAsync()) {
             threadContext.getTransaction().memoryBarrierWrite();
+            // already popped in stopSyncTimer()
         } else {
             selfNestingLevel--;
             threadContext.popEntry(this, endTick);

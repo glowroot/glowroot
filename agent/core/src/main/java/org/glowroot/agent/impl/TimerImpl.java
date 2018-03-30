@@ -156,7 +156,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
         return extend(ticker.read());
     }
 
-    void end(long endTick) {
+    public void end(long endTick) {
         if (--selfNestingLevel == 0) {
             endInternal(endTick);
         }
