@@ -2657,7 +2657,7 @@ public class SchemaUpgrade {
                     + " without a passphrase (for\n");
             sb.append("# example, a self signed certificate can be generated at the command line"
                     + " meeting the above\n");
-            sb.append("# requirements using:\n");
+            sb.append("# requirements using OpenSSL 1.0.0 or later:\n");
             sb.append("# \"openssl req -new -x509 -nodes -days 365 -out ui-cert.pem -keyout"
                     + " ui-key.pem\")\n");
             sb.append("ui.https=");
