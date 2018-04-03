@@ -453,9 +453,15 @@ class ClassAnalyzer {
         for (AnalyzedClass interfaceAnalyzedClass : interfaceAnalyzedHierarchy) {
             matchedMixinTypes.addAll(interfaceAnalyzedClass.mixinTypes());
         }
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedHierarchy) {
+            if (superAnalyzedClass.name().equals("java.lang.Thread")) {
+                matchedMixinTypes.addAll(superAnalyzedClass.mixinTypes());
+            }
+        }
         // remove mixins that were already implemented in a super class
         for (AnalyzedClass superAnalyzedClass : superAnalyzedHierarchy) {
-            if (!superAnalyzedClass.isInterface()) {
+            if (!superAnalyzedClass.isInterface()
+                    && !superAnalyzedClass.name().equals("java.lang.Thread")) {
                 matchedMixinTypes.removeAll(superAnalyzedClass.mixinTypes());
             }
         }

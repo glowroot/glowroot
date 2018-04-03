@@ -66,7 +66,8 @@ public class ExecutorAspect {
         }
     }
 
-    @Mixin("org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor")
+    @Mixin({"org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor",
+            "org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase$1"})
     public static class SuppressedRunnableImpl implements SuppressedRunnableEtcMixin {}
 
     // the method names are verbose since they will be mixed in to existing classes
@@ -92,15 +93,84 @@ public class ExecutorAspect {
     public static class ExecuteAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableEtc) {
-            // this class may have been loaded before class file transformer was added to jvm
-            return runnableEtc instanceof RunnableEtcMixin
-                    && !(runnableEtc instanceof SuppressedRunnableEtcMixin);
+            return isEnabledCommon(runnableEtc);
         }
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object runnableEtc) {
-            RunnableEtcMixin runnableMixin = (RunnableEtcMixin) runnableEtc;
-            AuxThreadContext auxContext = context.createAuxThreadContext();
-            runnableMixin.glowroot$setAuxContext(auxContext);
+            onBeforeCommon(context, runnableEtc);
+        }
+    }
+
+    @Pointcut(superTypeRestriction = "java.lang.Thread", methodName = "<init>",
+            methodParameterTypes = {}, nestingGroup = "executor-execute")
+    public static class ThreadInitAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver Thread thread) {
+            return isEnabledCommon(thread);
+        }
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindReceiver Thread thread) {
+            onBeforeCommon(context, thread);
+        }
+    }
+
+    @Pointcut(superTypeRestriction = "java.lang.Thread", methodName = "<init>",
+            methodParameterTypes = {"java.lang.String"}, nestingGroup = "executor-execute")
+    public static class ThreadInitWithStringAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver Thread thread) {
+            return isEnabledCommon(thread);
+        }
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindReceiver Thread thread) {
+            onBeforeCommon(context, thread);
+        }
+    }
+
+    @Pointcut(superTypeRestriction = "java.lang.Thread", methodName = "<init>",
+            methodParameterTypes = {"java.lang.ThreadGroup", "java.lang.String"},
+            nestingGroup = "executor-execute")
+    public static class ThreadInitWithStringAndThreadGroupAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver Thread thread) {
+            return isEnabledCommon(thread);
+        }
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindReceiver Thread thread) {
+            onBeforeCommon(context, thread);
+        }
+    }
+
+    @Pointcut(className = "java.lang.Thread", methodName = "<init>",
+            methodParameterTypes = {"java.lang.Runnable", ".."}, nestingGroup = "executor-execute")
+    public static class ThreadInitWithRunnableAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver Thread thread,
+                @BindParameter @Nullable Runnable runnable) {
+            return isEnabledCommon(thread, runnable);
+        }
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindReceiver Thread thread,
+                @BindParameter @Nullable Runnable runnable) {
+            onBeforeCommon(context, thread, runnable);
+        }
+    }
+
+    @Pointcut(className = "java.lang.Thread", methodName = "<init>",
+            methodParameterTypes = {"java.lang.ThreadGroup", "java.lang.Runnable", ".."},
+            nestingGroup = "executor-execute")
+    public static class ThreadInitWithThreadGroupAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver Thread thread,
+                @SuppressWarnings("unused") @BindParameter ThreadGroup threadGroup,
+                @BindParameter @Nullable Runnable runnable) {
+            return isEnabledCommon(thread, runnable);
+        }
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindReceiver Thread thread,
+                @SuppressWarnings("unused") @BindParameter ThreadGroup threadGroup,
+                @BindParameter @Nullable Runnable runnable) {
+            onBeforeCommon(context, thread, runnable);
         }
     }
 
@@ -110,12 +180,12 @@ public class ExecutorAspect {
             nestingGroup = "executor-add-listener")
     public static class AddListenerAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindParameter Object runnableEtc) {
-            return ExecuteAdvice.isEnabled(runnableEtc);
+        public static boolean isEnabled(@BindParameter Runnable runnable) {
+            return isEnabledCommon(runnable);
         }
         @OnBefore
-        public static void onBefore(ThreadContext context, @BindParameter Object runnableEtc) {
-            ExecuteAdvice.onBefore(context, runnableEtc);
+        public static void onBefore(ThreadContext context, @BindParameter Runnable runnable) {
+            onBeforeCommon(context, runnable);
         }
     }
 
@@ -384,6 +454,35 @@ public class ExecutorAspect {
             if (traceEntry != null) {
                 traceEntry.endWithError(t);
             }
+        }
+    }
+
+    private static boolean isEnabledCommon(Object runnableEtc) {
+        // this class may have been loaded before class file transformer was added to jvm
+        return runnableEtc instanceof RunnableEtcMixin
+                && !(runnableEtc instanceof SuppressedRunnableEtcMixin);
+    }
+
+    private static void onBeforeCommon(ThreadContext context, Object runnableEtc) {
+        RunnableEtcMixin runnableMixin = (RunnableEtcMixin) runnableEtc;
+        AuxThreadContext auxContext = context.createAuxThreadContext();
+        runnableMixin.glowroot$setAuxContext(auxContext);
+    }
+
+    private static boolean isEnabledCommon(Thread thread, @Nullable Runnable runnable) {
+        if (runnable == null) {
+            return isEnabledCommon(thread);
+        } else {
+            return isEnabledCommon(runnable);
+        }
+    }
+
+    private static void onBeforeCommon(ThreadContext context, Thread thread,
+            @Nullable Runnable runnable) {
+        if (runnable == null) {
+            onBeforeCommon(context, thread);
+        } else {
+            onBeforeCommon(context, runnable);
         }
     }
 

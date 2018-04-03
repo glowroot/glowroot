@@ -230,6 +230,9 @@ public class Weaver {
         }
         List<ShimType> matchedShimTypes = classAnalyzer.getMatchedShimTypes();
         List<MixinType> matchedMixinTypes = classAnalyzer.getMatchedMixinTypes();
+        if (className.equals("java/lang/Thread")) {
+            matchedMixinTypes = ImmutableList.of();
+        }
         if (classBeingRedefined != null
                 && (!matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty())) {
             Set<String> interfaceNames = Sets.newHashSet();
@@ -239,6 +242,9 @@ public class Weaver {
             for (ShimType matchedShimType : shimTypes) {
                 if (!interfaceNames.contains(matchedShimType.iface().getClassName())) {
                     // re-weaving would fail with "attempted to change superclass or interfaces"
+                    logger.warn("not reweaving {} because cannot add shim type: {}",
+                            ClassNames.fromInternalName(className),
+                            matchedShimType.iface().getClassName());
                     return null;
                 }
             }
@@ -246,6 +252,9 @@ public class Weaver {
                 for (Type mixinInterface : matchedMixinType.interfaces()) {
                     if (!interfaceNames.contains(mixinInterface.getClassName())) {
                         // re-weaving would fail with "attempted to change superclass or interfaces"
+                        logger.warn("not reweaving {} because cannot add mixin type: {}",
+                                ClassNames.fromInternalName(className),
+                                mixinInterface.getClassName());
                         return null;
                     }
                 }

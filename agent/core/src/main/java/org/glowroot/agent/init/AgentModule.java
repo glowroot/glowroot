@@ -192,6 +192,9 @@ public class AgentModule {
             }
             logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation.getAllLoadedClasses(),
                     glowrootJarFile, false);
+            if (instrumentation.isRetransformClassesSupported()) {
+                instrumentation.retransformClasses(Thread.class);
+            }
         }
 
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
