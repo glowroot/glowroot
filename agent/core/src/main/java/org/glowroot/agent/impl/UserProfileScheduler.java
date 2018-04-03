@@ -155,7 +155,7 @@ public class UserProfileScheduler {
                 activeThreadContexts.add(mainThreadContext);
             }
             activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
-            StackTraceCollector.captureStackTraces(activeThreadContexts, configService);
+            StackTraceCollector.captureStackTraces(activeThreadContexts);
         }
     }
 }

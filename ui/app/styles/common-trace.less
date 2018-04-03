@@ -135,6 +135,48 @@
   text-indent: -(4 * @indent1);
 }
 
+.gt-trace-query-text-column {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.gt-trace-query-total-column {
+  width: 60px;
+  text-align: right;
+}
+
+.gt-trace-query-other-column {
+  width: 80px;
+  text-align: right;
+}
+
+.gt-trace-query-rows-column {
+  width: 100px;
+  text-align: right;
+}
+
+.gt-padding-top-override {
+  padding-top: 10px !important;
+}
+
+#queries table td {
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+}
+
+.gt-trace-query-sort-button {
+  border: none;
+  padding: 0;
+  background-color: transparent;
+  color: darken(@gt-blue, 5%); // see .gt-link-color
+  text-align: right;
+}
+
+.gt-trace-query-sort-button:hover {
+  // this matches bootstrap's 'a' behavior (see scaffolding.less)
+  color: darken(darken(@gt-blue, 5%), 15%);
+}
+
 /* text-indent is inherited by default, so need to reset it on buttons inside .second-level-indent,
    e.g. export button on trace modal
    (note: button seems ok in Chrome and Firefox without this, but IE seems technically correct and requires it) */
@@ -185,7 +227,6 @@
   padding-bottom: 3px;
 }
 
-
 .gt-trace-entry-bar-outer {
   height: 13px;
   margin-top: 5px;
@@ -195,6 +236,10 @@
 .gt-trace-entry-bar {
   background-color: @gt-yellow;
   height: 100%;
+}
+
+.gt-dotdotdot {
+  line-height: 16px;
 }
 
 .gt-with-clip {
@@ -230,9 +275,11 @@
   body {
     font-size: 14px;
   }
+
   .btn, .form-control, .input-group-addon {
     font-size: 14px !important;
   }
+
   .form-control, .input-group .input-group-btn button {
     // this is related to font-size
     height: 34px;

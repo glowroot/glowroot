@@ -17,6 +17,7 @@ package org.glowroot.ui;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeoutException;
@@ -34,13 +35,16 @@ import org.immutables.value.Value;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
+import org.glowroot.common.live.LiveTraceRepository.EntriesAndQueries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
+import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.AgentRollupRepository;
 import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.common2.repo.TraceRepository.HeaderPlus;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -106,6 +110,30 @@ class TraceCommonService {
             }
         }
         return toJson(getStoredEntries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
+    }
+
+    // TODO this comment is no longer valid?
+    // overwritten entries will return {"overwritten":true}
+    // expired (not found) trace will return {"expired":true}
+    @Nullable
+    String getQueriesJson(String agentId, String traceId, boolean checkLiveTraces)
+            throws Exception {
+        if (checkLiveTraces) {
+            // check active/pending traces first, and lastly stored traces to make sure that the
+            // trace is not missed if it is in transition between these states
+            Queries queries;
+            try {
+                queries = liveTraceRepository.getQueries(agentId, traceId);
+            } catch (AgentNotConnectedException e) {
+                queries = null;
+            } catch (TimeoutException e) {
+                queries = null;
+            }
+            if (queries != null) {
+                return toJson(queries);
+            }
+        }
+        return toJson(getStoredQueries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
     }
 
     // overwritten profile will return {"overwritten":true}
@@ -176,6 +204,7 @@ class TraceCommonService {
                         .fileName(getFileName(header))
                         .headerJson(toJsonLiveHeader(agentId, header))
                         .entriesJson(entriesToJson(trace.getEntryList()))
+                        .queriesJson(queriesToJson(trace.getQueryList()))
                         // SharedQueryTexts are always returned from getFullTrace() above with
                         // fullTrace, so no need to resolve fullTraceSha1
                         .sharedQueryTextsJson(
@@ -193,12 +222,15 @@ class TraceCommonService {
         ImmutableTraceExport.Builder builder = ImmutableTraceExport.builder()
                 .fileName(getFileName(header.header()))
                 .headerJson(toJsonRepoHeader(agentId, header));
-        Entries entries = getStoredEntriesForExport(agentId, traceId, retryCountdown);
-        if (entries != null) {
-            builder.entriesJson(entriesToJson(entries.entries()));
+        EntriesAndQueries queriesAndEntries =
+                getStoredEntriesAndQueriesForExport(agentId, traceId, retryCountdown);
+        if (queriesAndEntries != null) {
+            builder.entriesJson(entriesToJson(queriesAndEntries.entries()));
+            builder.queriesJson(queriesToJson(queriesAndEntries.queries()));
             // SharedQueryTexts are always returned from getStoredEntries() above with fullTrace,
             // so no need to resolve fullTraceSha1
-            builder.sharedQueryTextsJson(sharedQueryTextsToJson(entries.sharedQueryTexts()));
+            builder.sharedQueryTextsJson(
+                    sharedQueryTextsToJson(queriesAndEntries.sharedQueryTexts()));
         }
         builder.mainThreadProfileJson(
                 toJson(getStoredMainThreadProfile(agentId, traceId, retryCountdown)));
@@ -229,13 +261,25 @@ class TraceCommonService {
         return entries;
     }
 
-    private @Nullable Entries getStoredEntriesForExport(String agentId, String traceId,
+    private @Nullable Queries getStoredQueries(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        Entries entries = traceRepository.readEntriesForExport(agentId, traceId);
+        Queries queries = traceRepository.readQueries(agentId, traceId);
+        while (queries == null && retryCountdown.remaining-- > 0) {
+            // trace may be completed, but still in transit from agent to the central collector
+            Thread.sleep(500);
+            queries = traceRepository.readQueries(agentId, traceId);
+        }
+        return queries;
+    }
+
+    private @Nullable EntriesAndQueries getStoredEntriesAndQueriesForExport(String agentId,
+            String traceId, RetryCountdown retryCountdown) throws Exception {
+        EntriesAndQueries entries =
+                traceRepository.readEntriesAndQueriesForExport(agentId, traceId);
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
-            entries = traceRepository.readEntriesForExport(agentId, traceId);
+            entries = traceRepository.readEntriesAndQueriesForExport(agentId, traceId);
         }
         return entries;
     }
@@ -281,6 +325,25 @@ class TraceCommonService {
         return sb.toString();
     }
 
+    private static @Nullable String toJson(@Nullable Queries queries) throws IOException {
+        if (queries == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        try {
+            jg.writeStartObject();
+            jg.writeFieldName("queries");
+            writeQueries(jg, queries.queries());
+            jg.writeFieldName("sharedQueryTexts");
+            writeSharedQueryTexts(jg, queries.sharedQueryTexts());
+            jg.writeEndObject();
+        } finally {
+            jg.close();
+        }
+        return sb.toString();
+    }
+
     @VisibleForTesting
     static @Nullable String entriesToJson(List<Trace.Entry> entries) throws IOException {
         if (entries.isEmpty()) {
@@ -290,6 +353,21 @@ class TraceCommonService {
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         try {
             writeEntries(jg, entries);
+        } finally {
+            jg.close();
+        }
+        return sb.toString();
+    }
+
+    @VisibleForTesting
+    static @Nullable String queriesToJson(List<Aggregate.Query> queries) throws IOException {
+        if (queries.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        try {
+            writeQueries(jg, queries);
         } finally {
             jg.close();
         }
@@ -336,6 +414,19 @@ class TraceCommonService {
         jg.writeEndArray();
     }
 
+    private static void writeQueries(JsonGenerator jg, List<Aggregate.Query> queries)
+            throws IOException {
+        jg.writeStartArray();
+        Iterator<Aggregate.Query> i = queries.iterator();
+        while (i.hasNext()) {
+            Aggregate.Query query = i.next();
+            jg.writeStartObject();
+            writeJson(query, jg);
+            jg.writeEndObject();
+        }
+        jg.writeEndArray();
+    }
+
     private static void writeSharedQueryTexts(JsonGenerator jg,
             List<Trace.SharedQueryText> sharedQueryTexts) throws IOException {
         jg.writeStartArray();
@@ -369,16 +460,18 @@ class TraceCommonService {
                 || header.getAuxThreadProfileSampleCount() > 0;
         return toJson(agentId, header, header.getPartial(),
                 header.getEntryCount() > 0 ? Existence.YES : Existence.NO,
+                header.getQueryCount() > 0 ? Existence.YES : Existence.NO,
                 hasProfile ? Existence.YES : Existence.NO);
     }
 
     private String toJsonRepoHeader(String agentId, HeaderPlus header) throws Exception {
         return toJson(agentId, header.header(), false, header.entriesExistence(),
-                header.profileExistence());
+                header.queriesExistence(), header.profileExistence());
     }
 
     private String toJson(String agentId, Trace.Header header, boolean active,
-            Existence entriesExistence, Existence profileExistence) throws Exception {
+            Existence entriesExistence, Existence queriesExistence, Existence profileExistence)
+            throws Exception {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         try {
@@ -452,6 +545,11 @@ class TraceCommonService {
             if (entryLimitExceeded) {
                 jg.writeBooleanField("entryLimitExceeded", entryLimitExceeded);
             }
+            jg.writeNumberField("queryCount", header.getQueryCount());
+            boolean queryLimitExceeded = header.getQueryLimitExceeded();
+            if (queryLimitExceeded) {
+                jg.writeBooleanField("queryLimitExceeded", queryLimitExceeded);
+            }
             jg.writeNumberField("mainThreadProfileSampleCount",
                     header.getMainThreadProfileSampleCount());
             boolean mainThreadProfileSampleLimitExceeded =
@@ -470,6 +568,8 @@ class TraceCommonService {
             }
             jg.writeStringField("entriesExistence",
                     entriesExistence.name().toLowerCase(Locale.ENGLISH));
+            jg.writeStringField("queriesExistence",
+                    queriesExistence.name().toLowerCase(Locale.ENGLISH));
             jg.writeStringField("profileExistence",
                     profileExistence.name().toLowerCase(Locale.ENGLISH));
             jg.writeEndObject();
@@ -513,6 +613,17 @@ class TraceCommonService {
             jg.writeFieldName("error");
             writeError(entry.getError(), jg);
         }
+    }
+
+    private static void writeJson(Aggregate.Query query, JsonGenerator jg) throws IOException {
+        jg.writeStringField("type", query.getType());
+        jg.writeNumberField("sharedQueryTextIndex", query.getSharedQueryTextIndex());
+        jg.writeNumberField("totalDurationNanos", query.getTotalDurationNanos());
+        jg.writeNumberField("executionCount", query.getExecutionCount());
+        if (query.hasTotalRows()) {
+            jg.writeNumberField("totalRows", query.getTotalRows().getValue());
+        }
+        jg.writeBooleanField("active", query.getActive());
     }
 
     private static void writeDetailEntries(List<Trace.DetailEntry> detailEntries, JsonGenerator jg)
@@ -667,6 +778,8 @@ class TraceCommonService {
         String headerJson();
         @Nullable
         String entriesJson();
+        @Nullable
+        String queriesJson();
         @Nullable
         String sharedQueryTextsJson();
         @Nullable

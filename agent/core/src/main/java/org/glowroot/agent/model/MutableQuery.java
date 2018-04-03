@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.model;
 
-import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
@@ -26,6 +25,8 @@ class MutableQuery {
 
     private boolean hasTotalRows;
     private long totalRows;
+
+    private boolean active;
 
     double getTotalDurationNanos() {
         return totalDurationNanos;
@@ -43,6 +44,10 @@ class MutableQuery {
         return totalRows;
     }
 
+    boolean isActive() {
+        return active;
+    }
+
     void addToTotalDurationNanos(double totalDurationNanos) {
         this.totalDurationNanos += totalDurationNanos;
     }
@@ -58,21 +63,32 @@ class MutableQuery {
         }
     }
 
+    void setActive(boolean active) {
+        this.active = active;
+    }
+
     void add(MutableQuery query) {
         addToTotalDurationNanos(query.totalDurationNanos);
         addToExecutionCount(query.executionCount);
         addToTotalRows(query.hasTotalRows, query.totalRows);
+        if (query.active) {
+            setActive(true);
+        }
     }
 
     void add(Aggregate.Query query) {
         addToTotalDurationNanos(query.getTotalDurationNanos());
         addToExecutionCount(query.getExecutionCount());
         addToTotalRows(query.hasTotalRows(), query.getTotalRows().getValue());
+        if (query.getActive()) {
+            setActive(true);
+        }
     }
 
     Aggregate.Query toAggregateProto(String queryType, String queryText,
-            SharedQueryTextCollector sharedQueryTextCollector) {
-        int sharedQueryTextIndex = sharedQueryTextCollector.getIndex(queryText);
+            SharedQueryTextCollection sharedQueryTextCollection, boolean includeActive)
+            throws Exception {
+        int sharedQueryTextIndex = sharedQueryTextCollection.getSharedQueryTextIndex(queryText);
         Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
                 .setType(queryType)
                 .setSharedQueryTextIndex(sharedQueryTextIndex)
@@ -80,6 +96,9 @@ class MutableQuery {
                 .setExecutionCount(executionCount);
         if (hasTotalRows) {
             builder.setTotalRows(OptionalInt64.newBuilder().setValue(totalRows));
+        }
+        if (includeActive) {
+            builder.setActive(active);
         }
         return builder.build();
     }

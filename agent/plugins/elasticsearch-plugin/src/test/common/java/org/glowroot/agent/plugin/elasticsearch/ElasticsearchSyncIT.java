@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +76,17 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("PUT testindex/testtype");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -97,6 +109,17 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("GET testindex/testtype");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -119,6 +142,17 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("PUT testindex/testtype");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -141,6 +175,17 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" [");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("DELETE testindex/testtype");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -163,6 +208,17 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("SEARCH testindex/testtype");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -185,6 +241,17 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("SEARCH _any/testtype");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -209,6 +276,17 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("SEARCH /");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -233,6 +311,17 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("SEARCH testindex,testindex2/testtype,testtype2");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -255,6 +344,17 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .startsWith("SEARCH testindex/testtype {");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     private static void checkTimers(Trace trace) {

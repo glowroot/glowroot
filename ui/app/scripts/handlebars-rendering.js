@@ -39,11 +39,14 @@ HandlebarsRendering = (function () {
 
   var monospaceCharWidth = 8.41;
 
-  var traceEntryLineLength;
+  var traceEntryMessageLength;
   var traceEntryBarWidth = 50;
   var traceDurationNanos;
 
+  var queryTextLength;
+
   var flattenedTraceEntries;
+  var queries;
 
   Handlebars.registerHelper('eachKeyValuePair', function (map, options) {
     var buffer = '';
@@ -267,6 +270,13 @@ HandlebarsRendering = (function () {
     return options.inverse(this);
   });
 
+  Handlebars.registerHelper('ifNotUndefined', function (value, options) {
+    if (value !== undefined) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
   Handlebars.registerHelper('date', function (timestamp) {
     return moment(timestamp).format('YYYY-MM-DD h:mm:ss.SSS a (Z)');
   });
@@ -280,8 +290,15 @@ HandlebarsRendering = (function () {
     }
   });
 
+  Handlebars.registerHelper('formatMillis', function (value) {
+    return formatMillis(value);
+  });
+
   Handlebars.registerHelper('formatInteger', function (value) {
     return value.toLocaleString();
+  });
+  Handlebars.registerHelper('formatCount', function (value) {
+    return formatCount(value);
   });
 
   Handlebars.registerHelper('ifExistenceYes', function (existence, options) {
@@ -298,11 +315,33 @@ HandlebarsRendering = (function () {
     return options.inverse(this);
   });
 
-  Handlebars.registerHelper('ifExistenceNo', function (existence, options) {
-    if (existence === 'no') {
+  Handlebars.registerHelper('ifAnyExistenceExpired', function (trace, options) {
+    if (trace.entriesExistence === 'expired' || trace.queriesExistence === 'expired'
+        || trace.profileExistence === 'expired') {
       return options.fn(this);
     }
     return options.inverse(this);
+  });
+
+  Handlebars.registerHelper('theExpiredDetails', function (trace) {
+    var expiredDetails = [];
+    if (trace.entriesExistence === 'expired') {
+      expiredDetails.push('entries');
+    }
+    if (trace.queriesExistence === 'expired') {
+      expiredDetails.push('query stats');
+    }
+    if (trace.profileExistence === 'expired') {
+      expiredDetails.push('profile');
+    }
+    var text = expiredDetails.join(', ');
+    text = text.charAt(0).toUpperCase() + text.substring(1);
+    var index = text.lastIndexOf(', ');
+    if (index === -1) {
+      return text;
+    } else {
+      return text.substring(0, index) + ' and ' + text.substring(index + 2);
+    }
   });
 
   Handlebars.registerHelper('ifAnyThreadInfo', function (trace, options) {
@@ -364,14 +403,30 @@ HandlebarsRendering = (function () {
       var sharedQueryText = traceEntry.queryMessage.sharedQueryText;
       if (sharedQueryText.fullTextSha1) {
         // query text is truncated, this is a "long message"
-        messageLength = traceEntryLineLength + 1;
+        messageLength = traceEntryMessageLength + 1;
       } else {
-        messageLength = traceEntry.message.length;
+        var queryMessage = traceEntry.queryMessage;
+        messageLength = queryMessage.prefix.length + sharedQueryText.fullText.length + queryMessage.suffix.length;
       }
     } else {
       messageLength = traceEntry.message.length;
     }
-    if (messageLength > traceEntryLineLength) {
+    if (messageLength > traceEntryMessageLength) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
+  Handlebars.registerHelper('ifLongQuery', function (query, options) {
+    var textLength;
+    var sharedQueryText = query.sharedQueryText;
+    if (sharedQueryText.fullTextSha1) {
+      // query text is truncated, this is a "long query"
+      textLength = queryTextLength + 1;
+    } else {
+      textLength = sharedQueryText.fullText.length;
+    }
+    if (textLength > queryTextLength) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -423,13 +478,14 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('firstPart', function (traceEntry) {
-    var totalChars = traceEntryLineLength - 2 * traceEntry.depth;
+    var totalChars = traceEntryMessageLength - 2 * traceEntry.depth;
     var messageToSlice;
     if (traceEntry.queryMessage) {
-      if (traceEntry.queryMessage.sharedQueryText.fullTextSha1) {
-        messageToSlice = traceEntry.queryMessage.prefix + traceEntry.queryMessage.sharedQueryText.truncatedText;
+      var sharedQueryText = traceEntry.queryMessage.sharedQueryText;
+      if (sharedQueryText.truncatedText) {
+        messageToSlice = traceEntry.queryMessage.prefix + sharedQueryText.truncatedText;
       } else {
-        messageToSlice = traceEntry.message;
+        messageToSlice = traceEntry.queryMessage.prefix + sharedQueryText.fullText;
       }
     } else {
       messageToSlice = traceEntry.message;
@@ -438,18 +494,41 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('lastPart', function (traceEntry) {
-    var totalChars = traceEntryLineLength - 2 * traceEntry.depth;
+    var totalChars = traceEntryMessageLength - 2 * traceEntry.depth;
     var messageToSlice;
     if (traceEntry.queryMessage) {
-      if (traceEntry.queryMessage.sharedQueryText.fullTextSha1) {
-        messageToSlice = traceEntry.queryMessage.sharedQueryText.truncatedEndText + traceEntry.queryMessage.suffix;
+      var sharedQueryText = traceEntry.queryMessage.sharedQueryText;
+      if (sharedQueryText.truncatedEndText) {
+        messageToSlice = sharedQueryText.truncatedEndText + traceEntry.queryMessage.suffix;
       } else {
-        messageToSlice = traceEntry.message;
+        messageToSlice = sharedQueryText.fullText + traceEntry.queryMessage.suffix;
       }
     } else {
       messageToSlice = traceEntry.message;
     }
     return messageToSlice.slice(-Math.floor(totalChars / 2));
+  });
+
+  Handlebars.registerHelper('queryFirstPart', function (query) {
+    var messageToSlice;
+    var sharedQueryText = query.sharedQueryText;
+    if (sharedQueryText.truncatedText) {
+      messageToSlice = sharedQueryText.truncatedText;
+    } else {
+      messageToSlice = sharedQueryText.fullText;
+    }
+    return messageToSlice.slice(0, Math.ceil(queryTextLength / 2));
+  });
+
+  Handlebars.registerHelper('queryLastPart', function (query) {
+    var messageToSlice;
+    var sharedQueryText = query.sharedQueryText;
+    if (sharedQueryText.truncatedEndText) {
+      messageToSlice = sharedQueryText.truncatedEndText;
+    } else {
+      messageToSlice = query.sharedQueryText.fullText;
+    }
+    return messageToSlice.slice(-Math.floor(queryTextLength / 2));
   });
 
   Handlebars.registerHelper('exceptionHtml', function (throwable) {
@@ -536,13 +615,13 @@ HandlebarsRendering = (function () {
         // this is an export file
         $selector.data('gtLoaded', true);
         // first time opening
-        initTraceEntryLineLength();
+        initTraceEntryMessageLength();
         var sharedQueryTexts = $traceParent.data('gtSharedQueryTexts');
-        mergeInSharedQueryTexts(entries, sharedQueryTexts);
+        mergeSharedQueryTextsIntoEntries(entries, sharedQueryTexts);
         flattenedTraceEntries = flattenTraceEntries(entries);
         // un-hide before building in case there are lots of trace entries, at least can see first few quickly
         $selector.removeClass('hide');
-        renderNext(flattenedTraceEntries, 0);
+        renderNextEntries(flattenedTraceEntries, 0);
       } else {
         // this is not an export file
         var agentId = $traceParent.data('gtAgentId');
@@ -565,15 +644,15 @@ HandlebarsRendering = (function () {
                 $selector.append('<div style="padding: 1em;">This trace has expired</div>');
               } else {
                 // first time opening
-                initTraceEntryLineLength();
-                mergeInSharedQueryTexts(data.entries, data.sharedQueryTexts);
+                initTraceEntryMessageLength();
+                mergeSharedQueryTextsIntoEntries(data.entries, data.sharedQueryTexts);
                 var last = data.entries[data.entries.length - 1];
                 // updating traceDurationNanos is needed for live traces
                 traceDurationNanos = Math.max(traceDurationNanos, last.startOffsetNanos + last.durationNanos);
                 flattenedTraceEntries = flattenTraceEntries(data.entries);
                 // un-hide before building in case there are lots of trace entries, at least can see first few quickly
                 $selector.removeClass('hide');
-                renderNext(flattenedTraceEntries, 0);
+                renderNextEntries(flattenedTraceEntries, 0);
               }
             })
             .fail(function (jqXHR) {
@@ -625,6 +704,111 @@ HandlebarsRendering = (function () {
       $i.removeClass('fa-plus-square');
       $i.addClass('fa-minus-square');
     }
+  });
+
+  $(document).on('click', '.gt-queries-toggle', function () {
+    var $selector = $('#queries');
+    if ($selector.data('gtLoading')) {
+      // handles rapid clicking when loading from url
+      return;
+    }
+    if (!$selector.data('gtLoaded')) {
+      var $traceParent = $(this).parents('.gt-trace-parent');
+      queries = $traceParent.data('gtQueries');
+      if (queries) {
+        // this is an export file
+        $selector.data('gtLoaded', true);
+        // first time opening
+        initQueryTextLength();
+        var sharedQueryTexts = $traceParent.data('gtSharedQueryTexts');
+        prepareQueries(queries, sharedQueryTexts);
+        // un-hide before building in case there are lots of queries, at least can see first few quickly
+        $selector.removeClass('hide');
+        renderNextQueries(queries, 0);
+      } else {
+        // this is not an export file
+        var agentId = $traceParent.data('gtAgentId');
+        var traceId = $traceParent.data('gtTraceId');
+        var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
+        $selector.data('gtLoading', true);
+        var $button = $(this);
+        var spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
+        var url = 'backend/trace/queries?agent-id=' + encodeURIComponent(agentId) + '&trace-id=' + traceId;
+        if (checkLiveTraces) {
+          url += '&check-live-traces=true';
+        }
+        $.get(url)
+            .done(function (data) {
+              if (data.overwritten) {
+                $selector.append('<div style="padding: 1em;">The trace query stats have expired, see'
+                    + ' <a href="admin/storage#trace-capped-database-size">'
+                    + 'Configuration &gt; Storage &gt; Trace detail data</a></div>');
+              } else if (data.expired) {
+                $selector.append('<div style="padding: 1em;">This trace has expired</div>');
+              } else {
+                // first time opening
+                initQueryTextLength();
+                prepareQueries(data.queries, data.sharedQueryTexts);
+                queries = data.queries;
+                // un-hide before building in case there are lots of trace entries, at least can see first few quickly
+                $selector.removeClass('hide');
+                renderNextQueries(queries, 0);
+              }
+            })
+            .fail(function (jqXHR) {
+              if (jqXHR.status === 401) {
+                goToLogin(jqXHR.responseJSON.timedOut);
+              } else {
+                $selector.append('<div class="gt-red" style="padding: 1em;">An error occurred retrieving the trace'
+                    + ' query stats</div>');
+              }
+            })
+            .always(function () {
+              spinner.stop();
+              $selector.data('gtLoading', false);
+              $selector.data('gtLoaded', true);
+            });
+      }
+    } else if ($selector.hasClass('hide')) {
+      $selector.removeClass('hide');
+    } else {
+      $selector.addClass('hide');
+    }
+  });
+
+  $(document).on('click', '.gt-trace-query-sort-button', function () {
+    var currProperty = $('.query-table').data('curr-sort-property');
+    var property = $(this).data('sort-property');
+    var direction;
+    if (property === currProperty) {
+      direction = -1 * Number($('.query-table').data('curr-sort-direction'));
+    } else {
+      direction = 1;
+    }
+    $('.query-table').data('curr-sort-property', property);
+    $('.query-table').data('curr-sort-direction', direction);
+
+    var $allSortIcons = $('.query-table .caret');
+    $allSortIcons.addClass('hide');
+    $allSortIcons.removeClass('gt-caret-sort-ascending');
+
+    var $currSortIcon = $(this).find('.caret');
+    $currSortIcon.removeClass('hide');
+    if (direction === -1) {
+      $currSortIcon.addClass('gt-caret-sort-ascending');
+    }
+
+    var sortedQueries = queries.slice(0).sort(function (a, b) {
+      if (b[property] === undefined) {
+        return direction;
+      } else if (a[property] === undefined) {
+        return -direction;
+      } else {
+        return direction * (b[property] - a[property]);
+      }
+    });
+    $('#queries table tbody').empty();
+    renderNextQueries(sortedQueries, 0);
   });
 
   $(document).on('click', '.gt-main-thread-profile-toggle', function () {
@@ -713,26 +897,51 @@ HandlebarsRendering = (function () {
     }
   }
 
-  function initTraceEntryLineLength() {
-    // -170 for the left margin of the trace entry lines
-    traceEntryLineLength = ($('#entries').width() - 220) / monospaceCharWidth;
+  function initTraceEntryMessageLength() {
+    // -220 for the left margin of the trace entry lines
+    traceEntryMessageLength = ($('#checkThisForWidth').width() - 220) / monospaceCharWidth;
     // min value of 60, otherwise not enough context provided by the elipsed line
-    traceEntryLineLength = Math.max(traceEntryLineLength, 60);
+    traceEntryMessageLength = Math.max(traceEntryMessageLength, 60);
     // max value of 240, since long queries are only initially retrieved with first 120 and last 120 characters
-    traceEntryLineLength = Math.min(traceEntryLineLength, 240);
+    traceEntryMessageLength = Math.min(traceEntryMessageLength, 240);
   }
 
-  function mergeInSharedQueryTexts(entries, sharedQueryTexts) {
+  function initQueryTextLength() {
+    // -360 for the left margin of the trace entry lines
+    queryTextLength = ($('#checkThisForWidth').width() - 400) / monospaceCharWidth;
+    // min value of 60, otherwise not enough context provided by the elipsed line
+    queryTextLength = Math.max(queryTextLength, 60);
+    // max value of 240, since long queries are only initially retrieved with first 120 and last 120 characters
+    queryTextLength = Math.min(queryTextLength, 240);
+  }
+
+  function mergeSharedQueryTextsIntoEntries(entries, sharedQueryTexts) {
     $.each(entries, function (index, entry) {
       if (entry.queryMessage) {
         entry.queryMessage.sharedQueryText = sharedQueryTexts[entry.queryMessage.sharedQueryTextIndex];
-        if (!entry.queryMessage.sharedQueryText.fullTextSha1) {
+        if (entry.queryMessage.sharedQueryText.fullText) {
           entry.message = entry.queryMessage.prefix + entry.queryMessage.sharedQueryText.fullText
               + entry.queryMessage.suffix;
         }
       }
       if (entry.childEntries) {
-        mergeInSharedQueryTexts(entry.childEntries, sharedQueryTexts);
+        mergeSharedQueryTextsIntoEntries(entry.childEntries, sharedQueryTexts);
+      }
+    });
+  }
+
+  function prepareQueries(queries, sharedQueryTexts) {
+    queries.sort(function (a, b) {
+      return b.totalDurationNanos - a.totalDurationNanos;
+    });
+    $.each(queries, function (index, query) {
+      query.index = index;
+      query.sharedQueryText = sharedQueryTexts[query.sharedQueryTextIndex];
+      query.timePerExecution = query.totalDurationNanos / (1000000 * query.executionCount);
+      if (query.totalRows === undefined) {
+        query.rowsPerExecution = undefined;
+      } else {
+        query.rowsPerExecution = query.totalRows / query.executionCount;
       }
     });
   }
@@ -760,7 +969,7 @@ HandlebarsRendering = (function () {
     return flattenedTraceEntries;
   }
 
-  function renderNext(entries, start) {
+  function renderNextEntries(entries, start) {
     // large numbers of trace entries (e.g. 20,000) render much faster when grouped into sub-divs
     var batchSize;
     var i;
@@ -778,7 +987,30 @@ HandlebarsRendering = (function () {
     $('#entries').append(html);
     if (start + 100 < entries.length) {
       setTimeout(function () {
-        renderNext(entries, start + batchSize);
+        renderNextEntries(entries, start + batchSize);
+      }, 10);
+    }
+  }
+
+  function renderNextQueries(queries, start) {
+    // large numbers of trace queries (e.g. 20,000) render much faster when grouped into sub-divs
+    var batchSize;
+    var i;
+    if (start === 0) {
+      // first batch size is smaller to make the records show up on screen right away
+      batchSize = 100;
+    } else {
+      // rest of batches are optimized for total throughput
+      batchSize = 500;
+    }
+    var html = '';
+    for (i = start; i < Math.min(start + batchSize, queries.length); i++) {
+      html += JST['trace-query'](queries[i]);
+    }
+    $('#queries table tbody').append(html);
+    if (start + 100 < queries.length) {
+      setTimeout(function () {
+        renderNextQueries(queries, start + batchSize);
       }, 10);
     }
   }
@@ -814,18 +1046,26 @@ HandlebarsRendering = (function () {
         }
         formatted = spaces + comment + formatted;
       }
-      var parameters = suffix.replace(/ => [0-9]+ rows?$/, '');
-      var rows = suffix.substring(parameters.length + 1);
-      var html = prefix;
-      // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
-      // there are extra newlines after the pre tag
-      html += '\n\n<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
-      if (parameters) {
-        html += '\n\n<span class="gt-indent2">parameters:</span>\n\n' + '<span class="gt-indent2">  ' + parameters
-            + '</span>';
-      }
-      if (rows) {
-        html += '\n\n<span class="gt-indent2">rows:</span>\n\n' + '<span class="gt-indent2">  ' + rows + '</span>';
+      var html;
+      if (prefix || suffix) {
+        var parameters = suffix.replace(/ => [0-9]+ rows?$/, '');
+        var rows = suffix.substring(parameters.length + 1);
+        html = prefix;
+        // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
+        // there are extra newlines after the pre tag
+        html += '\n\n<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
+        if (parameters) {
+          html += '\n\n<span class="gt-indent2">parameters:</span>\n\n' + '<span class="gt-indent2">  ' + parameters
+              + '</span>';
+        }
+        if (rows) {
+          html += '\n\n<span class="gt-indent2">rows:</span>\n\n' + '<span class="gt-indent2">  ' + rows + '</span>';
+        }
+      } else {
+        // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
+        // there are extra newlines after the pre tag
+        html = '<span class="gt-indent1 gt-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
+        expanded.addClass('gt-padding-top-override');
       }
       expanded.css('padding-bottom', '10px');
       var $clip = expanded.find('.gt-clip');
@@ -870,85 +1110,141 @@ HandlebarsRendering = (function () {
       } else {
         clipboardContainer = 'body';
       }
-      gtClipboard($clipboardIcon, clipboardContainer, function () {
-        return clipTextNode[0];
-      }, function () {
-        var text = clipTextNode.text();
-        // TODO deal with this hacky special case for SQL formatting
-        if (text.lastIndexOf('jdbc execute:\n\n', 0) === 0) {
-          text = text.substring('jdbc execute:\n\n'.length);
-        } else if (text.lastIndexOf('jdbc execution:\n\n', 0) === 0) {
-          // this is for traces captured prior to 0.10.1
-          text = text.substring('jdbc execution:\n\n'.length);
-        }
-        return text;
-      });
 
       var expandedTraceEntryNode = expanded.find('.gt-expanded-trace-entry');
-      var queryMessage;
+      var expandedTraceQueryNode = expanded.find('.gt-expanded-trace-query');
+      var $traceParent;
+      var agentId;
+      var alreadyDoneAfter;
+      var spinner;
       if (expandedTraceEntryNode.length) {
-        var traceEntryIndex = expandedTraceEntryNode.data('gt-trace-entry-index');
-        queryMessage = flattenedTraceEntries[traceEntryIndex].queryMessage;
-      }
-      if (queryMessage && queryMessage.sharedQueryText.fullTextSha1 && !queryMessage.sharedQueryText.fullText) {
-        var $traceParent = parent.parents('.gt-trace-parent');
-        var agentId = $traceParent.data('gtAgentId');
-        var alreadyDoneAfter;
-        var spinner = Glowroot.showSpinner(expanded.find('.gt-trace-detail-spinner'), function () {
-          doAfter();
-          alreadyDoneAfter = true;
+        gtClipboard($clipboardIcon, clipboardContainer, function () {
+          var text = clipTextNode.text();
+          // TODO deal with this hacky special case for SQL formatting
+          if (text.lastIndexOf('jdbc execute:\n\n', 0) === 0) {
+            text = text.substring('jdbc execute:\n\n'.length);
+          } else if (text.lastIndexOf('jdbc execution:\n\n', 0) === 0) {
+            // this is for traces captured prior to 0.10.1
+            text = text.substring('jdbc execution:\n\n'.length);
+          }
+          return text;
         });
-        $.get('backend/transaction/full-query-text?agent-rollup-id=' + encodeURIComponent(agentId)
-            + '&full-text-sha1=' + queryMessage.sharedQueryText.fullTextSha1)
-            .done(function (data) {
-              if (data.expired) {
-                expandedTraceEntryNode.text('[the full query text has expired]');
-              } else {
-                expandedTraceEntryNode.text(queryMessage.prefix + data.fullText + queryMessage.suffix);
-                if (queryMessage.prefix === 'jdbc execute: ') {
-                  formatSql(unexpanded, expanded, data.fullText, 'jdbc execute:', queryMessage.suffix.trim());
-                } else if (queryMessage.prefix === 'jdbc execution: ') {
-                  // this is for traces captured prior to 0.10.1
-                  formatSql(unexpanded, expanded, data.fullText, 'jdbc execution:', queryMessage.suffix.trim());
+        var traceEntryIndex = expandedTraceEntryNode.data('gt-trace-entry-index');
+        var queryMessage = flattenedTraceEntries[traceEntryIndex].queryMessage;
+        if (queryMessage && queryMessage.sharedQueryText.fullTextSha1 && !queryMessage.sharedQueryText.fullText) {
+          $traceParent = parent.parents('.gt-trace-parent');
+          agentId = $traceParent.data('gtAgentId');
+          spinner = Glowroot.showSpinner(expanded.find('.gt-trace-detail-spinner'), function () {
+            doAfter();
+            alreadyDoneAfter = true;
+          });
+          $.get('backend/transaction/full-query-text?agent-rollup-id=' + encodeURIComponent(agentId)
+              + '&full-text-sha1=' + queryMessage.sharedQueryText.fullTextSha1)
+              .done(function (data) {
+                if (data.expired) {
+                  expandedTraceEntryNode.text('[the full query text has expired]');
+                } else {
+                  expandedTraceEntryNode.text(queryMessage.prefix + data.fullText + queryMessage.suffix);
+                  if (queryMessage.prefix === 'jdbc execute: ') {
+                    formatSql(unexpanded, expanded, data.fullText, 'jdbc execute:', queryMessage.suffix.trim());
+                  } else if (queryMessage.prefix === 'jdbc execution: ') {
+                    // this is for traces captured prior to 0.10.1
+                    formatSql(unexpanded, expanded, data.fullText, 'jdbc execution:', queryMessage.suffix.trim());
+                  }
+                  // so other trace entries with same shared query text don't need to go to server
+                  queryMessage.sharedQueryText.fullText = data.fullText;
+                  expanded.addClass('gt-with-clip');
+                  expanded.find('.gt-clip').removeClass('hide');
                 }
-                // so other trace entries with same shared query text don't need to go to server
-                queryMessage.sharedQueryText.fullText = data.fullText;
-              }
-            })
-            .fail(function (jqXHR) {
-              if (jqXHR.status === 401) {
-                goToLogin(jqXHR.responseJSON.timedOut);
-              } else {
-                expandedTraceEntryNode.html('<div class="gt-red">An error occurred retrieving the full query text</div>');
-              }
-            })
-            .always(function () {
-              spinner.stop();
-              if (!alreadyDoneAfter) {
-                doAfter();
-              }
-            });
-      } else if (queryMessage && queryMessage.sharedQueryText.fullText) {
-        // full text is already available for short query texts, or was already fetched above
-        expandedTraceEntryNode.text(queryMessage.prefix + queryMessage.sharedQueryText.fullText + queryMessage.suffix);
-        if (queryMessage.prefix === 'jdbc execute: ') {
-          formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execute:',
-              queryMessage.suffix.trim());
-        } else if (queryMessage.prefix === 'jdbc execution: ') {
-          formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execution:',
-              queryMessage.suffix.trim());
+              })
+              .fail(function (jqXHR) {
+                if (jqXHR.status === 401) {
+                  goToLogin(jqXHR.responseJSON.timedOut);
+                } else {
+                  expandedTraceEntryNode.html(
+                      '<div class="gt-red">An error occurred retrieving the full query text</div>');
+                }
+              })
+              .always(function () {
+                spinner.stop();
+                if (!alreadyDoneAfter) {
+                  doAfter();
+                }
+              });
+        } else if (queryMessage && queryMessage.sharedQueryText.fullText) {
+          // full text is already available for short query texts, or was already fetched above
+          expandedTraceEntryNode.text(queryMessage.prefix + queryMessage.sharedQueryText.fullText
+              + queryMessage.suffix);
+          if (queryMessage.prefix === 'jdbc execute: ') {
+            formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execute:',
+                queryMessage.suffix.trim());
+          } else if (queryMessage.prefix === 'jdbc execution: ') {
+            formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execution:',
+                queryMessage.suffix.trim());
+          }
+          doAfter();
+        } else {
+          // the call to formatSql() is needed here for data collected prior to 0.9.3
+          var text = expandedTraceEntryNode.text().trim();
+          if (text.lastIndexOf('jdbc execution: ', 0) === 0) {
+            var afterPrefixStripped = text.substring('jdbc execution: '.length);
+            var afterRowsStripped = afterPrefixStripped.replace(/ => [0-9]+ rows?$/, '');
+            var queryText = afterRowsStripped.replace(/ \[.*?]$/, '');
+            var suffix = afterPrefixStripped.substring(queryText.length + 1);
+            formatSql(unexpanded, expanded, queryText, 'jdbc execution:', suffix);
+          }
+          doAfter();
         }
-        doAfter();
+      } else if (expandedTraceQueryNode.length) {
+        gtClipboard($clipboardIcon, clipboardContainer, function () {
+          return clipTextNode.text();
+        });
+        var traceQueryIndex = expandedTraceQueryNode.data('gt-trace-query-index');
+        var query = queries[traceQueryIndex];
+        if (query && query.sharedQueryText.fullTextSha1 && !query.sharedQueryText.fullText) {
+          $traceParent = parent.parents('.gt-trace-parent');
+          agentId = $traceParent.data('gtAgentId');
+          spinner = Glowroot.showSpinner(expanded.find('.gt-trace-detail-spinner'), function () {
+            doAfter();
+            alreadyDoneAfter = true;
+          });
+          $.get('backend/transaction/full-query-text?agent-rollup-id=' + encodeURIComponent(agentId)
+              + '&full-text-sha1=' + query.sharedQueryText.fullTextSha1)
+              .done(function (data) {
+                if (data.expired) {
+                  expandedTraceQueryNode.text('[the full query text has expired]');
+                } else {
+                  expandedTraceQueryNode.text(data.fullText);
+                  formatSql(unexpanded, expanded, data.fullText);
+                  // so other trace entries with same shared query text don't need to go to server
+                  query.sharedQueryText.fullText = data.fullText;
+                  expanded.addClass('gt-with-clip');
+                  expanded.find('.gt-clip').removeClass('hide');
+                }
+              })
+              .fail(function (jqXHR) {
+                if (jqXHR.status === 401) {
+                  goToLogin(jqXHR.responseJSON.timedOut);
+                } else {
+                  expandedTraceQueryNode.html('<div class="gt-red">An error occurred retrieving the full query text</div>');
+                }
+              })
+              .always(function () {
+                spinner.stop();
+                if (!alreadyDoneAfter) {
+                  doAfter();
+                }
+              });
+        } else if (query) {
+          // full text is already available for short query texts, or was already fetched above
+          expandedTraceQueryNode.text(query.sharedQueryText.fullText);
+          formatSql(unexpanded, expanded, query.sharedQueryText.fullText);
+          doAfter();
+        }
       } else {
-        // the call to formatSql() is needed here for data collected prior to 0.9.3
-        var text = expandedTraceEntryNode.text().trim();
-        if (text.lastIndexOf('jdbc execution: ', 0) === 0) {
-          var afterPrefixStripped = text.substring('jdbc execution: '.length);
-          var afterRowsStripped = afterPrefixStripped.replace(/ => [0-9]+ rows?$/, '');
-          var queryText = afterRowsStripped.replace(/ \[.*?]$/, '');
-          var suffix = afterPrefixStripped.substring(queryText.length + 1);
-          formatSql(unexpanded, expanded, queryText, 'jdbc execution:', suffix);
-        }
+        gtClipboard($clipboardIcon, clipboardContainer, function () {
+          return clipTextNode.text();
+        });
         doAfter();
       }
     } else {
@@ -1454,9 +1750,10 @@ HandlebarsRendering = (function () {
       registerShowAllHandler(traceHeader.mainBreakdown);
       registerShowAllHandler(traceHeader.auxBreakdown);
     },
-    renderTraceFromExport: function (traceHeader, $selector, entries, sharedQueryTexts, mainThreadProfile,
+    renderTraceFromExport: function (traceHeader, $selector, entries, queries, sharedQueryTexts, mainThreadProfile,
                                      auxThreadProfile) {
       $selector.data('gtEntries', entries);
+      $selector.data('gtQueries', queries);
       $selector.data('gtSharedQueryTexts', sharedQueryTexts);
       $selector.data('gtMainThreadProfile', mainThreadProfile);
       $selector.data('gtAuxThreadProfile', auxThreadProfile);

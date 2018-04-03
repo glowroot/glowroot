@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.embedded.repo;
+package org.glowroot.agent.model;
 
-import org.glowroot.agent.embedded.util.CappedDatabaseStats;
+public interface SharedQueryTextCollection {
 
-public interface TraceCappedDatabaseStatsMXBean {
-
-    CappedDatabaseStats getTraceEntries();
-    CappedDatabaseStats getTraceQueries();
-    CappedDatabaseStats getTraceSharedQueryTexts();
-    CappedDatabaseStats getTraceProfiles();
+    int getSharedQueryTextIndex(String queryText);
 }

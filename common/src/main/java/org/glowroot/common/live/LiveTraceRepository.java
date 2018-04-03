@@ -25,6 +25,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -40,6 +41,12 @@ public interface LiveTraceRepository {
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
     Entries getEntries(String agentId, String traceId) throws Exception;
+
+    // null return value means trace not found or was found but had no queries
+    //
+    // SharedQueryTexts are returned with either fullTrace or truncatedText/fullTraceSha1
+    @Nullable
+    Queries getQueries(String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile
     @Nullable
@@ -68,6 +75,19 @@ public interface LiveTraceRepository {
     @Value.Immutable
     public interface Entries {
         List<Trace.Entry> entries();
+        List<Trace.SharedQueryText> sharedQueryTexts();
+    }
+
+    @Value.Immutable
+    public interface Queries {
+        List<Aggregate.Query> queries();
+        List<Trace.SharedQueryText> sharedQueryTexts();
+    }
+
+    @Value.Immutable
+    public interface EntriesAndQueries {
+        List<Trace.Entry> entries();
+        List<Aggregate.Query> queries();
         List<Trace.SharedQueryText> sharedQueryTexts();
     }
 
@@ -158,6 +178,11 @@ public interface LiveTraceRepository {
 
         @Override
         public @Nullable Entries getEntries(String agentId, String traceId) {
+            return null;
+        }
+
+        @Override
+        public @Nullable Queries getQueries(String agentId, String traceId) {
             return null;
         }
 

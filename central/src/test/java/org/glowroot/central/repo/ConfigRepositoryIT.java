@@ -205,7 +205,7 @@ public class ConfigRepositoryIT {
                 .setMaxQueryAggregates(OptionalInt32.newBuilder().setValue(3))
                 .setMaxServiceCallAggregates(OptionalInt32.newBuilder().setValue(4))
                 .setMaxTraceEntriesPerTransaction(OptionalInt32.newBuilder().setValue(5))
-                .setMaxStackTraceSamplesPerTransaction(OptionalInt32.newBuilder().setValue(6))
+                .setMaxProfileSamplesPerTransaction(OptionalInt32.newBuilder().setValue(6))
                 .setMbeanGaugeNotFoundDelaySeconds(OptionalInt32.newBuilder().setValue(7))
                 .build();
 

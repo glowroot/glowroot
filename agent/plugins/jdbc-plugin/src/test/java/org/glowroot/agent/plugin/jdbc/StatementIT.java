@@ -33,6 +33,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +75,17 @@ public class StatementIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(3);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -94,6 +106,17 @@ public class StatementIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(3);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -114,6 +137,17 @@ public class StatementIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("update employee set name = 'nobody'");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(3);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -122,6 +156,9 @@ public class StatementIT {
         Trace trace = container.execute(ExecuteNullStatement.class);
         // then
         assertThat(trace.getHeader().getEntryCount()).isZero();
+        assertThat(trace.getEntryCount()).isZero();
+        assertThat(trace.getHeader().getQueryCount()).isZero();
+        assertThat(trace.getQueryCount()).isZero();
     }
 
     @Test
@@ -148,6 +185,20 @@ public class StatementIT {
         assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = PreparedStatementIT.sortedQueries(trace);
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("LIMIT EXCEEDED BUCKET");
+        assertThat(query.getExecutionCount()).isEqualTo(4501);
+
+        for (int k = 0; k < 500; k++) {
+            query = j.next();
+        }
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -168,6 +219,17 @@ public class StatementIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(3);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -188,6 +250,17 @@ public class StatementIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(3);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -208,6 +281,17 @@ public class StatementIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(3);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -228,6 +312,17 @@ public class StatementIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(2);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -248,6 +343,17 @@ public class StatementIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 1 row");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(1);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -268,6 +374,17 @@ public class StatementIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(3);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     public static class ExecuteStatementAndIterateOverResults

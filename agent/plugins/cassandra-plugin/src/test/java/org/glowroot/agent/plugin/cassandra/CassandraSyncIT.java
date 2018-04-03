@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +75,17 @@ public class CassandraSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("SELECT * FROM test.users");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(10);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -94,6 +106,18 @@ public class CassandraSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("SELECT * FROM test.users where id = 12345");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isTrue();
+        assertThat(query.getTotalRows().getValue()).isEqualTo(0);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -114,6 +138,18 @@ public class CassandraSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("SELECT * FROM test.users where id = 12345");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isTrue();
+        assertThat(query.getTotalRows().getValue()).isEqualTo(0);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -134,6 +170,17 @@ public class CassandraSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("SELECT * FROM test.users");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(10);
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -155,6 +202,17 @@ public class CassandraSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     @Test
@@ -181,6 +239,23 @@ public class CassandraSyncIT {
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("CQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("[batch] INSERT INTO test.users (id,  fname, lname)"
+                        + " VALUES (100, 'f100', 'l100'),"
+                        + " INSERT INTO test.users (id,  fname, lname)"
+                        + " VALUES (101, 'f101', 'l101'),"
+                        + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
+                        + " INSERT INTO test.users (id,  fname, lname)"
+                        + " VALUES (300, 'f300', 'l300')");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
     }
 
     public static class ExecuteStatement implements AppUnderTest, TransactionMarker {

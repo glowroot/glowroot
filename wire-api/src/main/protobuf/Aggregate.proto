@@ -87,6 +87,7 @@ message Aggregate {
     double total_duration_nanos = 3;
     int64 execution_count = 4;
     OptionalInt64 total_rows = 5;
+    bool active = 6; // only used for trace specific queries
   }
 
   // deprecated in 0.10.6

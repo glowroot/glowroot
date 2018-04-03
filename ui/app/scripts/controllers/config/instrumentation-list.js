@@ -234,8 +234,6 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       }
       if ($location.search().export) {
         gtClipboard('#exportModal .fa-clipboard', '#exportModal', function () {
-          return document.getElementById('jsonExport');
-        }, function () {
           return $scope.jsonExport;
         });
         $('#exportModal').data('location-query', 'export');

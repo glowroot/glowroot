@@ -203,5 +203,10 @@ class ConfigFile {
             advancedObjectNode.set("maxServiceCallAggregates",
                     advancedObjectNode.remove("maxAggregateServiceCallsPerType"));
         }
+        if (advancedObjectNode.has("maxStackTraceSamplesPerTransaction")) {
+            // upgrade from 0.10.5 to 0.10.6
+            advancedObjectNode.set("maxProfileSamplesPerTransaction",
+                    advancedObjectNode.remove("maxStackTraceSamplesPerTransaction"));
+        }
     }
 }

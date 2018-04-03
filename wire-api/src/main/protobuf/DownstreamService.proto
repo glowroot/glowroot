@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "AgentConfig.proto";
 import "Trace.proto";
+import "Aggregate.proto";
 import "Profile.proto";
 import "Common.proto";
 
@@ -43,6 +44,7 @@ message CentralRequest {
     // LiveTraceRepository
     HeaderRequest header_request = 500;
     EntriesRequest entries_request = 501;
+    QueriesRequest queries_request = 505;
     MainThreadProfileRequest main_thread_profile_request = 502;
     AuxThreadProfileRequest aux_thread_profile_request = 503;
     FullTraceRequest full_trace_request = 504;
@@ -79,6 +81,7 @@ message AgentResponse {
     // LiveTraceRepository
     HeaderResponse header_response = 500;
     EntriesResponse entries_response = 501;
+    QueriesResponse queries_response = 505;
     MainThreadProfileResponse main_thread_profile_response = 502;
     AuxThreadProfileResponse aux_thread_profile_response = 503;
     FullTraceResponse full_trace_response = 504;
@@ -258,9 +261,21 @@ message EntriesRequest {
   string trace_id = 1;
 }
 
+message QueriesRequest {
+  string trace_id = 1;
+}
+
 message EntriesResponse {
   repeated Trace.Entry entry = 1;
   // sends full_text_sha1, beginning_text, ending_text if sha1 is known to already exist in the
+  // central collector, otherwise sends only full_text (with no expectation that sha1 will be stored
+  // in the central collector)
+  repeated Trace.SharedQueryText shared_query_text = 2;
+}
+
+message QueriesResponse {
+  repeated Aggregate.Query query = 1;
+  // sends full_text_sha1, beginning_text if sha1 is known to already exist in the
   // central collector, otherwise sends only full_text (with no expectation that sha1 will be stored
   // in the central collector)
   repeated Trace.SharedQueryText shared_query_text = 2;

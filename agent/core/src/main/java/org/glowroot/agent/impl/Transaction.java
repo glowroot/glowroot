@@ -54,17 +54,15 @@ import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.model.AsyncQueryData;
 import org.glowroot.agent.model.AsyncTimerImpl;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.ErrorMessage;
-import org.glowroot.agent.model.ImmutableTimerImplSnapshot;
-import org.glowroot.agent.model.MutableAggregateTimer;
-import org.glowroot.agent.model.MutableTraceTimer;
 import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.ServiceCallCollector;
+import org.glowroot.agent.model.SharedQueryTextCollection;
 import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.agent.model.ThreadStats;
-import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
@@ -75,6 +73,8 @@ import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Traverser;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castInitialized;
@@ -127,9 +127,10 @@ public class Transaction {
     // trace-level error
     private volatile @Nullable ErrorMessage errorMessage;
 
-    private final int maxTraceEntriesPerTransaction;
+    private final int maxTraceEntries;
     private final int maxQueryAggregates;
     private final int maxServiceCallAggregates;
+    private final int maxProfileSamples;
 
     private final TransactionRegistry transactionRegistry;
     private final TransactionService transactionService;
@@ -180,13 +181,11 @@ public class Transaction {
     @GuardedBy("mainThreadContext")
     private @MonotonicNonNull Set<ThreadContextImpl> unmergedLimitExceededAuxThreadContexts;
 
-    // async root timers are the root timers which do not have corresponding thread context
-    // (those corresponding to async trace entries)
-    private final Object asyncTimerLock = new Object();
-    @GuardedBy("asyncTimerLock")
-    private @MonotonicNonNull List<AsyncTimerImpl> asyncTimers;
-    @GuardedBy("asyncTimerLock")
-    private @MonotonicNonNull Map<String, AggregateAsyncTimer> aggregateAsyncTimers;
+    private final Object asyncComponentsInitLock = new Object();
+    private volatile @MonotonicNonNull AsyncComponents asyncComponents;
+
+    private final Object sharedQueryTextCollectionLock = new Object();
+    private volatile @MonotonicNonNull SharedQueryTextCollectionImpl sharedQueryTextCollection;
 
     private volatile boolean completed;
     private volatile long endTick;
@@ -210,8 +209,8 @@ public class Transaction {
 
     Transaction(long startTime, long startTick, String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName, boolean captureThreadStats,
-            int maxTraceEntriesPerTransaction, int maxQueryAggregates, int maxServiceCallAggregates,
-            @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            int maxTraceEntries, int maxQueryAggregates, int maxServiceCallAggregates,
+            int maxProfileSamples, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             CompletionCallback completionCallback, Ticker ticker,
             TransactionRegistry transactionRegistry, TransactionService transactionService,
             ConfigService configService, UserProfileScheduler userProfileScheduler,
@@ -220,9 +219,10 @@ public class Transaction {
         this.startTick = startTick;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
-        this.maxTraceEntriesPerTransaction = maxTraceEntriesPerTransaction;
+        this.maxTraceEntries = maxTraceEntries;
         this.maxQueryAggregates = maxQueryAggregates;
         this.maxServiceCallAggregates = maxServiceCallAggregates;
+        this.maxProfileSamples = maxProfileSamples;
         this.completionCallback = completionCallback;
         this.ticker = ticker;
         this.userProfileScheduler = userProfileScheduler;
@@ -336,34 +336,20 @@ public class Transaction {
             if (auxThreadContexts == null) {
                 return;
             }
-            for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
-                rootTimers.mergeRootTimer(auxThreadContext.getRootTimer());
-            }
             if (alreadyMergedAuxThreadTimers != null) {
                 for (CommonTimerImpl rootTimer : alreadyMergedAuxThreadTimers.getRootTimers()) {
                     rootTimers.mergeRootTimer(rootTimer);
                 }
             }
+            for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
+                rootTimers.mergeRootTimer(auxThreadContext.getRootTimer());
+            }
         }
     }
 
     void mergeAsyncTimersInto(RootTimerCollector rootTimers) {
-        memoryBarrierRead();
-        synchronized (asyncTimerLock) {
-            if (asyncTimers == null) {
-                return;
-            }
-            for (AsyncTimerImpl asyncTimer : asyncTimers) {
-                rootTimers.mergeRootTimer(asyncTimer);
-            }
-            if (aggregateAsyncTimers == null) {
-                return;
-            }
-            for (Map.Entry<String, AggregateAsyncTimer> entry : aggregateAsyncTimers.entrySet()) {
-                AggregateAsyncTimer value = entry.getValue();
-                rootTimers.mergeRootTimer(
-                        new SimpleTimerImpl(entry.getKey(), value.totalNanos, value.count));
-            }
+        if (asyncComponents != null) {
+            asyncComponents.mergeAsyncTimersInto(rootTimers);
         }
     }
 
@@ -378,13 +364,13 @@ public class Transaction {
             if (auxThreadContexts == null) {
                 return totalCpuNanos;
             }
-            for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
-                totalCpuNanos =
-                        NotAvailableAware.add(totalCpuNanos, auxThreadContext.getTotalCpuNanos());
-            }
             if (alreadyMergedAuxThreadStats != null) {
                 totalCpuNanos = NotAvailableAware.add(totalCpuNanos,
                         alreadyMergedAuxThreadStats.getTotalCpuNanos());
+            }
+            for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
+                totalCpuNanos =
+                        NotAvailableAware.add(totalCpuNanos, auxThreadContext.getTotalCpuNanos());
             }
             return totalCpuNanos;
         }
@@ -395,11 +381,11 @@ public class Transaction {
             if (auxThreadContexts == null) {
                 return;
             }
-            for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
-                collector.mergeThreadStats(auxThreadContext.getThreadStats());
-            }
             if (alreadyMergedAuxThreadStats != null) {
                 collector.mergeThreadStats(alreadyMergedAuxThreadStats.getMergedThreadStats());
+            }
+            for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
+                collector.mergeThreadStats(auxThreadContext.getThreadStats());
             }
         }
     }
@@ -408,15 +394,47 @@ public class Transaction {
         memoryBarrierRead();
         mainThreadContext.mergeQueriesInto(collector);
         synchronized (mainThreadContext) {
-            if (auxThreadContexts == null) {
-                return;
+            if (auxThreadContexts != null) {
+                if (alreadyMergedAuxQueries != null) {
+                    alreadyMergedAuxQueries.mergeQueriesInto(collector);
+                }
+                for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
+                    auxThreadContext.mergeQueriesInto(collector);
+                }
             }
-            for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
-                auxThreadContext.mergeQueriesInto(collector);
+        }
+        if (asyncComponents != null) {
+            asyncComponents.mergeQueriesInto(collector);
+        }
+    }
+
+    public List<Aggregate.Query> getQueries() throws Exception {
+        synchronized (sharedQueryTextCollectionLock) {
+            if (sharedQueryTextCollection == null) {
+                sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
             }
-            if (alreadyMergedAuxQueries != null) {
-                alreadyMergedAuxQueries.mergeQueriesInto(collector);
+            return getQueriesInternal(sharedQueryTextCollection);
+        }
+    }
+
+    public int getQueryCount() throws Exception {
+        return getQueriesInternal(new NopSharedQueryTextCollection()).size();
+    }
+
+    private List<Aggregate.Query> getQueriesInternal(
+            SharedQueryTextCollection sharedQueryTextCollection) throws Exception {
+        QueryCollector collector = new QueryCollector(maxQueryAggregates,
+                AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER);
+        mergeQueriesInto(collector);
+        return collector.toAggregateProto(sharedQueryTextCollection, true);
+    }
+
+    public List<String> getSharedQueryTexts() {
+        synchronized (sharedQueryTextCollectionLock) {
+            if (sharedQueryTextCollection == null) {
+                sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
             }
+            return ImmutableList.copyOf(sharedQueryTextCollection.sharedQueryTexts);
         }
     }
 
@@ -424,31 +442,49 @@ public class Transaction {
         memoryBarrierRead();
         mainThreadContext.mergeServiceCallsInto(collector);
         synchronized (mainThreadContext) {
-            if (auxThreadContexts == null) {
-                return;
+            if (auxThreadContexts != null) {
+                if (alreadyMergedAuxServiceCalls != null) {
+                    alreadyMergedAuxServiceCalls.mergeServiceCallsInto(collector);
+                }
+                for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
+                    auxThreadContext.mergeServiceCallsInto(collector);
+                }
             }
-            for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
-                auxThreadContext.mergeServiceCallsInto(collector);
-            }
-            if (alreadyMergedAuxServiceCalls != null) {
-                alreadyMergedAuxServiceCalls.mergeServiceCallsInto(collector);
-            }
+        }
+        if (asyncComponents != null) {
+            asyncComponents.mergeServiceCallsInto(collector);
         }
     }
 
     // this method has side effect of incrementing counter
     boolean allowAnotherEntry() {
-        return entryLimitCounter++ < maxTraceEntriesPerTransaction;
+        return entryLimitCounter++ < maxTraceEntries;
     }
 
     // this method has side effect of incrementing counter
     boolean allowAnotherErrorEntry() {
         // use higher entry limit when adding errors, but still need some kind of cap
-        return entryLimitCounter++ < maxTraceEntriesPerTransaction
-                || extraErrorEntryLimitCounter++ < maxTraceEntriesPerTransaction;
+        return entryLimitCounter++ < maxTraceEntries
+                || extraErrorEntryLimitCounter++ < maxTraceEntries;
     }
 
-    public void accept(long captureTick, EntryVisitor entryVisitor) throws Exception {
+    public void visitEntries(long captureTick, EntryVisitor entryVisitor) throws Exception {
+        synchronized (sharedQueryTextCollectionLock) {
+            if (sharedQueryTextCollection == null) {
+                sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
+            }
+            visitEntriesInternal(captureTick, entryVisitor, sharedQueryTextCollection);
+        }
+    }
+
+    public int getEntryCount(long captureTick) throws Exception {
+        CountingEntryVisitor entryVisitor = new CountingEntryVisitor();
+        visitEntriesInternal(captureTick, entryVisitor, new NopSharedQueryTextCollection());
+        return entryVisitor.count;
+    }
+
+    private void visitEntriesInternal(long captureTick, EntryVisitor entryVisitor,
+            SharedQueryTextCollection sharedQueryTextCollection) throws Exception {
         memoryBarrierRead();
         ListMultimap<TraceEntryImpl, ThreadContextImpl> priorEntryChildThreadContextMap =
                 buildPriorEntryChildThreadContextMap();
@@ -466,7 +502,7 @@ public class Transaction {
         new ParentChildMapTrimmer(mainThreadContext.getRootEntry(), parentChildMap, captureTick)
                 .traverse();
         addProtobufChildEntries(mainThreadContext.getRootEntry(), parentChildMap, startTick,
-                captureTick, 0, entryVisitor, async);
+                captureTick, 0, entryVisitor, sharedQueryTextCollection, async);
     }
 
     long getMainThreadProfileSampleCount() {
@@ -489,9 +525,9 @@ public class Transaction {
         return mainThreadProfile.toProto();
     }
 
-    boolean isMainThreadProfileSampleLimitExceeded() {
-        // TODO implement profile limit
-        return false;
+    boolean isMainThreadProfileSampleLimitExceeded(long profileSampleCount) {
+        return profileSampleCount >= maxProfileSamples && mainThreadProfile != null
+                && mainThreadProfile.isSampleLimitExceeded();
     }
 
     long getAuxThreadProfileSampleCount() {
@@ -514,9 +550,9 @@ public class Transaction {
         return auxThreadProfile.toProto();
     }
 
-    boolean isAuxThreadProfileSampleLimitExceeded() {
-        // TODO implement profile limit
-        return false;
+    boolean isAuxThreadProfileSampleLimitExceeded(long profileSampleCount) {
+        return profileSampleCount >= maxProfileSamples && auxThreadProfile != null
+                && auxThreadProfile.isSampleLimitExceeded();
     }
 
     int getSlowThresholdMillisOverride() {
@@ -699,36 +735,19 @@ public class Transaction {
     }
 
     AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
-        AsyncTimerImpl asyncTimer = new AsyncTimerImpl((TimerNameImpl) asyncTimerName, startTick);
-        synchronized (asyncTimerLock) {
-            if (asyncTimers == null) {
-                asyncTimers = Lists.newArrayList();
-            }
-            if (asyncTimers.size() >= 1000) {
-                // this is just to conserve memory
-                if (aggregateAsyncTimers == null) {
-                    aggregateAsyncTimers = Maps.newHashMap();
-                }
-                List<AsyncTimerImpl> activeAsyncTimers = Lists.newArrayList();
-                for (AsyncTimerImpl loopAsyncTimer : asyncTimers) {
-                    if (loopAsyncTimer.active()) {
-                        activeAsyncTimers.add(loopAsyncTimer);
-                        continue;
-                    }
-                    AggregateAsyncTimer aggregateAsyncTimer =
-                            aggregateAsyncTimers.get(loopAsyncTimer.getName());
-                    if (aggregateAsyncTimer == null) {
-                        aggregateAsyncTimer = new AggregateAsyncTimer();
-                        aggregateAsyncTimers.put(loopAsyncTimer.getName(), aggregateAsyncTimer);
-                    }
-                    aggregateAsyncTimer.totalNanos += loopAsyncTimer.getTotalNanos();
-                    aggregateAsyncTimer.count += loopAsyncTimer.getCount();
-                }
-                asyncTimers = activeAsyncTimers;
-            }
-            asyncTimers.add(asyncTimer);
-        }
-        return asyncTimer;
+        return getOrInitAsyncComponents().startAsyncTimer(asyncTimerName, startTick);
+    }
+
+    AsyncQueryData getOrCreateAsyncQueryData(String queryType, String queryText,
+            boolean bypassLimit) {
+        return getOrInitAsyncComponents().getOrCreateAsyncQueryData(queryType, queryText,
+                bypassLimit);
+    }
+
+    AsyncQueryData getOrCreateAsyncServiceCallData(String serviceCallType, String serviceCallText,
+            boolean bypassLimit) {
+        return getOrInitAsyncComponents().getOrCreateAsyncServiceCallData(serviceCallType,
+                serviceCallText, bypassLimit);
     }
 
     TraceEntryImpl startInnerTransaction(String transactionType, String transactionName,
@@ -738,11 +757,16 @@ public class Transaction {
                 messageSupplier, timerName, threadContextHolder);
     }
 
-    boolean isEntryLimitExceeded() {
-        return entryLimitCounter > maxTraceEntriesPerTransaction;
+    boolean isEntryLimitExceeded(int entryCount) {
+        return entryCount >= maxTraceEntries && entryLimitCounter > maxTraceEntries;
     }
 
-    void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo, int limit) {
+    boolean isQueryLimitExceeded(int queryCount) {
+        // "LIMIT EXCEEDED BUCKET" will always push query count over the max
+        return queryCount > maxQueryAggregates;
+    }
+
+    void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo) {
         if (completed) {
             return;
         }
@@ -760,8 +784,8 @@ public class Transaction {
             // profile is constructed and first stack trace is added prior to setting the
             // transaction profile field, so that it is not possible to read a profile that doesn't
             // have at least one stack trace
-            profile = new ThreadProfile();
-            profile.addStackTrace(threadInfo, limit);
+            profile = new ThreadProfile(maxProfileSamples);
+            profile.addStackTrace(threadInfo);
             if (auxiliary) {
                 auxThreadProfile = profile;
             } else {
@@ -769,7 +793,7 @@ public class Transaction {
             }
             return;
         }
-        profile.addStackTrace(threadInfo, limit);
+        profile.addStackTrace(threadInfo);
     }
 
     void end(long endTick, boolean completeAsyncTransaction) {
@@ -915,9 +939,22 @@ public class Transaction {
         mergeableAuxThreadContext.mergeServiceCallsInto(alreadyMergedAuxServiceCalls);
     }
 
+    private AsyncComponents getOrInitAsyncComponents() {
+        if (asyncComponents == null) {
+            synchronized (asyncComponentsInitLock) {
+                if (asyncComponents == null) {
+                    asyncComponents = new AsyncComponents(maxQueryAggregates,
+                            maxServiceCallAggregates, ticker);
+                }
+            }
+        }
+        return asyncComponents;
+    }
+
     private static void addProtobufChildEntries(TraceEntryImpl entry,
             ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
-            long captureTick, int depth, EntryVisitor entryVisitor, boolean removeSingleAuxEntry)
+            long captureTick, int depth, EntryVisitor entryVisitor,
+            SharedQueryTextCollection sharedQueryTextCollection, boolean removeSingleAuxEntry)
             throws Exception {
         if (!parentChildMap.containsKey(entry)) {
             // check containsKey to avoid creating garbage empty list via ListMultimap
@@ -929,11 +966,13 @@ public class Transaction {
                     && !childEntry.hasLocationStackTrace();
             if (singleAuxEntry && removeSingleAuxEntry) {
                 addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
-                        captureTick, depth, entryVisitor, removeSingleAuxEntry);
+                        captureTick, depth, entryVisitor, sharedQueryTextCollection,
+                        removeSingleAuxEntry);
             } else {
-                childEntry.accept(depth, transactionStartTick, captureTick, entryVisitor);
+                childEntry.accept(depth, transactionStartTick, captureTick, entryVisitor,
+                        sharedQueryTextCollection);
                 addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
-                        captureTick, depth + 1, entryVisitor, false);
+                        captureTick, depth + 1, entryVisitor, sharedQueryTextCollection, false);
             }
         }
     }
@@ -1029,64 +1068,6 @@ public class Transaction {
         void mergeThreadStats(ThreadStats threadStats);
     }
 
-    private static class AggregateAsyncTimer {
-
-        private long totalNanos;
-        private long count;
-    }
-
-    private static class SimpleTimerImpl implements CommonTimerImpl {
-
-        private final String name;
-        private final long totalNanos;
-        private final long count;
-
-        private SimpleTimerImpl(String name, long totalNanos, long count) {
-            this.name = name;
-            this.totalNanos = totalNanos;
-            this.count = count;
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public boolean isExtended() {
-            return false;
-        }
-
-        @Override
-        public long getTotalNanos() {
-            return totalNanos;
-        }
-
-        @Override
-        public long getCount() {
-            return count;
-        }
-
-        @Override
-        public void mergeChildTimersInto(List<MutableTraceTimer> childTimers) {
-            // async timers have no child timers
-        }
-
-        @Override
-        public void mergeChildTimersInto2(List<MutableAggregateTimer> childTimers) {
-            // async timers have no child timers
-        }
-
-        @Override
-        public TimerImplSnapshot getSnapshot() {
-            return ImmutableTimerImplSnapshot.builder()
-                    .totalNanos(totalNanos)
-                    .count(count)
-                    .active(false)
-                    .build();
-        }
-    }
-
     private static class AuxThreadRootMessageSupplier extends MessageSupplier {
 
         private static final AuxThreadRootMessageSupplier INSTANCE =
@@ -1163,6 +1144,50 @@ public class Transaction {
                     }
                 }
             }
+        }
+    }
+
+    private static class CountingEntryVisitor implements EntryVisitor {
+
+        private int count;
+
+        @Override
+        public void visitEntry(Trace.Entry entry) {
+            if (countEntry(entry)) {
+                count++;
+            }
+        }
+
+        private static boolean countEntry(Trace.Entry entry) {
+            // don't count "auxiliary thread" entries since those are not counted in
+            // maxTraceEntriesPerTransaction limit (and it's confusing when entry count exceeds the
+            // limit)
+            return !entry.getMessage().equals(Transaction.AUXILIARY_THREAD_MESSAGE);
+        }
+    }
+
+    private static class SharedQueryTextCollectionImpl implements SharedQueryTextCollection {
+
+        private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
+        private List<String> sharedQueryTexts = Lists.newArrayList();
+
+        @Override
+        public int getSharedQueryTextIndex(String queryText) {
+            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
+            if (sharedQueryTextIndex == null) {
+                sharedQueryTextIndex = sharedQueryTextIndexes.size();
+                sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
+                sharedQueryTexts.add(queryText);
+            }
+            return sharedQueryTextIndex;
+        }
+    }
+
+    private static class NopSharedQueryTextCollection implements SharedQueryTextCollection {
+
+        @Override
+        public int getSharedQueryTextIndex(String queryText) {
+            return 0;
         }
     }
 }

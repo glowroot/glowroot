@@ -78,8 +78,7 @@ public class StackTraceCollector {
         processingThread.join();
     }
 
-    static void captureStackTraces(List<ThreadContextImpl> threadContexts,
-            ConfigService configService) {
+    static void captureStackTraces(List<ThreadContextImpl> threadContexts) {
         if (threadContexts.isEmpty()) {
             // critical not to call ThreadMXBean.getThreadInfo() with empty id list
             // see https://bugs.openjdk.java.net/browse/JDK-8074368
@@ -92,12 +91,11 @@ public class StackTraceCollector {
         @Nullable
         ThreadInfo[] threadInfos =
                 ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
-        int limit = configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction();
         for (int i = 0; i < threadContexts.size(); i++) {
             ThreadContextImpl threadContext = threadContexts.get(i);
             ThreadInfo threadInfo = threadInfos[i];
             if (threadInfo != null) {
-                threadContext.captureStackTrace(threadInfo, limit);
+                threadContext.captureStackTrace(threadInfo);
             }
         }
     }
@@ -160,7 +158,7 @@ public class StackTraceCollector {
                 }
                 activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
             }
-            captureStackTraces(activeThreadContexts, configService);
+            captureStackTraces(activeThreadContexts);
         }
     }
 }

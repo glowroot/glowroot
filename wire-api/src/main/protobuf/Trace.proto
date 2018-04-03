@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "Aggregate.proto";
 import "Profile.proto";
 import "Common.proto";
 
@@ -16,6 +17,7 @@ message Trace {
   Header header = 2;
   repeated Entry entry = 3; // entry ordering is pre-order depth-first
                             // there are typically multiple "root" nodes (with depth=0)
+  repeated Aggregate.Query query = 9;
   Profile main_thread_profile = 4;
   Profile aux_thread_profile = 5;
   bool update = 6; // optimization so the central collector does not need to check for prior partial
@@ -43,6 +45,8 @@ message Trace {
     ThreadStats aux_thread_stats = 18;
     int32 entry_count = 19;
     bool entry_limit_exceeded = 20;
+    int32 query_count = 25;
+    bool query_limit_exceeded = 26;
     int64 main_thread_profile_sample_count = 21;
     bool main_thread_profile_sample_limit_exceeded = 22;
     int64 aux_thread_profile_sample_count = 23;

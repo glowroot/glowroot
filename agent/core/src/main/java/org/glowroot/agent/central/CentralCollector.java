@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +57,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamCounts;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamHeader;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage.Queries;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -340,8 +340,8 @@ public class CentralCollector implements Collector {
             }
             requestObserver.onNext(TraceStreamMessage.newBuilder()
                     .setStreamCounts(TraceStreamCounts.newBuilder()
-                            .setSharedQueryTextCount(traceVisitor.sharedQueryTextCount)
-                            .setEntryCount(traceVisitor.entryCount))
+                            .setEntryCount(traceVisitor.entryCount)
+                            .setSharedQueryTextCount(traceVisitor.sharedQueryTextCount))
                     .build());
             requestObserver.onCompleted();
         }
@@ -359,10 +359,8 @@ public class CentralCollector implements Collector {
         private final StreamObserver<TraceStreamMessage> requestObserver;
         private final List<String> fullTextSha1s;
 
-        private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
-
-        private int sharedQueryTextCount;
         private int entryCount;
+        private int sharedQueryTextCount;
 
         private TraceVisitorImpl(StreamObserver<TraceStreamMessage> requestObserver,
                 List<String> fullTextSha1s) {
@@ -371,28 +369,31 @@ public class CentralCollector implements Collector {
         }
 
         @Override
-        public int visitSharedQueryText(String sharedQueryText) {
-            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(sharedQueryText);
-            if (sharedQueryTextIndex != null) {
-                return sharedQueryTextIndex;
-            }
-            sharedQueryTextIndex = sharedQueryTextIndexes.size();
-            sharedQueryTextIndexes.put(sharedQueryText, sharedQueryTextIndex);
-            Trace.SharedQueryText traceSharedQueryText = sharedQueryTextLimiter
-                    .buildTraceSharedQueryText(sharedQueryText, fullTextSha1s);
-            requestObserver.onNext(TraceStreamMessage.newBuilder()
-                    .setSharedQueryText(traceSharedQueryText)
-                    .build());
-            sharedQueryTextCount++;
-            return sharedQueryTextIndex;
-        }
-
-        @Override
         public void visitEntry(Trace.Entry entry) {
             requestObserver.onNext(TraceStreamMessage.newBuilder()
                     .setEntry(entry)
                     .build());
             entryCount++;
+        }
+
+        @Override
+        public void visitQueries(List<Aggregate.Query> queries) {
+            requestObserver.onNext(TraceStreamMessage.newBuilder()
+                    .setQueries(Queries.newBuilder()
+                            .addAllQuery(queries))
+                    .build());
+        }
+
+        @Override
+        public void visitSharedQueryTexts(List<String> sharedQueryTexts) {
+            for (String sharedQueryText : sharedQueryTexts) {
+                Trace.SharedQueryText traceSharedQueryText = sharedQueryTextLimiter
+                        .buildTraceSharedQueryText(sharedQueryText, fullTextSha1s);
+                requestObserver.onNext(TraceStreamMessage.newBuilder()
+                        .setSharedQueryText(traceSharedQueryText)
+                        .build());
+            }
+            sharedQueryTextCount = sharedQueryTexts.size();
         }
 
         @Override

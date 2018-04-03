@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,15 @@ package org.glowroot.agent.live;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
 import org.glowroot.agent.collector.Collector.EntryVisitor;
@@ -39,9 +38,11 @@ import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.common.live.ImmutableEntries;
+import org.glowroot.common.live.ImmutableQueries;
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.util.Clock;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -82,12 +83,27 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
-                // FIXME stream to central, similar to collectTrace
-                CollectingEntryVisitor entryVisitor = new CollectingEntryVisitor();
-                transaction.accept(ticker.read(), entryVisitor);
+                CollectingEntryVisitor visitor = new CollectingEntryVisitor();
+                transaction.visitEntries(ticker.read(), visitor);
                 return ImmutableEntries.builder()
-                        .addAllEntries(entryVisitor.entries)
-                        .addAllSharedQueryTexts(TraceCreator.toProto(entryVisitor.sharedQueryTexts))
+                        .addAllEntries(visitor.entries)
+                        .addAllSharedQueryTexts(
+                                TraceCreator.toProto(transaction.getSharedQueryTexts()))
+                        .build();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public @Nullable Queries getQueries(String agentId, String traceId) throws Exception {
+        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
+                transactionCollector.getPendingTransactions())) {
+            if (transaction.getTraceId().equals(traceId)) {
+                return ImmutableQueries.builder()
+                        .addAllQueries(transaction.getQueries())
+                        .addAllSharedQueryTexts(
+                                TraceCreator.toProto(transaction.getSharedQueryTexts()))
                         .build();
             }
         }
@@ -123,7 +139,6 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
-                // FIXME stream to central, similar to collectTrace
                 CollectingTraceVisitor traceVisitor = new CollectingTraceVisitor();
                 TraceReader traceReader = createTraceReader(transaction);
                 traceReader.accept(traceVisitor);
@@ -139,9 +154,9 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                     builder.setAuxThreadProfile(auxThreadProfile);
                 }
                 return builder.setHeader(checkNotNull(traceVisitor.header))
-                        .addAllEntry(traceVisitor.getEntries())
-                        .addAllSharedQueryText(
-                                TraceCreator.toProto(traceVisitor.getSharedQueryTexts()))
+                        .addAllEntry(traceVisitor.entries)
+                        .addAllQuery(traceVisitor.queries)
+                        .addAllSharedQueryText(TraceCreator.toProto(traceVisitor.sharedQueryTexts))
                         .build();
             }
         }
@@ -281,44 +296,29 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         return transactionName == null || transactionName.equals(transaction.getTransactionName());
     }
 
-    private static class CollectingEntryVisitor implements EntryVisitor {
-
-        private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
-        private final List<String> sharedQueryTexts = Lists.newArrayList();
+    private static class CollectingTraceVisitor implements TraceVisitor {
 
         private final List<Trace.Entry> entries = Lists.newArrayList();
-
-        @Override
-        public int visitSharedQueryText(String sharedQueryText) {
-            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(sharedQueryText);
-            if (sharedQueryTextIndex == null) {
-                sharedQueryTextIndex = sharedQueryTextIndexes.size();
-                sharedQueryTextIndexes.put(sharedQueryText, sharedQueryTextIndex);
-                sharedQueryTexts.add(sharedQueryText);
-            }
-            return sharedQueryTextIndex;
-        }
+        private List<Aggregate.Query> queries = ImmutableList.of();
+        private List<String> sharedQueryTexts = ImmutableList.of();
+        private @Nullable Profile mainThreadProfile;
+        private @Nullable Profile auxThreadProfile;
+        private @Nullable Trace.Header header;
 
         @Override
         public void visitEntry(Trace.Entry entry) {
             entries.add(entry);
         }
 
-        List<Trace.Entry> getEntries() {
-            return entries;
+        @Override
+        public void visitQueries(List<Aggregate.Query> queries) {
+            this.queries = queries;
         }
 
-        List<String> getSharedQueryTexts() {
-            return sharedQueryTexts;
+        @Override
+        public void visitSharedQueryTexts(List<String> sharedQueryTexts) {
+            this.sharedQueryTexts = sharedQueryTexts;
         }
-    }
-
-    private static class CollectingTraceVisitor extends CollectingEntryVisitor
-            implements TraceVisitor {
-
-        private @Nullable Profile mainThreadProfile;
-        private @Nullable Profile auxThreadProfile;
-        private @Nullable Trace.Header header;
 
         @Override
         public void visitMainThreadProfile(Profile profile) {
@@ -333,6 +333,16 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         @Override
         public void visitHeader(Trace.Header header) {
             this.header = header;
+        }
+    }
+
+    private static class CollectingEntryVisitor implements EntryVisitor {
+
+        private final List<Trace.Entry> entries = Lists.newArrayList();
+
+        @Override
+        public void visitEntry(Trace.Entry entry) {
+            entries.add(entry);
         }
     }
 }

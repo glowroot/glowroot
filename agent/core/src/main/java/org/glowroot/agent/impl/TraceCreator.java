@@ -29,6 +29,7 @@ import org.glowroot.agent.collector.Collector.TraceVisitor;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.common.util.Styles;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile.ProfileNode;
 import org.glowroot.wire.api.model.Proto;
@@ -66,26 +67,24 @@ public class TraceCreator {
 
     public static Trace.Header createPartialTraceHeader(Transaction transaction, long captureTime,
             long captureTick) throws Exception {
-        // TODO optimize, this is excessive to construct entries just to get count
-        CountingEntryVisitor entryVisitor = new CountingEntryVisitor();
-        transaction.accept(captureTick, entryVisitor);
+        int entryCount = transaction.getEntryCount(captureTick);
+        int queryCount = transaction.getQueryCount();
         long mainThreadProfileSampleCount = transaction.getMainThreadProfileSampleCount();
         long auxThreadProfileSampleCount = transaction.getAuxThreadProfileSampleCount();
         // only slow transactions reach this point, so setting slow=true (second arg below)
         return createTraceHeader(transaction, true, true, captureTime, captureTick,
-                entryVisitor.count, mainThreadProfileSampleCount, auxThreadProfileSampleCount);
+                entryCount, queryCount, mainThreadProfileSampleCount, auxThreadProfileSampleCount);
     }
 
     public static Trace.Header createCompletedTraceHeader(Transaction transaction)
             throws Exception {
-        // TODO optimize, this is excessive to construct entries just to get count
-        CountingEntryVisitor entryVisitor = new CountingEntryVisitor();
-        transaction.accept(transaction.getEndTick(), entryVisitor);
+        int entryCount = transaction.getEntryCount(transaction.getEndTick());
+        int queryCount = transaction.getQueryCount();
         long mainProfileSampleCount = transaction.getMainThreadProfileSampleCount();
         long auxProfileSampleCount = transaction.getAuxThreadProfileSampleCount();
         // only slow transactions reach this point, so setting slow=true (second arg below)
         return createTraceHeader(transaction, true, false, transaction.getCaptureTime(),
-                transaction.getEndTick(), entryVisitor.count, mainProfileSampleCount,
+                transaction.getEndTick(), entryCount, queryCount, mainProfileSampleCount,
                 auxProfileSampleCount);
     }
 
@@ -104,9 +103,15 @@ public class TraceCreator {
     // (without using synchronization to block updates to the trace while it is being read)
     private static void createFullTrace(Transaction transaction, boolean slow, boolean partial,
             long captureTime, long captureTick, TraceVisitor traceVisitor) throws Exception {
+
         CountingEntryVisitorWrapper entryVisitorWrapper =
                 new CountingEntryVisitorWrapper(traceVisitor);
-        transaction.accept(captureTick, entryVisitorWrapper);
+        transaction.visitEntries(captureTick, entryVisitorWrapper);
+
+        List<Aggregate.Query> queries = transaction.getQueries();
+        traceVisitor.visitQueries(queries);
+
+        traceVisitor.visitSharedQueryTexts(transaction.getSharedQueryTexts());
 
         Profile mainThreadProfile = transaction.getMainThreadProfileProtobuf();
         if (mainThreadProfile != null) {
@@ -123,14 +128,14 @@ public class TraceCreator {
         // auxThreadProfile can be gc'd at this point
 
         Trace.Header header = createTraceHeader(transaction, slow, partial, captureTime,
-                captureTick, entryVisitorWrapper.count, mainThreadProfileSampleCount,
-                auxThreadProfileSampleCount);
+                captureTick, entryVisitorWrapper.count, queries.size(),
+                mainThreadProfileSampleCount, auxThreadProfileSampleCount);
         traceVisitor.visitHeader(header);
     }
 
     private static Trace.Header createTraceHeader(Transaction transaction, boolean slow,
             boolean partial, long captureTime, long captureTick, int entryCount,
-            long mainProfileSampleCount, long auxProfileSampleCount) {
+            int queryCount, long mainProfileSampleCount, long auxProfileSampleCount) {
         Trace.Header.Builder builder = Trace.Header.newBuilder();
         builder.setPartial(partial);
         builder.setSlow(slow);
@@ -178,13 +183,15 @@ public class TraceCreator {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         builder.setEntryCount(entryCount);
-        builder.setEntryLimitExceeded(transaction.isEntryLimitExceeded());
+        builder.setEntryLimitExceeded(transaction.isEntryLimitExceeded(entryCount));
+        builder.setQueryCount(queryCount);
+        builder.setQueryLimitExceeded(transaction.isQueryLimitExceeded(queryCount));
         builder.setMainThreadProfileSampleCount(mainProfileSampleCount);
         builder.setMainThreadProfileSampleLimitExceeded(
-                transaction.isMainThreadProfileSampleLimitExceeded());
+                transaction.isMainThreadProfileSampleLimitExceeded(mainProfileSampleCount));
         builder.setAuxThreadProfileSampleCount(auxProfileSampleCount);
         builder.setAuxThreadProfileSampleLimitExceeded(
-                transaction.isAuxThreadProfileSampleLimitExceeded());
+                transaction.isAuxThreadProfileSampleLimitExceeded(auxProfileSampleCount));
         return builder.build();
     }
 
@@ -236,13 +243,13 @@ public class TraceCreator {
         }
     }
 
-    private static class CountingEntryVisitor implements EntryVisitor {
+    private static class CountingEntryVisitorWrapper implements EntryVisitor {
 
+        private final EntryVisitor delegate;
         private int count;
 
-        @Override
-        public int visitSharedQueryText(String sharedQueryText) {
-            return 0;
+        private CountingEntryVisitorWrapper(EntryVisitor delegate) {
+            this.delegate = delegate;
         }
 
         @Override
@@ -250,6 +257,7 @@ public class TraceCreator {
             if (countEntry(entry)) {
                 count++;
             }
+            delegate.visitEntry(entry);
         }
 
         private static boolean countEntry(Trace.Entry entry) {
@@ -257,35 +265,6 @@ public class TraceCreator {
             // maxTraceEntriesPerTransaction limit (and it's confusing when entry count exceeds the
             // limit)
             return !entry.getMessage().equals(Transaction.AUXILIARY_THREAD_MESSAGE);
-        }
-    }
-
-    private static class CountingEntryVisitorWrapper implements EntryVisitor {
-
-        private final @Nullable EntryVisitor delegate;
-        private int count;
-
-        private CountingEntryVisitorWrapper(@Nullable EntryVisitor delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public int visitSharedQueryText(String sharedQueryText) throws Exception {
-            if (delegate == null) {
-                return 0;
-            } else {
-                return delegate.visitSharedQueryText(sharedQueryText);
-            }
-        }
-
-        @Override
-        public void visitEntry(Trace.Entry entry) {
-            if (CountingEntryVisitor.countEntry(entry)) {
-                count++;
-            }
-            if (delegate != null) {
-                delegate.visitEntry(entry);
-            }
         }
     }
 }

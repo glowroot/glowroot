@@ -47,9 +47,10 @@ public class TransactionService implements ConfigListener {
     // cache for fast read access
     // visibility is provided by memoryBarrier below
     private boolean captureThreadStats;
+    private int maxTraceEntries;
     private int maxQueryAggregates;
     private int maxServiceCallAggregates;
-    private int maxTraceEntriesPerTransaction;
+    private int maxProfileSamples;
 
     // intentionally not volatile for small optimization
     private @MonotonicNonNull TransactionCollector transactionCollector;
@@ -92,7 +93,7 @@ public class TransactionService implements ConfigListener {
         long startTick = ticker.read();
         Transaction transaction = new Transaction(clock.currentTimeMillis(), startTick,
                 transactionType, transactionName, messageSupplier, timerName, captureThreadStats,
-                maxTraceEntriesPerTransaction, maxQueryAggregates, maxServiceCallAggregates,
+                maxTraceEntries, maxQueryAggregates, maxServiceCallAggregates, maxProfileSamples,
                 threadAllocatedBytes, transactionCompletionCallback, ticker, transactionRegistry,
                 this, configService, userProfileScheduler, threadContextHolder);
         SelfRemovableEntry transactionEntry = transactionRegistry.addTransaction(transaction);
@@ -120,7 +121,8 @@ public class TransactionService implements ConfigListener {
         captureThreadStats = configService.getTransactionConfig().captureThreadStats();
         maxQueryAggregates = advancedConfig.maxQueryAggregates();
         maxServiceCallAggregates = advancedConfig.maxServiceCallAggregates();
-        maxTraceEntriesPerTransaction = advancedConfig.maxTraceEntriesPerTransaction();
+        maxTraceEntries = advancedConfig.maxTraceEntriesPerTransaction();
+        maxProfileSamples = advancedConfig.maxProfileSamplesPerTransaction();
     }
 
     private class TransactionCompletionCallback implements CompletionCallback {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,14 +43,17 @@ import org.glowroot.central.repo.V09AgentRollupDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.DistributedExecutionMap;
 import org.glowroot.common.live.ImmutableEntries;
+import org.glowroot.common.live.ImmutableQueries;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
+import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
@@ -93,6 +96,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingMethodNam
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.PreloadClasspathCacheRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.QueriesRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.QueriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.SystemPropertiesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
@@ -349,6 +354,24 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         } else {
             return ImmutableEntries.builder()
                     .addAllEntries(entries)
+                    .addAllSharedQueryTexts(response.getSharedQueryTextList())
+                    .build();
+        }
+    }
+
+    @Nullable
+    Queries getQueries(String agentId, String traceId) throws Exception {
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setQueriesRequest(QueriesRequest.newBuilder()
+                        .setTraceId(traceId))
+                .build());
+        QueriesResponse response = responseWrapper.getQueriesResponse();
+        List<Aggregate.Query> queries = response.getQueryList();
+        if (queries.isEmpty()) {
+            return null;
+        } else {
+            return ImmutableQueries.builder()
+                    .addAllQueries(queries)
                     .addAllSharedQueryTexts(response.getSharedQueryTextList())
                     .build();
         }

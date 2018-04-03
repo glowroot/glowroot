@@ -177,8 +177,8 @@ public class ConfigIT extends WebDriverIT {
         page.getMaxServiceCallAggregatesTextField().sendKeys("987");
         page.getMaxTraceEntriesPerTransactionTextField().clear();
         page.getMaxTraceEntriesPerTransactionTextField().sendKeys("2345");
-        page.getMaxStackTraceSamplesPerTransactionTextField().clear();
-        page.getMaxStackTraceSamplesPerTransactionTextField().sendKeys("3456");
+        page.getMaxProfileSamplesPerTransactionTextField().clear();
+        page.getMaxProfileSamplesPerTransactionTextField().sendKeys("3456");
         page.clickSaveButton();
         // wait for save to finish
         Thread.sleep(1000);
@@ -196,7 +196,7 @@ public class ConfigIT extends WebDriverIT {
                 .isEqualTo("987");
         assertThat(page.getMaxTraceEntriesPerTransactionTextField().getAttribute("value"))
                 .isEqualTo("2345");
-        assertThat(page.getMaxStackTraceSamplesPerTransactionTextField().getAttribute("value"))
+        assertThat(page.getMaxProfileSamplesPerTransactionTextField().getAttribute("value"))
                 .isEqualTo("3456");
     }
 

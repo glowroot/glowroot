@@ -15,17 +15,19 @@
  */
 package org.glowroot.agent.impl;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
-import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
+import org.glowroot.agent.model.SharedQueryTextCollection;
 import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
@@ -347,7 +349,8 @@ public class AggregateIntervalCollector {
         @Override
         public void accept(AggregateVisitor aggregateVisitor) throws Exception {
             synchronized (lock) {
-                SharedQueryTextCollector sharedQueryTextCollector = new SharedQueryTextCollector();
+                SharedQueryTextCollectionImpl sharedQueryTextCollector =
+                        new SharedQueryTextCollectionImpl();
                 ScratchBuffer scratchBuffer = new ScratchBuffer();
                 for (Map.Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
                     String transactionType = e.getKey();
@@ -367,6 +370,30 @@ public class AggregateIntervalCollector {
                     }
                 }
             }
+        }
+    }
+
+    private static class SharedQueryTextCollectionImpl implements SharedQueryTextCollection {
+
+        private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
+
+        private List<String> latestSharedQueryTexts = Lists.newArrayList();
+
+        public List<String> getAndClearLastestSharedQueryTexts() {
+            List<String> latestSharedQueryTexts = this.latestSharedQueryTexts;
+            this.latestSharedQueryTexts = Lists.newArrayList();
+            return latestSharedQueryTexts;
+        }
+
+        @Override
+        public int getSharedQueryTextIndex(String queryText) {
+            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
+            if (sharedQueryTextIndex == null) {
+                sharedQueryTextIndex = sharedQueryTextIndexes.size();
+                sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
+                latestSharedQueryTexts.add(queryText);
+            }
+            return sharedQueryTextIndex;
         }
     }
 }

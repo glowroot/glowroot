@@ -54,8 +54,8 @@ public class AdvancedConfigPage {
         return withWait(xpath("//div[@gt-label='Max trace entries per transaction']//input"));
     }
 
-    public WebElement getMaxStackTraceSamplesPerTransactionTextField() {
-        return withWait(xpath("//div[@gt-label='Max stack trace samples per transaction']//input"));
+    public WebElement getMaxProfileSamplesPerTransactionTextField() {
+        return withWait(xpath("//div[@gt-label='Max profile samples per transaction']//input"));
     }
 
     public void clickSaveButton() {

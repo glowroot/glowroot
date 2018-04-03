@@ -33,6 +33,7 @@ import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.QueryEntryBase;
+import org.glowroot.agent.model.SharedQueryTextCollection;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryMessageSupplier;
@@ -101,7 +102,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
             @Nullable Object messageSupplier, @Nullable QueryData queryData,
             long queryExecutionCount, long startTick, @Nullable TimerImpl syncTimer,
             @Nullable AsyncTimerImpl asyncTimer) {
-        super(queryData);
+        super(queryData, startTick, queryExecutionCount);
         this.threadContext = threadContext;
         this.parentTraceEntry = parentTraceEntry;
         this.messageSupplier = messageSupplier;
@@ -110,10 +111,6 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         this.asyncTimer = asyncTimer;
         revisedStartTick = startTick;
         selfNestingLevel = 1;
-        // see special case for queryExecutionCount -1 in createCompletedErrorEntry() above
-        if (queryData != null && queryExecutionCount != -1) {
-            queryData.start(startTick, queryExecutionCount);
-        }
     }
 
     @Override
@@ -126,8 +123,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         return errorMessage;
     }
 
-    void accept(int depth, long transactionStartTick, long captureTick, EntryVisitor entryVisitor)
-            throws Exception {
+    void accept(int depth, long transactionStartTick, long captureTick, EntryVisitor entryVisitor,
+            SharedQueryTextCollection sharedQueryTextCollection) throws Exception {
         long offsetNanos = startTick - transactionStartTick;
         long durationNanos;
         boolean active;
@@ -158,7 +155,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
             builder.addAllDetailEntry(DetailMapWriter.toProto(readableMessage.getDetail()));
         } else if (messageSupplier instanceof QueryMessageSupplier) {
             String queryText = checkNotNull(getQueryText());
-            int sharedQueryTextIndex = entryVisitor.visitSharedQueryText(queryText);
+            int sharedQueryTextIndex = sharedQueryTextCollection.getSharedQueryTextIndex(queryText);
             ReadableQueryMessage readableQueryMessage =
                     (ReadableQueryMessage) ((QueryMessageSupplier) messageSupplier).get();
             Trace.QueryEntryMessage.Builder queryMessage = Trace.QueryEntryMessage.newBuilder()

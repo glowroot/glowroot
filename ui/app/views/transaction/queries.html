@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2017 the original author or authors.
+  Copyright 2015-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -115,9 +115,7 @@
           {{query.timePerExecution | gtMillis}}
         </td>
         <td class="gt-query-rows-column">
-          <span ng-if="query.rowsPerExecution !== -1">
-            {{query.rowsPerExecution | gtCount}}
-          </span>
+          {{query.rowsPerExecution | gtCount}}
         </td>
       </tr>
       </tbody>
@@ -159,7 +157,7 @@
           data-dismiss="modal">
     &times;
   </button>
-  <span class="fas fa-clipboard gt-clip"></span>
+  <span class="fas fa-clipboard gt-clip hide"></span>
 
   <div class="modal-dialog">
     <div class="modal-body">

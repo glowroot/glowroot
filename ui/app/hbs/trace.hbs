@@ -420,8 +420,68 @@
       <div class="hide gt-trace-detail-spinner"></div>
     </div>
   </div>
+  <div id="checkThisForWidth" style="margin: 10px 0 0 1em;">
+    <div id="entries" class="hide" style="font-family: Cousine, monospace;"></div>
+  </div>
+{{/ifExistenceYes}}
+{{#ifExistenceYes queriesExistence}}
+  <div style="margin-top: 10px;">
+    <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-queries-toggle">
+      <span class="gt-link-color">Query stats ({{queryCount}})</span>
+    </button>
+    {{! spinner is not used in export file }}
+    <div>
+      <div class="hide gt-trace-detail-spinner"></div>
+    </div>
+  </div>
   <div style="margin: 10px 0 0 1em;">
-    <div id="entries" style="font-family: Cousine, monospace;"></div>
+    <div id="queries" class="hide">
+      <table class="table query-table"
+             data-curr-sort-property="totalDurationNanos"
+             data-curr-sort-direction="1"
+             style="table-layout: fixed; margin: -40px 0 0;">
+        <thead>
+        <tr>
+          <th></th>
+          <th class="gt-trace-query-total-column">
+            <button class="gt-trace-query-sort-button"
+                    data-sort-property="totalDurationNanos">
+              Total<br>
+              time<br>
+              <span class="caret"></span>
+              (ms)
+            </button>
+          </th>
+          <th class="gt-trace-query-other-column">
+            <button class="gt-trace-query-sort-button"
+                    data-sort-property="executionCount">
+              Execution<br>
+              <span class="caret hide"></span>
+              count
+            </button>
+          </th>
+          <th class="gt-trace-query-other-column">
+            <button class="gt-trace-query-sort-button"
+                    data-sort-property="timePerExecution">
+              Time per<br>
+              execution<br>
+              <span class="caret hide"></span>
+              (ms)
+            </button>
+          </th>
+          <th class="gt-trace-query-rows-column">
+            <button class="gt-trace-query-sort-button"
+                    data-sort-property="rowsPerExecution">
+              Rows per<br>
+              <span class="caret hide"></span>
+              execution
+            </button>
+          </th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 {{/ifExistenceYes}}
 {{#ifExistenceYes profileExistence}}
@@ -470,35 +530,13 @@
     </div>
   {{/if}}
 {{/ifExistenceYes}}
-{{#ifExistenceExpired entriesExistence}}
-  {{#ifExistenceExpired profileExistence}}
-    <div style="margin: 10px 0;">
-      <strong>
-        Entries and profile for this trace have expired
-      </strong>
-      <em>
-        (see <a href="admin/storage#trace-capped-database-size">Configuration &gt; Storage &gt; Trace detail data</a>)
-      </em>
-    </div>
-  {{^}}
-    <div style="margin: 10px 0;">
-      <strong>
-        Entries for this trace have expired
-      </strong>
-      <em>
-        (see <a href="admin/storage#trace-capped-database-size">Configuration &gt; Storage &gt; Trace detail data</a>)
-      </em>
-    </div>
-  {{/ifExistenceExpired}}
-{{^}}
-  {{#ifExistenceExpired profileExistence}}
-    <div style="margin: 10px 0;">
-      <strong>
-        Profile for this trace has expired
-      </strong>
-      <em>
-        (see <a href="admin/storage#trace-capped-database-size">Configuration &gt; Storage &gt; Trace detail data</a>)
-      </em>
-    </div>
-  {{/ifExistenceExpired}}
-{{/ifExistenceExpired}}
+{{#ifAnyExistenceExpired .}}
+  <div style="margin: 10px 0;">
+    <strong>
+      {{#theExpiredDetails .}}{{/theExpiredDetails}} for this trace have expired
+    </strong>
+    <em>
+      (see <a href="admin/storage#trace-capped-database-size">Configuration &gt; Storage &gt; Trace detail data</a>)
+    </em>
+  </div>
+{{/ifAnyExistenceExpired}}

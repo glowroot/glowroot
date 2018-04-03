@@ -535,7 +535,7 @@ class ConfigJsonService {
         abstract int maxQueryAggregates();
         abstract int maxServiceCallAggregates();
         abstract int maxTraceEntriesPerTransaction();
-        abstract int maxStackTraceSamplesPerTransaction();
+        abstract int maxProfileSamplesPerTransaction();
         abstract int mbeanGaugeNotFoundDelaySeconds();
         abstract String version();
 
@@ -548,7 +548,7 @@ class ConfigJsonService {
                     .setMaxQueryAggregates(of(maxQueryAggregates()))
                     .setMaxServiceCallAggregates(of(maxServiceCallAggregates()))
                     .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
-                    .setMaxStackTraceSamplesPerTransaction(of(maxStackTraceSamplesPerTransaction()))
+                    .setMaxProfileSamplesPerTransaction(of(maxProfileSamplesPerTransaction()))
                     .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
                     .build();
         }
@@ -563,8 +563,8 @@ class ConfigJsonService {
                     .maxServiceCallAggregates(config.getMaxServiceCallAggregates().getValue())
                     .maxTraceEntriesPerTransaction(
                             config.getMaxTraceEntriesPerTransaction().getValue())
-                    .maxStackTraceSamplesPerTransaction(
-                            config.getMaxStackTraceSamplesPerTransaction().getValue())
+                    .maxProfileSamplesPerTransaction(
+                            config.getMaxProfileSamplesPerTransaction().getValue())
                     .mbeanGaugeNotFoundDelaySeconds(
                             config.getMbeanGaugeNotFoundDelaySeconds().getValue())
                     .version(Versions.getVersion(config))

@@ -33,6 +33,8 @@ import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.TraceDaoImpl;
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
+import org.glowroot.common.live.LiveTraceRepository.EntriesAndQueries;
+import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.model.Result;
@@ -134,13 +136,26 @@ public class TraceDaoWithV09Support implements TraceDao {
     }
 
     @Override
-    public Entries readEntriesForExport(String agentId, String traceId) throws Exception {
-        Entries entries = delegate.readEntriesForExport(agentId, traceId);
-        if (entries.entries().isEmpty() && clock.currentTimeMillis() < v09FqtLastExpirationTime
-                && checkV09(agentId, traceId)) {
-            return delegate.readEntriesForExport(V09Support.convertToV09(agentId), traceId);
+    public Queries readQueries(String agentId, String traceId) throws Exception {
+        Queries queries = delegate.readQueries(agentId, traceId);
+        if (queries.queries().isEmpty() && checkV09(agentId, traceId)) {
+            return delegate.readQueries(V09Support.convertToV09(agentId), traceId);
         }
-        return entries;
+        return queries;
+    }
+
+    @Override
+    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
+            throws Exception {
+        EntriesAndQueries entriesAndQueries =
+                delegate.readEntriesAndQueriesForExport(agentId, traceId);
+        if (entriesAndQueries.entries().isEmpty()
+                && clock.currentTimeMillis() < v09FqtLastExpirationTime
+                && checkV09(agentId, traceId)) {
+            return delegate.readEntriesAndQueriesForExport(V09Support.convertToV09(agentId),
+                    traceId);
+        }
+        return entriesAndQueries;
     }
 
     @Override

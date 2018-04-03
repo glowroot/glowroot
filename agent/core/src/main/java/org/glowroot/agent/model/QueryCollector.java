@@ -49,21 +49,22 @@ public class QueryCollector {
     }
 
     public List<Aggregate.Query> toAggregateProto(
-            SharedQueryTextCollector sharedQueryTextCollector) {
+            SharedQueryTextCollection sharedQueryTextCollection, boolean includeActive)
+            throws Exception {
         // " + queries.size()" is to cover the maximum number of limit exceeded buckets
         List<Aggregate.Query> allQueries =
                 Lists.newArrayListWithCapacity(Math.min(queryCount, limit) + queries.size());
         for (Map.Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
             for (Map.Entry<String, MutableQuery> innerEntry : outerEntry.getValue().entrySet()) {
                 allQueries.add(innerEntry.getValue().toAggregateProto(outerEntry.getKey(),
-                        innerEntry.getKey(), sharedQueryTextCollector));
+                        innerEntry.getKey(), sharedQueryTextCollection, includeActive));
             }
         }
         if (allQueries.size() <= limit) {
             // there could be limit exceeded buckets if hardLimitMultiplierWhileBuilding is 1
             for (Map.Entry<String, MutableQuery> entry : limitExceededBuckets.entrySet()) {
                 allQueries.add(entry.getValue().toAggregateProto(entry.getKey(),
-                        LIMIT_EXCEEDED_BUCKET, sharedQueryTextCollector));
+                        LIMIT_EXCEEDED_BUCKET, sharedQueryTextCollection, includeActive));
             }
             sort(allQueries);
             return allQueries;
@@ -84,7 +85,7 @@ public class QueryCollector {
         }
         for (Map.Entry<String, MutableQuery> entry : limitExceededBuckets.entrySet()) {
             allQueries.add(entry.getValue().toAggregateProto(entry.getKey(), LIMIT_EXCEEDED_BUCKET,
-                    sharedQueryTextCollector));
+                    sharedQueryTextCollection, includeActive));
         }
         // need to re-sort now including limit exceeded bucket
         sort(allQueries);
@@ -92,7 +93,7 @@ public class QueryCollector {
     }
 
     public void mergeQuery(String queryType, String queryText, double totalDurationNanos,
-            long executionCount, boolean hasTotalRows, long totalRows) {
+            long executionCount, boolean hasTotalRows, long totalRows, boolean active) {
         Map<String, MutableQuery> queriesForType = queries.get(queryType);
         if (queriesForType == null) {
             queriesForType = Maps.newHashMap();
@@ -111,6 +112,7 @@ public class QueryCollector {
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);
         aggregateQuery.addToExecutionCount(executionCount);
         aggregateQuery.addToTotalRows(hasTotalRows, totalRows);
+        aggregateQuery.setActive(active);
     }
 
     public void mergeQueriesInto(QueryCollector collector) {
@@ -119,7 +121,7 @@ public class QueryCollector {
                 MutableQuery query = entry.getValue();
                 collector.mergeQuery(outerEntry.getKey(), entry.getKey(),
                         query.getTotalDurationNanos(), query.getExecutionCount(),
-                        query.hasTotalRows(), query.getTotalRows());
+                        query.hasTotalRows(), query.getTotalRows(), query.isActive());
             }
         }
         for (Map.Entry<String, MutableQuery> limitExceededBucket : limitExceededBuckets
@@ -208,28 +210,5 @@ public class QueryCollector {
                 return Doubles.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
             }
         });
-    }
-
-    public static class SharedQueryTextCollector {
-
-        private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
-
-        private List<String> latestSharedQueryTexts = Lists.newArrayList();
-
-        public List<String> getAndClearLastestSharedQueryTexts() {
-            List<String> latestSharedQueryTexts = this.latestSharedQueryTexts;
-            this.latestSharedQueryTexts = Lists.newArrayList();
-            return latestSharedQueryTexts;
-        }
-
-        int getIndex(String queryText) {
-            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
-            if (sharedQueryTextIndex == null) {
-                sharedQueryTextIndex = sharedQueryTextIndexes.size();
-                sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
-                latestSharedQueryTexts.add(queryText);
-            }
-            return sharedQueryTextIndex;
-        }
     }
 }

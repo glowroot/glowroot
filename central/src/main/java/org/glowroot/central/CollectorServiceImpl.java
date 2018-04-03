@@ -604,6 +604,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         private List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         private @MonotonicNonNull Trace trace;
         private List<Trace.Entry> entries = new ArrayList<>();
+        private List<Aggregate.Query> queries = new ArrayList<>();
         private @MonotonicNonNull Profile mainThreadProfile;
         private @MonotonicNonNull Profile auxThreadProfile;
         private Trace. /*@MonotonicNonNull*/ Header header;
@@ -628,6 +629,9 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                     break;
                 case ENTRY:
                     entries.add(value.getEntry());
+                    break;
+                case QUERIES:
+                    queries.addAll(value.getQueries().getQueryList());
                     break;
                 case MAIN_THREAD_PROFILE:
                     mainThreadProfile = value.getMainThreadProfile();
@@ -677,6 +681,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                         .setUpdate(streamHeader.getUpdate())
                         .setHeader(checkNotNull(header))
                         .addAllEntry(entries)
+                        .addAllQuery(queries)
                         .addAllSharedQueryText(sharedQueryTexts);
                 if (mainThreadProfile != null) {
                     builder.setMainThreadProfile(mainThreadProfile);

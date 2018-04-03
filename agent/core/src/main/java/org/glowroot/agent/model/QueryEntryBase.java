@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,14 @@ public abstract class QueryEntryBase implements QueryEntry {
 
     private long maxRow;
 
-    protected QueryEntryBase(@Nullable QueryData queryData) {
+    protected QueryEntryBase(@Nullable QueryData queryData, long startTick,
+            long queryExecutionCount) {
         this.queryData = queryData;
+        // see special case for queryExecutionCount -1 in TraceEntryImpl.createCompletedErrorEntry()
+        if (queryData != null && queryExecutionCount != -1) {
+            queryData.start(startTick, queryExecutionCount);
+        }
+
     }
 
     public void extendQueryData(long startTick) {

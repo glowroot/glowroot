@@ -28,8 +28,8 @@ import org.glowroot.agent.impl.Transaction.ThreadStatsCollector;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.MutableAggregateTimer;
 import org.glowroot.agent.model.QueryCollector;
-import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
 import org.glowroot.agent.model.ServiceCallCollector;
+import org.glowroot.agent.model.SharedQueryTextCollection;
 import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
@@ -151,8 +151,8 @@ class AggregateCollector {
         return serviceCalls;
     }
 
-    Aggregate build(SharedQueryTextCollector sharedQueryTextCollector,
-            ScratchBuffer scratchBuffer) {
+    Aggregate build(SharedQueryTextCollection sharedQueryTextCollection,
+            ScratchBuffer scratchBuffer) throws Exception {
         Aggregate.Builder builder = Aggregate.newBuilder()
                 .setTotalDurationNanos(totalDurationNanos)
                 .setTransactionCount(transactionCount)
@@ -169,7 +169,7 @@ class AggregateCollector {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         if (queries != null) {
-            builder.addAllQuery(queries.toAggregateProto(sharedQueryTextCollector));
+            builder.addAllQuery(queries.toAggregateProto(sharedQueryTextCollection, false));
         }
         if (serviceCalls != null) {
             builder.addAllServiceCall(serviceCalls.toAggregateProto());

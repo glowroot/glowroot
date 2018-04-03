@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Constants;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage;
@@ -192,6 +193,7 @@ class GrpcServerWrapper {
 
                 private List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
                 private List<Trace.Entry> entries = Lists.newArrayList();
+                private List<Aggregate.Query> queries = Lists.newArrayList();
                 private @MonotonicNonNull Profile mainThreadProfile;
                 private @MonotonicNonNull Profile auxThreadProfile;
                 private Trace. /*@MonotonicNonNull*/ Header header;
@@ -208,6 +210,9 @@ class GrpcServerWrapper {
                             break;
                         case ENTRY:
                             entries.add(value.getEntry());
+                            break;
+                        case QUERIES:
+                            queries.addAll(value.getQueries().getQueryList());
                             break;
                         case MAIN_THREAD_PROFILE:
                             mainThreadProfile = value.getMainThreadProfile();
@@ -237,7 +242,8 @@ class GrpcServerWrapper {
                     Trace.Builder trace = Trace.newBuilder()
                             .setHeader(header)
                             .addAllSharedQueryText(sharedQueryTexts)
-                            .addAllEntry(entries);
+                            .addAllEntry(entries)
+                            .addAllQuery(queries);
                     if (mainThreadProfile != null) {
                         trace.setMainThreadProfile(mainThreadProfile);
                     }

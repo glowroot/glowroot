@@ -27,6 +27,10 @@ glowroot.controller('AdminStorageCtrl', [
     // initialize page binding object
     $scope.page = {};
 
+    // close modal backdrop if open, this is needed if click on "see Configuration > Storage > Trace detail data" inside
+    // of trace modal
+    $('.modal-backdrop').remove();
+
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };

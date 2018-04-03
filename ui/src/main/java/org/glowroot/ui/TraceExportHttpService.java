@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,7 @@ class TraceExportHttpService implements HttpService {
         String exportJsPlaceholder = "<script src=\"scripts/export.js\"></script>";
         String headerPlaceholder = "<script type=\"text/json\" id=\"headerJson\"></script>";
         String entriesPlaceholder = "<script type=\"text/json\" id=\"entriesJson\"></script>";
+        String queriesPlaceholder = "<script type=\"text/json\" id=\"queriesJson\"></script>";
         String sharedQueryTextsPlaceholder =
                 "<script type=\"text/json\" id=\"sharedQueryTextsJson\"></script>";
         String mainThreadProfilePlaceholder =
@@ -104,8 +105,9 @@ class TraceExportHttpService implements HttpService {
         String templateContent = asCharSource("trace-export.html").read();
         Pattern pattern = Pattern.compile("(" + htmlStartTag + "|" + exportCssPlaceholder + "|"
                 + exportJsPlaceholder + "|" + headerPlaceholder + "|" + entriesPlaceholder + "|"
-                + sharedQueryTextsPlaceholder + "|" + mainThreadProfilePlaceholder + "|"
-                + auxThreadProfilePlaceholder + "|" + footerMessagePlaceholder + ")");
+                + queriesPlaceholder + "|" + sharedQueryTextsPlaceholder + "|"
+                + mainThreadProfilePlaceholder + "|" + auxThreadProfilePlaceholder + "|"
+                + footerMessagePlaceholder + ")");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
         List<ChunkSource> chunkSources = Lists.newArrayList();
@@ -136,6 +138,14 @@ class TraceExportHttpService implements HttpService {
                 String entriesJson = traceExport.entriesJson();
                 if (entriesJson != null) {
                     chunkSources.add(ChunkSource.wrap(entriesJson));
+                }
+                chunkSources.add(ChunkSource.wrap("</script>"));
+            } else if (match.equals(queriesPlaceholder)) {
+                chunkSources
+                        .add(ChunkSource.wrap("<script type=\"text/json\" id=\"queriesJson\">"));
+                String queriesJson = traceExport.queriesJson();
+                if (queriesJson != null) {
+                    chunkSources.add(ChunkSource.wrap(queriesJson));
                 }
                 chunkSources.add(ChunkSource.wrap("</script>"));
             } else if (match.equals(sharedQueryTextsPlaceholder)) {

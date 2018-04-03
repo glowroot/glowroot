@@ -23,7 +23,9 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveTraceRepository.Entries;
+import org.glowroot.common.live.LiveTraceRepository.EntriesAndQueries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
+import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.model.Result;
@@ -57,13 +59,20 @@ public interface TraceRepository {
     @Nullable
     Entries readEntries(String agentId, String traceId) throws Exception;
 
-    // null return value means trace not found or was found but had no entries (and therefore also
-    // no queries)
+    // null return value means trace not found or was found but had no queries
+    //
+    // SharedQueryTexts are returned with either fullTrace or
+    // truncatedText/truncatedEndText/fullTraceSha1
+    @Nullable
+    Queries readQueries(String agentId, String traceId) throws Exception;
+
+    // null return value means trace not found or was found but had no entries
     //
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Nullable
-    Entries readEntriesForExport(String agentId, String traceId) throws Exception;
+    EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
+            throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile
     @Nullable
@@ -109,10 +118,10 @@ public interface TraceRepository {
     }
 
     @Value.Immutable
-    @Styles.AllParameters
     interface HeaderPlus {
         Trace.Header header();
         Existence entriesExistence();
+        Existence queriesExistence();
         // EXPIRED if either main thread or auxiliary thread profile exist and are expired
         // YES if either main thread or auxiliary thread profile exists
         // NO if both main thread or auxiliary thread profile do not exists

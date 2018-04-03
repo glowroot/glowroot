@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.glowroot.common.model.MutableProfile;
 
 public class ThreadProfile {
 
+    private final int maxSamples;
     private final Object lock = new Object();
     @GuardedBy("lock")
     private final List<List<StackTraceElement>> unmergedStackTraces = Lists.newArrayList();
@@ -40,7 +41,9 @@ public class ThreadProfile {
     private long sampleCount;
 
     @VisibleForTesting
-    public ThreadProfile() {}
+    public ThreadProfile(int maxSamples) {
+        this.maxSamples = maxSamples;
+    }
 
     public void mergeInto(MutableProfile profile) {
         synchronized (lock) {
@@ -67,15 +70,22 @@ public class ThreadProfile {
     public long getSampleCount() {
         // lock is needed for visibility
         synchronized (lock) {
-            return sampleCount;
+            return Math.min(sampleCount, maxSamples);
+        }
+    }
+
+    public boolean isSampleLimitExceeded() {
+        // lock is needed for visibility
+        synchronized (lock) {
+            return sampleCount > maxSamples;
         }
     }
 
     // limit is just to cap memory consumption for a single transaction profile in case it runs for
     // a very very very long time
-    public void addStackTrace(ThreadInfo threadInfo, int limit) {
+    public void addStackTrace(ThreadInfo threadInfo) {
         synchronized (lock) {
-            if (sampleCount >= limit) {
+            if (++sampleCount > maxSamples) {
                 return;
             }
             List<StackTraceElement> stackTrace = Arrays.asList(threadInfo.getStackTrace());
@@ -93,7 +103,6 @@ public class ThreadProfile {
             } else {
                 profile.merge(stackTrace, threadState);
             }
-            sampleCount++;
         }
     }
 

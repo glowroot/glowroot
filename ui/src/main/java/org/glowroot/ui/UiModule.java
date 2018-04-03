@@ -178,6 +178,7 @@ public class UiModule {
         // as the download url for the export file
         httpServices.put(Pattern.compile("^/export/trace$"), traceExportHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
+        httpServices.put(Pattern.compile("^/backend/trace/queries$"), traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/main-thread-profile$"),
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),

@@ -71,7 +71,7 @@ public abstract class AdvancedConfig {
 
     // used to limit memory requirement, also used to help limit trace capture size
     @Value.Default
-    public int maxStackTraceSamplesPerTransaction() {
+    public int maxProfileSamplesPerTransaction() {
         return 50000;
     }
 
@@ -89,7 +89,7 @@ public abstract class AdvancedConfig {
                 .setMaxQueryAggregates(of(maxQueryAggregates()))
                 .setMaxServiceCallAggregates(of(maxServiceCallAggregates()))
                 .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
-                .setMaxStackTraceSamplesPerTransaction(of(maxStackTraceSamplesPerTransaction()))
+                .setMaxProfileSamplesPerTransaction(of(maxProfileSamplesPerTransaction()))
                 .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
                 .build();
     }
@@ -114,9 +114,9 @@ public abstract class AdvancedConfig {
             builder.maxTraceEntriesPerTransaction(
                     config.getMaxTraceEntriesPerTransaction().getValue());
         }
-        if (config.hasMaxStackTraceSamplesPerTransaction()) {
-            builder.maxStackTraceSamplesPerTransaction(
-                    config.getMaxStackTraceSamplesPerTransaction().getValue());
+        if (config.hasMaxProfileSamplesPerTransaction()) {
+            builder.maxProfileSamplesPerTransaction(
+                    config.getMaxProfileSamplesPerTransaction().getValue());
         }
         if (config.hasMbeanGaugeNotFoundDelaySeconds()) {
             builder.mbeanGaugeNotFoundDelaySeconds(

@@ -1,0 +1,31 @@
+<tr id="gtTraceQuery{{index}}">
+  <td class="gt-trace-query-text-column">
+    {{#ifLongQuery .}}
+    {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
+      <div class="gt-inline-block gt-unexpanded-content gt-monospace"
+           style="margin-right: 0; margin-left: -3px;">
+        {{queryFirstPart .}}&nbsp;<span class="gt-link-color"><strong
+          class="gt-opensans gt-dotdotdot">...</strong></span>&nbsp;{{queryLastPart .}}
+      </div>
+      <!-- only convert newlines to <br>s for long messages -->
+      <div class="gt-expanded-content hide"
+           style="position: relative; margin-left: -3px;">
+        <i class="fas fa-clipboard gt-clip hide"></i>
+        <div class="gt-break-word gt-pre-wrap gt-monospace gt-clip-text gt-expanded-trace-query"
+             data-gt-trace-query-index="{{index}}"></div>
+        <div>
+          <div class="hide gt-trace-detail-spinner"></div>
+        </div>
+      </div>
+    {{^}}
+      <div class="gt-inline-block gt-content-padding gt-monospace">
+        {{sharedQueryText.fullText}}
+      </div>
+    {{/ifLongQuery}}
+  </td>
+  <td class="gt-trace-query-total-column">{{nanosToMillis totalDurationNanos}}{{#if active}}..{{/if}}</td>
+  <td class="gt-trace-query-other-column">{{formatInteger executionCount}}</td>
+  <td class="gt-trace-query-other-column">{{formatMillis timePerExecution}}{{#if active}}..{{/if}}</td>
+  <td class="gt-trace-query-rows-column">{{formatCount rowsPerExecution}}{{#if active}}{{#ifNotUndefined rowsPerExecution}}
+    ..{{/ifNotUndefined}}{{/if}}</td>
+</tr>

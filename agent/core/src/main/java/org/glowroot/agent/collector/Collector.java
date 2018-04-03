@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.agent.collector;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -67,14 +68,14 @@ public interface Collector {
     }
 
     public interface TraceVisitor extends EntryVisitor {
+        void visitQueries(List<Aggregate.Query> queries);
+        void visitSharedQueryTexts(List<String> sharedQueryTexts) throws SQLException;
         void visitMainThreadProfile(Profile profile);
         void visitAuxThreadProfile(Profile profile);
         void visitHeader(Trace.Header header);
     }
 
     public interface EntryVisitor {
-        // returns index to be used in Trace.Entry that is passed to visitEntry()
-        int visitSharedQueryText(String sharedQueryText) throws Exception;
         void visitEntry(Trace.Entry entry);
     }
 }

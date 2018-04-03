@@ -21,6 +21,7 @@ import org.glowroot.agent.embedded.util.CappedDatabaseStats;
 public class TraceCappedDatabaseStats implements TraceCappedDatabaseStatsMXBean {
 
     static final String TRACE_ENTRIES = "trace entries";
+    static final String TRACE_QUERIES = "trace queries";
     static final String TRACE_SHARED_QUERY_TEXTS = "trace shared query texts";
     static final String TRACE_PROFILES = "trace profiles";
 
@@ -33,6 +34,11 @@ public class TraceCappedDatabaseStats implements TraceCappedDatabaseStatsMXBean 
     @Override
     public CappedDatabaseStats getTraceEntries() {
         return cappedDatabase.getStats(TRACE_ENTRIES);
+    }
+
+    @Override
+    public CappedDatabaseStats getTraceQueries() {
+        return cappedDatabase.getStats(TRACE_QUERIES);
     }
 
     @Override
