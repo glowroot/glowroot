@@ -22,6 +22,7 @@ import java.net.URISyntaxException;
 import java.security.CodeSource;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -29,6 +30,7 @@ import org.h2.tools.Console;
 import org.h2.tools.Recover;
 import org.h2.tools.RunScript;
 import org.h2.tools.Script;
+import org.h2.tools.Shell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +60,12 @@ public class ToolMain {
             String subcommand = args[1];
             if (subcommand.equals("console") && args.length == 2) {
                 console(directories.getDataDir());
+                return;
+            } else if (subcommand.equals("shell") && args.length == 2) {
+                shell(directories.getDataDir());
+                return;
+            } else if (subcommand.equals("run") && args.length == 3) {
+                run(directories.getDataDir(), args[2]);
                 return;
             } else if (subcommand.equals("recreate") && args.length == 2) {
                 recreate(directories.getDataDir());
@@ -90,8 +98,20 @@ public class ToolMain {
     }
 
     private static void console(File dataDir) throws Exception {
+        // console is just for local debugging, and it doesn't accept remote connections anyways
+        // when run in this manner (with specific url)
+        System.setProperty("h2.bindAddress", "127.0.0.1");
         Console.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
                 "sa");
+    }
+
+    private static void shell(File dataDir) throws Exception {
+        Shell.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user", "sa");
+    }
+
+    private static void run(File dataDir, String sql) throws Exception {
+        Shell.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
+                "sa", "-sql", sql);
     }
 
     @RequiresNonNull("startupLogger")
