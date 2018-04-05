@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
@@ -162,8 +163,8 @@
             </relocation>
             <relocation>
               <!-- this shades guava's internal use of java util logging so that it will share same
-               glowroot.logback.xml configuration file (don't want to use jul-to-slf4j because that
-               will affect the whole JVM under test) -->
+                glowroot.logback.xml configuration file (don't want to use jul-to-slf4j because that
+                will affect the whole JVM under test) -->
               <pattern>java.util.logging</pattern>
               <shadedPattern>org.glowroot.agent.jul</shadedPattern>
             </relocation>
@@ -181,7 +182,8 @@
               unshaded for use by plugin integration tests -->
           </relocations>
           <transformers>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+            <transformer
+              implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
           </transformers>
         </configuration>
         <executions>
