@@ -43,9 +43,7 @@ public class ToolMain {
 
     private ToolMain() {}
 
-    public static void main(String[] args) throws Exception {
-        CodeSource codeSource = ToolMain.class.getProtectionDomain().getCodeSource();
-        File glowrootJarFile = getGlowrootJarFile(codeSource);
+    public static void main(String[] args, @Nullable File glowrootJarFile) throws Exception {
         Directories directories = new Directories(glowrootJarFile);
         MainEntryPoint.initLogging(directories.getConfDir(), directories.getSharedConfDir(),
                 directories.getLogDir(), null);
@@ -75,7 +73,7 @@ public class ToolMain {
             maskCentralData(directories.getDataDir());
             return;
         }
-        startupLogger.error("unexpected args, exiting");
+        startupLogger.error("unexpected args: \"{}\"", Joiner.on("\", \"").join(args));
     }
 
     @VisibleForTesting
