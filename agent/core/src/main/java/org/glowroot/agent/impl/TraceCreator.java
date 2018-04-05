@@ -19,9 +19,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.collector.Collector.TraceReader;

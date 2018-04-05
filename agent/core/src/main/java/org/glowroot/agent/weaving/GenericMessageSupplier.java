@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.weaving;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;

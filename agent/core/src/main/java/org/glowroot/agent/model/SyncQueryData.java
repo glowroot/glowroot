@@ -15,9 +15,8 @@
  */
 package org.glowroot.agent.model;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Ticker;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 // TODO update this comment that was copied from TimerImpl
 //

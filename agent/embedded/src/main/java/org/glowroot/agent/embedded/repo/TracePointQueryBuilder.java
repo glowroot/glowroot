@@ -18,11 +18,10 @@ package org.glowroot.agent.embedded.repo;
 import java.util.List;
 import java.util.Locale;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
 

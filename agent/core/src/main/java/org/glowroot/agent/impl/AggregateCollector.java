@@ -17,10 +17,9 @@ package org.glowroot.agent.impl;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.impl.Transaction.RootTimerCollector;

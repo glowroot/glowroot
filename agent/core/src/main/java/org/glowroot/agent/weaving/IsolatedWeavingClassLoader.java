@@ -26,13 +26,12 @@ import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.reflect.Reflection;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

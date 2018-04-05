@@ -19,7 +19,6 @@ import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanInfo;
@@ -32,6 +31,7 @@ import javax.management.QueryExp;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 import org.slf4j.Logger;

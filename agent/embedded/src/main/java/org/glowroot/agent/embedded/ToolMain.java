@@ -21,10 +21,9 @@ import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.security.CodeSource;
 
-import javax.annotation.Nullable;
-
 import com.google.common.annotations.VisibleForTesting;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.h2.tools.Console;
 import org.h2.tools.Recover;

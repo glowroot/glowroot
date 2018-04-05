@@ -15,7 +15,7 @@
  */
 package org.glowroot.common2.repo.util;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
@@ -24,7 +24,7 @@ public class ThreadStatsCreator {
 
     private ThreadStatsCreator() {}
 
-    public static @Nullable Aggregate.ThreadStats create(@Nullable Double totalCpuNanos,
+    public static Aggregate. /*@Nullable*/ ThreadStats create(@Nullable Double totalCpuNanos,
             @Nullable Double totalBlockedNanos, @Nullable Double totalWaitedNanos,
             @Nullable Double totalAllocatedBytes) {
         if (totalCpuNanos == null && totalBlockedNanos == null && totalWaitedNanos == null

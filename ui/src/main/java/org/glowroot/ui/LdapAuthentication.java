@@ -19,7 +19,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nullable;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -29,6 +28,7 @@ import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 
 import com.google.common.collect.Sets;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.agent.api.Instrumentation;

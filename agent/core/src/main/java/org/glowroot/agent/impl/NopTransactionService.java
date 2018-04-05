@@ -17,7 +17,7 @@ package org.glowroot.agent.impl;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.AsyncTraceEntry;

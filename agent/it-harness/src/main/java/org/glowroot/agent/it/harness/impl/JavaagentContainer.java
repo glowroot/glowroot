@@ -31,8 +31,6 @@ import java.util.concurrent.Executors;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
@@ -46,6 +44,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.channel.EventLoopGroup;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -17,8 +17,7 @@ package org.glowroot.agent.embedded.preinit;
 
 import java.util.Arrays;
 
-import javax.annotation.Nullable;
-
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 

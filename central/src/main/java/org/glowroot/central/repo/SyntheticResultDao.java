@@ -15,7 +15,7 @@
  */
 package org.glowroot.central.repo;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.common2.repo.SyntheticResultRepository;

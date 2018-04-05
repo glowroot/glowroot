@@ -20,13 +20,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.Constants;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;

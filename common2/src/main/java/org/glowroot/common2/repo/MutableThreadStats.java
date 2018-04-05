@@ -15,9 +15,8 @@
  */
 package org.glowroot.common2.repo;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common2.repo.util.UsedByJsonSerialization;
@@ -87,7 +86,7 @@ public class MutableThreadStats {
         }
     }
 
-    public void addThreadStats(@Nullable Aggregate.ThreadStats threadStats) {
+    public void addThreadStats(Aggregate. /*@Nullable*/ ThreadStats threadStats) {
         if (threadStats == null) {
             totalCpuNanos = NotAvailableAware.NA;
             totalBlockedNanos = NotAvailableAware.NA;

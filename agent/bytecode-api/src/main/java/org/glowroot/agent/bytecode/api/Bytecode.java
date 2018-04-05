@@ -17,7 +17,7 @@ package org.glowroot.agent.bytecode.api;
 
 import java.lang.reflect.Method;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TraceEntry;

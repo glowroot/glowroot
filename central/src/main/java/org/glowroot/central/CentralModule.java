@@ -28,8 +28,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.HostDistance;
@@ -57,6 +55,7 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 import org.slf4j.Logger;

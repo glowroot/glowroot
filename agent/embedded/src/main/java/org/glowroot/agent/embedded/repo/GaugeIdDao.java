@@ -17,11 +17,10 @@ package org.glowroot.agent.embedded.repo;
 
 import java.sql.SQLException;
 
-import javax.annotation.Nullable;
-
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.embedded.util.ImmutableColumn;

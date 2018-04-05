@@ -22,11 +22,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.Parser;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.util.SizeLimitBypassingParser;
 

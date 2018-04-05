@@ -17,12 +17,11 @@ package org.glowroot.agent.impl;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

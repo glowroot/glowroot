@@ -15,7 +15,7 @@
  */
 package org.glowroot.common2.repo;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 

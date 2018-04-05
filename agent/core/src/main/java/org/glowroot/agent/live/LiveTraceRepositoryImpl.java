@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Ticker;
@@ -28,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.collector.Collector.TraceReader;
@@ -68,7 +67,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     // checks active traces first, then pending traces (and finally caller should check stored
     // traces) to make sure that the trace is not missed if it is in transition between these states
     @Override
-    public @Nullable Trace.Header getHeader(String agentId, String traceId) throws Exception {
+    public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) throws Exception {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -303,7 +302,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         private List<String> sharedQueryTexts = ImmutableList.of();
         private @Nullable Profile mainThreadProfile;
         private @Nullable Profile auxThreadProfile;
-        private @Nullable Trace.Header header;
+        private Trace. /*@Nullable*/ Header header;
 
         @Override
         public void visitEntry(Trace.Entry entry) {

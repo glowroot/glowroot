@@ -19,13 +19,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Charsets;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.Hashing;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.agent.embedded.util.DataSource;

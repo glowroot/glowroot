@@ -17,7 +17,7 @@ package org.glowroot.common.util;
 
 import java.util.TimeZone;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class CaptureTimes {
 

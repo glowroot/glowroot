@@ -19,10 +19,9 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Sets;
 import io.grpc.stub.StreamObserver;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

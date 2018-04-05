@@ -15,8 +15,9 @@
  */
 package org.glowroot.common2.repo.util;
 
-import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public interface LazySecretKey {
 

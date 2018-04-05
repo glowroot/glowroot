@@ -19,8 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 
-import org.glowroot.common.util.SystemProperties;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SystemPropertiesTest {

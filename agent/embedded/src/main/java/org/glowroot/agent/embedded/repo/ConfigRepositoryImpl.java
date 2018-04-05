@@ -21,11 +21,10 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.AlertConfig;
@@ -126,7 +125,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentConfig.GaugeConfig getGaugeConfig(String agentId, String version) {
+    public AgentConfig. /*@Nullable*/ GaugeConfig getGaugeConfig(String agentId, String version) {
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             AgentConfig.GaugeConfig config = gaugeConfig.toProto();
             if (Versions.getVersion(config).equals(version)) {
@@ -143,7 +142,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentConfig.SyntheticMonitorConfig getSyntheticMonitorConfig(
+    public AgentConfig. /*@Nullable*/ SyntheticMonitorConfig getSyntheticMonitorConfig(
             String agentRollupId, String syntheticMonitorId) {
         throw new UnsupportedOperationException();
     }
@@ -158,7 +157,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentConfig.AlertConfig getAlertConfig(String agentRollupId,
+    public AgentConfig. /*@Nullable*/ AlertConfig getAlertConfig(String agentRollupId,
             String alertVersion) {
         for (AlertConfig alertConfig : configService.getAlertConfigs()) {
             AgentConfig.AlertConfig config = alertConfig.toProto();
@@ -179,7 +178,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentConfig.PluginConfig getPluginConfig(String agentId, String pluginId) {
+    public AgentConfig. /*@Nullable*/ PluginConfig getPluginConfig(String agentId,
+            String pluginId) {
         PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
         if (pluginConfig == null) {
             return null;
@@ -197,7 +197,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentConfig.InstrumentationConfig getInstrumentationConfig(String agentId,
+    public AgentConfig. /*@Nullable*/ InstrumentationConfig getInstrumentationConfig(String agentId,
             String version) {
         for (InstrumentationConfig config : configService.getInstrumentationConfigs()) {
             AgentConfig.InstrumentationConfig protoConfig = config.toProto();

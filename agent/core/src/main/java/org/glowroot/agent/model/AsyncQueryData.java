@@ -18,9 +18,8 @@ package org.glowroot.agent.model;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Ticker;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class AsyncQueryData implements QueryData {
 

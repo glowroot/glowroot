@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.impl;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.internal.LoggerFactory;

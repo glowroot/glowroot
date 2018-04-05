@@ -28,9 +28,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.infinispan.configuration.cache.CacheMode;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfiguration;

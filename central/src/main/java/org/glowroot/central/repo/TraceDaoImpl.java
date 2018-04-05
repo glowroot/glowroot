@@ -31,8 +31,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -42,6 +40,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.CassandraWriteMetrics;
@@ -1039,7 +1038,8 @@ public class TraceDaoImpl implements TraceDao {
         return Profile.parseFrom(checkNotNull(row.getBytes(0)));
     }
 
-    private @Nullable Trace.Header readHeader(String agentId, String traceId) throws Exception {
+    private Trace. /*@Nullable*/ Header readHeader(String agentId, String traceId)
+            throws Exception {
         Trace.Header header = readHeaderUsingPS(agentId, traceId, readHeaderV2);
         if (header != null) {
             return header;
@@ -1047,7 +1047,7 @@ public class TraceDaoImpl implements TraceDao {
         return readHeaderUsingPS(agentId, traceId, readHeaderV1);
     }
 
-    private @Nullable Trace.Header readHeaderUsingPS(String agentId, String traceId,
+    private Trace. /*@Nullable*/ Header readHeaderUsingPS(String agentId, String traceId,
             PreparedStatement readPS) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);

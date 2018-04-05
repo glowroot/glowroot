@@ -17,10 +17,9 @@ package org.glowroot.common2.repo.util;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.live.ImmutableTransactionQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;

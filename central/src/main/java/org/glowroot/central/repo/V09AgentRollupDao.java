@@ -18,12 +18,11 @@ package org.glowroot.central.repo;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;

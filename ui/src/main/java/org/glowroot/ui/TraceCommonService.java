@@ -22,14 +22,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;

@@ -18,12 +18,12 @@ package org.glowroot.agent.embedded.repo;
 import java.io.File;
 import java.io.IOException;
 
-import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common2.repo.util.Encryption;
 import org.glowroot.common2.repo.util.LazySecretKey;

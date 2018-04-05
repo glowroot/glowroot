@@ -20,8 +20,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.MoreObjects;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
@@ -51,6 +49,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.resolver.NoopAddressResolverGroup;
 import io.netty.util.CharsetUtil;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

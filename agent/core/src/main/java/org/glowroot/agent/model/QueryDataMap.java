@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.model;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

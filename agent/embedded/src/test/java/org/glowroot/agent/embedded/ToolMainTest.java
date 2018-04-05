@@ -22,8 +22,6 @@ import java.security.cert.Certificate;
 
 import org.junit.Test;
 
-import org.glowroot.agent.embedded.ToolMain;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ToolMainTest {

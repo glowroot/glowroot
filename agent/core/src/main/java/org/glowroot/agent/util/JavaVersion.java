@@ -15,9 +15,8 @@
  */
 package org.glowroot.agent.util;
 
-import javax.annotation.Nullable;
-
 import com.google.common.annotations.VisibleForTesting;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 // LIMIT DEPENDENCY USAGE IN THIS CLASS SO IT DOESN'T TRIGGER ANY CLASS LOADING ON ITS OWN
 public class JavaVersion {

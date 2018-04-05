@@ -23,7 +23,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import javax.annotation.Nullable;
 import javax.tools.ToolProvider;
 
 import com.google.common.base.Joiner;
@@ -34,6 +33,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

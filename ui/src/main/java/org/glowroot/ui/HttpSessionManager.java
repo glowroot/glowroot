@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -35,6 +33,7 @@ import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.slf4j.Logger;

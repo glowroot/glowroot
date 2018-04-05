@@ -15,10 +15,9 @@
  */
 package org.glowroot.agent.impl;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Ticker;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.AdvancedConfig;

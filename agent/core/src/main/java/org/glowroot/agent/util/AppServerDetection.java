@@ -19,9 +19,8 @@ import java.io.IOException;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.StandardSystemProperty;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

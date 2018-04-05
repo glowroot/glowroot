@@ -20,8 +20,6 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
-import org.glowroot.agent.embedded.sql.SQLException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SQLExceptionTest {

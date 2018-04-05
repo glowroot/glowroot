@@ -18,11 +18,11 @@ package org.glowroot.agent.impl;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AggregateReader;

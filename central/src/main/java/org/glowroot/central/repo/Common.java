@@ -25,8 +25,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Future;
 
-import javax.annotation.Nullable;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -38,6 +36,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;

@@ -18,7 +18,7 @@ package org.glowroot.agent.embedded.sql;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @SuppressWarnings("serial")
 public class SQLException extends Exception implements Iterable<Throwable> {

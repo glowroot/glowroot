@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
-import javax.annotation.Nullable;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -33,6 +31,7 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
 import org.glowroot.central.util.Cache;

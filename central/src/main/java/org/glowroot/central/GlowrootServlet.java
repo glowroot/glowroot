@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.annotation.Nullable;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -44,6 +43,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import io.netty.buffer.ByteBuf;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.ui.ChunkSource;
 import org.glowroot.ui.ChunkSource.ChunkCopier;

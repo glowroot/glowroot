@@ -28,8 +28,6 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -38,6 +36,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.primitives.Bytes;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;

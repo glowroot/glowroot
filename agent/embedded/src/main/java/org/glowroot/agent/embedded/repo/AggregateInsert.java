@@ -22,13 +22,12 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.AbstractMessage;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.agent.embedded.repo.AggregateDao.TruncatedQueryText;

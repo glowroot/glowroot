@@ -17,9 +17,8 @@ package org.glowroot.common2.repo;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common2.repo.SyntheticResult.ErrorInterval;
 

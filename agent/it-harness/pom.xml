@@ -85,16 +85,6 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <!-- don't need this dependency at runtime since only annotations,
-        however setting <optional>true</optional> causes this error in eclipse workspace
-        "The type javax.annotation.Nullable cannot be resolved. It is indirectly referenced
-        from required .class files".
-        This error occurs inside glowroot plugin test code when the glowroot-agent-it-harness
-        project is open at same time as plugin -->
-    </dependency>
   </dependencies>
 
   <build>

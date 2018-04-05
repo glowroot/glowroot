@@ -29,8 +29,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
@@ -59,6 +57,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.message.BasicHeader;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;

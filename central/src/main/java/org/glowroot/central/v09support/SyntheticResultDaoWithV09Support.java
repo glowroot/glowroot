@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.repo.SyntheticResultDaoImpl;

@@ -17,11 +17,10 @@ package org.glowroot.ui;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.ConfigDefaults;
 import org.glowroot.common.live.ImmutableOverallQuery;

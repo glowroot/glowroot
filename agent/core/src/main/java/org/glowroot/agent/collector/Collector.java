@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;

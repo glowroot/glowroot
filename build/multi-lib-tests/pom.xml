@@ -21,12 +21,6 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <!-- don't need this dependency at runtime since only annotations -->
-      <optional>true</optional>
-    </dependency>
   </dependencies>
 
   <build>
@@ -55,4 +49,27 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <!-- use custom-built jdk6 compatible checker framework annotations by default except when
+        actually running checker framework code quality tests, in which case the real checker
+        framework annotations are provided -->
+      <id>not-the-checker-build</id>
+      <activation>
+        <property>
+          <name>!glowroot.checker.build</name>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.glowroot.build</groupId>
+          <artifactId>glowroot-build-checker-jdk6</artifactId>
+          <version>${project.version}</version>
+          <!-- don't need this dependency at runtime since only annotations -->
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

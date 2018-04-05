@@ -20,9 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.annotation.Nullable;
-
 import com.google.common.io.ByteStreams;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.live.JvmTool.InputStreamProcessor;
 

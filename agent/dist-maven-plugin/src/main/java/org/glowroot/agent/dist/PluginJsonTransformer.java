@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
@@ -35,6 +33,7 @@ import com.google.common.io.Files;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.config.ImmutablePluginDescriptor;
 import org.glowroot.agent.config.ImmutablePropertyDescriptor;

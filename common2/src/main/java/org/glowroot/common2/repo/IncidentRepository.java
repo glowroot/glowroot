@@ -17,8 +17,7 @@ package org.glowroot.common2.repo;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;

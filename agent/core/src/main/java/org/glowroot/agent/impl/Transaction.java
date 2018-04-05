@@ -25,7 +25,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -46,6 +45,7 @@ import com.google.common.collect.TreeMultimap;
 import com.google.common.io.BaseEncoding;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +74,7 @@ import org.glowroot.common.util.Cancellable;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Traverser;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -518,7 +519,7 @@ public class Transaction {
         return mainThreadProfile;
     }
 
-    public @Nullable org.glowroot.wire.api.model.ProfileOuterClass.Profile getMainThreadProfileProtobuf() {
+    public @Nullable Profile getMainThreadProfileProtobuf() {
         if (mainThreadProfile == null) {
             return null;
         }
@@ -543,7 +544,7 @@ public class Transaction {
         return auxThreadProfile;
     }
 
-    public @Nullable org.glowroot.wire.api.model.ProfileOuterClass.Profile getAuxThreadProfileProtobuf() {
+    public @Nullable Profile getAuxThreadProfileProtobuf() {
         if (auxThreadProfile == null) {
             return null;
         }

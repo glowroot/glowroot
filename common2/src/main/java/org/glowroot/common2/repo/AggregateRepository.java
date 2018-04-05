@@ -17,7 +17,7 @@ package org.glowroot.common2.repo;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;

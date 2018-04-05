@@ -21,9 +21,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.agent.embedded.util.DataSource;

@@ -19,13 +19,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.annotation.Nullable;
-
 import com.google.common.reflect.Reflection;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.EventLoopGroup;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.it.harness.Container;
 

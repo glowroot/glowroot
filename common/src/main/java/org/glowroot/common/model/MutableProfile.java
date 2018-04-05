@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.MoreObjects;
@@ -36,6 +34,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Queues;
 import com.google.common.io.CharStreams;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -262,7 +261,7 @@ public class MutableProfile {
         return index;
     }
 
-    private static Profile.LeafThreadState getThreadState(@Nullable Thread.State state) {
+    private static Profile.LeafThreadState getThreadState(Thread. /*@Nullable*/ State state) {
         if (state == null) {
             return Profile.LeafThreadState.NONE;
         }

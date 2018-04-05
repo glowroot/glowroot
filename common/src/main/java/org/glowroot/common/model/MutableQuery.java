@@ -15,10 +15,9 @@
  */
 package org.glowroot.common.model;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class MutableQuery {
 

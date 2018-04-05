@@ -18,8 +18,7 @@ package org.glowroot.agent;
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 
-import javax.annotation.Nullable;
-
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;

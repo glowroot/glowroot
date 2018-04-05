@@ -21,10 +21,9 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.MainEntryPoint;
 import org.glowroot.agent.init.GlowrootAgentInit;

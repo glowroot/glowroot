@@ -18,9 +18,8 @@ package org.glowroot.agent.embedded.util;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Throwables;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 // similar to guava's Closer, but for java.sql.Statement which doesn't implement Closeable
 class StatementCloser {

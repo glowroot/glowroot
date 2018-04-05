@@ -114,12 +114,6 @@
       <artifactId>netty-handler-proxy</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <!-- don't need this dependency at runtime since only annotations -->
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>

@@ -19,10 +19,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -32,8 +31,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 public interface LiveTraceRepository {
 
     // null return value means trace not found
-    @Nullable
-    Trace.Header getHeader(String agentId, String traceId) throws Exception;
+    Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
@@ -172,7 +170,7 @@ public interface LiveTraceRepository {
     class LiveTraceRepositoryNop implements LiveTraceRepository {
 
         @Override
-        public @Nullable Trace.Header getHeader(String agentId, String traceId) {
+        public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) {
             return null;
         }
 

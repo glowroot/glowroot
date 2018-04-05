@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.Proto;
+import org.glowroot.wire.api.model.Proto.Throwable;
 
 @Value.Immutable
 @Styles.AllParameters
@@ -37,11 +37,14 @@ public abstract class ErrorMessage {
             Integer.getInteger("glowroot.transaction.throwable.frame.limit", 100000);
 
     public abstract String message();
-    public abstract @Nullable Proto.Throwable throwable();
+    // cannot use Proto. /*@Nullable*/ Throwable
+    // or org.glowroot.wire.api.model.Proto. /*@Nullable*/ Throwable here because Immutables needs
+    // to be able to see the annotation
+    public abstract @Nullable Throwable throwable();
 
     // accepts null values so callers don't have to check if passing it in from elsewhere
-    public static ErrorMessage create(@Nullable String message, @Nullable Throwable t,
-            AtomicInteger transactionThrowableFrameCount) {
+    public static ErrorMessage create(@Nullable String message,
+            java.lang. /*@Nullable*/ Throwable t, AtomicInteger transactionThrowableFrameCount) {
         if (t == null) {
             return ImmutableErrorMessage.of(Strings.nullToEmpty(message), null);
         } else {
@@ -49,7 +52,7 @@ public abstract class ErrorMessage {
         }
     }
 
-    private static ErrorMessage fromThrowable(@Nullable String message, Throwable t,
+    private static ErrorMessage fromThrowable(@Nullable String message, java.lang.Throwable t,
             AtomicInteger transactionThrowableFrameCount) {
         String msg = Strings.nullToEmpty(message);
         if (msg.isEmpty()) {
@@ -62,7 +65,7 @@ public abstract class ErrorMessage {
                 buildThrowableInfo(t, null, transactionThrowableFrameCount, 0));
     }
 
-    private static Proto.Throwable buildThrowableInfo(Throwable t,
+    private static Proto.Throwable buildThrowableInfo(java.lang.Throwable t,
             @Nullable List<StackTraceElement> causedStackTrace,
             AtomicInteger transactionThrowableFrameCount, int recursionDepth) {
         int framesInCommonWithEnclosing = 0;
@@ -99,7 +102,7 @@ public abstract class ErrorMessage {
             builder.addStackTraceElement(toProto(element));
         }
         builder.setFramesInCommonWithEnclosing(framesInCommonWithEnclosing);
-        Throwable cause = t.getCause();
+        java.lang.Throwable cause = t.getCause();
         if (cause == null) {
             return builder.build();
         }

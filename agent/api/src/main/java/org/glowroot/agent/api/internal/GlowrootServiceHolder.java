@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.api.internal;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class GlowrootServiceHolder {
 

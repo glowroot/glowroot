@@ -17,10 +17,9 @@ package org.glowroot.common2.repo;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
@@ -186,11 +185,11 @@ public class MutableAggregate {
         auxThreadStats.addTotalAllocatedBytes(totalAllocatedBytes);
     }
 
-    public void mergeMainThreadStats(@Nullable Aggregate.ThreadStats threadStats) {
+    public void mergeMainThreadStats(Aggregate. /*@Nullable*/ ThreadStats threadStats) {
         mainThreadStats.addThreadStats(threadStats);
     }
 
-    public void mergeAuxThreadStats(@Nullable Aggregate.ThreadStats threadStats) {
+    public void mergeAuxThreadStats(Aggregate. /*@Nullable*/ ThreadStats threadStats) {
         auxThreadStats.addThreadStats(threadStats);
     }
 

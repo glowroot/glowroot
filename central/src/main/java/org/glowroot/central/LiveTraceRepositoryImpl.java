@@ -17,9 +17,8 @@ package org.glowroot.central;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
@@ -34,7 +33,7 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Trace.Header getHeader(String agentId, String traceId) throws Exception {
+    public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) throws Exception {
         return downstreamService.getHeader(agentId, traceId);
     }
 

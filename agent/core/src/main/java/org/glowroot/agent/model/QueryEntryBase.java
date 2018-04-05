@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.model;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.plugin.api.QueryEntry;
 

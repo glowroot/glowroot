@@ -29,8 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
@@ -39,6 +37,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.primitives.Longs;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;

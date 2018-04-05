@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Properties;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class DriverManager {
 

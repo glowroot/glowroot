@@ -23,12 +23,11 @@ import java.io.InputStreamReader;
 import java.util.Iterator;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.Type;
 
 import org.glowroot.agent.live.JvmTool.InputStreamProcessor;

@@ -741,7 +741,7 @@
         </property>
       </activation>
       <properties>
-        <checker.version>2.4.0</checker.version>
+        <checker.version>2.5.0</checker.version>
       </properties>
       <dependencies>
         <dependency>
@@ -753,12 +753,6 @@
         <dependency>
           <groupId>org.checkerframework</groupId>
           <artifactId>checker</artifactId>
-          <version>${checker.version}</version>
-          <optional>true</optional>
-        </dependency>
-        <dependency>
-          <groupId>org.checkerframework</groupId>
-          <artifactId>compiler</artifactId>
           <version>${checker.version}</version>
           <optional>true</optional>
         </dependency>

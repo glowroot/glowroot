@@ -20,13 +20,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.builder.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

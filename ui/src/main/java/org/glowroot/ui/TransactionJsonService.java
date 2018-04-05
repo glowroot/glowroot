@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
@@ -32,6 +30,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.common.primitives.Doubles;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.ImmutableOverallQuery;
@@ -679,7 +678,8 @@ class TransactionJsonService {
                 Ordering.natural()
                         .onResultOf(new Function<Map.Entry<String, MutableDouble>, Double>() {
                             @Override
-                            public Double apply(@Nullable Map.Entry<String, MutableDouble> entry) {
+                            public Double apply(
+                                    Map. /*@Nullable*/ Entry<String, MutableDouble> entry) {
                                 checkNotNull(entry);
                                 return entry.getValue().doubleValue();
                             }

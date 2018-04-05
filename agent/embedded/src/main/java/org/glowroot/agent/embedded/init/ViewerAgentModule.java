@@ -17,7 +17,7 @@ package org.glowroot.agent.embedded.init;
 
 import java.io.File;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;

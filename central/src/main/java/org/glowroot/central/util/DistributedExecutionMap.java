@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ package org.glowroot.central.util;
 import java.io.Serializable;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
-
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.infinispan.util.function.SerializableFunction;
 
 public interface DistributedExecutionMap<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> {

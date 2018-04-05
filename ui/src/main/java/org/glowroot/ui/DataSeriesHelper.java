@@ -17,7 +17,7 @@ package org.glowroot.ui;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.util.CaptureTimes;
 

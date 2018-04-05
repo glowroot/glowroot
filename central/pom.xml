@@ -366,12 +366,6 @@
       <version>3.0.8</version>
     </dependency>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <!-- don't need this dependency at runtime since only annotations -->
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>

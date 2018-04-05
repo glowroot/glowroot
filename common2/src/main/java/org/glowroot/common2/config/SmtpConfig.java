@@ -17,11 +17,10 @@ package org.glowroot.common2.config;
 
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Versions;

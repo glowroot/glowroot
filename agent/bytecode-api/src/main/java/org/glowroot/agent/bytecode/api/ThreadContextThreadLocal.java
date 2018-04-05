@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.bytecode.api;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Wrapper that implements optimized {@link ThreadLocal} access pattern ideal for heavily used

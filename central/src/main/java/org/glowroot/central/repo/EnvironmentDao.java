@@ -17,11 +17,10 @@ package org.glowroot.central.repo;
 
 import java.nio.ByteBuffer;
 
-import javax.annotation.Nullable;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.repo.EnvironmentRepository;

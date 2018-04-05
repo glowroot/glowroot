@@ -18,10 +18,9 @@ package org.glowroot.agent.it.harness.impl;
 import java.util.List;
 import java.util.ListIterator;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.it.harness.ConfigService;
 import org.glowroot.agent.util.JavaVersion;

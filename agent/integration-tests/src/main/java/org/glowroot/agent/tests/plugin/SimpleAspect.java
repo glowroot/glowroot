@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.tests.plugin;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext;

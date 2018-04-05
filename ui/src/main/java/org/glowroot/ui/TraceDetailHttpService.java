@@ -17,9 +17,8 @@ package org.glowroot.ui;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.net.MediaType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

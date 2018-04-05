@@ -25,13 +25,12 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.infinispan.util.function.SerializableFunction;
@@ -327,8 +326,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         return responseWrapper.getReweaveResponse().getClassUpdateCount();
     }
 
-    @Nullable
-    Trace.Header getHeader(String agentId, String traceId) throws Exception {
+    Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) throws Exception {
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setHeaderRequest(HeaderRequest.newBuilder()
                         .setTraceId(traceId))

@@ -20,14 +20,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.ConfigDefaults;

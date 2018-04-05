@@ -35,8 +35,6 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.jar.JarFile;
 
-import javax.annotation.Nullable;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -50,6 +48,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

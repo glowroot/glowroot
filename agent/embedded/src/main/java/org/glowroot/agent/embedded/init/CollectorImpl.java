@@ -18,8 +18,7 @@ package org.glowroot.agent.embedded.init;
 import java.io.File;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

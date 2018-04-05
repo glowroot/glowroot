@@ -20,10 +20,9 @@ import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.Random;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -23,7 +23,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -33,6 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.repo.AgentConfigDao.AgentConfigUpdater;
 import org.glowroot.common.util.Versions;

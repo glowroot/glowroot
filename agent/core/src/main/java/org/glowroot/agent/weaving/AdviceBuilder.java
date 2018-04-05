@@ -23,12 +23,11 @@ import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
