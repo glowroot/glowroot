@@ -25,11 +25,14 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.primitives.Ints;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.AdvancedConfig;
@@ -1087,7 +1090,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // not volatile, so depends on memory barrier in Transaction for visibility
         private int selfNestingLevel;
         // only used by transaction thread
-        private @MonotonicNonNull TimerImpl extendedTimer;
+        private @Nullable TimerImpl extendedTimer;
 
         private boolean initialComplete;
 
@@ -1167,11 +1170,34 @@ public class ThreadContextImpl implements ThreadContextPlus {
         @Override
         public Timer extend() {
             if (selfNestingLevel++ == 0) {
-                long currTick = ticker.read();
-                extendedTimer = syncTimer.extend(currTick);
-                extendQueryData(currTick);
+                if (isAsync()) {
+                    extendAsync();
+                } else {
+                    extendSync(ticker.read());
+                }
             }
             return this;
+        }
+
+        private void extendSync(long currTick) {
+            extendedTimer = syncTimer.extend(currTick);
+            extendQueryData(currTick);
+        }
+
+        @RequiresNonNull("asyncTimer")
+        private void extendAsync() {
+            ThreadContextThreadLocal.Holder holder =
+                    BytecodeServiceHolder.get().getCurrentThreadContextHolder();
+            ThreadContextPlus currThreadContext = holder.get();
+            long currTick = ticker.read();
+            if (currThreadContext == ThreadContextImpl.this) {
+                extendSync(currTick);
+            } else {
+                // set to null since its value is checked in stopAsync()
+                extendedTimer = null;
+                extendQueryData(currTick);
+            }
+            asyncTimer.extend(currTick);
         }
 
         // this is called for stopping an extension
@@ -1179,11 +1205,32 @@ public class ThreadContextImpl implements ThreadContextPlus {
         public void stop() {
             // the timer interface for this class is only expose through return value of extend()
             if (--selfNestingLevel == 0) {
-                long stopTick = ticker.read();
-                checkNotNull(extendedTimer);
-                extendedTimer.end(stopTick);
-                endQueryData(stopTick);
+                if (isAsync()) {
+                    stopAsync();
+                } else {
+                    stopSync(ticker.read());
+                }
             }
+        }
+
+        private void stopSync(long endTick) {
+            // the timer interface for this class is only expose through return value of extend()
+            checkNotNull(extendedTimer).end(endTick);
+            endQueryData(endTick);
+        }
+
+        @RequiresNonNull("asyncTimer")
+        private void stopAsync() {
+            long endTick = ticker.read();
+            if (extendedTimer == null) {
+                endQueryData(endTick);
+                // it is not helpful to capture stack trace at end of async trace entry since it is
+                // ended by a different thread (and by not capturing, it reduces thread safety
+                // needs)
+            } else {
+                stopSync(endTick);
+            }
+            asyncTimer.end(endTick);
         }
 
         @Override
@@ -1202,6 +1249,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 return NopTimer.INSTANCE;
             }
             return syncTimer.extend();
+        }
+
+        @EnsuresNonNullIf(expression = "asyncTimer", result = true)
+        private boolean isAsync() {
+            return asyncTimer != null;
         }
     }
 }
