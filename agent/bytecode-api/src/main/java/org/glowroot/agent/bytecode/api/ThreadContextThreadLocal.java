@@ -35,7 +35,7 @@ public class ThreadContextThreadLocal {
     private final ThreadLocal<Holder> threadLocal = new ThreadLocal<Holder>() {
         @Override
         protected Holder initialValue() {
-            return new Holder(ThreadContextThreadLocal.this.initialValue());
+            return new Holder();
         }
     };
 
@@ -51,17 +51,11 @@ public class ThreadContextThreadLocal {
         return threadLocal.get();
     }
 
-    protected @Nullable ThreadContextPlus initialValue() {
-        return null;
-    }
-
     public static class Holder {
 
         private @Nullable ThreadContextPlus value;
 
-        private Holder(@Nullable ThreadContextPlus value) {
-            this.value = value;
-        }
+        private Holder() {}
 
         public @Nullable ThreadContextPlus get() {
             return value;
