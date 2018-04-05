@@ -322,7 +322,8 @@
                   <version>[1.7,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>[3.1.0,)</version>
+                  <!-- need 3.2.2+ for https://issues.apache.org/jira/browse/MNG-4565 -->
+                  <version>[3.2.2,)</version>
                 </requireMavenVersion>
                 <requireUpperBoundDeps />
               </rules>
@@ -608,6 +609,77 @@
         <!-- selenium 3.0+ requires Java 8+ -->
         <module>webdriver-tests</module>
       </modules>
+    </profile>
+    <profile>
+      <id>auto-activated-java-9</id>
+      <activation>
+        <jdk>[9,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>com.github.wvengen</groupId>
+              <artifactId>proguard-maven-plugin</artifactId>
+              <configuration>
+                <libs>
+                  <lib>${java.home}/jmods/java.base.jmod</lib>
+                  <!-- java.sql.jmod is needed for glowroot-agent-embedded -->
+                  <lib>${java.home}/jmods/java.sql.jmod</lib>
+                </libs>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>auto-activated-not-mac</id>
+      <activation>
+        <os>
+          <family>!mac</family>
+        </os>
+        <jdk>(,9)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>com.github.wvengen</groupId>
+              <artifactId>proguard-maven-plugin</artifactId>
+              <configuration>
+                <libs>
+                  <lib>${java.home}/lib/rt.jar</lib>
+                </libs>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>auto-activated-mac</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+        <jdk>(,9)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>com.github.wvengen</groupId>
+              <artifactId>proguard-maven-plugin</artifactId>
+              <configuration>
+                <libs>
+                  <lib>${java.home}/../Classes/classes.jar</lib>
+                </libs>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
     </profile>
     <profile>
       <id>auto-actived-add-license-jar-bundle</id>

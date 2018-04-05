@@ -243,11 +243,6 @@
         <configuration>
           <includeDependency>false</includeDependency>
           <obfuscate>false</obfuscate>
-          <libs>
-            <!-- see auto-activated-mac and auto-activated-not-mac profiles below for ${rt.jar.path}
-              definition -->
-            <lib>${rt.jar.path}</lib>
-          </libs>
           <options>
             <option>-dontoptimize</option>
             <option>-dontnote **</option>
@@ -272,55 +267,10 @@
           <dependency>
             <groupId>net.sf.proguard</groupId>
             <artifactId>proguard-base</artifactId>
-            <version>6.0.1</version>
+            <version>6.0.2</version>
           </dependency>
         </dependencies>
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>auto-activated-skip-proguard-under-java-9</id>
-      <activation>
-        <!-- proguard doesn't currently work on jdk 9 -->
-        <jdk>[9,)</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>com.github.wvengen</groupId>
-              <artifactId>proguard-maven-plugin</artifactId>
-              <configuration>
-                <skip>true</skip>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-    <profile>
-      <id>auto-activated-not-mac</id>
-      <activation>
-        <os>
-          <family>!mac</family>
-        </os>
-      </activation>
-      <properties>
-        <rt.jar.path>${java.home}/lib/rt.jar</rt.jar.path>
-      </properties>
-    </profile>
-    <profile>
-      <id>auto-activated-mac</id>
-      <activation>
-        <os>
-          <family>mac</family>
-        </os>
-      </activation>
-      <properties>
-        <rt.jar.path>${java.home}/../Classes/classes.jar</rt.jar.path>
-      </properties>
-    </profile>
-  </profiles>
 </project>
