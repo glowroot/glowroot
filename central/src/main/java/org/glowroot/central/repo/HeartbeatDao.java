@@ -38,7 +38,7 @@ public class HeartbeatDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement existsPS;
 
-    HeartbeatDao(Session session, Clock clock) {
+    HeartbeatDao(Session session, Clock clock) throws InterruptedException {
         this.session = session;
         this.clock = clock;
 

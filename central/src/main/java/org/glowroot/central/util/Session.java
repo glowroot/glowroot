@@ -24,6 +24,8 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -34,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Session {
 
@@ -52,12 +55,13 @@ public class Session {
 
     private final CassandraWriteMetrics cassandraWriteMetrics;
 
-    public Session(com.datastax.driver.core.Session wrappedSession, String keyspace) {
+    public Session(com.datastax.driver.core.Session wrappedSession, String keyspace)
+            throws InterruptedException {
         this.wrappedSession = wrappedSession;
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspace);
 
-        wrappedSession.execute("create keyspace if not exists " + keyspace + " with replication"
-                + " = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+        createIfNotExists(wrappedSession, "create keyspace if not exists " + keyspace
+                + " with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         wrappedSession.execute("use " + keyspace);
     }
 
@@ -110,17 +114,18 @@ public class Session {
         wrappedSession.close();
     }
 
-    public void createTableWithTWCS(String createTableQuery, int expirationHours) {
+    public void createTableWithTWCS(String createTableQuery, int expirationHours)
+            throws InterruptedException {
         createTableWithTWCS(createTableQuery, expirationHours, false);
     }
 
     public void createTableWithTWCS(String createTableQuery, int expirationHours,
-            boolean useAndInsteadOfWith) {
+            boolean useAndInsteadOfWith) throws InterruptedException {
         createTableWithTWCS(createTableQuery, expirationHours, useAndInsteadOfWith, false);
     }
 
     public void createTableWithTWCS(String createTableQuery, int expirationHours,
-            boolean useAndInsteadOfWith, boolean fallbackToSTCS) {
+            boolean useAndInsteadOfWith, boolean fallbackToSTCS) throws InterruptedException {
         // as long as gc_grace_seconds is less than TTL, then tombstones can be collected
         // immediately (https://issues.apache.org/jira/browse/CASSANDRA-4917)
         //
@@ -144,21 +149,19 @@ public class Session {
             // bucket_high is increased a bit to compensate for lower min_sstable_size so that worst
             // case number of sstables will be three 5mb sstables, three 10mb sstables, three 20mb
             // sstables, three 40mb sstables, etc
-            wrappedSession.execute(createTableQuery + " " + term + " "
+            createIfNotExists(createTableQuery + " " + term + " "
                     + getTwcsCompactionClause(expirationHours) + " and gc_grace_seconds = "
                     + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
             if (fallbackToSTCS) {
-                wrappedSession.execute(createTableQuery + " " + term
-                        + " compaction = { 'class' : 'SizeTieredCompactionStrategy',"
-                        + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
-                        + gcGraceSeconds);
+                createIfNotExists(createTableQuery + " " + term + " compaction = { 'class' :"
+                        + " 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
+                        + " true } and gc_grace_seconds = " + gcGraceSeconds);
             } else {
-                wrappedSession.execute(createTableQuery + " " + term
-                        + " compaction = { 'class' : 'DateTieredCompactionStrategy',"
-                        + " 'unchecked_tombstone_compaction' : true } and gc_grace_seconds = "
-                        + gcGraceSeconds);
+                createIfNotExists(createTableQuery + " " + term + " compaction = { 'class' :"
+                        + " 'DateTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
+                        + " true } and gc_grace_seconds = " + gcGraceSeconds);
             }
         }
     }
@@ -174,18 +177,19 @@ public class Session {
                 + getTwcsCompactionClause(compactionWindowUnit, compactionWindowSize));
     }
 
-    public void createTableWithLCS(String createTableQuery) {
+    public void createTableWithLCS(String createTableQuery) throws InterruptedException {
         createTableWithLCS(createTableQuery, false);
     }
 
-    public void createTableWithLCS(String createTableQuery, boolean useAndInsteadOfWith) {
+    public void createTableWithLCS(String createTableQuery, boolean useAndInsteadOfWith)
+            throws InterruptedException {
         String term = useAndInsteadOfWith ? "and" : "with";
-        wrappedSession.execute(createTableQuery + " " + term + " compaction = { 'class' :"
+        createIfNotExists(createTableQuery + " " + term + " compaction = { 'class' :"
                 + " 'LeveledCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
     }
 
-    public void createTableWithSTCS(String createTableQuery) {
-        wrappedSession.execute(createTableQuery + " with compaction = { 'class' :"
+    public void createTableWithSTCS(String createTableQuery) throws InterruptedException {
+        createIfNotExists(createTableQuery + " with compaction = { 'class' :"
                 + " 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
     }
 
@@ -214,6 +218,28 @@ public class Session {
             }
         }, MoreExecutors.directExecutor());
         return outerFuture;
+    }
+
+    // create keyspace/table can timeout, throwing NoHostAvailableException
+    // (see https://github.com/glowroot/glowroot/issues/351)
+    private void createIfNotExists(String query) throws InterruptedException {
+        createIfNotExists(wrappedSession, query);
+    }
+
+    private static void createIfNotExists(com.datastax.driver.core.Session wrappedSession,
+            String query) throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 30) {
+            try {
+                wrappedSession.execute(query);
+                return;
+            } catch (NoHostAvailableException e) {
+                logger.debug(e.getMessage(), e);
+            }
+            Thread.sleep(1000);
+        }
+        // try one last time and let exception bubble up
+        wrappedSession.execute(query);
     }
 
     public static int getCompactionWindowSizeHours(int expirationHours) {
