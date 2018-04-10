@@ -2441,7 +2441,8 @@ public class SchemaUpgrade {
     }
 
     private boolean columnExists(String tableName, String columnName) {
-        return keyspaceMetadata.getTable(tableName).getColumn(columnName) != null;
+        TableMetadata tableMetadata = keyspaceMetadata.getTable(tableName);
+        return tableMetadata != null && tableMetadata.getColumn(columnName) != null;
     }
 
     // drop table can timeout, throwing NoHostAvailableException

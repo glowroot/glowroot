@@ -18,3 +18,7 @@ public class Row {
 public class Metadata {
     public @Nullable KeyspaceMetadata getKeyspace(String keyspace);
 }
+
+public class KeyspaceMetadata {
+    public @Nullable TableMetadata getTable(String name);
+}

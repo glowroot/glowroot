@@ -33,6 +33,7 @@ import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.TableMetadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -212,8 +213,12 @@ public class CassandraWriteMetrics {
             // this should not happen
             return;
         }
-        Set<String> partitionKeyColumnNames = keyspaceMetadata.getTable(tableName)
-                .getPartitionKey()
+        TableMetadata tableMetadata = keyspaceMetadata.getTable(tableName);
+        if (tableMetadata == null) {
+            // this should not happen
+            return;
+        }
+        Set<String> partitionKeyColumnNames = tableMetadata.getPartitionKey()
                 .stream()
                 .map(ColumnMetadata::getName)
                 .collect(Collectors.toSet());
