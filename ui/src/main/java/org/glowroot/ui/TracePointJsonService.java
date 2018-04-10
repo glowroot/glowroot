@@ -308,7 +308,7 @@ class TracePointJsonService {
         private void writePoint(TracePoint point, JsonGenerator jg) throws IOException {
             jg.writeStartArray();
             jg.writeNumber(point.captureTime());
-            jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
+            jg.writeNumber(point.durationNanos() / (double) NANOSECONDS_PER_MILLISECOND);
             jg.writeString(point.agentId());
             jg.writeString(point.traceId());
             jg.writeEndArray();
