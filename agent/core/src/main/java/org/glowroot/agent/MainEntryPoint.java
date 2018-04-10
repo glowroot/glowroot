@@ -15,24 +15,24 @@
  */
 package org.glowroot.agent;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.net.MalformedURLException;
+import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import java.util.ServiceLoader;
 import java.util.jar.JarFile;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -174,7 +174,7 @@ public class MainEntryPoint {
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
-            glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), true)
+            glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), true, null)
                     .init(directories.getPluginsDir(), directories.getConfDir(),
                             directories.getSharedConfDir(), directories.getLogDir(),
                             directories.getTmpDir(), directories.getGlowrootJarFile(), properties,
@@ -271,10 +271,20 @@ public class MainEntryPoint {
         if (collectorAddress != null) {
             collectorAddress = collectorAddress.trim();
         }
-        Collector customCollector = loadCustomCollector(directories.getGlowrootDir());
-        if (customCollector != null) {
-            startupLogger.info("using collector: {}", customCollector.getClass().getName());
-            return new NonEmbeddedGlowrootAgentInit(null, null, customCollector);
+        Class<? extends Collector> customCollectorClass =
+                loadCustomCollectorClass(directories.getGlowrootDir());
+        Constructor<? extends Collector> collectorProxyConstructor = null;
+        if (customCollectorClass != null) {
+            try {
+                collectorProxyConstructor = customCollectorClass.getConstructor(Collector.class);
+            } catch (NoSuchMethodException e) {
+                startupLogger.debug(e.getMessage(), e);
+            }
+        }
+        if (customCollectorClass != null && collectorProxyConstructor == null) {
+            // non-delegating custom class loader
+            startupLogger.info("using collector: {}", customCollectorClass.getName());
+            return new NonEmbeddedGlowrootAgentInit(null, null, customCollectorClass);
         }
         if (Strings.isNullOrEmpty(collectorAddress)) {
             File embeddedCollectorJarFile = directories.getEmbeddedCollectorJarFile();
@@ -295,7 +305,8 @@ public class MainEntryPoint {
             }
             GlowrootAgentInitFactory glowrootAgentInitFactory =
                     (GlowrootAgentInitFactory) factoryClass.newInstance();
-            return glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), false);
+            return glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), false,
+                    customCollectorClass);
         }
         if (collectorAddress.startsWith("https://") && instrumentation != null) {
             String normalizedOsName = getNormalizedOsName();
@@ -319,7 +330,7 @@ public class MainEntryPoint {
         }
         String collectorAuthority = properties.get("glowroot.collector.authority");
         return new NonEmbeddedGlowrootAgentInit(collectorAddress, collectorAuthority,
-                customCollector);
+                customCollectorClass);
     }
 
     private static ImmutableMap<String, String> getGlowrootProperties(File confDir,
@@ -389,11 +400,12 @@ public class MainEntryPoint {
                 "org.apache.catalina.startup.Bootstrap stop");
     }
 
-    private static @Nullable Collector loadCustomCollector(File glowrootDir)
-            throws MalformedURLException {
-        Collector collector = loadCollector(MainEntryPoint.class.getClassLoader());
-        if (collector != null) {
-            return collector;
+    private static @Nullable Class<? extends Collector> loadCustomCollectorClass(File glowrootDir)
+            throws Exception {
+        ClassLoader classLoader = MainEntryPoint.class.getClassLoader();
+        Class<? extends Collector> collectorClass = loadCollectorClass(classLoader);
+        if (collectorClass != null) {
+            return collectorClass;
         }
         File servicesDir = new File(glowrootDir, "services");
         if (!servicesDir.exists()) {
@@ -416,16 +428,40 @@ public class MainEntryPoint {
             return null;
         }
         URLClassLoader servicesClassLoader = new URLClassLoader(urls.toArray(new URL[0]));
-        return loadCollector(servicesClassLoader);
+        return loadCollectorClass(servicesClassLoader);
     }
 
-    private static @Nullable Collector loadCollector(@Nullable ClassLoader classLoader) {
-        ServiceLoader<Collector> serviceLoader = ServiceLoader.load(Collector.class, classLoader);
-        Iterator<Collector> i = serviceLoader.iterator();
-        if (!i.hasNext()) {
+    private static @Nullable Class<? extends Collector> loadCollectorClass(
+            @Nullable ClassLoader classLoader) throws Exception {
+        InputStream in;
+        if (classLoader == null) {
+            in = ClassLoader.getSystemResourceAsStream(
+                    "META-INF/services/org.glowroot.agent.collector.Collector");
+        } else {
+            in = classLoader.getResourceAsStream(
+                    "META-INF/services/org.glowroot.agent.collector.Collector");
+        }
+        if (in == null) {
             return null;
         }
-        return i.next();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in, Charsets.UTF_8));
+        try {
+            String line = reader.readLine();
+            while (line != null) {
+                line = line.trim();
+                if (!line.isEmpty() && !line.startsWith("#")) {
+                    break;
+                }
+                line = reader.readLine();
+            }
+            if (line == null) {
+                return null;
+            }
+            Class<?> clazz = Class.forName(line, false, classLoader);
+            return clazz.asSubclass(Collector.class);
+        } finally {
+            reader.close();
+        }
     }
 
     private static @Nullable String getNormalizedOsName() {

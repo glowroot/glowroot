@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,9 +48,15 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(NonEmbeddedGlowrootAgentInit.class);
+
     private final @Nullable String collectorAddress;
     private final @Nullable String collectorAuthority;
-    private final @Nullable Collector customCollector;
+    private final @Nullable Class<? extends Collector> customCollectorClass;
 
     private volatile @MonotonicNonNull PluginCache pluginCache;
     private volatile @MonotonicNonNull ConfigService configService;
@@ -63,10 +70,10 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
     public NonEmbeddedGlowrootAgentInit(@Nullable String collectorAddress,
             @Nullable String collectorAuthority,
-            @Nullable Collector customCollector) {
+            @Nullable Class<? extends Collector> customCollectorClass) {
         this.collectorAddress = collectorAddress;
         this.collectorAuthority = collectorAuthority;
-        this.customCollector = customCollector;
+        this.customCollectorClass = customCollectorClass;
     }
 
     @Override
@@ -113,15 +120,30 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                         new ConfigUpdateService(configService, pluginCache);
                 NettyWorkaround.run();
                 Collector collector;
-                if (customCollector == null) {
+                Constructor<? extends Collector> collectorProxyConstructor = null;
+                if (customCollectorClass != null) {
+                    try {
+                        collectorProxyConstructor =
+                                customCollectorClass.getConstructor(Collector.class);
+                    } catch (NoSuchMethodException e) {
+                        logger.debug(e.getMessage(), e);
+                    }
+                }
+                if (customCollectorClass != null && collectorProxyConstructor == null) {
+                    collector = customCollectorClass.newInstance();
+                } else {
                     centralCollector = new CentralCollector(properties,
                             checkNotNull(collectorAddress), collectorAuthority, confDir,
                             sharedConfDir, agentModule.getLiveJvmService(),
                             agentModule.getLiveWeavingService(),
                             agentModule.getLiveTraceRepository(), agentConfigUpdater);
-                    collector = centralCollector;
-                } else {
-                    collector = customCollector;
+                    if (collectorProxyConstructor == null) {
+                        collector = centralCollector;
+                    } else {
+                        startupLogger.info("using collector proxy: {}",
+                                collectorProxyConstructor.getName());
+                        collector = collectorProxyConstructor.newInstance(centralCollector);
+                    }
                 }
                 collectorProxy.setInstance(collector);
                 collector.init(confDir, sharedConfDir,

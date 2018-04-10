@@ -17,7 +17,12 @@ package org.glowroot.agent.init;
 
 import java.io.File;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import org.glowroot.agent.collector.Collector;
+
 public interface GlowrootAgentInitFactory {
 
-    GlowrootAgentInit newGlowrootAgentInit(File dataDir, boolean offline);
+    GlowrootAgentInit newGlowrootAgentInit(File dataDir, boolean offline,
+            @Nullable Class<? extends Collector> collectorProxyClass);
 }

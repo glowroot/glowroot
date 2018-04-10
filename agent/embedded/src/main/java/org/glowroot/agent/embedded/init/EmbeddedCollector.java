@@ -38,9 +38,9 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 
-class CollectorImpl implements Collector {
+class EmbeddedCollector implements Collector {
 
-    private static final Logger logger = LoggerFactory.getLogger(CollectorImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(EmbeddedCollector.class);
 
     private static final String AGENT_ID = "";
 
@@ -52,7 +52,7 @@ class CollectorImpl implements Collector {
     private final AlertingService alertingService;
     private final HttpClient httpClient;
 
-    CollectorImpl(EnvironmentDao environmentDao, AggregateDao aggregateDao,
+    EmbeddedCollector(EnvironmentDao environmentDao, AggregateDao aggregateDao,
             TraceDao traceRepository, GaugeValueDao gaugeValueRepository,
             ConfigRepositoryImpl configRepository, AlertingService alertingService,
             HttpClient httpClient) {

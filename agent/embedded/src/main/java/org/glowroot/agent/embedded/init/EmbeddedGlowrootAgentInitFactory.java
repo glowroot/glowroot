@@ -17,13 +17,17 @@ package org.glowroot.agent.embedded.init;
 
 import java.io.File;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInitFactory;
 
 public class EmbeddedGlowrootAgentInitFactory implements GlowrootAgentInitFactory {
 
     @Override
-    public GlowrootAgentInit newGlowrootAgentInit(File dataDir, boolean offline) {
-        return new EmbeddedGlowrootAgentInit(dataDir, offline);
+    public GlowrootAgentInit newGlowrootAgentInit(File dataDir, boolean offline,
+            @Nullable Class<? extends Collector> collectorProxyClass) {
+        return new EmbeddedGlowrootAgentInit(dataDir, offline, collectorProxyClass);
     }
 }

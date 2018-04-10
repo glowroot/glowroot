@@ -26,6 +26,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
@@ -40,10 +41,13 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
     private final File dataDir;
     private final boolean offline;
+    private final @Nullable Class<? extends Collector> collectorProxyClass;
 
-    EmbeddedGlowrootAgentInit(File dataDir, boolean offline) {
+    EmbeddedGlowrootAgentInit(File dataDir, boolean offline,
+            @Nullable Class<? extends Collector> collectorProxyClass) {
         this.dataDir = dataDir;
         this.offline = offline;
+        this.collectorProxyClass = collectorProxyClass;
     }
 
     private @MonotonicNonNull EmbeddedAgentModule embeddedAgentModule;
@@ -65,7 +69,7 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 // TODO report checker framework issue that occurs without checkNotNull
                 checkNotNull(embeddedAgentModule);
                 embeddedAgentModule.onEnteringMain(confDir, sharedConfDir, dataDir, glowrootJarFile,
-                        properties, instrumentation, glowrootVersion);
+                        properties, instrumentation, collectorProxyClass, glowrootVersion);
                 // starting new thread in order not to block startup
                 Thread thread = new Thread(new Runnable() {
                     @Override
