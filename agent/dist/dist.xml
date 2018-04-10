@@ -20,6 +20,7 @@
       </includes>
       <outputDirectory>lib</outputDirectory>
       <outputFileNameMapping>glowroot-embedded-collector.jar</outputFileNameMapping>
+      <scope>provided</scope>
     </dependencySet>
     <dependencySet>
       <includes>
@@ -27,6 +28,7 @@
       </includes>
       <outputDirectory>lib</outputDirectory>
       <outputFileNameMapping>glowroot-central-collector-https-linux.jar</outputFileNameMapping>
+      <scope>provided</scope>
     </dependencySet>
     <dependencySet>
       <includes>
@@ -34,6 +36,7 @@
       </includes>
       <outputDirectory>lib</outputDirectory>
       <outputFileNameMapping>glowroot-central-collector-https-windows.jar</outputFileNameMapping>
+      <scope>provided</scope>
     </dependencySet>
     <dependencySet>
       <includes>
@@ -41,6 +44,7 @@
       </includes>
       <outputDirectory>lib</outputDirectory>
       <outputFileNameMapping>glowroot-central-collector-https-osx.jar</outputFileNameMapping>
+      <scope>provided</scope>
     </dependencySet>
   </dependencySets>
   <fileSets>

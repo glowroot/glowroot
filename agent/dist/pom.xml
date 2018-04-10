@@ -26,21 +26,33 @@
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-central-https-linux</artifactId>
       <version>${project.version}</version>
+      <!-- need to mark this as provided since it is still present in the dependency reduced pom
+        which is deployed to maven central -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-central-https-windows</artifactId>
       <version>${project.version}</version>
+      <!-- need to mark this as provided since it is still present in the dependency reduced pom
+        which is deployed to maven central -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-central-https-osx</artifactId>
       <version>${project.version}</version>
+      <!-- need to mark this as provided since it is still present in the dependency reduced pom
+        which is deployed to maven central -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-embedded</artifactId>
       <version>${project.version}</version>
+      <!-- need to mark this as provided since it is still present in the dependency reduced pom
+        which is deployed to maven central -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
