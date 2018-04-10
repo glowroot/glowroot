@@ -1,4 +1,4 @@
-Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/glowroot.svg)](https://travis-ci.org/glowroot/glowroot)
+Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/glowroot.svg)](https://travis-ci.org/glowroot/glowroot) [![Code Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.glowroot:glowroot-parent&metric=coverage)](https://sonarcloud.io/dashboard?id=org.glowroot%3Aglowroot-parent)
 =========
 
 ## Requirements
