@@ -60,14 +60,31 @@ glowroot.controller('ConfigCtrl', [
     };
 
     function agentRollupUrl(path, agentRollupId) {
-      var query = $scope.agentRollupQuery(agentRollupId);
-      return path + queryStrings.encodeObject(query);
+      if ($scope.isRollup(agentRollupId)) {
+        return path + '?agent-rollup-id=' + encodeURIComponent(agentRollupId);
+      } else {
+        return path + '?agent-id=' + encodeURIComponent(agentRollupId);
+      }
     }
 
     $scope.agentRollupUrl = function (agentRollupId) {
       var path = $location.path().substring(1);
+      if (path === 'config/gauge') {
+        path = 'config/gauge-list';
+      } else if (path === 'config/synthetic-monitor') {
+        path = 'config/synthetic-monitor-list';
+      } else if (path === 'config/alert') {
+        path = 'config/alert-list';
+      } else if (path === 'config/plugin') {
+        path = 'config/plugin-list';
+      } else if (path === 'config/instrumentation') {
+        path = 'config/instrumentation-list';
+      }
       if ($scope.isRollup(agentRollupId)) {
-        return agentRollupUrl('config/general', agentRollupId);
+        if (path !== 'config/general' && path !== 'config/synthetic-monitor-list' && path !== 'config/alert-list'
+            && path !== 'config/ui' && path !== 'config/advanced') {
+          path = 'config/general';
+        }
       }
       return agentRollupUrl(path, agentRollupId);
     };
