@@ -33,14 +33,11 @@ public class JarFileShadingIT {
     public void shouldCheckThatJarIsWellShaded() throws IOException {
         File glowrootCoreJarFile = getGlowrootAgentJarFile();
         List<String> acceptableEntries = Lists.newArrayList();
-        acceptableEntries.add("glowroot\\..*");
         acceptableEntries.add("org/");
         acceptableEntries.add("org/glowroot/");
         acceptableEntries.add("org/glowroot/agent/.*");
+        acceptableEntries.add("org/glowroot/agent/embedded/.*");
         acceptableEntries.add("META-INF/");
-        acceptableEntries.add("META-INF/glowroot\\..*");
-        acceptableEntries.add("META-INF/services/");
-        acceptableEntries.add("META-INF/services/org\\.glowroot\\..*");
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/LICENSE");
         acceptableEntries.add("META-INF/NOTICE");
@@ -67,7 +64,7 @@ public class JarFileShadingIT {
 
     private static File getGlowrootAgentJarFile() {
         for (File file : new File(".").listFiles()) {
-            if (file.getName().matches("glowroot-agent-core-[0-9.]+(-SNAPSHOT)?.jar")) {
+            if (file.getName().matches("glowroot-agent-embedded-[0-9.]+(-SNAPSHOT)?.jar")) {
                 return file;
             }
         }

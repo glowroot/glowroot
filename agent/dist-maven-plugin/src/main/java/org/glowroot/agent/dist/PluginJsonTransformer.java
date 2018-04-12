@@ -88,6 +88,9 @@ class PluginJsonTransformer {
 
     private static @Nullable String getGlowrootPluginJson(Artifact artifact) throws IOException {
         File artifactFile = artifact.getFile();
+        if (!artifactFile.exists()) {
+            return null;
+        }
         if (artifactFile.isDirectory()) {
             File jsonFile = new File(artifactFile, "META-INF/glowroot.plugin.json");
             if (!jsonFile.exists()) {
