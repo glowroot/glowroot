@@ -81,7 +81,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     @Override
     public void visitCode() {
-        mv.visitCode();
+        super.visitCode();
         if (!constructor) {
             superInitialized = true;
             onMethodEnter();
@@ -90,7 +90,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     @Override
     public void visitLabel(final Label label) {
-        mv.visitLabel(label);
+        super.visitLabel(label);
         if (stackFrameTracking && branches != null) {
             List<Object> frame = branches.get(label);
             if (frame != null) {
@@ -279,7 +279,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     break;
             }
         }
-        mv.visitInsn(opcode);
+        super.visitInsn(opcode);
     }
 
     @Override
@@ -316,7 +316,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitFieldInsn(final int opcode, final String owner, final String name,
             final String desc) {
-        mv.visitFieldInsn(opcode, owner, name, desc);
+        super.visitFieldInsn(opcode, owner, name, desc);
         if (stackFrameTracking) {
             char c = desc.charAt(0);
             boolean longOrDouble = c == 'J' || c == 'D';
@@ -351,7 +351,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     @Override
     public void visitIntInsn(final int opcode, final int operand) {
-        mv.visitIntInsn(opcode, operand);
+        super.visitIntInsn(opcode, operand);
         if (stackFrameTracking && opcode != NEWARRAY) {
             pushValue(OTHER);
         }
@@ -359,7 +359,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     @Override
     public void visitLdcInsn(final Object cst) {
-        mv.visitLdcInsn(cst);
+        super.visitLdcInsn(cst);
         if (stackFrameTracking) {
             pushValue(OTHER);
             if (cst instanceof Double || cst instanceof Long) {
@@ -370,7 +370,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     @Override
     public void visitMultiANewArrayInsn(final String desc, final int dims) {
-        mv.visitMultiANewArrayInsn(desc, dims);
+        super.visitMultiANewArrayInsn(desc, dims);
         if (stackFrameTracking) {
             for (int i = 0; i < dims; i++) {
                 popValue();
@@ -381,7 +381,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     @Override
     public void visitTypeInsn(final int opcode, final String type) {
-        mv.visitTypeInsn(opcode, type);
+        super.visitTypeInsn(opcode, type);
         // ANEWARRAY, CHECKCAST or INSTANCEOF don't change stack
         if (stackFrameTracking && opcode == NEW) {
             pushValue(OTHER);
@@ -392,7 +392,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitMethodInsn(final int opcode, final String owner, final String name,
             final String desc) {
-        if (api >= Opcodes.ASM6) {
+        if (api >= Opcodes.ASM5) {
             super.visitMethodInsn(opcode, owner, name, desc);
             return;
         }
@@ -402,7 +402,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitMethodInsn(final int opcode, final String owner, final String name,
             final String desc, final boolean itf) {
-        if (api < Opcodes.ASM6) {
+        if (api < Opcodes.ASM5) {
             super.visitMethodInsn(opcode, owner, name, desc, itf);
             return;
         }
@@ -451,7 +451,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     @Override
     public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
-        mv.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
+        super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
         if (stackFrameTracking) {
             Type[] types = Type.getArgumentTypes(desc);
             for (int i = 0; i < types.length; i++) {
@@ -473,7 +473,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     @Override
     public void visitJumpInsn(final int opcode, final Label label) {
-        mv.visitJumpInsn(opcode, label);
+        super.visitJumpInsn(opcode, label);
         if (stackFrameTracking) {
             switch (opcode) {
                 case IFEQ:
@@ -510,7 +510,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     @Override
     public void visitLookupSwitchInsn(final Label dflt, final int[] keys, final Label[] labels) {
-        mv.visitLookupSwitchInsn(dflt, keys, labels);
+        super.visitLookupSwitchInsn(dflt, keys, labels);
         if (stackFrameTracking) {
             popValue();
             addBranches(dflt, labels);
@@ -520,7 +520,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitTableSwitchInsn(final int min, final int max, final Label dflt,
             final Label... labels) {
-        mv.visitTableSwitchInsn(min, max, dflt, labels);
+        super.visitTableSwitchInsn(min, max, dflt, labels);
         if (stackFrameTracking) {
             popValue();
             addBranches(dflt, labels);
