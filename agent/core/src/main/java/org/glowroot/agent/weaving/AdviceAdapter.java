@@ -429,14 +429,12 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     break;
                 case INVOKESPECIAL:
                     Object type = popValue(); // objectref
-                    if (constructor) {
-                        if (type == THIS && !superInitialized) {
-                            onMethodEnter();
-                            superInitialized = true;
-                            // once super has been initialized it is no longer
-                            // necessary to keep track of stack state
-                            constructor = false;
-                        }
+                    if (constructor && type == THIS && !superInitialized) {
+                        onMethodEnter();
+                        superInitialized = true;
+                        // once super has been initialized it is no longer
+                        // necessary to keep track of stack state
+                        constructor = false;
                     }
                     break;
             }
