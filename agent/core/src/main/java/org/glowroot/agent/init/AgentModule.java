@@ -67,6 +67,7 @@ import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.AdviceCache;
 import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
+import org.glowroot.agent.weaving.PointcutClassFileTransformer;
 import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.agent.weaving.Weaver;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
@@ -133,13 +134,19 @@ public class AgentModule {
         this.configService = configService;
         transactionRegistry = new TransactionRegistry();
 
+        ClassFileTransformer pointcutClassFileTransformer = null;
         if (instrumentation != null) {
             for (File pluginJar : pluginCache.pluginJars()) {
                 instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
             }
+            pointcutClassFileTransformer = new PointcutClassFileTransformer();
+            instrumentation.addTransformer(pointcutClassFileTransformer);
         }
         adviceCache = new AdviceCache(pluginCache.pluginDescriptors(), pluginCache.pluginJars(),
                 configService.getInstrumentationConfigs(), instrumentation, tmpDir);
+        if (pointcutClassFileTransformer != null) {
+            checkNotNull(instrumentation).removeTransformer(pointcutClassFileTransformer);
+        }
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes());
         TimerNameCache timerNameCache = new TimerNameCache();

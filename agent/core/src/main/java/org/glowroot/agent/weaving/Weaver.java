@@ -45,7 +45,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
-import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.util.ASMifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.slf4j.Logger;
@@ -182,7 +181,13 @@ public class Weaver {
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         byte[] maybeProcessedBytes = null;
-        if (className.equals(ImportantClassNames.MANAGEMENT_FACTORY_CLASS_NAME)) {
+        if (accv.isConstructorPointcut()) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new PointcutClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals(ImportantClassNames.MANAGEMENT_FACTORY_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new ManagementFactoryHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
@@ -404,21 +409,6 @@ public class Weaver {
         private ActiveWeaving(long threadId, long startTick) {
             this.threadId = threadId;
             this.startTick = startTick;
-        }
-    }
-
-    private static class JSRInlinerClassVisitor extends ClassVisitor {
-
-        private JSRInlinerClassVisitor(ClassVisitor cv) {
-            super(ASM6, cv);
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv =
-                    checkNotNull(cv).visitMethod(access, name, desc, signature, exceptions);
-            return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
         }
     }
 

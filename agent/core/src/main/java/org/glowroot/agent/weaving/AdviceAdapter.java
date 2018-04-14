@@ -82,6 +82,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitCode() {
         super.visitCode();
+        onMethodPreEnter();
         if (!constructor) {
             superInitialized = true;
             onMethodEnter();
@@ -572,6 +573,8 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     private void pushValue(final Object o) {
         stackFrame.add(o);
     }
+
+    protected void onMethodPreEnter() {}
 
     protected void onMethodEnter() {}
 

@@ -371,15 +371,19 @@ public class PreInitializeWeavingClasses {
                 + "$TraceEntryAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
                 + "$TransactionAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.JSRInlinerClassVisitor");
         types.add("org.glowroot.agent.weaving.MixinType");
+        types.add("org.glowroot.agent.weaving.PointcutClassVisitor");
+        types.add("org.glowroot.agent.weaving.PointcutClassVisitor$PointcutAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.PointcutClassVisitor$PointcutMethodVisitor");
         types.add("org.glowroot.agent.weaving.PublicFinalMethod");
         types.add("org.glowroot.agent.weaving.ShimType");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$AnnotationCaptureMethodVisitor");
+        types.add("org.glowroot.agent.weaving.ThinClassVisitor$PointcutAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinClass");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinMethod");
         types.add("org.glowroot.agent.weaving.Weaver");
-        types.add("org.glowroot.agent.weaving.Weaver$JSRInlinerClassVisitor");
         types.add("org.glowroot.agent.weaving.WeavingClassFileTransformer");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$InitMixins");
@@ -513,6 +517,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor$1");
         types.add("org.glowroot.agent.weaving.MethodMetaGroup$1");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$1");
+        types.add("org.glowroot.agent.weaving.PointcutClassVisitor$1");
         types.add("org.glowroot.agent.weaving.Weaver$1");
         types.add("org.glowroot.agent.weaving.Weaver$2");
         types.add("org.glowroot.agent.weaving.Weaver$FelixOsgiHackClassVisitor$1");

@@ -33,6 +33,8 @@ class ThinClassVisitor extends ClassVisitor {
 
     private @Nullable ThinClass thinClass;
 
+    private boolean constructorPointcut;
+
     ThinClassVisitor() {
         super(ASM6);
     }
@@ -51,7 +53,11 @@ class ThinClassVisitor extends ClassVisitor {
     @Override
     public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible) {
         thinClassBuilder.addAnnotations(desc);
-        return null;
+        if (desc.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
+            return new PointcutAnnotationVisitor();
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -77,6 +83,10 @@ class ThinClassVisitor extends ClassVisitor {
         return checkNotNull(thinClass);
     }
 
+    boolean isConstructorPointcut() {
+        return constructorPointcut;
+    }
+
     @Value.Immutable
     interface ThinClass {
         int access();
@@ -98,6 +108,20 @@ class ThinClassVisitor extends ClassVisitor {
         String signature();
         List<String> exceptions();
         List<String> annotations();
+    }
+
+    private class PointcutAnnotationVisitor extends AnnotationVisitor {
+
+        private PointcutAnnotationVisitor() {
+            super(ASM6);
+        }
+
+        @Override
+        public void visit(@Nullable String name, Object value) {
+            if ("methodName".equals(name) && "<init>".equals(value)) {
+                constructorPointcut = true;
+            }
+        }
     }
 
     private class AnnotationCaptureMethodVisitor extends MethodVisitor {

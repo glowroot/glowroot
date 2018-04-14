@@ -157,7 +157,25 @@ class AdviceBuilder {
                 initOnAfterAdvice(adviceClass, method);
             }
         }
-        return builder.build();
+        Advice advice = builder.build();
+        if (pointcut.methodName().equals("<init>") && advice.onBeforeAdvice() != null
+                && advice.hasBindOptionalThreadContext()) {
+            // this is because of the way @OnBefore advice is handled on constructors,
+            // see WeavingMethodVisitory.invokeOnBefore()
+            throw new IllegalStateException("@BindOptionalThreadContext is not allowed in a "
+                    + "@Pointcut with methodName \"<init>\" that has an @OnBefore method");
+        }
+        if (pointcut.methodName().equals("<init>") && advice.isEnabledAdvice() != null) {
+            for (AdviceParameter parameter : advice.isEnabledParameters()) {
+                if (parameter.kind() == ParameterKind.RECEIVER) {
+                    // @IsEnabled is called before the super constructor is called, so "this" is not
+                    // available yet
+                    throw new IllegalStateException("@BindReceiver is not allowed on @IsEnabled for"
+                            + " a @Pointcut with methodName \"<init>\"");
+                }
+            }
+        }
+        return advice;
     }
 
     private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method)

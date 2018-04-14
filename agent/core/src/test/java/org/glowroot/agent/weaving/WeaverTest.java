@@ -72,6 +72,7 @@ import org.glowroot.agent.weaving.SomeAspect.ClassNamePatternAdvice;
 import org.glowroot.agent.weaving.SomeAspect.ComplexSuperTypeRestrictionAdvice;
 import org.glowroot.agent.weaving.SomeAspect.FinalMethodAdvice;
 import org.glowroot.agent.weaving.SomeAspect.GenericMiscAdvice;
+import org.glowroot.agent.weaving.SomeAspect.HackedConstructorBytecodeAdvice;
 import org.glowroot.agent.weaving.SomeAspect.HasString;
 import org.glowroot.agent.weaving.SomeAspect.HasStringClassMixin;
 import org.glowroot.agent.weaving.SomeAspect.HasStringInterfaceMixin;
@@ -1314,7 +1315,8 @@ public class WeaverTest {
     @Test
     public void shouldHandleConstructorPointcut() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicMiscConstructorAdvice.class);
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                enhanceConstructorAdviceClass(BasicMiscConstructorAdvice.class));
         // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
         SomeAspectThreadLocals.resetThreadLocals();
         // when
@@ -1333,8 +1335,8 @@ public class WeaverTest {
     @Test
     public void shouldVerifyConstructorPointcutsAreNotNested() throws Exception {
         // given
-        Misc test =
-                newWovenObject(BasicMisc.class, Misc.class, BasicMiscAllConstructorAdvice.class);
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                enhanceConstructorAdviceClass(BasicMiscAllConstructorAdvice.class));
         // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
         SomeAspectThreadLocals.resetThreadLocals();
         // when
@@ -1346,7 +1348,7 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(2);
         assertThat(SomeAspectThreadLocals.orderedEvents.get()).containsExactly("isEnabled",
-                "onBefore", "onReturn", "onAfter", "isEnabled", "onBefore", "onReturn", "onAfter");
+                "isEnabled", "onBefore", "onReturn", "onAfter", "onBefore", "onReturn", "onAfter");
     }
 
     @Test
@@ -1699,6 +1701,23 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
     }
 
+    @Test
+    public void shouldExecuteAdviceOnHackedConstructorBytecode() throws Exception {
+        // given
+        LazyDefinedClass implClass =
+                GenerateHackedConstructorBytecode.generateHackedConstructorBytecode();
+        newWovenObject(implClass, GenerateHackedConstructorBytecode.Test.class,
+                enhanceConstructorAdviceClass(HackedConstructorBytecodeAdvice.class));
+        // when
+        // (advice is on constructor, so already captured above)
+        // then
+        assertThat(SomeAspectThreadLocals.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
             Class<?> adviceOrShimOrMixinClass, Class<?>... extraBridgeClasses) throws Exception {
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
@@ -1780,6 +1799,12 @@ public class WeaverTest {
         @SuppressWarnings("unchecked")
         Class<T> implClass = (Class<T>) Class.forName(className, false, isolatedWeavingClassLoader);
         return isolatedWeavingClassLoader.newInstance(implClass, bridgeClass);
+    }
+
+    private static Class<?> enhanceConstructorAdviceClass(Class<?> adviceClass)
+            throws ClassNotFoundException {
+        IsolatedWeavingClassLoader isolatedWeavingClassLoader = new IsolatedWeavingClassLoader();
+        return Class.forName(adviceClass.getName(), false, isolatedWeavingClassLoader);
     }
 
     private static void assumeJdk7() {

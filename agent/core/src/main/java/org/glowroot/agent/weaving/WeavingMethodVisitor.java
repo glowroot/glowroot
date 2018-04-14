@@ -156,7 +156,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
         Object[] implicitFrameLocals = new Object[nImplicitFrameLocals];
         int i = 0;
         if (needsReceiver) {
-            implicitFrameLocals[i++] = owner.getInternalName();
+            if (name.equals("<init>")) {
+                implicitFrameLocals[i++] = UNINITIALIZED_THIS;
+            } else {
+                implicitFrameLocals[i++] = owner.getInternalName();
+            }
         }
         for (int j = 0; j < argumentTypes.length; j++) {
             implicitFrameLocals[i++] = convert(argumentTypes[j]);
@@ -170,6 +174,19 @@ class WeavingMethodVisitor extends AdviceAdapter {
             return outerMethodVisitor.visitAnnotation(desc, visible);
         }
         return super.visitAnnotation(desc, visible);
+    }
+
+    @Override
+    protected void onMethodPreEnter() {
+        stackFrameTracking = false;
+        try {
+            onMethodPreEnterInternal();
+            if (name.equals("<init>")) {
+                implicitFrameLocals[0] = owner.getInternalName();
+            }
+        } finally {
+            stackFrameTracking = true;
+        }
     }
 
     @Override
@@ -281,7 +298,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         super.visitMaxs(maxStack, maxLocals);
     }
 
-    private void onMethodEnterInternal() {
+    private void onMethodPreEnterInternal() {
         methodStartLabel = new Label();
         visitLabel(methodStartLabel);
         // enabled and traveler locals must be defined outside of the try block so they will be
@@ -291,6 +308,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
             defineTravelerLocalVar(advice);
         }
         saveArgsForMethodExit();
+    }
+
+    private void onMethodEnterInternal() {
         for (int i = 0; i < advisors.size(); i++) {
             Advice advice = advisors.get(i);
             invokeOnBefore(advice, travelerLocals.get(advice));
@@ -548,14 +568,24 @@ class WeavingMethodVisitor extends AdviceAdapter {
         Integer enabledLocal = enabledLocals.get(advice);
         Label onBeforeBlockEnd = null;
         if (enabledLocal != null) {
-            onBeforeBlockEnd = new Label();
-            loadLocal(enabledLocal);
-            visitJumpInsn(IFEQ, onBeforeBlockEnd);
+            if (name.equals("<init>")) {
+                loadLocal(enabledLocal);
+            } else {
+                onBeforeBlockEnd = new Label();
+                loadLocal(enabledLocal);
+                visitJumpInsn(IFEQ, onBeforeBlockEnd);
+            }
         }
         loadMethodParameters(advice.onBeforeParameters(), 0, -1, advice.adviceType(),
                 OnBefore.class, false);
-        visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
-                onBeforeAdvice.getName(), onBeforeAdvice.getDescriptor(), false);
+        if (enabledLocal != null && name.equals("<init>")) {
+            String desc = "(Z" + onBeforeAdvice.getDescriptor().substring(1);
+            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                    onBeforeAdvice.getName(), desc, false);
+        } else {
+            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                    onBeforeAdvice.getName(), onBeforeAdvice.getDescriptor(), false);
+        }
         if (travelerLocal != null) {
             storeLocal(travelerLocal);
         }
@@ -1098,27 +1128,31 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void pushDefault(Type type) {
+        pushDefault(this, type);
+    }
+
+    static void pushDefault(MethodVisitor mv, Type type) {
         switch (type.getSort()) {
             case Type.BOOLEAN:
-                push(false);
+                mv.visitInsn(ICONST_0);
                 break;
             case Type.CHAR:
             case Type.BYTE:
             case Type.SHORT:
             case Type.INT:
-                visitInsn(ICONST_0);
+                mv.visitInsn(ICONST_0);
                 break;
             case Type.FLOAT:
-                visitInsn(FCONST_0);
+                mv.visitInsn(FCONST_0);
                 break;
             case Type.LONG:
-                visitInsn(LCONST_0);
+                mv.visitInsn(LCONST_0);
                 break;
             case Type.DOUBLE:
-                visitInsn(DCONST_0);
+                mv.visitInsn(DCONST_0);
                 break;
             default:
-                visitInsn(ACONST_NULL);
+                mv.visitInsn(ACONST_NULL);
                 break;
         }
     }

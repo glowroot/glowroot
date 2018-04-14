@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,16 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+// pointcuts on constructors (methodName = "<init>") are unusual
+// because you cannot have a try catch handler than covers the call to the super constructor
+// see https://bugs.openjdk.java.net/browse/JDK-8172282
+// because of this, @IsEnabled is invoked prior to calling the super constructor
+// and @OnBefore is invoked after calling the super constructor
+// NOTE @IsEnabled could be invoked after calling the super constructor, but this causes stack frame
+// headaches if some other bytecode manipulation added local variable prior to the super constructor
+// call (which is not possible via straight Java code, but is legal in bytecode,
+// see WeaverTest.shouldExecuteAdviceOnHackedConstructorBytecode())
 
 @Target(TYPE)
 @Retention(RUNTIME)

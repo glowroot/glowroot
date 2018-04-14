@@ -1401,6 +1401,32 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(className = "HackedConstructorBytecode", methodName = "<init>",
+            methodParameterTypes = {}, timerName = "xyz")
+    public static class HackedConstructorBytecodeAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            SomeAspectThreadLocals.enabledCount.increment();
+            return true;
+        }
+        @OnBefore
+        public static void onBefore() {
+            SomeAspectThreadLocals.onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            SomeAspectThreadLocals.onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            SomeAspectThreadLocals.onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            SomeAspectThreadLocals.onAfterCount.increment();
+        }
+    }
+
     @Pointcut(className = "java.lang.Iterable", methodName = "iterator|spliterator",
             methodParameterTypes = {".."})
     public static class IterableAdvice {
