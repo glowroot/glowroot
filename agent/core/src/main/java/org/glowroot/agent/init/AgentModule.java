@@ -142,7 +142,7 @@ public class AgentModule {
             pointcutClassFileTransformer = new PointcutClassFileTransformer();
             instrumentation.addTransformer(pointcutClassFileTransformer);
         }
-        adviceCache = new AdviceCache(pluginCache.pluginDescriptors(), pluginCache.pluginJars(),
+        adviceCache = new AdviceCache(pluginCache.pluginDescriptors(),
                 configService.getInstrumentationConfigs(), instrumentation, tmpDir);
         if (pointcutClassFileTransformer != null) {
             checkNotNull(instrumentation).removeTransformer(pointcutClassFileTransformer);

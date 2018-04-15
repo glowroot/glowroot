@@ -18,7 +18,6 @@ package org.glowroot.agent.weaving;
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,7 +64,7 @@ public class AdviceCache {
 
     private volatile ImmutableList<Advice> allAdvisors;
 
-    public AdviceCache(List<PluginDescriptor> pluginDescriptors, List<File> pluginJars,
+    public AdviceCache(List<PluginDescriptor> pluginDescriptors,
             List<InstrumentationConfig> reweavableConfigs,
             @Nullable Instrumentation instrumentation, File tmpDir) throws Exception {
 
@@ -73,12 +72,6 @@ public class AdviceCache {
         List<ShimType> shimTypes = Lists.newArrayList();
         List<MixinType> mixinTypes = Lists.newArrayList();
         Map<Advice, LazyDefinedClass> lazyAdvisors = Maps.newHashMap();
-        // use temporary class loader so @Pointcut classes won't be defined for real until
-        // PointcutClassVisitor is ready to weave them
-        final URL[] pluginJarURLs = new URL[pluginJars.size()];
-        for (int i = 0; i < pluginJars.size(); i++) {
-            pluginJarURLs[i] = pluginJars.get(i).toURI().toURL();
-        }
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.aspects()) {
                 try {
