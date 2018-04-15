@@ -364,7 +364,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         Integer enabledLocal = null;
         Method isEnabledAdvice = advice.isEnabledAdvice();
         if (isEnabledAdvice != null) {
-            loadMethodParameters(advice.isEnabledParameters(), 0, -1, advice.adviceType(),
+            loadMethodParameters(advice.isEnabledParameters(), 0, null, advice.adviceType(),
                     IsEnabled.class, false);
             visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                     isEnabledAdvice.getName(), isEnabledAdvice.getDescriptor(), false);
@@ -576,7 +576,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 visitJumpInsn(IFEQ, onBeforeBlockEnd);
             }
         }
-        loadMethodParameters(advice.onBeforeParameters(), 0, -1, advice.adviceType(),
+        loadMethodParameters(advice.onBeforeParameters(), 0, null, advice.adviceType(),
                 OnBefore.class, false);
         if (enabledLocal != null && name.equals("<init>")) {
             String desc = "(Z" + onBeforeAdvice.getDescriptor().substring(1);
