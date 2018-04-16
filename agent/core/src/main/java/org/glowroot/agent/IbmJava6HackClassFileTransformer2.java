@@ -30,7 +30,7 @@ import org.glowroot.agent.bytecode.api.BytecodeEarly;
 
 import static org.objectweb.asm.Opcodes.ASM6;
 
-public class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
+class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
 
     @Override
     public byte /*@Nullable*/ [] transform(@Nullable ClassLoader loader, @Nullable String className,

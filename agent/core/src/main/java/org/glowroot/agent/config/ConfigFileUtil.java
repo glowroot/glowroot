@@ -41,6 +41,8 @@ public class ConfigFileUtil {
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private ConfigFileUtil() {}
+
     public static ObjectNode getRootObjectNode(File file) {
         String content;
         try {

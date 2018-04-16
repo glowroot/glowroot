@@ -26,15 +26,14 @@ import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryEntry;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
-import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 
-public class NopTransactionService {
+class NopTransactionService {
 
-    public static final TraceEntry TRACE_ENTRY = NopAsyncQueryEntry.INSTANCE;
-    public static final QueryEntry QUERY_ENTRY = NopAsyncQueryEntry.INSTANCE;
-    public static final AsyncTraceEntry ASYNC_TRACE_ENTRY = NopAsyncQueryEntry.INSTANCE;
-    public static final AsyncQueryEntry ASYNC_QUERY_ENTRY = NopAsyncQueryEntry.INSTANCE;
+    static final TraceEntry TRACE_ENTRY = NopAsyncQueryEntry.INSTANCE;
+    static final QueryEntry QUERY_ENTRY = NopAsyncQueryEntry.INSTANCE;
+    static final AsyncTraceEntry ASYNC_TRACE_ENTRY = NopAsyncQueryEntry.INSTANCE;
+    static final AsyncQueryEntry ASYNC_QUERY_ENTRY = NopAsyncQueryEntry.INSTANCE;
 
     private NopTransactionService() {}
 
@@ -90,9 +89,9 @@ public class NopTransactionService {
         }
     }
 
-    public static class NopAuxThreadContext implements AuxThreadContext {
+    static class NopAuxThreadContext implements AuxThreadContext {
 
-        public static final NopAuxThreadContext INSTANCE = new NopAuxThreadContext();
+        static final NopAuxThreadContext INSTANCE = new NopAuxThreadContext();
 
         private NopAuxThreadContext() {}
 
@@ -107,25 +106,13 @@ public class NopTransactionService {
         }
     }
 
-    public static class NopTimer implements Timer {
+    static class NopTimer implements Timer {
 
-        public static final NopTimer INSTANCE = new NopTimer();
+        static final NopTimer INSTANCE = new NopTimer();
 
         private NopTimer() {}
 
         @Override
         public void stop() {}
-
-        @Override
-        public Timer extend() {
-            return INSTANCE;
-        }
-    }
-
-    public static class NopTimerName implements TimerName {
-
-        public static final NopTimerName INSTANCE = new NopTimerName();
-
-        private NopTimerName() {}
     }
 }

@@ -16,12 +16,12 @@
 package org.glowroot.agent.init;
 
 import java.io.File;
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 public interface GlowrootAgentInit {
@@ -29,8 +29,8 @@ public interface GlowrootAgentInit {
     void init(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir, File logDir,
             File tmpDir, @Nullable File glowrootJarFile, Map<String, String> properties,
             @Nullable Instrumentation instrumentation,
-            @Nullable ClassFileTransformer preCheckClassFileTransformer, String glowrootVersion)
-            throws Exception;
+            @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
+            String glowrootVersion) throws Exception;
 
     @OnlyUsedByTests
     void setSlowThresholdToZero() throws Exception;

@@ -17,7 +17,6 @@ package org.glowroot.agent.embedded.init;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
 
@@ -31,6 +30,7 @@ import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NettyWorkaround;
+import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -57,7 +57,7 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             final @Nullable File sharedConfDir, File logDir, File tmpDir,
             final @Nullable File glowrootJarFile, final Map<String, String> properties,
             final @Nullable Instrumentation instrumentation,
-            @Nullable ClassFileTransformer preCheckClassFileTransformer,
+            @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
             final String glowrootVersion) throws Exception {
         embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDir, sharedConfDir, logDir,
                 tmpDir, instrumentation, preCheckClassFileTransformer, glowrootJarFile,

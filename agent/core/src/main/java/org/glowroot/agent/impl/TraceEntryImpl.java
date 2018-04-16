@@ -127,7 +127,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     }
 
     void accept(int depth, long transactionStartTick, long captureTick, EntryVisitor entryVisitor,
-            SharedQueryTextCollection sharedQueryTextCollection) throws Exception {
+            SharedQueryTextCollection sharedQueryTextCollection) {
         long offsetNanos = startTick - transactionStartTick;
         long durationNanos;
         boolean active;

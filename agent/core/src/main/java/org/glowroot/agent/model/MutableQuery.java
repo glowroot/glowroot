@@ -86,8 +86,7 @@ class MutableQuery {
     }
 
     Aggregate.Query toAggregateProto(String queryType, String queryText,
-            SharedQueryTextCollection sharedQueryTextCollection, boolean includeActive)
-            throws Exception {
+            SharedQueryTextCollection sharedQueryTextCollection, boolean includeActive) {
         int sharedQueryTextIndex = sharedQueryTextCollection.getSharedQueryTextIndex(queryText);
         Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
                 .setType(queryType)

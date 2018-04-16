@@ -18,7 +18,6 @@ package org.glowroot.agent.embedded.init;
 import java.io.Closeable;
 import java.io.File;
 import java.io.Serializable;
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.sql.SQLException;
 import java.util.List;
@@ -52,6 +51,7 @@ import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.EnvironmentCreator;
 import org.glowroot.agent.init.JRebelWorkaround;
+import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
@@ -100,7 +100,7 @@ class EmbeddedAgentModule {
 
     EmbeddedAgentModule(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir,
             File logDir, File tmpDir, @Nullable Instrumentation instrumentation,
-            @Nullable ClassFileTransformer preCheckClassFileTransformer,
+            @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
             @Nullable File glowrootJarFile, String glowrootVersion, boolean offlineViewer)
             throws Exception {
 
@@ -372,11 +372,8 @@ class EmbeddedAgentModule {
             // upgrade from database created _after_ TriggeredAlertDao was removed
             return true;
         }
-        if (dataSource.columnExists("triggered_alert", "alert_config_version")) {
-            // upgrade from database created _before_ TriggeredAlertDao was removed
-            return true;
-        }
-        return false;
+        // upgrade from database created _before_ TriggeredAlertDao was removed
+        return dataSource.columnExists("triggered_alert", "alert_config_version");
     }
 
     private static void addAlertPermission(ConfigRepositoryImpl configRepository) throws Exception {

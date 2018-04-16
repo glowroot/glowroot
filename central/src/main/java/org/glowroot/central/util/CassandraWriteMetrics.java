@@ -254,39 +254,6 @@ public class CassandraWriteMetrics {
         }
     }
 
-    private WriteMetrics getOrCreateOrOther(Map<String, WriteMetrics> nestedWriteMetricsMap,
-            String transactionName) {
-        WriteMetrics perTransactionNameMetrics = nestedWriteMetricsMap.get(transactionName);
-        if (perTransactionNameMetrics != null) {
-            return perTransactionNameMetrics;
-        }
-        if (nestedWriteMetricsMap.size() < TRANSACTION_NAME_LIMIT - 1) {
-            perTransactionNameMetrics = new WriteMetrics(transactionName);
-            nestedWriteMetricsMap.put(transactionName, perTransactionNameMetrics);
-            return perTransactionNameMetrics;
-        }
-        perTransactionNameMetrics = nestedWriteMetricsMap.get(TRANSACTION_NAME_OTHER);
-        if (perTransactionNameMetrics != null) {
-            return perTransactionNameMetrics;
-        }
-        perTransactionNameMetrics = new WriteMetrics(TRANSACTION_NAME_OTHER);
-        nestedWriteMetricsMap.put(transactionName, perTransactionNameMetrics);
-        return perTransactionNameMetrics;
-    }
-
-    private @Nullable String getAgentRollupId(List<ColumnDefinitions.Definition> columnDefinitions,
-            BoundStatement boundStatement) {
-        ColumnDefinitions.Definition columnDefinition = columnDefinitions.get(0);
-        String columnDefinitionName = columnDefinition.getName();
-        if (columnDefinitionName.equals("agent_rollup_id")
-                || columnDefinitionName.equals("agent_id")
-                || columnDefinitionName.equals("agent_rollup")) {
-            return boundStatement.getString(0);
-        } else {
-            return null;
-        }
-    }
-
     private @Nullable String getTransactionType(
             List<ColumnDefinitions.Definition> columnDefinitions, BoundStatement boundStatement) {
         if (columnDefinitions.size() < 2) {
@@ -315,7 +282,40 @@ public class CassandraWriteMetrics {
         }
     }
 
-    private int getNumBytes(BoundStatement boundStatement, int i, DataType dataType) {
+    private static WriteMetrics getOrCreateOrOther(Map<String, WriteMetrics> nestedWriteMetricsMap,
+            String transactionName) {
+        WriteMetrics perTransactionNameMetrics = nestedWriteMetricsMap.get(transactionName);
+        if (perTransactionNameMetrics != null) {
+            return perTransactionNameMetrics;
+        }
+        if (nestedWriteMetricsMap.size() < TRANSACTION_NAME_LIMIT - 1) {
+            perTransactionNameMetrics = new WriteMetrics(transactionName);
+            nestedWriteMetricsMap.put(transactionName, perTransactionNameMetrics);
+            return perTransactionNameMetrics;
+        }
+        perTransactionNameMetrics = nestedWriteMetricsMap.get(TRANSACTION_NAME_OTHER);
+        if (perTransactionNameMetrics != null) {
+            return perTransactionNameMetrics;
+        }
+        perTransactionNameMetrics = new WriteMetrics(TRANSACTION_NAME_OTHER);
+        nestedWriteMetricsMap.put(transactionName, perTransactionNameMetrics);
+        return perTransactionNameMetrics;
+    }
+
+    private static @Nullable String getAgentRollupId(
+            List<ColumnDefinitions.Definition> columnDefinitions, BoundStatement boundStatement) {
+        ColumnDefinitions.Definition columnDefinition = columnDefinitions.get(0);
+        String columnDefinitionName = columnDefinition.getName();
+        if (columnDefinitionName.equals("agent_rollup_id")
+                || columnDefinitionName.equals("agent_id")
+                || columnDefinitionName.equals("agent_rollup")) {
+            return boundStatement.getString(0);
+        } else {
+            return null;
+        }
+    }
+
+    private static int getNumBytes(BoundStatement boundStatement, int i, DataType dataType) {
         switch (dataType.getName()) {
             case VARCHAR:
                 String s = boundStatement.getString(i);
@@ -328,7 +328,7 @@ public class CassandraWriteMetrics {
         }
     }
 
-    private List<CassandraWriteTotals> getCassandraDataWritten(
+    private static List<CassandraWriteTotals> getCassandraDataWritten(
             Map<String, WriteMetrics> writeMetricsMap, int limit) {
         return writeMetricsMap.values().stream()
                 .sorted(Comparator.reverseOrder())

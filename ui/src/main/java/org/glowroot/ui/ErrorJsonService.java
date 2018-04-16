@@ -215,9 +215,9 @@ class ErrorJsonService {
         return configRepository.getRollupConfigs().size() - 1;
     }
 
-    private void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,
+    private static void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,
             DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra, long dataPointIntervalMillis,
-            long liveCaptureTime) throws Exception {
+            long liveCaptureTime) {
         DataSeriesHelper dataSeriesHelper =
                 new DataSeriesHelper(liveCaptureTime, dataPointIntervalMillis);
         ErrorPoint lastErrorPoint = null;

@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.jdbc.message;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.glowroot.agent.plugin.api.checker.Nullable;
 
@@ -92,7 +93,11 @@ public class BindParameterList implements Iterable</*@Nullable*/ Object> {
 
         @Override
         public @Nullable Object next() {
-            return parameters[i++];
+            if (i < size) {
+                return parameters[i++];
+            } else {
+                throw new NoSuchElementException();
+            }
         }
 
         @Override

@@ -48,8 +48,7 @@ public class QueryCollector {
     }
 
     public List<Aggregate.Query> toAggregateProto(
-            SharedQueryTextCollection sharedQueryTextCollection, boolean includeActive)
-            throws Exception {
+            SharedQueryTextCollection sharedQueryTextCollection, boolean includeActive) {
         // " + queries.size()" is to cover the maximum number of limit exceeded buckets
         List<Aggregate.Query> allQueries =
                 Lists.newArrayListWithCapacity(Math.min(queryCount, limit) + queries.size());

@@ -69,7 +69,7 @@ public class ConfigServiceImpl
         PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
         if (pluginConfig == null) {
             if (pluginDescriptors.isEmpty()) {
-                logger.warn("unexpected plugin id: {} (there are no available plugins)");
+                logger.warn("unexpected plugin id: {} (there are no available plugins)", pluginId);
             } else {
                 List<String> ids = Lists.newArrayList();
                 for (PluginDescriptor pluginDescriptor : pluginDescriptors) {

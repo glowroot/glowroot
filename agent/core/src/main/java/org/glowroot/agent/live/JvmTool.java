@@ -106,24 +106,30 @@ class JvmTool {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         Process process = processBuilder.start();
         Closer closer = Closer.create();
-        InputStream in = closer.register(process.getInputStream());
-        InputStream err = closer.register(process.getErrorStream());
-        ErrorStreamReader errorStreamReader = new ErrorStreamReader(err);
-        Thread errorStreamReaderThread = new Thread(errorStreamReader);
-        errorStreamReaderThread.setName("Glowroot-JVM-Tool-Error-Stream-Reader");
-        errorStreamReaderThread.setDaemon(true);
-        errorStreamReaderThread.start();
+        ErrorStreamReader errorStreamReader;
         T result = null;
         Exception processingException = null;
         try {
-            result = processAndClose(in, processor);
-        } catch (Exception e) {
-            processingException = e;
+            InputStream in = closer.register(process.getInputStream());
+            InputStream err = closer.register(process.getErrorStream());
+            errorStreamReader = new ErrorStreamReader(err);
+            Thread errorStreamReaderThread = new Thread(errorStreamReader);
+            errorStreamReaderThread.setName("Glowroot-JVM-Tool-Error-Stream-Reader");
+            errorStreamReaderThread.setDaemon(true);
+            errorStreamReaderThread.start();
+            try {
+                result = processAndClose(in, processor);
+            } catch (Exception e) {
+                processingException = e;
+            } catch (Throwable t) {
+                processingException = new RuntimeException(t);
+            }
+            errorStreamReaderThread.join();
         } catch (Throwable t) {
-            processingException = new RuntimeException(t);
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
         }
-        errorStreamReaderThread.join();
-        closer.close();
         int status = process.waitFor();
         if (status == UNAVAILABLE_DUE_TO_RUNNING_IN_JRE_STATUS) {
             throw new UnavailableDueToRunningInJreException();

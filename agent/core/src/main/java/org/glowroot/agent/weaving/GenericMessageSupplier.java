@@ -64,7 +64,7 @@ public class GenericMessageSupplier extends MessageSupplier {
         this.methodName = methodName;
     }
 
-    public void setReturnValue(@Nullable Object returnValue) {
+    private void setReturnValue(@Nullable Object returnValue) {
         // render the return value to strings immediately in case it is mutable
         String[] parts = new String[template.getReturnPathParts().size()];
         int i = 0;

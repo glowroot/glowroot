@@ -136,7 +136,7 @@ public class RollupLevelService {
         return (long) Math.ceil(captureTime / (double) intervalMillis) * intervalMillis;
     }
 
-    public static enum DataKind {
+    public enum DataKind {
         GENERAL, QUERY, SERVICE_CALL, PROFILE
     }
 }

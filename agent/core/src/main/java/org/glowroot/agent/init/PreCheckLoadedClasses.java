@@ -21,8 +21,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -55,6 +57,8 @@ public class PreCheckLoadedClasses {
         IMPORTANT_CLASS_NAMES = new HashSet<String>(importantClassNames);
     }
 
+    private PreCheckLoadedClasses() {}
+
     static boolean isImportantClass(String className, Class<?> clazz) {
         return IMPORTANT_CLASS_NAMES.contains(className)
                 || isImportantRunnableOrCallable(className, clazz)
@@ -77,18 +81,25 @@ public class PreCheckLoadedClasses {
         }
     }
 
-    public static class DebugClassFileTransformer implements ClassFileTransformer {
+    public static class PreCheckClassFileTransformer implements ClassFileTransformer {
 
         private final Set<String> importantInternalNames;
         private final String shadeProofJulLoggerInternalName =
                 SHADE_PROOF_JUL_LOGGER_CLASS_NAME.replace('.', '/');
 
-        public DebugClassFileTransformer() {
+        private final Map<String, Exception> importantClassLoadingPoints =
+                new ConcurrentHashMap<String, Exception>();
+
+        public PreCheckClassFileTransformer() {
             List<String> internalNames = new ArrayList<String>();
             for (String className : IMPORTANT_CLASS_NAMES) {
                 internalNames.add(className.replace('.', '/'));
             }
             importantInternalNames = new HashSet<String>(internalNames);
+        }
+
+        public Map<String, Exception> getImportantClassLoadingPoints() {
+            return importantClassLoadingPoints;
         }
 
         @Override
@@ -101,9 +112,8 @@ public class PreCheckLoadedClasses {
             if (importantInternalNames.contains(className)
                     || className.equals("java/net/HttpURLConnection")
                     || CHECK_FOR_JUL_LOGGER && className.equals(shadeProofJulLoggerInternalName)) {
-                System.err.println("important class loaded before Glowroot instrumentation could be"
-                        + " applied to it: " + className.replace('/', '.'));
-                new Exception().printStackTrace();
+                importantClassLoadingPoints.put(className.replace('/', '.'),
+                        new Exception("location stack trace"));
             }
             return null;
         }

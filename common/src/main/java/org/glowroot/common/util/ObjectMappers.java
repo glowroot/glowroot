@@ -148,7 +148,7 @@ public class ObjectMappers {
                 @Override
                 public Enum<?> deserialize(JsonParser jp, DeserializationContext ctxt)
                         throws IOException {
-                    Class<? extends Enum> rawClass = (Class<Enum>) type.getRawClass();
+                    Class<? extends Enum> rawClass = type.getRawClass().asSubclass(Enum.class);
                     return Enum.valueOf(rawClass,
                             jp.getValueAsString().replace('-', '_').toUpperCase(Locale.ENGLISH));
                 }

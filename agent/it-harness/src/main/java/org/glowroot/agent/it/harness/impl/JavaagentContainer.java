@@ -118,8 +118,7 @@ public class JavaagentContainer implements Container {
                     // TODO report checker framework issue that occurs without checkNotNull
                     Socket socket = checkNotNull(heartbeatListenerSocket).accept();
                     InputStream socketIn = socket.getInputStream();
-                    while (socketIn.read() != -1) {
-                    }
+                    ByteStreams.exhaust(socketIn);
                 } catch (IOException e) {
                     logger.error(e.getMessage(), e);
                 }

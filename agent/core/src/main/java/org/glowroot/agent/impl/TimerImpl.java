@@ -150,12 +150,11 @@ public class TimerImpl implements Timer, CommonTimerImpl {
         }
     }
 
-    @Override
     public Timer extend() {
         return extend(ticker.read());
     }
 
-    public void end(long endTick) {
+    void end(long endTick) {
         if (--selfNestingLevel == 0) {
             endInternal(endTick);
         }

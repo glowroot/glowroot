@@ -418,7 +418,7 @@ public class Transaction {
         }
     }
 
-    public int getQueryCount() throws Exception {
+    int getQueryCount() throws Exception {
         return getQueriesInternal(new NopSharedQueryTextCollection()).size();
     }
 
@@ -478,7 +478,7 @@ public class Transaction {
         }
     }
 
-    public int getEntryCount(long captureTick) throws Exception {
+    int getEntryCount(long captureTick) throws Exception {
         CountingEntryVisitor entryVisitor = new CountingEntryVisitor();
         visitEntriesInternal(captureTick, entryVisitor, new NopSharedQueryTextCollection());
         return entryVisitor.count;

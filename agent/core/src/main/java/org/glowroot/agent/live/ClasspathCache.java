@@ -276,9 +276,9 @@ class ClasspathCache {
     private void loadClassNamesFromJarFile(File jarFile, Location location,
             Multimap<String, Location> newClassNameLocations) throws IOException {
         Closer closer = Closer.create();
-        InputStream s = new FileInputStream(jarFile);
-        JarInputStream jarIn = closer.register(new JarInputStream(s));
         try {
+            InputStream in = closer.register(new FileInputStream(jarFile));
+            JarInputStream jarIn = closer.register(new JarInputStream(in));
             loadClassNamesFromManifestClassPath(jarIn, jarFile, newClassNameLocations);
             loadClassNamesFromJarInputStream(jarIn, "", location, newClassNameLocations);
         } catch (Throwable t) {
@@ -445,14 +445,8 @@ class ClasspathCache {
         }
         Closer closer = Closer.create();
         try {
-            InputStream in = uri.toURL().openStream();
-            JarInputStream jarIn;
-            try {
-                jarIn = closer.register(new JarInputStream(in));
-            } catch (IOException e) {
-                in.close();
-                throw e;
-            }
+            InputStream in = closer.register(uri.toURL().openStream());
+            JarInputStream jarIn = closer.register(new JarInputStream(in));
             loadClassNamesFromJarInputStream(jarIn, "", location, newClassNameLocations);
         } catch (Throwable t) {
             throw closer.rethrow(t);
@@ -465,15 +459,9 @@ class ClasspathCache {
             String directoryInsideJarFile, Location location,
             Multimap<String, Location> newClassNameLocations) throws IOException {
         Closer closer = Closer.create();
-        InputStream in = new FileInputStream(jarFile);
-        JarInputStream jarIn;
         try {
-            jarIn = closer.register(new JarInputStream(in));
-        } catch (IOException e) {
-            in.close();
-            throw e;
-        }
-        try {
+            InputStream in = closer.register(new FileInputStream(jarFile));
+            JarInputStream jarIn = closer.register(new JarInputStream(in));
             loadClassNamesFromJarInputStream(jarIn, directoryInsideJarFile, location,
                     newClassNameLocations);
         } catch (Throwable t) {
@@ -676,15 +664,8 @@ class ClasspathCache {
         }
         Closer closer = Closer.create();
         try {
-            InputStream in = uri.toURL().openStream();
-            JarInputStream jarIn;
-            try {
-                jarIn = new JarInputStream(in);
-            } catch (IOException e) {
-                in.close();
-                throw e;
-            }
-            closer.register(jarIn);
+            InputStream in = closer.register(uri.toURL().openStream());
+            JarInputStream jarIn = closer.register(new JarInputStream(in));
             JarEntry jarEntry;
             while ((jarEntry = jarIn.getNextJarEntry()) != null) {
                 if (jarEntry.isDirectory()) {

@@ -76,4 +76,15 @@ public class Optional<T> {
             return value.equals(other.value);
         }
     }
+
+    @Override
+    public int hashCode() {
+        if (value == null) {
+            // copied from com.google.common.base.Absent.hashCode()
+            return 0x79a31aac;
+        } else {
+            // copied from com.google.common.base.Present.hashCode()
+            return 0x598df91c + value.hashCode();
+        }
+    }
 }

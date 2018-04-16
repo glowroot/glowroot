@@ -173,13 +173,6 @@ class AsyncComponents {
         }
     }
 
-    private AsyncQueryData createQueryData(Map<String, AsyncQueryData> queriesForType,
-            String queryText) {
-        AsyncQueryData queryData = new AsyncQueryData(queryText, null);
-        queriesForType.put(queryText, queryData);
-        return queryData;
-    }
-
     AsyncQueryData getOrCreateAsyncServiceCallData(String serviceCallType, String serviceCallText,
             boolean bypassLimit) {
         Map<String, AsyncQueryData> serviceCallsForType = asyncServiceCalls.get(serviceCallType);
@@ -210,13 +203,6 @@ class AsyncComponents {
         }
     }
 
-    private AsyncQueryData createServiceCallData(Map<String, AsyncQueryData> serviceCallsForType,
-            String serviceCallText) {
-        AsyncQueryData serviceCallData = new AsyncQueryData(serviceCallText, null);
-        serviceCallsForType.put(serviceCallText, serviceCallData);
-        return serviceCallData;
-    }
-
     // this method has side effect of incrementing counter
     private boolean allowAnotherQueryAggregate(boolean bypassLimit) {
         return queryAggregateCounter++ < maxQueryAggregates
@@ -229,6 +215,20 @@ class AsyncComponents {
         return serviceCallAggregateCounter++ < maxServiceCallAggregates
                 * AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER
                 || bypassLimit;
+    }
+
+    private static AsyncQueryData createQueryData(Map<String, AsyncQueryData> queriesForType,
+            String queryText) {
+        AsyncQueryData queryData = new AsyncQueryData(queryText, null);
+        queriesForType.put(queryText, queryData);
+        return queryData;
+    }
+
+    private static AsyncQueryData createServiceCallData(
+            Map<String, AsyncQueryData> serviceCallsForType, String serviceCallText) {
+        AsyncQueryData serviceCallData = new AsyncQueryData(serviceCallText, null);
+        serviceCallsForType.put(serviceCallText, serviceCallData);
+        return serviceCallData;
     }
 
     private static class AggregateAsyncTimer {

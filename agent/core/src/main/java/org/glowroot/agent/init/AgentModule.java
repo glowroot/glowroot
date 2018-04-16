@@ -20,6 +20,7 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.jar.JarFile;
@@ -53,6 +54,7 @@ import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionService;
 import org.glowroot.agent.impl.UserProfileScheduler;
+import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.agent.live.LiveAggregateRepositoryImpl;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
@@ -127,7 +129,7 @@ public class AgentModule {
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, final PluginCache pluginCache,
             final ConfigService configService, @Nullable Instrumentation instrumentation,
             @Nullable File glowrootJarFile, File tmpDir,
-            @Nullable ClassFileTransformer preCheckClassFileTransformer) throws Exception {
+            @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer) throws Exception {
 
         this.clock = clock;
         this.ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
@@ -194,6 +196,11 @@ public class AgentModule {
                 jvmRetransformClassesSupported = false;
             }
             if (preCheckClassFileTransformer != null) {
+                for (Map.Entry<String, Exception> entry : preCheckClassFileTransformer
+                        .getImportantClassLoadingPoints().entrySet()) {
+                    logger.warn("important class loaded before Glowroot instrumentation could be"
+                            + " applied to it: {}", entry.getKey(), entry.getValue());
+                }
                 instrumentation.removeTransformer(preCheckClassFileTransformer);
             }
             logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation.getAllLoadedClasses(),

@@ -19,7 +19,6 @@ import org.junit.Test;
 
 import org.glowroot.agent.impl.NopTransactionService.NopAuxThreadContext;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
-import org.glowroot.agent.impl.NopTransactionService.NopTimerName;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,16 +64,5 @@ public class NopTransactionServiceTest {
                 .isEqualTo(NopTransactionService.TRACE_ENTRY);
         assertThat(NopAuxThreadContext.INSTANCE.startAndMarkAsyncTransactionComplete())
                 .isEqualTo(NopTransactionService.TRACE_ENTRY);
-    }
-
-    @Test
-    public void testNopTimer() {
-        NopTimer.INSTANCE.stop();
-        assertThat(NopTimer.INSTANCE.extend()).isEqualTo(NopTimer.INSTANCE);
-    }
-
-    @Test
-    public void testNopTimerName() {
-        NopTimerName.INSTANCE.toString();
     }
 }

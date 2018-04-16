@@ -38,7 +38,7 @@ import org.glowroot.agent.plugin.api.TraceEntry;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class OptionalThreadContextImpl implements ThreadContextPlus {
+class OptionalThreadContextImpl implements ThreadContextPlus {
 
     private static final Logger logger = LoggerFactory.getLogger(OptionalThreadContextImpl.class);
 
@@ -47,7 +47,7 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     private final TransactionService transactionService;
     private final ThreadContextThreadLocal.Holder threadContextHolder;
 
-    public static OptionalThreadContextImpl create(TransactionService transactionService,
+    static OptionalThreadContextImpl create(TransactionService transactionService,
             ThreadContextThreadLocal.Holder threadContextHolder) {
         return new OptionalThreadContextImpl(transactionService, threadContextHolder);
     }

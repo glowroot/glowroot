@@ -19,6 +19,7 @@ import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.internal.LoggerFactory;
 
+// instantiated via reflection (see org.glowroot.agent.plugin.api.Logger)
 public class LoggerFactoryImpl implements LoggerFactory {
 
     @Override

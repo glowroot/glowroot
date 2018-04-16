@@ -133,7 +133,7 @@ public class Directories {
         return logDir;
     }
 
-    public File getTmpDir() {
+    File getTmpDir() {
         return tmpDir;
     }
 

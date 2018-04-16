@@ -59,7 +59,7 @@ import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInitFactory;
 import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
-import org.glowroot.agent.init.PreCheckLoadedClasses.DebugClassFileTransformer;
+import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.weaving.Java9;
@@ -88,10 +88,10 @@ public class MainEntryPoint {
             // glowroot is already running, probably due to multiple glowroot -javaagent JVM args
             return;
         }
-        DebugClassFileTransformer debugClassFileTransformer = null;
+        PreCheckClassFileTransformer preCheckClassFileTransformer = null;
         if (PRE_CHECK_LOADED_CLASSES) {
-            debugClassFileTransformer = new DebugClassFileTransformer();
-            instrumentation.addTransformer(debugClassFileTransformer);
+            preCheckClassFileTransformer = new PreCheckClassFileTransformer();
+            instrumentation.addTransformer(preCheckClassFileTransformer);
         }
         // DO NOT USE ANY GUAVA CLASSES before initLogging() because they trigger loading of jul
         // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
@@ -154,7 +154,7 @@ public class MainEntryPoint {
             }
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
-            start(directories, properties, instrumentation, debugClassFileTransformer);
+            start(directories, properties, instrumentation, preCheckClassFileTransformer);
         } catch (AgentDirsLockedException e) {
             logAgentDirsLockedException(directories.getConfDir(), e.getLockFile());
         } catch (Throwable t) {
@@ -164,7 +164,7 @@ public class MainEntryPoint {
     }
 
     public static void runOfflineViewer(Directories directories,
-            GlowrootAgentInitFactory glowrootAgentInitFactory) throws InterruptedException {
+            GlowrootAgentInitFactory glowrootAgentInitFactory) {
         // initLogging() already called by OfflineViewer.main()
         checkNotNull(startupLogger);
         try {
@@ -248,7 +248,7 @@ public class MainEntryPoint {
     @RequiresNonNull("startupLogger")
     private static void start(Directories directories, Map<String, String> properties,
             @Nullable Instrumentation instrumentation,
-            @Nullable ClassFileTransformer preCheckClassFileTransformer) throws Exception {
+            @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer) throws Exception {
         String version = Version.getVersion(MainEntryPoint.class);
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());

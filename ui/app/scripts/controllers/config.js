@@ -22,7 +22,7 @@ glowroot.controller('ConfigCtrl', [
   '$http',
   '$timeout',
   'queryStrings',
-  function ($scope, $location, $http, $timeout, queryStrings) {
+  function ($scope, $location, $http, $timeout) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'gears';

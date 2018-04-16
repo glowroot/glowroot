@@ -227,46 +227,6 @@ public class CentralCollector implements Collector {
 
     private class CollectAggregatesGrpcCall extends GrpcCall<AggregateResponseMessage> {
 
-        private class AggregateVisitorImpl implements AggregateVisitor {
-            private final StreamObserver<AggregateStreamMessage> requestObserver;
-            private AggregateVisitorImpl(StreamObserver<AggregateStreamMessage> requestObserver) {
-                this.requestObserver = requestObserver;
-            }
-            @Override
-            public void visitOverallAggregate(String transactionType,
-                    List<String> sharedQueryTexts, Aggregate overallAggregate) {
-                for (String sharedQueryText : sharedQueryTexts) {
-                    Aggregate.SharedQueryText aggregateSharedQueryText = sharedQueryTextLimiter
-                            .buildAggregateSharedQueryText(sharedQueryText, fullTextSha1s);
-                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                            .setSharedQueryText(aggregateSharedQueryText)
-                            .build());
-                }
-                requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                        .setOverallAggregate(OverallAggregate.newBuilder()
-                                .setTransactionType(transactionType)
-                                .setAggregate(overallAggregate))
-                        .build());
-            }
-            @Override
-            public void visitTransactionAggregate(String transactionType,
-                    String transactionName, List<String> sharedQueryTexts,
-                    Aggregate transactionAggregate) {
-                for (String sharedQueryText : sharedQueryTexts) {
-                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                            .setSharedQueryText(sharedQueryTextLimiter
-                                    .buildAggregateSharedQueryText(sharedQueryText, fullTextSha1s))
-                            .build());
-                }
-                requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                        .setTransactionAggregate(TransactionAggregate.newBuilder()
-                                .setTransactionType(transactionType)
-                                .setTransactionName(transactionName)
-                                .setAggregate(transactionAggregate))
-                        .build());
-            }
-        }
-
         private final AggregateReader aggregateReader;
         private final List<String> fullTextSha1s = Lists.newArrayList();
 
@@ -302,6 +262,50 @@ public class CentralCollector implements Collector {
             nextAggregateDelayMillis = Math.min(response.getNextDelayMillis(), 30000);
             for (String fullTextSha1 : fullTextSha1s) {
                 sharedQueryTextLimiter.onSuccessfullySentToCentralCollector(fullTextSha1);
+            }
+        }
+
+        private class AggregateVisitorImpl implements AggregateVisitor {
+
+            private final StreamObserver<AggregateStreamMessage> requestObserver;
+
+            private AggregateVisitorImpl(StreamObserver<AggregateStreamMessage> requestObserver) {
+                this.requestObserver = requestObserver;
+            }
+
+            @Override
+            public void visitOverallAggregate(String transactionType,
+                    List<String> sharedQueryTexts, Aggregate overallAggregate) {
+                for (String sharedQueryText : sharedQueryTexts) {
+                    Aggregate.SharedQueryText aggregateSharedQueryText = sharedQueryTextLimiter
+                            .buildAggregateSharedQueryText(sharedQueryText, fullTextSha1s);
+                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                            .setSharedQueryText(aggregateSharedQueryText)
+                            .build());
+                }
+                requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                        .setOverallAggregate(OverallAggregate.newBuilder()
+                                .setTransactionType(transactionType)
+                                .setAggregate(overallAggregate))
+                        .build());
+            }
+
+            @Override
+            public void visitTransactionAggregate(String transactionType,
+                    String transactionName, List<String> sharedQueryTexts,
+                    Aggregate transactionAggregate) {
+                for (String sharedQueryText : sharedQueryTexts) {
+                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                            .setSharedQueryText(sharedQueryTextLimiter
+                                    .buildAggregateSharedQueryText(sharedQueryText, fullTextSha1s))
+                            .build());
+                }
+                requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                        .setTransactionAggregate(TransactionAggregate.newBuilder()
+                                .setTransactionType(transactionType)
+                                .setTransactionName(transactionName)
+                                .setAggregate(transactionAggregate))
+                        .build());
             }
         }
     }

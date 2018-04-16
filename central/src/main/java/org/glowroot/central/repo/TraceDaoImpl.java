@@ -1370,7 +1370,7 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     @Value.Immutable
-    static abstract class TraceKey {
+    abstract static class TraceKey {
 
         abstract String agentId();
         abstract String traceId();

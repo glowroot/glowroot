@@ -416,7 +416,7 @@ public class Weaver {
 
         private final ClassWriter cw;
 
-        ManagementFactoryHackClassVisitor(ClassWriter cw) {
+        private ManagementFactoryHackClassVisitor(ClassWriter cw) {
             super(ASM6, cw);
             this.cw = cw;
         }
@@ -454,7 +454,7 @@ public class Weaver {
 
         private final ClassWriter cw;
 
-        JBossWeldHackClassVisitor(ClassWriter cw) {
+        private JBossWeldHackClassVisitor(ClassWriter cw) {
             super(ASM6, cw);
             this.cw = cw;
         }
@@ -493,7 +493,7 @@ public class Weaver {
 
         private final ClassWriter cw;
 
-        JBossModulesHackClassVisitor(ClassWriter cw) {
+        private JBossModulesHackClassVisitor(ClassWriter cw) {
             super(ASM6, cw);
             this.cw = cw;
         }
@@ -534,7 +534,7 @@ public class Weaver {
         // and org.apache.felix.framework.ModuleImpl (prior to felix 4.0.0)
         private @Nullable String className;
 
-        FelixOsgiHackClassVisitor(ClassWriter cw) {
+        private FelixOsgiHackClassVisitor(ClassWriter cw) {
             super(ASM6, cw);
             this.cw = cw;
         }
@@ -589,7 +589,7 @@ public class Weaver {
 
         private final ClassWriter cw;
 
-        EclipseOsgiHackClassVisitor(ClassWriter cw) {
+        private EclipseOsgiHackClassVisitor(ClassWriter cw) {
             super(ASM6, cw);
             this.cw = cw;
         }
@@ -634,7 +634,7 @@ public class Weaver {
 
         private final ClassWriter cw;
 
-        JBoss4HackClassVisitor(ClassWriter cw) {
+        private JBoss4HackClassVisitor(ClassWriter cw) {
             super(ASM6, cw);
             this.cw = cw;
         }

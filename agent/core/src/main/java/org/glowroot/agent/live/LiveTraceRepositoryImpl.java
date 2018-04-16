@@ -238,10 +238,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         if (!transactionType.equals(transaction.getTransactionType())) {
             return false;
         }
-        if (transactionName != null && !transactionName.equals(transaction.getTransactionName())) {
-            return false;
-        }
-        return true;
+        return transactionName == null || transactionName.equals(transaction.getTransactionName());
     }
 
     private Trace.Header createTraceHeader(Transaction transaction) throws Exception {

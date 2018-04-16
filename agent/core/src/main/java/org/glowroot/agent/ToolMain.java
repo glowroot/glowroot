@@ -38,7 +38,7 @@ public abstract class ToolMain {
         ClassLoader loader =
                 new URLClassLoader(new URL[] {embeddedCollectorJarFile.toURI().toURL()});
         Class<?> clazz = Class.forName("org.glowroot.agent.embedded.ToolMain", true, loader);
-        Method method = clazz.getMethod("main", new Class<?>[] {String[].class, File.class});
+        Method method = clazz.getMethod("main", String[].class, File.class);
         method.invoke(null, args, glowrootJarFile);
     }
 }

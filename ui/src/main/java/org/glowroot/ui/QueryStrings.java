@@ -104,8 +104,8 @@ class QueryStrings {
         } else if (isBoolean(targetClass)) {
             return Boolean.parseBoolean(str);
         } else if (Enum.class.isAssignableFrom(targetClass)) {
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            Enum<?> enumValue = Enum.valueOf((Class<? extends Enum>) targetClass,
+            @SuppressWarnings("unchecked")
+            Enum<? extends Enum<?>> enumValue = Enum.valueOf(targetClass.asSubclass(Enum.class),
                     str.replace('-', '_').toUpperCase(Locale.ENGLISH));
             return enumValue;
         } else {

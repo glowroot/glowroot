@@ -44,7 +44,7 @@ public class BootstrapMetaHolders {
 
     private BootstrapMetaHolders() {}
 
-    public static int reserveClassMetaHolderIndex(String metaHolderInternalName,
+    static int reserveClassMetaHolderIndex(String metaHolderInternalName,
             String classMetaFieldName) {
         synchronized (classMetaHolders) {
             String key = metaHolderInternalName + '.' + classMetaFieldName;
@@ -58,7 +58,7 @@ public class BootstrapMetaHolders {
         }
     }
 
-    public static int reserveMethodMetaHolderIndex(String metaHolderInternalName,
+    static int reserveMethodMetaHolderIndex(String metaHolderInternalName,
             String methodMetaFieldName) {
         synchronized (methodMetaHolders) {
             methodMetaHolders.add(null);
@@ -68,7 +68,7 @@ public class BootstrapMetaHolders {
         }
     }
 
-    public static void createClassMetaHolder(String metaHolderInternalName,
+    static void createClassMetaHolder(String metaHolderInternalName,
             String classMetaFieldName, Type classMetaType, Type type) {
         String key = metaHolderInternalName + '.' + classMetaFieldName;
         Integer index = classMetaHolderIndexes.get(key);
@@ -77,7 +77,7 @@ public class BootstrapMetaHolders {
         classMetaHolders.set(index, classMetaHolder);
     }
 
-    public static void createMethodMetaHolder(String metaHolderInternalName,
+    static void createMethodMetaHolder(String metaHolderInternalName,
             String methodMetaFieldName, Type methodMetaType, Type methodOwnerType,
             String methodName, List<Type> methodParameterTypes) {
         String key = metaHolderInternalName + '.' + methodMetaFieldName;

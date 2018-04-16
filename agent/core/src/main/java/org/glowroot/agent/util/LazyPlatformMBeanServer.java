@@ -28,6 +28,7 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 // this is needed for jboss-modules because calling ManagementFactory.getPlatformMBeanServer()
@@ -223,7 +225,16 @@ public class LazyPlatformMBeanServer {
             if (platformMBeanServerAvailable) {
                 return;
             }
-            platformMBeanServerAvailability.wait(SECONDS.toMillis(60));
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            // looping to guard against "spurious wakeup" from Object.wait()
+            while (!platformMBeanServerAvailable) {
+                long remaining = SECONDS.toMillis(60) - stopwatch.elapsed(MILLISECONDS);
+                if (remaining < 1000) {
+                    // less that one second remaining
+                    break;
+                }
+                platformMBeanServerAvailability.wait(remaining);
+            }
             if (!platformMBeanServerAvailable) {
                 logger.error("platform mbean server was never created by container");
             }

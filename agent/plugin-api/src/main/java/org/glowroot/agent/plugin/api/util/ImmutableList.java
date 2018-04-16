@@ -23,7 +23,7 @@ import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
 
 public class ImmutableList {
 
-    private final static PluginService service = PluginServiceHolder.get();
+    private static final PluginService service = PluginServiceHolder.get();
 
     private ImmutableList() {}
 

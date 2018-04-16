@@ -87,7 +87,7 @@ public abstract class TransactionConfig {
     }
 
     @Value.Immutable
-    public static abstract class SlowThreshold {
+    public abstract static class SlowThreshold {
 
         public abstract String transactionType();
 

@@ -460,8 +460,7 @@ public class CentralModule {
                     new SchemaUpgrade(session, keyspaceMetadata, Clock.systemClock(), false);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
-                startupLogger.info("creating glowroot central schema ...",
-                        keyspace);
+                startupLogger.info("creating glowroot central schema ...");
             } else if (initialSchemaVersion != schemaUpgrade.getCurrentSchemaVersion()) {
                 startupLogger.warn("running a version of glowroot central that does not match the"
                         + " glowroot central schema version (expecting glowroot central schema"
@@ -675,8 +674,7 @@ public class CentralModule {
         return properties;
     }
 
-    private static Map<String, String> overlayAnySystemProperties(Map<String, String> props)
-            throws IOException {
+    private static Map<String, String> overlayAnySystemProperties(Map<String, String> props) {
         Map<String, String> properties = Maps.newHashMap(props);
         for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
             if (entry.getKey() instanceof String && entry.getValue() instanceof String

@@ -440,7 +440,7 @@ glowroot.factory('charts', [
           html += ' style="background-color: #eee;"';
         }
         html += '>'
-            + '<td class="legendColorBox" width="16">'
+            + '<td class="legendColorBox" style="width: 16px;">'
             + '<div style="border: 1px solid rgb(204, 204, 204); padding: 1px;">'
             + '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">'
             + '</div></div></td>'

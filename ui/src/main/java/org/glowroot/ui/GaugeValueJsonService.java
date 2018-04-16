@@ -189,15 +189,6 @@ class GaugeValueJsonService {
         }
     }
 
-    private boolean isEmpty(Map<String, List<GaugeValue>> map) {
-        for (List<GaugeValue> values : map.values()) {
-            if (!values.isEmpty()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     private int getLargestRollupLevel() {
         return configRepository.getRollupConfigs().size();
     }
@@ -237,6 +228,15 @@ class GaugeValueJsonService {
                     .build());
         }
         return rolledUpGaugeValues;
+    }
+
+    private static boolean isEmpty(Map<String, List<GaugeValue>> map) {
+        for (List<GaugeValue> values : map.values()) {
+            if (!values.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static DataSeries convertToDataSeriesWithGaps(String dataSeriesName,

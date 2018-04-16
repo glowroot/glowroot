@@ -453,10 +453,22 @@ class TransactionJsonService {
         return configRepository.getRollupConfigs().size() - 1;
     }
 
+    private boolean isProfileOverwritten(TransactionProfileRequest request, String agentRollupId,
+            TransactionQuery query) throws Exception {
+        if (request.auxiliary()
+                && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query)) {
+            return true;
+        }
+        if (!request.auxiliary()
+                && aggregateRepository.shouldHaveMainThreadProfile(agentRollupId, query)) {
+            return true;
+        }
+        return false;
+    }
+
     private static PercentileData getDataSeriesForPercentileChart(
             TransactionPercentileRequest request, List<PercentileAggregate> percentileAggregates,
-            List<Double> percentiles, long dataPointIntervalMillis, long liveCaptureTime)
-            throws Exception {
+            List<Double> percentiles, long dataPointIntervalMillis, long liveCaptureTime) {
         if (percentileAggregates.isEmpty()) {
             return ImmutablePercentileData.builder()
                     .mergedAggregate(ImmutablePercentileMergedAggregate.builder()
@@ -527,9 +539,9 @@ class TransactionJsonService {
                 .build();
     }
 
-    private List<DataSeries> getDataSeriesForThroughputChart(TransactionDataRequest request,
+    private static List<DataSeries> getDataSeriesForThroughputChart(TransactionDataRequest request,
             List<ThroughputAggregate> throughputAggregates, long dataPointIntervalMillis,
-            long liveCaptureTime) throws Exception {
+            long liveCaptureTime) {
         if (throughputAggregates.isEmpty()) {
             return Lists.newArrayList();
         }
@@ -562,22 +574,9 @@ class TransactionJsonService {
         return dataSeriesList;
     }
 
-    private boolean isProfileOverwritten(TransactionProfileRequest request, String agentRollupId,
-            TransactionQuery query) throws Exception {
-        if (request.auxiliary()
-                && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query)) {
-            return true;
-        }
-        if (!request.auxiliary()
-                && aggregateRepository.shouldHaveMainThreadProfile(agentRollupId, query)) {
-            return true;
-        }
-        return false;
-    }
-
     private static List<DataSeries> getDataSeriesForTimerChart(TransactionDataRequest request,
-            List<OverviewAggregate> aggregates, long dataPointIntervalMillis, long liveCaptureTime)
-            throws Exception {
+            List<OverviewAggregate> aggregates, long dataPointIntervalMillis,
+            long liveCaptureTime) {
         if (aggregates.isEmpty()) {
             return Lists.newArrayList();
         }
@@ -589,8 +588,7 @@ class TransactionJsonService {
     }
 
     private static List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
-            List<StackedPoint> stackedPoints, long dataPointIntervalMillis, long liveCaptureTime)
-            throws Exception {
+            List<StackedPoint> stackedPoints, long dataPointIntervalMillis, long liveCaptureTime) {
         DataSeriesHelper dataSeriesHelper =
                 new DataSeriesHelper(liveCaptureTime, dataPointIntervalMillis);
         final int topX = 5;
