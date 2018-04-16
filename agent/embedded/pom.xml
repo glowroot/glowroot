@@ -13,8 +13,8 @@
 
   <artifactId>glowroot-agent-embedded-unshaded</artifactId>
 
-  <name>Glowroot Embedded Collector (Unshaded)</name>
-  <description>Glowroot Embedded Collector (Unshaded)</description>
+  <name>Glowroot Agent Embedded Collector (Unshaded)</name>
+  <description>Glowroot Agent Embedded Collector (Unshaded)</description>
 
   <dependencies>
     <dependency>

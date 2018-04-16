@@ -13,8 +13,8 @@
 
   <artifactId>glowroot-agent-embedded</artifactId>
 
-  <name>Glowroot Embedded Collector</name>
-  <description>Glowroot Embedded Collector</description>
+  <name>Glowroot Agent Embedded Collector</name>
+  <description>Glowroot Agent Embedded Collector</description>
 
   <dependencies>
     <dependency>
