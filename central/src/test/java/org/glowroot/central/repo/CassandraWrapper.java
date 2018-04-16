@@ -40,7 +40,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 // see copies of this class in glowroot-agent-cassandra-plugin and glowroot-webdriver-tests
 class CassandraWrapper {
 
-    private static final String CASSANDRA_VERSION;
+    static final String CASSANDRA_VERSION;
 
     static {
         if (System.getProperty("os.name").startsWith("Windows")) {
@@ -172,12 +172,12 @@ class CassandraWrapper {
         }
     }
 
-    private static class ConsoleOutputPipe implements Runnable {
+    static class ConsoleOutputPipe implements Runnable {
 
         private final InputStream in;
         private final OutputStream out;
 
-        private ConsoleOutputPipe(InputStream in, OutputStream out) {
+        ConsoleOutputPipe(InputStream in, OutputStream out) {
             this.in = in;
             this.out = out;
         }

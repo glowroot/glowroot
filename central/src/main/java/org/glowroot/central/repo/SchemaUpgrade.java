@@ -32,13 +32,11 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -102,7 +100,6 @@ public class SchemaUpgrade {
     private static final int CURR_SCHEMA_VERSION = 76;
 
     private final Session session;
-    private final KeyspaceMetadata keyspaceMetadata;
     private final Clock clock;
     private final boolean servlet;
 
@@ -111,10 +108,8 @@ public class SchemaUpgrade {
 
     private boolean reloadCentralConfiguration;
 
-    public SchemaUpgrade(Session session, KeyspaceMetadata keyspaceMetadata, Clock clock,
-            boolean servlet) throws Exception {
+    public SchemaUpgrade(Session session, Clock clock, boolean servlet) throws Exception {
         this.session = session;
-        this.keyspaceMetadata = keyspaceMetadata;
         this.clock = clock;
         this.servlet = servlet;
 
@@ -122,7 +117,7 @@ public class SchemaUpgrade {
                 + " schema_version int, primary key (one))");
         insertIntoSchemVersionPS =
                 session.prepare("insert into schema_version (one, schema_version) values (1, ?)");
-        initialSchemaVersion = getSchemaVersion(session, keyspaceMetadata);
+        initialSchemaVersion = getSchemaVersion(session);
     }
 
     public @Nullable Integer getInitialSchemaVersion() {
@@ -490,7 +485,7 @@ public class SchemaUpgrade {
             throws Exception {
         List<String> snappyTableNames = new ArrayList<>();
         List<String> dtcsTableNames = new ArrayList<>();
-        for (TableMetadata table : keyspaceMetadata.getTables()) {
+        for (TableMetadata table : session.getTables()) {
             String compressionClass = table.getOptions().getCompression().get("class");
             if (compressionClass != null && compressionClass
                     .equals("org.apache.cassandra.io.compress.SnappyCompressor")) {
@@ -660,7 +655,7 @@ public class SchemaUpgrade {
 
     private void updateTwcsDtcsGcSeconds() throws Exception {
         logger.info("updating gc_grace_seconds on TWCS/DTCS tables ...");
-        for (TableMetadata table : keyspaceMetadata.getTables()) {
+        for (TableMetadata table : session.getTables()) {
             String compactionClass = table.getOptions().getCompaction().get("class");
             if (compactionClass == null) {
                 continue;
@@ -1395,8 +1390,8 @@ public class SchemaUpgrade {
 
     private void rewriteAgentConfigTablePart1() throws Exception {
         dropTableIfExists("agent_config_temp");
-        session.execute("create table agent_config_temp (agent_rollup_id varchar, config blob,"
-                + " config_update boolean, config_update_token uuid, primary key"
+        session.updateSchemaWithRetry("create table agent_config_temp (agent_rollup_id varchar,"
+                + " config blob, config_update boolean, config_update_token uuid, primary key"
                 + " (agent_rollup_id))");
         PreparedStatement insertTempPS = session.prepare("insert into agent_config_temp"
                 + " (agent_rollup_id, config, config_update, config_update_token) values"
@@ -1448,8 +1443,8 @@ public class SchemaUpgrade {
 
     private void rewriteEnvironmentTablePart1() throws Exception {
         dropTableIfExists("environment_temp");
-        session.execute("create table environment_temp (agent_id varchar, environment blob,"
-                + " primary key (agent_id))");
+        session.updateSchemaWithRetry("create table environment_temp (agent_id varchar, environment"
+                + " blob, primary key (agent_id))");
         PreparedStatement insertTempPS = session
                 .prepare("insert into environment_temp (agent_id, environment) values (?, ?)");
         ResultSet results = session.execute("select agent_id, environment from environment");
@@ -1490,10 +1485,14 @@ public class SchemaUpgrade {
     }
 
     private void rewriteOpenIncidentTablePart1() throws Exception {
+        if (!tableExists("open_incident")) {
+            // must be upgrading all the way from a glowroot version prior to open_incident
+            return;
+        }
         dropTableIfExists("open_incident_temp");
-        session.execute("create table open_incident_temp (one int, agent_rollup_id varchar,"
-                + " condition blob, severity varchar, notification blob, open_time timestamp,"
-                + " primary key (one, agent_rollup_id, condition, severity))");
+        session.updateSchemaWithRetry("create table open_incident_temp (one int, agent_rollup_id"
+                + " varchar, condition blob, severity varchar, notification blob, open_time"
+                + " timestamp, primary key (one, agent_rollup_id, condition, severity))");
         PreparedStatement insertTempPS = session.prepare("insert into open_incident_temp (one,"
                 + " agent_rollup_id, condition, severity, notification, open_time) values"
                 + " (1, ?, ?, ?, ?, ?)");
@@ -1545,8 +1544,12 @@ public class SchemaUpgrade {
     }
 
     private void rewriteResolvedIncidentTablePart1() throws Exception {
+        if (!tableExists("resolved_incident")) {
+            // must be upgrading all the way from a glowroot version prior to resolved_incident
+            return;
+        }
         dropTableIfExists("resolved_incident_temp");
-        session.execute("create table resolved_incident_temp (one int, resolve_time"
+        session.updateSchemaWithRetry("create table resolved_incident_temp (one int, resolve_time"
                 + " timestamp, agent_rollup_id varchar, condition blob, severity varchar,"
                 + " notification blob, open_time timestamp, primary key (one, resolve_time,"
                 + " agent_rollup_id, condition)) with clustering order by (resolve_time desc)");
@@ -1611,8 +1614,8 @@ public class SchemaUpgrade {
 
     private void rewriteRoleTablePart1() throws Exception {
         dropTableIfExists("role_temp");
-        session.execute("create table role_temp (name varchar, permissions set<varchar>,"
-                + " primary key (name))");
+        session.updateSchemaWithRetry("create table role_temp (name varchar, permissions"
+                + " set<varchar>, primary key (name))");
         PreparedStatement insertTempPS =
                 session.prepare("insert into role_temp (name, permissions) values (?, ?)");
         ResultSet results = session.execute("select name, permissions from role");
@@ -1699,10 +1702,14 @@ public class SchemaUpgrade {
     }
 
     private void rewriteHeartbeatTablePart1() throws Exception {
+        if (!tableExists("heartbeat")) {
+            // must be upgrading all the way from a glowroot version prior to heartbeat
+            return;
+        }
         logger.info("rewriting heartbeat table (part 1) ...");
         dropTableIfExists("heartbeat_temp");
-        session.execute("create table heartbeat_temp (agent_id varchar, central_capture_time"
-                + " timestamp, primary key (agent_id, central_capture_time))");
+        session.updateSchemaWithRetry("create table heartbeat_temp (agent_id varchar,"
+                + " central_capture_time timestamp, primary key (agent_id, central_capture_time))");
         PreparedStatement insertTempPS = session.prepare("insert into heartbeat_temp (agent_id,"
                 + " central_capture_time) values (?, ?)");
         ResultSet results = session.execute("select agent_id, central_capture_time from heartbeat");
@@ -1762,8 +1769,9 @@ public class SchemaUpgrade {
 
     private void rewriteTransactionTypeTablePart1() throws Exception {
         dropTableIfExists("transaction_type_temp");
-        session.execute("create table transaction_type_temp (one int, agent_rollup varchar,"
-                + " transaction_type varchar, primary key (one, agent_rollup, transaction_type))");
+        session.updateSchemaWithRetry("create table transaction_type_temp (one int, agent_rollup"
+                + " varchar, transaction_type varchar, primary key (one, agent_rollup,"
+                + " transaction_type))");
         PreparedStatement insertTempPS = session.prepare("insert into transaction_type_temp (one,"
                 + " agent_rollup, transaction_type) values (1, ?, ?)");
         ResultSet results = session.execute(
@@ -1809,8 +1817,8 @@ public class SchemaUpgrade {
 
     private void rewriteTraceAttributeNameTablePart1() throws Exception {
         dropTableIfExists("trace_attribute_name_temp");
-        session.execute("create table trace_attribute_name_temp (agent_rollup varchar,"
-                + " transaction_type varchar, trace_attribute_name varchar, primary key"
+        session.updateSchemaWithRetry("create table trace_attribute_name_temp (agent_rollup"
+                + " varchar, transaction_type varchar, trace_attribute_name varchar, primary key"
                 + " ((agent_rollup, transaction_type), trace_attribute_name))");
         PreparedStatement insertTempPS = session.prepare("insert into trace_attribute_name_temp"
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?)");
@@ -1863,11 +1871,11 @@ public class SchemaUpgrade {
         logger.info("rewriting gauge_name table (part 1) - this could take several minutes on large"
                 + " data sets ...");
         dropTableIfExists("gauge_name_temp");
-        session.execute("create table gauge_name_temp (agent_rollup_id varchar, capture_time"
-                + " timestamp, gauge_name varchar, primary key (agent_rollup_id, capture_time,"
-                + " gauge_name))");
+        session.updateSchemaWithRetry("create table gauge_name_temp (agent_rollup_id varchar,"
+                + " capture_time timestamp, gauge_name varchar, primary key (agent_rollup_id,"
+                + " capture_time, gauge_name))");
         PreparedStatement insertTempPS = session.prepare("insert into gauge_name_temp"
-                + " (agent_rollup_id, capture_time, gauge_name) values (?, ?, ?) using ttl ?");
+                + " (agent_rollup_id, capture_time, gauge_name) values (?, ?, ?)");
         ResultSet results =
                 session.execute("select agent_rollup_id, capture_time, gauge_name from gauge_name");
         // using linked list to make it fast to remove elements from the front
@@ -2239,7 +2247,7 @@ public class SchemaUpgrade {
     }
 
     private void updateLcsUncheckedTombstoneCompaction() throws Exception {
-        for (TableMetadata table : keyspaceMetadata.getTables()) {
+        for (TableMetadata table : session.getTables()) {
             String compactionClass = table.getOptions().getCompaction().get("class");
             if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.LeveledCompactionStrategy")) {
@@ -2251,7 +2259,7 @@ public class SchemaUpgrade {
     }
 
     private void updateStcsUncheckedTombstoneCompaction() throws Exception {
-        for (TableMetadata table : keyspaceMetadata.getTables()) {
+        for (TableMetadata table : session.getTables()) {
             String compactionClass = table.getOptions().getCompaction().get("class");
             if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")) {
@@ -2263,7 +2271,7 @@ public class SchemaUpgrade {
     }
 
     private void optimizeTwcsTables() throws Exception {
-        for (TableMetadata table : keyspaceMetadata.getTables()) {
+        for (TableMetadata table : session.getTables()) {
             Map<String, String> compaction = table.getOptions().getCompaction();
             String compactionClass = compaction.get("class");
             if (compactionClass != null && compactionClass
@@ -2333,6 +2341,10 @@ public class SchemaUpgrade {
     }
 
     private void rewriteV09AgentRollupPart1() throws Exception {
+        if (!tableExists("v09_agent_rollup")) {
+            // must be upgrading all the way from a glowroot version prior to v09_agent_rollup
+            return;
+        }
         dropTableIfExists("v09_agent_rollup_temp");
         session.createTableWithLCS("create table if not exists v09_agent_rollup_temp (one int,"
                 + " v09_agent_id varchar, v09_agent_rollup_id varchar, primary key (one,"
@@ -2373,8 +2385,8 @@ public class SchemaUpgrade {
 
     private void updateTraceAttributeNamePartitionKeyPart1() throws Exception {
         dropTableIfExists("trace_attribute_name_temp");
-        session.execute("create table trace_attribute_name_temp (agent_rollup varchar,"
-                + " transaction_type varchar, trace_attribute_name varchar, primary key"
+        session.updateSchemaWithRetry("create table trace_attribute_name_temp (agent_rollup"
+                + " varchar, transaction_type varchar, trace_attribute_name varchar, primary key"
                 + " (agent_rollup, transaction_type, trace_attribute_name))");
         PreparedStatement insertTempPS = session.prepare("insert into trace_attribute_name_temp"
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?)");
@@ -2425,7 +2437,7 @@ public class SchemaUpgrade {
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
             throws Exception {
-        if (!columnExists(tableName, columnName)) {
+        if (tableExists(tableName) && !columnExists(tableName, columnName)) {
             session.execute("alter table " + tableName + " add " + columnName + " " + cqlType);
         }
     }
@@ -2437,29 +2449,18 @@ public class SchemaUpgrade {
     }
 
     private boolean tableExists(String tableName) {
-        return keyspaceMetadata.getTable(tableName) != null;
+        return session.getTable(tableName) != null;
     }
 
     private boolean columnExists(String tableName, String columnName) {
-        TableMetadata tableMetadata = keyspaceMetadata.getTable(tableName);
+        TableMetadata tableMetadata = session.getTable(tableName);
         return tableMetadata != null && tableMetadata.getColumn(columnName) != null;
     }
 
     // drop table can timeout, throwing NoHostAvailableException
     // (see https://github.com/glowroot/glowroot/issues/125)
-    private void dropTableIfExists(String tableName) throws Exception {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (stopwatch.elapsed(SECONDS) < 60) {
-            try {
-                session.execute("drop table if exists " + tableName);
-                return;
-            } catch (NoHostAvailableException e) {
-                logger.debug(e.getMessage(), e);
-            }
-            Thread.sleep(1000);
-        }
-        // try one last time and let exception bubble up
-        session.execute("drop table if exists " + tableName);
+    private void dropTableIfExists(String tableName) throws InterruptedException {
+        session.updateSchemaWithRetry("drop table if exists " + tableName);
     }
 
     // this is needed to prevent OOM due to ever expanding list of futures (and the result sets that
@@ -2702,7 +2703,12 @@ public class SchemaUpgrade {
             return ImmutableCentralStorageConfig.builder().build();
         }
         try {
-            return mapper.readValue(storageConfigText, ImmutableCentralStorageConfig.class);
+            ObjectNode node = (ObjectNode) mapper.readTree(storageConfigText);
+            // fullQueryTextExpirationHours is removed from CentralStorageConfig in upgrade to
+            // 0.10.3, but this method can be called before that, e.g. when upgrading from 0.9.28 to
+            // 0.10.0 as part of bigger upgrade to post-0.10.3
+            node.remove("fullQueryTextExpirationHours");
+            return mapper.readValue(mapper.treeAsTokens(node), ImmutableCentralStorageConfig.class);
         } catch (IOException e) {
             logger.warn(e.getMessage(), e);
             return ImmutableCentralStorageConfig.builder().build();
@@ -2738,15 +2744,14 @@ public class SchemaUpgrade {
         boundStatement.setBytes(i, row.getBytes(i));
     }
 
-    private static @Nullable Integer getSchemaVersion(Session session, KeyspaceMetadata keyspace)
-            throws Exception {
+    private static @Nullable Integer getSchemaVersion(Session session) throws Exception {
         ResultSet results =
                 session.execute("select schema_version from schema_version where one = 1");
         Row row = results.one();
         if (row != null) {
             return row.getInt(0);
         }
-        TableMetadata agentTable = keyspace.getTable("agent");
+        TableMetadata agentTable = session.getTable("agent");
         if (agentTable != null && agentTable.getColumn("system_info") != null) {
             // special case, this is glowroot version 0.9.1, the only version supporting upgrades
             // prior to schema_version table

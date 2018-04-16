@@ -1,0 +1,280 @@
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 00:53:00+0000,0.338511,6
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 00:54:00+0000,0.127579,11
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 00:55:00+0000,0.210284,9
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 00:56:00+0000,0.127432,12
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 00:57:00+0000,0.106933,11
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 00:58:00+0000,0.150624,12
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 00:59:00+0000,0.11179,11
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:00:00+0000,0.096162,12
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:01:00+0000,0.091969,11
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:02:00+0000,0.0778,12
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:03:00+0000,0.080251,11
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:04:00+0000,0.082245,12
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:05:00+0000,0.084441,11
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:06:00+0000,0.088481,12
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:07:00+0000,0.149538,10
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:08:00+0000,0.102628,12
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:09:00+0000,0.100367,7
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 18:17:00+0000,0.369177,4
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 18:18:00+0000,0.104553,12
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 18:19:00+0000,0.086856,11
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 00:53:00+0000,1.3671e+07,6
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 00:54:00+0000,1.4472e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 00:55:00+0000,4.824e+06,9
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 00:56:00+0000,0,12
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 00:57:00+0000,0,11
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 00:58:00+0000,0,12
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 00:59:00+0000,0,11
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:00:00+0000,8.0437e+06,12
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:01:00+0000,1.9305e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:02:00+0000,1.9305e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:03:00+0000,1.9305e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:04:00+0000,1.9305e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:05:00+0000,1.9305e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:06:00+0000,1.9305e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:07:00+0000,1.9305e+07,10
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:08:00+0000,1.9305e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:09:00+0000,1.9305e+07,7
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 18:17:00+0000,1.5623e+07,4
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 18:18:00+0000,2.4266e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 18:19:00+0000,2.672e+07,11
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 00:53:00+0000,0.170678,6
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 00:54:00+0000,0.005123,11
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 00:55:00+0000,0.104391,9
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 00:56:00+0000,0.005565,12
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 00:57:00+0000,0.005224,11
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 00:58:00+0000,0.013128,12
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 00:59:00+0000,0.007872,11
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:00:00+0000,0.005569,12
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:01:00+0000,0.005052,11
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:02:00+0000,0.005096,12
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:03:00+0000,0.005015,11
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:04:00+0000,0.005006,12
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:05:00+0000,0.00482,11
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:06:00+0000,0.004942,12
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:07:00+0000,0.005213,10
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:08:00+0000,0.005029,12
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:09:00+0000,0.004985,7
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 18:17:00+0000,0.271214,4
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 18:18:00+0000,0.008342,12
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 18:19:00+0000,0.005326,11
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 00:53:00+0000,6.3027e+07,6
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 00:54:00+0000,6.7368e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 00:55:00+0000,6.456e+07,9
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 00:56:00+0000,6.7562e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 00:57:00+0000,6.7673e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 00:58:00+0000,6.9919e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 00:59:00+0000,7.3659e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:00:00+0000,7.3731e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:01:00+0000,7.3776e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:02:00+0000,7.3816e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:03:00+0000,7.3843e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:04:00+0000,7.3868e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:05:00+0000,7.3902e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:06:00+0000,7.3909e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:07:00+0000,7.4006e+07,10
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:08:00+0000,7.4029e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:09:00+0000,7.4039e+07,7
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 18:17:00+0000,5.8139e+07,4
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 18:18:00+0000,6.9331e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 18:19:00+0000,7.0296e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 00:53:00+0000,2.5542e+07,6
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 00:54:00+0000,2.7856e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 00:55:00+0000,2.7285e+07,9
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 00:56:00+0000,2.9438e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 00:57:00+0000,2.9438e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 00:58:00+0000,2.9438e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 00:59:00+0000,2.9438e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:00:00+0000,2.9441e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:01:00+0000,2.9446e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:02:00+0000,2.9446e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:03:00+0000,2.9446e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:04:00+0000,2.9446e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:05:00+0000,2.9446e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:06:00+0000,2.9446e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:07:00+0000,2.9446e+07,10
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:08:00+0000,2.9446e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:09:00+0000,2.9446e+07,7
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 18:17:00+0000,2.376e+07,4
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 18:18:00+0000,3.2e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 18:19:00+0000,3.3985e+07,11
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 00:53:00+0000,0.141655,28237533790
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 00:54:00+0000,0,57189680205
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 00:55:00+0000,0.069703,43040028807
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 00:56:00+0000,0,62398717723
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 00:57:00+0000,0,57226889492
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 00:58:00+0000,0,62461824858
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 00:59:00+0000,0,57307603980
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:00:00+0000,0.016017,62433226378
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:01:00+0000,0,57173428939
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:02:00+0000,0,62468328187
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:03:00+0000,0,57256769222
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:04:00+0000,0,62429923180
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:05:00+0000,0,57105268223
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:06:00+0000,0,62453475348
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:07:00+0000,0,52059034590
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:08:00+0000,0,62491959043
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:09:00+0000,0,36489004811
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 18:17:00+0000,0.345942,20234600086
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 18:18:00+0000,0.016022,62413455951
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 18:19:00+0000,0,57218686239
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 00:53:00+0000,8.0758e+07,6
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 00:54:00+0000,7.8824e+07,11
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 00:55:00+0000,1.9887e+08,9
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 00:56:00+0000,2.6632e+08,12
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 00:57:00+0000,2.7557e+08,11
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 00:58:00+0000,3.1268e+08,12
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 00:59:00+0000,3.7123e+08,11
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:00:00+0000,2.4399e+08,12
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:01:00+0000,6.946e+07,11
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:02:00+0000,6.946e+07,12
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:03:00+0000,7.0673e+07,11
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:04:00+0000,7.1068e+07,12
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:05:00+0000,7.1821e+07,11
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:06:00+0000,7.315e+07,12
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:07:00+0000,7.7108e+07,10
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:08:00+0000,7.8645e+07,12
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:09:00+0000,7.9141e+07,7
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 18:17:00+0000,2.2142e+08,4
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 18:18:00+0000,2.6041e+08,12
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 18:19:00+0000,2.5084e+08,11
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 00:53:00+0000,1.1493e+10,6
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 00:54:00+0000,1.153e+10,11
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 00:55:00+0000,1.1855e+10,9
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 00:56:00+0000,1.1476e+10,12
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 00:57:00+0000,1.1392e+10,11
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 00:58:00+0000,1.1335e+10,12
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 00:59:00+0000,1.1133e+10,11
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:00:00+0000,1.1488e+10,12
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:01:00+0000,1.1474e+10,11
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:02:00+0000,1.1511e+10,12
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:03:00+0000,1.1497e+10,11
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:04:00+0000,1.1475e+10,12
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:05:00+0000,1.151e+10,11
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:06:00+0000,1.1485e+10,12
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:07:00+0000,1.1592e+10,10
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:08:00+0000,1.1659e+10,12
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:09:00+0000,1.1633e+10,7
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 18:17:00+0000,1.1885e+10,4
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 18:18:00+0000,1.1715e+10,12
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 18:19:00+0000,1.1698e+10,11
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 00:53:00+0000,8.129e+06,6
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 00:54:00+0000,8.6788e+06,11
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 00:55:00+0000,8.3165e+06,9
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 00:56:00+0000,8.6939e+06,12
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 00:57:00+0000,8.6959e+06,11
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 00:58:00+0000,8.953e+06,12
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 00:59:00+0000,9.3757e+06,11
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:00:00+0000,9.3758e+06,12
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:01:00+0000,9.3758e+06,11
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:02:00+0000,9.3758e+06,12
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:03:00+0000,9.3758e+06,11
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:04:00+0000,9.3758e+06,12
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:05:00+0000,9.3758e+06,11
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:06:00+0000,9.3758e+06,12
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:07:00+0000,9.3894e+06,10
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:08:00+0000,9.3909e+06,12
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:09:00+0000,9.3909e+06,7
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 18:17:00+0000,7.4353e+06,4
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 18:18:00+0000,8.8795e+06,12
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 18:19:00+0000,8.966e+06,11
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 00:53:00+0000,2.37287,28235840710
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 00:54:00+0000,0,57189664381
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 00:55:00+0000,1.20821,43038937007
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 00:56:00+0000,0,62398760489
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 00:57:00+0000,0,57226836890
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 00:58:00+0000,0,62461831700
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 00:59:00+0000,0,57307616383
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:00:00+0000,0.288308,62433202001
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:01:00+0000,0,57173446901
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:02:00+0000,0,62468321344
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:03:00+0000,0,57256761097
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:04:00+0000,0,62429918904
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:05:00+0000,0,57105276347
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:06:00+0000,0,62453468079
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:07:00+0000,0,52059042286
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:08:00+0000,0,62491952628
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:09:00+0000,0,36489003956
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 18:17:00+0000,4.64585,20233116128
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 18:18:00+0000,0.416577,62413460654
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 18:19:00+0000,0,57218715748
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 00:53:00+0000,1.7575e+07,6
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 00:54:00+0000,1.7592e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 00:55:00+0000,1.7739e+07,9
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 00:56:00+0000,1.7978e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 00:57:00+0000,1.8056e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 00:58:00+0000,1.8923e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 00:59:00+0000,1.9837e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:00:00+0000,1.978e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:01:00+0000,1.9898e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:02:00+0000,2.0082e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:03:00+0000,2.0182e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:04:00+0000,2.0282e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:05:00+0000,2.0475e+07,11
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:06:00+0000,2.0508e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:07:00+0000,2.0658e+07,10
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:08:00+0000,2.0747e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:09:00+0000,2.08e+07,7
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 18:17:00+0000,1.6447e+07,4
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 18:18:00+0000,1.8979e+07,12
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 18:19:00+0000,1.9563e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 00:53:00+0000,4.1875e+07,6
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 00:54:00+0000,3.6496e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 00:55:00+0000,1.6676e+08,9
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 00:56:00+0000,2.3688e+08,12
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 00:57:00+0000,2.4614e+08,11
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 00:58:00+0000,2.8336e+08,12
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 00:59:00+0000,3.4179e+08,11
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:00:00+0000,2.065e+08,12
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:01:00+0000,2.0709e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:02:00+0000,2.0709e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:03:00+0000,2.2043e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:04:00+0000,2.2317e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:05:00+0000,2.3191e+07,11
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:06:00+0000,2.4399e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:07:00+0000,2.8357e+07,10
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:08:00+0000,3.0005e+07,12
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:09:00+0000,3.039e+07,7
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 18:17:00+0000,1.8217e+08,4
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 18:18:00+0000,2.0415e+08,12
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 18:19:00+0000,1.9021e+08,11
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 00:53:00+0000,5.9499,28235780838
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 00:54:00+0000,0,57189636584
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 00:55:00+0000,4.04285,43038951120
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 00:56:00+0000,0,62398811807
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 00:57:00+0000,0,57226773170
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 00:58:00+0000,0,62461833838
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 00:59:00+0000,0,57307633917
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:00:00+0000,0,62433176341
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:01:00+0000,0,57173562796
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:02:00+0000,0,62468213575
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:03:00+0000,0,57256747412
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:04:00+0000,0,62429912489
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:05:00+0000,0,57105287467
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:06:00+0000,0,62453458242
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:07:00+0000,0,52059050841
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:08:00+0000,0,62491945785
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:09:00+0000,0,36489002246
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 18:17:00+0000,10.725,20233093890
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 18:18:00+0000,0,62413466214
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 18:19:00+0000,0,57218703773
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 00:53:00+0000,0.035416,28235796661
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 00:54:00+0000,0,57189648986
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 00:55:00+0000,0.023235,43038940856
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 00:56:00+0000,0,62398782727
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 00:57:00+0000,0,57226809520
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 00:58:00+0000,0,62461828279
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 00:59:00+0000,0,57307633917
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:00:00+0000,0,62433185322
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:01:00+0000,0,57173491805
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:02:00+0000,0,62468280289
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:03:00+0000,0,57256751689
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:04:00+0000,0,62429914627
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:05:00+0000,0,57105282335
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:06:00+0000,0,62453462947
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:07:00+0000,0,52059046991
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:08:00+0000,0,62491948351
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:09:00+0000,0,36489003101
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 18:17:00+0000,0.098848,20233096884
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 18:18:00+0000,0,62413465358
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 18:19:00+0000,0,57218709761

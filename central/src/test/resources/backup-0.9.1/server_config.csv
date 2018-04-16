@@ -1,0 +1,4 @@
+web,"{\"port\":4000,\"bindAddress\":\"0.0.0.0\",\"sessionTimeoutMinutes\":30}"
+ldap,"{\"host\":\"localhost\",\"username\":\"abc\",\"password\":\"849Uv/qv0RPn6nAyigJoYg:fvPiiN6AU8z4MC/SHW0rEQ\",\"userBaseDn\":\"abc\",\"userSearchFilter\":\"abc\",\"groupBaseDn\":\"abc\",\"groupSearchFilter\":\"abc\",\"roleMappings\":{\"abc\":[\"Administrator\"]}}"
+smtp,{\"host\":\"localhost\"}
+storage,"{\"rollupExpirationHours\":[72,336,2160,17520],\"traceExpirationHours\":336,\"fullQueryTextExpirationHours\":336}"

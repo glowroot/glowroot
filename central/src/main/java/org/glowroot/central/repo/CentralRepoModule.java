@@ -18,7 +18,6 @@ package org.glowroot.central.repo;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableSet;
@@ -52,12 +51,11 @@ public class CentralRepoModule {
     private final V09AgentRollupDao v09AgentRollupDao;
 
     public CentralRepoModule(ClusterManager clusterManager, Session session,
-            KeyspaceMetadata keyspaceMetadata, String cassandraSymmetricEncryptionKey, Clock clock)
-            throws Exception {
+            String cassandraSymmetricEncryptionKey, Clock clock) throws Exception {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
-        userDao = new UserDao(session, keyspaceMetadata, clusterManager);
-        roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
+        userDao = new UserDao(session, clusterManager);
+        roleDao = new RoleDao(session, clusterManager);
         configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao,
                 roleDao, cassandraSymmetricEncryptionKey);
         agentDao = new AgentDao(session, agentConfigDao, configRepository, clock);
@@ -73,7 +71,7 @@ public class CentralRepoModule {
         long v09FqtLastExpirationTime;
         long v09TraceLastExpirationTime;
         long v09AggregateLastExpirationTime;
-        if (keyspaceMetadata.getTable("v09_agent_check") == null) {
+        if (session.getTable("v09_agent_check") == null) {
             agentRollupIdsWithV09Data = ImmutableSet.of();
             v09LastCaptureTime = 0;
             v09FqtLastExpirationTime = 0;

@@ -1,0 +1,14 @@
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad,2018-04-18 01:00:00+0000,0.145518,84
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used",2018-04-18 01:00:00+0000,4.5376e+06,84
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad,2018-04-18 01:00:00+0000,0.029228,84
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used",2018-04-18 01:00:00+0000,6.8922e+07,84
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used",2018-04-18 01:00:00+0000,2.8722e+07,84
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]",2018-04-18 01:00:00+0000,0.018592,430295505233
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used,2018-04-18 01:00:00+0000,2.3967e+08,84
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize,2018-04-18 01:00:00+0000,1.1451e+10,84
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used",2018-04-18 01:00:00+0000,8.8351e+06,84
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]",2018-04-18 01:00:00+0000,0.318388,430292689561
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used",2018-04-18 01:00:00+0000,1.8519e+07,84
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used",2018-04-18 01:00:00+0000,2.0645e+08,84
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]",2018-04-18 01:00:00+0000,0.794808,430292597615
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]",2018-04-18 01:00:00+0000,0.004648,430292626268

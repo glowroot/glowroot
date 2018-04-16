@@ -18,7 +18,6 @@ package org.glowroot.central.repo;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.TableMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,21 +28,17 @@ import org.glowroot.common.Constants;
 import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.repo.RepoAdmin;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public class RepoAdminImpl implements RepoAdmin {
 
     private static final Logger logger = LoggerFactory.getLogger(RepoAdminImpl.class);
 
     private final Session session;
-    private final String keyspace;
     private final ConfigRepositoryImpl configRepository;
     private final CassandraWriteMetrics cassandraWriteMetrics;
 
-    public RepoAdminImpl(Session session, String keyspace, ConfigRepositoryImpl configRepository,
+    public RepoAdminImpl(Session session, ConfigRepositoryImpl configRepository,
             CassandraWriteMetrics cassandraWriteMetrics) {
         this.session = session;
-        this.keyspace = keyspace;
         this.configRepository = configRepository;
         this.cassandraWriteMetrics = cassandraWriteMetrics;
     }
@@ -86,10 +81,8 @@ public class RepoAdminImpl implements RepoAdmin {
     @Override
     public int updateCassandraTwcsWindowSizes() throws Exception {
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
-        KeyspaceMetadata keyspaceMetadata =
-                checkNotNull(session.getCluster().getMetadata().getKeyspace(keyspace));
         List<String> tableNames = new ArrayList<>();
-        for (TableMetadata table : keyspaceMetadata.getTables()) {
+        for (TableMetadata table : session.getTables()) {
             String compactionClass = table.getOptions().getCompaction().get("class");
             if (compactionClass == null || !compactionClass
                     .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {

@@ -1,0 +1,14 @@
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionCount[counter]"
+Xyz,"java.lang:type=GarbageCollector,name=PS MarkSweep:CollectionTime[counter]"
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionCount[counter]"
+Xyz,"java.lang:type=GarbageCollector,name=PS Scavenge:CollectionTime[counter]"
+Xyz,java.lang:type=Memory:HeapMemoryUsage.used
+Xyz,"java.lang:type=MemoryPool,name=Code Cache:Usage.used"
+Xyz,"java.lang:type=MemoryPool,name=Compressed Class Space:Usage.used"
+Xyz,"java.lang:type=MemoryPool,name=Metaspace:Usage.used"
+Xyz,"java.lang:type=MemoryPool,name=PS Eden Space:Usage.used"
+Xyz,"java.lang:type=MemoryPool,name=PS Old Gen:Usage.used"
+Xyz,"java.lang:type=MemoryPool,name=PS Survivor Space:Usage.used"
+Xyz,java.lang:type=OperatingSystem:FreePhysicalMemorySize
+Xyz,java.lang:type=OperatingSystem:ProcessCpuLoad
+Xyz,java.lang:type=OperatingSystem:SystemCpuLoad

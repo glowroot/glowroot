@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -49,11 +48,10 @@ class UserDao {
 
     private final Cache<String, List<UserConfig>> allUserConfigsCache;
 
-    UserDao(Session session, KeyspaceMetadata keyspaceMetadata,
-            ClusterManager clusterManager) throws Exception {
+    UserDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        boolean createAnonymousUser = keyspaceMetadata.getTable("user") == null;
+        boolean createAnonymousUser = session.getTable("user") == null;
 
         session.createTableWithLCS("create table if not exists user (username varchar, ldap"
                 + " boolean, password_hash varchar, roles set<varchar>, primary key (username))");

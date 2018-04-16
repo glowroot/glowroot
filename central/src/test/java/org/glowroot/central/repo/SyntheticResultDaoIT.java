@@ -18,7 +18,6 @@ package org.glowroot.central.repo;
 import java.util.List;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.google.common.collect.Lists;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -45,14 +44,11 @@ public class SyntheticResultDaoIT {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests");
-        KeyspaceMetadata keyspaceMetadata =
-                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
-
         clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager);
-        UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
-        RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
+        UserDao userDao = new UserDao(session, clusterManager);
+        RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
         syntheticResultDao =

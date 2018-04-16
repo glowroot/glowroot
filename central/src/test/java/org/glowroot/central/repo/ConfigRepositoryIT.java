@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.UUID;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.google.common.collect.ImmutableList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -77,19 +76,17 @@ public class ConfigRepositoryIT {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests");
-        session.execute("drop table if exists agent_config");
-        session.execute("drop table if exists user");
-        session.execute("drop table if exists role");
-        session.execute("drop table if exists central_config");
-        session.execute("drop table if exists agent");
-        KeyspaceMetadata keyspaceMetadata =
-                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+        session.updateSchemaWithRetry("drop table if exists agent_config");
+        session.updateSchemaWithRetry("drop table if exists user");
+        session.updateSchemaWithRetry("drop table if exists role");
+        session.updateSchemaWithRetry("drop table if exists central_config");
+        session.updateSchemaWithRetry("drop table if exists agent");
 
         clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
-        UserDao userDao = new UserDao(session, keyspaceMetadata, clusterManager);
-        RoleDao roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
+        UserDao userDao = new UserDao(session, clusterManager);
+        RoleDao roleDao = new RoleDao(session, clusterManager);
         configRepository =
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
     }
@@ -98,10 +95,10 @@ public class ConfigRepositoryIT {
     public static void tearDown() throws Exception {
         clusterManager.close();
         // remove bad data so other tests don't have issue
-        session.execute("drop table agent_config");
-        session.execute("drop table user");
-        session.execute("drop table role");
-        session.execute("drop table central_config");
+        session.updateSchemaWithRetry("drop table if exists agent_config");
+        session.updateSchemaWithRetry("drop table if exists user");
+        session.updateSchemaWithRetry("drop table if exists role");
+        session.updateSchemaWithRetry("drop table if exists central_config");
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();

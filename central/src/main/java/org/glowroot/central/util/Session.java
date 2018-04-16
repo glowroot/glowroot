@@ -15,23 +15,28 @@
  */
 package org.glowroot.central.util;
 
+import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +48,7 @@ public class Session {
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
 
     private final com.datastax.driver.core.Session wrappedSession;
+    private final String keyspace;
 
     // limit concurrent async queries per thread (mainly so the rollup thread doesn't hog them all)
     @SuppressWarnings("nullness:type.argument.type.incompatible")
@@ -58,9 +64,10 @@ public class Session {
     public Session(com.datastax.driver.core.Session wrappedSession, String keyspace)
             throws InterruptedException {
         this.wrappedSession = wrappedSession;
+        this.keyspace = keyspace;
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspace);
 
-        createIfNotExists(wrappedSession, "create keyspace if not exists " + keyspace
+        updateSchemaWithRetry(wrappedSession, "create keyspace if not exists " + keyspace
                 + " with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         wrappedSession.execute("use " + keyspace);
     }
@@ -108,6 +115,28 @@ public class Session {
 
     public Cluster getCluster() {
         return wrappedSession.getCluster();
+    }
+
+    public @Nullable TableMetadata getTable(String name) {
+        KeyspaceMetadata keyspace = getKeyspace();
+        if (keyspace == null) {
+            return null;
+        } else {
+            return keyspace.getTable(name);
+        }
+    }
+
+    public Collection<TableMetadata> getTables() {
+        KeyspaceMetadata keyspace = getKeyspace();
+        if (keyspace == null) {
+            return ImmutableList.of();
+        } else {
+            return keyspace.getTables();
+        }
+    }
+
+    private @Nullable KeyspaceMetadata getKeyspace() {
+        return wrappedSession.getCluster().getMetadata().getKeyspace(keyspace);
     }
 
     public void close() {
@@ -193,6 +222,10 @@ public class Session {
                 + " 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
     }
 
+    public void updateSchemaWithRetry(String query) throws InterruptedException {
+        updateSchemaWithRetry(wrappedSession, query);
+    }
+
     private ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle) throws Exception {
         Semaphore perThreadSemaphore = perThreadSemaphores.get();
         perThreadSemaphore.acquire();
@@ -220,16 +253,16 @@ public class Session {
         return outerFuture;
     }
 
-    // create keyspace/table can timeout, throwing NoHostAvailableException
-    // (see https://github.com/glowroot/glowroot/issues/351)
     private void createIfNotExists(String query) throws InterruptedException {
-        createIfNotExists(wrappedSession, query);
+        updateSchemaWithRetry(wrappedSession, query);
     }
 
-    private static void createIfNotExists(com.datastax.driver.core.Session wrappedSession,
+    // creating/dropping/truncating keyspaces/tables can timeout, throwing NoHostAvailableException
+    // (see https://github.com/glowroot/glowroot/issues/351)
+    private static void updateSchemaWithRetry(com.datastax.driver.core.Session wrappedSession,
             String query) throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        while (stopwatch.elapsed(SECONDS) < 30) {
+        while (stopwatch.elapsed(SECONDS) < 60) {
             try {
                 wrappedSession.execute(query);
                 return;

@@ -149,12 +149,8 @@ public class CentralModule {
             clusterManager = ClusterManager.create(centralDir, centralConfig.jgroupsProperties());
             session = connect(centralConfig);
             cluster = session.getCluster();
-            String keyspace = centralConfig.cassandraKeyspace();
 
-            KeyspaceMetadata keyspaceMetadata =
-                    checkNotNull(cluster.getMetadata().getKeyspace(keyspace));
-            SchemaUpgrade schemaUpgrade =
-                    new SchemaUpgrade(session, keyspaceMetadata, clock, servlet);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, clock, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating glowroot central schema ...");
@@ -165,7 +161,7 @@ public class CentralModule {
                 centralConfig = getCentralConfiguration(centralDir);
             }
             CentralRepoModule repos = new CentralRepoModule(clusterManager, session,
-                    keyspaceMetadata, centralConfig.cassandraSymmetricEncryptionKey(), clock);
+                    centralConfig.cassandraSymmetricEncryptionKey(), clock);
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
@@ -237,7 +233,7 @@ public class CentralModule {
                     .gaugeValueRepository(repos.getGaugeValueDao())
                     .syntheticResultRepository(repos.getSyntheticResultDao())
                     .incidentRepository(repos.getIncidentDao())
-                    .repoAdmin(new RepoAdminImpl(session, keyspace, repos.getConfigRepository(),
+                    .repoAdmin(new RepoAdminImpl(session, repos.getConfigRepository(),
                             session.getCassandraWriteMetrics()))
                     .rollupLevelService(rollupLevelService)
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
@@ -381,22 +377,16 @@ public class CentralModule {
         CentralConfiguration centralConfig = getCentralConfiguration(centralDir);
         Session session = null;
         Cluster cluster = null;
-        String keyspace;
         try {
             session = connect(centralConfig);
             cluster = session.getCluster();
-            keyspace = centralConfig.cassandraKeyspace();
-
-            KeyspaceMetadata keyspaceMetadata =
-                    checkNotNull(cluster.getMetadata().getKeyspace(keyspace));
-            SchemaUpgrade schemaUpgrade =
-                    new SchemaUpgrade(session, keyspaceMetadata, Clock.systemClock(), false);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, Clock.systemClock(), false);
             if (schemaUpgrade.getInitialSchemaVersion() != null) {
                 startupLogger.error("glowroot central schema already exists, exiting");
                 return;
             }
             startupLogger.info("creating glowroot central schema ...");
-            new CentralRepoModule(ClusterManager.create(), session, keyspaceMetadata,
+            new CentralRepoModule(ClusterManager.create(), session,
                     centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
         } finally {
@@ -452,12 +442,7 @@ public class CentralModule {
         try {
             session = connect(centralConfig);
             cluster = session.getCluster();
-            String keyspace = centralConfig.cassandraKeyspace();
-
-            KeyspaceMetadata keyspaceMetadata =
-                    checkNotNull(cluster.getMetadata().getKeyspace(keyspace));
-            SchemaUpgrade schemaUpgrade =
-                    new SchemaUpgrade(session, keyspaceMetadata, Clock.systemClock(), false);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, Clock.systemClock(), false);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating glowroot central schema ...");
@@ -468,9 +453,8 @@ public class CentralModule {
                         schemaUpgrade.getCurrentSchemaVersion(), initialSchemaVersion);
                 return;
             }
-            CentralRepoModule repos =
-                    new CentralRepoModule(ClusterManager.create(), session, keyspaceMetadata,
-                            centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
+            CentralRepoModule repos = new CentralRepoModule(ClusterManager.create(), session,
+                    centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
                 startupLogger.info("glowroot central schema created");

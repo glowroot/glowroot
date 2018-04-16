@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -53,11 +52,10 @@ class RoleDao {
     private final Cache<String, Optional<RoleConfig>> roleConfigCache;
     private final Cache<String, List<RoleConfig>> allRoleConfigsCache;
 
-    RoleDao(Session session, KeyspaceMetadata keyspaceMetadata, ClusterManager clusterManager)
-            throws Exception {
+    RoleDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
 
-        boolean createAnonymousRole = keyspaceMetadata.getTable("role") == null;
+        boolean createAnonymousRole = session.getTable("role") == null;
 
         session.createTableWithLCS("create table if not exists role (name varchar, permissions"
                 + " set<varchar>, primary key (name))");

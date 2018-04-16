@@ -26,7 +26,6 @@ import java.security.SecureRandom;
 import java.util.Properties;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
@@ -61,6 +60,7 @@ import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.agent.it.harness.impl.LocalContainer;
 import org.glowroot.central.CentralModule;
+import org.glowroot.central.util.Session;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -188,15 +188,12 @@ public class WebDriverSetup {
         if (useCentral) {
             CassandraWrapper.start();
             Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-            Session session = cluster.newSession();
-            session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
-                    + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
-            session.execute("use glowroot_unit_tests");
-            session.execute("drop table if exists agent_config");
-            session.execute("drop table if exists user");
-            session.execute("drop table if exists role");
-            session.execute("drop table if exists central_config");
-            session.execute("drop table if exists agent");
+            Session session = new Session(cluster.newSession(), "glowroot_unit_tests");
+            session.updateSchemaWithRetry("drop table if exists agent_config");
+            session.updateSchemaWithRetry("drop table if exists user");
+            session.updateSchemaWithRetry("drop table if exists role");
+            session.updateSchemaWithRetry("drop table if exists central_config");
+            session.updateSchemaWithRetry("drop table if exists agent");
             session.close();
             cluster.close();
             int grpcPort = getAvailablePort();

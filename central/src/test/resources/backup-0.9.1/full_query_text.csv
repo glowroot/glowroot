@@ -1,0 +1,1 @@
+9d5b4aebc0c16d4f7a9653179c6981491f0a6d24,"select tags0_.notes_id as notes_id1_1_0_, tags0_.tags_id as tags_id2_1_0_, tag1_.id as id1_2_1_, tag1_.name as name2_2_1_ from note_tags tags0_ inner join tag tag1_ on tags0_.tags_id=tag1_.id where tags0_.notes_id=?"

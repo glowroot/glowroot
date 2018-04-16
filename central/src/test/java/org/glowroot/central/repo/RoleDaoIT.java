@@ -16,7 +16,6 @@
 package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.KeyspaceMetadata;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,11 +39,8 @@ public class RoleDaoIT {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests");
-        KeyspaceMetadata keyspaceMetadata =
-                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
-
         clusterManager = ClusterManager.create();
-        roleDao = new RoleDao(session, keyspaceMetadata, clusterManager);
+        roleDao = new RoleDao(session, clusterManager);
     }
 
     @AfterClass
