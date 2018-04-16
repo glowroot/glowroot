@@ -22,12 +22,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 
-class ViewerAgentModule {
+class OfflineViewerAgentModule {
 
     private final PluginCache pluginCache;
     private final ConfigService configService;
 
-    ViewerAgentModule(@Nullable File pluginsDir, File confDir) throws Exception {
+    OfflineViewerAgentModule(@Nullable File pluginsDir, File confDir) throws Exception {
         pluginCache = PluginCache.create(pluginsDir, true);
         configService = ConfigService.create(confDir, pluginCache.pluginDescriptors());
     }

@@ -59,7 +59,7 @@ class HttpSessionManager {
     private static final Logger auditLogger = LoggerFactory.getLogger("audit");
 
     private final boolean central;
-    private final boolean offline;
+    private final boolean offlineViewer;
     private final ConfigRepository configRepository;
     private final Clock clock;
     private final LayoutService layoutService;
@@ -67,10 +67,10 @@ class HttpSessionManager {
     private final SecureRandom secureRandom = new SecureRandom();
     private final ConcurrentMap<String, ImmutableSession> sessionMap;
 
-    HttpSessionManager(boolean central, boolean offline, ConfigRepository configRepository,
+    HttpSessionManager(boolean central, boolean offlineViewer, ConfigRepository configRepository,
             Clock clock, LayoutService layoutService, SessionMapFactory sessionMapFactory) {
         this.central = central;
-        this.offline = offline;
+        this.offlineViewer = offlineViewer;
         this.configRepository = configRepository;
         this.clock = clock;
         this.layoutService = layoutService;
@@ -125,7 +125,7 @@ class HttpSessionManager {
     }
 
     Authentication getAuthentication(CommonRequest request, boolean touch) throws Exception {
-        if (offline) {
+        if (offlineViewer) {
             return getOfflineViewerAuthentication();
         }
         String sessionId = getSessionId(request);
@@ -171,7 +171,7 @@ class HttpSessionManager {
         UserConfig userConfig = getUserConfigCaseInsensitive("anonymous");
         return ImmutableAuthentication.builder()
                 .central(central)
-                .offline(false)
+                .offlineViewer(false)
                 .anonymous(true)
                 .ldap(false)
                 .caseAmbiguousUsername("anonymous")
@@ -207,8 +207,8 @@ class HttpSessionManager {
 
     private Authentication getOfflineViewerAuthentication() {
         return ImmutableAuthentication.builder()
-                .central(false) // offline only applies to embedded
-                .offline(true)
+                .central(false) // offline viewer only applies to embedded
+                .offlineViewer(true)
                 .anonymous(true)
                 .ldap(false)
                 .caseAmbiguousUsername("anonymous")
@@ -293,7 +293,7 @@ class HttpSessionManager {
         Authentication createAuthentication(boolean central, ConfigRepository configRepository) {
             return ImmutableAuthentication.builder()
                     .central(central)
-                    .offline(false)
+                    .offlineViewer(false)
                     .anonymous(false) // sessions are only for non-anonymous authentication
                     .ldap(ldap())
                     .caseAmbiguousUsername(caseAmbiguousUsername())
@@ -311,7 +311,7 @@ class HttpSessionManager {
     abstract static class Authentication {
 
         abstract boolean central();
-        abstract boolean offline();
+        abstract boolean offlineViewer();
         abstract boolean anonymous();
         abstract boolean ldap();
         abstract String caseAmbiguousUsername(); // the case is exactly as user entered during login
@@ -330,7 +330,7 @@ class HttpSessionManager {
         boolean isPermittedForAgentRollup(String agentRollupId, String permission)
                 throws Exception {
             checkState(permission.startsWith("agent:"));
-            if (offline()) {
+            if (offlineViewer()) {
                 return !permission.startsWith("agent:config:edit:");
             }
             if (permission.equals("agent:trace")) {
@@ -343,7 +343,7 @@ class HttpSessionManager {
 
         boolean isAdminPermitted(String permission) throws Exception {
             checkState(permission.startsWith("admin:"));
-            if (offline()) {
+            if (offlineViewer()) {
                 return permission.equals("admin:view") || permission.startsWith("admin:view:");
             }
             return isPermitted(SimplePermission.create(permission));
@@ -352,7 +352,7 @@ class HttpSessionManager {
         // only used by LayoutService
         boolean hasAnyPermissionImpliedBy(String permission) throws Exception {
             checkState(permission.equals("agent") || permission.startsWith("agent:"));
-            if (offline()) {
+            if (offlineViewer()) {
                 return !permission.startsWith("agent:config:edit:");
             }
             List<String> permissionParts = Splitter.on(':').splitToList(permission);
@@ -368,7 +368,7 @@ class HttpSessionManager {
         // only used by LayoutService
         boolean isPermittedForSomeAgentRollup(String permission) throws Exception {
             checkState(permission.startsWith("agent:"));
-            if (offline()) {
+            if (offlineViewer()) {
                 return !permission.startsWith("agent:config:edit:");
             }
             List<String> permissionParts = Splitter.on(':').splitToList(permission);

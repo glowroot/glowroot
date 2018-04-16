@@ -163,13 +163,12 @@ public class MainEntryPoint {
         }
     }
 
-    public static void runViewer(Directories directories,
+    public static void runOfflineViewer(Directories directories,
             GlowrootAgentInitFactory glowrootAgentInitFactory) throws InterruptedException {
         // initLogging() already called by OfflineViewer.main()
         checkNotNull(startupLogger);
-        String version;
         try {
-            version = Version.getVersion(MainEntryPoint.class);
+            String version = Version.getVersion(MainEntryPoint.class);
             startupLogger.info("Glowroot version: {}", version);
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
             ImmutableMap<String, String> properties =
@@ -186,9 +185,6 @@ public class MainEntryPoint {
             startupLogger.error("Glowroot cannot start: {}", t.getMessage(), t);
             return;
         }
-        // Glowroot does not create any non-daemon threads, so need to block jvm from exiting when
-        // running the viewer
-        Thread.sleep(Long.MAX_VALUE);
     }
 
     @EnsuresNonNull("startupLogger")

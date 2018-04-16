@@ -87,7 +87,7 @@ class EmbeddedAgentModule {
     private final PluginCache pluginCache;
 
     private final @Nullable AgentModule agentModule;
-    private final @Nullable ViewerAgentModule viewerAgentModule;
+    private final @Nullable OfflineViewerAgentModule offlineViewerAgentModule;
 
     private final String version;
 
@@ -101,7 +101,7 @@ class EmbeddedAgentModule {
     EmbeddedAgentModule(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir,
             File logDir, File tmpDir, @Nullable Instrumentation instrumentation,
             @Nullable ClassFileTransformer preCheckClassFileTransformer,
-            @Nullable File glowrootJarFile, String glowrootVersion, boolean offline)
+            @Nullable File glowrootJarFile, String glowrootVersion, boolean offlineViewer)
             throws Exception {
 
         agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
@@ -112,9 +112,9 @@ class EmbeddedAgentModule {
         // need to perform jrebel workaround prior to loading any jackson classes
         JRebelWorkaround.perform();
         pluginCache = PluginCache.create(pluginsDir, false);
-        if (offline) {
+        if (offlineViewer) {
             agentModule = null;
-            viewerAgentModule = new ViewerAgentModule(pluginsDir, confDir);
+            offlineViewerAgentModule = new OfflineViewerAgentModule(pluginsDir, confDir);
         } else {
             // agent module needs to be started as early as possible, so that weaving will be
             // applied to as many classes as possible
@@ -125,7 +125,7 @@ class EmbeddedAgentModule {
                     ConfigService.create(confDir, pluginCache.pluginDescriptors());
             agentModule = new AgentModule(clock, null, pluginCache, configService, instrumentation,
                     glowrootJarFile, tmpDir, preCheckClassFileTransformer);
-            viewerAgentModule = null;
+            offlineViewerAgentModule = null;
             PreInitializeStorageShutdownClasses.preInitializeClasses();
         }
         this.confDir = confDir;
@@ -149,9 +149,9 @@ class EmbeddedAgentModule {
         final boolean h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
 
         if (agentModule == null) {
-            checkNotNull(viewerAgentModule);
+            checkNotNull(offlineViewerAgentModule);
             ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDir,
-                    viewerAgentModule.getConfigService(), pluginCache);
+                    offlineViewerAgentModule.getConfigService(), pluginCache);
             DataSource dataSource = createDataSource(h2MemDb, dataDir);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, null);
@@ -229,7 +229,7 @@ class EmbeddedAgentModule {
             uiModule = new CreateUiModuleBuilder()
                     .central(false)
                     .servlet(false)
-                    .offline(false)
+                    .offlineViewer(false)
                     .confDir(confDir)
                     .sharedConfDir(sharedConfDir)
                     .logDir(logDir)
@@ -264,11 +264,11 @@ class EmbeddedAgentModule {
                     .version(version)
                     .build();
         } else {
-            checkNotNull(viewerAgentModule);
+            checkNotNull(offlineViewerAgentModule);
             uiModule = new CreateUiModuleBuilder()
                     .central(false)
                     .servlet(false)
-                    .offline(true)
+                    .offlineViewer(true)
                     .confDir(confDir)
                     .sharedConfDir(sharedConfDir)
                     .logDir(logDir)

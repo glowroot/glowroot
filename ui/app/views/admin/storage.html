@@ -435,7 +435,7 @@
         </div>
       </fieldset>
       <div class="form-group gt-form-buttons"
-           ng-if="layout.adminEdit || layout.offline">
+           ng-if="layout.adminEdit || layout.offlineViewer">
         <div class="col-lg-offset-4 col-lg-8 gt-sometimes-legend-padding-storage">
           <div gt-button-group>
             <div gt-button
@@ -509,28 +509,28 @@
                  gt-label="Defrag H2 data"
                  gt-click="defragH2Data(deferred)"
                  gt-btn-class="btn-default"
-                 ng-if="layout.offline"
+                 ng-if="layout.offlineViewer"
                  class="gt-inline-block">
             </div>
             <div gt-button
                  gt-label="Compact H2 data"
                  gt-click="compactH2Data(deferred)"
                  gt-btn-class="btn-default"
-                 ng-if="layout.offline"
+                 ng-if="layout.offlineViewer"
                  class="gt-inline-block">
             </div>
             <div gt-button
                  gt-label="Analyze H2 disk space"
                  gt-click="analyzeH2DiskSpace(deferred)"
                  gt-btn-class="btn-default"
-                 ng-if="layout.offline"
+                 ng-if="layout.offlineViewer"
                  class="gt-inline-block">
             </div>
             <div gt-button
                  gt-label="Analyze trace counts"
                  gt-click="analyzeTraceCounts(deferred)"
                  gt-btn-class="btn-default"
-                 ng-if="layout.offline"
+                 ng-if="layout.offlineViewer"
                  class="gt-inline-block">
             </div>
           </div>

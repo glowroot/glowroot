@@ -23,6 +23,6 @@ import org.glowroot.agent.collector.Collector;
 
 public interface GlowrootAgentInitFactory {
 
-    GlowrootAgentInit newGlowrootAgentInit(File dataDir, boolean offline,
+    GlowrootAgentInit newGlowrootAgentInit(File dataDir, boolean offlineViewer,
             @Nullable Class<? extends Collector> collectorProxyClass);
 }

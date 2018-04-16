@@ -40,13 +40,13 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedGlowrootAgentInit.class);
 
     private final File dataDir;
-    private final boolean offline;
+    private final boolean offlineViewer;
     private final @Nullable Class<? extends Collector> collectorProxyClass;
 
-    EmbeddedGlowrootAgentInit(File dataDir, boolean offline,
+    EmbeddedGlowrootAgentInit(File dataDir, boolean offlineViewer,
             @Nullable Class<? extends Collector> collectorProxyClass) {
         this.dataDir = dataDir;
-        this.offline = offline;
+        this.offlineViewer = offlineViewer;
         this.collectorProxyClass = collectorProxyClass;
     }
 
@@ -61,7 +61,7 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             final String glowrootVersion) throws Exception {
         embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDir, sharedConfDir, logDir,
                 tmpDir, instrumentation, preCheckClassFileTransformer, glowrootJarFile,
-                glowrootVersion, offline);
+                glowrootVersion, offlineViewer);
         OnEnteringMain onEnteringMain = new OnEnteringMain() {
             @Override
             public void run() throws Exception {

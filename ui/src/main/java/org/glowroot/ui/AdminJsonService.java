@@ -106,7 +106,7 @@ class AdminJsonService {
     };
 
     private final boolean central;
-    private final boolean offline;
+    private final boolean offlineViewer;
     private final File confDir;
     private final @Nullable File sharedConfDir;
     private final ConfigRepository configRepository;
@@ -118,12 +118,12 @@ class AdminJsonService {
     // null when running in servlet container
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    AdminJsonService(boolean central, boolean offline, File confDir, @Nullable File sharedConfDir,
-            ConfigRepository configRepository, RepoAdmin repoAdmin,
+    AdminJsonService(boolean central, boolean offlineViewer, File confDir,
+            @Nullable File sharedConfDir, ConfigRepository configRepository, RepoAdmin repoAdmin,
             LiveAggregateRepository liveAggregateRepository, MailService mailService,
             HttpClient httpClient) {
         this.central = central;
-        this.offline = offline;
+        this.offlineViewer = offlineViewer;
         this.confDir = confDir;
         this.sharedConfDir = sharedConfDir;
         this.configRepository = configRepository;
@@ -525,7 +525,7 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/defrag-h2-data", permission = "")
     void defragH2Data(@BindAuthentication Authentication authentication) throws Exception {
-        if (!offline && !authentication.isAdminPermitted("admin:edit:storage")) {
+        if (!offlineViewer && !authentication.isAdminPermitted("admin:edit:storage")) {
             throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
         }
         repoAdmin.defragH2Data();
@@ -533,7 +533,7 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/compact-h2-data", permission = "")
     void compactH2Data(@BindAuthentication Authentication authentication) throws Exception {
-        if (!offline && !authentication.isAdminPermitted("admin:edit:storage")) {
+        if (!offlineViewer && !authentication.isAdminPermitted("admin:edit:storage")) {
             throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
         }
         repoAdmin.compactH2Data();
@@ -541,7 +541,7 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/analyze-h2-disk-space", permission = "")
     String analyzeH2DiskSpace(@BindAuthentication Authentication authentication) throws Exception {
-        if (!offline && !authentication.isAdminPermitted("admin:edit:storage")) {
+        if (!offlineViewer && !authentication.isAdminPermitted("admin:edit:storage")) {
             throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
         }
         long h2DataFileSize = repoAdmin.getH2DataFileSize();
@@ -561,7 +561,7 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/analyze-trace-counts", permission = "")
     String analyzeTraceCounts(@BindAuthentication Authentication authentication) throws Exception {
-        if (!offline && !authentication.isAdminPermitted("admin:edit:storage")) {
+        if (!offlineViewer && !authentication.isAdminPermitted("admin:edit:storage")) {
             throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
         }
         return mapper.writeValueAsString(repoAdmin.analyzeTraceCounts());

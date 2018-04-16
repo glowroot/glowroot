@@ -62,13 +62,15 @@ class HttpServer {
     private final File confDir;
     private final @Nullable File sharedConfDir;
 
+    private final boolean offlineViewer;
+
     private volatile @Nullable SslContext sslContext;
     private volatile @MonotonicNonNull Channel serverChannel;
     private volatile @MonotonicNonNull Integer port;
 
     HttpServer(String bindAddress, boolean https, Supplier<String> contextPathSupplier,
             int numWorkerThreads, CommonHandler commonHandler, File confDir,
-            @Nullable File sharedConfDir, boolean central) throws Exception {
+            @Nullable File sharedConfDir, boolean central, boolean offlineViewer) throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -108,6 +110,7 @@ class HttpServer {
         }
         this.confDir = confDir;
         this.sharedConfDir = sharedConfDir;
+        this.offlineViewer = offlineViewer;
 
         bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
@@ -155,14 +158,16 @@ class HttpServer {
     @RequiresNonNull("serverChannel")
     private void onBindSuccess() {
         port = ((InetSocketAddress) serverChannel.localAddress()).getPort();
+        String listener = offlineViewer ? "Offline viewer" : "UI";
         String optionalHttps = sslContext == null ? "" : " (HTTPS)";
         if (bindAddress.equals("127.0.0.1")) {
-            startupLogger.info("UI listening on {}:{}{} (to access the UI from remote machines,"
+            startupLogger.info("{} listening on {}:{}{} (to access the UI from remote machines,"
                     + " change the bind address to 0.0.0.0, either in the Glowroot UI under"
                     + " Configuration > Web or directly in the admin.json file, and then restart"
-                    + " JVM to take effect)", bindAddress, port, optionalHttps);
+                    + " JVM to take effect)", listener, bindAddress, port, optionalHttps);
         } else {
-            startupLogger.info("UI listening on {}:{}{}", bindAddress, port, optionalHttps);
+            startupLogger.info("{} listening on {}:{}{}", listener, bindAddress, port,
+                    optionalHttps);
         }
     }
 

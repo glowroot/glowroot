@@ -217,7 +217,7 @@ public class CentralModule {
             uiModule = new CreateUiModuleBuilder()
                     .central(true)
                     .servlet(servlet)
-                    .offline(false)
+                    .offlineViewer(false)
                     .bindAddress(centralConfig.uiBindAddress())
                     .port(centralConfig.uiPort())
                     .https(centralConfig.uiHttps())

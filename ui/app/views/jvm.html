@@ -78,31 +78,31 @@
            gt-display="Thread dump"
            gt-url="jvm/thread-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/thread-dump' || currentUrl() === 'jvm/jstack'"
-           ng-if="agentRollup.permissions.jvm.threadDump && !isAgentRollup() && !layout.offline">
+           ng-if="agentRollup.permissions.jvm.threadDump && !isAgentRollup() && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="Heap dump"
            gt-url="jvm/heap-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/heap-dump'"
-           ng-if="agentRollup.permissions.jvm.heapDump && !isAgentRollup() && !layout.offline">
+           ng-if="agentRollup.permissions.jvm.heapDump && !isAgentRollup() && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="Heap histogram"
            gt-url="jvm/heap-histogram{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/heap-histogram'"
-           ng-if="agentRollup.permissions.jvm.heapHistogram && !isAgentRollup() && !layout.offline">
+           ng-if="agentRollup.permissions.jvm.heapHistogram && !isAgentRollup() && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="MBean tree"
            gt-url="jvm/mbean-tree{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/mbean-tree'"
-           ng-if="agentRollup.permissions.jvm.mbeanTree && !isAgentRollup() && !layout.offline">
+           ng-if="agentRollup.permissions.jvm.mbeanTree && !isAgentRollup() && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="System properties"
            gt-url="jvm/system-properties{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/system-properties'"
-           ng-if="agentRollup.permissions.jvm.systemProperties && !isAgentRollup() && !layout.offline">
+           ng-if="agentRollup.permissions.jvm.systemProperties && !isAgentRollup() && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="Environment"

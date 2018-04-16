@@ -67,7 +67,7 @@ public class UiModule {
     public static UiModule createUiModule(
             boolean central,
             boolean servlet,
-            boolean offline,
+            boolean offlineViewer,
             @Nullable String bindAddress, // only used for central
             @Nullable Integer port, // only used for central
             @Nullable Boolean https, // only used for central
@@ -107,12 +107,13 @@ public class UiModule {
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         MailService mailService = new MailService();
 
-        AdminJsonService adminJsonService =
-                new AdminJsonService(central, offline, confDir, sharedConfDir, configRepository,
-                        repoAdmin, liveAggregateRepository, mailService, httpClient);
+        AdminJsonService adminJsonService = new AdminJsonService(central, offlineViewer, confDir,
+                sharedConfDir, configRepository, repoAdmin, liveAggregateRepository, mailService,
+                httpClient);
 
-        LayoutService layoutService = new LayoutService(central, offline, version, configRepository,
-                transactionTypeRepository, traceAttributeNameRepository, agentRollupRepository);
+        LayoutService layoutService = new LayoutService(central, offlineViewer, version,
+                configRepository, transactionTypeRepository, traceAttributeNameRepository,
+                agentRollupRepository);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(new LayoutJsonService(agentRollupRepository, layoutService));
@@ -151,7 +152,7 @@ public class UiModule {
             jsonServices.add(new SyntheticMonitorConfigJsonService(configRepository));
         }
 
-        HttpSessionManager httpSessionManager = new HttpSessionManager(central, offline,
+        HttpSessionManager httpSessionManager = new HttpSessionManager(central, offlineViewer,
                 configRepository, clock, layoutService, sessionMapFactory);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
         TraceDetailHttpService traceDetailHttpService =
@@ -199,7 +200,7 @@ public class UiModule {
             if (central) {
                 httpServer = new HttpServer(checkNotNull(bindAddress), checkNotNull(https),
                         Suppliers.ofInstance(checkNotNull(contextPath)), numWorkerThreads,
-                        commonHandler, confDir, sharedConfDir, central);
+                        commonHandler, confDir, sharedConfDir, central, offlineViewer);
                 initialPort = checkNotNull(port);
             } else {
                 final EmbeddedWebConfig initialWebConfig = configRepository.getEmbeddedWebConfig();
@@ -216,7 +217,7 @@ public class UiModule {
                 };
                 httpServer = new HttpServer(initialWebConfig.bindAddress(),
                         initialWebConfig.https(), contextPathSupplier, numWorkerThreads,
-                        commonHandler, confDir, sharedConfDir, central);
+                        commonHandler, confDir, sharedConfDir, central, offlineViewer);
                 initialPort = initialWebConfig.port();
             }
             adminJsonService.setHttpServer(httpServer);

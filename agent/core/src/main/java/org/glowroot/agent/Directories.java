@@ -84,6 +84,10 @@ public class Directories {
             tmpDir = lazyDefaultBaseDir.getSubDir("tmp");
         }
 
+        mkdirs(confDir);
+        mkdirs(logDir);
+        mkdirs(tmpDir);
+
         this.confDir = confDir;
         this.logDir = logDir;
         this.tmpDir = tmpDir;
@@ -103,6 +107,7 @@ public class Directories {
         sharedConfDir = null;
         logDir = testDir;
         tmpDir = lazyDefaultBaseDir.getSubDir("tmp");
+        mkdirs(tmpDir);
         glowrootJarFile = null;
     }
 
@@ -168,10 +173,19 @@ public class Directories {
     public File getDataDir() throws IOException {
         File dataDir = getAgentDir("data", props, agentId);
         if (dataDir == null) {
-            return lazyDefaultBaseDir.getSubDir("data");
-        } else {
-            return dataDir;
+            dataDir = lazyDefaultBaseDir.getSubDir("data");
         }
+        mkdirs(dataDir);
+        return dataDir;
+    }
+
+    // only used by offline viewer
+    public boolean hasDataDir() throws IOException {
+        File dataDir = getAgentDir("data", props, agentId);
+        if (dataDir == null) {
+            dataDir = lazyDefaultBaseDir.getSubDir("data");
+        }
+        return dataDir.exists();
     }
 
     private static File getGlowrootDir(@Nullable File glowrootJarFile) {
@@ -201,19 +215,10 @@ public class Directories {
             }
         }
         File dir = new File(dirPath);
-        dir.mkdirs();
-        if (!dir.isDirectory()) {
-            throw new IOException("Could not create directory: " + dir.getAbsolutePath());
-        }
         if (agentId == null || agentId.isEmpty()) {
             return dir;
         }
-        File subDir = new File(dir, makeSafeDirName(agentId));
-        subDir.mkdir();
-        if (!subDir.isDirectory()) {
-            throw new IOException("Could not create directory: " + subDir.getAbsolutePath());
-        }
-        return subDir;
+        return new File(dir, makeSafeDirName(agentId));
     }
 
     @VisibleForTesting
@@ -238,6 +243,13 @@ public class Directories {
         return safeName.toString();
     }
 
+    private static void mkdirs(File dir) throws IOException {
+        dir.mkdirs();
+        if (!dir.isDirectory()) {
+            throw new IOException("Could not create directory: " + dir.getAbsolutePath());
+        }
+    }
+
     private static class LazyDefaultBaseDir {
 
         private final File glowrootDir;
@@ -258,12 +270,7 @@ public class Directories {
         }
 
         private File getSubDir(String name) throws IOException {
-            File subDir = new File(get(), name);
-            subDir.mkdir();
-            if (!subDir.isDirectory()) {
-                throw new IOException("Could not create directory: " + subDir.getAbsolutePath());
-            }
-            return subDir;
+            return new File(get(), name);
         }
 
         private static File getBaseDir(File glowrootDir, @Nullable String agentId)

@@ -26,8 +26,8 @@ import org.glowroot.agent.init.GlowrootAgentInitFactory;
 public class EmbeddedGlowrootAgentInitFactory implements GlowrootAgentInitFactory {
 
     @Override
-    public GlowrootAgentInit newGlowrootAgentInit(File dataDir, boolean offline,
+    public GlowrootAgentInit newGlowrootAgentInit(File dataDir, boolean offlineViewer,
             @Nullable Class<? extends Collector> collectorProxyClass) {
-        return new EmbeddedGlowrootAgentInit(dataDir, offline, collectorProxyClass);
+        return new EmbeddedGlowrootAgentInit(dataDir, offlineViewer, collectorProxyClass);
     }
 }

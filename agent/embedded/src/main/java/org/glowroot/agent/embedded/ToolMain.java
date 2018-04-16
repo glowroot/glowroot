@@ -51,8 +51,18 @@ public class ToolMain {
                 directories.getLogDir(), null);
         startupLogger = LoggerFactory.getLogger("org.glowroot");
 
+        if (!directories.hasDataDir()) {
+            String path = glowrootJarFile == null ? "/path/to/glowroot.jar"
+                    : glowrootJarFile.getAbsolutePath();
+            startupLogger.info("To run Glowroot, you need to add \"-javaagent:{}\" to your"
+                    + " application's JVM args.", path);
+            return;
+        }
         if (args.length == 0) {
-            MainEntryPoint.runViewer(directories, new EmbeddedGlowrootAgentInitFactory());
+            MainEntryPoint.runOfflineViewer(directories, new EmbeddedGlowrootAgentInitFactory());
+            // Glowroot does not create any non-daemon threads, so need to block jvm from exiting
+            // when running the offline viewer
+            Thread.sleep(Long.MAX_VALUE);
             return;
         }
         String command = args[0];

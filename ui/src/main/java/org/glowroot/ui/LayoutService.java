@@ -50,19 +50,19 @@ class LayoutService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final boolean central;
-    private final boolean offline;
+    private final boolean offlineViewer;
     private final String version;
     private final ConfigRepository configRepository;
     private final TransactionTypeRepository transactionTypeRepository;
     private final TraceAttributeNameRepository traceAttributeNameRepository;
     private final AgentRollupRepository agentRollupRepository;
 
-    LayoutService(boolean central, boolean offline, String version,
+    LayoutService(boolean central, boolean offlineViewer, String version,
             ConfigRepository configRepository, TransactionTypeRepository transactionTypeRepository,
             TraceAttributeNameRepository traceAttributeNameRepository,
             AgentRollupRepository agentRollupRepository) {
         this.central = central;
-        this.offline = offline;
+        this.offlineViewer = offlineViewer;
         this.version = version;
         this.configRepository = configRepository;
         this.transactionTypeRepository = transactionTypeRepository;
@@ -220,7 +220,7 @@ class LayoutService {
     private ImmutableLayout createNoAccessLayout(Authentication authentication) {
         return ImmutableLayout.builder()
                 .central(central)
-                .offline(offline)
+                .offlineViewer(offlineViewer)
                 .glowrootVersion(version)
                 .loginEnabled(true)
                 .gaugeCollectionIntervalMillis(0)
@@ -251,9 +251,9 @@ class LayoutService {
         }
         return ImmutableLayout.builder()
                 .central(central)
-                .offline(offline)
+                .offlineViewer(offlineViewer)
                 .glowrootVersion(version)
-                .loginEnabled(offline ? false
+                .loginEnabled(offlineViewer ? false
                         : configRepository.namedUsersExist()
                                 || !configRepository.getLdapConfig().host().isEmpty())
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
@@ -386,7 +386,7 @@ class LayoutService {
     abstract static class Layout {
 
         abstract boolean central();
-        abstract boolean offline();
+        abstract boolean offlineViewer();
         abstract String glowrootVersion();
         abstract boolean loginEnabled();
         abstract ImmutableList<RollupConfig> rollupConfigs();
