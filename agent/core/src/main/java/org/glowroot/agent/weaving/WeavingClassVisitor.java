@@ -155,7 +155,7 @@ class WeavingClassVisitor extends ClassVisitor {
             String /*@Nullable*/ [] interfaceInternalNamesNullable) {
 
         type = Type.getObjectType(internalName);
-        String /*@Nullable*/ [] interfacesIncludingMixins = getInterfacesIncludingShimsAndMixins(
+        String[] interfacesIncludingMixins = getInterfacesIncludingShimsAndMixins(
                 interfaceInternalNamesNullable, shimTypes, mixinTypes);
         cw.visit(version, access, internalName, signature, superInternalName,
                 interfacesIncludingMixins);

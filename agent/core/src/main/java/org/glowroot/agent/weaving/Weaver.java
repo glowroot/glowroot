@@ -307,7 +307,7 @@ public class Weaver {
 
     private void checkForDeadlockedActiveWeaving(List<Long> activeWeavingThreadIds) {
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-        long /*@Nullable*/ [] deadlockedThreadIds = threadBean.findDeadlockedThreads();
+        long[] deadlockedThreadIds = threadBean.findDeadlockedThreads();
         if (deadlockedThreadIds == null || Collections.disjoint(Longs.asList(deadlockedThreadIds),
                 activeWeavingThreadIds)) {
             return;
