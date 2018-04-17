@@ -60,6 +60,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.glowroot.central.repo.CentralRepoModule;
 import org.glowroot.central.repo.ConfigRepositoryImpl.AgentConfigListener;
@@ -802,6 +803,9 @@ public class CentralModule {
                 System.setProperty("glowroot.log.dir", prior);
             }
         }
+        // install jul-to-slf4j bridge for guava/grpc/protobuf which log to jul
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
     }
 
     private static File getLogDir(File centralDir) throws IOException {
