@@ -16,6 +16,8 @@
 package org.glowroot.central.util;
 
 import java.util.Collection;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 
@@ -48,7 +50,9 @@ public class Session {
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
 
     private final com.datastax.driver.core.Session wrappedSession;
-    private final String keyspace;
+    private final String keyspaceName;
+
+    private final Queue<String> allTableNames = new ConcurrentLinkedQueue<>();
 
     // limit concurrent async queries per thread (mainly so the rollup thread doesn't hog them all)
     @SuppressWarnings("nullness:type.argument.type.incompatible")
@@ -61,15 +65,15 @@ public class Session {
 
     private final CassandraWriteMetrics cassandraWriteMetrics;
 
-    public Session(com.datastax.driver.core.Session wrappedSession, String keyspace)
+    public Session(com.datastax.driver.core.Session wrappedSession, String keyspaceName)
             throws InterruptedException {
         this.wrappedSession = wrappedSession;
-        this.keyspace = keyspace;
-        cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspace);
+        this.keyspaceName = keyspaceName;
+        cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
 
-        updateSchemaWithRetry(wrappedSession, "create keyspace if not exists " + keyspace
+        updateSchemaWithRetry(wrappedSession, "create keyspace if not exists " + keyspaceName
                 + " with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
-        wrappedSession.execute("use " + keyspace);
+        wrappedSession.execute("use " + keyspaceName);
     }
 
     public CassandraWriteMetrics getCassandraWriteMetrics() {
@@ -117,6 +121,10 @@ public class Session {
         return wrappedSession.getCluster();
     }
 
+    public String getKeyspaceName() {
+        return keyspaceName;
+    }
+
     public @Nullable TableMetadata getTable(String name) {
         KeyspaceMetadata keyspace = getKeyspace();
         if (keyspace == null) {
@@ -135,8 +143,12 @@ public class Session {
         }
     }
 
+    public Collection<String> getAllTableNames() {
+        return allTableNames;
+    }
+
     private @Nullable KeyspaceMetadata getKeyspace() {
-        return wrappedSession.getCluster().getMetadata().getKeyspace(keyspace);
+        return wrappedSession.getCluster().getMetadata().getKeyspace(keyspaceName);
     }
 
     public void close() {
@@ -178,17 +190,17 @@ public class Session {
             // bucket_high is increased a bit to compensate for lower min_sstable_size so that worst
             // case number of sstables will be three 5mb sstables, three 10mb sstables, three 20mb
             // sstables, three 40mb sstables, etc
-            createIfNotExists(createTableQuery + " " + term + " "
+            createTableWithTracking(createTableQuery + " " + term + " "
                     + getTwcsCompactionClause(expirationHours) + " and gc_grace_seconds = "
                     + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
             if (fallbackToSTCS) {
-                createIfNotExists(createTableQuery + " " + term + " compaction = { 'class' :"
+                createTableWithTracking(createTableQuery + " " + term + " compaction = { 'class' :"
                         + " 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
                         + " true } and gc_grace_seconds = " + gcGraceSeconds);
             } else {
-                createIfNotExists(createTableQuery + " " + term + " compaction = { 'class' :"
+                createTableWithTracking(createTableQuery + " " + term + " compaction = { 'class' :"
                         + " 'DateTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
                         + " true } and gc_grace_seconds = " + gcGraceSeconds);
             }
@@ -213,12 +225,12 @@ public class Session {
     public void createTableWithLCS(String createTableQuery, boolean useAndInsteadOfWith)
             throws InterruptedException {
         String term = useAndInsteadOfWith ? "and" : "with";
-        createIfNotExists(createTableQuery + " " + term + " compaction = { 'class' :"
+        createTableWithTracking(createTableQuery + " " + term + " compaction = { 'class' :"
                 + " 'LeveledCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
     }
 
     public void createTableWithSTCS(String createTableQuery) throws InterruptedException {
-        createIfNotExists(createTableQuery + " with compaction = { 'class' :"
+        createTableWithTracking(createTableQuery + " with compaction = { 'class' :"
                 + " 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction' : true }");
     }
 
@@ -253,8 +265,26 @@ public class Session {
         return outerFuture;
     }
 
-    private void createIfNotExists(String query) throws InterruptedException {
-        updateSchemaWithRetry(wrappedSession, query);
+    private void createTableWithTracking(String createTableQuery) throws InterruptedException {
+        if (createTableQuery.startsWith("create table if not exists ")) {
+            String remaining = createTableQuery.substring("create table if not exists ".length());
+            int index = remaining.indexOf(' ');
+            allTableNames.add(remaining.substring(0, index));
+        } else {
+            throw new IllegalStateException("create table query must use \"if not exists\" so that"
+                    + " it can be safely retried on timeout");
+        }
+        updateSchemaWithRetry(createTableQuery);
+    }
+
+    private @Nullable String getTableName(String createTableQuery, String prefix) {
+        if (createTableQuery.startsWith(prefix)) {
+            String suffix = createTableQuery.substring(prefix.length());
+            int index = suffix.indexOf(' ');
+            return suffix.substring(0, index);
+        } else {
+            return null;
+        }
     }
 
     // creating/dropping/truncating keyspaces/tables can timeout, throwing NoHostAvailableException

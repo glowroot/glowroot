@@ -1158,9 +1158,9 @@ public class SchemaUpgrade {
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         int maxRollupHours = storageConfig.getMaxRollupHours();
         dropTableIfExists("gauge_name");
-        session.createTableWithTWCS("create table gauge_name (agent_rollup_id varchar, capture_time"
-                + " timestamp, gauge_name varchar, primary key (agent_rollup_id, capture_time,"
-                + " gauge_name))", maxRollupHours);
+        session.createTableWithTWCS("create table if not exists gauge_name (agent_rollup_id"
+                + " varchar, capture_time timestamp, gauge_name varchar, primary key"
+                + " (agent_rollup_id, capture_time, gauge_name))", maxRollupHours);
         PreparedStatement insertPS = session.prepare("insert into gauge_name (agent_rollup_id,"
                 + " capture_time, gauge_name) values (?, ?, ?) using ttl ?");
         Multimap<Long, AgentRollupIdGaugeNamePair> rowsPerCaptureTime = HashMultimap.create();
@@ -1258,9 +1258,10 @@ public class SchemaUpgrade {
                 // only create v09_agent_check and v09_last_capture_time tables if needed
                 if (insertV09AgentCheckPS == null) {
                     dropTableIfExists("v09_last_capture_time");
-                    session.createTableWithLCS("create table v09_last_capture_time (one int,"
-                            + " v09_last_capture_time timestamp, v09_fqt_last_expiration_time"
-                            + " timestamp, v09_trace_last_expiration_time timestamp,"
+                    session.createTableWithLCS("create table if not exists v09_last_capture_time"
+                            + " (one int, v09_last_capture_time timestamp,"
+                            + " v09_fqt_last_expiration_time timestamp,"
+                            + " v09_trace_last_expiration_time timestamp,"
                             + " v09_aggregate_last_expiration_time timestamp, primary key (one))");
                     BoundStatement boundStatement = session.prepare("insert into"
                             + " v09_last_capture_time (one, v09_last_capture_time,"
@@ -1284,8 +1285,8 @@ public class SchemaUpgrade {
                     session.execute(boundStatement);
 
                     dropTableIfExists("v09_agent_check");
-                    session.createTableWithLCS("create table v09_agent_check (one int, agent_id"
-                            + " varchar, primary key (one, agent_id))");
+                    session.createTableWithLCS("create table if not exists v09_agent_check (one"
+                            + " int, agent_id varchar, primary key (one, agent_id))");
                     insertV09AgentCheckPS = session.prepare(
                             "insert into v09_agent_check (one, agent_id) values (1, ?)");
                 }
@@ -1327,8 +1328,8 @@ public class SchemaUpgrade {
                 + " large data sets ...");
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("agent");
-        session.createTableWithTWCS("create table agent (one int, capture_time timestamp, agent_id"
-                + " varchar, primary key (one, capture_time, agent_id))",
+        session.createTableWithTWCS("create table if not exists agent (one int, capture_time"
+                + " timestamp, agent_id varchar, primary key (one, capture_time, agent_id))",
                 storageConfig.getMaxRollupHours());
         PreparedStatement insertPS = session.prepare("insert into agent (one, capture_time,"
                 + " agent_id) values (1, ?, ?) using ttl ?");
@@ -1390,9 +1391,9 @@ public class SchemaUpgrade {
 
     private void rewriteAgentConfigTablePart1() throws Exception {
         dropTableIfExists("agent_config_temp");
-        session.updateSchemaWithRetry("create table agent_config_temp (agent_rollup_id varchar,"
-                + " config blob, config_update boolean, config_update_token uuid, primary key"
-                + " (agent_rollup_id))");
+        session.updateSchemaWithRetry("create table if not exists agent_config_temp"
+                + " (agent_rollup_id varchar, config blob, config_update boolean,"
+                + " config_update_token uuid, primary key (agent_rollup_id))");
         PreparedStatement insertTempPS = session.prepare("insert into agent_config_temp"
                 + " (agent_rollup_id, config, config_update, config_update_token) values"
                 + " (?, ?, ?, ?)");
@@ -1414,9 +1415,9 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("agent_config");
-        session.createTableWithLCS("create table agent_config (agent_rollup_id varchar, config"
-                + " blob, config_update boolean, config_update_token uuid, primary key"
-                + " (agent_rollup_id))");
+        session.createTableWithLCS("create table if not exists agent_config (agent_rollup_id"
+                + " varchar, config blob, config_update boolean, config_update_token uuid, primary"
+                + " key (agent_rollup_id))");
         PreparedStatement insertPS = session.prepare("insert into agent_config"
                 + " (agent_rollup_id, config, config_update, config_update_token) values"
                 + " (?, ?, ?, ?)");
@@ -1443,8 +1444,8 @@ public class SchemaUpgrade {
 
     private void rewriteEnvironmentTablePart1() throws Exception {
         dropTableIfExists("environment_temp");
-        session.updateSchemaWithRetry("create table environment_temp (agent_id varchar, environment"
-                + " blob, primary key (agent_id))");
+        session.updateSchemaWithRetry("create table if not exists environment_temp (agent_id"
+                + " varchar, environment blob, primary key (agent_id))");
         PreparedStatement insertTempPS = session
                 .prepare("insert into environment_temp (agent_id, environment) values (?, ?)");
         ResultSet results = session.execute("select agent_id, environment from environment");
@@ -1462,8 +1463,8 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("environment");
-        session.createTableWithLCS("create table environment (agent_id varchar, environment blob,"
-                + " primary key (agent_id))");
+        session.createTableWithLCS("create table if not exists environment (agent_id varchar,"
+                + " environment blob, primary key (agent_id))");
         PreparedStatement insertPS = session
                 .prepare("insert into environment (agent_id, environment) values (?, ?)");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
@@ -1490,9 +1491,9 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("open_incident_temp");
-        session.updateSchemaWithRetry("create table open_incident_temp (one int, agent_rollup_id"
-                + " varchar, condition blob, severity varchar, notification blob, open_time"
-                + " timestamp, primary key (one, agent_rollup_id, condition, severity))");
+        session.updateSchemaWithRetry("create table if not exists open_incident_temp (one int,"
+                + " agent_rollup_id varchar, condition blob, severity varchar, notification blob,"
+                + " open_time timestamp, primary key (one, agent_rollup_id, condition, severity))");
         PreparedStatement insertTempPS = session.prepare("insert into open_incident_temp (one,"
                 + " agent_rollup_id, condition, severity, notification, open_time) values"
                 + " (1, ?, ?, ?, ?, ?)");
@@ -1515,9 +1516,9 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("open_incident");
-        session.createTableWithLCS("create table open_incident (one int, agent_rollup_id varchar,"
-                + " condition blob, severity varchar, notification blob, open_time timestamp,"
-                + " primary key (one, agent_rollup_id, condition, severity))");
+        session.createTableWithLCS("create table if not exists open_incident (one int,"
+                + " agent_rollup_id varchar, condition blob, severity varchar, notification blob,"
+                + " open_time timestamp, primary key (one, agent_rollup_id, condition, severity))");
         PreparedStatement insertPS = session.prepare("insert into open_incident (one,"
                 + " agent_rollup_id, condition, severity, notification, open_time) values"
                 + " (1, ?, ?, ?, ?, ?)");
@@ -1549,10 +1550,11 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("resolved_incident_temp");
-        session.updateSchemaWithRetry("create table resolved_incident_temp (one int, resolve_time"
-                + " timestamp, agent_rollup_id varchar, condition blob, severity varchar,"
-                + " notification blob, open_time timestamp, primary key (one, resolve_time,"
-                + " agent_rollup_id, condition)) with clustering order by (resolve_time desc)");
+        session.updateSchemaWithRetry("create table if not exists resolved_incident_temp (one int,"
+                + " resolve_time timestamp, agent_rollup_id varchar, condition blob, severity"
+                + " varchar, notification blob, open_time timestamp, primary key (one,"
+                + " resolve_time, agent_rollup_id, condition)) with clustering order by"
+                + " (resolve_time desc)");
         PreparedStatement insertTempPS = session.prepare("insert into resolved_incident_temp"
                 + " (one, resolve_time, agent_rollup_id, condition, severity, notification,"
                 + " open_time) values (1, ?, ?, ?, ?, ?, ?)");
@@ -1576,11 +1578,11 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("resolved_incident");
-        session.createTableWithTWCS("create table resolved_incident (one int, resolve_time"
-                + " timestamp, agent_rollup_id varchar, condition blob, severity varchar,"
-                + " notification blob, open_time timestamp, primary key (one, resolve_time,"
-                + " agent_rollup_id, condition)) with clustering order by (resolve_time desc)",
-                Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS, true);
+        session.createTableWithTWCS("create table if not exists resolved_incident (one int,"
+                + " resolve_time timestamp, agent_rollup_id varchar, condition blob, severity"
+                + " varchar, notification blob, open_time timestamp, primary key (one,"
+                + " resolve_time, agent_rollup_id, condition)) with clustering order by"
+                + " (resolve_time desc)", Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS, true);
         PreparedStatement insertPS = session.prepare("insert into resolved_incident (one,"
                 + " resolve_time, agent_rollup_id, condition, severity, notification,"
                 + " open_time) values (1, ?, ?, ?, ?, ?, ?) using ttl ?");
@@ -1614,8 +1616,8 @@ public class SchemaUpgrade {
 
     private void rewriteRoleTablePart1() throws Exception {
         dropTableIfExists("role_temp");
-        session.updateSchemaWithRetry("create table role_temp (name varchar, permissions"
-                + " set<varchar>, primary key (name))");
+        session.updateSchemaWithRetry("create table if not exists role_temp (name varchar,"
+                + " permissions set<varchar>, primary key (name))");
         PreparedStatement insertTempPS =
                 session.prepare("insert into role_temp (name, permissions) values (?, ?)");
         ResultSet results = session.execute("select name, permissions from role");
@@ -1633,8 +1635,8 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("role");
-        session.createTableWithLCS("create table role (name varchar, permissions set<varchar>,"
-                + " primary key (name))");
+        session.createTableWithLCS("create table if not exists role (name varchar, permissions"
+                + " set<varchar>, primary key (name))");
         PreparedStatement insertPS =
                 session.prepare("insert into role (name, permissions) values (?, ?)");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
@@ -1708,7 +1710,7 @@ public class SchemaUpgrade {
         }
         logger.info("rewriting heartbeat table (part 1) ...");
         dropTableIfExists("heartbeat_temp");
-        session.updateSchemaWithRetry("create table heartbeat_temp (agent_id varchar,"
+        session.updateSchemaWithRetry("create table if not exists heartbeat_temp (agent_id varchar,"
                 + " central_capture_time timestamp, primary key (agent_id, central_capture_time))");
         PreparedStatement insertTempPS = session.prepare("insert into heartbeat_temp (agent_id,"
                 + " central_capture_time) values (?, ?)");
@@ -1734,8 +1736,8 @@ public class SchemaUpgrade {
         logger.info("rewriting heartbeat table (part 2) ...");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
         dropTableIfExists("heartbeat");
-        session.createTableWithTWCS("create table heartbeat (agent_id varchar, central_capture_time"
-                + " timestamp, primary key (agent_id, central_capture_time))",
+        session.createTableWithTWCS("create table if not exists heartbeat (agent_id varchar,"
+                + " central_capture_time timestamp, primary key (agent_id, central_capture_time))",
                 HeartbeatDao.EXPIRATION_HOURS);
         PreparedStatement insertPS = session.prepare("insert into heartbeat (agent_id,"
                 + " central_capture_time) values (?, ?) using ttl ?");
@@ -1769,8 +1771,8 @@ public class SchemaUpgrade {
 
     private void rewriteTransactionTypeTablePart1() throws Exception {
         dropTableIfExists("transaction_type_temp");
-        session.updateSchemaWithRetry("create table transaction_type_temp (one int, agent_rollup"
-                + " varchar, transaction_type varchar, primary key (one, agent_rollup,"
+        session.updateSchemaWithRetry("create table if not exists transaction_type_temp (one int,"
+                + " agent_rollup varchar, transaction_type varchar, primary key (one, agent_rollup,"
                 + " transaction_type))");
         PreparedStatement insertTempPS = session.prepare("insert into transaction_type_temp (one,"
                 + " agent_rollup, transaction_type) values (1, ?, ?)");
@@ -1791,8 +1793,9 @@ public class SchemaUpgrade {
         }
         dropTableIfExists("transaction_type");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
-        session.createTableWithLCS("create table transaction_type (one int, agent_rollup varchar,"
-                + " transaction_type varchar, primary key (one, agent_rollup, transaction_type))");
+        session.createTableWithLCS("create table if not exists transaction_type (one int,"
+                + " agent_rollup varchar, transaction_type varchar, primary key (one, agent_rollup,"
+                + " transaction_type))");
         PreparedStatement insertPS = session.prepare("insert into transaction_type (one,"
                 + " agent_rollup, transaction_type) values (1, ?, ?) using ttl ?");
         int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
@@ -1817,9 +1820,9 @@ public class SchemaUpgrade {
 
     private void rewriteTraceAttributeNameTablePart1() throws Exception {
         dropTableIfExists("trace_attribute_name_temp");
-        session.updateSchemaWithRetry("create table trace_attribute_name_temp (agent_rollup"
-                + " varchar, transaction_type varchar, trace_attribute_name varchar, primary key"
-                + " ((agent_rollup, transaction_type), trace_attribute_name))");
+        session.updateSchemaWithRetry("create table if not exists trace_attribute_name_temp"
+                + " (agent_rollup varchar, transaction_type varchar, trace_attribute_name varchar,"
+                + " primary key ((agent_rollup, transaction_type), trace_attribute_name))");
         PreparedStatement insertTempPS = session.prepare("insert into trace_attribute_name_temp"
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?)");
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
@@ -1840,8 +1843,8 @@ public class SchemaUpgrade {
         }
         dropTableIfExists("trace_attribute_name");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
-        session.createTableWithLCS("create table trace_attribute_name (agent_rollup varchar,"
-                + " transaction_type varchar, trace_attribute_name varchar, primary key"
+        session.createTableWithLCS("create table if not exists trace_attribute_name (agent_rollup"
+                + " varchar, transaction_type varchar, trace_attribute_name varchar, primary key"
                 + " ((agent_rollup, transaction_type), trace_attribute_name))");
         PreparedStatement insertPS = session.prepare("insert into trace_attribute_name"
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?) using"
@@ -1871,9 +1874,9 @@ public class SchemaUpgrade {
         logger.info("rewriting gauge_name table (part 1) - this could take several minutes on large"
                 + " data sets ...");
         dropTableIfExists("gauge_name_temp");
-        session.updateSchemaWithRetry("create table gauge_name_temp (agent_rollup_id varchar,"
-                + " capture_time timestamp, gauge_name varchar, primary key (agent_rollup_id,"
-                + " capture_time, gauge_name))");
+        session.updateSchemaWithRetry("create table if not exists gauge_name_temp (agent_rollup_id"
+                + " varchar, capture_time timestamp, gauge_name varchar, primary key"
+                + " (agent_rollup_id, capture_time, gauge_name))");
         PreparedStatement insertTempPS = session.prepare("insert into gauge_name_temp"
                 + " (agent_rollup_id, capture_time, gauge_name) values (?, ?, ?)");
         ResultSet results =
@@ -1902,9 +1905,10 @@ public class SchemaUpgrade {
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("gauge_name");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
-        session.createTableWithTWCS("create table gauge_name (agent_rollup_id varchar, capture_time"
-                + " timestamp, gauge_name varchar, primary key (agent_rollup_id, capture_time,"
-                + " gauge_name))", storageConfig.getMaxRollupHours());
+        session.createTableWithTWCS("create table if not exists gauge_name (agent_rollup_id"
+                + " varchar, capture_time timestamp, gauge_name varchar, primary key"
+                + " (agent_rollup_id, capture_time, gauge_name))",
+                storageConfig.getMaxRollupHours());
         PreparedStatement insertPS = session.prepare("insert into gauge_name (agent_rollup_id,"
                 + " capture_time, gauge_name) values (?, ?, ?) using ttl ?");
         int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
@@ -1943,8 +1947,8 @@ public class SchemaUpgrade {
                 // only create v09_agent_check and v09_last_capture_time tables if needed
                 if (insertPS == null) {
                     dropTableIfExists("v09_agent_rollup");
-                    session.createTableWithLCS("create table v09_agent_rollup (one int,"
-                            + " v09_agent_id varchar, v09_agent_rollup_id varchar, primary key"
+                    session.createTableWithLCS("create table if not exists v09_agent_rollup (one"
+                            + " int, v09_agent_id varchar, v09_agent_rollup_id varchar, primary key"
                             + " (one, v09_agent_id, v09_agent_rollup_id))");
                     insertPS = session.prepare("insert into v09_agent_rollup"
                             + " (one, v09_agent_id, v09_agent_rollup_id) values (1, ?, ?)");
@@ -2385,9 +2389,9 @@ public class SchemaUpgrade {
 
     private void updateTraceAttributeNamePartitionKeyPart1() throws Exception {
         dropTableIfExists("trace_attribute_name_temp");
-        session.updateSchemaWithRetry("create table trace_attribute_name_temp (agent_rollup"
-                + " varchar, transaction_type varchar, trace_attribute_name varchar, primary key"
-                + " (agent_rollup, transaction_type, trace_attribute_name))");
+        session.updateSchemaWithRetry("create table if not exists trace_attribute_name_temp"
+                + " (agent_rollup varchar, transaction_type varchar, trace_attribute_name varchar,"
+                + " primary key (agent_rollup, transaction_type, trace_attribute_name))");
         PreparedStatement insertTempPS = session.prepare("insert into trace_attribute_name_temp"
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?)");
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
@@ -2411,8 +2415,8 @@ public class SchemaUpgrade {
             return;
         }
         dropTableIfExists("trace_attribute_name");
-        session.createTableWithLCS("create table trace_attribute_name (agent_rollup varchar,"
-                + " transaction_type varchar, trace_attribute_name varchar, primary key"
+        session.createTableWithLCS("create table if not exists trace_attribute_name (agent_rollup"
+                + " varchar, transaction_type varchar, trace_attribute_name varchar, primary key"
                 + " (agent_rollup, transaction_type, trace_attribute_name))");
         PreparedStatement insertPS = session.prepare("insert into trace_attribute_name"
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?) using"

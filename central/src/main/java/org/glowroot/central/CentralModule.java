@@ -412,6 +412,12 @@ public class CentralModule {
                 return;
             }
             command = Tools::setupAdminUser;
+        } else if (commandName.equals("truncate-all-data")) {
+            if (args.size() != 0) {
+                startupLogger.error("truncate-all-data does not accept any args, exiting");
+                return;
+            }
+            command = Tools::truncateAllData;
         } else if (commandName.equals("execute-range-deletes")) {
             if (args.size() != 2) {
                 startupLogger.error("execute-range-deletes requires two args (partial table name"

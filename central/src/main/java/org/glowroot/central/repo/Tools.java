@@ -28,6 +28,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -44,6 +45,10 @@ import static java.util.concurrent.TimeUnit.HOURS;
 public class Tools {
 
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
+    private static final Set<String> keepTableNames = ImmutableSet.of("schema_version",
+            "central_config", "agent_config", "user", "role", "agent", "environment",
+            "v09_agent_rollup");
 
     private final Session session;
     private final CentralRepoModule repos;
@@ -68,6 +73,22 @@ public class Tools {
                 .addRoles("Administrator")
                 .build());
         repos.getUserDao().delete("anonymous");
+        return true;
+    }
+
+    public boolean truncateAllData(@SuppressWarnings("unused") List<String> args) throws Exception {
+        for (String tableName : session.getAllTableNames()) {
+            if (!keepTableNames.contains(tableName)) {
+                startupLogger.info("truncating {} ...", tableName);
+                session.updateSchemaWithRetry("truncate table " + tableName);
+            }
+        }
+        // no longer need v09 data checks (but still need v09_agent_rollup mappings for 0.9 agents)
+        session.updateSchemaWithRetry("drop table if exists v09_agent_check");
+        session.updateSchemaWithRetry("drop table if exists v09_last_capture_time");
+        startupLogger.info("NOTE: by default, Cassandra snapshots tables when they are truncated,"
+                + " so in order to free up disk space you will need to clear those snapshots, e.g."
+                + " with \"nodetool clearsnapshot {}\"", session.getKeyspaceName());
         return true;
     }
 
