@@ -17,6 +17,7 @@ package org.glowroot.tests;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -41,10 +42,12 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.jvm.JvmSidebar;
+import org.glowroot.tests.reporting.AdhocPage;
 import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.xpath;
 
 public class BasicSmokeIT extends WebDriverIT {
 
@@ -294,6 +297,151 @@ public class BasicSmokeIT extends WebDriverIT {
 
         // jvm capabilities is not accessible via config sidebar currently
         app.open("/jvm/capabilities");
+    }
+
+    @Test
+    public void shouldRunReportTransactionAverage() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        AdhocPage adhocPage = new AdhocPage(driver);
+
+        app.open();
+        globalNavbar.getReportingLink().click();
+        if (WebDriverSetup.useCentral) {
+            adhocPage.getAgentTextField().click();
+            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
+            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+        }
+        adhocPage.getMetricSelect().selectByValue("string:transaction:average");
+        adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
+
+        // when
+        adhocPage.clickRunReportButton();
+
+        // then
+        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+    }
+
+    @Test
+    public void shouldRunReportTransactionPercentile() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        AdhocPage adhocPage = new AdhocPage(driver);
+
+        app.open();
+        globalNavbar.getReportingLink().click();
+        if (WebDriverSetup.useCentral) {
+            adhocPage.getAgentTextField().click();
+            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
+            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+        }
+        adhocPage.getMetricSelect().selectByValue("string:transaction:x-percentile");
+        adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
+        adhocPage.getTransactionPercentileTextField().sendKeys("95");
+
+        // when
+        adhocPage.clickRunReportButton();
+
+        // then
+        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+    }
+
+    @Test
+    public void shouldRunReportTransactionCount() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        AdhocPage adhocPage = new AdhocPage(driver);
+
+        app.open();
+        globalNavbar.getReportingLink().click();
+        if (WebDriverSetup.useCentral) {
+            adhocPage.getAgentTextField().click();
+            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
+            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+        }
+        adhocPage.getMetricSelect().selectByValue("string:transaction:count");
+        adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
+
+        // when
+        adhocPage.clickRunReportButton();
+
+        // then
+        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+    }
+
+    @Test
+    public void shouldRunReportErrorRate() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        AdhocPage adhocPage = new AdhocPage(driver);
+
+        app.open();
+        globalNavbar.getReportingLink().click();
+        if (WebDriverSetup.useCentral) {
+            adhocPage.getAgentTextField().click();
+            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
+            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+        }
+        adhocPage.getMetricSelect().selectByValue("string:transaction:count");
+        adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
+
+        // when
+        adhocPage.clickRunReportButton();
+
+        // then
+        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+    }
+
+    @Test
+    public void shouldRunReportErrorCount() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        AdhocPage adhocPage = new AdhocPage(driver);
+
+        app.open();
+        globalNavbar.getReportingLink().click();
+        if (WebDriverSetup.useCentral) {
+            adhocPage.getAgentTextField().click();
+            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
+            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+        }
+        adhocPage.getMetricSelect().selectByValue("string:transaction:count");
+        adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
+
+        // when
+        adhocPage.clickRunReportButton();
+
+        // then
+        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+    }
+
+    @Test
+    public void shouldRunReportGauge() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        AdhocPage adhocPage = new AdhocPage(driver);
+
+        app.open();
+        globalNavbar.getReportingLink().click();
+        if (WebDriverSetup.useCentral) {
+            adhocPage.getAgentTextField().click();
+            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
+            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+        }
+        adhocPage.getMetricSelect()
+                .selectByValue("string:gauge:java.lang:type=Memory:HeapMemoryUsage.used");
+
+        // when
+        adhocPage.clickRunReportButton();
+
+        // then
+        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
     }
 
     @Test
