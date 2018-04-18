@@ -77,7 +77,7 @@ public class SchemaUpgradeIT {
         // then don't throw exception
     }
 
-    private static void updateSchemaWithRetry(com.datastax.driver.core.Session wrappedSession,
+    static void updateSchemaWithRetry(com.datastax.driver.core.Session wrappedSession,
             String query) throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 60) {
