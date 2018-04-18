@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,18 +52,52 @@ public class StorageConfigPage {
         return withWait(xpath("//div[@gt-model='config.traceCappedDatabaseSizeMb']//input"));
     }
 
+    public void clickSaveButton() {
+        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
+    }
+
     public void clickDeleteAllButton() throws InterruptedException {
         WebElement deleteAllDataButton =
                 withWait(xpath("//button[normalize-space()='Delete all data']"));
         deleteAllDataButton.click();
         WebElement yesButton = withWait(xpath("//button[normalize-space()='Yes']"));
         yesButton.click();
-        // TODO implement better wait for delete to complete
-        Thread.sleep(1000);
     }
 
-    public void clickSaveButton() {
-        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
+    public void clickDefragH2Data() {
+        WebElement button = withWait(xpath("//button[normalize-space()='Defrag H2 data']"));
+        button.click();
+        WebElement yesButton = withWait(xpath("//button[normalize-space()='Yes']"));
+        yesButton.click();
+    }
+
+    public void clickCompactH2Data() {
+        WebElement button = withWait(xpath("//button[normalize-space()='Compact H2 data']"));
+        button.click();
+        WebElement yesButton = withWait(xpath("//button[normalize-space()='Yes']"));
+        yesButton.click();
+    }
+
+    public void clickAnalyzeH2DiskSpace() {
+        WebElement button = withWait(xpath("//button[normalize-space()='Analyze H2 disk space']"));
+        button.click();
+        WebElement yesButton = withWait(xpath("//button[normalize-space()='Yes']"));
+        yesButton.click();
+    }
+
+    public void clickAnalyzeTraceCounts() {
+        WebElement button = withWait(xpath("//button[normalize-space()='Analyze trace counts']"));
+        button.click();
+        WebElement yesButton = withWait(xpath("//button[normalize-space()='Yes']"));
+        yesButton.click();
+    }
+
+    public void clickUpdateTwcsWindowSizesButton() {
+        WebElement button =
+                withWait(xpath("//button[normalize-space()='Update TWCS window sizes']"));
+        button.click();
+        WebElement yesButton = withWait(xpath("//button[normalize-space()='Yes']"));
+        yesButton.click();
     }
 
     private WebElement withWait(By by) {

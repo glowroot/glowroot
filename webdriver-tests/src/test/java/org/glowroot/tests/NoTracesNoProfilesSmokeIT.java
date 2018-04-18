@@ -44,6 +44,8 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
         globalNavbar.getAdminConfigLink().click();
         configSidebar.getStorageLink().click();
         storageConfigPage.clickDeleteAllButton();
+        // TODO implement better wait for delete to complete
+        Thread.sleep(1000);
 
         String content = httpGet("http://localhost:" + getUiPort()
                 + "/backend/config/transaction?agent-id=" + agentId);

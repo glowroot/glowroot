@@ -31,6 +31,7 @@ import com.google.common.collect.Sets;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -447,6 +448,13 @@ public class BasicSmokeIT extends WebDriverIT {
     @Test
     public void shouldCheckLogPage() throws Exception {
         httpGet("http://localhost:" + getUiPort() + "/log");
+    }
+
+    @Test
+    public void shouldCheckCassandraWriteTotals() throws Exception {
+        Assume.assumeTrue(WebDriverSetup.useCentral);
+        httpGet("http://localhost:" + getUiPort()
+                + "/backend/admin/cassandra-write-totals?limit=10");
     }
 
     private void clickAroundInTraceModal(String traceId, boolean active) throws Exception {
