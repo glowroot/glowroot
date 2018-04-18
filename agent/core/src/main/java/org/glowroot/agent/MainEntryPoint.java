@@ -156,7 +156,8 @@ public class MainEntryPoint {
                     getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
             start(directories, properties, instrumentation, preCheckClassFileTransformer);
         } catch (AgentDirsLockedException e) {
-            logAgentDirsLockedException(directories.getConfDir(), e.getLockFile());
+            logAgentDirsLockedException(directories.getConfDir(), e.getLockFile(), e.isCentral(),
+                    e.isOfflineViewer());
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
@@ -179,7 +180,8 @@ public class MainEntryPoint {
                             directories.getTmpDir(), directories.getGlowrootJarFile(), properties,
                             null, null, version);
         } catch (AgentDirsLockedException e) {
-            logAgentDirsLockedException(directories.getConfDir(), e.getLockFile());
+            logAgentDirsLockedException(directories.getConfDir(), e.getLockFile(), e.isCentral(),
+                    e.isOfflineViewer());
             return;
         } catch (Throwable t) {
             startupLogger.error("Glowroot cannot start: {}", t.getMessage(), t);
@@ -372,7 +374,8 @@ public class MainEntryPoint {
     }
 
     @RequiresNonNull("startupLogger")
-    private static void logAgentDirsLockedException(File confDir, File lockFile) {
+    private static void logAgentDirsLockedException(File confDir, File lockFile, boolean central,
+            boolean offlineViewer) {
         // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
         // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
         // have been used to specify '-javaagent:glowroot.jar', in which case Glowroot tries
@@ -385,9 +388,24 @@ public class MainEntryPoint {
         //
         // no need for logging in the special (but common) case described above
         if (!isTomcatStop()) {
+            String extraExplanation = "";
+            if (!offlineViewer) {
+                extraExplanation = ".  If you are trying to monitor multiple JVM processes on one"
+                        + " box from the same agent installation, please see instructions for how"
+                        + " to do this on the wiki: ";
+                if (central) {
+                    extraExplanation += "https://github.com/glowroot/glowroot/wiki/Agent"
+                            + "-Installation-(for-Central-Collector)#monitoring-multiple-jvm"
+                            + "-processes-on-one-box";
+                } else {
+                    extraExplanation += "https://github.com/glowroot/glowroot/wiki/Agent"
+                            + "-Installation-(with-Embedded-Collector)#monitoring-multiple-jvm"
+                            + "-processes-on-one-box";
+                }
+            }
             startupLogger.error("Glowroot not started, directory in use by another jvm process: {}"
-                    + " (unable to obtain lock on {})", confDir.getAbsolutePath(),
-                    lockFile.getAbsolutePath());
+                    + " (unable to obtain lock on {}){}", confDir.getAbsolutePath(),
+                    lockFile.getAbsolutePath(), extraExplanation);
         }
     }
 

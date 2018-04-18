@@ -84,7 +84,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
             final String glowrootVersion) throws Exception {
 
-        agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
+        agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir, true, false);
         Ticker ticker = Tickers.getTicker();
         Clock clock = Clock.systemClock();
 

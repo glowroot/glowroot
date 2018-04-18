@@ -104,7 +104,7 @@ class EmbeddedAgentModule {
             @Nullable File glowrootJarFile, String glowrootVersion, boolean offlineViewer)
             throws Exception {
 
-        agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir);
+        agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir, false, offlineViewer);
 
         ticker = Ticker.systemTicker();
         clock = Clock.systemClock();
