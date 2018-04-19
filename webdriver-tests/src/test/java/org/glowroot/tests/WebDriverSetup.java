@@ -72,7 +72,7 @@ public class WebDriverSetup {
     // travis build is currently failing with jbrowser driver
     private static final boolean USE_JBROWSER_DRIVER = false;
 
-    private static final String GECKO_DRIVER_VERSION = "0.19.1";
+    private static final String GECKO_DRIVER_VERSION = "0.20.1";
 
     private static final Logger logger = LoggerFactory.getLogger(WebDriverSetup.class);
 

@@ -214,6 +214,8 @@ public class Logger {
         }
         updateLibVersion("jboss.logging.version", "2.1.0.Final");
         runJBossLoggingJava8(test);
+        updateLibVersion("jboss.logging.version", "2.1.1.Final");
+        runJBossLoggingJava8(test);
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {

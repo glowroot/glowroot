@@ -18,7 +18,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <datastax.driver.version>3.4.0</datastax.driver.version>
+    <datastax.driver.version>3.5.0</datastax.driver.version>
   </properties>
 
   <dependencies>

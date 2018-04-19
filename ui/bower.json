@@ -15,11 +15,11 @@
     "eonasdan-bootstrap-datetimepicker": "4.17.47",
     "flot": "trask/flot#glowroot-0.9.9",
     "flot.tooltip": "trask/flot.tooltip#glowroot-0.9.27",
-    "fontawesome": "5.0.8",
+    "fontawesome": "5.0.10",
     "handlebars": "4.0.11",
     "jquery": "3.3.1",
-    "moment": "2.21.0",
-    "moment-timezone": "0.5.14",
+    "moment": "2.22.1",
+    "moment-timezone": "0.5.16",
     "sequeljs": "trask/sequeljs#glowroot-0.9.8",
     "spinjs": "2.3.2"
   }

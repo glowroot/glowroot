@@ -290,11 +290,11 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 14; i++) {
+        for (int i = 0; i <= 16; i++) {
             updateLibVersion("spring.version", "4.3." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 4; i++) {
+        for (int i = 0; i <= 5; i++) {
             updateLibVersion("spring.version", "5.0." + i + ".RELEASE");
             runJava8(test);
         }

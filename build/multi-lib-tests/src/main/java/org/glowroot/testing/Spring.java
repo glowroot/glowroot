@@ -48,10 +48,10 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.2." + i + ".RELEASE");
         }
-        for (int i = 0; i <= 14; i++) {
+        for (int i = 0; i <= 16; i++) {
             run("4.3." + i + ".RELEASE");
         }
-        for (int i = 0; i <= 4; i++) {
+        for (int i = 0; i <= 5; i++) {
             runJava8("5.0." + i + ".RELEASE");
         }
     }

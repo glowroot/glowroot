@@ -147,7 +147,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.14.RELEASE</version>
+      <version>4.3.16.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -189,7 +189,7 @@
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
-      <version>3.4.0</version>
+      <version>3.5.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
