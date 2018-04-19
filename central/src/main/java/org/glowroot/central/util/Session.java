@@ -238,7 +238,20 @@ public class Session {
         updateSchemaWithRetry(wrappedSession, query);
     }
 
-    private ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle) throws Exception {
+    private void createTableWithTracking(String createTableQuery) throws InterruptedException {
+        if (createTableQuery.startsWith("create table if not exists ")) {
+            String remaining = createTableQuery.substring("create table if not exists ".length());
+            int index = remaining.indexOf(' ');
+            allTableNames.add(remaining.substring(0, index));
+        } else {
+            throw new IllegalStateException("create table query must use \"if not exists\" so that"
+                    + " it can be safely retried on timeout");
+        }
+        updateSchemaWithRetry(createTableQuery);
+    }
+
+    private static ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle)
+            throws Exception {
         Semaphore perThreadSemaphore = perThreadSemaphores.get();
         perThreadSemaphore.acquire();
         SettableFuture<ResultSet> outerFuture = SettableFuture.create();
@@ -265,19 +278,7 @@ public class Session {
         return outerFuture;
     }
 
-    private void createTableWithTracking(String createTableQuery) throws InterruptedException {
-        if (createTableQuery.startsWith("create table if not exists ")) {
-            String remaining = createTableQuery.substring("create table if not exists ".length());
-            int index = remaining.indexOf(' ');
-            allTableNames.add(remaining.substring(0, index));
-        } else {
-            throw new IllegalStateException("create table query must use \"if not exists\" so that"
-                    + " it can be safely retried on timeout");
-        }
-        updateSchemaWithRetry(createTableQuery);
-    }
-
-    private @Nullable String getTableName(String createTableQuery, String prefix) {
+    private static @Nullable String getTableName(String createTableQuery, String prefix) {
         if (createTableQuery.startsWith(prefix)) {
             String suffix = createTableQuery.substring(prefix.length());
             int index = suffix.indexOf(' ');

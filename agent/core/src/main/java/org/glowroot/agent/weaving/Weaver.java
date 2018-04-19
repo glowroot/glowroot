@@ -63,7 +63,6 @@ import org.glowroot.agent.util.IterableWithSelfRemovableEntries;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.objectweb.asm.Opcodes.ASM6;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
@@ -208,13 +207,13 @@ public class Weaver {
         } else if (className.equals(ImportantClassNames.FELIX_OSGI_HACK_CLASS_NAME)
                 || className.equals(ImportantClassNames.FELIX3_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
+            ClassVisitor cv = new OsgiHackClassVisitor(cw, className, "shouldBootDelegate");
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.ECLIPSE_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new EclipseOsgiHackClassVisitor(cw);
+            ClassVisitor cv = new OsgiHackClassVisitor(cw, className, "isBootDelegationPackage");
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
@@ -527,43 +526,40 @@ public class Weaver {
         }
     }
 
-    private static class FelixOsgiHackClassVisitor extends ClassVisitor {
+    private static class OsgiHackClassVisitor extends ClassVisitor {
 
         private final ClassWriter cw;
-        // this hack is used for both org.apache.felix.framework.BundleWiringImpl (felix 4.0.0+)
-        // and org.apache.felix.framework.ModuleImpl (prior to felix 4.0.0)
-        private @Nullable String className;
+        // this hack is used for
+        // org.apache.felix.framework.BundleWiringImpl.shouldBootDelegate() (felix 4.0.0+)
+        // org.apache.felix.framework.ModuleImpl.shouldBootDelegate() (prior to felix 4.0.0)
+        // org.eclipse.osgi.internal.framework.EquinoxContainer.isBootDelegationPackage()
+        private final String className;
+        private final String methodName;
 
-        private FelixOsgiHackClassVisitor(ClassWriter cw) {
+        private OsgiHackClassVisitor(ClassWriter cw, String className, String methodName) {
             super(ASM6, cw);
             this.cw = cw;
-        }
-
-        @Override
-        public void visit(int version, int access, String name, @Nullable String signature,
-                @Nullable String superName, String /*@Nullable*/ [] interfaces) {
-            super.visit(version, access, name, signature, superName, interfaces);
-            this.className = name;
+            this.className = className;
+            this.methodName = methodName;
         }
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals("shouldBootDelegate") && desc.equals("(Ljava/lang/String;)Z")) {
-                return new FelixOsgiHackMethodVisitor(checkNotNull(className), mv, access, name,
-                        desc);
+            if (name.equals(methodName) && desc.equals("(Ljava/lang/String;)Z")) {
+                return new OsgiHackMethodVisitor(className, mv, access, name, desc);
             } else {
                 return mv;
             }
         }
     }
 
-    private static class FelixOsgiHackMethodVisitor extends AdviceAdapter {
+    private static class OsgiHackMethodVisitor extends AdviceAdapter {
 
         private final String ownerName;
 
-        private FelixOsgiHackMethodVisitor(String ownerName, MethodVisitor mv, int access,
+        private OsgiHackMethodVisitor(String ownerName, MethodVisitor mv, int access,
                 String name, String desc) {
             super(ASM6, mv, access, name, desc);
             this.ownerName = ownerName;
@@ -581,51 +577,6 @@ public class Weaver {
             visitInsn(IRETURN);
             visitLabel(label);
             Object[] locals = new Object[] {ownerName, "java/lang/String"};
-            visitFrame(F_NEW, locals.length, locals, 0, new Object[0]);
-        }
-    }
-
-    private static class EclipseOsgiHackClassVisitor extends ClassVisitor {
-
-        private final ClassWriter cw;
-
-        private EclipseOsgiHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
-            this.cw = cw;
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals("isBootDelegationPackage") && desc.equals("(Ljava/lang/String;)Z")) {
-                return new EclipseOsgiHackMethodVisitor(mv, access, name, desc);
-            } else {
-                return mv;
-            }
-        }
-    }
-
-    private static class EclipseOsgiHackMethodVisitor extends AdviceAdapter {
-
-        private EclipseOsgiHackMethodVisitor(MethodVisitor mv, int access, String name,
-                String desc) {
-            super(ASM6, mv, access, name, desc);
-        }
-
-        @Override
-        protected void onMethodEnter() {
-            visitVarInsn(ALOAD, 1);
-            visitLdcInsn("org.glowroot.");
-            visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith",
-                    "(Ljava/lang/String;)Z", false);
-            Label label = new Label();
-            visitJumpInsn(IFEQ, label);
-            visitInsn(ICONST_1);
-            visitInsn(IRETURN);
-            visitLabel(label);
-            Object[] locals = new Object[] {ImportantClassNames.ECLIPSE_OSGI_HACK_CLASS_NAME,
-                    "java/lang/String"};
             visitFrame(F_NEW, locals.length, locals, 0, new Object[0]);
         }
     }

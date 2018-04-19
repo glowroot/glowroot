@@ -417,7 +417,7 @@ public class CentralModule {
             }
             command = Tools::setupAdminUser;
         } else if (commandName.equals("truncate-all-data")) {
-            if (args.size() != 0) {
+            if (!args.isEmpty()) {
                 startupLogger.error("truncate-all-data does not accept any args, exiting");
                 return;
             }

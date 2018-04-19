@@ -143,6 +143,21 @@ class Common {
         return ImmutableList.copyOf(needsRollupFromChildrenMap.values());
     }
 
+    static void insertNeedsRollupFromChild(String agentRollupId, String parentAgentRollupId,
+            PreparedStatement insertNeedsRollupFromChild,
+            NeedsRollupFromChildren needsRollupFromChildren, long captureTime,
+            int needsRollupAdjustedTTL, Session session) throws Exception {
+        BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
+        int i = 0;
+        boundStatement.setString(i++, parentAgentRollupId);
+        boundStatement.setTimestamp(i++, new Date(captureTime));
+        boundStatement.setUUID(i++, UUIDs.timeBased());
+        boundStatement.setString(i++, agentRollupId);
+        boundStatement.setSet(i++, needsRollupFromChildren.getKeys().keySet());
+        boundStatement.setInt(i++, needsRollupAdjustedTTL);
+        session.execute(boundStatement);
+    }
+
     // it is important that the insert into next needs_rollup happens after present
     // rollup and before deleting present rollup
     // if insert before present rollup then possible for the next rollup to occur before

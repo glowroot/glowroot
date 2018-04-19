@@ -31,74 +31,6 @@ glowroot.controller('ConfigAlertCtrl', [
 
     var gaugeUnits = {};
 
-    var METRICS = [
-      {
-        id: 'transaction',
-        display: 'Transactions',
-        heading: true,
-        disabled: true
-      },
-      {
-        id: 'transaction:average',
-        display: 'Response time (average)'
-      },
-      {
-        id: 'transaction:x-percentile',
-        display: 'Response time (X\u1d57\u02b0 percentile)'
-      },
-      // TODO
-      // {
-      //   id: 'transaction:timer-inclusive',
-      //   display: 'Breakdown metric time (inclusive)'
-      // },
-      // {
-      //   id: 'transaction:timer-exclusive',
-      //   display: 'Breakdown metric time (exclusive)'
-      // },
-      // {
-      //   id: 'transaction:timer-count',
-      //   display: 'Breakdown metric count'
-      // },
-      // {
-      //   id: 'transaction:profile-sample-count',
-      //   display: 'Profile sample count'
-      // },
-      {
-        id: 'transaction:count',
-        display: 'Count'
-      },
-      {
-        id: '-empty1-',
-        display: '',
-        disabled: true
-      },
-      {
-        id: 'error',
-        display: 'Errors',
-        heading: true,
-        disabled: true
-      },
-      {
-        id: 'error:rate',
-        display: 'Error rate (%)'
-      },
-      {
-        id: 'error:count',
-        display: 'Count'
-      },
-      {
-        id: '-empty2-',
-        display: '',
-        disabled: true
-      },
-      {
-        id: 'gauge',
-        display: 'JVM Gauges',
-        heading: true,
-        disabled: true
-      }
-    ];
-
     $scope.conditionThresholdByteUnits = [
       {
         display: 'bytes',
@@ -118,7 +50,7 @@ glowroot.controller('ConfigAlertCtrl', [
       }
     ];
 
-    $scope.metrics = angular.copy(METRICS);
+    $scope.metrics = angular.copy($scope.METRICS);
     $scope.metrics.push({
       id: 'gauge:select',
       display: '(select one or more agents to see available gauges)',
@@ -239,7 +171,7 @@ glowroot.controller('ConfigAlertCtrl', [
       } else {
         $scope.heading = '<New>';
       }
-      $scope.metrics = angular.copy(METRICS);
+      $scope.metrics = angular.copy($scope.METRICS);
       gaugeUnits = {};
       angular.forEach(data.gauges, function (gauge) {
         $scope.metrics.push({

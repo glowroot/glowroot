@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -63,6 +65,34 @@ public class ConfigFileUtil {
             writeBackupFile(file);
         }
         return rootObjectNode == null ? mapper.createObjectNode() : rootObjectNode;
+    }
+
+    public static <T> /*@Nullable*/ T getConfig(ObjectNode rootObjectNode, String key,
+            Class<T> clazz) {
+        JsonNode node = rootObjectNode.get(key);
+        if (node == null) {
+            return null;
+        }
+        try {
+            return mapper.treeToValue(node, clazz);
+        } catch (JsonProcessingException e) {
+            logger.error("error parsing config json node '{}': ", key, e);
+            return null;
+        }
+    }
+
+    public static <T> /*@Nullable*/ T getConfig(ObjectNode rootObjectNode, String key,
+            TypeReference<T> typeReference) {
+        JsonNode node = rootObjectNode.get(key);
+        if (node == null) {
+            return null;
+        }
+        try {
+            return mapper.readValue(mapper.treeAsTokens(node), typeReference);
+        } catch (IOException e) {
+            logger.error("error parsing config json node '{}': ", key, e);
+            return null;
+        }
     }
 
     public static void writeToFileIfNeeded(File file, ObjectNode rootObjectNode,
@@ -110,7 +140,7 @@ public class ConfigFileUtil {
         return orderedObjectNode;
     }
 
-    static void writeBackupFile(File file) {
+    private static void writeBackupFile(File file) {
         File backupFile = new File(file.getParentFile(), file.getName() + ".invalid-orig");
         try {
             Files.copy(file, backupFile);

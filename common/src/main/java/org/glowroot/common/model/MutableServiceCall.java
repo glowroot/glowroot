@@ -18,8 +18,6 @@ package org.glowroot.common.model;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-
 public class MutableServiceCall {
 
     static final Ordering<MutableServiceCall> byTotalDurationDesc =
@@ -35,7 +33,7 @@ public class MutableServiceCall {
     private double totalDurationNanos;
     private long executionCount;
 
-    public MutableServiceCall(String type, String text) {
+    MutableServiceCall(String type, String text) {
         this.type = type;
         this.text = text;
     }
@@ -67,14 +65,5 @@ public class MutableServiceCall {
     void add(MutableServiceCall serviceCall) {
         addToTotalDurationNanos(serviceCall.totalDurationNanos);
         addToExecutionCount(serviceCall.executionCount);
-    }
-
-    Aggregate.ServiceCall toProto() {
-        return Aggregate.ServiceCall.newBuilder()
-                .setType(type)
-                .setText(text)
-                .setTotalDurationNanos(totalDurationNanos)
-                .setExecutionCount(executionCount)
-                .build();
     }
 }

@@ -29,6 +29,8 @@ class Routes {
     private static final ConcurrentMap<String, String> simplifiedRoutes =
             new ConcurrentHashMap<String, String>();
 
+    private Routes() {}
+
     // visible for testing
     static String simplifiedRoute(String route) {
         String simplifiedRoute = simplifiedRoutes.get(route);

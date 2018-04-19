@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, moment, $ */
+/* global glowroot, angular, $ */
 
 glowroot.controller('TransactionCtrl', [
   '$scope',
@@ -97,28 +97,6 @@ glowroot.controller('TransactionCtrl', [
       return queryStrings.encodeObject(query);
     };
 
-    // TODO this is exact duplicate of same function in gauge-values.js
-    $scope.applyLast = function () {
-      if (!$scope.range.last) {
-        return;
-      }
-      var now = moment().startOf('second').valueOf();
-      var from = now - $scope.range.last;
-      var to = now + $scope.range.last / 10;
-      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(from, to);
-      var revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
-      var revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-      var revisedDataPointIntervalMillis = charts.getDataPointIntervalMillis(revisedFrom, revisedTo);
-      if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
-        // expanded out to larger rollup threshold so need to re-adjust
-        // ok to use original from/to instead of revisedFrom/revisedTo
-        revisedFrom = Math.floor(from / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
-        revisedTo = Math.ceil(to / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
-      }
-      $scope.range.chartFrom = revisedFrom;
-      $scope.range.chartTo = revisedTo;
-    };
-
     function onLocationChangeSuccess() {
       // can't use locationChanges service here because transaction.js covers multiple url paths
       if ($location.path().lastIndexOf('/' + shortName + '/', 0) === -1) {
@@ -138,7 +116,7 @@ glowroot.controller('TransactionCtrl', [
       $scope.summarySortOrder = $location.search()['summary-sort-order'] || $scope.defaultSummarySortOrder;
 
       // always re-apply last in order to reflect the latest time
-      $scope.applyLast();
+      charts.applyLast($scope);
     }
 
     // need to defer listener registration, otherwise captures initial location change sometimes

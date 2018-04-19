@@ -63,7 +63,7 @@ glowroot.factory('charts', [
       };
 
       $scope.refresh = function () {
-        $scope.applyLast();
+        applyLast($scope);
         $scope.range.chartRefresh++;
       };
     }
@@ -82,7 +82,7 @@ glowroot.factory('charts', [
 
       if (zoomingOut && $scope.range.last) {
         $scope.range.last = roundUpLast($scope.range.last * 2);
-        $scope.applyLast();
+        applyLast($scope);
         return;
       }
 
@@ -129,25 +129,24 @@ glowroot.factory('charts', [
           // due to shrinking the zoom to data point interval, which could result in strange 2 days --> 22 hours
           // instead of the more obvious 2 days --> 1 day
           $scope.range.last = roundUpLast($scope.range.last / 2);
-          $scope.applyLast();
+          applyLast($scope);
           return;
         }
         if (tracePoints && revisedTo - revisedFrom === 120000) {
           $scope.range.last = 60000;
-          $scope.applyLast();
+          applyLast($scope);
           return;
         }
         if (tracePoints && now < revisedFrom) {
           // this can happen after zooming in on RHS of chart until 1 second total chart width, then zooming out on LHS
           $scope.range.last = 60000;
-          $scope.applyLast();
           return;
         }
         var last = roundUpLast(now - revisedFrom, selection);
         if (last > 0) {
           $scope.range.last = last;
         }
-        $scope.applyLast();
+        applyLast($scope);
       } else {
         $scope.range.chartFrom = revisedFrom;
         $scope.range.chartTo = revisedTo;
@@ -490,6 +489,28 @@ glowroot.factory('charts', [
       });
     }
 
+    function applyLast($scope) {
+      if (!$scope.range.last) {
+        return;
+      }
+      var now = moment().startOf('second').valueOf();
+      var from = now - $scope.range.last;
+      var to = now + $scope.range.last / 10;
+      var dataPointIntervalMillis = getDataPointIntervalMillis(from, to, $scope.useGaugeViewThresholdMultiplier);
+      var revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+      var revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+      var revisedDataPointIntervalMillis =
+          getDataPointIntervalMillis(revisedFrom, revisedTo, $scope.useGaugeViewThresholdMultiplier);
+      if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
+        // expanded out to larger rollup threshold so need to re-adjust
+        // ok to use original from/to instead of revisedFrom/revisedTo
+        revisedFrom = Math.floor(from / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
+        revisedTo = Math.ceil(to / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
+      }
+      $scope.range.chartFrom = revisedFrom;
+      $scope.range.chartTo = revisedTo;
+    }
+
     return {
       createState: createState,
       init: init,
@@ -499,7 +520,8 @@ glowroot.factory('charts', [
       renderTooltipHtml: renderTooltipHtml,
       updateRange: updateRange,
       getDataPointIntervalMillis: getDataPointIntervalMillis,
-      startAutoRefresh: startAutoRefresh
+      startAutoRefresh: startAutoRefresh,
+      applyLast: applyLast
     };
   }
 ]);

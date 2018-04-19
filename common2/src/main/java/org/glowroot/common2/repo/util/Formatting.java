@@ -31,7 +31,7 @@ public class Formatting {
         return displaySixDigitsOfPrecision(value, Locale.getDefault());
     }
 
-    public static String formatBytes(long bytes) {
+    static String formatBytes(long bytes) {
         return formatBytes(bytes, Locale.getDefault());
     }
 

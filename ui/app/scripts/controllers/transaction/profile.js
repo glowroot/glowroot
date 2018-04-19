@@ -21,9 +21,10 @@ glowroot.controller('TransactionProfileCtrl', [
   '$http',
   '$location',
   'locationChanges',
+  'charts',
   'queryStrings',
   'httpErrors',
-  function ($scope, $http, $location, locationChanges, queryStrings, httpErrors) {
+  function ($scope, $http, $location, locationChanges, charts, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'profile';
 
@@ -84,7 +85,7 @@ glowroot.controller('TransactionProfileCtrl', [
     };
 
     $scope.refresh = function () {
-      $scope.applyLast();
+      charts.applyLast($scope);
       appliedFilter = $scope.filter;
       $scope.range.chartRefresh++;
     };

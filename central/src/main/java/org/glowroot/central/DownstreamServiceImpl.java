@@ -37,8 +37,6 @@ import org.infinispan.util.function.SerializableFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.central.repo.AgentDao;
-import org.glowroot.central.repo.V09AgentRollupDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.DistributedExecutionMap;
 import org.glowroot.common.live.ImmutableEntries;
@@ -113,17 +111,14 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceImpl.class);
 
-    private final AgentDao agentDao;
-    private final V09AgentRollupDao v09AgentRollupDao;
+    private final GrpcCommon grpcCommon;
 
     private final DistributedExecutionMap<String, ConnectedAgent> connectedAgents;
 
     private final ReadWriteLock shuttingDownLock = new ReentrantReadWriteLock(true);
 
-    DownstreamServiceImpl(AgentDao agentDao, V09AgentRollupDao v09AgentRollupDao,
-            ClusterManager clusterManager) {
-        this.agentDao = agentDao;
-        this.v09AgentRollupDao = v09AgentRollupDao;
+    DownstreamServiceImpl(GrpcCommon grpcCommon, ClusterManager clusterManager) {
+        this.grpcCommon = grpcCommon;
         connectedAgents = clusterManager.createDistributedExecutionMap("connectedAgents");
     }
 
@@ -478,7 +473,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             if (value.getMessageCase() == AgentResponse.MessageCase.HELLO) {
                 Hello hello = value.getHello();
                 try {
-                    agentId = getAgentId(hello.getAgentId(), hello.getPostV09());
+                    agentId = grpcCommon.getAgentId(hello.getAgentId(), hello.getPostV09());
                 } catch (Exception e) {
                     logger.error("{} - {}",
                             getDisplayForLogging(hello.getAgentId(), hello.getPostV09()),
@@ -607,38 +602,11 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         }
 
         private String getDisplayForLogging(String agentId, boolean postV09) {
-            if (postV09) {
-                return getDisplayForLogging(agentId);
-            }
-            String postV09AgentId;
-            try {
-                postV09AgentId = getAgentId(agentId, false);
-            } catch (Exception e) {
-                logger.error("{} - v09:{}", agentId, e.getMessage(), e);
-                return "id:v09:" + agentId;
-            }
-            return getDisplayForLogging(postV09AgentId);
+            return grpcCommon.getDisplayForLogging(agentId, postV09);
         }
 
         private String getDisplayForLogging(String agentId) {
-            try {
-                return agentDao.readAgentRollupDisplay(agentId);
-            } catch (Exception e) {
-                logger.error("{} - {}", agentId, e.getMessage(), e);
-                return "id:" + agentId;
-            }
-        }
-
-        private String getAgentId(String agentId, boolean postV09) throws Exception {
-            if (postV09) {
-                return agentId;
-            }
-            String v09AgentRollupId = v09AgentRollupDao.getV09AgentRollupId(agentId);
-            if (v09AgentRollupId == null) {
-                return agentId;
-            } else {
-                return CollectorServiceImpl.convertFromV09AgentRollupId(v09AgentRollupId) + agentId;
-            }
+            return grpcCommon.getDisplayForLogging(agentId);
         }
     }
 

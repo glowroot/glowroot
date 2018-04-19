@@ -327,15 +327,9 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             if (parentAgentRollupId != null) {
                 // insert needs to happen first before call to postRollup(), see method-level
                 // comment on postRollup
-                BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
-                int i = 0;
-                boundStatement.setString(i++, parentAgentRollupId);
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setUUID(i++, UUIDs.timeBased());
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setSet(i++, needsRollupFromChildren.getKeys().keySet());
-                boundStatement.setInt(i++, needsRollupAdjustedTTL);
-                session.execute(boundStatement);
+                Common.insertNeedsRollupFromChild(agentRollupId, parentAgentRollupId,
+                        insertNeedsRollupFromChild, needsRollupFromChildren, captureTime,
+                        needsRollupAdjustedTTL, session);
             }
             Common.postRollup(agentRollupId, needsRollupFromChildren.getCaptureTime(),
                     needsRollupFromChildren.getKeys().keySet(),

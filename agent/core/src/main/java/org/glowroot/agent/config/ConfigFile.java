@@ -20,13 +20,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,33 +57,12 @@ class ConfigFile {
         }
     }
 
-    @Nullable
-    <T> T getConfig(String key, Class<T> clazz) {
-        JsonNode node = rootObjectNode.get(key);
-        if (node == null) {
-            return null;
-        }
-        try {
-            return mapper.treeToValue(node, clazz);
-        } catch (JsonProcessingException e) {
-            logger.error("error parsing config json node '{}': ", key, e);
-            return null;
-        }
+    <T> /*@Nullable*/ T getConfig(String key, Class<T> clazz) {
+        return ConfigFileUtil.getConfig(rootObjectNode, key, clazz);
     }
 
-    <T extends /*@NonNull*/ Object> /*@Nullable*/ T getConfig(String key,
-            TypeReference<T> typeReference) {
-        JsonNode node = rootObjectNode.get(key);
-        if (node == null) {
-            return null;
-        }
-        try {
-            return mapper.readValue(mapper.treeAsTokens(node), typeReference);
-        } catch (IOException e) {
-            logger.error("error parsing config json node '{}': ", key, e);
-            ConfigFileUtil.writeBackupFile(file);
-            return null;
-        }
+    <T> /*@Nullable*/ T getConfig(String key, TypeReference<T> typeReference) {
+        return ConfigFileUtil.getConfig(rootObjectNode, key, typeReference);
     }
 
     void writeConfig(String key, Object config) throws IOException {

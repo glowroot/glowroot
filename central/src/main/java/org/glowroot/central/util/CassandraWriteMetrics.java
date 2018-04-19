@@ -35,7 +35,6 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TableMetadata;
 import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -331,13 +330,13 @@ public class CassandraWriteMetrics {
     private static List<CassandraWriteTotals> getCassandraDataWritten(
             Map<String, WriteMetrics> writeMetricsMap, int limit) {
         return writeMetricsMap.values().stream()
-                .sorted(Comparator.reverseOrder())
+                .sorted(Comparator.comparingLong(WriteMetrics::getBytesWritten).reversed())
                 .limit(limit)
                 .map(WriteMetrics::toDataWritten)
                 .collect(Collectors.toList());
     }
 
-    private static class WriteMetrics implements Comparable<WriteMetrics> {
+    private static class WriteMetrics {
 
         private final String display;
         private final AtomicLong rowsWritten = new AtomicLong();
@@ -360,9 +359,8 @@ public class CassandraWriteMetrics {
                     .build();
         }
 
-        @Override
-        public int compareTo(WriteMetrics o) {
-            return Longs.compare(this.bytesWritten.get(), o.bytesWritten.get());
+        long getBytesWritten() {
+            return bytesWritten.get();
         }
     }
 }

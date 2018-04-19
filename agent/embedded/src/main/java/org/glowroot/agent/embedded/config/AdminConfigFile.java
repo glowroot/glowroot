@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,9 +28,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigFileUtil;
 import org.glowroot.common.util.ObjectMappers;
@@ -40,7 +36,6 @@ import org.glowroot.common2.config.PermissionParser;
 // TODO if admin.json file has unrecognized top-level node then log warning and remove that node
 class AdminConfigFile {
 
-    private static final Logger logger = LoggerFactory.getLogger(AdminConfigFile.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final List<String> keyOrder = ImmutableList.of("general", "users", "roles",
@@ -60,32 +55,12 @@ class AdminConfigFile {
         }
     }
 
-    @Nullable
-    <T> T getConfig(String key, Class<T> clazz) {
-        JsonNode node = rootObjectNode.get(key);
-        if (node == null) {
-            return null;
-        }
-        try {
-            return mapper.treeToValue(node, clazz);
-        } catch (JsonProcessingException e) {
-            logger.error("error parsing admin json node '{}': ", key, e);
-            return null;
-        }
+    <T> /*@Nullable*/ T getConfig(String key, Class<T> clazz) {
+        return ConfigFileUtil.getConfig(rootObjectNode, key, clazz);
     }
 
-    <T extends /*@NonNull*/ Object> /*@Nullable*/ T getConfig(String key,
-            TypeReference<T> typeReference) {
-        JsonNode node = rootObjectNode.get(key);
-        if (node == null) {
-            return null;
-        }
-        try {
-            return mapper.readValue(mapper.treeAsTokens(node), typeReference);
-        } catch (IOException e) {
-            logger.error("error parsing admin json node '{}': ", key, e);
-            return null;
-        }
+    <T> /*@Nullable*/ T getConfig(String key, TypeReference<T> typeReference) {
+        return ConfigFileUtil.getConfig(rootObjectNode, key, typeReference);
     }
 
     void writeConfig(String key, Object config) throws IOException {

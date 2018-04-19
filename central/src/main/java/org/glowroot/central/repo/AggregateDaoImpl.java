@@ -853,8 +853,6 @@ public class AggregateDaoImpl implements AggregateDao {
         for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
             long captureTime = needsRollupFromChildren.getCaptureTime();
             TTL adjustedTTL = getAdjustedTTL(ttl, captureTime, clock);
-            int needsRollupAdjustedTTL =
-                    Common.getNeedsRollupAdjustedTTL(adjustedTTL.generalTTL(), rollupConfigs);
             RollupParams rollupParams =
                     getRollupParams(agentRollupId, agentRollupIdForMeta, rollupLevel, adjustedTTL);
             List<Future<?>> futures = new ArrayList<>();
@@ -869,18 +867,14 @@ public class AggregateDaoImpl implements AggregateDao {
             // wait for above async work to ensure rollup complete before proceeding
             MoreFutures.waitForAll(futures);
 
+            int needsRollupAdjustedTTL =
+                    Common.getNeedsRollupAdjustedTTL(adjustedTTL.generalTTL(), rollupConfigs);
             if (parentAgentRollupId != null) {
                 // insert needs to happen first before call to postRollup(), see method-level
                 // comment on postRollup
-                BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
-                int i = 0;
-                boundStatement.setString(i++, parentAgentRollupId);
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setUUID(i++, UUIDs.timeBased());
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setSet(i++, needsRollupFromChildren.getKeys().keySet());
-                boundStatement.setInt(i++, needsRollupAdjustedTTL);
-                session.execute(boundStatement);
+                Common.insertNeedsRollupFromChild(agentRollupId, parentAgentRollupId,
+                        insertNeedsRollupFromChild, needsRollupFromChildren, captureTime,
+                        needsRollupAdjustedTTL, session);
             }
             Common.postRollup(agentRollupId, needsRollupFromChildren.getCaptureTime(),
                     needsRollupFromChildren.getKeys().keySet(),

@@ -136,7 +136,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     };
 
     $scope.refresh = function () {
-      $scope.applyLast();
+      charts.applyLast($scope);
       appliedFilter = $scope.filter;
       $scope.range.chartRefresh++;
     };

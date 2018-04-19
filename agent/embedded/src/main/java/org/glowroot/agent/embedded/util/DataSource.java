@@ -144,45 +144,12 @@ public class DataSource {
     }
 
     public List<H2Table> analyzeH2DiskSpace() throws Exception {
-        if (dbFile == null) {
-            return ImmutableList.of();
-        }
-        List</*@Untainted*/ String> tableNames;
-        synchronized (lock) {
-            if (closed) {
-                return ImmutableList.of();
+        return suppressQueryTimeout(new Callable<List<H2Table>>() {
+            @Override
+            public List<H2Table> call() throws Exception {
+                return analyzeH2DiskSpaceUnderSuppressQueryTimeout();
             }
-            tableNames = getAllTableNamesUnderLock();
-        }
-        List<H2Table> tables = Lists.newArrayList();
-        for (String tableName : tableNames) {
-            long bytes;
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            synchronized (lock) {
-                if (closed) {
-                    return tables;
-                }
-                bytes = getTableBytesUnderLock(tableName);
-            }
-            // sleep a bit to allow some other threads to use the data source
-            Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
-            stopwatch.reset().start();
-            long rows;
-            synchronized (lock) {
-                if (closed) {
-                    return tables;
-                }
-                rows = getTableRowsUnderLock(tableName);
-            }
-            // sleep a bit to allow some other threads to use the data source
-            Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
-            tables.add(ImmutableH2Table.builder()
-                    .name(tableName)
-                    .bytes(bytes)
-                    .rows(rows)
-                    .build());
-        }
-        return tables;
+        });
     }
 
     public void deleteAll() throws SQLException {
@@ -237,8 +204,28 @@ public class DataSource {
 
     // warning: this method returns 0 when data source is closed
     public long queryForLong(final @Untainted String sql, Object... args) throws SQLException {
-        Long value = queryForOptionalLong(sql, args);
-        return value == null ? 0L : value;
+        debug(sql, args);
+        synchronized (lock) {
+            if (closed) {
+                return 0;
+            }
+            return queryUnderLock(sql, args, new ResultSetExtractor<Long>() {
+                @Override
+                public Long extractData(ResultSet resultSet) throws SQLException {
+                    if (!resultSet.next()) {
+                        return 0L;
+                    }
+                    long val = resultSet.getLong(1);
+                    if (resultSet.wasNull()) {
+                        logger.warn("more than one row returned: {}", sql);
+                    }
+                    if (resultSet.next()) {
+                        logger.warn("more than one row returned: {}", sql);
+                    }
+                    return val;
+                }
+            });
+        }
     }
 
     public @Nullable Long queryForOptionalLong(final @Untainted String sql, Object... args)
@@ -505,6 +492,45 @@ public class DataSource {
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
+    private List<H2Table> analyzeH2DiskSpaceUnderSuppressQueryTimeout() throws Exception {
+        List</*@Untainted*/ String> tableNames;
+        synchronized (lock) {
+            if (closed) {
+                return ImmutableList.of();
+            }
+            tableNames = getAllTableNamesUnderLock();
+        }
+        List<H2Table> tables = Lists.newArrayList();
+        for (String tableName : tableNames) {
+            long bytes;
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            synchronized (lock) {
+                if (closed) {
+                    return tables;
+                }
+                bytes = queryForLong("call disk_space_used (?)", tableName);
+            }
+            // sleep a bit to allow some other threads to use the data source
+            Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
+            stopwatch.reset().start();
+            long rows;
+            synchronized (lock) {
+                if (closed) {
+                    return tables;
+                }
+                rows = queryForLong("select count(*) from " + tableName);
+            }
+            // sleep a bit to allow some other threads to use the data source
+            Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
+            tables.add(ImmutableH2Table.builder()
+                    .name(tableName)
+                    .bytes(bytes)
+                    .rows(rows)
+                    .build());
+        }
+        return tables;
+    }
+
     @GuardedBy("lock")
     private <T extends /*@Nullable*/ Object> T queryUnderLock(@Untainted String sql, Object[] args,
             ResultSetExtractor<T> rse) throws SQLException {
@@ -513,74 +539,27 @@ public class DataSource {
             preparedStatement.setObject(i + 1, args[i]);
         }
         ResultSet resultSet = preparedStatement.executeQuery();
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            return rse.extractData(resultSet);
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
-        // don't need to close statement since they are all cached and used under lock
-    }
-
-    @GuardedBy("lock")
-    private long getTableBytesUnderLock(String tableName) throws SQLException {
-        PreparedStatement preparedStatement = prepareStatement("call disk_space_used (?)", 0);
-        preparedStatement.setString(1, tableName);
-        ResultSet resultSet = preparedStatement.executeQuery();
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            if (!resultSet.next()) {
-                throw new IllegalStateException("No results for call disk_space_used");
-            }
-            return resultSet.getLong(1);
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
-        // don't need to close statement since they are all cached and used under lock
-    }
-
-    @GuardedBy("lock")
-    private long getTableRowsUnderLock(@Untainted String tableName) throws SQLException {
-        PreparedStatement preparedStatement =
-                prepareStatement("select count(*) from " + tableName, 0);
-        ResultSet resultSet = preparedStatement.executeQuery();
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            if (!resultSet.next()) {
-                throw new IllegalStateException("No results for call disk_space_used");
-            }
-            return resultSet.getLong(1);
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
+        return extractAndClose(resultSet, rse);
         // don't need to close statement since they are all cached and used under lock
     }
 
     @GuardedBy("lock")
     private List</*@Untainted*/ String> getAllTableNamesUnderLock() throws SQLException {
         ResultSet resultSet = connection.getMetaData().getTables(null, null, null, null);
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            List</*@Untainted*/ String> tableNames = Lists.newArrayList();
-            while (resultSet.next()) {
-                String tableType = checkNotNull(resultSet.getString(4));
-                if (tableType.equals("TABLE")) {
-                    String tableName = checkNotNull(resultSet.getString(3));
-                    tableNames.add(castUntainted(tableName));
+        return extractAndClose(resultSet, new ResultSetExtractor<List</*@Untainted*/ String>>() {
+            @Override
+            public List</*@Untainted*/ String> extractData(ResultSet resultSet) throws Exception {
+                List</*@Untainted*/ String> tableNames = Lists.newArrayList();
+                while (resultSet.next()) {
+                    String tableType = checkNotNull(resultSet.getString(4));
+                    if (tableType.equals("TABLE")) {
+                        String tableName = checkNotNull(resultSet.getString(3));
+                        tableNames.add(castUntainted(tableName));
+                    }
                 }
+                return tableNames;
             }
-            return tableNames;
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
+        });
     }
 
     @GuardedBy("lock")
@@ -602,6 +581,18 @@ public class DataSource {
             // preparedStatementCache's CacheLoader throws is SQLException
             logger.error(e.getMessage(), e);
             throw new SQLException(e);
+        }
+    }
+
+    private static <T> T extractAndClose(ResultSet resultSet, ResultSetExtractor<T> rse)
+            throws SQLException {
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
+        try {
+            return rse.extractData(resultSet);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
         }
     }
 

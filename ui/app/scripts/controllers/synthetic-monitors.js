@@ -152,28 +152,6 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       }
     });
 
-    // TODO this is exact duplicate of same function in transaction.js
-    $scope.applyLast = function () {
-      if (!$scope.range.last) {
-        return;
-      }
-      var now = moment().startOf('second').valueOf();
-      var from = now - $scope.range.last;
-      var to = now + $scope.range.last / 10;
-      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(from, to, true);
-      var revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
-      var revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-      var revisedDataPointIntervalMillis = charts.getDataPointIntervalMillis(revisedFrom, revisedTo, true);
-      if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
-        // expanded out to larger rollup threshold so need to re-adjust
-        // ok to use original from/to instead of revisedFrom/revisedTo
-        revisedFrom = Math.floor(from / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
-        revisedTo = Math.ceil(to / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
-      }
-      $scope.range.chartFrom = revisedFrom;
-      $scope.range.chartTo = revisedTo;
-    };
-
     var location;
 
     function addToQuery(query) {
@@ -209,7 +187,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
         $scope.range.last = location.last;
         $scope.range.chartFrom = location.chartFrom;
         $scope.range.chartTo = location.chartTo;
-        $scope.applyLast();
+        charts.applyLast($scope);
       }
     });
 

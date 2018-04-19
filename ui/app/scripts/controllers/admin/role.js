@@ -197,23 +197,8 @@ glowroot.controller('AdminRoleCtrl', [
       if (permissionsObj.config._) {
         permissionsObj.config.view = false;
         permissionsObj.config.edit._ = false;
-        if ($scope.layout.central) {
-          permissionsObj.config.edit.general = false;
-        }
-        permissionsObj.config.edit.transaction = false;
-        permissionsObj.config.edit.gauge = false;
-        permissionsObj.config.edit.jvm = false;
-        if ($scope.layout.central) {
-          permissionsObj.config.edit.syntheticMonitor = false;
-        }
-        permissionsObj.config.edit.alert = false;
-        permissionsObj.config.edit.ui = false;
-        permissionsObj.config.edit.plugin = false;
-        permissionsObj.config.edit.instrumentation = false;
-        permissionsObj.config.edit.reweave = false;
-        permissionsObj.config.edit.advanced = false;
       }
-      if (permissionsObj.config.edit._) {
+      if (permissionsObj.config._ || permissionsObj.config.edit._) {
         if ($scope.layout.central) {
           permissionsObj.config.edit.general = false;
         }

@@ -247,44 +247,48 @@ public class ActionRequestBuilderAspect {
             return "DELETE " + request.index() + '/' + request.type();
         } else if (actionRequest instanceof SearchRequest) {
             SearchRequest request = (SearchRequest) actionRequest;
-            StringBuilder sb = new StringBuilder("SEARCH ");
-            @Nullable
-            String[] indices = request.indices();
-            @Nullable
-            String[] types = request.types();
-            if (indices != null && indices.length > 0) {
-                if (types != null && types.length > 0) {
-                    appendTo(sb, indices);
-                    sb.append('/');
-                    appendTo(sb, types);
-                } else {
-                    appendTo(sb, indices);
-                }
-            } else {
-                if (types != null && types.length > 0) {
-                    sb.append("_any/");
-                    appendTo(sb, types);
-                } else {
-                    sb.append('/');
-                }
-            }
-            Object source =
-                    ((SearchRequestBuilder) actionRequestBuilder).glowroot$getQueryBuilder();
-            if (source == null) {
-                return sb.toString();
-            } else if (source instanceof BytesReference) {
-                sb.append(' ');
-                sb.append(((BytesReference) source).toUtf8());
-                return sb.toString();
-            } else {
-                sb.append(' ');
-                sb.append(source);
-                return sb.toString();
-            }
+            return getQueryText(request, actionRequestBuilder);
         } else if (actionRequest == null) {
             return "(action request was null)";
         } else {
             return actionRequest.getClass().getName();
+        }
+    }
+
+    private static String getQueryText(SearchRequest request,
+            ActionRequestBuilder actionRequestBuilder) {
+        StringBuilder sb = new StringBuilder("SEARCH ");
+        @Nullable
+        String[] indices = request.indices();
+        @Nullable
+        String[] types = request.types();
+        if (indices != null && indices.length > 0) {
+            if (types != null && types.length > 0) {
+                appendTo(sb, indices);
+                sb.append('/');
+                appendTo(sb, types);
+            } else {
+                appendTo(sb, indices);
+            }
+        } else {
+            if (types != null && types.length > 0) {
+                sb.append("_any/");
+                appendTo(sb, types);
+            } else {
+                sb.append('/');
+            }
+        }
+        Object source = ((SearchRequestBuilder) actionRequestBuilder).glowroot$getQueryBuilder();
+        if (source == null) {
+            return sb.toString();
+        } else if (source instanceof BytesReference) {
+            sb.append(' ');
+            sb.append(((BytesReference) source).toUtf8());
+            return sb.toString();
+        } else {
+            sb.append(' ');
+            sb.append(source);
+            return sb.toString();
         }
     }
 

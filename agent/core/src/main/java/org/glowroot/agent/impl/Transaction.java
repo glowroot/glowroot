@@ -411,7 +411,7 @@ public class Transaction {
         }
     }
 
-    public List<Aggregate.Query> getQueries() throws Exception {
+    public List<Aggregate.Query> getQueries() {
         synchronized (sharedQueryTextCollectionLock) {
             if (sharedQueryTextCollection == null) {
                 sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
@@ -420,12 +420,12 @@ public class Transaction {
         }
     }
 
-    int getQueryCount() throws Exception {
+    int getQueryCount() {
         return getQueriesInternal(new NopSharedQueryTextCollection()).size();
     }
 
     private List<Aggregate.Query> getQueriesInternal(
-            SharedQueryTextCollection sharedQueryTextCollection) throws Exception {
+            SharedQueryTextCollection sharedQueryTextCollection) {
         QueryCollector collector = new QueryCollector(maxQueryAggregates,
                 AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER);
         mergeQueriesInto(collector);

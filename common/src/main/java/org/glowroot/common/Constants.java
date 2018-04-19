@@ -15,10 +15,12 @@
  */
 package org.glowroot.common;
 
-public interface Constants {
+public class Constants {
 
-    int AGGREGATE_QUERY_TEXT_TRUNCATE = 120; // first X characters
-    int TRACE_QUERY_TEXT_TRUNCATE = 120; // first X and last X characters
+    public static final int AGGREGATE_QUERY_TEXT_TRUNCATE = 120; // first X characters
+    public static final int TRACE_QUERY_TEXT_TRUNCATE = 120; // first X and last X characters
 
-    int RESOLVED_INCIDENT_EXPIRATION_HOURS = 30 * 24;
+    public static final int RESOLVED_INCIDENT_EXPIRATION_HOURS = 30 * 24;
+
+    private Constants() {}
 }

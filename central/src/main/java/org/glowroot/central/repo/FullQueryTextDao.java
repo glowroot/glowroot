@@ -108,13 +108,7 @@ class FullQueryTextDao {
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
-        ListenableFuture<?> future;
-        try {
-            future = storeCheckInternal(rateLimiterKey);
-        } catch (Exception e) {
-            rateLimiter.invalidate(rateLimiterKey);
-            throw e;
-        }
+        Future<?> future = storeCheckInternal(rateLimiterKey);
         if (!rateLimiterForSha1.tryAcquire(fullTextSha1)) {
             return ImmutableList.of(future);
         }
@@ -125,8 +119,7 @@ class FullQueryTextDao {
             invalidateBoth(rateLimiterKey);
             throw e;
         }
-        return ImmutableList.of(
-                MoreFutures.onFailure(future, () -> invalidateBoth(rateLimiterKey)),
+        return ImmutableList.of(future,
                 MoreFutures.onFailure(future2, () -> invalidateBoth(rateLimiterKey)));
     }
 
@@ -135,13 +128,7 @@ class FullQueryTextDao {
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
-        ListenableFuture<?> future;
-        try {
-            future = storeCheckInternal(rateLimiterKey);
-        } catch (Exception e) {
-            rateLimiter.invalidate(rateLimiterKey);
-            throw e;
-        }
+        Future<?> future = storeCheckInternal(rateLimiterKey);
         if (!rateLimiterForSha1.tryAcquire(fullTextSha1)) {
             return ImmutableList.of(future);
         }
@@ -188,8 +175,7 @@ class FullQueryTextDao {
                 chainedFuture.completeExceptionally(t);
             }
         }, MoreExecutors.directExecutor());
-        return ImmutableList.of(
-                MoreFutures.onFailure(future, () -> invalidateBoth(rateLimiterKey)),
+        return ImmutableList.of(future,
                 MoreFutures.onFailure(chainedFuture, () -> invalidateBoth(rateLimiterKey)));
     }
 
@@ -198,15 +184,7 @@ class FullQueryTextDao {
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
-        try {
-            ListenableFuture<?> future = storeCheckInternal(rateLimiterKey);
-            return ImmutableList.of(
-                    MoreFutures.onFailure(future,
-                            () -> rateLimiter.invalidate(rateLimiterKey)));
-        } catch (Exception e) {
-            rateLimiter.invalidate(rateLimiterKey);
-            throw e;
-        }
+        return ImmutableList.of(storeCheckInternal(rateLimiterKey));
     }
 
     private @Nullable String getFullTextUsingPS(String agentRollupId, String fullTextSha1,
@@ -290,14 +268,20 @@ class FullQueryTextDao {
         return chainedFuture;
     }
 
-    private ListenableFuture<?> storeCheckInternal(FullQueryTextKey rateLimiterKey)
+    private CompletableFuture<?> storeCheckInternal(FullQueryTextKey rateLimiterKey)
             throws Exception {
-        BoundStatement boundStatement = insertCheckV2PS.bind();
-        int i = 0;
-        boundStatement.setString(i++, rateLimiterKey.agentRollupId());
-        boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
-        boundStatement.setInt(i++, getTTL());
-        return session.executeAsync(boundStatement);
+        try {
+            BoundStatement boundStatement = insertCheckV2PS.bind();
+            int i = 0;
+            boundStatement.setString(i++, rateLimiterKey.agentRollupId());
+            boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
+            boundStatement.setInt(i++, getTTL());
+            ListenableFuture<?> future = session.executeAsync(boundStatement);
+            return MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
+        } catch (Exception e) {
+            rateLimiter.invalidate(rateLimiterKey);
+            throw e;
+        }
     }
 
     private void invalidateBoth(FullQueryTextKey rateLimiterKey) {

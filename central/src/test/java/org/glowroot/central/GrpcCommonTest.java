@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,13 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CollectorServiceImplTest {
+public class GrpcCommonTest {
 
     @Test
     public void test() {
-        assertThat(CollectorServiceImpl.convertFromV09AgentRollupId("a/b/c"))
-                .isEqualTo("a::b::c::");
-        assertThat(CollectorServiceImpl.convertFromV09AgentRollupId("  a/b/c  "))
-                .isEqualTo("a::b::c::");
-        assertThat(CollectorServiceImpl.convertFromV09AgentRollupId("a /  b/c"))
-                .isEqualTo("a::b::c::");
-        assertThat(CollectorServiceImpl.convertFromV09AgentRollupId("a/  b  /c"))
-                .isEqualTo("a::b::c::");
+        assertThat(GrpcCommon.convertFromV09AgentRollupId("a/b/c")).isEqualTo("a::b::c::");
+        assertThat(GrpcCommon.convertFromV09AgentRollupId("  a/b/c  ")).isEqualTo("a::b::c::");
+        assertThat(GrpcCommon.convertFromV09AgentRollupId("a /  b/c")).isEqualTo("a::b::c::");
+        assertThat(GrpcCommon.convertFromV09AgentRollupId("a/  b  /c")).isEqualTo("a::b::c::");
     }
 }

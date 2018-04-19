@@ -206,7 +206,7 @@ public class Directories {
     }
 
     private static @Nullable File getAgentDir(String shortName, Properties props,
-            @Nullable String agentId) throws IOException {
+            @Nullable String agentId) {
         String dirPath = System.getProperty("glowroot." + shortName + ".dir");
         if (dirPath == null || dirPath.isEmpty()) {
             dirPath = props.getProperty(shortName + ".dir");

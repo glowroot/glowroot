@@ -151,7 +151,7 @@ class AggregateCollector {
     }
 
     Aggregate build(SharedQueryTextCollection sharedQueryTextCollection,
-            ScratchBuffer scratchBuffer) throws Exception {
+            ScratchBuffer scratchBuffer) {
         Aggregate.Builder builder = Aggregate.newBuilder()
                 .setTotalDurationNanos(totalDurationNanos)
                 .setTransactionCount(transactionCount)

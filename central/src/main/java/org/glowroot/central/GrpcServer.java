@@ -56,11 +56,12 @@ class GrpcServer {
             CentralAlertingService centralAlertingService, ClusterManager clusterManager,
             Clock clock, String version) throws IOException {
 
-        downstreamService = new DownstreamServiceImpl(agentDao, v09AgentRollupDao, clusterManager);
+        GrpcCommon grpcCommon = new GrpcCommon(agentDao, v09AgentRollupDao);
+        downstreamService = new DownstreamServiceImpl(grpcCommon, clusterManager);
 
         CollectorServiceImpl collectorService = new CollectorServiceImpl(agentDao, agentConfigDao,
                 environmentDao, heartbeatDao, aggregateDao, gaugeValueDao, traceDao,
-                v09AgentRollupDao, centralAlertingService, clock, version);
+                v09AgentRollupDao, grpcCommon, centralAlertingService, clock, version);
 
         if (httpPort == null) {
             httpServer = null;

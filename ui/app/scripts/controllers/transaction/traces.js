@@ -168,7 +168,7 @@ glowroot.controller('TracesCtrl', [
     }
 
     $scope.refresh = function () {
-      $scope.applyLast();
+      charts.applyLast($scope);
       angular.extend(appliedFilter, $scope.filter);
       $scope.range.chartRefresh++;
     };

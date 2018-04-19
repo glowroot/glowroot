@@ -59,8 +59,6 @@ public interface ConfigRepository {
     public static final int GAUGE_VIEW_THRESHOLD_MULTIPLIER = 4;
 
     String GENERAL_KEY = "general";
-    String USERS_KEY = "users";
-    String ROLES_KEY = "roles";
     String WEB_KEY = "web";
     String STORAGE_KEY = "storage";
     String SMTP_KEY = "smtp";
