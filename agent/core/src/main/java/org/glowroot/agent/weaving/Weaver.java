@@ -243,7 +243,7 @@ public class Weaver {
             for (Class<?> iface : classBeingRedefined.getInterfaces()) {
                 interfaceNames.add(iface.getName());
             }
-            for (ShimType matchedShimType : shimTypes) {
+            for (ShimType matchedShimType : matchedShimTypes) {
                 if (!interfaceNames.contains(matchedShimType.iface().getClassName())) {
                     // re-weaving would fail with "attempted to change superclass or interfaces"
                     logger.warn("not reweaving {} because cannot add shim type: {}",
@@ -252,7 +252,7 @@ public class Weaver {
                     return null;
                 }
             }
-            for (MixinType matchedMixinType : mixinTypes) {
+            for (MixinType matchedMixinType : matchedMixinTypes) {
                 for (Type mixinInterface : matchedMixinType.interfaces()) {
                     if (!interfaceNames.contains(mixinInterface.getClassName())) {
                         // re-weaving would fail with "attempted to change superclass or interfaces"
