@@ -13,7 +13,7 @@ Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/gl
 4. Start your application
 5. Point your browser to http://localhost:4000
 
-See the [wiki](https://github.com/glowroot/glowroot/wiki/Agent-Installation) for optional post-installation steps.
+See the [wiki](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(with-Embedded-Collector)) for optional post-installation steps.
 
 ## Please report any issues!
 
