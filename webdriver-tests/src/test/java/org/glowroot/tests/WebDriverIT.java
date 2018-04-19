@@ -24,7 +24,6 @@ import java.net.UnknownHostException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
@@ -43,10 +42,6 @@ import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
 import org.openqa.selenium.WebDriver;
 
-import org.glowroot.agent.config.ImmutableAdvancedConfig;
-import org.glowroot.agent.config.ImmutableTransactionConfig;
-import org.glowroot.agent.config.ImmutableUiConfig;
-import org.glowroot.agent.config.ImmutableUserRecordingConfig;
 import org.glowroot.agent.it.harness.Container;
 
 public abstract class WebDriverIT {
@@ -150,11 +145,24 @@ public abstract class WebDriverIT {
     }
 
     private static void resetAllCentralConfig() throws Exception {
-        resetCentralConfig("transaction", false, ImmutableTransactionConfig.builder().build());
-        resetCentralConfig("ui", true, ImmutableUiConfig.builder().build());
-        resetCentralConfig("user-recording", false,
-                ImmutableUserRecordingConfig.builder().build());
-        resetCentralConfig("advanced", true, ImmutableAdvancedConfig.builder().build());
+        resetCentralConfig("transaction", false, "{\"slowThresholdMillis\":2000,"
+                + "\"profilingIntervalMillis\":1000,"
+                + "\"captureThreadStats\":true,"
+                + "\"version\":\"$version\"}");
+        resetCentralConfig("ui", true, "{\"defaultTransactionType\":\"Web\","
+                + "\"defaultPercentiles\":[50.0,95.0,99.0],"
+                + "\"defaultGaugeNames\":[\"java.lang:type=Memory:HeapMemoryUsage.used\"],"
+                + "\"version\":\"$version\"}");
+        resetCentralConfig("user-recording", false, "{\"version\":\"$version\"}");
+        resetCentralConfig("advanced", true, "{\"weavingTimer\":false,"
+                + "\"immediatePartialStoreThresholdSeconds\":60,"
+                + "\"maxTransactionAggregates\":500,"
+                + "\"maxQueryAggregates\":500,"
+                + "\"maxServiceCallAggregates\":500,"
+                + "\"maxTraceEntriesPerTransaction\":2000,"
+                + "\"maxProfileSamplesPerTransaction\":50000,"
+                + "\"mbeanGaugeNotFoundDelaySeconds\":60,"
+                + "\"version\":\"$version\"}");
         deleteAllGauges();
         deleteAllAlerts();
         deleteAllInstrumentation();
@@ -188,7 +196,7 @@ public abstract class WebDriverIT {
                 + "\"version\":\"$version\"}");
     }
 
-    private static void resetCentralConfig(String type, boolean useAgentRollupId, Object config)
+    private static void resetCentralConfig(String type, boolean useAgentRollupId, String template)
             throws Exception {
         String url = "http://localhost:" + getUiPort() + "/backend/config/" + type + "?agent";
         if (useAgentRollupId) {
@@ -198,9 +206,8 @@ public abstract class WebDriverIT {
 
         String content = httpGet(url);
         String version = getVersion(content);
-        ObjectNode json = new ObjectMapper().valueToTree(config);
-        json.put("version", version);
-        httpPost(url, json.toString());
+        String postContent = template.replace("$version", version);
+        httpPost(url, postContent);
     }
 
     private static void deleteAllGauges() throws Exception {

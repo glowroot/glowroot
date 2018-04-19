@@ -60,7 +60,6 @@ case "$1" in
 
       "test2") mvn clean install -DargLine="$surefire_jvm_args" \
                                  -DskipTests \
-                                 $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
 
@@ -120,7 +119,7 @@ case "$1" in
                  then
                    mvn clean verify -pl :glowroot-agent-logger-plugin \
                                     -DargLine="$surefire_jvm_args" \
-                                    $test_shaded_opt \
+                                    -Dglowroot.test.shaded \
                                     -Dglowroot.it.harness=javaagent \
                                     -Dglowroot.test.julManager=org.jboss.logmanager.LogManager \
                                     -Dtest.it=JavaLoggingIT \
@@ -137,7 +136,6 @@ case "$1" in
                fi
                mvn clean install -DargLine="$surefire_jvm_args" \
                                  -DskipTests \
-                                 $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
 
@@ -146,6 +144,7 @@ case "$1" in
                # check for glowroot snapshot artifacts in that repository, sometimes causing slowness during travis-ci builds
                mvn clean verify -pl :glowroot-central,:glowroot-webdriver-tests \
                                 -DargLine="$surefire_jvm_args" \
+                                $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 --no-snapshot-updates \
                                 -B
@@ -158,7 +157,6 @@ case "$1" in
                fi
                mvn clean install -DargLine="$surefire_jvm_args" \
                                  -DskipTests \
-                                 $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
 
@@ -168,6 +166,7 @@ case "$1" in
                mvn clean verify -pl :glowroot-webdriver-tests \
                                 -Dglowroot.internal.webdriver.useCentral=true \
                                 -DargLine="$surefire_jvm_args" \
+                                $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 --no-snapshot-updates \
                                 -B
@@ -187,6 +186,7 @@ case "$1" in
                  mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                   -Pjavadoc \
                                   -DargLine="$surefire_jvm_args" \
+                                  $test_shaded_opt \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                   --settings build/travis-ci/settings.xml \
                                   -B
@@ -194,6 +194,7 @@ case "$1" in
                  mvn clean install -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                    -Pjavadoc \
                                    -DargLine="$surefire_jvm_args" \
+                                   $test_shaded_opt \
                                    -B
                fi
                ;;
