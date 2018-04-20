@@ -103,6 +103,7 @@ glowroot.controller('TracesCtrl', [
         $scope.showChartSpinner++;
       }
       $scope.suppressChartSpinner = false;
+
       $http.get('backend/' + traceKind + '/points' + queryStrings.encodeObject(query))
           .then(function (response) {
             var data = response.data;

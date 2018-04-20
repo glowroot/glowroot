@@ -150,7 +150,7 @@ glowroot.controller('TransactionCtrl', [
     $scope.$watchGroup(['range.last', 'range.chartFrom', 'range.chartTo'],
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
-            $location.search($scope.buildQueryObject());
+            $location.search($scope.buildQueryObject(undefined, $location.path() === '/transaction/traces'));
           }
         });
 
