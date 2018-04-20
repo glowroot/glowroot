@@ -18,8 +18,9 @@ package org.glowroot.agent.embedded.repo;
 import java.io.File;
 
 import com.google.common.base.Ticker;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.agent.collector.Collector.TraceReader;
@@ -45,13 +46,13 @@ public class TraceDaoTest {
 
     private static final String AGENT_ID = "";
 
-    private DataSource dataSource;
-    private File cappedFile;
-    private CappedDatabase cappedDatabase;
-    private TraceDao traceDao;
+    private static DataSource dataSource;
+    private static File cappedFile;
+    private static CappedDatabase cappedDatabase;
+    private static TraceDao traceDao;
 
-    @Before
-    public void beforeEachTest() throws Exception {
+    @BeforeClass
+    public static void setUp() throws Exception {
         dataSource = new DataSource();
         if (dataSource.tableExists("trace")) {
             dataSource.execute("drop table trace");
@@ -62,11 +63,17 @@ public class TraceDaoTest {
                 mock(FullQueryTextDao.class), mock(TraceAttributeNameDao.class));
     }
 
-    @After
-    public void afterEachTest() throws Exception {
+    @AfterClass
+    public static void tearDown() throws Exception {
         dataSource.close();
         cappedDatabase.close();
         cappedFile.delete();
+    }
+
+    @Before
+    public void beforeEachTest() throws Exception {
+        dataSource.execute("truncate table trace");
+        dataSource.execute("truncate table trace_attribute");
     }
 
     @Test
@@ -79,7 +86,9 @@ public class TraceDaoTest {
                 .from(0)
                 .to(100)
                 .build();
-        TracePointFilter filter = ImmutableTracePointFilter.builder().build();
+        TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(0)
+                .build();
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
 
         // when
@@ -97,6 +106,72 @@ public class TraceDaoTest {
     }
 
     @Test
+    public void shouldReadTraceWithDurationNanosQualifier() throws Exception {
+        // given
+        Trace.Header header = TraceTestData.createTraceHeader();
+        traceDao.store(TraceTestData.createTraceReader(header));
+        TraceQuery query = ImmutableTraceQuery.builder()
+                .transactionType("unit test")
+                .from(0)
+                .to(100)
+                .build();
+        TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(header.getDurationNanos())
+                .durationNanosHigh(header.getDurationNanos())
+                .build();
+
+        // when
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
+        // then
+        assertThat(queryResult.records()).hasSize(1);
+    }
+
+    @Test
+    public void shouldNotReadTraceWithHighDurationNanosQualifier() throws Exception {
+        // given
+        Trace.Header header = TraceTestData.createTraceHeader();
+        traceDao.store(TraceTestData.createTraceReader(header));
+        TraceQuery query = ImmutableTraceQuery.builder()
+                .transactionType("unit test")
+                .from(0)
+                .to(100)
+                .build();
+        TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(header.getDurationNanos() + 1)
+                .durationNanosHigh(header.getDurationNanos() + 2)
+                .build();
+
+        // when
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
+        // then
+        assertThat(queryResult.records()).isEmpty();
+    }
+
+    @Test
+    public void shouldNotReadTraceWithLowDurationNanosQualifier() throws Exception {
+        // given
+        Trace.Header header = TraceTestData.createTraceHeader();
+        traceDao.store(TraceTestData.createTraceReader(header));
+        TraceQuery query = ImmutableTraceQuery.builder()
+                .transactionType("unit test")
+                .from(0)
+                .to(100)
+                .build();
+        TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(header.getDurationNanos() - 2)
+                .durationNanosHigh(header.getDurationNanos() - 1)
+                .build();
+
+        // when
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
+        // then
+        assertThat(queryResult.records()).isEmpty();
+    }
+
+    @Test
     public void shouldReadTraceWithAttributeQualifier() throws Exception {
         // given
         traceDao.store(TraceTestData.createTraceReader());
@@ -106,6 +181,7 @@ public class TraceDaoTest {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(0)
                 .attributeName("abc")
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz")
@@ -128,6 +204,7 @@ public class TraceDaoTest {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(0)
                 .attributeName("abc")
                 .attributeValueComparator(null)
                 .attributeValue(null)
@@ -150,6 +227,7 @@ public class TraceDaoTest {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(0)
                 .attributeName(null)
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz")
@@ -172,6 +250,7 @@ public class TraceDaoTest {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(0)
                 .attributeName("abc")
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("abc")
@@ -194,6 +273,7 @@ public class TraceDaoTest {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(0)
                 .attributeName(null)
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz1")

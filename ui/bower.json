@@ -13,7 +13,7 @@
     "codemirror": "5.36.0",
     "d3-flame-graph": "1.0.11",
     "eonasdan-bootstrap-datetimepicker": "4.17.47",
-    "flot": "trask/flot#glowroot-0.9.9",
+    "flot": "trask/flot#9930b3d5e2989524083d978100208e51ec64d6f5",
     "flot.tooltip": "trask/flot.tooltip#glowroot-0.9.27",
     "fontawesome": "5.0.10",
     "handlebars": "4.0.11",

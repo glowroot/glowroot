@@ -15,10 +15,14 @@
  */
 package org.glowroot.central.repo;
 
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceDao extends TraceRepository {
 
     void store(String agentId, Trace trace) throws Exception;
+
+    @OnlyUsedByTests
+    void truncateAll() throws Exception;
 }

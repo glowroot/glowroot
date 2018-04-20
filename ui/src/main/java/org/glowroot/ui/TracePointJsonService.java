@@ -111,6 +111,13 @@ class TracePointJsonService {
 
     private String getPoints(TraceKind traceKind, String agentRollupId, TracePointRequest request)
             throws Exception {
+        double durationMillisLow = request.durationMillisLow();
+        long durationNanosLow = Math.round(durationMillisLow * NANOSECONDS_PER_MILLISECOND);
+        Long durationNanosHigh = null;
+        Double durationMillisHigh = request.durationMillisHigh();
+        if (durationMillisHigh != null) {
+            durationNanosHigh = Math.round(durationMillisHigh * NANOSECONDS_PER_MILLISECOND);
+        }
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
@@ -118,6 +125,8 @@ class TracePointJsonService {
                 .to(request.to())
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
+                .durationNanosLow(durationNanosLow)
+                .durationNanosHigh(durationNanosHigh)
                 .headlineComparator(request.headlineComparator())
                 .headline(request.headline())
                 .errorMessageComparator(request.errorMessageComparator())
@@ -323,6 +332,8 @@ class TracePointJsonService {
         public abstract @Nullable String transactionName();
         public abstract long from();
         public abstract long to();
+        public abstract double durationMillisLow();
+        public abstract @Nullable Double durationMillisHigh();
         public abstract @Nullable StringComparator headlineComparator();
         public abstract @Nullable String headline();
         public abstract @Nullable StringComparator errorMessageComparator();

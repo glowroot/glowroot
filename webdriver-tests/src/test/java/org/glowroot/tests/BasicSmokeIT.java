@@ -164,6 +164,7 @@ public class BasicSmokeIT extends WebDriverIT {
                 + "?transaction-type=Web"
                 + "&from=0"
                 + "&to=" + Long.MAX_VALUE
+                + "&duration-millis-low=0"
                 + "&headline-comparator=begins"
                 + "&headline="
                 + "&error-message-comparator=begins"

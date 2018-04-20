@@ -38,6 +38,7 @@ import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common2.repo.ImmutableErrorMessageCount;
 import org.glowroot.common2.repo.ImmutableErrorMessageResult;
 import org.glowroot.common2.repo.ImmutableTraceQuery;
@@ -319,6 +320,12 @@ public class TraceDaoWithV09Support implements TraceDao {
                     .queryPostV09(query)
                     .build();
         }
+    }
+
+    @Override
+    @OnlyUsedByTests
+    public void truncateAll() throws Exception {
+        delegate.truncateAll();
     }
 
     @Value.Immutable

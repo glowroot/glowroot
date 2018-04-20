@@ -92,6 +92,8 @@ public interface LiveTraceRepository {
     @Value.Immutable
     abstract class TracePointFilter {
 
+        public abstract long durationNanosLow();
+        public abstract @Nullable Long durationNanosHigh();
         public abstract @Nullable StringComparator headlineComparator();
         public abstract @Nullable String headline();
         public abstract @Nullable StringComparator errorMessageComparator();
@@ -101,6 +103,14 @@ public interface LiveTraceRepository {
         public abstract @Nullable String attributeName();
         public abstract @Nullable StringComparator attributeValueComparator();
         public abstract @Nullable String attributeValue();
+
+        public boolean matchesDuration(long durationNanos) {
+            if (durationNanos < durationNanosLow()) {
+                return false;
+            }
+            Long durationNanosHigh = durationNanosHigh();
+            return durationNanosHigh == null || durationNanos <= durationNanosHigh;
+        }
 
         public boolean matchesHeadline(String headline) {
             return matchesUsingStringComparator(headline, headline(), headlineComparator());

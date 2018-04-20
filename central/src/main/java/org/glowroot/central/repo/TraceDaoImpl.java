@@ -62,6 +62,7 @@ import org.glowroot.common.model.Result;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.NotAvailableAware;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common2.repo.ImmutableErrorMessageCount;
 import org.glowroot.common2.repo.ImmutableErrorMessagePoint;
 import org.glowroot.common2.repo.ImmutableErrorMessageResult;
@@ -1178,6 +1179,36 @@ public class TraceDaoImpl implements TraceDao {
         return sharedQueryTexts;
     }
 
+    @Override
+    @OnlyUsedByTests
+    public void truncateAll() throws Exception {
+        session.execute("truncate table trace_tt_slow_count");
+        session.execute("truncate table trace_tn_slow_count");
+        session.execute("truncate table trace_tt_slow_count_partial");
+        session.execute("truncate table trace_tn_slow_count_partial");
+        session.execute("truncate table trace_tt_slow_point");
+        session.execute("truncate table trace_tn_slow_point");
+        session.execute("truncate table trace_tt_slow_point_partial");
+        session.execute("truncate table trace_tn_slow_point_partial");
+        session.execute("truncate table trace_tt_error_count");
+        session.execute("truncate table trace_tn_error_count");
+        session.execute("truncate table trace_tt_error_point");
+        session.execute("truncate table trace_tn_error_point");
+        session.execute("truncate table trace_tt_error_message");
+        session.execute("truncate table trace_tn_error_message");
+        session.execute("truncate table trace_header");
+        session.execute("truncate table trace_entry");
+        session.execute("truncate table trace_shared_query_text");
+        session.execute("truncate table trace_main_thread_profile");
+        session.execute("truncate table trace_aux_thread_profile");
+        session.execute("truncate table trace_header_v2");
+        session.execute("truncate table trace_entry_v2");
+        session.execute("truncate table trace_query_v2");
+        session.execute("truncate table trace_shared_query_text_v2");
+        session.execute("truncate table trace_main_thread_profile_v2");
+        session.execute("truncate table trace_aux_thread_profile_v2");
+    }
+
     private static void bindSlowPoint(BoundStatement boundStatement, String agentRollupId,
             String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall)
             throws IOException {
@@ -1280,7 +1311,8 @@ public class TraceDaoImpl implements TraceDao {
                     Messages.parseDelimitedFrom(attributeBytes, Trace.Attribute.parser());
             Map<String, List<String>> attributes = attrs.stream().collect(
                     Collectors.toMap(Trace.Attribute::getName, Trace.Attribute::getValueList));
-            if (filter.matchesHeadline(headline)
+            if (filter.matchesDuration(durationNanos)
+                    && filter.matchesHeadline(headline)
                     && filter.matchesError(errorMessage)
                     && filter.matchesUser(user)
                     && filter.matchesAttributes(attributes)) {

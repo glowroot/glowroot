@@ -70,6 +70,7 @@ class TracePointQueryBuilder {
         appendTraceKindCriteria(builder);
         appendTransactionTypeCriteria(builder);
         appendTransactionNameCriteria(builder);
+        appendDurationNanosCriteria(builder);
         appendHeadlineCriteria(builder);
         appendErrorCriteria(builder);
         appendUserCriteria(builder);
@@ -119,6 +120,19 @@ class TracePointQueryBuilder {
         if (transactionName != null) {
             builder.appendText(" and trace.transaction_name = ?");
             builder.addArg(transactionName);
+        }
+    }
+
+    private void appendDurationNanosCriteria(ParameterizedSqlBuilder builder) {
+        long durationNanosLow = filter.durationNanosLow();
+        if (durationNanosLow > 0) {
+            builder.appendText(" and trace.duration_nanos >= ?");
+            builder.addArg(durationNanosLow);
+        }
+        Long durationNanosHigh = filter.durationNanosHigh();
+        if (durationNanosHigh != null) {
+            builder.appendText(" and trace.duration_nanos <= ?");
+            builder.addArg(durationNanosHigh);
         }
     }
 
