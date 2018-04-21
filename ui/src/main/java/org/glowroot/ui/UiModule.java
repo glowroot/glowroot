@@ -242,7 +242,7 @@ public class UiModule {
     }
 
     // used by tests and by central ui
-    public void close() {
+    public void close() throws Exception {
         if (httpServer != null) {
             httpServer.close();
         }

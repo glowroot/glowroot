@@ -129,7 +129,8 @@ class TraceCollector {
                                 + " create a memory leak\\.")) {
             return;
         }
-        if (logEvent.getLevel().ordinal() >= LogEvent.Level.WARN_VALUE) {
+        if (logEvent.getLevel() == LogEvent.Level.WARN
+                || logEvent.getLevel() == LogEvent.Level.ERROR) {
             unexpectedMessages.add(logEvent);
         }
     }

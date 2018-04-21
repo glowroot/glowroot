@@ -90,6 +90,7 @@ public class DataSource {
             CacheBuilder.newBuilder().weakValues()
                     .build(new CacheLoader</*@Untainted*/ String, PreparedStatement>() {
                         @Override
+                        @SuppressWarnings("GuardedBy")
                         public PreparedStatement load(@Untainted String sql) throws SQLException {
                             return connection.prepareStatement(sql);
                         }
@@ -463,17 +464,22 @@ public class DataSource {
     // helpful for upgrading schema
     public void renameTable(@Untainted String oldTableName, @Untainted String newTableName)
             throws SQLException {
-        if (Schemas.tableExists(oldTableName, connection)) {
-            execute("alter table " + oldTableName + " rename to " + newTableName);
+        synchronized (lock) {
+            if (Schemas.tableExists(oldTableName, connection)) {
+                execute("alter table " + oldTableName + " rename to " + newTableName);
+            }
         }
     }
 
     // helpful for upgrading schema
     public void renameColumn(@Untainted String tableName, @Untainted String oldColumnName,
             @Untainted String newColumnName) throws SQLException {
-        if (Schemas.columnExists(tableName, oldColumnName, connection)) {
-            execute("alter table " + tableName + " alter column " + oldColumnName + " rename to "
-                    + newColumnName);
+        synchronized (lock) {
+            if (Schemas.columnExists(tableName, oldColumnName, connection)) {
+                execute("alter table " + tableName + " alter column " + oldColumnName
+                        + " rename to "
+                        + newColumnName);
+            }
         }
     }
 
@@ -499,7 +505,7 @@ public class DataSource {
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
-    // lock must be acquired prior to calling this method
+    @GuardedBy("lock")
     private <T extends /*@Nullable*/ Object> T queryUnderLock(@Untainted String sql, Object[] args,
             ResultSetExtractor<T> rse) throws SQLException {
         PreparedStatement preparedStatement = prepareStatement(sql, QUERY_TIMEOUT_SECONDS);
@@ -518,7 +524,7 @@ public class DataSource {
         // don't need to close statement since they are all cached and used under lock
     }
 
-    // lock must be acquired prior to calling this method
+    @GuardedBy("lock")
     private long getTableBytesUnderLock(String tableName) throws SQLException {
         PreparedStatement preparedStatement = prepareStatement("call disk_space_used (?)", 0);
         preparedStatement.setString(1, tableName);
@@ -537,7 +543,7 @@ public class DataSource {
         // don't need to close statement since they are all cached and used under lock
     }
 
-    // lock must be acquired prior to calling this method
+    @GuardedBy("lock")
     private long getTableRowsUnderLock(@Untainted String tableName) throws SQLException {
         PreparedStatement preparedStatement =
                 prepareStatement("select count(*) from " + tableName, 0);
@@ -556,7 +562,7 @@ public class DataSource {
         // don't need to close statement since they are all cached and used under lock
     }
 
-    // lock must be acquired prior to calling this method
+    @GuardedBy("lock")
     private List</*@Untainted*/ String> getAllTableNamesUnderLock() throws SQLException {
         ResultSet resultSet = connection.getMetaData().getTables(null, null, null, null);
         ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -577,6 +583,7 @@ public class DataSource {
         }
     }
 
+    @GuardedBy("lock")
     private PreparedStatement prepareStatement(@Untainted String sql, int queryTimeoutSeconds)
             throws SQLException {
         try {

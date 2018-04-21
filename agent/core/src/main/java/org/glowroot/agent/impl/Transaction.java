@@ -121,9 +121,10 @@ public class Transaction {
     private volatile @Nullable String user;
     private volatile int userPriority = Integer.MIN_VALUE;
 
+    private final Object attributesLock = new Object();
     // lazy loaded to reduce memory when custom attributes are not used
-    @GuardedBy("attributes")
-    private volatile @MonotonicNonNull SetMultimap<String, String> attributes;
+    @GuardedBy("attributesLock")
+    private @MonotonicNonNull SetMultimap<String, String> attributes;
 
     // trace-level error
     private volatile @Nullable ErrorMessage errorMessage;
@@ -186,7 +187,8 @@ public class Transaction {
     private volatile @MonotonicNonNull AsyncComponents asyncComponents;
 
     private final Object sharedQueryTextCollectionLock = new Object();
-    private volatile @MonotonicNonNull SharedQueryTextCollectionImpl sharedQueryTextCollection;
+    @GuardedBy("sharedQueryTextCollectionLock")
+    private @MonotonicNonNull SharedQueryTextCollectionImpl sharedQueryTextCollection;
 
     private volatile boolean completed;
     private volatile long endTick;
@@ -291,15 +293,15 @@ public class Transaction {
         return Strings.nullToEmpty(user);
     }
 
-    public ImmutableSetMultimap<String, String> getAttributes() {
-        if (attributes == null) {
-            return ImmutableSetMultimap.of();
-        }
-        SetMultimap<String, String> orderedAttributes = TreeMultimap.create();
-        synchronized (attributes) {
+    public SetMultimap<String, String> getAttributes() {
+        synchronized (attributesLock) {
+            if (attributes == null) {
+                return ImmutableSetMultimap.of();
+            }
+            SetMultimap<String, String> orderedAttributes = TreeMultimap.create();
             orderedAttributes.putAll(attributes);
+            return orderedAttributes;
         }
-        return ImmutableSetMultimap.copyOf(orderedAttributes);
     }
 
     Map<String, ?> getDetail() {
@@ -620,12 +622,12 @@ public class Transaction {
     }
 
     void addAttribute(String name, @Nullable String value) {
-        if (attributes == null) {
-            // no race condition here since only transaction thread calls addAttribute()
-            attributes = HashMultimap.create(ATTRIBUTE_KEYS_INITIAL_CAPACITY, 1);
-        }
-        String val = Strings.nullToEmpty(value);
-        synchronized (attributes) {
+        synchronized (attributesLock) {
+            if (attributes == null) {
+                // no race condition here since only transaction thread calls addAttribute()
+                attributes = HashMultimap.create(ATTRIBUTE_KEYS_INITIAL_CAPACITY, 1);
+            }
+            String val = Strings.nullToEmpty(value);
             Collection<String> values = attributes.get(name);
             if (values.size() < ATTRIBUTE_VALUES_PER_KEY_LIMIT) {
                 values.add(val);
@@ -868,7 +870,7 @@ public class Transaction {
         memoryBarrierWrite();
     }
 
-    // must be called under synchronized (mainThreadContext)
+    @GuardedBy("mainThreadContext")
     @RequiresNonNull("auxThreadContexts")
     private boolean allowAnotherAuxThreadContextWithTraceEntries() {
         int unmergedCount = auxThreadContexts.size();
@@ -912,6 +914,7 @@ public class Transaction {
         return true;
     }
 
+    @GuardedBy("mainThreadContext")
     @EnsuresNonNull({"alreadyMergedAuxThreadTimers", "alreadyMergedAuxThreadStats",
             "alreadyMergedAuxQueries", "alreadyMergedAuxServiceCalls"})
     private void initAlreadyMergedAuxComponentsIfNeeded() {
@@ -931,6 +934,7 @@ public class Transaction {
         }
     }
 
+    @GuardedBy("mainThreadContext")
     @RequiresNonNull({"alreadyMergedAuxThreadTimers", "alreadyMergedAuxThreadStats",
             "alreadyMergedAuxQueries", "alreadyMergedAuxServiceCalls"})
     private void mergeAux(ThreadContextImpl mergeableAuxThreadContext) {
@@ -996,7 +1000,7 @@ public class Transaction {
         }
     }
 
-    // must be called under synchronized (mainThreadContext)
+    @GuardedBy("mainThreadContext")
     private void detachIncompleteAuxThreadContexts() {
         if (auxThreadContexts == null) {
             return;
@@ -1027,6 +1031,7 @@ public class Transaction {
         }
     }
 
+    @GuardedBy("mainThreadContext")
     @RequiresNonNull("auxThreadContexts")
     private Iterable<ThreadContextImpl> getUnmergedAuxThreadContext() {
         if (unmergeableAuxThreadContexts == null) {

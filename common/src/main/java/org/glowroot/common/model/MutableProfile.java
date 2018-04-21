@@ -574,7 +574,7 @@ public class MutableProfile {
         }
     }
 
-    private class ProfileWriter extends Traverser<ProfileNode, IOException> {
+    private static class ProfileWriter extends Traverser<ProfileNode, IOException> {
 
         private final JsonGenerator jg;
 
@@ -612,7 +612,7 @@ public class MutableProfile {
         }
     }
 
-    private class FlameGraphWriter extends Traverser<ProfileNode, IOException> {
+    private static class FlameGraphWriter extends Traverser<ProfileNode, IOException> {
 
         private final JsonGenerator jg;
         private int height;

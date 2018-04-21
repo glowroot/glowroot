@@ -16,13 +16,14 @@
 package org.glowroot.agent.embedded;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.security.CodeSource;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -190,7 +191,7 @@ public class ToolMain {
     @RequiresNonNull("startupLogger")
     private static void maskCentralData(File dataDir) throws Exception {
         File maskScriptFile = File.createTempFile("mask-central-data", ".sql");
-        PrintWriter out = new PrintWriter(new FileWriter(maskScriptFile));
+        PrintWriter out = new PrintWriter(Files.newWriter(maskScriptFile, Charsets.UTF_8));
         try {
             // mask agent ids and agent rollup ids
             out.println("update trace set headline = left(headline, position(': ', headline) + 1)"

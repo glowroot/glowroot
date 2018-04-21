@@ -135,8 +135,8 @@ public class HttpClient {
             request.headers().set(HttpHeaderNames.HOST, host);
             request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
             Channel ch = bootstrap.connect(host, port).sync().channel();
-            ch.writeAndFlush(request);
-            ch.closeFuture().sync();
+            ch.writeAndFlush(request).get();
+            ch.closeFuture().sync().get();
 
             String unexpectedErrorMessage = handler.unexpectedErrorMessage;
             if (unexpectedErrorMessage != null) {
@@ -151,7 +151,7 @@ public class HttpClient {
             }
             return checkNotNull(handler.responseContent);
         } finally {
-            group.shutdownGracefully();
+            group.shutdownGracefully().get();
         }
     }
 
@@ -201,10 +201,10 @@ public class HttpClient {
         }
 
         @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             logger.error(cause.getMessage(), cause);
             unexpectedErrorMessage = cause.getMessage();
-            ctx.close();
+            ctx.close().get();
         }
     }
 

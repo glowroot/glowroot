@@ -32,7 +32,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class ThreadContextThreadLocal {
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private final ThreadLocal<Holder> threadLocal = new ThreadLocal<Holder>() {
+    private static final ThreadLocal<Holder> threadLocal = new ThreadLocal<Holder>() {
         @Override
         protected Holder initialValue() {
             return new Holder();

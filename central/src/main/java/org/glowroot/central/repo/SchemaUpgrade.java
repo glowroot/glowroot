@@ -16,18 +16,20 @@
 package org.glowroot.central.repo;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
@@ -84,6 +86,9 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -1191,8 +1196,7 @@ public class SchemaUpgrade {
                     ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
         }
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
         for (long captureTime : sortedCaptureTimes) {
@@ -1371,8 +1375,7 @@ public class SchemaUpgrade {
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(agentIdsPerCaptureTime.keySet());
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         for (long captureTime : sortedCaptureTimes) {
             int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
             for (String agentId : agentIdsPerCaptureTime.get(captureTime)) {
@@ -1715,8 +1718,7 @@ public class SchemaUpgrade {
         PreparedStatement insertTempPS = session.prepare("insert into heartbeat_temp (agent_id,"
                 + " central_capture_time) values (?, ?)");
         ResultSet results = session.execute("select agent_id, central_capture_time from heartbeat");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind();
             boundStatement.setString(0, row.getString(0));
@@ -1744,8 +1746,7 @@ public class SchemaUpgrade {
         int ttl = Ints.saturatedCast(HOURS.toSeconds(HeartbeatDao.EXPIRATION_HOURS));
         ResultSet results =
                 session.execute("select agent_id, central_capture_time from heartbeat_temp");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -1881,8 +1882,7 @@ public class SchemaUpgrade {
                 + " (agent_rollup_id, capture_time, gauge_name) values (?, ?, ?)");
         ResultSet results =
                 session.execute("select agent_rollup_id, capture_time, gauge_name from gauge_name");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind();
             boundStatement.setString(0, row.getString(0));
@@ -1914,8 +1914,7 @@ public class SchemaUpgrade {
         int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
         ResultSet results = session
                 .execute("select agent_rollup_id, capture_time, gauge_name from gauge_name_temp");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -2041,8 +2040,7 @@ public class SchemaUpgrade {
         ResultSet results = session.execute("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id, duration_nanos, error, headline, user, attributes, partial"
                 + " from trace_tt_slow_point");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
@@ -2103,8 +2101,7 @@ public class SchemaUpgrade {
                 + " and trace_id = ?");
         ResultSet results = session.execute("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id from trace_tt_slow_count_partial");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
@@ -2157,8 +2154,7 @@ public class SchemaUpgrade {
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id, duration_nanos, error,"
                 + " headline, user, attributes, partial from trace_tn_slow_point");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
@@ -2222,8 +2218,7 @@ public class SchemaUpgrade {
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id from"
                 + " trace_tn_slow_count_partial");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
@@ -2396,8 +2391,7 @@ public class SchemaUpgrade {
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?)");
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
                 + " trace_attribute_name from trace_attribute_name");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind();
             boundStatement.setString(0, row.getString(0));
@@ -2424,8 +2418,7 @@ public class SchemaUpgrade {
         int ttl = getCentralStorageConfig(session).getTraceTTL();
         ResultSet results = session.execute("select agent_rollup, transaction_type,"
                 + " trace_attribute_name from trace_attribute_name_temp");
-        // using linked list to make it fast to remove elements from the front
-        LinkedList<ListenableFuture<ResultSet>> futures = new LinkedList<>();
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertPS.bind();
             boundStatement.setString(0, row.getString(0));
@@ -2469,10 +2462,10 @@ public class SchemaUpgrade {
 
     // this is needed to prevent OOM due to ever expanding list of futures (and the result sets that
     // they retain)
-    private static void waitForSome(LinkedList<ListenableFuture<ResultSet>> futures)
+    private static void waitForSome(Queue<ListenableFuture<ResultSet>> futures)
             throws Exception {
         while (futures.size() > 1000) {
-            futures.removeFirst().get();
+            futures.remove().get();
         }
     }
 
@@ -2689,7 +2682,7 @@ public class SchemaUpgrade {
             throw new IllegalStateException(
                     "Glowroot central could not start, see error message above for instructions");
         }
-        try (FileWriter out = new FileWriter(propFile, true)) {
+        try (Writer out = Files.newBufferedWriter(propFile.toPath(), UTF_8, CREATE, APPEND)) {
             out.write(sb.toString());
         }
         return true;

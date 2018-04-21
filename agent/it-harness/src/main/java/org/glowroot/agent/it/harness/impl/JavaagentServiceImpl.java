@@ -72,7 +72,7 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
             executingAppThread = Thread.currentThread();
             Class<?> appClass =
                     Class.forName(request.getValue(), true, ClassLoader.getSystemClassLoader());
-            AppUnderTest app = (AppUnderTest) appClass.newInstance();
+            AppUnderTest app = (AppUnderTest) appClass.getConstructor().newInstance();
             app.executeApp();
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);

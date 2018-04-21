@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
@@ -80,6 +81,7 @@ public class JavaagentContainer implements Container {
     private final @Nullable TraceCollector traceCollector;
     private final JavaagentServiceBlockingStub javaagentService;
     private final ExecutorService consolePipeExecutor;
+    private final Future<?> consolePipeFuture;
     private final Process process;
     private final ConsoleOutputPipe consoleOutputPipe;
     private final @Nullable ConfigServiceImpl configService;
@@ -154,7 +156,7 @@ public class JavaagentContainer implements Container {
         // to redirect output to a file
         checkNotNull(in);
         consoleOutputPipe = new ConsoleOutputPipe(in, System.out);
-        consolePipeExecutor.submit(consoleOutputPipe);
+        consolePipeFuture = consolePipeExecutor.submit(consoleOutputPipe);
         this.process = process;
 
         eventLoopGroup = EventLoopGroups.create("Glowroot-IT-Harness*-GRPC-Worker-ELG");
@@ -291,6 +293,7 @@ public class JavaagentContainer implements Container {
             server.close();
         }
         process.waitFor();
+        consolePipeFuture.get();
         consolePipeExecutor.shutdown();
         if (!consolePipeExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");

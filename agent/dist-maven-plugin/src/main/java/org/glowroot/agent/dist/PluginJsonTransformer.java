@@ -17,7 +17,6 @@ package org.glowroot.agent.dist;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -96,12 +95,7 @@ class PluginJsonTransformer {
             if (!jsonFile.exists()) {
                 return null;
             }
-            FileReader reader = new FileReader(jsonFile);
-            try {
-                return CharStreams.toString(reader);
-            } finally {
-                reader.close();
-            }
+            return Files.toString(jsonFile, Charsets.UTF_8);
         }
         JarInputStream jarIn = new JarInputStream(new FileInputStream(artifact.getFile()));
         try {

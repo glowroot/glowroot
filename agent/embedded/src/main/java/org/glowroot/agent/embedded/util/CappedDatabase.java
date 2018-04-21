@@ -169,7 +169,10 @@ public class CappedDatabase {
         try {
             return parser.parseFrom(input);
         } catch (Exception e) {
-            if (!out.isOverwritten(cappedId)) {
+            synchronized (lock) {
+                overwritten = out.isOverwritten(cappedId);
+            }
+            if (!overwritten) {
                 logger.error(e.getMessage(), e);
             }
             return null;
@@ -211,7 +214,10 @@ public class CappedDatabase {
                 messages.add(message);
             }
         } catch (Exception e) {
-            if (!out.isOverwritten(cappedId)) {
+            synchronized (lock) {
+                overwritten = out.isOverwritten(cappedId);
+            }
+            if (!overwritten) {
                 logger.error(e.getMessage(), e);
             }
             return ImmutableList.of();

@@ -49,19 +49,19 @@ public class Session {
 
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
 
-    private final com.datastax.driver.core.Session wrappedSession;
-    private final String keyspaceName;
-
-    private final Queue<String> allTableNames = new ConcurrentLinkedQueue<>();
-
     // limit concurrent async queries per thread (mainly so the rollup thread doesn't hog them all)
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private final ThreadLocal<Semaphore> perThreadSemaphores = new ThreadLocal<Semaphore>() {
+    private static final ThreadLocal<Semaphore> perThreadSemaphores = new ThreadLocal<Semaphore>() {
         @Override
         protected Semaphore initialValue() {
             return new Semaphore(512);
         }
     };
+
+    private final com.datastax.driver.core.Session wrappedSession;
+    private final String keyspaceName;
+
+    private final Queue<String> allTableNames = new ConcurrentLinkedQueue<>();
 
     private final CassandraWriteMetrics cassandraWriteMetrics;
 

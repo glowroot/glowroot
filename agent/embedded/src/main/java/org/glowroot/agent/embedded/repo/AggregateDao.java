@@ -654,7 +654,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private class TransactionSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
+    private static class TransactionSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
         private final OverallQuery query;
         private final SummarySortOrder sortOrder;
@@ -774,7 +774,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private class TransactionErrorSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
+    private static class TransactionErrorSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
         private final OverallQuery query;
         private final ErrorSummarySortOrder sortOrder;

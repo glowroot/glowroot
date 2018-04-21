@@ -161,7 +161,7 @@ class RepoAdminImpl implements RepoAdmin {
         throw new UnsupportedOperationException();
     }
 
-    private class TraceOverallCountQuery implements JdbcQuery<List<TraceOverallCount>> {
+    private static class TraceOverallCountQuery implements JdbcQuery<List<TraceOverallCount>> {
 
         @Override
         public @Untainted String getSql() {
@@ -192,7 +192,7 @@ class RepoAdminImpl implements RepoAdmin {
         }
     }
 
-    private class TraceCountQuery implements JdbcQuery<List<TraceCount>> {
+    private static class TraceCountQuery implements JdbcQuery<List<TraceCount>> {
 
         @Override
         public @Untainted String getSql() {

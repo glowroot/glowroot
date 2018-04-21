@@ -239,6 +239,7 @@ public class AggregateIntervalCollector {
         }
     }
 
+    @GuardedBy("lock")
     private IntervalTypeCollector getTypeCollector(String transactionType) {
         IntervalTypeCollector typeCollector;
         typeCollector = typeCollectors.get(transactionType);
@@ -249,6 +250,7 @@ public class AggregateIntervalCollector {
         return typeCollector;
     }
 
+    @GuardedBy("lock")
     private @Nullable AggregateCollector getAggregateCollector(String transactionType,
             @Nullable String transactionName) {
         IntervalTypeCollector intervalTypeCollector = typeCollectors.get(transactionType);

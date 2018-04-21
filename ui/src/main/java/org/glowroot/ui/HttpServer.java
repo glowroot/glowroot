@@ -195,7 +195,7 @@ class HttpServer {
             throw new PortChangeFailedException(e);
         }
         port = newPort;
-        previousServerChannel.close();
+        previousServerChannel.close().get();
         handler.closeAllButCurrent();
     }
 
@@ -212,10 +212,10 @@ class HttpServer {
     }
 
     // used by tests and by central ui
-    void close() {
+    void close() throws Exception {
         logger.debug("close(): stopping http server");
-        workerGroup.shutdownGracefully();
-        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully().get();
+        bossGroup.shutdownGracefully().get();
         logger.debug("close(): http server stopped");
     }
 

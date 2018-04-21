@@ -780,10 +780,9 @@
               <forceJavacCompilerUse>true</forceJavacCompilerUse>
               <showWarnings>true</showWarnings>
               <compilerArgs>
-                <!-- DepAnn OFF until immutables resolves warnings in generated code -->
-                <arg>-Xep:DepAnn:OFF</arg>
-                <arg>-Xep:GuardedByChecker:WARN</arg>
-                <arg>-XepDisableWarningsInGeneratedCode</arg>
+                <arg>-XepExcludedPaths:.*/target/generated-sources/.*</arg>
+                <!-- needed to suppress "bootstrap class path not set in conjunction with -source 1.6" -->
+                <arg>-Xlint:-options</arg>
               </compilerArgs>
             </configuration>
             <dependencies>

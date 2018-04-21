@@ -27,8 +27,9 @@ public abstract class Logger {
 
     static {
         try {
-            loggerFactory = (LoggerFactory) Class
-                    .forName("org.glowroot.agent.impl.LoggerFactoryImpl").newInstance();
+            loggerFactory =
+                    (LoggerFactory) Class.forName("org.glowroot.agent.impl.LoggerFactoryImpl")
+                            .getConstructor().newInstance();
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

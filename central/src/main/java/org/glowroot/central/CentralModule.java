@@ -16,10 +16,11 @@
 package org.glowroot.central;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.Writer;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.security.CodeSource;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +52,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -83,6 +83,9 @@ import org.glowroot.ui.SessionMapFactory;
 import org.glowroot.ui.UiModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class CentralModule {
@@ -589,7 +592,7 @@ public class CentralModule {
             if (!oldPropFile.exists()) {
                 return ImmutableMap.of();
             }
-            java.nio.file.Files.copy(oldPropFile.toPath(), propFile.toPath());
+            Files.copy(oldPropFile.toPath(), propFile.toPath());
         }
         Properties props = PropertiesFiles.load(propFile);
 
@@ -634,10 +637,11 @@ public class CentralModule {
         if (secretFile.exists()) {
             String existingValue = props.getProperty("cassandra.symmetricEncryptionKey");
             if (Strings.isNullOrEmpty(existingValue)) {
-                byte[] bytes = Files.toByteArray(secretFile);
+                byte[] bytes = Files.readAllBytes(secretFile.toPath());
                 String newValue = BaseEncoding.base16().lowerCase().encode(bytes);
                 if (existingValue == null) {
-                    try (FileWriter out = new FileWriter(propFile, true)) {
+                    try (Writer out =
+                            Files.newBufferedWriter(propFile.toPath(), UTF_8, CREATE, APPEND)) {
                         out.write("\ncassandra.symmetricEncryptionKey=");
                         out.write(newValue);
                         out.write("\n");

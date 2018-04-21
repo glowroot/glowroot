@@ -15,7 +15,7 @@
  */
 package org.glowroot.central.util;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -37,7 +37,7 @@ public class MoreFutures {
     private MoreFutures() {}
 
     // not using guava Futures.allAsList().get() because it logs every error
-    public static void waitForAll(List<? extends Future<?>> futures) throws Exception {
+    public static void waitForAll(Collection<? extends Future<?>> futures) throws Exception {
         Exception exception = null;
         for (Future<?> future : futures) {
             if (exception != null) {

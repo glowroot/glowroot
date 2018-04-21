@@ -220,7 +220,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
     }
 
-    private class GaugeValuesBinder implements JdbcUpdate {
+    private static class GaugeValuesBinder implements JdbcUpdate {
 
         private final Map<GaugeValue, Long> gaugeValueIdMap;
 
@@ -284,7 +284,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
     }
 
-    private class GaugeValueQuery implements JdbcRowQuery<GaugeValue> {
+    private static class GaugeValueQuery implements JdbcRowQuery<GaugeValue> {
 
         private final long gaugeId;
         private final long from;

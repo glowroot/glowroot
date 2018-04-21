@@ -235,6 +235,7 @@ class ClasspathCache {
         return loaders;
     }
 
+    @GuardedBy("this")
     private void loadClassNames(Location location,
             Multimap<String, Location> newClassNameLocations) {
         if (classpathLocations.contains(location)) {
@@ -273,6 +274,7 @@ class ClasspathCache {
         }
     }
 
+    @GuardedBy("this")
     private void loadClassNamesFromJarFile(File jarFile, Location location,
             Multimap<String, Location> newClassNameLocations) throws IOException {
         Closer closer = Closer.create();
@@ -288,6 +290,7 @@ class ClasspathCache {
         }
     }
 
+    @GuardedBy("this")
     private void loadClassNamesFromManifestClassPath(JarInputStream jarIn, File jarFile,
             Multimap<String, Location> newClassNameLocations) {
         Manifest manifest = jarIn.getManifest();

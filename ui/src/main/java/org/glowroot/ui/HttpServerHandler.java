@@ -65,14 +65,14 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
 
+    private static final ThreadLocal</*@Nullable*/ Channel> currentChannel =
+            new ThreadLocal</*@Nullable*/ Channel>();
+
     private final ChannelGroup allChannels;
 
     private final Supplier<String> contextPathSupplier;
 
     private final CommonHandler commonHandler;
-
-    private final ThreadLocal</*@Nullable*/ Channel> currentChannel =
-            new ThreadLocal</*@Nullable*/ Channel>();
 
     HttpServerHandler(Supplier<String> contextPathSupplier, CommonHandler commonHandler) {
         this.contextPathSupplier = contextPathSupplier;
@@ -86,11 +86,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         super.channelActive(ctx);
     }
 
-    void closeAllButCurrent() throws InterruptedException {
+    void closeAllButCurrent() throws Exception {
         Channel current = currentChannel.get();
         for (Channel channel : allChannels) {
             if (channel != current) {
-                channel.close().await();
+                channel.close().await().get();
             }
         }
     }
@@ -151,7 +151,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         } else if (content instanceof ChunkSource) {
             HttpResponse resp = new DefaultHttpResponse(HTTP_1_1, OK, response.getHeaders());
             resp.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-            ctx.write(resp);
+            ChannelFuture future = ctx.write(resp);
+            HttpServices.addErrorListener(future);
             ChunkSource chunkSource = (ChunkSource) content;
             ChunkedInput<HttpContent> chunkedInput;
             String zipFileName = response.getZipFileName();
@@ -160,7 +161,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             } else {
                 chunkedInput = ChunkedInputs.createZipFileDownload(chunkSource, zipFileName);
             }
-            ChannelFuture future = ctx.write(chunkedInput);
+            future = ctx.write(chunkedInput);
             HttpServices.addErrorListener(future);
             if (!keepAlive) {
                 HttpServices.addCloseListener(future);
@@ -177,9 +178,10 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         if (keepAlive && !request.protocolVersion().isKeepAliveDefault()) {
             response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         }
-        ChannelFuture f = ctx.write(response);
+        ChannelFuture future = ctx.write(response);
+        HttpServices.addErrorListener(future);
         if (!keepAlive) {
-            f.addListener(ChannelFutureListener.CLOSE);
+            future.addListener(ChannelFutureListener.CLOSE);
         }
     }
 

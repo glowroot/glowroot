@@ -106,6 +106,7 @@ public class ThreadProfile {
         }
     }
 
+    @GuardedBy("lock")
     private void mergeTheUnmergedInto(MutableProfile profile) {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);

@@ -297,6 +297,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.bytecode.api.BytecodeServiceHolder");
         types.add("org.glowroot.agent.bytecode.api.ThreadContextPlus");
         types.add("org.glowroot.agent.bytecode.api.ThreadContextThreadLocal");
+        types.add("org.glowroot.agent.bytecode.api.ThreadContextThreadLocal$1");
         types.add("org.glowroot.agent.bytecode.api.ThreadContextThreadLocal$Holder");
         types.add("org.glowroot.agent.bytecode.api.Util");
         types.add("org.glowroot.agent.weaving.Advice");

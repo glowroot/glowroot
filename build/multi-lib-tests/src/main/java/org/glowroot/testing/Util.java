@@ -15,18 +15,16 @@
  */
 package org.glowroot.testing;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -47,9 +45,7 @@ class Util {
 
     static {
         try {
-            report = new PrintWriter(
-                    new BufferedWriter(new OutputStreamWriter(new FileOutputStream("report.txt"))),
-                    true);
+            report = new PrintWriter(Files.newWriter(new File("report.txt"), Charsets.UTF_8), true);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -148,8 +144,9 @@ class Util {
         InputStream in = checkNotNull(process.getInputStream());
         ConsoleOutputPipe consoleOutputPipe = new ConsoleOutputPipe(in, System.out);
         ExecutorService consolePipeExecutorService = Executors.newSingleThreadExecutor();
-        consolePipeExecutorService.submit(consoleOutputPipe);
+        Future<?> future = consolePipeExecutorService.submit(consoleOutputPipe);
         int exit = process.waitFor();
+        future.get();
         consolePipeExecutorService.shutdown();
         consolePipeExecutorService.awaitTermination(10, SECONDS);
         if (exit != 0) {

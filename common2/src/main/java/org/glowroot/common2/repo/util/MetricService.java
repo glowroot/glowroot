@@ -111,7 +111,7 @@ class MetricService {
         if (aggregates.isEmpty()) {
             return null;
         }
-        long totalDurationNanos = 0;
+        double totalDurationNanos = 0;
         long totalTransactionCount = 0;
         for (OverviewAggregate aggregate : aggregates) {
             totalDurationNanos += aggregate.totalDurationNanos();
