@@ -167,7 +167,13 @@ glowroot.controller('TransactionCtrl', [
     };
 
     $scope.buildQueryObjectForChartRange = function (last) {
-      return buildQueryObject(true, last);
+      var query = buildQueryObject(true, last);
+      if ($location.path() === '/transaction/traces' || $location.path() === '/error/traces') {
+        // clear duration filter on zooming out to avoid confusion
+        delete query['duration-millis-low'];
+        delete query['duration-millis-high'];
+      }
+      return query;
     };
 
     $scope.buildQueryObjectForTraceTab = function (overlayExtras) {
