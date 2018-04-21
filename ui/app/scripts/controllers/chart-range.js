@@ -87,8 +87,6 @@ glowroot.controller('ChartRangeCtrl', [
 
     $scope.headerRangeQueryString = function (last) {
       var query = $scope.buildQueryObject();
-      delete query['trace-chart-from'];
-      delete query['trace-chart-to'];
       delete query.from;
       delete query.to;
       if (last === 4 * 60 * 60 * 1000) {
