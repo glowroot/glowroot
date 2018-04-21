@@ -150,16 +150,32 @@ glowroot.controller('TransactionCtrl', [
     $scope.$watchGroup(['range.last', 'range.chartFrom', 'range.chartTo'],
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
-            $location.search($scope.buildQueryObject(undefined, $location.path() === '/transaction/traces'));
+            if ($location.path() === '/transaction/traces') {
+              $location.search($scope.buildQueryObjectForTraceTab(true));
+            } else {
+              $location.search($scope.buildQueryObject(true));
+            }
           }
         });
 
     $scope.tabQueryString = function () {
-      return queryStrings.encodeObject($scope.buildQueryObject({}));
+      return queryStrings.encodeObject($scope.buildQueryObject());
     };
 
-    $scope.buildQueryObject = function (baseQuery, allowSeconds) {
-      var query = baseQuery || angular.copy($location.search());
+    $scope.buildQueryObject = function (overlayExtras) {
+      return buildQueryObject(overlayExtras, $scope.range.last);
+    };
+
+    $scope.buildQueryObjectForChartRange = function (last) {
+      return buildQueryObject(true, last);
+    };
+
+    $scope.buildQueryObjectForTraceTab = function (overlayExtras) {
+      return buildQueryObject(overlayExtras, $scope.range.last, true);
+    };
+
+    function buildQueryObject(overlayExtras, last, allowSeconds) {
+      var query = {};
       if ($scope.layout.central) {
         var agentId = $location.search()['agent-id'];
         if (agentId) {
@@ -170,7 +186,7 @@ glowroot.controller('TransactionCtrl', [
       }
       query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;
-      if (!$scope.range.last) {
+      if (!last) {
         if (allowSeconds) {
           query.from = $scope.range.chartFrom;
           query.to = $scope.range.chartTo;
@@ -179,8 +195,8 @@ glowroot.controller('TransactionCtrl', [
           query.to = Math.ceil($scope.range.chartTo / 60000) * 60000;
         }
         delete query.last;
-      } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
-        query.last = $scope.range.last;
+      } else if (last !== 4 * 60 * 60 * 1000) {
+        query.last = last;
         delete query.from;
         delete query.to;
       }
@@ -189,8 +205,20 @@ glowroot.controller('TransactionCtrl', [
       } else {
         delete query['summary-sort-order'];
       }
+      if (overlayExtras) {
+        var overlay = angular.copy($location.search());
+        delete overlay['agent-id'];
+        delete overlay['agent-rollup-id'];
+        delete overlay['transaction-type'];
+        delete overlay['transaction-name'];
+        delete overlay.from;
+        delete overlay.to;
+        delete overlay.last;
+        delete overlay['summary-sort-order'];
+        angular.extend(query, overlay);
+      }
       return query;
-    };
+    }
 
     $scope.currentTabUrl = function () {
       return $location.path().substring(1);

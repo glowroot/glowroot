@@ -55,7 +55,7 @@ glowroot.controller('TransactionQueriesCtrl', [
     };
 
     $scope.sortQueryString = function (attributeName) {
-      var query = $scope.buildQueryObject({});
+      var query = $scope.buildQueryObject();
       if (attributeName !== 'total-time' || ($scope.sortAttribute === 'total-time' && !$scope.sortAsc)) {
         query['sort-attribute'] = attributeName;
       }

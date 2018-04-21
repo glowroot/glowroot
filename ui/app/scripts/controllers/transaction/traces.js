@@ -441,7 +441,7 @@ glowroot.controller('TracesCtrl', [
     });
 
     function updateLocation() {
-      var query = $scope.buildQueryObject({}, true);
+      var query = $scope.buildQueryObjectForTraceTab();
       if (Number(appliedFilter.durationMillisLow)) {
         query['duration-millis-low'] = appliedFilter.durationMillisLow;
       }

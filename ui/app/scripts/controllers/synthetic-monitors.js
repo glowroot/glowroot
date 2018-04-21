@@ -53,8 +53,15 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       return $location.path().substring(1) + queryStrings.encodeObject(query);
     };
 
-    $scope.buildQueryObject = function () {
+    $scope.buildQueryObjectForChartRange = function (last) {
+      return $scope.buildQueryObject(last);
+    };
+
+    $scope.buildQueryObject = function (last) {
       var query = {};
+      if (last === undefined) {
+        last = $scope.range.last;
+      }
       if ($scope.layout.central) {
         var agentId = $location.search()['agent-id'];
         if (agentId) {
@@ -72,12 +79,12 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       } else {
         query['synthetic-monitor-id'] = $scope.syntheticMonitorIds;
       }
-      if (!$scope.range.last) {
+      if (!last) {
         query.from = $scope.range.chartFrom;
         query.to = $scope.range.chartTo;
         delete query.last;
-      } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
-        query.last = $scope.range.last;
+      } else if (last !== 4 * 60 * 60 * 1000) {
+        query.last = last;
         delete query.from;
         delete query.to;
       }
@@ -94,7 +101,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     }
 
     function watchListener(autoRefresh) {
-      var query = $scope.buildQueryObject();
+      var query = $scope.buildQueryObject(true);
       $location.search(query);
       if ($scope.syntheticMonitorIds.length) {
         refreshData(autoRefresh);

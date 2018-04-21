@@ -28,7 +28,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     if ($scope.hideMainContent()) {
       // this is needed to prevent nested controller chart-range.js from throwing errors
-      $scope.buildQueryObject = function () {
+      $scope.buildQueryObjectForChartRange = function () {
         return {};
       };
       return;
@@ -63,7 +63,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     var locationReplace = false;
 
     function watchListener(autoRefresh) {
-      $location.search($scope.buildQueryObject());
+      $location.search(buildQueryObject($scope.range.last));
       if (locationReplace) {
         $location.replace();
         locationReplace = false;
@@ -109,7 +109,11 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       return window.innerWidth < 768;
     };
 
-    $scope.buildQueryObject = function () {
+    $scope.buildQueryObjectForChartRange = function (last) {
+      return buildQueryObject(last);
+    };
+
+    function buildQueryObject(last) {
       var query = {};
       if ($scope.layout.central) {
         var agentId = $location.search()['agent-id'];
@@ -125,14 +129,14 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       } else {
         query['gauge-name'] = $scope.gaugeNames;
       }
-      if (!$scope.range.last) {
+      if (!last) {
         query.from = $scope.range.chartFrom;
         query.to = $scope.range.chartTo;
-      } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
-        query.last = $scope.range.last;
+      } else if (last !== 4 * 60 * 60 * 1000) {
+        query.last = last;
       }
       return query;
-    };
+    }
 
     // TODO this is exact duplicate of same function in transaction.js
     $scope.applyLast = function () {
