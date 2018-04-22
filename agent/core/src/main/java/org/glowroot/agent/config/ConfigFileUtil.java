@@ -25,7 +25,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
@@ -35,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 public class ConfigFileUtil {
 
@@ -46,7 +47,7 @@ public class ConfigFileUtil {
     public static ObjectNode getRootObjectNode(File file) {
         String content;
         try {
-            content = Files.toString(file, Charsets.UTF_8);
+            content = Files.toString(file, UTF_8);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             return mapper.createObjectNode();
@@ -68,14 +69,14 @@ public class ConfigFileUtil {
             List<String> keyOrder) throws IOException {
         String content = writeConfigAsString(rootObjectNode, keyOrder);
         if (file.exists()) {
-            String existingContent = Files.toString(file, Charsets.UTF_8);
+            String existingContent = Files.toString(file, UTF_8);
             if (content.equals(existingContent)) {
                 // it's nice to preserve the correct modification stamp on the file to track when it
                 // was last really changed
                 return;
             }
         }
-        Files.write(content, file, Charsets.UTF_8);
+        Files.write(content, file, UTF_8);
     }
 
     private static String writeConfigAsString(ObjectNode rootObjectNode, List<String> keyOrder)

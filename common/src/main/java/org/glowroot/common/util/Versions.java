@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@ package org.glowroot.common.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
 import com.google.protobuf.AbstractMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 public class Versions {
 
@@ -32,8 +33,7 @@ public class Versions {
 
     public static String getJsonVersion(Object obj) {
         try {
-            return Hashing.sha1().hashString(mapper.writeValueAsString(obj), Charsets.UTF_8)
-                    .toString();
+            return Hashing.sha1().hashString(mapper.writeValueAsString(obj), UTF_8).toString();
         } catch (JsonProcessingException e) {
             logger.error(e.getMessage(), e);
             return "0000000000000000000000000000000000000000";

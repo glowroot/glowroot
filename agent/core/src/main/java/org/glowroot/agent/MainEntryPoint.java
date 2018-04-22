@@ -36,7 +36,6 @@ import java.util.Properties;
 import java.util.jar.JarFile;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
@@ -67,6 +66,8 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
 
+import static com.google.common.base.Charsets.ISO_8859_1;
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MainEntryPoint {
@@ -458,7 +459,7 @@ public class MainEntryPoint {
         if (in == null) {
             return null;
         }
-        BufferedReader reader = new BufferedReader(new InputStreamReader(in, Charsets.UTF_8));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in, UTF_8));
         try {
             String line = reader.readLine();
             while (line != null) {
@@ -615,13 +616,13 @@ public class MainEntryPoint {
 
     private static List<String> readPropertiesFile(File propFile) throws IOException {
         // properties files must be ISO_8859_1
-        return Files.readLines(propFile, Charsets.ISO_8859_1);
+        return Files.readLines(propFile, ISO_8859_1);
     }
 
     private static void writePropertiesFile(File propFile, List<String> newLines)
             throws FileNotFoundException {
         // properties files must be ISO_8859_1
-        PrintWriter out = new PrintWriter(Files.newWriter(propFile, Charsets.ISO_8859_1));
+        PrintWriter out = new PrintWriter(Files.newWriter(propFile, ISO_8859_1));
         try {
             for (String newLine : newLines) {
                 out.println(newLine);

@@ -17,7 +17,6 @@ package org.glowroot.ui;
 
 import java.net.URL;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -26,6 +25,7 @@ import org.glowroot.ui.CommonHandler.CommonRequest;
 import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
@@ -50,7 +50,7 @@ class IndexHtmlHttpService implements HttpService {
     public CommonResponse handleRequest(CommonRequest request, Authentication authentication)
             throws Exception {
         URL url = IndexHtmlHttpService.class.getResource("/org/glowroot/ui/app-dist/index.html");
-        String indexHtml = Resources.toString(checkNotNull(url), Charsets.UTF_8);
+        String indexHtml = Resources.toString(checkNotNull(url), UTF_8);
         String layout = layoutService.getLayoutJson(authentication);
         String contextPath = request.getContextPath();
         String baseHref = contextPath.equals("/") ? "/" : contextPath + "/";

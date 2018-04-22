@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.Resources;
@@ -34,6 +33,7 @@ import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.TraceCommonService.TraceExport;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
@@ -189,6 +189,6 @@ class TraceExportHttpService implements HttpService {
     private static CharSource asCharSource(String exportResourceName) {
         URL url = TraceExportHttpService.class
                 .getResource("/org/glowroot/ui/export-dist/" + exportResourceName);
-        return Resources.asCharSource(checkNotNull(url), Charsets.UTF_8);
+        return Resources.asCharSource(checkNotNull(url), UTF_8);
     }
 }

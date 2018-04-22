@@ -32,7 +32,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -92,6 +91,7 @@ import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class AggregateDaoImpl implements AggregateDao {
@@ -427,7 +427,7 @@ public class AggregateDaoImpl implements AggregateDao {
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
                 if (fullText.length() > Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
-                    fullTextSha1 = SHA_1.hashString(fullText, Charsets.UTF_8).toString();
+                    fullTextSha1 = SHA_1.hashString(fullText, UTF_8).toString();
                     futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
                     for (int i = 1; i < agentRollupIds.size(); i++) {
                         futures.addAll(fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i),

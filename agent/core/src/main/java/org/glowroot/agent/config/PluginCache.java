@@ -28,7 +28,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -41,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
@@ -150,7 +150,7 @@ public abstract class PluginCache {
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         for (URL url : descriptorURLs) {
             try {
-                String content = Resources.toString(url, Charsets.UTF_8);
+                String content = Resources.toString(url, UTF_8);
                 PluginDescriptor pluginDescriptor =
                         mapper.readValue(content, ImmutablePluginDescriptor.class);
                 pluginDescriptors.add(pluginDescriptor);

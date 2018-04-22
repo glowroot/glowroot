@@ -41,10 +41,11 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 public class Compilations {
 
@@ -62,8 +63,8 @@ public class Compilations {
 
         IsolatedClassLoader isolatedClassLoader = new IsolatedClassLoader();
 
-        StandardJavaFileManager standardFileManager = javaCompiler
-                .getStandardFileManager(diagnosticCollector, Locale.ENGLISH, Charsets.UTF_8);
+        StandardJavaFileManager standardFileManager =
+                javaCompiler.getStandardFileManager(diagnosticCollector, Locale.ENGLISH, UTF_8);
         standardFileManager.setLocation(StandardLocation.CLASS_PATH, getCompilationClassPath());
         JavaFileManager fileManager =
                 new IsolatedJavaFileManager(standardFileManager, isolatedClassLoader);

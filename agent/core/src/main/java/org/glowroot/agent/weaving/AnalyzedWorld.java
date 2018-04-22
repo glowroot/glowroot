@@ -28,7 +28,6 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -46,6 +45,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.common.util.Styles;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 public class AnalyzedWorld {
 
@@ -139,7 +140,7 @@ public class AnalyzedWorld {
 
     List<Advice> mergeInstrumentationAnnotations(List<Advice> advisors, byte[] classBytes,
             @Nullable ClassLoader loader, String className) {
-        byte[] marker = "Lorg/glowroot/agent/api/Instrumentation$".getBytes(Charsets.UTF_8);
+        byte[] marker = "Lorg/glowroot/agent/api/Instrumentation$".getBytes(UTF_8);
         if (Bytes.indexOf(classBytes, marker) == -1) {
             return advisors;
         }

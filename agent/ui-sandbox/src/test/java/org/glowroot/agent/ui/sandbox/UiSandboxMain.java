@@ -18,7 +18,6 @@ package org.glowroot.agent.ui.sandbox;
 import java.io.File;
 import java.util.concurrent.Executors;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -29,6 +28,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.agent.it.harness.impl.LocalContainer;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class UiSandboxMain {
@@ -47,7 +47,7 @@ public class UiSandboxMain {
             Files.write(
                     "{\"transactions\":{\"profilingIntervalMillis\":100},"
                             + "\"ui\":{\"defaultTransactionType\":\"Sandbox\"}}",
-                    configFile, Charsets.UTF_8);
+                    configFile, UTF_8);
         }
         if (useJavaagent && useGlowrootCentral) {
             container = new JavaagentContainer(testDir, false,

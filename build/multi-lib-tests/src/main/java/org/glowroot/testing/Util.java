@@ -26,12 +26,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.glowroot.testing.JavaVersion.JAVA7;
@@ -45,7 +45,7 @@ class Util {
 
     static {
         try {
-            report = new PrintWriter(Files.newWriter(new File("report.txt"), Charsets.UTF_8), true);
+            report = new PrintWriter(Files.newWriter(new File("report.txt"), UTF_8), true);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -54,10 +54,10 @@ class Util {
     static void updateLibVersion(String modulePath, String property, String version)
             throws IOException {
         File pomFile = new File(BASE_DIR + "/" + modulePath + "/pom.xml");
-        String pom = Files.toString(pomFile, Charsets.UTF_8);
+        String pom = Files.toString(pomFile, UTF_8);
         pom = pom.replaceAll("<" + property + ">.*",
                 "<" + property + ">" + version + "</" + property + ">");
-        Files.write(pom, pomFile, Charsets.UTF_8);
+        Files.write(pom, pomFile, UTF_8);
         System.out.println(property + " : " + version);
         report.println(property + " : " + version);
     }

@@ -23,8 +23,9 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.BaseEncoding;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 public class Encryption {
 
@@ -39,7 +40,7 @@ public class Encryption {
         secureRandom.nextBytes(iv);
         Cipher aesCipherForEncryption = Cipher.getInstance("AES/CBC/PKCS5Padding");
         aesCipherForEncryption.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(iv));
-        byte[] encryptedBytes = aesCipherForEncryption.doFinal(text.getBytes(Charsets.UTF_8));
+        byte[] encryptedBytes = aesCipherForEncryption.doFinal(text.getBytes(UTF_8));
         return encoder.encode(encryptedBytes) + ':' + encoder.encode(iv);
     }
 
@@ -55,7 +56,7 @@ public class Encryption {
         Cipher aesCipherForDecryption = Cipher.getInstance("AES/CBC/PKCS5Padding");
         aesCipherForDecryption.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
         byte[] decryptedBytes = aesCipherForDecryption.doFinal(encryptedText);
-        return new String(decryptedBytes, Charsets.UTF_8);
+        return new String(decryptedBytes, UTF_8);
     }
 
     public static SecretKey generateNewKey() throws NoSuchAlgorithmException {

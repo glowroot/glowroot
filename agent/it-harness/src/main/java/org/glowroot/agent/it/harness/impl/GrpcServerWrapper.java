@@ -24,7 +24,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -61,6 +60,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -279,8 +279,7 @@ class GrpcServerWrapper {
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
                 if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
-                    fullTextSha1 =
-                            Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+                    fullTextSha1 = Hashing.sha1().hashString(fullText, UTF_8).toString();
                     fullTexts.put(fullTextSha1, fullText);
                 }
                 return fullText;

@@ -35,7 +35,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.HashFunction;
@@ -75,6 +74,7 @@ import org.glowroot.wire.api.model.Proto.StackTraceElement;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TraceDaoImpl implements TraceDao {
 
@@ -554,7 +554,7 @@ public class TraceDaoImpl implements TraceDao {
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
                 if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
-                    fullTextSha1 = SHA_1.hashString(fullText, Charsets.UTF_8).toString();
+                    fullTextSha1 = SHA_1.hashString(fullText, UTF_8).toString();
                     futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
                     for (int i = 1; i < agentRollupIds.size(); i++) {
                         futures.addAll(fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i),

@@ -29,7 +29,6 @@ import java.util.Map;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -52,6 +51,8 @@ import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.SizeLimitBypassingParser;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 public class CappedDatabase {
 
@@ -297,7 +298,7 @@ public class CappedDatabase {
             final int bufferSize = 32768;
             return new InputStreamReader(newLZFInputStream(
                     new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize)),
-                    Charsets.UTF_8);
+                    UTF_8);
         }
     }
 

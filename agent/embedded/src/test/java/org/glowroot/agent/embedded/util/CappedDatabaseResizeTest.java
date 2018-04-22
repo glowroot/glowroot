@@ -19,13 +19,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Ticker;
 import com.google.common.io.ByteSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CappedDatabaseResizeTest {
@@ -79,11 +79,10 @@ public class CappedDatabaseResizeTest {
         // when
         // because of compression, use somewhat random text and loop until wrap occurs
         String text = createRandomText();
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
-        long cappedId =
-                cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
+        long cappedId = cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
         cappedDatabase.resize(newSizeKb);
 
         // then
@@ -102,11 +101,10 @@ public class CappedDatabaseResizeTest {
         cappedDatabase.resize(newSizeKb);
         // because of compression, use somewhat random text and loop until wrap occurs
         String text = createRandomText();
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
-        long cappedId =
-                cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
+        long cappedId = cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
 
         // then
         String text2 = cappedDatabase.read(cappedId).read();

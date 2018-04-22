@@ -28,13 +28,13 @@ import java.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.rauschig.jarchivelib.ArchiveFormat;
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.rauschig.jarchivelib.CompressionType;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 // see copies of this class in glowroot-agent-cassandra-plugin and glowroot-webdriver-tests
@@ -106,18 +106,18 @@ class CassandraWrapper {
         File confDir = new File(cassandraDir, "conf");
         // reduce logging to stdout
         File logbackXmlFile = new File(confDir, "logback.xml");
-        String xml = Files.asCharSource(logbackXmlFile, Charsets.UTF_8).read();
+        String xml = Files.asCharSource(logbackXmlFile, UTF_8).read();
         xml = xml.replace("<root level=\"INFO\">", "<root level=\"ERROR\">");
         xml = xml.replace("<logger name=\"org.apache.cassandra\" level=\"DEBUG\"/>", "");
-        Files.asCharSink(logbackXmlFile, Charsets.UTF_8).write(xml);
+        Files.asCharSink(logbackXmlFile, UTF_8).write(xml);
         // long timeouts needed on slow travis ci machines
         File yamlFile = new File(confDir, "cassandra.yaml");
-        String yaml = Files.asCharSource(yamlFile, Charsets.UTF_8).read();
+        String yaml = Files.asCharSource(yamlFile, UTF_8).read();
         yaml = yaml.replaceAll("(?m)^read_request_timeout_in_ms: .*$",
                 "read_request_timeout_in_ms: 30000");
         yaml = yaml.replaceAll("(?m)^write_request_timeout_in_ms: .*$",
                 "write_request_timeout_in_ms: 30000");
-        Files.asCharSink(yamlFile, Charsets.UTF_8).write(yaml);
+        Files.asCharSink(yamlFile, UTF_8).write(yaml);
     }
 
     private static List<String> buildCommandLine(File cassandraDir) {

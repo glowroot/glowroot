@@ -17,7 +17,6 @@ package org.glowroot.agent.central;
 
 import java.util.List;
 
-import com.google.common.base.Charsets;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
@@ -27,6 +26,7 @@ import org.glowroot.common.Constants;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.DAYS;
 
@@ -42,7 +42,7 @@ class SharedQueryTextLimiter {
     Aggregate.SharedQueryText buildAggregateSharedQueryText(String fullText,
             List<String> fullTextSha1s) {
         if (fullText.length() > Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
-            String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+            String fullTextSha1 = Hashing.sha1().hashString(fullText, UTF_8).toString();
             if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
                 // need to send full text
                 fullTextSha1s.add(fullTextSha1);
@@ -66,7 +66,7 @@ class SharedQueryTextLimiter {
 
     Trace.SharedQueryText buildTraceSharedQueryText(String fullText, List<String> fullTextSha1s) {
         if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
-            String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+            String fullTextSha1 = Hashing.sha1().hashString(fullText, UTF_8).toString();
             if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
                 fullTextSha1s.add(fullTextSha1);
                 // need to send full text
@@ -102,7 +102,7 @@ class SharedQueryTextLimiter {
             String fullText = sharedQueryText.getFullText();
             if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
                 String fullTextSha1 =
-                        Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+                        Hashing.sha1().hashString(fullText, UTF_8).toString();
                 if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
                     // need to send full text
                     updatedSharedQueryTexts.add(sharedQueryText);

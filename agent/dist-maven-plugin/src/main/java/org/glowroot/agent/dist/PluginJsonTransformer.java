@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
@@ -40,6 +39,8 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.PropertyDescriptor;
 import org.glowroot.agent.config.PropertyValue;
 import org.glowroot.agent.dist.PluginConfig.PropertyConfig;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 class PluginJsonTransformer {
 
@@ -68,7 +69,7 @@ class PluginJsonTransformer {
         if (!metaInfDir.exists() && !metaInfDir.mkdirs()) {
             throw new IOException("Could not create directory: " + metaInfDir.getAbsolutePath());
         }
-        Files.write(pluginsJson, file, Charsets.UTF_8);
+        Files.write(pluginsJson, file, UTF_8);
     }
 
     private static List<PluginDescriptor> getPluginDescriptors(Set<Artifact> artifacts)
@@ -95,7 +96,7 @@ class PluginJsonTransformer {
             if (!jsonFile.exists()) {
                 return null;
             }
-            return Files.toString(jsonFile, Charsets.UTF_8);
+            return Files.toString(jsonFile, UTF_8);
         }
         JarInputStream jarIn = new JarInputStream(new FileInputStream(artifact.getFile()));
         try {
@@ -108,7 +109,7 @@ class PluginJsonTransformer {
                 if (!name.equals("META-INF/glowroot.plugin.json")) {
                     continue;
                 }
-                InputStreamReader in = new InputStreamReader(jarIn, Charsets.UTF_8);
+                InputStreamReader in = new InputStreamReader(jarIn, UTF_8);
                 String content = CharStreams.toString(in);
                 in.close();
                 return content;

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Random;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Ticker;
 import com.google.common.io.ByteSource;
 import org.junit.After;
@@ -29,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CappedDatabaseTest {
@@ -56,8 +56,7 @@ public class CappedDatabaseTest {
         // given
         String text = "0123456789";
         // when
-        long cappedId =
-                cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        long cappedId = cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
         // then
         String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
@@ -69,8 +68,7 @@ public class CappedDatabaseTest {
         String text = "0123456789";
 
         // when
-        long cappedId =
-                cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        long cappedId = cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
 
         // then
         Reader in = cappedDatabase.read(cappedId).openStream();
@@ -97,11 +95,10 @@ public class CappedDatabaseTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
 
         // when
-        long cappedId =
-                cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        long cappedId = cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
 
         // then
         String text2 = cappedDatabase.read(cappedId).read();
@@ -118,12 +115,11 @@ public class CappedDatabaseTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
 
         // when
-        long cappedId =
-                cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        long cappedId = cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
 
         // then
         String text2 = cappedDatabase.read(cappedId).read();
@@ -140,12 +136,11 @@ public class CappedDatabaseTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        long cappedId =
-                cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        long cappedId = cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
 
         // when
-        cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+        cappedDatabase.write(ByteSource.wrap(text.getBytes(UTF_8)), "test");
 
         // then
         String exceptionClassName = null;

@@ -24,7 +24,6 @@ import java.net.UnknownHostException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -43,6 +42,8 @@ import org.junit.rules.TestWatcher;
 import org.openqa.selenium.WebDriver;
 
 import org.glowroot.agent.it.harness.Container;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public abstract class WebDriverIT {
 
@@ -121,8 +122,7 @@ public abstract class WebDriverIT {
     static String httpGet(String url) throws Exception {
         try (CloseableHttpResponse response = httpClient.execute(new HttpGet(url));
                 InputStream responseContent = response.getEntity().getContent()) {
-            String content =
-                    CharStreams.toString(new InputStreamReader(responseContent, Charsets.UTF_8));
+            String content = CharStreams.toString(new InputStreamReader(responseContent, UTF_8));
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200) {
                 throw new AssertionError("Unexpected status code: " + statusCode);

@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
@@ -52,6 +51,7 @@ import org.glowroot.ui.CommonHandler.CommonRequest;
 import org.glowroot.ui.CommonHandler.CommonResponse;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @WebServlet("/*")
 @SuppressWarnings("serial")
@@ -118,7 +118,7 @@ public class GlowrootServlet extends HttpServlet {
                 ServletOutputStream out = res.getOutputStream();
                 ZipOutputStream zipOut = new ZipOutputStream(out);
                 zipOut.putNextEntry(new ZipEntry(zipFileName + ".html"));
-                OutputStreamWriter zipWriter = new OutputStreamWriter(zipOut, Charsets.UTF_8);
+                OutputStreamWriter zipWriter = new OutputStreamWriter(zipOut, UTF_8);
                 ChunkCopier copier = chunkSource.getCopier(zipWriter);
                 while (copier.copyNext()) {
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.net.ServerSocket;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
@@ -35,6 +34,8 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 // see https://github.com/netty/netty/issues/3233
 // and https://bugs.openjdk.java.net/browse/JDK-8041920
@@ -53,7 +54,7 @@ public class MethodHandleRelatedCrashIT {
         // need to run with embedded=true so it starts up the Netty UI
         testDir = Files.createTempDir();
         File adminFile = new File(testDir, "admin.json");
-        Files.write("{\"web\":{\"port\":" + getAvailablePort() + "}}", adminFile, Charsets.UTF_8);
+        Files.write("{\"web\":{\"port\":" + getAvailablePort() + "}}", adminFile, UTF_8);
         container = new JavaagentContainer(testDir, true, ImmutableList.<String>of());
     }
 

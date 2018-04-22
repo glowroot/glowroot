@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -54,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.ui.CommonHandler.CommonRequest;
 import org.glowroot.ui.CommonHandler.CommonResponse;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -260,7 +260,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
         @Override
         public String getContent() {
-            return request.content().toString(Charsets.UTF_8);
+            return request.content().toString(UTF_8);
         }
     }
 }

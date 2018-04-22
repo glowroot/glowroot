@@ -22,7 +22,6 @@ import java.util.concurrent.Executors;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.io.Resources;
 import org.junit.AfterClass;
@@ -33,6 +32,7 @@ import org.glowroot.central.repo.CassandraWrapper.ConsoleOutputPipe;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SchemaUpgradeIT {
@@ -49,7 +49,7 @@ public class SchemaUpgradeIT {
         session = new Session(wrappedSession, "glowroot_upgrade_test");
         URL url = Resources.getResource("glowroot-0.9.1-schema.cql");
         StringBuilder cql = new StringBuilder();
-        for (String line : Resources.readLines(url, Charsets.UTF_8)) {
+        for (String line : Resources.readLines(url, UTF_8)) {
             if (line.isEmpty()) {
                 session.execute(cql.toString());
                 cql.setLength(0);

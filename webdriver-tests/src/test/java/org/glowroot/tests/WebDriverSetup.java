@@ -26,7 +26,6 @@ import java.security.SecureRandom;
 import java.util.Properties;
 
 import com.datastax.driver.core.Cluster;
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -62,6 +61,7 @@ import org.glowroot.agent.it.harness.impl.LocalContainer;
 import org.glowroot.central.CentralModule;
 import org.glowroot.central.util.Session;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class WebDriverSetup {
@@ -226,7 +226,7 @@ public class WebDriverSetup {
 
     private static Container createContainer(int uiPort, File testDir) throws Exception {
         File adminFile = new File(testDir, "admin.json");
-        Files.asCharSink(adminFile, Charsets.UTF_8).write("{\"web\":{\"port\":" + uiPort + "}}");
+        Files.asCharSink(adminFile, UTF_8).write("{\"web\":{\"port\":" + uiPort + "}}");
         Container container;
         if (Containers.useJavaagent()) {
             container = new JavaagentContainer(testDir, true, ImmutableList.of());

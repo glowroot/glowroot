@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
@@ -36,6 +35,7 @@ import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.rauschig.jarchivelib.CompressionType;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class ElasticsearchWrapper {
@@ -123,15 +123,15 @@ class ElasticsearchWrapper {
         // reduce logging to stdout
         if (ELASTICSEARCH_VERSION.startsWith("5.") || ELASTICSEARCH_VERSION.startsWith("6.")) {
             File log4j2PropertiesFile = new File(configDir, "log4j2.properties");
-            String contents = Files.asCharSource(log4j2PropertiesFile, Charsets.UTF_8).read();
+            String contents = Files.asCharSource(log4j2PropertiesFile, UTF_8).read();
             contents = contents.replace("rootLogger.level = info", "rootLogger.level = warn");
-            Files.asCharSink(log4j2PropertiesFile, Charsets.UTF_8).write(contents);
+            Files.asCharSink(log4j2PropertiesFile, UTF_8).write(contents);
         } else if (ELASTICSEARCH_VERSION.startsWith("2.")) {
             File loggingYamlFile = new File(configDir, "logging.yml");
-            String contents = Files.asCharSource(loggingYamlFile, Charsets.UTF_8).read();
+            String contents = Files.asCharSource(loggingYamlFile, UTF_8).read();
             contents = contents.replace("es.logger.level: INFO", "es.logger.level: WARN");
             contents = contents.replace("action: DEBUG", "action: INFO");
-            Files.asCharSink(loggingYamlFile, Charsets.UTF_8).write(contents);
+            Files.asCharSink(loggingYamlFile, UTF_8).write(contents);
         } else {
             throw new IllegalStateException(
                     "Unexpected Elasticsearch version: " + ELASTICSEARCH_VERSION);

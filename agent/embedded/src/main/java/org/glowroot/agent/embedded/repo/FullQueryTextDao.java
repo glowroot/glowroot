@@ -19,7 +19,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import com.google.common.base.Charsets;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -35,6 +34,7 @@ import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.agent.embedded.util.Schemas.Index;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 
@@ -69,7 +69,7 @@ class FullQueryTextDao {
     }
 
     String updateLastCaptureTime(String fullText, long captureTime) throws SQLException {
-        String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+        String fullTextSha1 = Hashing.sha1().hashString(fullText, UTF_8).toString();
         if (lastCaptureTimeUpdatedInThePastDay.getIfPresent(fullTextSha1) != null) {
             return fullTextSha1;
         }

@@ -20,7 +20,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
@@ -29,6 +28,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.Constants;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 public class QueryCollector {
 
@@ -138,8 +139,7 @@ public class QueryCollector {
                 if (fullQueryText.length() > Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
                     truncatedQueryText =
                             fullQueryText.substring(0, Constants.AGGREGATE_QUERY_TEXT_TRUNCATE);
-                    fullQueryTextSha1 =
-                            Hashing.sha1().hashString(fullQueryText, Charsets.UTF_8).toString();
+                    fullQueryTextSha1 = Hashing.sha1().hashString(fullQueryText, UTF_8).toString();
                 } else {
                     truncatedQueryText = fullQueryText;
                     fullQueryTextSha1 = null;
@@ -165,7 +165,7 @@ public class QueryCollector {
                 if (fullQueryText.length() <= Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
                     continue;
                 }
-                String sha1 = Hashing.sha1().hashString(fullQueryText, Charsets.UTF_8).toString();
+                String sha1 = Hashing.sha1().hashString(fullQueryText, UTF_8).toString();
                 if (fullQueryTextSha1.equals(sha1)) {
                     return fullQueryText;
                 }
