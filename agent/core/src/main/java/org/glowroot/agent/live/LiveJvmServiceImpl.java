@@ -115,9 +115,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             throw new UnavailableDueToRunningInIbmJvmException();
         }
         long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
-        boolean allowAttachSelf = !JavaVersion.isGreaterThanOrEqualToJava9()
-                || Boolean.getBoolean("jdk.attach.allowAttachSelf");
-        return JStackTool.run(pid, allowAttachSelf, glowrootJarFile);
+        return JStackTool.run(pid, allowAttachSelf(), glowrootJarFile);
     }
 
     @Override
@@ -154,9 +152,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             throw new UnavailableDueToRunningInIbmJvmException();
         }
         long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
-        boolean allowAttachSelf = !JavaVersion.isGreaterThanOrEqualToJava9()
-                || Boolean.getBoolean("jdk.attach.allowAttachSelf");
-        return HeapHistogramTool.run(pid, allowAttachSelf, glowrootJarFile);
+        return HeapHistogramTool.run(pid, allowAttachSelf(), glowrootJarFile);
     }
 
     @Override
@@ -318,6 +314,17 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         } else {
             return null;
         }
+    }
+
+    private static boolean allowAttachSelf() {
+        if (AppServerDetection.isJRockitJvm()) {
+            // self attach sporadically logs annoying:
+            // [ERROR][attach ] Failed to flush the destination file
+            // [ERROR][attach ] OS message: The pipe has been ended (109)
+            return false;
+        }
+        return !JavaVersion.isGreaterThanOrEqualToJava9()
+                || Boolean.getBoolean("jdk.attach.allowAttachSelf");
     }
 
     private static File ibmHeapDump(File directory) throws Exception {

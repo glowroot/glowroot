@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.Type;
 
 import org.glowroot.agent.live.JvmTool.InputStreamProcessor;
+import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
 
 class HeapHistogramTool {
@@ -47,6 +48,7 @@ class HeapHistogramTool {
 
         @Override
         public HeapHistogram process(InputStream in) throws IOException {
+            boolean jrockit = AppServerDetection.isJRockitJvm();
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
             // skip over header lines
             String line = reader.readLine();
@@ -59,13 +61,22 @@ class HeapHistogramTool {
             Map<String, ClassInfo> classInfos = Maps.newHashMap();
             Splitter splitter = Splitter.on(' ').omitEmptyStrings();
             while ((line = reader.readLine()) != null) {
-                Iterator<String> parts = splitter.split(line).iterator();
-                String num = parts.next();
-                if (num.equals("Total")) {
+                if (line.startsWith("Total ") || line.endsWith(" total ---")) {
                     break;
                 }
-                long count = Long.parseLong(parts.next());
-                long bytes = Long.parseLong(parts.next());
+                Iterator<String> parts = splitter.split(line).iterator();
+                parts.next();
+                long count;
+                long bytes;
+                if (jrockit) {
+                    String bytesStr = parts.next();
+                    bytes = 1024 * Long.parseLong(bytesStr.substring(0, bytesStr.length() - 1));
+                    count = Long.parseLong(parts.next());
+                    parts.next();
+                } else {
+                    count = Long.parseLong(parts.next());
+                    bytes = Long.parseLong(parts.next());
+                }
                 String className = parts.next();
                 // skipping PermGen objects
                 if (className.charAt(0) != '<') {

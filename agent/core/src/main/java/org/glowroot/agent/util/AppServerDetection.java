@@ -38,6 +38,10 @@ public class AppServerDetection {
         return "IBM J9 VM".equals(StandardSystemProperty.JAVA_VM_NAME.value());
     }
 
+    public static boolean isJRockitJvm() {
+        return "Oracle JRockit(R)".equals(StandardSystemProperty.JAVA_VM_NAME.value());
+    }
+
     static boolean isJBossModules() {
         return "org.jboss.modules.Main".equals(MAIN_CLASS);
     }
