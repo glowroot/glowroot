@@ -240,7 +240,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SEARCH testindex/testtype");
+                .getFullText()).startsWith("SEARCH testindex/testtype {");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
@@ -251,7 +251,7 @@ public class ElasticsearchAsyncIT {
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SEARCH testindex/testtype");
+                .startsWith("SEARCH testindex/testtype {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.hasTotalRows()).isFalse();
 
@@ -273,7 +273,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SEARCH _any/testtype");
+                .getFullText()).startsWith("SEARCH _any/testtype {");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
@@ -284,7 +284,7 @@ public class ElasticsearchAsyncIT {
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SEARCH _any/testtype");
+                .startsWith("SEARCH _any/testtype {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.hasTotalRows()).isFalse();
 
@@ -308,7 +308,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SEARCH /");
+                .getFullText()).startsWith("SEARCH / {");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
@@ -319,7 +319,7 @@ public class ElasticsearchAsyncIT {
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SEARCH /");
+                .startsWith("SEARCH / {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.hasTotalRows()).isFalse();
 
@@ -343,7 +343,7 @@ public class ElasticsearchAsyncIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SEARCH testindex,testindex2/testtype,testtype2");
+                .getFullText()).startsWith("SEARCH testindex,testindex2/testtype,testtype2 {");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
@@ -354,7 +354,7 @@ public class ElasticsearchAsyncIT {
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SEARCH testindex,testindex2/testtype,testtype2");
+                .startsWith("SEARCH testindex,testindex2/testtype,testtype2 {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.hasTotalRows()).isFalse();
 

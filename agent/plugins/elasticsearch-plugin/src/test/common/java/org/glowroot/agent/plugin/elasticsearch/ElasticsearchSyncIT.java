@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -203,7 +204,7 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SEARCH testindex/testtype");
+                .getFullText()).startsWith("SEARCH testindex/testtype {");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
@@ -214,7 +215,7 @@ public class ElasticsearchSyncIT {
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SEARCH testindex/testtype");
+                .startsWith("SEARCH testindex/testtype {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.hasTotalRows()).isFalse();
 
@@ -236,7 +237,7 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SEARCH _any/testtype");
+                .getFullText()).startsWith("SEARCH _any/testtype {");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
@@ -247,7 +248,7 @@ public class ElasticsearchSyncIT {
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SEARCH _any/testtype");
+                .startsWith("SEARCH _any/testtype {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.hasTotalRows()).isFalse();
 
@@ -271,7 +272,7 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SEARCH /");
+                .getFullText()).startsWith("SEARCH / {");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
@@ -282,7 +283,7 @@ public class ElasticsearchSyncIT {
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SEARCH /");
+                .startsWith("SEARCH / {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.hasTotalRows()).isFalse();
 
@@ -306,7 +307,7 @@ public class ElasticsearchSyncIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                .getFullText()).isEqualTo("SEARCH testindex,testindex2/testtype,testtype2");
+                .getFullText()).startsWith("SEARCH testindex,testindex2/testtype,testtype2 {");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
@@ -317,7 +318,7 @@ public class ElasticsearchSyncIT {
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("Elasticsearch");
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
-                .isEqualTo("SEARCH testindex,testindex2/testtype,testtype2");
+                .startsWith("SEARCH testindex,testindex2/testtype,testtype2 {");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.hasTotalRows()).isFalse();
 
@@ -328,6 +329,39 @@ public class ElasticsearchSyncIT {
     public void shouldCaptureDocumentSearchWithQuery() throws Exception {
         // when
         Trace trace = container.execute(ExecuteDocumentSearchWithQuery.class);
+
+        // then
+        checkTimers(trace);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).startsWith("SEARCH testindex/testtype {");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("elasticsearch execute: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+
+        assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("Elasticsearch");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .startsWith("SEARCH testindex/testtype {");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
+    }
+
+    @Test
+    public void shouldCaptureDocumentSearchWithQueryAndSort() throws Exception {
+        // when
+        Trace trace = container.execute(ExecuteDocumentSearchWithQueryAndSort.class);
 
         // then
         checkTimers(trace);
@@ -595,6 +629,31 @@ public class ElasticsearchSyncIT {
             client.prepareSearch("testindex")
                     .setTypes("testtype")
                     .setQuery(QueryBuilders.termQuery("xyz", "text"))
+                    .get();
+        }
+    }
+
+    public static class ExecuteDocumentSearchWithQueryAndSort
+            implements AppUnderTest, TransactionMarker {
+
+        private TransportClient client;
+
+        @Override
+        public void executeApp() throws Exception {
+            client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
+            client.prepareIndex("testindex", "testtype")
+                    .setSource("abc", 11, "xyz", "some text")
+                    .get();
+            transactionMarker();
+            client.close();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            client.prepareSearch("testindex")
+                    .setTypes("testtype")
+                    .setQuery(QueryBuilders.termQuery("xyz", "text"))
+                    .addSort("abc", SortOrder.ASC)
                     .get();
         }
     }
