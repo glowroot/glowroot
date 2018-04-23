@@ -278,16 +278,17 @@ public class ActionRequestBuilderAspect {
                 sb.append('/');
             }
         }
-        Object source = ((SearchRequestBuilder) actionRequestBuilder).glowroot$getQueryBuilder();
-        if (source == null) {
+        Object queryBuilder =
+                ((SearchRequestBuilder) actionRequestBuilder).glowroot$getQueryBuilder();
+        if (queryBuilder == null) {
             return sb.toString();
-        } else if (source instanceof BytesReference) {
+        } else if (queryBuilder instanceof BytesReference) {
             sb.append(' ');
-            sb.append(((BytesReference) source).toUtf8());
+            sb.append(((BytesReference) queryBuilder).toUtf8());
             return sb.toString();
         } else {
             sb.append(' ');
-            sb.append(source);
+            sb.append(queryBuilder);
             return sb.toString();
         }
     }

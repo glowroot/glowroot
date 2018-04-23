@@ -325,9 +325,9 @@ public class ElasticsearchSyncIT {
     }
 
     @Test
-    public void shouldCaptureDocumentSearchWithSource() throws Exception {
+    public void shouldCaptureDocumentSearchWithQuery() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteDocumentSearchWithSource.class);
+        Trace trace = container.execute(ExecuteDocumentSearchWithQuery.class);
 
         // then
         checkTimers(trace);
@@ -576,7 +576,7 @@ public class ElasticsearchSyncIT {
         }
     }
 
-    public static class ExecuteDocumentSearchWithSource implements AppUnderTest, TransactionMarker {
+    public static class ExecuteDocumentSearchWithQuery implements AppUnderTest, TransactionMarker {
 
         private TransportClient client;
 
