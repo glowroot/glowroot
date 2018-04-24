@@ -379,7 +379,7 @@ case "$1" in
                  cd webdriver-tests
                  # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
                  while true; do sleep 60; echo ...; done &
-                 mvn clean verify -Dit.test=!AlertConfigIT,!ConfigIT \
+                 mvn clean verify -Dit.test=BasicSmokeIT,AdminIT \
                                   -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                   -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
                                   -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
@@ -400,7 +400,28 @@ case "$1" in
                  cd webdriver-tests
                  # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
                  while true; do sleep 60; echo ...; done &
-                 mvn clean verify -Dit.test=AlertConfigIT,ConfigIT \
+                 mvn clean verify -Dit.test=AlertConfigIT,InstrumentationConfigIT \
+                                  -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
+                                  -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
+                                  -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
+                                  -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
+                                  -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
+                                  -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
+                                  -DargLine="$surefire_jvm_args" \
+                                  -B
+               else
+                 echo skipping, saucelabs only runs against master repository and master branch
+               fi
+               ;;
+
+ "saucelabs3") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
+               then
+                 mvn clean install -DskipTests \
+                                   -B
+                 cd webdriver-tests
+                 # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
+                 while true; do sleep 60; echo ...; done &
+                 mvn clean verify -Dit.test=!BasicSmokeIT,!AdminIT,!AlertConfigIT,!InstrumentationConfigIT \
                                   -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                   -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
                                   -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \

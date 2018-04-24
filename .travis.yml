@@ -68,32 +68,46 @@ matrix:
       env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
     - jdk: oraclejdk8
       env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs3 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
       # firefox
     - jdk: oraclejdk8
       env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
     - jdk: oraclejdk8
       env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs3 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
       # internet explorer
     - jdk: oraclejdk8
       env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
     - jdk: oraclejdk8
       env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
     - jdk: oraclejdk8
+      env: TARGET=saucelabs3 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
+    - jdk: oraclejdk8
       env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
     - jdk: oraclejdk8
       env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
     - jdk: oraclejdk8
+      env: TARGET=saucelabs3 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
+    - jdk: oraclejdk8
       env: TARGET=saucelabs1 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
     - jdk: oraclejdk8
       env: TARGET=saucelabs2 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs3 SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
       # safari
     - jdk: oraclejdk8
       env: TARGET=saucelabs1 SAUCELABS_PLATFORM="OS X 10.11" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=9
     - jdk: oraclejdk8
       env: TARGET=saucelabs2 SAUCELABS_PLATFORM="OS X 10.11" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=9
     - jdk: oraclejdk8
+      env: TARGET=saucelabs3 SAUCELABS_PLATFORM="OS X 10.11" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=9
+    - jdk: oraclejdk8
       env: TARGET=saucelabs1 SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
     - jdk: oraclejdk8
       env: TARGET=saucelabs2 SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs3 SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
 addons:
   sauce_connect: true
