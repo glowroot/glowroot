@@ -28,7 +28,6 @@ test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-j
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jms-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jsp-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-logger-plugin"
-test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-netty-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-play-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-quartz-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-redis-plugin"
@@ -39,6 +38,7 @@ test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-r
 #   glowroot-agent-grails-plugin
 #   glowroot-agent-jaxrs-plugin
 #   glowroot-agent-jsf-plugin
+#   glowroot-agent-netty-plugin
 #   glowroot-agent-servlet-plugin
 #   glowroot-agent-spring-plugin
 #   glowroot-agent-struts-plugin
@@ -53,6 +53,7 @@ case "$1" in
                  exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
                fi
                mvn clean install -pl $exclude_modules \
+                                 -P netty-4.x,spring-4.x \
                                  -DargLine="$surefire_jvm_args" \
                                  $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
@@ -63,22 +64,20 @@ case "$1" in
                                  -DskipTests \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
-
-               activate_profiles="netty-4.x"
                if [[ "$TEST_SHADED" == "true" ]]
                then
                  # async-http-client, elasticsearch and play tests all require shading
                  if [[ "$java_version" > "1.8" ]]
                  then
                    # latest versions of async-http-client, elasticsearch and play all require Java 8+
-                   activate_profiles="$activate_profiles,async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x"
+                   activate_profiles_opt="-P async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x"
                  else
-                   activate_profiles="$activate_profiles,async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
+                   activate_profiles_opt="-P async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
                  fi
                fi
                # enforcer.skip is needed for async-http-client, elasticsearch and play
                mvn clean install -pl ${test1_excluded_plugin_modules//!:/:} \
-                                 -P $activate_profiles \
+                                 $activate_profiles_opt \
                                  -Denforcer.skip \
                                  -DargLine="$surefire_jvm_args" \
                                  $test_shaded_opt \
@@ -232,6 +231,7 @@ case "$1" in
                                  -Dglowroot.it.harness=javaagent"
                  # run integration tests
                  mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -P netty-4.x,spring-4.x \
                                       -B
                  # install to run additional tests
                  mvn clean install -DskipTests -B
@@ -290,12 +290,6 @@ case "$1" in
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -Dglowroot.test.shaded \
                                       -B
-                 # netty 4.x
-                 mvn $common_mvn_args -pl agent/plugins/netty-plugin \
-                                      -P netty-4.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
-                                      -B
                  # netty 3.x
                  mvn $common_mvn_args -pl agent/plugins/netty-plugin \
                                       -P netty-3.x \
@@ -318,6 +312,18 @@ case "$1" in
                  # play 1.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-1.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
+                                      -B
+                 # spring 3.2.x
+                 mvn $common_mvn_args -pl agent/plugins/spring-plugin \
+                                      -P spring-3.2.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
+                                      -B
+                 # spring 3.x
+                 mvn $common_mvn_args -pl agent/plugins/spring-plugin \
+                                      -P spring-3.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -Dglowroot.test.shaded \
                                       -B

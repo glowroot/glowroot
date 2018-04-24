@@ -218,25 +218,19 @@ public class JavaagentContainer implements Container {
 
     @Override
     public Trace execute(Class<? extends AppUnderTest> appClass) throws Exception {
-        checkNotNull(traceCollector);
-        executeInternal(appClass);
-        // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
-        // can sometimes take a long time for that large trace to be serialized and transferred
-        Trace trace = traceCollector.getCompletedTrace(20, SECONDS);
-        traceCollector.clearTrace();
-        return trace;
+        return executeInternal(appClass, null, null);
     }
 
     @Override
     public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType)
             throws Exception {
-        checkNotNull(traceCollector);
-        executeInternal(appClass);
-        // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
-        // can sometimes take a long time for that large trace to be serialized and transferred
-        Trace trace = traceCollector.getCompletedTrace(transactionType, 20, SECONDS);
-        traceCollector.clearTrace();
-        return trace;
+        return executeInternal(appClass, transactionType, null);
+    }
+
+    @Override
+    public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType,
+            String transactionName) throws Exception {
+        return executeInternal(appClass, transactionType, transactionName);
     }
 
     @Override
@@ -307,6 +301,18 @@ public class JavaagentContainer implements Container {
         if (deleteTestDirOnClose) {
             TempDirs.deleteRecursively(testDir);
         }
+    }
+
+    private Trace executeInternal(Class<? extends AppUnderTest> appClass,
+            @Nullable String transactionType, @Nullable String transactionName) throws Exception {
+        checkNotNull(traceCollector);
+        executeInternal(appClass);
+        // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
+        // can sometimes take a long time for that large trace to be serialized and transferred
+        Trace trace =
+                traceCollector.getCompletedTrace(transactionType, transactionName, 20, SECONDS);
+        traceCollector.clearTrace();
+        return trace;
     }
 
     private void executeInternal(Class<? extends AppUnderTest> appUnderTestClass) {

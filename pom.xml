@@ -297,6 +297,12 @@
         <!-- tomcat 8 requires JDK 7+ -->
         <version>7.0.85</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-websocket</artifactId>
+        <!-- tomcat 8 requires JDK 7+ -->
+        <version>7.0.85</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

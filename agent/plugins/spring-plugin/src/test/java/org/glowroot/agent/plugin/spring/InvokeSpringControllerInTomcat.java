@@ -16,8 +16,10 @@
 package org.glowroot.agent.plugin.spring;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
+import java.util.concurrent.ExecutionException;
 
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
@@ -34,7 +36,18 @@ abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
     private static final Logger logger =
             LoggerFactory.getLogger(InvokeSpringControllerInTomcat.class);
 
-    public void executeApp(String webapp, String contextPath, String url) throws Exception {
+    public void executeApp(String webapp, final String contextPath, final String url)
+            throws Exception {
+        executeApp(webapp, contextPath, new RunnableWithPort() {
+            @Override
+            public void run(int port) throws Exception {
+                exec(contextPath, url, port);
+            }
+        });
+    }
+
+    public void executeApp(String webapp, String contextPath, RunnableWithPort runnable)
+            throws Exception {
         int port = getAvailablePort();
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");
@@ -48,13 +61,7 @@ abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
 
         tomcat.start();
 
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-        int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + contextPath + url)
-                .execute().get().getStatusCode();
-        asyncHttpClient.close();
-        if (statusCode != 200) {
-            throw new IllegalStateException("Unexpected status code: " + statusCode);
-        }
+        runnable.run(port);
 
         // spring still does a bit of work after the response is concluded,
         // see org.springframework.web.servlet.FrameworkServlet.publishRequestHandledEvent(),
@@ -65,6 +72,17 @@ abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
         checkForRequestThreads(webappLoader);
         tomcat.stop();
         tomcat.destroy();
+    }
+
+    private void exec(String contextPath, String url, int port)
+            throws InterruptedException, ExecutionException, IOException {
+        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+        int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + contextPath + url)
+                .execute().get().getStatusCode();
+        asyncHttpClient.close();
+        if (statusCode != 200) {
+            throw new IllegalStateException("Unexpected status code: " + statusCode);
+        }
     }
 
     private static int getAvailablePort() throws Exception {
@@ -100,5 +118,9 @@ abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
                         sb);
             }
         }
+    }
+
+    interface RunnableWithPort {
+        void run(int port) throws Exception;
     }
 }

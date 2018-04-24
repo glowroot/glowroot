@@ -39,20 +39,21 @@ public class Spring {
         for (int i = 2; i <= 18; i++) {
             run("3.2." + i + ".RELEASE", "spring-3.2.x");
         }
-        for (int i = 0; i <= 9; i++) {
-            run("4.0." + i + ".RELEASE");
+        run("4.0.0.RELEASE", "spring-4.0.0");
+        for (int i = 1; i <= 9; i++) {
+            run("4.0." + i + ".RELEASE", "spring-4.x");
         }
         for (int i = 0; i <= 9; i++) {
-            run("4.1." + i + ".RELEASE");
+            run("4.1." + i + ".RELEASE", "spring-4.x");
         }
         for (int i = 0; i <= 9; i++) {
-            run("4.2." + i + ".RELEASE");
+            run("4.2." + i + ".RELEASE", "spring-4.x");
         }
         for (int i = 0; i <= 16; i++) {
-            run("4.3." + i + ".RELEASE");
+            run("4.3." + i + ".RELEASE", "spring-4.x");
         }
         for (int i = 0; i <= 5; i++) {
-            runJava8("5.0." + i + ".RELEASE");
+            runJava8("5.0." + i + ".RELEASE", "spring-4.x");
         }
     }
 

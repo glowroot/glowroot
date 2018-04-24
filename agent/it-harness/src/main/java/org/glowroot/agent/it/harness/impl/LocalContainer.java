@@ -120,21 +120,19 @@ public class LocalContainer implements Container {
 
     @Override
     public Trace execute(Class<? extends AppUnderTest> appClass) throws Exception {
-        checkNotNull(traceCollector);
-        executeInternal(appClass);
-        Trace trace = traceCollector.getCompletedTrace(10, SECONDS);
-        traceCollector.clearTrace();
-        return trace;
+        return executeInternal(appClass, null, null);
     }
 
     @Override
     public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType)
             throws Exception {
-        checkNotNull(traceCollector);
-        executeInternal(appClass);
-        Trace trace = traceCollector.getCompletedTrace(transactionType, 10, SECONDS);
-        traceCollector.clearTrace();
-        return trace;
+        return executeInternal(appClass, transactionType, null);
+    }
+
+    @Override
+    public Trace execute(Class<? extends AppUnderTest> appClass, String transactionType,
+            String transactionName) throws Exception {
+        return executeInternal(appClass, transactionType, transactionName);
     }
 
     @Override
@@ -187,6 +185,16 @@ public class LocalContainer implements Container {
         }
         // release class loader to prevent PermGen OOM during maven test
         isolatedWeavingClassLoader = null;
+    }
+
+    public Trace executeInternal(Class<? extends AppUnderTest> appClass,
+            @Nullable String transactionType, @Nullable String transactionName) throws Exception {
+        checkNotNull(traceCollector);
+        executeInternal(appClass);
+        Trace trace =
+                traceCollector.getCompletedTrace(transactionType, transactionName, 10, SECONDS);
+        traceCollector.clearTrace();
+        return trace;
     }
 
     private void executeInternal(Class<? extends AppUnderTest> appClass) throws Exception {

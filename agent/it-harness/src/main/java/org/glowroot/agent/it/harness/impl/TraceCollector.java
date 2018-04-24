@@ -27,6 +27,7 @@ import org.immutables.value.Value;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class TraceCollector {
@@ -36,31 +37,32 @@ class TraceCollector {
     private final List<ExpectedLogMessage> expectedMessages = Lists.newCopyOnWriteArrayList();
     private final List<LogEvent> unexpectedMessages = Lists.newCopyOnWriteArrayList();
 
-    Trace getCompletedTrace(int timeout, TimeUnit unit) throws InterruptedException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (stopwatch.elapsed(unit) < timeout) {
-            Trace trace = this.trace;
-            if (trace != null && !trace.getHeader().getPartial()) {
-                return trace;
-            }
-            Thread.sleep(10);
+    Trace getCompletedTrace(@Nullable String transactionType, @Nullable String transactionName,
+            int timeout, TimeUnit unit) throws InterruptedException {
+        if (transactionName != null) {
+            checkNotNull(transactionType);
         }
-        throw new IllegalStateException("No trace was collected");
-    }
-
-    Trace getCompletedTrace(String transactionType, int timeout, TimeUnit unit)
-            throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(unit) < timeout) {
             Trace trace = this.trace;
             if (trace != null && !trace.getHeader().getPartial()
-                    && trace.getHeader().getTransactionType().equals(transactionType)) {
+                    && (transactionType == null
+                            || trace.getHeader().getTransactionType().equals(transactionType))
+                    && (transactionName == null
+                            || trace.getHeader().getTransactionName().equals(transactionName))) {
                 return trace;
             }
             Thread.sleep(10);
         }
-        throw new IllegalStateException(
-                "No trace was collected for transaction type: " + transactionType);
+        if (transactionName != null) {
+            throw new IllegalStateException("No trace was collected for transaction type \""
+                    + transactionType + "\" and transaction name \"" + transactionName + "\"");
+        } else if (transactionType != null) {
+            throw new IllegalStateException(
+                    "No trace was collected for transaction type: " + transactionType);
+        } else {
+            throw new IllegalStateException("No trace was collected");
+        }
     }
 
     Trace getPartialTrace(int timeout, TimeUnit unit) throws InterruptedException {

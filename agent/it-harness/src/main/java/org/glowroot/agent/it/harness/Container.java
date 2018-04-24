@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@ public interface Container {
 
     Trace execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType)
             throws Exception;
+
+    Trace execute(Class<? extends AppUnderTest> appUnderTestClass, String transactionType,
+            String transactionName) throws Exception;
 
     void executeNoExpectedTrace(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
 
