@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, angular, $ */
 
 glowroot.controller('TransactionSidebarCtrl', [
   '$scope',
@@ -91,6 +91,8 @@ glowroot.controller('TransactionSidebarCtrl', [
     var initialStateChangeSuccess = true;
     $scope.$on('gtStateChangeSuccess', function () {
       if ($scope.range.last && !initialStateChangeSuccess) {
+        // need to update selectpicker dropdown with current tab url
+        $('#summarySortDropdown').selectpicker('refresh');
         // refresh on tab change
         $timeout(function () {
           // slight delay to de-prioritize summaries data request

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2017 the original author or authors.
+  Copyright 2015-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@
       <select gt-selectpicker
               gt-selectpicker-options="{width: '100%', style: 'gt-transaction-sidebar-by'}"
               gt-model="summarySortOrder"
-              gt-title="summarySortOrders[summarySortOrder]">
+              gt-title="summarySortOrders[summarySortOrder]"
+              id="summarySortDropdown">
         <option ng-repeat="(value, display) in summarySortOrders"
                 data-href="{{currentTabUrl()}}{{summarySortQueryString(value, transactionType)}}"
                 value="{{value}}">
