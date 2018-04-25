@@ -77,7 +77,7 @@ public class StartupIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("listener init: " + TestServletContextListener.class.getName());
+                .isEqualTo("Listener init: " + TestServletContextListener.class.getName());
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -124,7 +124,7 @@ public class StartupIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
-                "container initializer: " + TestServletContainerInitializer.class.getName());
+                "Container initializer: " + TestServletContainerInitializer.class.getName());
 
         assertThat(i.hasNext()).isFalse();
     }

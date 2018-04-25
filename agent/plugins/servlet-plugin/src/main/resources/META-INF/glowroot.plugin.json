@@ -67,9 +67,10 @@
       "methodParameterTypes": [
         "javax.servlet.ServletContextEvent"
       ],
-      "captureKind": "trace-entry",
+      "captureKind": "transaction",
       "timerName": "listener init",
-      "traceEntryMessageTemplate": "listener init: {{this.class.name}}"
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Listener init: {{this.class.name}}"
     },
     {
       "className": "javax.servlet.Servlet",
@@ -100,9 +101,10 @@
         "java.util.Set",
         "javax.servlet.ServletContext"
       ],
-      "captureKind": "trace-entry",
+      "captureKind": "transaction",
       "timerName": "container initializer",
-      "traceEntryMessageTemplate": "container initializer: {{this.class.name}}"
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Container initializer: {{this.class.name}}"
     },
     {
       "className": "io.undertow.servlet.api.DeploymentManager",
