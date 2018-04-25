@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.plugin.elasticsearch;
 
-import java.util.List;
-
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.QueryEntry;
@@ -71,19 +69,7 @@ public class ActionRequestBuilderAspect {
 
         @Shim("org.elasticsearch.search.builder.SearchSourceBuilder sourceBuilder()")
         @Nullable
-        SearchSourceBuilder glowroot$sourceBuilder();
-    }
-
-    @Shim("org.elasticsearch.search.builder.SearchSourceBuilder")
-    public interface SearchSourceBuilder {
-
-        @Shim("org.elasticsearch.index.query.QueryBuilder query()")
-        @Nullable
-        Object glowroot$query();
-
-        @Shim("java.util.List sorts()")
-        @Nullable
-        List<?> glowroot$sorts();
+        Object glowroot$sourceBuilder();
     }
 
     @Shim("org.elasticsearch.action.ActionRequest")
@@ -261,7 +247,7 @@ public class ActionRequestBuilderAspect {
                 sb.append('/');
             }
         }
-        SearchSourceBuilder sourceBuilder = actionRequestBuilder.glowroot$sourceBuilder();
+        Object sourceBuilder = actionRequestBuilder.glowroot$sourceBuilder();
         if (sourceBuilder != null) {
             sb.append(' ');
             sb.append(sourceBuilder);
