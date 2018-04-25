@@ -93,7 +93,7 @@ public class StartupIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .isEqualTo("servlet init: " + TestServletInit.class.getName());
+                .isEqualTo("Servlet init: " + TestServletInit.class.getName());
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -108,7 +108,7 @@ public class StartupIT {
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("filter init: " + TestFilterInit.class.getName());
+        assertThat(entry.getMessage()).isEqualTo("Filter init: " + TestFilterInit.class.getName());
 
         assertThat(i.hasNext()).isFalse();
     }

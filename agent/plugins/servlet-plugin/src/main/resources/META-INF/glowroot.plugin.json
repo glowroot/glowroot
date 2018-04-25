@@ -77,9 +77,10 @@
       "methodParameterTypes": [
         "javax.servlet.ServletConfig"
       ],
-      "captureKind": "trace-entry",
+      "captureKind": "transaction",
       "timerName": "servlet init",
-      "traceEntryMessageTemplate": "servlet init: {{this.class.name}}"
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Servlet init: {{this.class.name}}"
     },
     {
       "className": "javax.servlet.Filter",
@@ -87,9 +88,10 @@
       "methodParameterTypes": [
         "javax.servlet.FilterConfig"
       ],
-      "captureKind": "trace-entry",
+      "captureKind": "transaction",
       "timerName": "filter init",
-      "traceEntryMessageTemplate": "filter init: {{this.class.name}}"
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Filter init: {{this.class.name}}"
     },
     {
       "className": "javax.servlet.ServletContainerInitializer",
