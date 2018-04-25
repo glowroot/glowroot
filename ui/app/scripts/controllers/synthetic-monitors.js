@@ -137,20 +137,22 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       yvalMaps[label] = map;
     }
 
-    // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
-    // (see https://github.com/angular/angular.js/pull/12643)
-    $scope.$watch('[range.chartFrom, range.chartTo, range.chartRefresh, range.chartAutoRefresh]',
-        function (newValues, oldValues) {
-          if (newValues !== oldValues) {
-            watchListener(newValues[3] !== oldValues[3]);
-          }
-        });
+    if (!$scope.hideMainContent()) {
+      // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
+      // (see https://github.com/angular/angular.js/pull/12643)
+      $scope.$watch('[range.chartFrom, range.chartTo, range.chartRefresh, range.chartAutoRefresh]',
+          function (newValues, oldValues) {
+            if (newValues !== oldValues) {
+              watchListener(newValues[3] !== oldValues[3]);
+            }
+          });
 
-    $scope.$watchCollection('syntheticMonitorIds', function (newValue, oldValue) {
-      if (newValue !== oldValue || newValue.length) {
-        watchListener(false);
-      }
-    });
+      $scope.$watchCollection('syntheticMonitorIds', function (newValue, oldValue) {
+        if (newValue !== oldValue || newValue.length) {
+          watchListener(false);
+        }
+      });
+    }
 
     var location;
 
