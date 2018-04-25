@@ -107,14 +107,14 @@
       "transactionNameTemplate": "Container initializer: {{this.class.name}}"
     },
     {
-      "className": "io.undertow.servlet.api.DeploymentManager",
-      "methodName": "start",
+      "className": "org.wildfly.extension.undertow.deployment.UndertowDeploymentService",
+      "methodName": "startContext",
       "methodParameterTypes": [
       ],
       "captureKind": "transaction",
       "timerName": "application startup",
       "transactionType": "Startup",
-      "transactionNameTemplate": "Servlet context: {{this.deployment.deploymentInfo.contextPath}}"
+      "transactionNameTemplate": "Servlet context: {{this.deploymentInfoInjectedValue.value.contextPath}}"
     },
     {
       "className": "org.eclipse.jetty.webapp.WebAppContext",
