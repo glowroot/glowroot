@@ -34,6 +34,7 @@ test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-q
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-redis-plugin"
 
 # these plugins are not excluded in test1:
+#   glowroot-agent-ejb-plugin
 #   glowroot-agent-executor-plugin
 #   glowroot-agent-grails-plugin
 #   glowroot-agent-jaxrs-plugin

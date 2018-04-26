@@ -1,0 +1,18 @@
+{
+  "name": "EJB Plugin",
+  "id": "ejb",
+  "instrumentation": [
+    {
+      "classAnnotation": "javax.ejb.Singleton",
+      "methodAnnotation": "javax.ejb.Timeout|javax.ejb.Schedule|javax.ejb.Schedules",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "EJB timer: {{this.class.simpleName}}.{{methodName}}()",
+      "traceEntryMessageTemplate": "EJB timer: {{this.class.name}}.{{methodName}}()",
+      "timerName": "ejb timer"
+    }
+  ]
+}
