@@ -251,16 +251,14 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         }, 100);
       } else {
         // the user cleared the text input and tabbed away
-        resetMethodSignatures();
-        delete $scope.selectedMethodSignature;
+        resetMethodSignatures('');
       }
     };
 
     $scope.methodSignatureText = function (methodSignature) {
-      if (methodSignature.name.indexOf('*') !== -1 || methodSignature.name.indexOf('|') !== -1) {
-        return 'any signature';
-      }
-      if (isSignatureAll(methodSignature)) {
+      if (methodSignature === undefined || methodSignature.name === undefined
+          || methodSignature.name.indexOf('*') !== -1 || methodSignature.name.indexOf('|') !== -1
+          || isSignatureAll(methodSignature)) {
         return 'any signature';
       }
       var text = '';
