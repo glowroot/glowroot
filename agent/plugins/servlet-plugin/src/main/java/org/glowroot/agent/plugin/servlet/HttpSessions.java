@@ -85,16 +85,17 @@ class HttpSessions {
             if (attributeName == null) {
                 continue;
             }
-            String valueString;
             if (attributeName.equals(ServletPluginProperties.HTTP_SESSION_ID_ATTR)) {
-                valueString = Strings.nullToEmpty(session.getId());
-            } else {
-                Object value = session.getAttribute(attributeName);
+                captureMap.put(attributeName, Strings.nullToEmpty(session.getId()));
+                continue;
+            }
+            Object value = session.getAttribute(attributeName);
+            if (value == null) {
                 // value shouldn't be null, but its (remotely) possible that a concurrent
                 // request for the same session just removed the attribute
-                valueString = value == null ? "" : value.toString();
+                continue;
             }
-            captureMap.put(attributeName, valueString);
+            captureMap.put(attributeName, Strings.nullToEmpty(value.toString()));
         }
     }
 
@@ -105,7 +106,8 @@ class HttpSessions {
             String fullPath = attributePath.getFullPath();
             for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
                 Object val = entry.getValue();
-                captureMap.put(fullPath + "." + entry.getKey(), val == null ? "" : val.toString());
+                captureMap.put(fullPath + "." + entry.getKey(),
+                        val == null ? "" : Strings.nullToEmpty(val.toString()));
             }
         } else if (value != null) {
             String fullPath = attributePath.getFullPath();
@@ -119,7 +121,7 @@ class HttpSessions {
             SessionAttributePath attributePath) {
         Object value = getSessionAttribute(session, attributePath);
         if (value != null) {
-            captureMap.put(attributePath.getFullPath(), value.toString());
+            captureMap.put(attributePath.getFullPath(), Strings.nullToEmpty(value.toString()));
         }
     }
 }

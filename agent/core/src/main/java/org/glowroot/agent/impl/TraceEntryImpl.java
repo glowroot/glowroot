@@ -485,6 +485,6 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         if (errorMessage != null) {
             return errorMessage.message();
         }
-        return super.toString();
+        return checkNotNull(super.toString());
     }
 }

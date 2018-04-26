@@ -46,6 +46,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Compilations {
 
@@ -91,7 +92,7 @@ public class Compilations {
             if (!diagnostics.isEmpty()) {
                 List<String> compilationErrors = Lists.newArrayList();
                 for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics) {
-                    compilationErrors.add(diagnostic.toString());
+                    compilationErrors.add(checkNotNull(diagnostic.toString()));
                 }
                 throw new CompilationException(compilationErrors);
             }

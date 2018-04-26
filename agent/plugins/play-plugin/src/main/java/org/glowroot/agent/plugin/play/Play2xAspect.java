@@ -80,19 +80,23 @@ public class Play2xAspect {
                 ScalaOption methodOption = tags.glowroot$get("ROUTE_ACTION_METHOD");
                 if (controllerOption != null && controllerOption.isDefined() && methodOption != null
                         && methodOption.isDefined()) {
-                    String controller = controllerOption.get().toString();
+                    String controller = toString(controllerOption.get());
                     String transactionName =
-                            getAltTransactionName(controller, methodOption.get().toString());
+                            getAltTransactionName(controller, toString(methodOption.get()));
                     context.setTransactionName(transactionName, Priority.CORE_PLUGIN);
                 }
             } else {
                 ScalaOption option = tags.glowroot$get("ROUTE_PATTERN");
                 if (option != null && option.isDefined()) {
-                    String route = option.get().toString();
+                    String route = toString(option.get());
                     route = Routes.simplifiedRoute(route);
                     context.setTransactionName(route, Priority.CORE_PLUGIN);
                 }
             }
+        }
+        private static String toString(Object obj) {
+            String str = obj.toString();
+            return str == null ? "" : str;
         }
     }
 

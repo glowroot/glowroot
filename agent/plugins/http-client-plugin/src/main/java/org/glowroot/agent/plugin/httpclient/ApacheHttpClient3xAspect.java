@@ -69,6 +69,9 @@ public class ApacheHttpClient3xAspect {
                 uri = "";
             } else {
                 uri = uriObj.toString();
+                if (uri == null) {
+                    uri = "";
+                }
             }
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
                     MessageSupplier.create("http client request: {}{}", method, uri),

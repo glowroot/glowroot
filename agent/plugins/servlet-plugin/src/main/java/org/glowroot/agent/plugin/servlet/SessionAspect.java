@@ -110,7 +110,7 @@ public class SessionAspect {
                 messageSupplier.putSessionAttributeChangedValue(attributeName, null);
             } else {
                 messageSupplier.putSessionAttributeChangedValue(attributeName,
-                        attributeValue.toString());
+                        Strings.nullToEmpty(attributeValue.toString()));
             }
         }
 
@@ -125,7 +125,8 @@ public class SessionAspect {
                     for (Map.Entry<?, ?> entry : ((Map<?, ?>) val).entrySet()) {
                         Object v = entry.getValue();
                         messageSupplier.putSessionAttributeChangedValue(
-                                fullPath + "." + entry.getKey(), v == null ? null : v.toString());
+                                fullPath + "." + entry.getKey(),
+                                v == null ? null : Strings.nullToEmpty(v.toString()));
                     }
                 } else {
                     for (Map.Entry<String, String> entry : Beans.propertiesAsText(val).entrySet()) {
@@ -139,7 +140,7 @@ public class SessionAspect {
             } else {
                 Object val = HttpSessions.getSessionAttribute(attributeValue, attributePath);
                 messageSupplier.putSessionAttributeChangedValue(fullPath,
-                        val == null ? null : val.toString());
+                        val == null ? null : Strings.nullToEmpty(val.toString()));
             }
         }
     }

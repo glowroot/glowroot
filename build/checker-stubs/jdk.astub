@@ -11,6 +11,11 @@ public class ClassLoader {
             @Nullable String implVersion, @Nullable String implVendor, @Nullable URL sealBase);
 }
 
+public class Object {
+    // this is needed for plugins that call toString() on application objects
+    public @Nullable String toString();
+}
+
 public class String {
     public @PolyTainted String toLowerCase(@PolyTainted String this, Locale locale);
 }
@@ -22,6 +27,11 @@ public class Class<T> {
 public class StackTraceElement {
     // methodName can be null after hotswapping under Eclipse debugger
     public @Nullable String getMethodName();
+}
+
+public class StringBuilder {
+    // this overrides Object toString() above to specify that it never returns null
+    public String toString();
 }
 
 /* ========================================================================== */

@@ -389,7 +389,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                     .build();
         } else {
             return MBeanDump.MBeanValue.newBuilder()
-                    .setString(value.toString())
+                    .setString(checkNotNull(value.toString()))
                     .build();
         }
     }

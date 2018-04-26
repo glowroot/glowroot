@@ -302,6 +302,33 @@ public class SessionAttributeIT {
     }
 
     @Test
+    public void testHasBadSessionAttribute() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        // when
+        Trace trace = container.execute(HasBadSessionAttribute.class, "Web");
+        // then
+        assertThat(getSessionAttributes(trace)).isNotNull();
+        assertThat(getSessionAttributes(trace)).hasSize(1);
+        assertThat(getSessionAttributes(trace).get("one")).isEqualTo("");
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+    }
+
+    @Test
+    public void testSetBadSessionAttribute() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        // when
+        Trace trace = container.execute(SetBadSessionAttribute.class, "Web");
+        // then
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(trace)).hasSize(1);
+        assertThat(getUpdatedSessionAttributes(trace).containsKey("one")).isTrue();
+        assertThat(getUpdatedSessionAttributes(trace).get("one")).isEmpty();
+    }
+
+    @Test
     public void testHasMissingSessionAttribute2() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
@@ -522,6 +549,22 @@ public class SessionAttributeIT {
     }
 
     @SuppressWarnings("serial")
+    public static class HasBadSessionAttribute extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("one", new BadObject());
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetBadSessionAttribute extends TestServlet {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("one", new BadObject());
+        }
+    }
+
+    @SuppressWarnings("serial")
     public static class GetBadAttributeNames extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
@@ -645,6 +688,13 @@ public class SessionAttributeIT {
         }
         public String getThree() {
             return three;
+        }
+    }
+
+    public static class BadObject {
+        @Override
+        public String toString() {
+            return null;
         }
     }
 }

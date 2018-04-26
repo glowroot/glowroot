@@ -634,7 +634,7 @@ public class DataSource {
             } else if (arg == null) {
                 argStrings.add("NULL");
             } else {
-                argStrings.add(arg.toString());
+                argStrings.add(checkNotNull(arg.toString()));
             }
         }
         if (logger.isDebugEnabled()) {

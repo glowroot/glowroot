@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -120,7 +121,7 @@ public class PluginServiceImpl implements PluginService {
                 try {
                     Object value = entry.getValue().invoke(obj);
                     if (value != null) {
-                        properties.put(entry.getKey(), value.toString());
+                        properties.put(entry.getKey(), Strings.nullToEmpty(value.toString()));
                     }
                 } catch (Exception e) {
                     // log exception at debug level
