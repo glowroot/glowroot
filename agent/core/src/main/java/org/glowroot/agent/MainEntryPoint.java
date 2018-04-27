@@ -75,6 +75,9 @@ public class MainEntryPoint {
     private static final boolean PRE_CHECK_LOADED_CLASSES =
             Boolean.getBoolean("glowroot.debug.preCheckLoadedClasses");
 
+    public static final boolean PRINT_CLASS_LOADING =
+            Boolean.getBoolean("glowroot.debug.printClassLoading");
+
     // need to wait to init logger until after establishing logDir
     private static volatile @MonotonicNonNull Logger startupLogger;
 
@@ -93,6 +96,19 @@ public class MainEntryPoint {
         if (PRE_CHECK_LOADED_CLASSES) {
             preCheckClassFileTransformer = new PreCheckClassFileTransformer();
             instrumentation.addTransformer(preCheckClassFileTransformer);
+        }
+        if (PRINT_CLASS_LOADING) {
+            DebuggingClassFileTransformer transformer = new DebuggingClassFileTransformer();
+            try {
+                instrumentation.addTransformer(transformer, true);
+                instrumentation
+                        .retransformClasses(Class.forName("sun.misc.Launcher$AppClassLoader"));
+            } catch (Throwable t) {
+                System.err.println("Could not add debugging class file transformer");
+                t.printStackTrace();
+                return;
+            }
+            instrumentation.removeTransformer(transformer);
         }
         // DO NOT USE ANY GUAVA CLASSES before initLogging() because they trigger loading of jul
         // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
