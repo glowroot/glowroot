@@ -270,8 +270,11 @@ public class Weaver {
                         matchedMixinTypes, classAnalyzer.getMethodAdvisors(), analyzedWorld);
         ClassReader cr =
                 new ClassReader(maybeProcessedBytes == null ? classBytes : maybeProcessedBytes);
+        byte[] transformedBytes;
         try {
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            // ClassWriter.toByteArray() can throw exception also, see issue #370
+            transformedBytes = cw.toByteArray();
         } catch (RuntimeException e) {
             logger.error("unable to weave {}: {}", className, e.getMessage(), e);
             try {
@@ -283,7 +286,6 @@ public class Weaver {
             }
             return null;
         }
-        byte[] transformedBytes = cw.toByteArray();
         if (className.equals(DEBUG_CLASS_NAME)) {
             try {
                 File tempFile = File.createTempFile("glowroot-transformed-", ".class");
