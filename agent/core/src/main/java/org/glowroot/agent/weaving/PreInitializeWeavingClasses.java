@@ -327,6 +327,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ClassNames");
         types.add("org.glowroot.agent.weaving.FrameDeduppingMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$ActiveWeaving");
+        types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackClassVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$OsgiHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$OsgiHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBoss4HackClassVisitor");
