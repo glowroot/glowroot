@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ public class GuavaListenableFutureIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        // unshaded doesn't work because glowroot loads guava classes before the Weaver is
-        // registered, so the guava classes don't have a chance to get woven
-        Assume.assumeTrue(isShaded());
+        // unshaded doesn't work under javaagent because glowroot loads guava classes before the
+        // Weaver is registered, so the guava classes don't have a chance to get woven
+        Assume.assumeTrue(isShaded() || !Containers.useJavaagent());
         container = Containers.create();
     }
 
