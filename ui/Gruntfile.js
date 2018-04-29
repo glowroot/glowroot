@@ -64,7 +64,7 @@ module.exports = function (grunt) {
         {from: '^/report/.*$', to: '/index.html'},
         {from: '^/config/.*$', to: '/index.html'},
         {from: '^/admin/.*$', to: '/index.html'},
-        {from: '^/profile/.*', to: '/index.html'},
+        {from: '^/profile/.*$', to: '/index.html'},
         {from: '^/login$', to: '/index.html'}
       ],
       options: {
