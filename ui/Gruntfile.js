@@ -346,15 +346,7 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('serve', 'Compile then start a connect web server', function (target) {
-    if (target === 'xyzzy') {
-      return grunt.task.run([
-        'configureProxies:xyzzy',
-        'configureRewriteRules',
-        'connect:xyzzy:keepalive'
-      ]);
-    }
-
+  grunt.registerTask('serve', 'Compile then start a connect web server', function () {
     grunt.task.run([
       'clean:serve',
       'less',
