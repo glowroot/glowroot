@@ -36,7 +36,7 @@ module.exports = function (grunt) {
       },
       livereload: {
         options: {
-          livereload: '<%= connect.livereload.options.livereload %>'
+          livereload: '<%= connect.options.livereload %>'
         },
         files: [
           '<%= yeoman.app %>/index.html',
@@ -65,47 +65,67 @@ module.exports = function (grunt) {
         {from: '^/profile/.*', to: '/index.html'},
         {from: '^/login$', to: '/index.html'}
       ],
+      options: {
+        port: 9000,
+        // Change this to '0.0.0.0' to access the server from outside.
+        hostname: 'localhost',
+        livereload: 35729,
+        open: true,
+        middleware: function (connect) {
+          var setXUACompatibleHeader = function (req, res, next) {
+            // X-UA-Compatible must be set via header (as opposed to via meta tag)
+            // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
+            res.setHeader('X-UA-Compatible', 'IE=edge');
+            next();
+          };
+          var serveStatic = require('serve-static');
+          return [
+            setXUACompatibleHeader,
+            require('grunt-connect-rewrite/lib/utils').rewriteRequest,
+            require('grunt-connect-proxy/lib/utils').proxyRequest,
+            serveStatic('.tmp'),
+            connect().use('/bower_components', serveStatic('bower_components')),
+            serveStatic(appConfig.app),
+            connect().use('/fonts', serveStatic('bower_components/fontawesome/web-fonts-with-css/webfonts')),
+            connect().use('/uib/template', serveStatic('bower_components/angular-ui-bootstrap/template'))
+          ];
+        }
+      },
       livereload: {
         proxies: [
           {
             context: '/backend',
             host: 'localhost',
             port: 4000
-            // if backend is served over https, use
-            // protocol: 'https:'
           },
           {
             context: '/export',
             host: 'localhost',
             port: 4000
           }
-        ],
-        options: {
-          port: 9000,
-          // Change this to '0.0.0.0' to access the server from outside.
-          hostname: 'localhost',
-          livereload: 35729,
-          open: true,
-          middleware: function (connect) {
-            var setXUACompatibleHeader = function (req, res, next) {
-              // X-UA-Compatible must be set via header (as opposed to via meta tag)
-              // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
-              res.setHeader('X-UA-Compatible', 'IE=edge');
-              next();
-            };
-            var serveStatic = require('serve-static');
-            return [
-              setXUACompatibleHeader,
-              require('grunt-connect-rewrite/lib/utils').rewriteRequest,
-              require('grunt-connect-proxy/lib/utils').proxyRequest,
-              serveStatic('.tmp'),
-              connect().use('/bower_components', serveStatic('bower_components')),
-              serveStatic(appConfig.app),
-              connect().use('/fonts', serveStatic('bower_components/fontawesome/web-fonts-with-css/webfonts')),
-              connect().use('/uib/template', serveStatic('bower_components/angular-ui-bootstrap/template'))
-            ];
+        ]
+      },
+      demo: {
+        proxies: [
+          {
+            context: '/backend',
+            host: 'demo.glowroot.org',
+            port: 443,
+            protocol: 'https:',
+            headers: {
+              host: 'demo.glowroot.org'
+            }
+          },
+          {
+            context: '/export',
+            host: 'demo.glowroot.org',
+            port: 443,
+            protocol: 'https:',
+            headers: {
+              host: 'demo.glowroot.org'
+            }
           }
-        }
+        ]
       }
     },
 
@@ -346,14 +366,17 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('serve', 'Compile then start a connect web server', function () {
+  grunt.registerTask('serve', 'Compile then start a connect web server', function (target) {
+    if (target === undefined) {
+      target = 'livereload';
+    }
     grunt.task.run([
       'clean:serve',
       'less',
       'handlebars',
       'configureRewriteRules',
-      'configureProxies:livereload',
-      'connect:livereload',
+      'configureProxies:' + target,
+      'connect:' + target,
       'watch'
     ]);
   });
