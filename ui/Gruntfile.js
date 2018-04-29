@@ -15,6 +15,8 @@ module.exports = function (grunt) {
     exportDist: 'target/generated-resources/export-dist/org/glowroot/ui/export-dist'
   };
 
+  var livereload = 35729;
+
   // Define the configuration for all the tasks
   grunt.initConfig({
 
@@ -36,7 +38,7 @@ module.exports = function (grunt) {
       },
       livereload: {
         options: {
-          livereload: '<%= connect.options.livereload %>'
+          livereload: livereload
         },
         files: [
           '<%= yeoman.app %>/index.html',
@@ -69,7 +71,6 @@ module.exports = function (grunt) {
         port: 9000,
         // Change this to '0.0.0.0' to access the server from outside.
         hostname: 'localhost',
-        livereload: 35729,
         open: true,
         middleware: function (connect) {
           var setXUACompatibleHeader = function (req, res, next) {
@@ -80,6 +81,23 @@ module.exports = function (grunt) {
           };
           var serveStatic = require('serve-static');
           return [
+            require('connect-livereload')({
+              port: livereload,
+              include: [
+                /^\/$/,
+                /^\/transaction\//,
+                /^\/error\//,
+                /^\/jvm\//,
+                /^\/synthetic-monitors(|\\?.*)/,
+                /^\/incidents(|\\?.*)/,
+                /^\/report\//,
+                /^\/config\//,
+                /^\/admin\//,
+                /^\/profile\//,
+                /^\/login$/
+              ],
+              hostname: 'localhost'
+            }),
             setXUACompatibleHeader,
             require('grunt-connect-rewrite/lib/utils').rewriteRequest,
             require('grunt-connect-proxy/lib/utils').proxyRequest,
