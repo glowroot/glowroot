@@ -25,22 +25,35 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.central.util.CassandraWriteMetrics;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.Constants;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.repo.RepoAdmin;
+
+import static java.util.concurrent.TimeUnit.HOURS;
 
 public class RepoAdminImpl implements RepoAdmin {
 
     private static final Logger logger = LoggerFactory.getLogger(RepoAdminImpl.class);
 
     private final Session session;
+    private final AgentDao agentDao;
     private final ConfigRepositoryImpl configRepository;
     private final CassandraWriteMetrics cassandraWriteMetrics;
+    private final Clock clock;
 
-    public RepoAdminImpl(Session session, ConfigRepositoryImpl configRepository,
-            CassandraWriteMetrics cassandraWriteMetrics) {
+    public RepoAdminImpl(Session session, AgentDao agentDao, ConfigRepositoryImpl configRepository,
+            CassandraWriteMetrics cassandraWriteMetrics, Clock clock) {
         this.session = session;
+        this.agentDao = agentDao;
         this.configRepository = configRepository;
         this.cassandraWriteMetrics = cassandraWriteMetrics;
+        this.clock = clock;
+    }
+
+    @Override
+    public void runHealthCheck() throws Exception {
+        long now = clock.currentTimeMillis();
+        agentDao.readAgentRollups(now - HOURS.toMillis(4), now);
     }
 
     @Override

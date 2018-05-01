@@ -22,6 +22,8 @@ import org.immutables.value.Value;
 
 public interface RepoAdmin {
 
+    void runHealthCheck() throws Exception;
+
     void defragH2Data() throws Exception;
 
     void compactH2Data() throws Exception;

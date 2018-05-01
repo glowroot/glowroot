@@ -28,6 +28,7 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.embedded.util.DataSource.JdbcQuery;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ImmutableTraceCount;
 import org.glowroot.common2.repo.ImmutableTraceCounts;
 import org.glowroot.common2.repo.ImmutableTraceOverallCount;
@@ -35,6 +36,7 @@ import org.glowroot.common2.repo.RepoAdmin;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class RepoAdminImpl implements RepoAdmin {
@@ -50,12 +52,14 @@ class RepoAdminImpl implements RepoAdmin {
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
+    private final Clock clock;
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             CappedDatabase traceCappedDatabase, ConfigRepositoryImpl configRepository,
             EnvironmentDao environmentDao, GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao,
             GaugeValueDao gaugeValueDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao) {
+            FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
+            Clock clock) {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
@@ -67,6 +71,14 @@ class RepoAdminImpl implements RepoAdmin {
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.traceAttributeNameDao = traceAttributeNameDao;
+        this.clock = clock;
+    }
+
+    @Override
+    public void runHealthCheck() throws Exception {
+        long now = clock.currentTimeMillis();
+        dataSource.queryForLong("select count(*) from aggregate_tt_rollup_0 where capture_time > ?"
+                + " and capture_time < ?", now - HOURS.toMillis(4), now);
     }
 
     @Override

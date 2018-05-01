@@ -237,8 +237,8 @@ public class CentralModule {
                     .gaugeValueRepository(repos.getGaugeValueDao())
                     .syntheticResultRepository(repos.getSyntheticResultDao())
                     .incidentRepository(repos.getIncidentDao())
-                    .repoAdmin(new RepoAdminImpl(session, repos.getConfigRepository(),
-                            session.getCassandraWriteMetrics()))
+                    .repoAdmin(new RepoAdminImpl(session, repos.getAgentDao(),
+                            repos.getConfigRepository(), session.getCassandraWriteMetrics(), clock))
                     .rollupLevelService(rollupLevelService)
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())

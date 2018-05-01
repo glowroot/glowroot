@@ -452,6 +452,11 @@ public class BasicSmokeIT extends WebDriverIT {
     }
 
     @Test
+    public void shouldCheckHealthCheckPage() throws Exception {
+        httpGet("http://localhost:" + getUiPort() + "/health");
+    }
+
+    @Test
     public void shouldCheckCassandraWriteTotals() throws Exception {
         Assume.assumeTrue(WebDriverSetup.useCentral);
         httpGet("http://localhost:" + getUiPort()
