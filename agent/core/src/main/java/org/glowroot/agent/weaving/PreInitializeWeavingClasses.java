@@ -331,10 +331,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$OsgiHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$OsgiHackMethodVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$JBoss4HackClassVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$JBoss4HackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossModulesHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossModulesHackMethodVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$JBossUrlHackClassVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$JBossUrlHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$ManagementFactoryHackClassVisitor");

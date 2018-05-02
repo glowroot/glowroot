@@ -204,6 +204,12 @@ public class Weaver {
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals(ImportantClassNames.JBOSS_URL_HACK_CLASS_NAME)) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new JBossUrlHackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.FELIX_OSGI_HACK_CLASS_NAME)
                 || className.equals(ImportantClassNames.FELIX3_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
@@ -220,12 +226,6 @@ public class Weaver {
         } else if (className.equals(ImportantClassNames.OPENEJB_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new OpenEJBHackClassVisitor(cw);
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
-            maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ImportantClassNames.JBOSS4_HACK_CLASS_NAME)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new JBoss4HackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
             maybeProcessedBytes = cw.toByteArray();
@@ -629,11 +629,11 @@ public class Weaver {
         }
     }
 
-    private static class JBoss4HackClassVisitor extends ClassVisitor {
+    private static class JBossUrlHackClassVisitor extends ClassVisitor {
 
         private final ClassWriter cw;
 
-        private JBoss4HackClassVisitor(ClassWriter cw) {
+        private JBossUrlHackClassVisitor(ClassWriter cw) {
             super(ASM6, cw);
             this.cw = cw;
         }
@@ -642,17 +642,18 @@ public class Weaver {
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals("internalInitURLHandlers") && desc.equals("()V")) {
-                return new JBoss4HackMethodVisitor(mv, access, name, desc);
+            if (name.equals("<clinit>") && desc.equals("()V")) {
+                return new JBossUrlHackMethodVisitor(mv, access, name, desc);
             } else {
                 return mv;
             }
         }
     }
 
-    private static class JBoss4HackMethodVisitor extends AdviceAdapter {
+    private static class JBossUrlHackMethodVisitor extends AdviceAdapter {
 
-        private JBoss4HackMethodVisitor(MethodVisitor mv, int access, String name, String desc) {
+        private JBossUrlHackMethodVisitor(MethodVisitor mv, int access, String name,
+                String desc) {
             super(ASM6, mv, access, name, desc);
         }
 
@@ -660,7 +661,7 @@ public class Weaver {
         protected void onMethodEnter() {
             // these classes can be initialized inside of ClassFileTransformer.transform(), via
             // Resources.toByteArray(url) inside of AnalyzedWorld.createAnalyzedClass()
-            // because jboss 4.x registers org.jboss.net.protocol.URLStreamHandlerFactory to handle
+            // because jboss registers org.jboss.net.protocol.URLStreamHandlerFactory to handle
             // "file" and "resource" URLs
             //
             // these classes can not be initialized in PreInitializeWeavingClasses since they are

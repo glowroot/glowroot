@@ -22,6 +22,8 @@ public class ImportantClassNames {
             "java/lang/management/ManagementFactory";
     public static final String JBOSS_WELD_HACK_CLASS_NAME = "org/jboss/weld/util/Decorators";
     public static final String JBOSS_MODULES_HACK_CLASS_NAME = "org/jboss/modules/Module";
+    public static final String JBOSS_URL_HACK_CLASS_NAME =
+            "org/jboss/net/protocol/URLStreamHandlerFactory";
     public static final String FELIX_OSGI_HACK_CLASS_NAME =
             "org/apache/felix/framework/BundleWiringImpl";
     public static final String FELIX3_OSGI_HACK_CLASS_NAME =
@@ -30,7 +32,6 @@ public class ImportantClassNames {
             "org/eclipse/osgi/internal/framework/EquinoxContainer";
     public static final String OPENEJB_HACK_CLASS_NAME =
             "org/apache/openejb/util/classloader/URLClassLoaderFirst";
-    public static final String JBOSS4_HACK_CLASS_NAME = "org/jboss/system/server/ServerImpl";
 
     private ImportantClassNames() {}
 }
