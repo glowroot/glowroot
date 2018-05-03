@@ -29,6 +29,7 @@ import java.util.Map;
 
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -57,6 +58,18 @@ import static com.google.common.base.Charsets.UTF_8;
 public class CappedDatabase {
 
     private static final Logger logger = LoggerFactory.getLogger(CappedDatabase.class);
+
+    private static final boolean USE_SAFE_LZF_ENCODER;
+
+    static {
+        String arch = StandardSystemProperty.OS_ARCH.value();
+        // see https://github.com/lz4/lz4-java/blob/1.4.1/src/java/net/jpountz/util/Utils.java#L27
+        boolean unalignedAccessAllowed = "i386".equals(arch) || "x86".equals(arch)
+                || "amd64".equals(arch) || "x86_64".equals(arch) || "aarch64".equals(arch)
+                || "ppc64le".equals(arch);
+        USE_SAFE_LZF_ENCODER =
+                !unalignedAccessAllowed || (AppServerDetection.isIbmJvm() && JavaVersion.isJava6());
+    }
 
     private final File file;
     private final Object lock = new Object();
@@ -267,7 +280,7 @@ public class CappedDatabase {
     }
 
     private static LZFOutputStream newLZFOutputStream(OutputStream outputStream) {
-        if (AppServerDetection.isIbmJvm() && JavaVersion.isJava6()) {
+        if (USE_SAFE_LZF_ENCODER) {
             return new LZFOutputStream(ChunkEncoderFactory.safeInstance(), outputStream);
         } else {
             return new LZFOutputStream(outputStream);
@@ -275,7 +288,7 @@ public class CappedDatabase {
     }
 
     private static LZFInputStream newLZFInputStream(InputStream inputStream) throws IOException {
-        if (AppServerDetection.isIbmJvm() && JavaVersion.isJava6()) {
+        if (USE_SAFE_LZF_ENCODER) {
             return new LZFInputStream(ChunkDecoderFactory.safeInstance(), inputStream);
         } else {
             return new LZFInputStream(inputStream);

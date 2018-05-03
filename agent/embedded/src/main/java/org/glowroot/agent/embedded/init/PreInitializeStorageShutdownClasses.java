@@ -68,6 +68,7 @@ class PreInitializeStorageShutdownClasses {
         List<String> types = Lists.newArrayList();
         types.addAll(getGlowrootUsedTypes());
         types.addAll(getH2UsedTypes());
+        types.addAll(getGuavaUsedTypes());
         types.addAll(javaUsedTypes());
         return types;
     }
@@ -79,6 +80,8 @@ class PreInitializeStorageShutdownClasses {
         types.add("org.glowroot.agent.embedded.util.CappedDatabaseOutputStream");
         types.add("org.glowroot.agent.embedded.util.DataSource");
         types.add("org.glowroot.agent.embedded.util.DataSource$ShutdownHookThread");
+        types.add("org.glowroot.agent.util.AppServerDetection");
+        types.add("org.glowroot.agent.util.JavaVersion");
         return types;
     }
 
@@ -107,6 +110,12 @@ class PreInitializeStorageShutdownClasses {
         types.add("org.h2.util.StringUtils");
         types.add("org.h2.util.Utils");
         types.add("org.h2.util.Utils$ClassFactory");
+        return types;
+    }
+
+    private static List<String> getGuavaUsedTypes() {
+        List<String> types = Lists.newArrayList();
+        types.add("com.google.common.base.StandardSystemProperty");
         return types;
     }
 
