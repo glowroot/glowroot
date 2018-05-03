@@ -641,12 +641,11 @@
       </build>
     </profile>
     <profile>
-      <id>auto-activated-not-mac</id>
+      <id>auto-activated-not-apple-jdk</id>
       <activation>
-        <os>
-          <family>!mac</family>
-        </os>
-        <jdk>(,9)</jdk>
+        <file>
+          <exists>${java.home}/lib/rt.jar</exists>
+        </file>
       </activation>
       <build>
         <pluginManagement>
@@ -665,12 +664,11 @@
       </build>
     </profile>
     <profile>
-      <id>auto-activated-mac</id>
+      <id>auto-activated-apple-jdk</id>
       <activation>
-        <os>
-          <family>mac</family>
-        </os>
-        <jdk>(,9)</jdk>
+        <file>
+          <exists>${java.home}/../Classes/classes.jar</exists>
+        </file>
       </activation>
       <build>
         <pluginManagement>
