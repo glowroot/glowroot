@@ -382,6 +382,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ThinClassVisitor");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$AnnotationCaptureMethodVisitor");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$PointcutAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.ThinClassVisitor$RemoteAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.ThinClassVisitor$ValueAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinClass");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinMethod");
         types.add("org.glowroot.agent.weaving.Weaver");

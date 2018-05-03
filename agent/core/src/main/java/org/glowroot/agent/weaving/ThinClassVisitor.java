@@ -22,6 +22,7 @@ import org.immutables.value.Value;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
@@ -58,6 +59,8 @@ class ThinClassVisitor extends ClassVisitor {
         thinClassBuilder.addAnnotations(desc);
         if (desc.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
             return new PointcutAnnotationVisitor();
+        } else if (desc.equals("Ljavax/ejb/Remote;")) {
+            return new RemoteAnnotationVisitor();
         } else {
             return null;
         }
@@ -104,6 +107,7 @@ class ThinClassVisitor extends ClassVisitor {
         List<String> annotations();
         List<ThinMethod> nonBridgeMethods();
         List<ThinMethod> bridgeMethods();
+        List<Type> ejbRemoteInterfaces();
     }
 
     @Value.Immutable
@@ -153,6 +157,36 @@ class ThinClassVisitor extends ClassVisitor {
                 thinClassBuilder.addBridgeMethods(thinMethod);
             } else {
                 thinClassBuilder.addNonBridgeMethods(thinMethod);
+            }
+        }
+    }
+
+    private class RemoteAnnotationVisitor extends AnnotationVisitor {
+
+        private RemoteAnnotationVisitor() {
+            super(ASM6);
+        }
+
+        @Override
+        public @Nullable AnnotationVisitor visitArray(String name) {
+            if (name.equals("value")) {
+                return new ValueAnnotationVisitor();
+            } else {
+                return null;
+            }
+        }
+    }
+
+    private class ValueAnnotationVisitor extends AnnotationVisitor {
+
+        private ValueAnnotationVisitor() {
+            super(ASM6);
+        }
+
+        @Override
+        public void visit(@Nullable String name, Object value) {
+            if (name == null && value instanceof Type) {
+                thinClassBuilder.addEjbRemoteInterfaces((Type) value);
             }
         }
     }

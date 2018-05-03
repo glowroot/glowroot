@@ -39,6 +39,8 @@ abstract class AnalyzedClass {
     abstract ImmutableList<ShimType> shimTypes();
     abstract ImmutableList<MixinType> mixinTypes();
 
+    abstract boolean ejbRemote();
+
     // not using @Value.Derived to keep down memory footprint
     boolean isInterface() {
         return Modifier.isInterface(modifiers());

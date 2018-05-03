@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -42,9 +43,13 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.config.ImmutableInstrumentationConfig;
+import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
+import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.agent.weaving.ThinClassVisitor.ThinClass;
 import org.glowroot.agent.weaving.ThinClassVisitor.ThinMethod;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
@@ -89,6 +94,14 @@ class ClassAnalyzer {
                 .name(className)
                 .superName(superClassName)
                 .addAllInterfaceNames(interfaceNames);
+        boolean ejbRemote = false;
+        for (String annotation : thinClass.annotations()) {
+            if (annotation.equals("Ljavax/ejb/Remote;")) {
+                ejbRemote = true;
+                break;
+            }
+        }
+        analyzedClassBuilder.ejbRemote(ejbRemote);
 
         ParseContext parseContext = ImmutableParseContext.of(className, codeSource);
         List<AnalyzedClass> interfaceAnalyzedHierarchy = Lists.newArrayList();
@@ -122,8 +135,19 @@ class ClassAnalyzer {
         }
         analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
         analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
-        this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
 
+        Set<String> ejbRemoteInterfaces = getEjbRemoteInterfaces(thinClass, superAnalyzedClasses);
+        if (ejbRemoteInterfaces.isEmpty()) {
+            this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
+        } else if (loader == null) {
+            logger.warn("instrumenting @javax.ejb.Remote not currently supported in bootstrap class"
+                    + " loader: {}", className);
+            this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
+        } else {
+            List<AnalyzedClass> ejbHackedSuperAnalyzedClasses =
+                    hack(thinClass, loader, superAnalyzedClasses, ejbRemoteInterfaces);
+            this.superAnalyzedClasses = ImmutableList.copyOf(ejbHackedSuperAnalyzedClasses);
+        }
         Set<String> superClassNames = Sets.newHashSet();
         superClassNames.add(className);
         for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
@@ -133,10 +157,10 @@ class ClassAnalyzer {
         adviceMatchers = AdviceMatcher.getAdviceMatchers(className, thinClass.annotations(),
                 superClassNames, advisors);
         if (intf) {
-            shortCircuitBeforeAnalyzeMethods = adviceMatchers.isEmpty();
+            shortCircuitBeforeAnalyzeMethods = false;
         } else {
             shortCircuitBeforeAnalyzeMethods =
-                    !hasSuperAdvice(superAnalyzedClasses) && matchedShimTypes.isEmpty()
+                    !hasSuperAdvice(this.superAnalyzedClasses) && matchedShimTypes.isEmpty()
                             && matchedMixinTypes.isEmpty() && adviceMatchers.isEmpty();
         }
         this.classBytes = classBytes;
@@ -216,7 +240,9 @@ class ClassAnalyzer {
         List<String> methodAnnotations = thinMethod.annotations();
         List<Advice> matchingAdvisors = getMatchingAdvisors(thinMethod, methodAnnotations,
                 parameterTypes, returnType);
-        if (matchingAdvisors.isEmpty()) {
+        // FIXME don't need to calculate this every time
+        boolean intf = Modifier.isInterface(thinClass.access());
+        if (matchingAdvisors.isEmpty() && !intf) {
             return ImmutableList.of();
         }
         ImmutableAnalyzedMethod.Builder builder = ImmutableAnalyzedMethod.builder();
@@ -474,6 +500,79 @@ class ClassAnalyzer {
             }
         }
         return false;
+    }
+
+    private static Set<String> getEjbRemoteInterfaces(ThinClass thinClass,
+            List<AnalyzedClass> superAnalyzedClasses) {
+        Set<String> ejbRemoteInterfaces = Sets.newHashSet();
+        for (Type ejbRemoteInterface : thinClass.ejbRemoteInterfaces()) {
+            ejbRemoteInterfaces.add(ejbRemoteInterface.getClassName());
+        }
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            if (superAnalyzedClass.isInterface() && superAnalyzedClass.ejbRemote()) {
+                ejbRemoteInterfaces.add(superAnalyzedClass.name());
+            }
+        }
+        return ejbRemoteInterfaces;
+    }
+
+    private static List<AnalyzedClass> hack(ThinClass thinClass, ClassLoader loader,
+            List<AnalyzedClass> superAnalyzedClasses, Set<String> ejbRemoteInterfaces) {
+        List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
+        for (String ejbRemoteInterface : ejbRemoteInterfaces) {
+            String shortClassName = ejbRemoteInterface;
+            int index = shortClassName.lastIndexOf('.');
+            if (index != -1) {
+                shortClassName = shortClassName.substring(index + 1);
+            }
+            index = shortClassName.lastIndexOf('$');
+            if (index != -1) {
+                shortClassName = shortClassName.substring(index + 1);
+            }
+            instrumentationConfigs.add(ImmutableInstrumentationConfig.builder()
+                    .className(ejbRemoteInterface)
+                    .subTypeRestriction(ClassNames.fromInternalName(thinClass.name()))
+                    .methodName("*")
+                    .addMethodParameterTypes("..")
+                    .captureKind(CaptureKind.TRANSACTION)
+                    .transactionType("EJB Remote")
+                    .transactionNameTemplate(shortClassName + "#{{methodName}}")
+                    .traceEntryMessageTemplate(ejbRemoteInterface + ".{{methodName}}()")
+                    .timerName("ejb remote")
+                    .build());
+        }
+        ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
+                AdviceGenerator.createAdvisors(instrumentationConfigs, null, false);
+        try {
+            ClassLoaders.defineClassesInClassLoader(newAdvisors.values(), loader);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        Map<String, Advice> newAdvisorsByRemoteInterface = Maps.newHashMap();
+        for (Advice advice : newAdvisors.keySet()) {
+            newAdvisorsByRemoteInterface.put(advice.pointcut().className(), advice);
+        }
+
+        List<AnalyzedClass> ejbHackedSuperAnalyzedClasses = Lists.newArrayList();
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            Advice advice = newAdvisorsByRemoteInterface.get(superAnalyzedClass.name());
+            if (advice == null) {
+                ejbHackedSuperAnalyzedClasses.add(superAnalyzedClass);
+            } else {
+                ImmutableAnalyzedClass.Builder builder = ImmutableAnalyzedClass.builder()
+                        .copyFrom(superAnalyzedClass);
+                List<AnalyzedMethod> analyzedMethods = Lists.newArrayList();
+                for (AnalyzedMethod analyzedMethod : superAnalyzedClass.analyzedMethods()) {
+                    analyzedMethods.add(ImmutableAnalyzedMethod.builder()
+                            .copyFrom(analyzedMethod)
+                            .addSubTypeRestrictedAdvisors(advice)
+                            .build());
+                }
+                builder.analyzedMethods(analyzedMethods);
+                ejbHackedSuperAnalyzedClasses.add(builder.build());
+            }
+        }
+        return ejbHackedSuperAnalyzedClasses;
     }
 
     private static boolean hasSuperAdvice(List<AnalyzedClass> superAnalyzedClasses) {

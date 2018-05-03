@@ -31,6 +31,7 @@ public class ClassWriter {
 
 public class AnnotationVisitor {
     public void visit(@Nullable String name, Object value);
+    public @Nullable AnnotationVisitor visitArray(String name);
 }
 
 /* ========================================================================== */

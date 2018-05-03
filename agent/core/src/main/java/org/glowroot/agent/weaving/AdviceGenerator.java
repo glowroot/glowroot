@@ -158,7 +158,7 @@ class AdviceGenerator {
         annotationVisitor.visit("methodName", config.methodName());
         annotationVisitor.visit("methodAnnotation", config.methodAnnotation());
         AnnotationVisitor arrayAnnotationVisitor =
-                annotationVisitor.visitArray("methodParameterTypes");
+                checkNotNull(annotationVisitor.visitArray("methodParameterTypes"));
         for (String methodParameterType : config.methodParameterTypes()) {
             arrayAnnotationVisitor.visit(null, methodParameterType);
         }

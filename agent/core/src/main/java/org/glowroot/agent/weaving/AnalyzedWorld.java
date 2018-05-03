@@ -138,7 +138,7 @@ public class AnalyzedWorld {
         return getSuperClasses(className, loader, parseContext);
     }
 
-    List<Advice> mergeInstrumentationAnnotations(List<Advice> advisors, byte[] classBytes,
+    static List<Advice> mergeInstrumentationAnnotations(List<Advice> advisors, byte[] classBytes,
             @Nullable ClassLoader loader, String className) {
         byte[] marker = "Lorg/glowroot/agent/api/Instrumentation$".getBytes(UTF_8);
         if (Bytes.indexOf(classBytes, marker) == -1) {
@@ -452,6 +452,7 @@ public class AnalyzedWorld {
                 }
             }
         }
+        boolean intf = clazz.isInterface();
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isSynthetic()) {
                 // don't add synthetic methods to the analyzed model
@@ -474,7 +475,7 @@ public class AnalyzedWorld {
                 matchingAdvisors.addAll(extraAdvisors);
             }
             ClassAnalyzer.sortAdvisors(matchingAdvisors);
-            if (!matchingAdvisors.isEmpty()) {
+            if (intf || !matchingAdvisors.isEmpty()) {
                 ImmutableAnalyzedMethod.Builder methodBuilder = ImmutableAnalyzedMethod.builder();
                 methodBuilder.name(method.getName());
                 for (Type parameterType : parameterTypes) {
@@ -499,6 +500,14 @@ public class AnalyzedWorld {
                 classBuilder.addPublicFinalMethods(publicFinalMethodBuilder.build());
             }
         }
+        boolean ejbRemote = false;
+        for (Annotation annotation : clazz.getDeclaredAnnotations()) {
+            if (annotation.annotationType().getName().equals("javax.ejb.Remote")) {
+                ejbRemote = true;
+                break;
+            }
+        }
+        classBuilder.ejbRemote(ejbRemote);
         return classBuilder.build();
     }
 
