@@ -10,7 +10,7 @@
       ],
       "captureKind": "transaction",
       "transactionType": "Background",
-      "transactionNameTemplate": "EJB timer: {{this.class.simpleName}}.{{methodName}}()",
+      "transactionNameTemplate": "EJB timer: {{this.class.simpleName}}#{{methodName}}",
       "traceEntryMessageTemplate": "EJB timer: {{this.class.name}}.{{methodName}}()",
       "timerName": "ejb timer"
     }
