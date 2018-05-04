@@ -514,6 +514,182 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>de.dentrassi.maven</groupId>
+        <artifactId>rpm</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>rpm</goal>
+            </goals>
+            
+            <configuration>
+              <attach>false</attach> <!-- don't attach RPM -->
+              <skipSigning>true</skipSigning>
+              <group>Applications/System</group>
+              <license>/usr/share/doc/glowroot-central/LICENSE</license>
+              <url>https://github.com/glowroot/glowroot</url>
+              <description>Glowroot Central Collector</description>
+              	  
+              <prerequisites>
+                <prerequisite>systemd</prerequisite>
+                <prerequisite>/usr/sbin/useradd</prerequisite>
+                <prerequisite>/usr/sbin/groupadd</prerequisite>
+                <prerequisite>/usr/sbin/userdel</prerequisite>
+                <prerequisite>/usr/sbin/groupdel</prerequisite>
+                <prerequisite>/usr/bin/getent</prerequisite>
+              </prerequisites>
+                
+              <requires>
+                <require>jre &gt;= 1.8</require>
+              </requires>
+              	  
+              <provides>user(glowroot)</provides>
+              <provides>group(glowroot)</provides>
+              	  
+              <suggests>cassandra &gt;= 3.11</suggests>
+                
+              <!-- Create glowroot user and group -->
+              <beforeInstallation>
+                getent group  glowroot &gt; /dev/null || groupadd -r glowroot
+                getent passwd glowroot &gt; /dev/null || useradd  -g glowroot -M -r glowroot
+                if [ $1 -eq 2 ] ; then systemctl stop glowroot-central.service; fi
+              </beforeInstallation>
+                
+              <!-- (Re)start the collector upon upgrade assuming that it's already correctly configured -->
+              <afterInstallation>
+                systemctl daemon-reload
+                systemd-tmpfiles --create /usr/lib/tmpfiles.d/glowroot-central.conf
+                if [ $1 -eq 2 ] ; then systemctl start glowroot-central.service; fi
+              </afterInstallation>
+               
+              <beforeRemoval>
+                systemctl stop glowroot-central.service
+              </beforeRemoval>
+              	
+              <!-- Remove glowroot user and group upon un-installation -->
+              <afterRemoval>
+                if [ $1 -eq 0 ] ; then userdel glowroot &amp;&amp; groupdel glowroot 2&gt; /dev/null; fi
+                systemctl daemon-reload
+              </afterRemoval>
+                
+              <rulesets>
+                <ruleset>
+                  <id>gc-default</id>
+                  <rules>
+                    <rule>
+                      <user>root</user>
+                      <group>root</group>
+                    </rule>
+                    <rule>
+                      <when>
+                        <type>directory</type>
+                      </when>
+                      <mode>0755</mode>
+                    </rule>
+                    <rule>
+                      <when>
+                        <type>file</type>
+                      </when>
+                      <mode>0644</mode>
+                    </rule>
+                    <rule>
+                      <when>
+                        <type>file</type>
+                        <prefix>/etc/</prefix>
+                      </when>
+                      <configuration>true</configuration>
+                      <noreplace>true</noreplace>
+                      <mode>0640</mode>
+                      <user>root</user>
+                      <group>glowroot</group>
+                    </rule>
+                    <rule>
+                      <when>
+                        <type>file</type>
+                        <prefix>/usr/share/doc/</prefix>
+                      </when>
+                      <documentation>true</documentation>
+                    </rule>
+                  </rules>
+                </ruleset>
+              </rulesets>
+              
+              <entries>                
+                <entry>
+                  <name>/etc/glowroot-central</name>
+                  <directory>true</directory>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/share/doc/glowroot-central</name>
+                  <directory>true</directory>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central</name>
+                  <directory>true</directory>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central/lib</name>
+                  <directory>true</directory>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/etc/glowroot-central/glowroot-central.properties</name>
+                  <file>src/main/conf/glowroot-central.properties</file>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/share/doc/glowroot-central/NOTICE</name>
+                  <file>src/main/webapp/META-INF/NOTICE</file>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/share/doc/glowroot-central/LICENSE</name>
+                  <file>src/main/webapp/META-INF/LICENSE</file>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central/${project.build.finalName}.jar</name>
+                  <file>target/${project.build.finalName}.jar</file>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central/glowroot-central.jar</name>
+                  <linkTo>${project.build.finalName}.jar</linkTo>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central/glowroot-central.properties</name>
+                  <linkTo>/etc/glowroot-central/glowroot-central.properties</linkTo>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central/lib</name>
+                  <collect>
+                    <from>target/${project.build.finalName}/WEB-INF/lib</from>
+                  </collect>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/systemd/system/glowroot-central.service</name>
+                  <file>src/main/systemd/glowroot-central.service</file>
+                  <ruleset>gc-default</ruleset>
+                  <configuration>true</configuration>
+                </entry>
+                <entry>
+                  <name>/usr/lib/tmpfiles.d/glowroot-central.conf</name>
+                  <file>src/main/systemd/glowroot-central.conf</file>
+                  <ruleset>gc-default</ruleset>
+                  <configuration>true</configuration>
+                </entry>
+              </entries>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>

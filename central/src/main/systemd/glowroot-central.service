@@ -1,0 +1,14 @@
+[Unit]
+Description=Glowroot Central Collector
+
+[Service]
+ExecStart=/usr/bin/java \
+  -Dglowroot.log.dir=/var/log/glowroot-central \
+  -jar /usr/lib/glowroot-central/glowroot-central.jar
+Type=simple
+User=glowroot
+Group=glowroot
+WorkingDirectory=/var/run/glowroot-central
+
+[Install]
+WantedBy=multi-user.target
