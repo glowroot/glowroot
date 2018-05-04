@@ -93,6 +93,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private final ClassWriter cw;
     private final @Nullable ClassLoader loader;
 
+    private final boolean frames;
     private final AnalyzedClass analyzedClass;
     private final List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice;
 
@@ -113,13 +114,14 @@ class WeavingClassVisitor extends ClassVisitor {
     private @MonotonicNonNull String metaHolderInternalName;
     private int methodMetaCounter;
 
-    public WeavingClassVisitor(ClassWriter cw, @Nullable ClassLoader loader,
+    public WeavingClassVisitor(ClassWriter cw, @Nullable ClassLoader loader, boolean frames,
             AnalyzedClass analyzedClass, List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice,
             List<ShimType> shimTypes, List<MixinType> mixinTypes,
             Map<String, List<Advice>> methodAdvisors, AnalyzedWorld analyzedWorld) {
         super(ASM6, cw);
         this.cw = cw;
         this.loader = loader;
+        this.frames = frames;
         this.analyzedClass = analyzedClass;
         this.methodsThatOnlyNowFulfillAdvice = methodsThatOnlyNowFulfillAdvice;
         this.shimTypes = shimTypes;
@@ -444,7 +446,7 @@ class WeavingClassVisitor extends ClassVisitor {
                 break;
             }
         }
-        return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
+        return new WeavingMethodVisitor(mv, frames, access, name, desc, type, matchingAdvisors,
                 metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
     }
 
@@ -453,7 +455,7 @@ class WeavingClassVisitor extends ClassVisitor {
             String desc, Iterable<Advice> matchingAdvisors) {
         // FIXME remove superseded advisors
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
-        return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
+        return new WeavingMethodVisitor(mv, frames, access, name, desc, type, matchingAdvisors,
                 metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
     }
 

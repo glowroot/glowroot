@@ -31,6 +31,8 @@ class ThinClassVisitor extends ClassVisitor {
 
     private final ImmutableThinClass.Builder thinClassBuilder = ImmutableThinClass.builder();
 
+    private int majorVersion;
+
     private @Nullable ThinClass thinClass;
 
     private boolean constructorPointcut;
@@ -42,6 +44,7 @@ class ThinClassVisitor extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String /*@Nullable*/ [] interfaces) {
+        majorVersion = version & 0xFFFF;
         thinClassBuilder.access(access);
         thinClassBuilder.name(name);
         thinClassBuilder.superName(superName);
@@ -77,6 +80,10 @@ class ThinClassVisitor extends ClassVisitor {
     @Override
     public void visitEnd() {
         thinClass = thinClassBuilder.build();
+    }
+
+    int getMajorVersion() {
+        return majorVersion;
     }
 
     ThinClass getThinClass() {

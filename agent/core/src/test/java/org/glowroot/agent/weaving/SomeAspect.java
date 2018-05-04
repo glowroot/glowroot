@@ -1375,8 +1375,9 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.agent.weaving.GenerateMoreNotPerfectBytecode$Test",
-            methodName = "execute", methodParameterTypes = {}, timerName = "xyz")
+    @Pointcut(className = "org.glowroot.agent.weaving.GenerateMoreNotPerfectBytecode$Test"
+            + "|org.glowroot.agent.weaving.GenerateStillMoreNotPerfectBytecode$Test",
+            methodName = "execute", methodParameterTypes = {".."}, timerName = "xyz")
     public static class MoreNotPerfectBytecodeAdvice {
         @IsEnabled
         public static boolean isEnabled() {

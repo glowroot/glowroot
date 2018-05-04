@@ -78,6 +78,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private static final ConcurrentMap<String, Integer> suppressionKeyIds =
             new ConcurrentHashMap<String, Integer>();
 
+    private final boolean frames;
     private final int access;
     private final String name;
     private final Type owner;
@@ -113,11 +114,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private int[] savedArgLocals = new int[0];
 
-    WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
-            Iterable<Advice> advisors, @Nullable String metaHolderInternalName,
+    WeavingMethodVisitor(MethodVisitor mv, boolean frames, int access, String name, String desc,
+            Type owner, Iterable<Advice> advisors, @Nullable String metaHolderInternalName,
             @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader,
             @Nullable MethodVisitor outerMethodVisitor) {
         super(ASM6, new FrameDeduppingMethodVisitor(mv), access, name, desc);
+        this.frames = frames;
         this.access = access;
         this.name = name;
         this.owner = owner;
@@ -1112,8 +1114,10 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void visitImplicitFrame(Object... stack) {
-        super.visitFrame(F_NEW, implicitFrameLocals.length, implicitFrameLocals, stack.length,
-                stack);
+        if (frames) {
+            super.visitFrame(F_NEW, implicitFrameLocals.length, implicitFrameLocals, stack.length,
+                    stack);
+        }
     }
 
     @Override

@@ -1702,6 +1702,22 @@ public class WeaverTest {
     }
 
     @Test
+    public void shouldExecuteAdviceOnStillMoreNotPerfectBytecode() throws Exception {
+        // given
+        LazyDefinedClass implClass =
+                GenerateStillMoreNotPerfectBytecode.generateStillMoreNotPerfectBytecode();
+        GenerateStillMoreNotPerfectBytecode.Test test = newWovenObject(implClass,
+                GenerateStillMoreNotPerfectBytecode.Test.class, MoreNotPerfectBytecodeAdvice.class);
+        // when
+        test.execute();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
     public void shouldExecuteAdviceOnHackedConstructorBytecode() throws Exception {
         // given
         LazyDefinedClass implClass =

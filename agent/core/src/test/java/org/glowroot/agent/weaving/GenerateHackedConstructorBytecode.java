@@ -35,7 +35,7 @@ import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.NEWARRAY;
 import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.T_BOOLEAN;
-import static org.objectweb.asm.Opcodes.V1_7;
+import static org.objectweb.asm.Opcodes.V1_6;
 
 // this is valid bytecode, but cannot be generated from valid Java code
 // e.g. jacoco does this
@@ -46,7 +46,7 @@ public class GenerateHackedConstructorBytecode {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         MethodVisitor mv;
 
-        cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, "HackedConstructorBytecode", null,
+        cw.visit(V1_6, ACC_PUBLIC + ACC_SUPER, "HackedConstructorBytecode", null,
                 Test.class.getName().replace('.', '/'), new String[] {});
 
         {

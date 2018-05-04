@@ -66,6 +66,7 @@ import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsE
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.objectweb.asm.Opcodes.ASM6;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.V1_6;
 
 public class Weaver {
 
@@ -179,55 +180,57 @@ public class Weaver {
                 classBytes, loader, className);
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
+        boolean frames = accv.getMajorVersion() >= V1_6;
+        int expandFrames = frames ? ClassReader.EXPAND_FRAMES : 0;
         byte[] maybeProcessedBytes = null;
         if (accv.isConstructorPointcut()) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new PointcutClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.MANAGEMENT_FACTORY_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new ManagementFactoryHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.JBOSS_WELD_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossWeldHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.JBOSS_MODULES_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossModulesHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.JBOSS_URL_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossUrlHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.FELIX_OSGI_HACK_CLASS_NAME)
                 || className.equals(ImportantClassNames.FELIX3_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new OsgiHackClassVisitor(cw, className, "shouldBootDelegate");
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.ECLIPSE_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new OsgiHackClassVisitor(cw, className, "isBootDelegationPackage");
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.OPENEJB_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new OpenEJBHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
@@ -271,14 +274,14 @@ public class Weaver {
         }
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         WeavingClassVisitor cv =
-                new WeavingClassVisitor(cw, loader, classAnalyzer.getAnalyzedClass(),
+                new WeavingClassVisitor(cw, loader, frames, classAnalyzer.getAnalyzedClass(),
                         classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(), matchedShimTypes,
                         matchedMixinTypes, classAnalyzer.getMethodAdvisors(), analyzedWorld);
         ClassReader cr =
                 new ClassReader(maybeProcessedBytes == null ? classBytes : maybeProcessedBytes);
         byte[] transformedBytes;
         try {
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             // ClassWriter.toByteArray() can throw exception also, see issue #370
             transformedBytes = cw.toByteArray();
         } catch (RuntimeException e) {
@@ -301,13 +304,16 @@ public class Weaver {
             } catch (IOException e) {
                 logger.warn(e.getMessage(), e);
             }
-            logger.info("ASM for {} (transformed):\n{}", className, toASM(transformedBytes));
+            logger.info("ASM for {} (transformed):\n{}", className,
+                    toASM(transformedBytes, expandFrames));
 
             ClassReader cr2 = new ClassReader(transformedBytes);
-            ClassWriter cw2 = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+            int computeFrames = expandFrames == 0 ? 0 : ClassWriter.COMPUTE_FRAMES;
+            String extraStr = expandFrames == 0 ? "" : " + COMPUTE_FRAMES";
+            ClassWriter cw2 = new ClassWriter(computeFrames);
             cr2.accept(cw2, ClassReader.SKIP_FRAMES);
-            logger.info("ASM for {} (transformed + COMPUTE_FRAMES):\n{}", className,
-                    toASM(cw2.toByteArray()));
+            logger.warn("ASM for {} (transformed{}):\n{}", className, extraStr,
+                    toASM(cw2.toByteArray(), expandFrames));
         }
         return transformedBytes;
     }
@@ -342,12 +348,12 @@ public class Weaver {
         }
     }
 
-    private static String toASM(byte[] transformedBytes) {
+    private static String toASM(byte[] transformedBytes, int expandFrames) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         ClassReader cr = new ClassReader(transformedBytes);
         TraceClassVisitor tcv = new TraceClassVisitor(null, new ASMifier(), pw);
-        cr.accept(tcv, ClassReader.EXPAND_FRAMES);
+        cr.accept(tcv, expandFrames);
         pw.close();
         return sw.toString();
     }
