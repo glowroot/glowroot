@@ -35,31 +35,31 @@
   </div>
 {{/if}}
 <div>
-  <!-- note: surrounding div is for nicer copy paste result -->
   <div class="gt-trace-attr-name">Transaction type:&nbsp;</div>
   <div class="gt-trace-attr-value">{{transactionType}}</div>
 </div>
 <div>
-  <!-- note: surrounding div is for nicer copy paste result -->
   <div class="gt-trace-attr-name">Transaction name:&nbsp;</div>
   <div class="gt-trace-attr-value">{{transactionName}}</div>
 </div>
 {{#if error}}
-  <div class="gt-trace-attr-name">Error:&nbsp;</div>
-  <div class="gt-trace-attr-value">{{error.message}}</div>
-  {{#if error.exception}}
-    <div class="gt-trace-exception-indent">
-      <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
-      {{! using span so background will stretch beyond page border if needed }}
-      <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide">
-        <div class="gt-link-color">exception</div>
-        <div class="gt-monospace gt-clip-text">
-          {{{exceptionHtml error.exception}}}
+  <div>
+    <div class="gt-trace-attr-name">Error:&nbsp;</div>
+    <div class="gt-trace-attr-value">{{error.message}}</div>
+    {{#if error.exception}}
+      <div class="gt-trace-exception-indent">
+        <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
+        {{! using span so background will stretch beyond page border if needed }}
+        <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide">
+          <div class="gt-link-color">exception</div>
+          <div class="gt-monospace gt-clip-text">
+            {{{exceptionHtml error.exception}}}
+          </div>
+          <i class="fas fa-clipboard gt-clip"></i>
         </div>
-        <i class="fas fa-clipboard gt-clip"></i>
       </div>
-    </div>
-  {{/if}}
+    {{/if}}
+  </div>
 {{/if}}
 <div>
   <div class="gt-trace-attr-name">Start:&nbsp;</div>
