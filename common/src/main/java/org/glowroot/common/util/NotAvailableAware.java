@@ -17,9 +17,13 @@ package org.glowroot.common.util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class NotAvailableAware {
 
     public static final int NA = -1;
+
+    private static final double NANOSECONDS_PER_MILLISECOND = 1000000.0;
 
     private NotAvailableAware() {}
 
@@ -47,5 +51,21 @@ public class NotAvailableAware {
 
     public static @Nullable Double orNull(double value) {
         return value == NA ? null : value;
+    }
+
+    public static long millisToNanos(long millis) {
+        if (NotAvailableAware.isNA(millis)) {
+            return NotAvailableAware.NA;
+        } else {
+            return MILLISECONDS.toNanos(millis);
+        }
+    }
+
+    public static double millisToNanos(double millis) {
+        if (NotAvailableAware.isNA(millis)) {
+            return NotAvailableAware.NA;
+        } else {
+            return millis * NANOSECONDS_PER_MILLISECOND;
+        }
     }
 }

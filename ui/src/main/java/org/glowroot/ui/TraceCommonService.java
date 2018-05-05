@@ -38,7 +38,6 @@ import org.glowroot.common.live.LiveTraceRepository.EntriesAndQueries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.model.MutableProfile;
-import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.AgentRollupRepository;
 import org.glowroot.common2.repo.TraceRepository;
@@ -531,13 +530,21 @@ class TraceCommonService {
                 writeTimer(asyncTimer, jg);
             }
             jg.writeEndArray();
-            if (header.hasMainThreadStats()) {
+            if (header.hasMainThreadRootTimer()) {
                 jg.writeFieldName("mainThreadStats");
-                writeThreadStats(header.getMainThreadStats(), jg);
+                if (header.hasOldMainThreadStats()) {
+                    writeOldThreadStats(header.getOldMainThreadStats(), jg);
+                } else {
+                    writeThreadStats(header.getMainThreadStats(), jg);
+                }
             }
-            if (header.hasAuxThreadStats()) {
+            if (!header.getAuxThreadRootTimerList().isEmpty()) {
                 jg.writeFieldName("auxThreadStats");
-                writeThreadStats(header.getAuxThreadStats(), jg);
+                if (header.hasOldAuxThreadStats()) {
+                    writeOldThreadStats(header.getOldAuxThreadStats(), jg);
+                } else {
+                    writeThreadStats(header.getAuxThreadStats(), jg);
+                }
             }
             jg.writeNumberField("entryCount", header.getEntryCount());
             boolean entryLimitExceeded = header.getEntryLimitExceeded();
@@ -723,30 +730,23 @@ class TraceCommonService {
         jg.writeEndObject();
     }
 
+    private static void writeOldThreadStats(Trace.OldThreadStats threadStats, JsonGenerator jg)
+            throws IOException {
+        jg.writeStartObject();
+        jg.writeNumberField("totalCpuNanos", threadStats.getTotalCpuNanos().getValue());
+        jg.writeNumberField("totalBlockedNanos", threadStats.getTotalBlockedNanos().getValue());
+        jg.writeNumberField("totalWaitedNanos", threadStats.getTotalWaitedNanos().getValue());
+        jg.writeNumberField("totalAllocatedBytes", threadStats.getTotalAllocatedBytes().getValue());
+        jg.writeEndObject();
+    }
+
     private static void writeThreadStats(Trace.ThreadStats threadStats, JsonGenerator jg)
             throws IOException {
         jg.writeStartObject();
-        if (threadStats.hasTotalCpuNanos()) {
-            jg.writeNumberField("totalCpuNanos", threadStats.getTotalCpuNanos().getValue());
-        } else {
-            jg.writeNumberField("totalCpuNanos", NotAvailableAware.NA);
-        }
-        if (threadStats.hasTotalBlockedNanos()) {
-            jg.writeNumberField("totalBlockedNanos", threadStats.getTotalBlockedNanos().getValue());
-        } else {
-            jg.writeNumberField("totalBlockedNanos", NotAvailableAware.NA);
-        }
-        if (threadStats.hasTotalWaitedNanos()) {
-            jg.writeNumberField("totalWaitedNanos", threadStats.getTotalWaitedNanos().getValue());
-        } else {
-            jg.writeNumberField("totalWaitedNanos", NotAvailableAware.NA);
-        }
-        if (threadStats.hasTotalAllocatedBytes()) {
-            jg.writeNumberField("totalAllocatedBytes",
-                    threadStats.getTotalAllocatedBytes().getValue());
-        } else {
-            jg.writeNumberField("totalAllocatedBytes", NotAvailableAware.NA);
-        }
+        jg.writeNumberField("totalCpuNanos", threadStats.getTotalCpuNanos());
+        jg.writeNumberField("totalBlockedNanos", threadStats.getTotalBlockedNanos());
+        jg.writeNumberField("totalWaitedNanos", threadStats.getTotalWaitedNanos());
+        jg.writeNumberField("totalAllocatedBytes", threadStats.getTotalAllocatedBytes());
         jg.writeEndObject();
     }
 

@@ -173,14 +173,10 @@ public class TraceCreator {
         builder.addAllAsyncTimer(asyncTimers.toProto());
         ThreadStatsCollectorImpl mainThreadStats = new ThreadStatsCollectorImpl();
         mainThreadStats.mergeThreadStats(transaction.getMainThreadStats());
-        if (!mainThreadStats.isNA()) {
-            builder.setMainThreadStats(mainThreadStats.toProto());
-        }
+        builder.setMainThreadStats(mainThreadStats.toProto());
         ThreadStatsCollectorImpl auxThreadStats = new ThreadStatsCollectorImpl();
         transaction.mergeAuxThreadStatsInto(auxThreadStats);
-        if (!auxThreadStats.isNA()) {
-            builder.setAuxThreadStats(auxThreadStats.toProto());
-        }
+        builder.setAuxThreadStats(auxThreadStats.toProto());
         builder.setEntryCount(entryCount);
         builder.setEntryLimitExceeded(transaction.isEntryLimitExceeded(entryCount));
         builder.setQueryCount(queryCount);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,9 +64,8 @@ public class TraceThreadStatsIT {
         // when
         Trace trace = container.execute(ShouldUseCpu.class);
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos().getValue())
+        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos())
                 .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
-        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
@@ -76,9 +75,8 @@ public class TraceThreadStatsIT {
         // when
         Trace trace = container.execute(ShouldWait.class);
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos().getValue())
+        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos())
                 .isGreaterThanOrEqualTo(5);
-        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
@@ -88,9 +86,8 @@ public class TraceThreadStatsIT {
         // when
         Trace trace = container.execute(ShouldBlock.class);
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos().getValue())
+        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos())
                 .isGreaterThanOrEqualTo(5);
-        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     private static void enableCaptureThreadStats() throws Exception {

@@ -351,7 +351,7 @@
     </div>
   </div>
 {{/if}}
-{{#if mainThreadStats}}
+{{#ifNotAllNA mainThreadStats}}
   <div class="gt-bold gt-breakdown-header">
     JVM Thread Stats{{#if auxThreadStats}} (Main Thread){{/if}}
   </div>
@@ -379,35 +379,37 @@
       {{formatAllocatedBytes mainThreadStats/totalAllocatedBytes}}
     </div>
   {{/ifNotNA}}
-{{/if}}
+{{/ifNotAllNA}}
 {{#if auxThreadStats}}
-  <div class="gt-bold gt-breakdown-header">
-    JVM Thread Stats{{#if mainThreadStats}} (Auxiliary Threads){{/if}}
-  </div>
-  {{#ifNotNA auxThreadStats/totalCpuNanos}}
-    <div class="gt-indent2">
-      <span>CPU time:</span>
-      {{nanosToMillis auxThreadStats/totalCpuNanos}} milliseconds
+  {{#ifNotAllNA auxThreadStats}}
+    <div class="gt-bold gt-breakdown-header">
+      JVM Thread Stats{{#if mainThreadStats}} (Auxiliary Threads){{/if}}
     </div>
-  {{/ifNotNA}}
-  {{#ifNotNA auxThreadStats/totalBlockedNanos}}
-    <div class="gt-indent2">
-      <span>Blocked time:</span>
-      {{nanosToMillis auxThreadStats/totalBlockedNanos}} milliseconds
-    </div>
-  {{/ifNotNA}}
-  {{#ifNotNA auxThreadStats/totalWaitedNanos}}
-    <div class="gt-indent2">
-      <span>Waited time:</span>
-      {{nanosToMillis auxThreadStats/totalWaitedNanos}} milliseconds
-    </div>
-  {{/ifNotNA}}
-  {{#ifNotNA auxThreadStats/totalAllocatedBytes}}
-    <div class="gt-indent2">
-      <span>Allocated memory:</span>
-      {{formatAllocatedBytes auxThreadStats/totalAllocatedBytes}}
-    </div>
-  {{/ifNotNA}}
+    {{#ifNotNA auxThreadStats/totalCpuNanos}}
+      <div class="gt-indent2">
+        <span>CPU time:</span>
+        {{nanosToMillis auxThreadStats/totalCpuNanos}} milliseconds
+      </div>
+    {{/ifNotNA}}
+    {{#ifNotNA auxThreadStats/totalBlockedNanos}}
+      <div class="gt-indent2">
+        <span>Blocked time:</span>
+        {{nanosToMillis auxThreadStats/totalBlockedNanos}} milliseconds
+      </div>
+    {{/ifNotNA}}
+    {{#ifNotNA auxThreadStats/totalWaitedNanos}}
+      <div class="gt-indent2">
+        <span>Waited time:</span>
+        {{nanosToMillis auxThreadStats/totalWaitedNanos}} milliseconds
+      </div>
+    {{/ifNotNA}}
+    {{#ifNotNA auxThreadStats/totalAllocatedBytes}}
+      <div class="gt-indent2">
+        <span>Allocated memory:</span>
+        {{formatAllocatedBytes auxThreadStats/totalAllocatedBytes}}
+      </div>
+    {{/ifNotNA}}
+  {{/ifNotAllNA}}
 {{/if}}
 <br>
 {{#ifExistenceYes entriesExistence}}

@@ -37,31 +37,12 @@ public class RowMappers {
         }
     }
 
-    public static @Nullable Double getDouble(ResultSet resultSet, int columnIndex)
-            throws SQLException {
-        double value = resultSet.getDouble(columnIndex);
-        if (value == 0 && resultSet.wasNull()) {
-            return null;
-        } else {
-            return value;
-        }
-    }
-
     public static void setLong(PreparedStatement preparedStatement, int columnIndex,
             @Nullable Long value) throws SQLException {
         if (value == null) {
             preparedStatement.setNull(columnIndex, Types.BIGINT);
         } else {
             preparedStatement.setLong(columnIndex, value);
-        }
-    }
-
-    public static void setDouble(PreparedStatement preparedStatement, int columnIndex,
-            @Nullable Double value) throws SQLException {
-        if (value == null) {
-            preparedStatement.setNull(columnIndex, Types.DOUBLE);
-        } else {
-            preparedStatement.setDouble(columnIndex, value);
         }
     }
 

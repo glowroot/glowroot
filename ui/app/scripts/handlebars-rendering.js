@@ -252,6 +252,14 @@ HandlebarsRendering = (function () {
     return options.inverse(this);
   });
 
+  Handlebars.registerHelper('ifNotAllNA', function (threadStats, options) {
+    if (threadStats.totalCpuNanos !== -1 || threadStats.totalBlockedNanos !== -1 || threadStats.totalWaitedNanos !== -1
+        || threadStats.totalAllocatedBytes !== -1) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
   Handlebars.registerHelper('ifNotNA', function (value, options) {
     if (value !== -1) {
       return options.fn(this);

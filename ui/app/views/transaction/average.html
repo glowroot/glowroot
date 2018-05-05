@@ -154,7 +154,7 @@
         </table>
       </div>
 
-      <div ng-if="mergedAggregate.mainThreadStats" style="margin-top: 15px;">
+      <div ng-if="displayThreadStats(mergedAggregate.mainThreadStats)" style="margin-top: 15px;">
         <label>
           JVM Thread Stats<span ng-if="mergedAggregate.auxThreadStats"> (Main Thread)</span>:
         </label>
@@ -164,7 +164,7 @@
         </div>
       </div>
 
-      <div ng-if="mergedAggregate.auxThreadStats" style="margin-top: 15px;">
+      <div ng-if="displayThreadStats(mergedAggregate.auxThreadStats)" style="margin-top: 15px;">
         <label>
           JVM Thread Stats<span ng-if="mergedAggregate.mainThreadStats"> (Auxiliary Threads)</span>:
         </label>

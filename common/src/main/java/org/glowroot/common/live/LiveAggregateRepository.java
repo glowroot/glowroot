@@ -29,7 +29,6 @@ import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
 
 public interface LiveAggregateRepository {
 
@@ -99,12 +98,8 @@ public interface LiveAggregateRepository {
         List<Aggregate.Timer> mainThreadRootTimers();
         List<Aggregate.Timer> auxThreadRootTimers();
         List<Aggregate.Timer> asyncTimers();
-        // cannot use Aggregate. /*@Nullable*/ ThreadStats here because Immutables needs to be able
-        // to see the annotation
-        @Nullable
-        ThreadStats mainThreadStats();
-        @Nullable
-        ThreadStats auxThreadStats();
+        Aggregate.ThreadStats mainThreadStats();
+        Aggregate.ThreadStats auxThreadStats();
     }
 
     @Value.Immutable

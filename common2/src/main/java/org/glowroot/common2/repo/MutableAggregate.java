@@ -153,43 +153,43 @@ public class MutableAggregate {
         mergeRootTimers(toBeMergedRootTimers, asyncTimers);
     }
 
-    public void addMainThreadTotalCpuNanos(@Nullable Double totalCpuNanos) {
+    public void addMainThreadTotalCpuNanos(double totalCpuNanos) {
         mainThreadStats.addTotalCpuNanos(totalCpuNanos);
     }
 
-    public void addMainThreadTotalBlockedNanos(@Nullable Double totalBlockedNanos) {
+    public void addMainThreadTotalBlockedNanos(double totalBlockedNanos) {
         mainThreadStats.addTotalBlockedNanos(totalBlockedNanos);
     }
 
-    public void addMainThreadTotalWaitedNanos(@Nullable Double totalWaitedNanos) {
+    public void addMainThreadTotalWaitedNanos(double totalWaitedNanos) {
         mainThreadStats.addTotalWaitedNanos(totalWaitedNanos);
     }
 
-    public void addMainThreadTotalAllocatedBytes(@Nullable Double totalAllocatedBytes) {
+    public void addMainThreadTotalAllocatedBytes(double totalAllocatedBytes) {
         mainThreadStats.addTotalAllocatedBytes(totalAllocatedBytes);
     }
 
-    public void addAuxThreadTotalCpuNanos(@Nullable Double totalCpuNanos) {
+    public void addAuxThreadTotalCpuNanos(double totalCpuNanos) {
         auxThreadStats.addTotalCpuNanos(totalCpuNanos);
     }
 
-    public void addAuxThreadTotalBlockedNanos(@Nullable Double totalBlockedNanos) {
+    public void addAuxThreadTotalBlockedNanos(double totalBlockedNanos) {
         auxThreadStats.addTotalBlockedNanos(totalBlockedNanos);
     }
 
-    public void addAuxThreadTotalWaitedNanos(@Nullable Double totalWaitedNanos) {
+    public void addAuxThreadTotalWaitedNanos(double totalWaitedNanos) {
         auxThreadStats.addTotalWaitedNanos(totalWaitedNanos);
     }
 
-    public void addAuxThreadTotalAllocatedBytes(@Nullable Double totalAllocatedBytes) {
+    public void addAuxThreadTotalAllocatedBytes(double totalAllocatedBytes) {
         auxThreadStats.addTotalAllocatedBytes(totalAllocatedBytes);
     }
 
-    public void mergeMainThreadStats(Aggregate. /*@Nullable*/ ThreadStats threadStats) {
+    public void mergeMainThreadStats(Aggregate.ThreadStats threadStats) {
         mainThreadStats.addThreadStats(threadStats);
     }
 
-    public void mergeAuxThreadStats(Aggregate. /*@Nullable*/ ThreadStats threadStats) {
+    public void mergeAuxThreadStats(Aggregate.ThreadStats threadStats) {
         auxThreadStats.addThreadStats(threadStats);
     }
 
@@ -198,21 +198,17 @@ public class MutableAggregate {
     }
 
     public OverviewAggregate toOverviewAggregate(long captureTime) {
-        ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
+        return ImmutableOverviewAggregate.builder()
                 .captureTime(captureTime)
                 .totalDurationNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
                 .asyncTransactions(asyncTransactions)
                 .mainThreadRootTimers(toProto(mainThreadRootTimers))
                 .auxThreadRootTimers(toProto(auxThreadRootTimers))
-                .asyncTimers(toProto(asyncTimers));
-        if (!mainThreadStats.isNA()) {
-            builder.mainThreadStats(mainThreadStats.toProto());
-        }
-        if (!auxThreadStats.isNA()) {
-            builder.auxThreadStats(auxThreadStats.toProto());
-        }
-        return builder.build();
+                .asyncTimers(toProto(asyncTimers))
+                .mainThreadStats(mainThreadStats.toProto())
+                .auxThreadStats(auxThreadStats.toProto())
+                .build();
     }
 
     public PercentileAggregate toPercentileAggregate(long captureTime) {

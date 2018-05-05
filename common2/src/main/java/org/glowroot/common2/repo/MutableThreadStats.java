@@ -15,13 +15,9 @@
  */
 package org.glowroot.common2.repo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common2.repo.util.UsedByJsonSerialization;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 public class MutableThreadStats {
 
@@ -29,8 +25,6 @@ public class MutableThreadStats {
     private double totalBlockedNanos;
     private double totalWaitedNanos;
     private double totalAllocatedBytes;
-
-    private boolean empty = true;
 
     @UsedByJsonSerialization
     public double getTotalCpuNanos() {
@@ -52,104 +46,39 @@ public class MutableThreadStats {
         return totalAllocatedBytes;
     }
 
-    public void addTotalCpuNanos(@Nullable Double totalCpuNanos) {
-        if (totalCpuNanos != null) {
-            this.totalCpuNanos = NotAvailableAware.add(this.totalCpuNanos, totalCpuNanos);
-        } else {
-            this.totalCpuNanos = NotAvailableAware.NA;
-        }
+    public void addTotalCpuNanos(double totalCpuNanos) {
+        this.totalCpuNanos = NotAvailableAware.add(this.totalCpuNanos, totalCpuNanos);
     }
 
-    public void addTotalBlockedNanos(@Nullable Double totalBlockedNanos) {
-        if (totalBlockedNanos != null) {
-            this.totalBlockedNanos =
-                    NotAvailableAware.add(this.totalBlockedNanos, totalBlockedNanos);
-        } else {
-            this.totalBlockedNanos = NotAvailableAware.NA;
-        }
+    public void addTotalBlockedNanos(double totalBlockedNanos) {
+        this.totalBlockedNanos = NotAvailableAware.add(this.totalBlockedNanos, totalBlockedNanos);
     }
 
-    public void addTotalWaitedNanos(@Nullable Double totalWaitedNanos) {
-        if (totalWaitedNanos != null) {
-            this.totalWaitedNanos = NotAvailableAware.add(this.totalWaitedNanos, totalWaitedNanos);
-        } else {
-            this.totalWaitedNanos = NotAvailableAware.NA;
-        }
+    public void addTotalWaitedNanos(double totalWaitedNanos) {
+        this.totalWaitedNanos = NotAvailableAware.add(this.totalWaitedNanos, totalWaitedNanos);
     }
 
-    public void addTotalAllocatedBytes(@Nullable Double totalAllocatedBytes) {
-        if (totalAllocatedBytes != null) {
-            this.totalAllocatedBytes =
-                    NotAvailableAware.add(this.totalAllocatedBytes, totalAllocatedBytes);
-        } else {
-            this.totalAllocatedBytes = NotAvailableAware.NA;
-        }
+    public void addTotalAllocatedBytes(double totalAllocatedBytes) {
+        this.totalAllocatedBytes =
+                NotAvailableAware.add(this.totalAllocatedBytes, totalAllocatedBytes);
     }
 
-    public void addThreadStats(Aggregate. /*@Nullable*/ ThreadStats threadStats) {
-        if (threadStats == null) {
-            totalCpuNanos = NotAvailableAware.NA;
-            totalBlockedNanos = NotAvailableAware.NA;
-            totalWaitedNanos = NotAvailableAware.NA;
-            totalAllocatedBytes = NotAvailableAware.NA;
-            return;
-        }
-        if (threadStats.hasTotalCpuNanos()) {
-            totalCpuNanos =
-                    NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos().getValue());
-        } else {
-            totalCpuNanos = NotAvailableAware.NA;
-        }
-        if (threadStats.hasTotalBlockedNanos()) {
-            totalBlockedNanos = NotAvailableAware.add(totalBlockedNanos,
-                    threadStats.getTotalBlockedNanos().getValue());
-        } else {
-            totalBlockedNanos = NotAvailableAware.NA;
-        }
-        if (threadStats.hasTotalWaitedNanos()) {
-            totalWaitedNanos = NotAvailableAware.add(totalWaitedNanos,
-                    threadStats.getTotalWaitedNanos().getValue());
-        } else {
-            totalWaitedNanos = NotAvailableAware.NA;
-        }
-        if (threadStats.hasTotalAllocatedBytes()) {
-            totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
-                    threadStats.getTotalAllocatedBytes().getValue());
-        } else {
-            totalAllocatedBytes = NotAvailableAware.NA;
-        }
-        empty = false;
-    }
-
-    @JsonIgnore
-    public boolean isNA() {
-        if (empty) {
-            return true;
-        }
-        return NotAvailableAware.isNA(totalCpuNanos)
-                && NotAvailableAware.isNA(totalBlockedNanos)
-                && NotAvailableAware.isNA(totalWaitedNanos)
-                && NotAvailableAware.isNA(totalAllocatedBytes);
+    public void addThreadStats(Aggregate.ThreadStats threadStats) {
+        totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
+        totalBlockedNanos =
+                NotAvailableAware.add(totalBlockedNanos, threadStats.getTotalBlockedNanos());
+        totalWaitedNanos =
+                NotAvailableAware.add(totalWaitedNanos, threadStats.getTotalWaitedNanos());
+        totalAllocatedBytes =
+                NotAvailableAware.add(totalAllocatedBytes, threadStats.getTotalAllocatedBytes());
     }
 
     Aggregate.ThreadStats toProto() {
-        Aggregate.ThreadStats.Builder builder = Aggregate.ThreadStats.newBuilder();
-        if (!NotAvailableAware.isNA(totalCpuNanos)) {
-            builder.setTotalCpuNanos(toProto(totalCpuNanos));
-        }
-        if (!NotAvailableAware.isNA(totalBlockedNanos)) {
-            builder.setTotalBlockedNanos(toProto(totalBlockedNanos));
-        }
-        if (!NotAvailableAware.isNA(totalWaitedNanos)) {
-            builder.setTotalWaitedNanos(toProto(totalWaitedNanos));
-        }
-        if (!NotAvailableAware.isNA(totalAllocatedBytes)) {
-            builder.setTotalAllocatedBytes(toProto(totalAllocatedBytes));
-        }
-        return builder.build();
-    }
-
-    private static OptionalDouble toProto(double value) {
-        return OptionalDouble.newBuilder().setValue(value).build();
+        return Aggregate.ThreadStats.newBuilder()
+                .setTotalCpuNanos(totalCpuNanos)
+                .setTotalBlockedNanos(totalBlockedNanos)
+                .setTotalWaitedNanos(totalWaitedNanos)
+                .setTotalAllocatedBytes(totalAllocatedBytes)
+                .build();
     }
 }

@@ -41,8 +41,10 @@ message Trace {
     Timer main_thread_root_timer = 14;
     repeated Timer aux_thread_root_timer = 15;
     repeated Timer async_timer = 16; // async timers have no child timers
-    ThreadStats main_thread_stats = 17;
-    ThreadStats aux_thread_stats = 18;
+    OldThreadStats old_main_thread_stats = 17; // deprecated in 0.10.9
+    OldThreadStats old_aux_thread_stats = 18; // deprecated in 0.10.9
+    ThreadStats main_thread_stats = 27;
+    ThreadStats aux_thread_stats = 28;
     int32 entry_count = 19;
     bool entry_limit_exceeded = 20;
     int32 query_count = 25;
@@ -89,11 +91,19 @@ message Trace {
     repeated Timer child_timer = 6;
   }
 
-  message ThreadStats {
+  // deprecated in 0.10.9
+  message OldThreadStats {
     OptionalInt64 total_cpu_nanos = 1;
     OptionalInt64 total_blocked_nanos = 2;
     OptionalInt64 total_waited_nanos = 3;
     OptionalInt64 total_allocated_bytes = 4;
+  }
+
+  message ThreadStats {
+    sint64 total_cpu_nanos = 1; // -1 means N/A
+    sint64 total_blocked_nanos = 2; // -1 means N/A
+    sint64 total_waited_nanos = 3; // -1 means N/A
+    sint64 total_allocated_bytes = 4; // -1 means N/A
   }
 
   message Entry {

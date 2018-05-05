@@ -46,18 +46,18 @@ class AggregateMerging {
             mainThreadStats.addThreadStats(aggregate.mainThreadStats());
             auxThreadStats.addThreadStats(aggregate.auxThreadStats());
         }
-        ImmutableMergedAggregate.Builder mergedAggregate = ImmutableMergedAggregate.builder();
-        mergedAggregate.transactionCount(transactionCount);
-        mergedAggregate.mainThreadRootTimers(mainThreadRootTimers);
-        mergedAggregate.auxThreadRootTimers(auxThreadRootTimers);
-        mergedAggregate.asyncTimers(asyncTimers);
-        if (!mainThreadStats.isNA()) {
-            mergedAggregate.mainThreadStats(mainThreadStats);
+        ImmutableMergedAggregate.Builder builder = ImmutableMergedAggregate.builder()
+                .transactionCount(transactionCount)
+                .mainThreadRootTimers(mainThreadRootTimers)
+                .auxThreadRootTimers(auxThreadRootTimers)
+                .asyncTimers(asyncTimers);
+        if (!mainThreadRootTimers.isEmpty()) {
+            builder.mainThreadStats(mainThreadStats);
         }
-        if (!auxThreadStats.isNA()) {
-            mergedAggregate.auxThreadStats(auxThreadStats);
+        if (!auxThreadRootTimers.isEmpty()) {
+            builder.auxThreadStats(auxThreadStats);
         }
-        return mergedAggregate.build();
+        return builder.build();
     }
 
     private static void mergeRootTimers(List<Aggregate.Timer> toBeMergedRootTimers,

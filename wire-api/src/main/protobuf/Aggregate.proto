@@ -30,8 +30,10 @@ message Aggregate {
   repeated Timer main_thread_root_timer = 5;
   repeated Timer aux_thread_root_timer = 6;
   repeated Timer async_timer = 7; // async timers have no child timers
-  ThreadStats main_thread_stats = 8;
-  ThreadStats aux_thread_stats = 9;
+  OldThreadStats old_main_thread_stats = 8; // deprecated in 0.10.9
+  OldThreadStats old_aux_thread_stats = 9; // deprecated in 0.10.9
+  ThreadStats main_thread_stats = 17;
+  ThreadStats aux_thread_stats = 18;
   Histogram duration_nanos_histogram = 10; // histogram values are in nanoseconds with microsecond
                                            // precision
   repeated OldQueriesByType old_queries_by_type = 11; // deprecated in 0.10.6
@@ -58,11 +60,19 @@ message Aggregate {
     repeated Timer child_timer = 5;
   }
 
-  message ThreadStats {
+  // deprecated in 0.10.9
+  message OldThreadStats {
     OptionalDouble total_cpu_nanos = 1;
     OptionalDouble total_blocked_nanos = 2;
     OptionalDouble total_waited_nanos = 3;
     OptionalDouble total_allocated_bytes = 4;
+  }
+
+  message ThreadStats {
+    double total_cpu_nanos = 1; // -1 means N/A
+    double total_blocked_nanos = 2; // -1 means N/A
+    double total_waited_nanos = 3; // -1 means N/A
+    double total_allocated_bytes = 4; // -1 means N/A
   }
 
   // deprecated in 0.10.6
