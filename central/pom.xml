@@ -669,7 +669,7 @@
                 <entry>
                   <name>/usr/lib/glowroot-central/lib</name>
                   <collect>
-                    <from>target/${project.build.finalName}/WEB-INF/lib</from>
+                    <from>target/${project.build.finalName}-dist/glowroot-central/lib</from>
                   </collect>
                   <ruleset>gc-default</ruleset>
                 </entry>

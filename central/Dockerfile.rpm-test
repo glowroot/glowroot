@@ -8,6 +8,6 @@ EXPOSE 4000 8181
 
 CMD /usr/sbin/init
 
-# docker build -f Dockerfile.rpm-dist -t glowroot/glowroot-central/rpm .
+# docker build -f Dockerfile.rpm-test -t glowroot/glowroot-central/rpm .
 # docker run --name myglowroot --link mycassandra:cassandra --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -p 4000:4000 -p 8181:8181 -d glowroot/glowroot-central/rpm
 
