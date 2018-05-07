@@ -22,7 +22,6 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -38,7 +37,6 @@ import javax.xml.bind.DatatypeConverter;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -114,12 +112,8 @@ public class AlertingService {
     }
 
     public void checkForDeletedAlerts(String agentRollupId) throws Exception {
-        Set<AlertCondition> alertConditions = Sets.newHashSet();
-        for (AlertConfig alertConfig : getAlertConfigsLeniently(agentRollupId)) {
-            alertConditions.add(alertConfig.getCondition());
-        }
         for (OpenIncident openIncident : incidentRepository.readOpenIncidents(agentRollupId)) {
-            if (!alertConditions.contains(openIncident.condition())) {
+            if (isDeletedAlert(openIncident)) {
                 incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis());
             }
         }
@@ -180,7 +174,8 @@ public class AlertingService {
 
     private boolean isDeletedAlert(OpenIncident openIncident) throws Exception {
         for (AlertConfig alertConfig : getAlertConfigsLeniently(openIncident.agentRollupId())) {
-            if (alertConfig.getCondition().equals(openIncident.condition())) {
+            if (alertConfig.getCondition().equals(openIncident.condition())
+                    && alertConfig.getSeverity() == openIncident.severity()) {
                 return false;
             }
         }
