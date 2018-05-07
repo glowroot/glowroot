@@ -552,7 +552,7 @@
               <!-- Create glowroot user and group -->
               <beforeInstallation>
                 getent group  glowroot &gt; /dev/null || groupadd -r glowroot
-                getent passwd glowroot &gt; /dev/null || useradd  -g glowroot -M -r glowroot
+                getent passwd glowroot &gt; /dev/null || useradd  -g glowroot -M -r glowroot -d /var/run/glowroot-central
                 if [ $1 -eq 2 ] ; then systemctl stop glowroot-central.service; fi
               </beforeInstallation>
                 
