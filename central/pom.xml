@@ -667,6 +667,37 @@
                   <ruleset>gc-default</ruleset>
                 </entry>
                 <entry>
+                  <name>/usr/lib/glowroot-central/key.pem</name>
+                  <linkTo>/etc/glowroot-central/key.pem</linkTo>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <!-- Symlinks to missing key/cert files are treated as non-existing files by the JVM -->
+                <entry>
+                  <name>/usr/lib/glowroot-central/cert.pem</name>
+                  <linkTo>/etc/glowroot-central/cert.pem</linkTo>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central/grpc-key.pem</name>
+                  <linkTo>/etc/glowroot-central/grpc-key.pem</linkTo>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central/grpc-cert.pem</name>
+                  <linkTo>/etc/glowroot-central/grpc-cert.pem</linkTo>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central/ui-key.pem</name>
+                  <linkTo>/etc/glowroot-central/ui-key.pem</linkTo>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
+                  <name>/usr/lib/glowroot-central/ui-cert.pem</name>
+                  <linkTo>/etc/glowroot-central/ui-cert.pem</linkTo>
+                  <ruleset>gc-default</ruleset>
+                </entry>
+                <entry>
                   <name>/usr/lib/glowroot-central/lib</name>
                   <collect>
                     <from>target/${project.build.finalName}-dist/glowroot-central/lib</from>
