@@ -178,6 +178,14 @@
             <label ng-class="{'gt-label-disabled': page.permissions.jvm._}"
                    style="margin-left: 30px;">
               <input type="checkbox"
+                     ng-model="page.permissions.jvm.forceGC"
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Force GC
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.jvm._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
                      ng-model="page.permissions.jvm.mbeanTree"
                      ng-disabled="page.permissions.jvm._ || !layout.adminEdit">MBean tree
             </label>
@@ -466,6 +474,14 @@
               <input type="checkbox"
                      ng-model="page.permissions.jvm.heapHistogram"
                      ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Heap histogram
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.jvm._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.jvm.forceGC"
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Force GC
             </label>
           </div>
           <div class="checkbox">
@@ -805,6 +821,14 @@
               <input type="checkbox"
                      ng-model="permissionBlock.jvm.heapHistogram"
                      ng-disabled="permissionBlock.jvm._ || !layout.adminEdit">Heap histogram
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': permissionBlock.jvm._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="permissionBlock.jvm.forceGC"
+                     ng-disabled="permissionBlock.jvm._ || !layout.adminEdit">Force GC
             </label>
           </div>
           <div class="checkbox">

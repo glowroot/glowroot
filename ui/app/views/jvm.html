@@ -93,6 +93,12 @@
            ng-if="agentRollup.permissions.jvm.heapHistogram && !isAgentRollup() && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
+           gt-display="Force GC"
+           gt-url="jvm/force-gc{{agentQueryString()}}"
+           gt-active="currentUrl() === 'jvm/force-gc'"
+           ng-if="agentRollup.permissions.jvm.forceGC && !isAgentRollup() && !layout.offlineViewer">
+      </div>
+      <div gt-sidebar-item
            gt-display="MBean tree"
            gt-url="jvm/mbean-tree{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/mbean-tree'"

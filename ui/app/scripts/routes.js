@@ -389,10 +389,10 @@ glowroot.config([
       templateUrl: 'views/jvm/heap-histogram.html',
       controller: 'JvmHeapHistogramCtrl'
     });
-    $stateProvider.state('jvm.gc', {
-      url: '/gc',
-      templateUrl: 'views/jvm/gc.html',
-      controller: 'JvmGcCtrl'
+    $stateProvider.state('jvm.forceGC', {
+      url: '/force-gc',
+      templateUrl: 'views/jvm/force-gc.html',
+      controller: 'JvmForceGcCtrl'
     });
     $stateProvider.state('jvm.mbeanTree', {
       url: '/mbean-tree',

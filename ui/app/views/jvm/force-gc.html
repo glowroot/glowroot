@@ -1,5 +1,5 @@
 <!--
-  Copyright 2016 the original author or authors.
+  Copyright 2016-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -18,10 +18,13 @@
 <div ng-if="agentNotConnected" class="alert alert-danger">
   This feature is only available when the agent is running and connected
 </div>
-<div ng-if="loaded && !agentNotConnected">
+<div ng-if="explicitGcDisabled" class="alert alert-danger">
+  This feature is not available because the JVM is running with -XX:+DisableExplicitGC
+</div>
+<div ng-if="loaded && !agentNotConnected && !explicitGcDisabled">
   <div gt-button
-       gt-label="GC"
-       gt-click="gc(deferred)"
+       gt-label="Force GC"
+       gt-click="forceGC(deferred)"
        style="padding: 28px 0 0 20px;">
   </div>
 </div>

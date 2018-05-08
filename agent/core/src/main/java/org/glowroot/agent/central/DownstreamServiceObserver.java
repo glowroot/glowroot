@@ -50,8 +50,9 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExceptionResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExplicitGcDisabledResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ForceGcResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceResponse;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderResponse;
@@ -222,8 +223,11 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             case HEAP_HISTOGRAM_REQUEST:
                 heapHistogramAndRespond(request, responseObserver);
                 return;
-            case GC_REQUEST:
-                gcAndRespond(request, responseObserver);
+            case EXPLICIT_GC_DISABLED_REQUEST:
+                explicitGcDisabledAndRespond(request, responseObserver);
+                return;
+            case FORCE_GC_REQUEST:
+                forceGcAndRespond(request, responseObserver);
                 return;
             case MBEAN_DUMP_REQUEST:
                 mbeanDumpAndRespond(request, responseObserver);
@@ -432,10 +436,11 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 .build());
     }
 
-    private void gcAndRespond(CentralRequest request,
+    private void explicitGcDisabledAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        boolean disabled;
         try {
-            liveJvmService.gc("");
+            disabled = liveJvmService.isExplicitGcDisabled("");
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -443,7 +448,23 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         }
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
-                .setGcResponse(GcResponse.getDefaultInstance())
+                .setExplicitGcDisabledResponse(ExplicitGcDisabledResponse.newBuilder()
+                        .setDisabled(disabled))
+                .build());
+    }
+
+    private void forceGcAndRespond(CentralRequest request,
+            StreamObserver<AgentResponse> responseObserver) {
+        try {
+            liveJvmService.forceGC("");
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        responseObserver.onNext(AgentResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setForceGcResponse(ForceGcResponse.getDefaultInstance())
                 .build());
     }
 

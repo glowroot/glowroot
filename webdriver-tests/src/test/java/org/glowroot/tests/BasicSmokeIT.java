@@ -283,6 +283,9 @@ public class BasicSmokeIT extends WebDriverIT {
 
         jvmSidebar.getHeapHistogramLink().click();
 
+        jvmSidebar.getForceGcLink().click();
+        Utils.withWait(driver, By.xpath("//button[normalize-space()='Force GC']")).click();
+
         jvmSidebar.getMBeanTreeLink().click();
         List<WebElement> elements = new WebDriverWait(driver, 30).until(ExpectedConditions
                 .visibilityOfAllElementsLocatedBy(By.className("gt-mbean-unexpanded-content")));

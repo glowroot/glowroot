@@ -26,7 +26,8 @@ message CentralRequest {
     AvailableDiskSpaceRequest available_disk_space_request = 301;
     HeapDumpRequest heap_dump_request = 302;
     HeapHistogramRequest heap_histogram_request = 309;
-    GcRequest gc_request = 303;
+    ExplicitGcDisabledRequest explicit_gc_disabled_request = 311;
+    ForceGcRequest force_gc_request = 303;
     MBeanDumpRequest mbean_dump_request = 304;
     MatchingMBeanObjectNamesRequest matching_mbean_object_names_request = 305;
     MBeanMetaRequest mbean_meta_request = 306;
@@ -63,7 +64,8 @@ message AgentResponse {
     AvailableDiskSpaceResponse available_disk_space_response = 301;
     HeapDumpResponse heap_dump_response = 302;
     HeapHistogramResponse heap_histogram_response = 309;
-    GcResponse gc_response = 303;
+    ExplicitGcDisabledResponse explicit_gc_disabled_response = 311;
+    ForceGcResponse force_gc_response = 303;
     MBeanDumpResponse mbean_dump_response = 304;
     MatchingMBeanObjectNamesResponse matching_mbean_object_names_response = 305;
     MBeanMetaResponse mbean_meta_response = 306;
@@ -149,10 +151,17 @@ message HeapHistogramResponse {
   bool unavailable_due_to_running_in_ibm_jvm = 3;
 }
 
-message GcRequest {
+message ExplicitGcDisabledRequest {
 }
 
-message GcResponse {
+message ExplicitGcDisabledResponse {
+  bool disabled = 1;
+}
+
+message ForceGcRequest {
+}
+
+message ForceGcResponse {
 }
 
 message MBeanDumpRequest {

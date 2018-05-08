@@ -63,9 +63,10 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesReque
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExplicitGcDisabledRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ForceGcRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceResponse;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderRequest;
@@ -221,9 +222,16 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         return response.getHeapHistogram();
     }
 
-    void gc(String agentId) throws Exception {
+    boolean isExplicitGcDisabled(String agentId) throws Exception {
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setExplicitGcDisabledRequest(ExplicitGcDisabledRequest.getDefaultInstance())
+                .build());
+        return responseWrapper.getExplicitGcDisabledResponse().getDisabled();
+    }
+
+    void forceGC(String agentId) throws Exception {
         runOnCluster(agentId, CentralRequest.newBuilder()
-                .setGcRequest(GcRequest.getDefaultInstance())
+                .setForceGcRequest(ForceGcRequest.getDefaultInstance())
                 .build());
     }
 

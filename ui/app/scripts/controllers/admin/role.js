@@ -134,6 +134,8 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.jvm.heapDump = true;
       } else if (permission === 'agent:jvm:heapHistogram') {
         permissionBlock.jvm.heapHistogram = true;
+      } else if (permission === 'agent:jvm:forceGC') {
+        permissionBlock.jvm.forceGC = true;
       } else if (permission === 'agent:jvm:mbeanTree') {
         permissionBlock.jvm.mbeanTree = true;
       } else if (permission === 'agent:jvm:systemProperties') {
@@ -190,6 +192,7 @@ glowroot.controller('AdminRoleCtrl', [
         permissionsObj.jvm.threadDump = false;
         permissionsObj.jvm.heapDump = false;
         permissionsObj.jvm.heapHistogram = false;
+        permissionsObj.jvm.forceGC = false;
         permissionsObj.jvm.mbeanTree = false;
         permissionsObj.jvm.systemProperties = false;
         permissionsObj.jvm.environment = false;
@@ -284,6 +287,9 @@ glowroot.controller('AdminRoleCtrl', [
       }
       if (permissionsObj.jvm.heapHistogram) {
         permissions.push('agent:jvm:heapHistogram');
+      }
+      if (permissionsObj.jvm.forceGC) {
+        permissions.push('agent:jvm:forceGC');
       }
       if (permissionsObj.jvm.mbeanTree) {
         permissions.push('agent:jvm:mbeanTree');
@@ -423,6 +429,7 @@ glowroot.controller('AdminRoleCtrl', [
           threadDump: false,
           heapDump: false,
           heapHistogram: false,
+          forceGC: false,
           mbeanTree: false,
           systemProperties: false,
           environment: false

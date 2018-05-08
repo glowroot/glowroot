@@ -156,10 +156,24 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public void gc(String agentId) {
-        // using MemoryMXBean.gc() instead of System.gc() in hope that it will someday bypass
-        // -XX:+DisableExplicitGC (see https://bugs.openjdk.java.net/browse/JDK-6396411)
-        ManagementFactory.getMemoryMXBean().gc();
+    public boolean isExplicitGcDisabled(String agentId) throws Exception {
+        boolean disabled = false;
+        for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+            if (jvmArg.equals("-XX:+DisableExplicitGC")) {
+                disabled = true;
+            } else if (jvmArg.equals("-XX:-DisableExplicitGC")) {
+                disabled = false;
+            }
+        }
+        // last one wins
+        return disabled;
+    }
+
+    @Override
+    public void forceGC(String agentId) {
+        // MemoryMXBean.gc() also checks -XX:+DisableExplicitGC, so may as well call System.gc()
+        // (see https://bugs.openjdk.java.net/browse/JDK-6396411)
+        System.gc();
     }
 
     @Override

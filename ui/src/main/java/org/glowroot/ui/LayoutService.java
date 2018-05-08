@@ -311,7 +311,8 @@ class LayoutService {
                                 "agent:jvm:heapDump"))
                         .heapHistogram(authentication.isPermittedForAgentRollup(agentRollupId,
                                 "agent:jvm:heapHistogram"))
-                        .gc(authentication.isPermittedForAgentRollup(agentRollupId, "agent:jvm:gc"))
+                        .forceGC(authentication.isPermittedForAgentRollup(agentRollupId,
+                                "agent:jvm:forceGC"))
                         .mbeanTree(authentication.isPermittedForAgentRollup(agentRollupId,
                                 "agent:jvm:mbeanTree"))
                         .systemProperties(authentication.isPermittedForAgentRollup(agentRollupId,
@@ -479,7 +480,7 @@ class LayoutService {
         abstract boolean threadDump();
         abstract boolean heapDump();
         abstract boolean heapHistogram();
-        abstract boolean gc();
+        abstract boolean forceGC();
         abstract boolean mbeanTree();
         abstract boolean systemProperties();
         abstract boolean environment();
@@ -487,8 +488,8 @@ class LayoutService {
 
         private boolean hasSomeAccess() {
             // capabilities is not in sidebar, so not included here
-            return gauges() || threadDump() || heapDump() || heapHistogram() || gc() || mbeanTree()
-                    || systemProperties() || environment();
+            return gauges() || threadDump() || heapDump() || heapHistogram() || forceGC()
+                    || mbeanTree() || systemProperties() || environment();
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,20 @@
 
 /* global glowroot */
 
-glowroot.controller('JvmGcCtrl', [
+glowroot.controller('JvmForceGcCtrl', [
   '$scope',
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
 
-    $scope.$parent.heading = 'GC';
+    $scope.$parent.heading = 'Force GC';
 
     if ($scope.hideMainContent()) {
       return;
     }
 
-    $scope.gc = function (deferred) {
-      $http.post('backend/jvm/gc?agent-id=' + encodeURIComponent($scope.agentId))
+    $scope.forceGC = function (deferred) {
+      $http.post('backend/jvm/force-gc?agent-id=' + encodeURIComponent($scope.agentId))
           .then(function () {
             deferred.resolve('Success');
           }, function (response) {
@@ -37,13 +37,11 @@ glowroot.controller('JvmGcCtrl', [
           });
     };
 
-    $http.get('backend/jvm/gc-check-agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
+    $http.get('backend/jvm/explicit-gc-disabled?agent-id=' + encodeURIComponent($scope.agentId))
         .then(function (response) {
           $scope.loaded = true;
-          $scope.agentNotConnected = !response.data;
-          if ($scope.agentNotConnected) {
-            return;
-          }
+          $scope.agentNotConnected = response.data.agentNotConnected;
+          $scope.explicitGcDisabled = response.data.explicitGcDisabled;
         }, function (response) {
           httpErrors.handle(response, $scope);
         });

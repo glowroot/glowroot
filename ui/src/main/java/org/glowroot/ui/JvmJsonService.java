@@ -353,16 +353,22 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @POST(path = "/backend/jvm/gc", permission = "agent:jvm:gc")
-    void performGC(@BindAgentId String agentId) throws Exception {
+    @GET(path = "/backend/jvm/explicit-gc-disabled", permission = "agent:jvm:forceGC")
+    String explicitGcDisabled(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
-        liveJvmService.gc(agentId);
+        try {
+            boolean explicitGcDisabled = liveJvmService.isExplicitGcDisabled(agentId);
+            return "{\"explicitGcDisabled\":" + explicitGcDisabled + "}";
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"agentNotConnected\":true}";
+        }
     }
 
-    @GET(path = "/backend/jvm/gc-check-agent-connected", permission = "agent:jvm:gc")
-    String checkAgentConnected(@BindAgentId String agentId) throws Exception {
+    @POST(path = "/backend/jvm/force-gc", permission = "agent:jvm:forceGC")
+    void performGC(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
-        return Boolean.toString(liveJvmService.isAvailable(agentId));
+        liveJvmService.forceGC(agentId);
     }
 
     @GET(path = "/backend/jvm/mbean-tree", permission = "agent:jvm:mbeanTree")

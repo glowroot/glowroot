@@ -73,9 +73,15 @@ public class DownstreamServiceNotConnectedTest {
     }
 
     @Test
+    public void shouldThrowAgentNotConnectExceptionOnExplicitGcDisabled() throws Exception {
+        thrown.expect(AgentNotConnectedException.class);
+        downstreamService.isExplicitGcDisabled("a");
+    }
+
+    @Test
     public void shouldThrowAgentNotConnectExceptionOnGc() throws Exception {
         thrown.expect(AgentNotConnectedException.class);
-        downstreamService.gc("a");
+        downstreamService.forceGC("a");
     }
 
     @Test
