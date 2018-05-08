@@ -54,120 +54,120 @@ public class EjbRemoteIT {
     public void shouldCaptureARemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteARemoteBeanOne.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("ARemoteOne#one");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteOne.one()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteOne#one");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureARemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteARemoteBeanTwo.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("ARemoteTwo#two");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteTwo.two()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureA2RemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteA2RemoteBeanOne.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("ARemoteOne#one");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteOne.one()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteOne#one");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureA2RemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteA2RemoteBeanTwo.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("ARemoteTwo#two");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteTwo.two()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureA3RemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteA3RemoteBeanOne.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("ARemoteOne#one");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteOne.one()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteOne#one");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureA3RemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteA3RemoteBeanTwo.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("ARemoteTwo#two");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteTwo.two()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: ARemoteTwo#two");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$ARemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureBRemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteBRemoteBeanOne.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("BRemoteOne#one");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteOne.one()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteOne#one");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureBRemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteBRemoteBeanTwo.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("BRemoteTwo#two");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteTwo.two()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureB2RemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteB2RemoteBeanOne.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("BRemoteOne#one");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteOne.one()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteOne#one");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureB2RemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteB2RemoteBeanTwo.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("BRemoteTwo#two");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteTwo.two()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteTwo.two()");
     }
 
     @Test
     public void shouldCaptureB3RemoteBeanOne() throws Exception {
         Trace trace = container.execute(ExecuteB3RemoteBeanOne.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("BRemoteOne#one");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteOne.one()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteOne#one");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteOne.one()");
     }
 
     @Test
     public void shouldCaptureB3RemoteBeanTwo() throws Exception {
         Trace trace = container.execute(ExecuteB3RemoteBeanTwo.class);
         Trace.Header header = trace.getHeader();
-        assertThat(header.getTransactionType()).isEqualTo("EJB Remote");
-        assertThat(header.getTransactionName()).isEqualTo("BRemoteTwo#two");
-        assertThat(header.getHeadline())
-                .isEqualTo("org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteTwo.two()");
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteTwo.two()");
     }
 
     public static class ExecuteARemoteBeanOne implements AppUnderTest {
