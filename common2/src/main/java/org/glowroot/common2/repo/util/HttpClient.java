@@ -48,6 +48,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.resolver.NoopAddressResolverGroup;
 import io.netty.util.CharsetUtil;
+import io.netty.util.ReferenceCountUtil;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -192,11 +193,15 @@ public class HttpClient {
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            if (msg instanceof HttpResponse && msg instanceof HttpContent) {
-                responseStatus = ((HttpResponse) msg).status();
-                responseContent = ((HttpContent) msg).content().toString(CharsetUtil.UTF_8);
-            } else {
-                unexpectedErrorMessage = "Unexpected response message class: " + msg.getClass();
+            try {
+                if (msg instanceof HttpResponse && msg instanceof HttpContent) {
+                    responseStatus = ((HttpResponse) msg).status();
+                    responseContent = ((HttpContent) msg).content().toString(CharsetUtil.UTF_8);
+                } else {
+                    unexpectedErrorMessage = "Unexpected response message class: " + msg.getClass();
+                }
+            } finally {
+                ReferenceCountUtil.release(msg);
             }
         }
 
