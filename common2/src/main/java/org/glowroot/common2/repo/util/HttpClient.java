@@ -21,6 +21,7 @@ import java.net.SocketAddress;
 import java.net.URI;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Throwables;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -58,6 +59,7 @@ import org.glowroot.common2.config.HttpProxyConfig;
 import org.glowroot.common2.repo.ConfigRepository;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class HttpClient {
 
@@ -101,6 +103,9 @@ public class HttpClient {
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap bootstrap = new Bootstrap();
+            // TODO follow netty proxy support at https://github.com/netty/netty/issues/1133
+            final HttpProxyHandler httpProxyHandler =
+                    newHttpProxyHandlerIfNeeded(httpProxyConfig, passwordOverride);
             final HttpClientHandler handler = new HttpClientHandler();
             bootstrap.group(group)
                     .channel(NioSocketChannel.class)
@@ -108,7 +113,9 @@ public class HttpClient {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
-                            addProxyHandlerIfNeeded(p, httpProxyConfig, passwordOverride);
+                            if (httpProxyHandler != null) {
+                                p.addLast(httpProxyHandler);
+                            }
                             if (ssl) {
                                 SslContext sslContext = SslContextBuilder.forClient().build();
                                 p.addLast(sslContext.newHandler(ch.alloc(), host, port));
@@ -136,12 +143,16 @@ public class HttpClient {
             request.headers().set(HttpHeaderNames.HOST, host);
             request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
             Channel ch = bootstrap.connect(host, port).sync().channel();
+            if (httpProxyHandler != null) {
+                // this line is needed to capture and throw connection exception properly
+                httpProxyHandler.connectFuture().get();
+            }
             ch.writeAndFlush(request).get();
             ch.closeFuture().sync().get();
-
-            String unexpectedErrorMessage = handler.unexpectedErrorMessage;
-            if (unexpectedErrorMessage != null) {
-                throw new IOException(unexpectedErrorMessage);
+            Throwable exception = handler.exception;
+            if (exception != null) {
+                Throwables.propagateIfPossible(exception, Exception.class);
+                throw new Exception(exception);
             }
             HttpResponseStatus responseStatus = checkNotNull(handler.responseStatus);
             int statusCode = responseStatus.code();
@@ -152,24 +163,24 @@ public class HttpClient {
             }
             return checkNotNull(handler.responseContent);
         } finally {
-            group.shutdownGracefully().get();
+            group.shutdownGracefully(0, 10, SECONDS).get();
         }
     }
 
-    private void addProxyHandlerIfNeeded(ChannelPipeline pipeline, HttpProxyConfig httpProxyConfig,
+    private @Nullable HttpProxyHandler newHttpProxyHandlerIfNeeded(HttpProxyConfig httpProxyConfig,
             @Nullable String passwordOverride) throws Exception {
         String proxyHost = httpProxyConfig.host();
         if (proxyHost.isEmpty()) {
-            return;
+            return null;
         }
         int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
         SocketAddress proxyAddress = new InetSocketAddress(proxyHost, proxyPort);
         String username = httpProxyConfig.username();
         if (username.isEmpty()) {
-            pipeline.addLast(new HttpProxyHandler(proxyAddress));
+            return new HttpProxyHandler(proxyAddress);
         } else {
             String password = getPassword(httpProxyConfig, passwordOverride);
-            pipeline.addLast(new HttpProxyHandler(proxyAddress, username, password));
+            return new HttpProxyHandler(proxyAddress, username, password);
         }
     }
 
@@ -189,7 +200,7 @@ public class HttpClient {
 
         private volatile @MonotonicNonNull HttpResponseStatus responseStatus;
         private volatile @Nullable String responseContent;
-        private volatile @Nullable String unexpectedErrorMessage;
+        private volatile @Nullable Throwable exception;
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -198,7 +209,8 @@ public class HttpClient {
                     responseStatus = ((HttpResponse) msg).status();
                     responseContent = ((HttpContent) msg).content().toString(CharsetUtil.UTF_8);
                 } else {
-                    unexpectedErrorMessage = "Unexpected response message class: " + msg.getClass();
+                    exception =
+                            new Exception("Unexpected response message class: " + msg.getClass());
                 }
             } finally {
                 ReferenceCountUtil.release(msg);
@@ -207,9 +219,9 @@ public class HttpClient {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            logger.error(cause.getMessage(), cause);
-            unexpectedErrorMessage = cause.getMessage();
-            ctx.close().get();
+            logger.debug(cause.getMessage(), cause);
+            exception = cause;
+            ctx.close();
         }
     }
 
