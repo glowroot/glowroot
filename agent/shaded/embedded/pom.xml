@@ -273,13 +273,6 @@
             </option>
           </options>
         </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>net.sf.proguard</groupId>
-            <artifactId>proguard-base</artifactId>
-            <version>6.0.2</version>
-          </dependency>
-        </dependencies>
       </plugin>
     </plugins>
   </build>

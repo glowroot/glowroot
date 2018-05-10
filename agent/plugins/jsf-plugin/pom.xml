@@ -18,6 +18,7 @@
 
   <properties>
     <!-- instrumented libraries -->
+    <!-- JSF 2.3+ requires Java 8+ -->
     <faces.version>2.2.17</faces.version>
   </properties>
 
@@ -53,6 +54,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- javax.websocket.server.ServerContainer is needed by Glassfish JSF implementation -->
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-websocket</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- this is needed because logback classic 1.1.10+ contains
         META-INF/services/javax.servlet.ServletContainerInitializer which causes issues when running
         tests with embedded tomcat inside JavaagentContainer because logback is loaded in the
@@ -73,14 +80,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.sun.faces</groupId>
-      <artifactId>jsf-api</artifactId>
-      <version>${faces.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.faces</groupId>
-      <artifactId>jsf-impl</artifactId>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.faces</artifactId>
       <version>${faces.version}</version>
       <scope>test</scope>
     </dependency>

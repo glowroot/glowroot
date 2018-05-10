@@ -44,7 +44,7 @@ public class Grails {
         }
         run("3.2.0");
         run("3.2.1");
-        for (int i = 4; i <= 11; i++) {
+        for (int i = 4; i <= 12; i++) {
             run("3.2." + i);
         }
         run("3.3.0");

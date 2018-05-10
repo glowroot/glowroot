@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,10 @@ class EventLoopGroups {
                         .build());
         NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(1, executor);
         nioEventLoopGroup.terminationFuture()
-                .addListener(new GenericFutureListener<Future<Object>>() {
+                .addListener(new GenericFutureListener<Future</*@Nullable*/ Object>>() {
                     @Override
-                    public void operationComplete(Future<Object> future) throws Exception {
+                    public void operationComplete(Future</*@Nullable*/ Object> future)
+                            throws Exception {
                         executor.shutdown();
                         if (!executor.awaitTermination(10, SECONDS)) {
                             throw new IllegalStateException("Could not terminate executor");
