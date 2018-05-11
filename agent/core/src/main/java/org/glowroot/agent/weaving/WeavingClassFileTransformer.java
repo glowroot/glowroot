@@ -103,7 +103,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     private byte /*@Nullable*/ [] transformInternal(@Nullable ClassLoader loader, String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
-        if (ignoreClass(className)) {
+        if (ignoreClass(className, loader)) {
             return null;
         }
         if (loader == null && !weaveBootstrapClassLoader) {
@@ -117,7 +117,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         return weaver.weave(bytes, className, classBeingRedefined, codeSource, loader);
     }
 
-    private static boolean ignoreClass(String className) {
+    private static boolean ignoreClass(String className, @Nullable ClassLoader loader) {
         if (!ALLOW_WEAVING_AGENT_CLASSES && isGlowrootAgentClass(className)) {
             // don't weave glowroot core classes, including shaded classes like h2 jdbc driver
             return true;
@@ -134,6 +134,11 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         if (className.startsWith("com/sun/proxy/$Proxy") || className.startsWith("$Proxy")) {
             // optimization, especially for jdbc plugin to avoid weaving proxy wrappers when dealing
             // with connection pools
+            return true;
+        }
+        if (className.equals("load/C4") && loader != null && loader.getClass().getName()
+                .equals("oracle.classloader.util.ClassLoadEnvironment$DependencyLoader")) {
+            // special case to avoid weaving error when running OC4J
             return true;
         }
         return false;
