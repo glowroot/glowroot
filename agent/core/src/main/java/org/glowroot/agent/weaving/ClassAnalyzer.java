@@ -95,13 +95,14 @@ class ClassAnalyzer {
                 .superName(superClassName)
                 .addAllInterfaceNames(interfaceNames);
         boolean ejbRemote = false;
+        boolean ejbStateless = false;
         for (String annotation : thinClass.annotations()) {
             if (annotation.equals("Ljavax/ejb/Remote;")) {
                 ejbRemote = true;
-                break;
+            } else if (annotation.equals("Ljavax/ejb/Stateless;")) {
+                ejbStateless = true;
             }
         }
-        analyzedClassBuilder.ejbRemote(ejbRemote);
 
         ParseContext parseContext = ImmutableParseContext.of(className, codeSource);
         List<AnalyzedClass> interfaceAnalyzedHierarchy = Lists.newArrayList();
@@ -136,17 +137,26 @@ class ClassAnalyzer {
         analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
         analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
 
-        Set<String> ejbRemoteInterfaces = getEjbRemoteInterfaces(thinClass, superAnalyzedClasses);
-        if (ejbRemoteInterfaces.isEmpty()) {
-            this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
-        } else if (loader == null) {
-            logger.warn("instrumenting @javax.ejb.Remote not currently supported in bootstrap class"
-                    + " loader: {}", className);
-            this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
+        if ((ejbRemote || ejbStateless) && !intf) {
+            Set<String> ejbRemoteInterfaces =
+                    getEjbRemoteInterfaces(thinClass, superAnalyzedClasses);
+            if (ejbRemoteInterfaces.isEmpty()) {
+                this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
+                analyzedClassBuilder.ejbRemote(ejbRemote);
+            } else if (loader == null) {
+                logger.warn("instrumenting @javax.ejb.Remote not currently supported in bootstrap"
+                        + " class loader: {}", className);
+                this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
+                analyzedClassBuilder.ejbRemote(false);
+            } else {
+                List<AnalyzedClass> ejbHackedSuperAnalyzedClasses =
+                        hack(thinClass, loader, superAnalyzedClasses, ejbRemoteInterfaces);
+                this.superAnalyzedClasses = ImmutableList.copyOf(ejbHackedSuperAnalyzedClasses);
+                analyzedClassBuilder.ejbRemote(true);
+            }
         } else {
-            List<AnalyzedClass> ejbHackedSuperAnalyzedClasses =
-                    hack(thinClass, loader, superAnalyzedClasses, ejbRemoteInterfaces);
-            this.superAnalyzedClasses = ImmutableList.copyOf(ejbHackedSuperAnalyzedClasses);
+            this.superAnalyzedClasses = ImmutableList.copyOf(superAnalyzedClasses);
+            analyzedClassBuilder.ejbRemote(ejbRemote);
         }
         Set<String> superClassNames = Sets.newHashSet();
         superClassNames.add(className);
@@ -518,9 +528,20 @@ class ClassAnalyzer {
 
     private static List<AnalyzedClass> hack(ThinClass thinClass, ClassLoader loader,
             List<AnalyzedClass> superAnalyzedClasses, Set<String> ejbRemoteInterfaces) {
-        List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
+        Map<String, List<String>> superInterfaceNames = Maps.newHashMap();
+        for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
+            if (analyzedClass.isInterface()) {
+                superInterfaceNames.put(analyzedClass.name(), analyzedClass.interfaceNames());
+            }
+        }
+        Map<String, String> interfaceNamesToInstrument = Maps.newHashMap();
         for (String ejbRemoteInterface : ejbRemoteInterfaces) {
-            String shortClassName = ejbRemoteInterface;
+            addToInterfaceNamesToInstrument(ejbRemoteInterface, superInterfaceNames,
+                    interfaceNamesToInstrument, ejbRemoteInterface);
+        }
+        List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
+        for (Map.Entry<String, String> entry : interfaceNamesToInstrument.entrySet()) {
+            String shortClassName = entry.getValue();
             int index = shortClassName.lastIndexOf('.');
             if (index != -1) {
                 shortClassName = shortClassName.substring(index + 1);
@@ -530,7 +551,7 @@ class ClassAnalyzer {
                 shortClassName = shortClassName.substring(index + 1);
             }
             instrumentationConfigs.add(ImmutableInstrumentationConfig.builder()
-                    .className(ejbRemoteInterface)
+                    .className(entry.getKey())
                     .subTypeRestriction(ClassNames.fromInternalName(thinClass.name()))
                     .methodName("*")
                     .addMethodParameterTypes("..")
@@ -538,7 +559,7 @@ class ClassAnalyzer {
                     .transactionType("Background")
                     .transactionNameTemplate("EJB remote: " + shortClassName + "#{{methodName}}")
                     .traceEntryMessageTemplate(
-                            "EJB remote: " + ejbRemoteInterface + ".{{methodName}}()")
+                            "EJB remote: " + entry.getValue() + ".{{methodName}}()")
                     .timerName("ejb remote")
                     .build());
         }
@@ -574,6 +595,19 @@ class ClassAnalyzer {
             }
         }
         return ejbHackedSuperAnalyzedClasses;
+    }
+
+    private static void addToInterfaceNamesToInstrument(String interfaceName,
+            Map<String, List<String>> superInterfaceNamesMap,
+            Map<String, String> interfaceNamesToInstrument, String ejbRemoteInterface) {
+        interfaceNamesToInstrument.put(interfaceName, ejbRemoteInterface);
+        List<String> superInterfaceNames = superInterfaceNamesMap.get(interfaceName);
+        if (superInterfaceNames != null) {
+            for (String superInterfaceName : superInterfaceNames) {
+                addToInterfaceNamesToInstrument(superInterfaceName, superInterfaceNamesMap,
+                        interfaceNamesToInstrument, ejbRemoteInterface);
+            }
+        }
     }
 
     private static boolean hasSuperAdvice(List<AnalyzedClass> superAnalyzedClasses) {

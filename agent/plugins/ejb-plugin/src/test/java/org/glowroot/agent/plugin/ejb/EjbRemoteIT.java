@@ -16,6 +16,7 @@
 package org.glowroot.agent.plugin.ejb;
 
 import javax.ejb.Remote;
+import javax.ejb.Stateless;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -170,6 +171,16 @@ public class EjbRemoteIT {
                 "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$BRemoteTwo.two()");
     }
 
+    @Test
+    public void shouldCaptureCRemoteSessionBeanOne() throws Exception {
+        Trace trace = container.execute(ExecuteCRemoteSessionBeanOne.class);
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("EJB remote: CRemoteSessionOne#one");
+        assertThat(header.getHeadline()).isEqualTo(
+                "EJB remote: org.glowroot.agent.plugin.ejb.EjbRemoteIT$CRemoteSessionOne.one()");
+    }
+
     public static class ExecuteARemoteBeanOne implements AppUnderTest {
         @Override
         public void executeApp() throws Exception {
@@ -254,6 +265,13 @@ public class EjbRemoteIT {
         }
     }
 
+    public static class ExecuteCRemoteSessionBeanOne implements AppUnderTest {
+        @Override
+        public void executeApp() throws Exception {
+            new CRemoteSessionBean().one();
+        }
+    }
+
     @Remote({ARemoteOne.class, ARemoteTwo.class})
     public static class ARemoteBean implements ARemoteOne, ARemoteTwo {
         @Override
@@ -322,5 +340,18 @@ public class EjbRemoteIT {
     @Remote
     public interface BRemoteTwo {
         void two(int x);
+    }
+
+    @Stateless
+    public static class CRemoteSessionBean implements CRemoteSessionOne {
+        @Override
+        public void one() {}
+    }
+
+    @Remote
+    public interface CRemoteSessionOne extends One {}
+
+    public interface One {
+        void one();
     }
 }
