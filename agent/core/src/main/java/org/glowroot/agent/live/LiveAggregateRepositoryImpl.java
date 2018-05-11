@@ -17,6 +17,7 @@ package org.glowroot.agent.live;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -91,6 +92,11 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
             revisedTo = Math.min(revisedTo, intervalCollector.getCaptureTime() - 1);
         }
         return revisedTo;
+    }
+
+    @Override
+    public Set<String> getTransactionTypes(String agentId) {
+        return aggregator.getTransactionTypes();
     }
 
     @Override

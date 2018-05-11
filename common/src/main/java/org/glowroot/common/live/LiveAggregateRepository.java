@@ -17,7 +17,9 @@ package org.glowroot.common.live;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
+import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -43,6 +45,8 @@ public interface LiveAggregateRepository {
 
     long mergeInTransactionErrorSummaries(String agentId, OverallQuery query,
             TransactionErrorSummaryCollector collector);
+
+    Set<String> getTransactionTypes(String agentId);
 
     @Nullable
     LiveResult<OverviewAggregate> getOverviewAggregates(String agentId, TransactionQuery query);
@@ -162,6 +166,11 @@ public interface LiveAggregateRepository {
         public long mergeInTransactionErrorSummaries(String agentId, OverallQuery query,
                 TransactionErrorSummaryCollector collector) {
             return query.to();
+        }
+
+        @Override
+        public Set<String> getTransactionTypes(String agentId) {
+            return Sets.newHashSet();
         }
 
         @Override

@@ -17,6 +17,7 @@ package org.glowroot.agent.impl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -226,6 +227,14 @@ public class AggregateIntervalCollector {
                 return;
             }
             aggregateCollector.mergeAuxThreadProfilesInto(collector);
+        }
+    }
+
+    // TODO report checker framework issue that occurs without this suppression
+    @SuppressWarnings("return.type.incompatible")
+    Set<String> getTransactionTypes() {
+        synchronized (lock) {
+            return typeCollectors.keySet();
         }
     }
 

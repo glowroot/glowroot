@@ -30,6 +30,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.ConfigDefaults;
+import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.common2.repo.AgentRollupRepository;
@@ -56,11 +57,13 @@ class LayoutService {
     private final TransactionTypeRepository transactionTypeRepository;
     private final TraceAttributeNameRepository traceAttributeNameRepository;
     private final AgentRollupRepository agentRollupRepository;
+    private final LiveAggregateRepository liveAggregateRepository;
 
     LayoutService(boolean central, boolean offlineViewer, String version,
             ConfigRepository configRepository, TransactionTypeRepository transactionTypeRepository,
             TraceAttributeNameRepository traceAttributeNameRepository,
-            AgentRollupRepository agentRollupRepository) {
+            AgentRollupRepository agentRollupRepository,
+            LiveAggregateRepository liveAggregateRepository) {
         this.central = central;
         this.offlineViewer = offlineViewer;
         this.version = version;
@@ -68,6 +71,7 @@ class LayoutService {
         this.transactionTypeRepository = transactionTypeRepository;
         this.traceAttributeNameRepository = traceAttributeNameRepository;
         this.agentRollupRepository = agentRollupRepository;
+        this.liveAggregateRepository = liveAggregateRepository;
     }
 
     String getLayoutJson(Authentication authentication) throws Exception {
@@ -109,12 +113,15 @@ class LayoutService {
                 .lastDisplayPart(Iterables.getLast(agentRollupDisplayParts))
                 .permissions(permissions)
                 .build();
-        return buildAgentRollupLayout(agentRollup, transactionTypeRepository.read(agentRollupId),
+        Set<String> transactionTypes = Sets.newHashSet();
+        transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
+        transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
+        return buildAgentRollupLayout(agentRollup, transactionTypes,
                 traceAttributeNameRepository.read(agentRollupId));
     }
 
     private @Nullable AgentRollupLayout buildAgentRollupLayout(FilteredAgentRollup agentRollup,
-            List<String> storedTransactionTypes, Map<String, List<String>> traceAttributeNames)
+            Set<String> transactionTypes, Map<String, List<String>> traceAttributeNames)
             throws Exception {
         UiConfig uiConfig;
         try {
@@ -128,13 +135,13 @@ class LayoutService {
         }
         Permissions permissions = agentRollup.permissions();
         String defaultTransactionType = uiConfig.getDefaultTransactionType();
-        Set<String> transactionTypes = Sets.newTreeSet(storedTransactionTypes);
-        transactionTypes.add(defaultTransactionType);
+        Set<String> transactionTypesWithDefault = Sets.newTreeSet(transactionTypes);
+        transactionTypesWithDefault.add(defaultTransactionType);
         return ImmutableAgentRollupLayout.builder()
                 .id(agentRollup.id())
                 .display(agentRollup.display())
                 .permissions(permissions)
-                .addAllTransactionTypes(transactionTypes)
+                .addAllTransactionTypes(transactionTypesWithDefault)
                 .putAllTraceAttributeNames(traceAttributeNames)
                 .defaultTransactionType(defaultTransactionType)
                 .defaultPercentiles(uiConfig.getDefaultPercentileList())

@@ -16,6 +16,7 @@
 package org.glowroot.agent.impl;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -23,6 +24,7 @@ import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +89,15 @@ public class Aggregator {
                         configService.getAdvancedConfig().maxQueryAggregates(),
                         configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
         processingExecutor.execute(new TransactionProcessor());
+    }
+
+    public Set<String> getTransactionTypes() {
+        Set<String> transactionTypes = Sets.newHashSet();
+        transactionTypes.addAll(activeIntervalCollector.getTransactionTypes());
+        for (AggregateIntervalCollector intervalCollector : pendingIntervalCollectors) {
+            transactionTypes.addAll(intervalCollector.getTransactionTypes());
+        }
+        return transactionTypes;
     }
 
     // from is non-inclusive
