@@ -1,3 +1,4 @@
 **
 !docker-entrypoint.sh
 !target/glowroot-central-*-dist.zip
+!target/glowroot-central-*.rpm

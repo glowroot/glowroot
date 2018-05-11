@@ -602,6 +602,11 @@
             </lifecycleMappingMetadata>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>de.dentrassi.maven</groupId>
+          <artifactId>rpm</artifactId>
+          <version>0.10.2</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
