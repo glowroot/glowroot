@@ -105,8 +105,7 @@ public class CentralModule {
     private final UiModule uiModule;
 
     public static CentralModule create() throws Exception {
-        CodeSource codeSource = CentralModule.class.getProtectionDomain().getCodeSource();
-        return create(getCentralDir(codeSource));
+        return create(getCentralDir());
     }
 
     @VisibleForTesting
@@ -130,9 +129,9 @@ public class CentralModule {
         SyntheticMonitorService syntheticMonitorService = null;
         UiModule uiModule = null;
         try {
+            Directories directories = new Directories(centralDir);
             // init logger as early as possible
-            File logDir = getLogDir(centralDir);
-            initLogging(centralDir, logDir);
+            initLogging(directories.getConfDir(), directories.getLogDir());
             Clock clock = Clock.systemClock();
             Ticker ticker = Ticker.systemTicker();
             String version = Version.getVersion(CentralModule.class);
@@ -144,13 +143,12 @@ public class CentralModule {
                     extra = ", this can be changed by adding the JVM arg -Dglowroot.central.dir=..."
                             + " to your servlet container startup";
                 }
-                startupLogger.info(
-                        "Glowroot home: {} (location for glowroot-central.properties file{})",
-                        centralDir.getAbsolutePath(), extra);
+                startupLogger.info("Glowroot home: {}", centralDir.getAbsolutePath(), extra);
             }
 
-            CentralConfiguration centralConfig = getCentralConfiguration(centralDir);
-            clusterManager = ClusterManager.create(centralDir, centralConfig.jgroupsProperties());
+            CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
+            clusterManager = ClusterManager.create(directories.getConfDir(),
+                    centralConfig.jgroupsProperties());
             session = connect(centralConfig);
             cluster = session.getCluster();
 
@@ -162,7 +160,7 @@ public class CentralModule {
                 schemaUpgrade.upgrade();
             }
             if (schemaUpgrade.reloadCentralConfiguration()) {
-                centralConfig = getCentralConfiguration(centralDir);
+                centralConfig = getCentralConfiguration(directories.getConfDir());
             }
             CentralRepoModule repos = new CentralRepoModule(clusterManager, session,
                     centralConfig.cassandraSymmetricEncryptionKey(), clock);
@@ -188,11 +186,11 @@ public class CentralModule {
                     alertingService, heartbeatAlertingService);
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(),
-                    centralConfig.grpcHttpPort(), centralConfig.grpcHttpsPort(), centralDir,
-                    repos.getAgentConfigDao(), repos.getAgentDao(), repos.getEnvironmentDao(),
-                    repos.getHeartbeatDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
-                    repos.getTraceDao(), repos.getV09AgentRollupDao(), centralAlertingService,
-                    clusterManager, clock, version);
+                    centralConfig.grpcHttpPort(), centralConfig.grpcHttpsPort(),
+                    directories.getConfDir(), repos.getAgentConfigDao(), repos.getAgentDao(),
+                    repos.getEnvironmentDao(), repos.getHeartbeatDao(), repos.getAggregateDao(),
+                    repos.getGaugeValueDao(), repos.getTraceDao(), repos.getV09AgentRollupDao(),
+                    centralAlertingService, clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
                     repos.getAgentDao(), repos.getAgentConfigDao(), downstreamService, clock);
@@ -222,8 +220,8 @@ public class CentralModule {
                     .port(centralConfig.uiPort())
                     .https(centralConfig.uiHttps())
                     .contextPath(centralConfig.uiContextPath())
-                    .confDir(centralDir)
-                    .logDir(logDir)
+                    .confDir(directories.getConfDir())
+                    .logDir(directories.getLogDir())
                     .logFileNamePattern(Pattern.compile("glowroot-central.*\\.log"))
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
@@ -350,35 +348,15 @@ public class CentralModule {
         }
     }
 
-    private static File getCentralDir(@Nullable CodeSource codeSource) throws URISyntaxException {
-        if (codeSource == null) {
-            // this should only happen under test
-            return new File(".");
-        }
-        File codeSourceFile = new File(codeSource.getLocation().toURI());
-        if (codeSourceFile.getName().endsWith(".jar")) {
-            File centralDir = codeSourceFile.getParentFile();
-            if (centralDir == null) {
-                return new File(".");
-            } else {
-                return centralDir;
-            }
-        } else {
-            // this should only happen under test
-            return new File(".");
-        }
-    }
-
     static void createSchema() throws Exception {
-        File centralDir = new File(".");
-        File logDir = getLogDir(centralDir);
-        initLogging(centralDir, logDir);
+        Directories directories = new Directories(getCentralDir());
+        initLogging(directories.getConfDir(), directories.getLogDir());
         String version = Version.getVersion(CentralModule.class);
         startupLogger.info("running create-schema command");
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
 
-        CentralConfiguration centralConfig = getCentralConfiguration(centralDir);
+        CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
         Session session = null;
         Cluster cluster = null;
         try {
@@ -405,9 +383,8 @@ public class CentralModule {
     }
 
     static void runCommand(String commandName, List<String> args) throws Exception {
-        File centralDir = new File(".");
-        File logDir = getLogDir(centralDir);
-        initLogging(centralDir, logDir);
+        Directories directories = new Directories(getCentralDir());
+        initLogging(directories.getConfDir(), directories.getLogDir());
         Command command;
         if (commandName.equals("setup-admin-user")) {
             if (args.size() != 2) {
@@ -445,7 +422,7 @@ public class CentralModule {
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
 
-        CentralConfiguration centralConfig = getCentralConfiguration(centralDir);
+        CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
         Session session = null;
         Cluster cluster = null;
         boolean success;
@@ -484,9 +461,8 @@ public class CentralModule {
         }
     }
 
-    private static CentralConfiguration getCentralConfiguration(File centralDir)
-            throws IOException {
-        Map<String, String> properties = getPropertiesFromConfigFile(centralDir);
+    private static CentralConfiguration getCentralConfiguration(File confDir) throws IOException {
+        Map<String, String> properties = getPropertiesFromConfigFile(confDir);
         properties = overlayAnySystemProperties(properties);
         ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
         String cassandraContactPoints = properties.get("glowroot.cassandra.contactPoints");
@@ -583,12 +559,12 @@ public class CentralModule {
         return builder.build();
     }
 
-    private static Map<String, String> getPropertiesFromConfigFile(File centralDir)
+    private static Map<String, String> getPropertiesFromConfigFile(File confDir)
             throws IOException {
-        File propFile = new File(centralDir, "glowroot-central.properties");
+        File propFile = new File(confDir, "glowroot-central.properties");
         if (!propFile.exists()) {
             // upgrade from 0.9.5 to 0.9.6
-            File oldPropFile = new File(centralDir, "glowroot-server.properties");
+            File oldPropFile = new File(confDir, "glowroot-server.properties");
             if (!oldPropFile.exists()) {
                 return ImmutableMap.of();
             }
@@ -605,7 +581,7 @@ public class CentralModule {
         String jgroupsConfigurationFile = props.getProperty("jgroups.configurationFile");
         if (("default-jgroups-udp.xml".equals(jgroupsConfigurationFile)
                 || "default-jgroups-tcp.xml".equals(jgroupsConfigurationFile))
-                && !new File(centralDir, jgroupsConfigurationFile).exists()) {
+                && !new File(confDir, jgroupsConfigurationFile).exists()) {
             // using one of the included jgroups xml files prior to 0.9.16
             upgradePropertyNames.put("jgroups.configurationFile=default-jgroups-udp.xml",
                     "jgroups.configurationFile=jgroups-udp.xml");
@@ -633,7 +609,7 @@ public class CentralModule {
             props = PropertiesFiles.load(propFile);
         }
         // upgrade from 0.9.15 to 0.9.16
-        File secretFile = new File(centralDir, "secret");
+        File secretFile = new File(confDir, "secret");
         if (secretFile.exists()) {
             String existingValue = props.getProperty("cassandra.symmetricEncryptionKey");
             if (Strings.isNullOrEmpty(existingValue)) {
@@ -787,6 +763,26 @@ public class CentralModule {
         return cassandraVersion;
     }
 
+    private static File getCentralDir() throws URISyntaxException {
+        CodeSource codeSource = CentralModule.class.getProtectionDomain().getCodeSource();
+        if (codeSource == null) {
+            // this should only happen under test
+            return new File(".");
+        }
+        File codeSourceFile = new File(codeSource.getLocation().toURI());
+        if (codeSourceFile.getName().endsWith(".jar")) {
+            File centralDir = codeSourceFile.getParentFile();
+            if (centralDir == null) {
+                return new File(".");
+            } else {
+                return centralDir;
+            }
+        } else {
+            // this should only happen under test
+            return new File(".");
+        }
+    }
+
     // TODO report checker framework issue that occurs without this suppression
     @EnsuresNonNull("startupLogger")
     @SuppressWarnings("contracts.postcondition.not.satisfied")
@@ -810,20 +806,6 @@ public class CentralModule {
         // install jul-to-slf4j bridge for guava/grpc/protobuf which log to jul
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
-    }
-
-    private static File getLogDir(File centralDir) throws IOException {
-        String explicitLogDirPath = System.getProperty("glowroot.log.dir");
-        if (Strings.isNullOrEmpty(explicitLogDirPath)) {
-            return new File(centralDir, "logs");
-        }
-        File explicitLogDir = new File(explicitLogDirPath);
-        explicitLogDir.mkdirs();
-        if (!explicitLogDir.isDirectory()) {
-            throw new IOException(
-                    "Could not create log directory: " + explicitLogDir.getAbsolutePath());
-        }
-        return explicitLogDir;
     }
 
     @Value.Immutable

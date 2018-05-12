@@ -50,7 +50,7 @@ class GrpcServer {
     private final @Nullable Server httpsServer;
 
     GrpcServer(String bindAddress, @Nullable Integer httpPort, @Nullable Integer httpsPort,
-            File centralDir, AgentConfigDao agentConfigDao, AgentDao agentDao,
+            File confDir, AgentConfigDao agentConfigDao, AgentDao agentDao,
             EnvironmentDao environmentDao, HeartbeatDao heartbeatDao, AggregateDao aggregateDao,
             GaugeValueDao gaugeValueDao, TraceDao traceDao, V09AgentRollupDao v09AgentRollupDao,
             CentralAlertingService centralAlertingService, ClusterManager clusterManager,
@@ -66,7 +66,7 @@ class GrpcServer {
         if (httpPort == null) {
             httpServer = null;
         } else {
-            httpServer = startServer(bindAddress, httpPort, false, centralDir, downstreamService,
+            httpServer = startServer(bindAddress, httpPort, false, confDir, downstreamService,
                     collectorService);
             if (httpsPort == null) {
                 startupLogger.info("gRPC listening on {}:{}", bindAddress, httpPort);
@@ -77,21 +77,21 @@ class GrpcServer {
         if (httpsPort == null) {
             httpsServer = null;
         } else {
-            httpsServer = startServer(bindAddress, httpsPort, true, centralDir, downstreamService,
+            httpsServer = startServer(bindAddress, httpsPort, true, confDir, downstreamService,
                     collectorService);
             startupLogger.info("gRPC listening on {}:{} (HTTPS)", bindAddress, httpsPort);
         }
     }
 
-    private static Server startServer(String bindAddress, int port, boolean https, File centralDir,
+    private static Server startServer(String bindAddress, int port, boolean https, File confDir,
             DownstreamServiceImpl downstreamService, CollectorServiceImpl collectorService)
             throws IOException {
         NettyServerBuilder builder =
                 NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port));
         if (https) {
             builder.useTransportSecurity(
-                    getHttpsConfFile(centralDir, "grpc-cert.pem", "cert.pem", "certificate"),
-                    getHttpsConfFile(centralDir, "grpc-key.pem", "key.pem", "private key"));
+                    getHttpsConfFile(confDir, "grpc-cert.pem", "cert.pem", "certificate"),
+                    getHttpsConfFile(confDir, "grpc-key.pem", "key.pem", "private key"));
         }
         return builder.addService(collectorService.bindService())
                 .addService(downstreamService.bindService())

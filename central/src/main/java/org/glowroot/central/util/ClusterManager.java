@@ -55,7 +55,7 @@ public abstract class ClusterManager {
         return new NonClusterManager();
     }
 
-    public static ClusterManager create(File centralDir, Map<String, String> jgroupsProperties) {
+    public static ClusterManager create(File confDir, Map<String, String> jgroupsProperties) {
         Map<String, String> properties = Maps.newHashMap(jgroupsProperties);
         String jgroupsConfigurationFile = properties.remove("jgroups.configurationFile");
         if (jgroupsConfigurationFile != null) {
@@ -65,7 +65,7 @@ public abstract class ClusterManager {
                 properties.put("jgroups.initialNodes",
                         Pattern.compile(":([0-9]+)").matcher(initialNodes).replaceAll("[$1]"));
             }
-            return new ClusterManagerImpl(centralDir, jgroupsConfigurationFile, properties);
+            return new ClusterManagerImpl(confDir, jgroupsConfigurationFile, properties);
         } else {
             return new NonClusterManager();
         }
@@ -86,12 +86,12 @@ public abstract class ClusterManager {
 
         private final EmbeddedCacheManager cacheManager;
 
-        private ClusterManagerImpl(File centralDir, String jgroupsConfigurationFile,
+        private ClusterManagerImpl(File confDir, String jgroupsConfigurationFile,
                 Map<String, String> jgroupsProperties) {
             GlobalConfiguration configuration = new GlobalConfigurationBuilder()
                     .transport().defaultTransport()
                     .addProperty("configurationFile",
-                            getConfigurationFilePropertyValue(centralDir, jgroupsConfigurationFile))
+                            getConfigurationFilePropertyValue(confDir, jgroupsConfigurationFile))
                     .build();
             cacheManager = doWithSystemProperties(jgroupsProperties,
                     () -> new DefaultCacheManager(configuration));
@@ -135,13 +135,13 @@ public abstract class ClusterManager {
             Thread.sleep(1000);
         }
 
-        private static String getConfigurationFilePropertyValue(File centralDir,
+        private static String getConfigurationFilePropertyValue(File confDir,
                 String jgroupsConfigurationFile) {
             File file = new File(jgroupsConfigurationFile);
             if (file.isAbsolute()) {
                 return jgroupsConfigurationFile;
             }
-            file = new File(centralDir, jgroupsConfigurationFile);
+            file = new File(confDir, jgroupsConfigurationFile);
             if (file.exists()) {
                 return file.getAbsolutePath();
             }
