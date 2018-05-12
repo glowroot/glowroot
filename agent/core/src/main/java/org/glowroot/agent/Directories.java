@@ -84,10 +84,6 @@ public class Directories {
             tmpDir = lazyDefaultBaseDir.getSubDir("tmp");
         }
 
-        mkdirs(confDir);
-        mkdirs(logDir);
-        mkdirs(tmpDir);
-
         this.confDir = confDir;
         this.logDir = logDir;
         this.tmpDir = tmpDir;
@@ -206,7 +202,7 @@ public class Directories {
     }
 
     private static @Nullable File getAgentDir(String shortName, Properties props,
-            @Nullable String agentId) {
+            @Nullable String agentId) throws IOException {
         String dirPath = System.getProperty("glowroot." + shortName + ".dir");
         if (dirPath == null || dirPath.isEmpty()) {
             dirPath = props.getProperty(shortName + ".dir");
@@ -216,9 +212,9 @@ public class Directories {
         }
         File dir = new File(dirPath);
         if (agentId == null || agentId.isEmpty()) {
-            return dir;
+            return mkdirs(dir);
         }
-        return new File(dir, makeSafeDirName(agentId));
+        return mkdirs(new File(dir, makeSafeDirName(agentId)));
     }
 
     @VisibleForTesting
@@ -243,11 +239,12 @@ public class Directories {
         return safeName.toString();
     }
 
-    private static void mkdirs(File dir) throws IOException {
+    private static File mkdirs(File dir) throws IOException {
         dir.mkdirs();
         if (!dir.isDirectory()) {
             throw new IOException("Could not create directory: " + dir.getAbsolutePath());
         }
+        return dir;
     }
 
     private static class LazyDefaultBaseDir {
@@ -270,7 +267,7 @@ public class Directories {
         }
 
         private File getSubDir(String name) throws IOException {
-            return new File(get(), name);
+            return mkdirs(new File(get(), name));
         }
 
         private static File getBaseDir(File glowrootDir, @Nullable String agentId)
@@ -280,12 +277,7 @@ public class Directories {
             }
             // "agent-" prefix is needed to ensure uniqueness
             // (and to be visibly different from tmp and plugins directories)
-            File baseDir = new File(glowrootDir, "agent-" + makeSafeDirName(agentId));
-            baseDir.mkdir();
-            if (!baseDir.isDirectory()) {
-                throw new IOException("Could not create directory: " + baseDir.getAbsolutePath());
-            }
-            return baseDir;
+            return mkdirs(new File(glowrootDir, "agent-" + makeSafeDirName(agentId)));
         }
     }
 }
