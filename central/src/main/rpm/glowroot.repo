@@ -1,5 +1,5 @@
 [glowroot]
 name=Glowroot
 baseurl=https://glowroot.org/yum
-gpgcheck=0
+gpgkey=http://glowroot.org/yum/RPM-GPG-KEY-${gpg.keyId}
 enabled=1

@@ -13,7 +13,7 @@ git diff --cached --exit-code > /dev/null
 
 if [[ $? != 0 ]]; then
   git diff --cached
-  
+
   echo -n "Proceed? [y/N] "
   read -n 1 proceed
   echo
@@ -35,15 +35,30 @@ set -e
 
 base_dir=$(dirname $0)/..
 
-echo -n "release version: "
-read release_version
+if [ -z "$release_version" ]
+then
+  echo -n "release version: "
+  read release_version
+fi
 
-echo -n "built by: "
-read built_by
+if [ -z "$built_by" ]
+then
+  echo -n "built by: "
+  read built_by
+fi
 
-echo -n "Enter GPG passphrase: "
-read -s gpg_passphrase
-echo
+if [ -z "$gpg_keyid" ]
+then
+  echo -n "GPG key ID: "
+  read gpg_keyid
+fi
+
+if [ -z "$gpg_passphrase" ]
+then
+  echo -n "GPG passphrase: "
+  read -s gpg_passphrase
+  echo
+fi
 
 
 bower_snapshot_dependencies=$(grep -e "trask.*#[0-9a-f]\{40\}" $base_dir/ui/bower.json || true)
@@ -101,9 +116,11 @@ mvn clean install -pl :glowroot-agent,:glowroot-central -am \
                   -Pjavadoc \
                   -DskipTests
 
+# gpg.keyId is needed for the rpm signing maven plugin
 USERNAME=$built_by mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                     -Pjavadoc \
                                     -Prelease \
                                     -Dglowroot.build.commit=$commit \
                                     -DskipTests \
+                                    -Dgpg.keyId=$gpg_keyid \
                                     -Dgpg.passphrase=$gpg_passphrase
