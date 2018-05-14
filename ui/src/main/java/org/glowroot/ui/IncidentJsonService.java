@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Locale;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
@@ -66,7 +69,9 @@ class IncidentJsonService {
         ImmutableIncidentResponse.Builder response = ImmutableIncidentResponse.builder();
         // seems better to read all incidents and then filter by permission, instead of reading
         // individually for every agentRollupId that user has permission to read
-        List<OpenIncident> openIncidents = incidentRepository.readAllOpenIncidents();
+        List<OpenIncident> openIncidents =
+                new BySeverityOrdering().compound(new ByOpenTimeOrdering())
+                        .sortedCopy(incidentRepository.readAllOpenIncidents());
         for (OpenIncident openIncident : openIncidents) {
             if (authentication.isPermittedForAgentRollup(openIncident.agentRollupId(),
                     "agent:incident")) {
@@ -112,6 +117,20 @@ class IncidentJsonService {
     private static String toString(AlertSeverity alertSeverity) {
         String name = alertSeverity.name();
         return name.substring(0, 1) + name.substring(1).toLowerCase(Locale.ENGLISH);
+    }
+
+    private static class BySeverityOrdering extends Ordering<OpenIncident> {
+        @Override
+        public int compare(OpenIncident left, OpenIncident right) {
+            return Ints.compare(left.severity().getNumber(), right.severity().getNumber());
+        }
+    }
+
+    private static class ByOpenTimeOrdering extends Ordering<OpenIncident> {
+        @Override
+        public int compare(OpenIncident left, OpenIncident right) {
+            return Longs.compare(left.openTime(), right.openTime());
+        }
     }
 
     @Value.Immutable
