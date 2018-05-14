@@ -1,0 +1,5 @@
+[glowroot]
+name=Glowroot
+baseurl=https://glowroot.org/yum
+gpgcheck=0
+enabled=1
