@@ -15,7 +15,7 @@ service CollectorService {
   // deprecated in 0.9.5, replaced by collectAggregateStream
   rpc collectAggregates(OldAggregateMessage) returns (AggregateResponseMessage);
   rpc collectAggregateStream(stream AggregateStreamMessage) returns (AggregateResponseMessage);
-  rpc collectGaugeValues(GaugeValueMessage) returns (EmptyMessage);
+  rpc collectGaugeValues(GaugeValueMessage) returns (GaugeValueResponseMessage);
   // deprecated in 0.9.5, replaced by collectTraceStream
   rpc collectTrace(OldTraceMessage) returns (EmptyMessage);
   rpc collectTraceStream(stream TraceStreamMessage) returns (EmptyMessage);
@@ -60,6 +60,10 @@ message GaugeValueMessage {
   string agent_id = 1;
   repeated GaugeValue gauge_values = 2;
   bool post_v09 = 3;
+}
+
+message GaugeValueResponseMessage {
+  bool resend_init = 1;
 }
 
 message OldTraceMessage {

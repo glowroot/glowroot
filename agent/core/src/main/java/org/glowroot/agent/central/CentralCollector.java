@@ -26,12 +26,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import io.grpc.stub.StreamObserver;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.central.CentralConnection.GrpcCall;
 import org.glowroot.agent.collector.Collector;
+import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
@@ -47,6 +49,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -70,19 +73,21 @@ public class CentralCollector implements Collector {
 
     private final String agentId;
     private final String collectorAddress;
+    private final ConfigService configService;
     private final CentralConnection centralConnection;
     private final CollectorServiceStub collectorServiceStub;
     private final DownstreamServiceObserver downstreamServiceObserver;
 
     private final SharedQueryTextLimiter sharedQueryTextLimiter = new SharedQueryTextLimiter();
 
+    private volatile @MonotonicNonNull Environment environment;
     private volatile int nextAggregateDelayMillis;
 
     public CentralCollector(Map<String, String> properties, String collectorAddress,
             @Nullable String collectorAuthority, File confDir, @Nullable File sharedConfDir,
             LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
-            LiveTraceRepositoryImpl liveTraceRepository, AgentConfigUpdater agentConfigUpdater)
-            throws Exception {
+            LiveTraceRepositoryImpl liveTraceRepository, AgentConfigUpdater agentConfigUpdater,
+            ConfigService configService) throws Exception {
 
         String agentId = properties.get("glowroot.agent.id");
         if (Strings.isNullOrEmpty(agentId)) {
@@ -98,6 +103,7 @@ public class CentralCollector implements Collector {
         }
         this.agentId = agentId;
         this.collectorAddress = collectorAddress;
+        this.configService = configService;
 
         startupLogger.info("agent id: {}", agentId);
 
@@ -112,7 +118,7 @@ public class CentralCollector implements Collector {
     }
 
     @Override
-    public void init(File confDir, @Nullable File sharedConfDir, Environment environment,
+    public void init(File confDir, @Nullable File sharedConfDir, final Environment environment,
             AgentConfig agentConfig, final AgentConfigUpdater agentConfigUpdater) {
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setAgentId(agentId)
@@ -126,6 +132,7 @@ public class CentralCollector implements Collector {
             }
             @Override
             void doWithResponse(final InitResponse response) {
+                CentralCollector.this.environment = environment;
                 // don't need to suppress sending this log message to the central collector because
                 // startup logger info messages are never sent to the central collector
                 startupLogger.info("connected to the central collector {}, version {}",
@@ -156,10 +163,27 @@ public class CentralCollector implements Collector {
                 .addAllGaugeValues(gaugeValues)
                 .setPostV09(true)
                 .build();
-        centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
+        centralConnection.callWithAFewRetries(new GrpcCall<GaugeValueResponseMessage>() {
             @Override
-            public void call(StreamObserver<EmptyMessage> responseObserver) {
+            public void call(StreamObserver<GaugeValueResponseMessage> responseObserver) {
                 collectorServiceStub.collectGaugeValues(gaugeValueMessage, responseObserver);
+            }
+            @Override
+            public void doWithResponse(GaugeValueResponseMessage response) {
+                if (response.getResendInit() && environment != null) {
+                    final InitMessage initMessage = InitMessage.newBuilder()
+                            .setAgentId(agentId)
+                            .setEnvironment(environment)
+                            .setAgentConfig(configService.getAgentConfig())
+                            .build();
+                    // only once, since resendInit will continue to be sent back until it succeeds
+                    centralConnection.callOnce(new GrpcCall<InitResponse>() {
+                        @Override
+                        void call(StreamObserver<InitResponse> responseObserver) {
+                            collectorServiceStub.collectInit(initMessage, responseObserver);
+                        }
+                    });
+                }
             }
         });
     }

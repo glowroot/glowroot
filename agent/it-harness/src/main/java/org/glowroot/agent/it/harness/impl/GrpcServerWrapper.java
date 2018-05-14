@@ -47,6 +47,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateResponseM
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
@@ -184,7 +185,10 @@ class GrpcServerWrapper {
 
         @Override
         public void collectGaugeValues(GaugeValueMessage request,
-                StreamObserver<EmptyMessage> responseObserver) {}
+                StreamObserver<GaugeValueResponseMessage> responseObserver) {
+            responseObserver.onNext(GaugeValueResponseMessage.getDefaultInstance());
+            responseObserver.onCompleted();
+        }
 
         @Override
         public StreamObserver<TraceStreamMessage> collectTraceStream(

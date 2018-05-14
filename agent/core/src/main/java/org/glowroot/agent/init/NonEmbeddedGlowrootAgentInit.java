@@ -58,9 +58,6 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     private final @Nullable String collectorAuthority;
     private final @Nullable Class<? extends Collector> customCollectorClass;
 
-    private volatile @MonotonicNonNull PluginCache pluginCache;
-    private volatile @MonotonicNonNull ConfigService configService;
-    private volatile @MonotonicNonNull CollectorProxy collectorProxy;
     private volatile @MonotonicNonNull AgentModule agentModule;
     private volatile @MonotonicNonNull CentralCollector centralCollector;
 
@@ -90,10 +87,11 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
         // need to perform jrebel workaround prior to loading any jackson classes
         JRebelWorkaround.perform();
-        pluginCache = PluginCache.create(pluginsDir, false);
-        configService = ConfigService.create(confDir, pluginCache.pluginDescriptors());
+        final PluginCache pluginCache = PluginCache.create(pluginsDir, false);
+        final ConfigService configService =
+                ConfigService.create(confDir, pluginCache.pluginDescriptors());
 
-        collectorProxy = new CollectorProxy();
+        final CollectorProxy collectorProxy = new CollectorProxy();
 
         CollectorLogbackAppender collectorLogbackAppender =
                 new CollectorLogbackAppender(collectorProxy);
@@ -108,9 +106,6 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             @Override
             public void run() throws Exception {
                 // TODO report checker framework issue that occurs without checkNotNull
-                checkNotNull(pluginCache);
-                checkNotNull(configService);
-                checkNotNull(collectorProxy);
                 checkNotNull(agentModule);
                 ScheduledExecutorService backgroundExecutor = Executors.newScheduledThreadPool(2,
                         ThreadFactories.create("Glowroot-Background-%d"));
@@ -136,7 +131,8 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                             checkNotNull(collectorAddress), collectorAuthority, confDir,
                             sharedConfDir, agentModule.getLiveJvmService(),
                             agentModule.getLiveWeavingService(),
-                            agentModule.getLiveTraceRepository(), agentConfigUpdater);
+                            agentModule.getLiveTraceRepository(), agentConfigUpdater,
+                            configService);
                     if (collectorProxyConstructor == null) {
                         collector = centralCollector;
                     } else {
@@ -147,8 +143,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 }
                 collectorProxy.setInstance(collector);
                 collector.init(confDir, sharedConfDir,
-                        EnvironmentCreator.create(glowrootVersion,
-                                agentModule.getConfigService().getJvmConfig()),
+                        EnvironmentCreator.create(glowrootVersion, configService.getJvmConfig()),
                         configService.getAgentConfig(), agentConfigUpdater);
             }
         };

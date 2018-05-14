@@ -211,8 +211,7 @@ public class AgentConfigDao {
         throw new OptimisticLockException();
     }
 
-    @Nullable
-    AgentConfig read(String agentRollupId) throws Exception {
+    public @Nullable AgentConfig read(String agentRollupId) throws Exception {
         return agentConfigCache.get(agentRollupId).orNull();
     }
 

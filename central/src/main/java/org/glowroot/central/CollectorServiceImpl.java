@@ -55,6 +55,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMes
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -195,7 +196,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             traceHeadline = "Collect gauge values: {{0.agentId}}", timer = "gauges")
     @Override
     public void collectGaugeValues(GaugeValueMessage request,
-            StreamObserver<EmptyMessage> responseObserver) {
+            StreamObserver<GaugeValueResponseMessage> responseObserver) {
         throttledCollectGaugeValues(request, responseObserver);
     }
 
@@ -264,7 +265,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     }
 
     private void throttledCollectGaugeValues(GaugeValueMessage request,
-            StreamObserver<EmptyMessage> responseObserver) {
+            StreamObserver<GaugeValueResponseMessage> responseObserver) {
         throttle(request.getAgentId(), request.getPostV09(), responseObserver, new Runnable() {
             @Override
             public void run() {
@@ -349,7 +350,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     }
 
     private void collectGaugeValuesUnderThrottle(GaugeValueMessage request,
-            StreamObserver<EmptyMessage> responseObserver) {
+            StreamObserver<GaugeValueResponseMessage> responseObserver) {
         String postV09AgentId;
         try {
             postV09AgentId = grpcCommon.getAgentId(request.getAgentId(), request.getPostV09());
@@ -394,7 +395,17 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             // probably shutdown requested
             logger.debug(e.getMessage(), e);
         }
-        responseObserver.onNext(EmptyMessage.getDefaultInstance());
+        boolean resendInit;
+        try {
+            resendInit = agentConfigDao.read(postV09AgentId) == null;
+        } catch (Throwable t) {
+            // log as error, but not worth failing for this
+            logger.error("{} - {}", getDisplayForLogging(postV09AgentId), t.getMessage(), t);
+            resendInit = false;
+        }
+        responseObserver.onNext(GaugeValueResponseMessage.newBuilder()
+                .setResendInit(resendInit)
+                .build());
         responseObserver.onCompleted();
     }
 

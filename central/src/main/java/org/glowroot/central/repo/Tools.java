@@ -46,6 +46,8 @@ public class Tools {
 
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
+    // agent_config and environment are needed to support agents prior to 0.10.10 which don't
+    // re-send that data when requested
     private static final Set<String> keepTableNames = ImmutableSet.of("schema_version",
             "central_config", "agent_config", "user", "role", "environment", "v09_agent_rollup");
 
