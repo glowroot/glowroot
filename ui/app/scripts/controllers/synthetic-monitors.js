@@ -54,14 +54,11 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     };
 
     $scope.buildQueryObjectForChartRange = function (last) {
-      return $scope.buildQueryObject(last);
+      return buildQueryObject(last);
     };
 
-    $scope.buildQueryObject = function (last) {
+    function buildQueryObject (last) {
       var query = {};
-      if (last === undefined) {
-        last = $scope.range.last;
-      }
       if ($scope.layout.central) {
         var agentId = $location.search()['agent-id'];
         if (agentId) {
@@ -82,14 +79,11 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       if (!last) {
         query.from = $scope.range.chartFrom;
         query.to = $scope.range.chartTo;
-        delete query.last;
       } else if (last !== 4 * 60 * 60 * 1000) {
         query.last = last;
-        delete query.from;
-        delete query.to;
       }
       return query;
-    };
+    }
 
     $scope.hideMainContent = function () {
       return !$scope.agentRollupId && !$scope.agentId;
@@ -101,8 +95,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     }
 
     function watchListener(autoRefresh) {
-      var query = $scope.buildQueryObject(true);
-      $location.search(query);
+      $location.search(buildQueryObject($scope.range.last));
       if ($scope.syntheticMonitorIds.length) {
         refreshData(autoRefresh);
       } else {
