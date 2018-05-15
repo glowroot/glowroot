@@ -1,5 +1,5 @@
 <!--
-  Copyright 2017 the original author or authors.
+  Copyright 2017-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -47,17 +47,20 @@
         <thead>
         <th style="width: 105px;">Severity</th>
         <th style="width: 110px;">Duration</th>
-        <th style="width: 160px;" ng-if="layout.central">Agent</th>
+        <th style="width: 180px;" ng-if="layout.central">Agent</th>
         <th>Condition</th>
         </thead>
         <tbody>
         <tr ng-repeat="incident in openIncidents"
             class="gt-red"
-            style="font-weight: bold; font-size: 16px;">
+            style="font-weight: 600; font-size: 16px;">
           <td>{{incident.severity}}</td>
           <td>{{incident.durationMillis | gtDuration}}</td>
           <td ng-if="layout.central">{{incident.agentRollupDisplay}}</td>
-          <td>{{incident.display}}</td>
+          <td>
+            <a ng-if="incident.href" ng-href="{{incident.href}}">{{incident.display}}</a>
+            <span ng-if="!incident.href">{{incident.display}}</span>
+          </td>
         </tr>
         </tbody>
       </table>
@@ -82,7 +85,7 @@
         <th style="width: 105px;">Severity</th>
         <th style="width: 220px;">Resolved</th>
         <th style="width: 110px;">Duration</th>
-        <th style="width: 160px;" ng-if="layout.central">Agent</th>
+        <th style="width: 180px;" ng-if="layout.central">Agent</th>
         <th>Condition</th>
         </thead>
         <tbody>
@@ -92,7 +95,10 @@
           <td>{{incident.resolveTime | date:'medium'}}</td>
           <td>{{incident.durationMillis | gtDuration}}</td>
           <td ng-if="layout.central">{{incident.agentRollupDisplay}}</td>
-          <td>{{incident.display}}</td>
+          <td>
+            <a ng-if="incident.href" ng-href="{{incident.href}}">{{incident.display}}</a>
+            <span ng-if="!incident.href">{{incident.display}}</span>
+          </td>
         </tr>
         </tbody>
       </table>

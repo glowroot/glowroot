@@ -34,6 +34,9 @@ import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common2.repo.IncidentRepository.ResolvedIncident;
 import org.glowroot.ui.HttpSessionManager.Authentication;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -90,7 +93,7 @@ class IncidentJsonService {
     }
 
     private DisplayedIncident createDisplayedIncident(OpenIncident incident) throws Exception {
-        return ImmutableDisplayedIncident.builder()
+        ImmutableDisplayedIncident.Builder builder = ImmutableDisplayedIncident.builder()
                 .agentRollupDisplay(
                         agentRollupRepository.readAgentRollupDisplay(incident.agentRollupId()))
                 .openTime(incident.openTime())
@@ -98,11 +101,13 @@ class IncidentJsonService {
                 .severity(toString(incident.severity()))
                 .display(AlertConfigJsonService.getConditionDisplay(incident.agentRollupId(),
                         incident.condition(), configRepository))
-                .build();
+                .agentRollupId(incident.agentRollupId());
+        setConditionFields(builder, incident.condition());
+        return builder.build();
     }
 
     private DisplayedIncident createDisplayedIncident(ResolvedIncident incident) throws Exception {
-        return ImmutableDisplayedIncident.builder()
+        ImmutableDisplayedIncident.Builder builder = ImmutableDisplayedIncident.builder()
                 .agentRollupDisplay(
                         agentRollupRepository.readAgentRollupDisplay(incident.agentRollupId()))
                 .openTime(incident.openTime())
@@ -111,7 +116,37 @@ class IncidentJsonService {
                 .severity(toString(incident.severity()))
                 .display(AlertConfigJsonService.getConditionDisplay(incident.agentRollupId(),
                         incident.condition(), configRepository))
-                .build();
+                .agentRollupId(incident.agentRollupId());
+        setConditionFields(builder, incident.condition());
+        return builder.build();
+    }
+
+    private static void setConditionFields(ImmutableDisplayedIncident.Builder builder,
+            AlertCondition condition) {
+        AlertCondition.ValCase conditionType = condition.getValCase();
+        if (conditionType == AlertCondition.ValCase.METRIC_CONDITION) {
+            MetricCondition metricCondition = condition.getMetricCondition();
+            builder.conditionType("metric")
+                    .metric(metricCondition.getMetric())
+                    .transactionType(metricCondition.getTransactionType())
+                    .transactionName(metricCondition.getTransactionName())
+                    .timePeriodSeconds(metricCondition.getTimePeriodSeconds());
+            if (metricCondition.hasPercentile()) {
+                builder.percentile(metricCondition.getPercentile().getValue());
+            }
+        } else if (conditionType == AlertCondition.ValCase.SYNTHETIC_MONITOR_CONDITION) {
+            SyntheticMonitorCondition syntheticMonitorCondition =
+                    condition.getSyntheticMonitorCondition();
+            builder.conditionType("synthetic-monitor")
+                    .syntheticMonitorId(syntheticMonitorCondition.getSyntheticMonitorId())
+                    .thresholdMillis(syntheticMonitorCondition.getThresholdMillis());
+        } else if (conditionType == AlertCondition.ValCase.HEARTBEAT_CONDITION) {
+            builder.conditionType("heartbeat")
+                    .timePeriodSeconds(condition.getHeartbeatCondition().getTimePeriodSeconds());
+        } else {
+            throw new IllegalStateException(
+                    "Unexpected alert condition type: " + conditionType);
+        }
     }
 
     private static String toString(AlertSeverity alertSeverity) {
@@ -142,6 +177,26 @@ class IncidentJsonService {
         Long resolveTime();
         String severity();
         String display();
+        // these rest are used to create drilldown href
+        String agentRollupId();
+        String conditionType();
+        // metric fields
+        @Nullable
+        String metric();
+        @Nullable
+        String transactionType();
+        @Nullable
+        String transactionName();
+        @Nullable
+        Double percentile();
+        // synthetic monitor fields
+        @Nullable
+        String syntheticMonitorId();
+        @Nullable
+        Integer thresholdMillis();
+        // common to metric and heartbeat
+        @Nullable
+        Integer timePeriodSeconds();
     }
 
     @Value.Immutable
