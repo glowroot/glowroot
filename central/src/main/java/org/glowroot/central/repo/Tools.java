@@ -47,8 +47,7 @@ public class Tools {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private static final Set<String> keepTableNames = ImmutableSet.of("schema_version",
-            "central_config", "agent_config", "user", "role", "agent", "environment",
-            "v09_agent_rollup");
+            "central_config", "agent_config", "user", "role", "environment", "v09_agent_rollup");
 
     private final Session session;
     private final CentralRepoModule repos;
