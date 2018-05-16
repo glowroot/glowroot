@@ -64,7 +64,10 @@ class UserDao {
         deletePS = session.prepare("delete from user where username = ?");
 
         if (createAnonymousUser) {
-            BoundStatement boundStatement = insertIfNotExistsPS.bind();
+            // don't use "if not exists" here since it's not needed and has more chance to fail,
+            // leaving the schema in a bad state (with the user table created, but no anonymous
+            // user)
+            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
             boundStatement.setString(i++, "anonymous");
             boundStatement.setBool(i++, false);

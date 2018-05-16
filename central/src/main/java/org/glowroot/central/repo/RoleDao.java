@@ -69,7 +69,10 @@ class RoleDao {
         readOnePS = session.prepare("select name, permissions from role where name = ?");
 
         if (createAnonymousRole) {
-            BoundStatement boundStatement = insertIfNotExistsPS.bind();
+            // don't use "if not exists" here since it's not needed and has more chance to fail,
+            // leaving the schema in a bad state (with the role table created, but no Administrator
+            // role)
+            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
             boundStatement.setString(i++, "Administrator");
             boundStatement.setSet(i++,
