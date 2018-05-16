@@ -30,12 +30,14 @@
                 data-live-search="true"
                 data-style="btn-flat"
                 id="agentRollupDropdown">
-          <option ng-repeat="agentRollup in agentRollups"
-                  data-href="{{agentRollupUrl(agentRollup.id)}}"
-                  data-tokens="{{agentRollup.display}}"
-                  value="{{agentRollup.id}}"
-                  ng-disabled="agentRollup.disabled">
-            {{agentRollup.indentedDisplay}}
+          <option ng-repeat="item in agentRollups track by item.id"
+                  data-href="{{agentRollupUrl(item.id)}}"
+                  data-tokens="{{item.display}}"
+                  value="{{item.id}}"
+                  title="{{agentRollup.display}}"
+                  ng-disabled="item.disabled"
+                  ng-selected="item.id == agentRollup.id">
+            {{item.indentedDisplay}}
           </option>
           <option disabled
                   class="gt-agent-rollup-dropdown-message hide"

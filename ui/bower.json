@@ -8,7 +8,7 @@
     "angular-ui-router": "1.0.15",
     "angular-ui-select": "trask/angular-ui-select#glowroot-0.10.0",
     "bootstrap": "3.3.7",
-    "bootstrap-select": "trask/bootstrap-select#glowroot-0.9.25",
+    "bootstrap-select": "trask/bootstrap-select#59272cc5d390fba99c4d35aa6d3e9178477ffc8f",
     "clipboard": "trask/clipboard.js#glowroot-0.9.25",
     "codemirror": "5.37.0",
     "d3-flame-graph": "1.0.11",
