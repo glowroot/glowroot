@@ -131,18 +131,6 @@ public class AlertingService {
             String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
             long endTime) throws Exception {
         long startTime = endTime - SECONDS.toMillis(metricCondition.getTimePeriodSeconds());
-        if (hasMinTransactionCount(metricCondition.getMetric())) {
-            long minTransactionCount = metricCondition.getMinTransactionCount();
-            if (minTransactionCount != 0) {
-                long transactionCount = metricService.getTransactionCount(agentRollupId,
-                        metricCondition.getTransactionType(),
-                        Strings.emptyToNull(metricCondition.getTransactionName()), startTime,
-                        endTime);
-                if (transactionCount < minTransactionCount) {
-                    return;
-                }
-            }
-        }
         Number value =
                 metricService.getMetricValue(agentRollupId, metricCondition, startTime, endTime);
         if (value == null) {
@@ -164,6 +152,19 @@ public class AlertingService {
             sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
                     metricCondition, endTime, true);
         } else if (openIncident == null && currentlyTriggered) {
+            // don't open if min transaction count is not met
+            if (hasMinTransactionCount(metricCondition.getMetric())) {
+                long minTransactionCount = metricCondition.getMinTransactionCount();
+                if (minTransactionCount != 0) {
+                    long transactionCount = metricService.getTransactionCount(agentRollupId,
+                            metricCondition.getTransactionType(),
+                            Strings.emptyToNull(metricCondition.getTransactionName()), startTime,
+                            endTime);
+                    if (transactionCount < minTransactionCount) {
+                        return;
+                    }
+                }
+            }
             // the start time for the incident is the end time of the interval evaluated above
             incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
                     alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
