@@ -257,13 +257,18 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       var dataSeries;
       var scale;
       var grouping;
+      var cpuLoad = false;
       for (i = 0; i < data.length; i++) {
         dataSeries = data[i];
         updateYvalMap(dataSeries.name, dataSeries.data);
         if (dataSeries.data.length) {
           // set negative data to zero after putting real value into yval map
           setNegativeDataToZero(dataSeries);
-          if (needScale) {
+          if (dataSeries.name === 'java.lang:type=OperatingSystem:ProcessCpuLoad'
+              || dataSeries.name === 'java.lang:type=OperatingSystem:SystemCpuLoad') {
+            scale = 100;
+            cpuLoad = true;
+          } else if (needScale) {
             scale = getPointsScale(dataSeries.data);
           } else if (convertBytesToMB) {
             scale = 1 / (1024 * 1024);
@@ -299,6 +304,11 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         }
       }
       updateThePlotData(data);
+      if (cpuLoad) {
+        chartState.plot.getAxes().yaxis.options.max = 100;
+      } else {
+        chartState.plot.getAxes().yaxis.options.max = undefined;
+      }
     }
 
     function setNegativeDataToZero(dataSeries) {
