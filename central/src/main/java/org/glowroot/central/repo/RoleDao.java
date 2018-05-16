@@ -102,23 +102,23 @@ class RoleDao {
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
-    void insert(RoleConfig userConfig) throws Exception {
+    void insert(RoleConfig roleConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
-        bindInsert(boundStatement, userConfig);
+        bindInsert(boundStatement, roleConfig);
         session.execute(boundStatement);
-        roleConfigCache.invalidate(userConfig.name());
+        roleConfigCache.invalidate(roleConfig.name());
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
 
     }
 
-    void insertIfNotExists(RoleConfig userConfig) throws Exception {
+    void insertIfNotExists(RoleConfig roleConfig) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
-        bindInsert(boundStatement, userConfig);
+        bindInsert(boundStatement, roleConfig);
         ResultSet results = session.execute(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
-            roleConfigCache.invalidate(userConfig.name());
+            roleConfigCache.invalidate(roleConfig.name());
             allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
         } else {
             throw new DuplicateRoleNameException();
