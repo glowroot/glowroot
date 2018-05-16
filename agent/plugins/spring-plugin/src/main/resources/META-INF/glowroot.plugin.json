@@ -10,6 +10,19 @@
       "description": "Set transaction name to the controller's className#methodName instead of using the controller's URL mapping"
     }
   ],
+  "instrumentation": [
+    {
+      "className": "org.springframework.batch.core.Step",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "org.springframework.batch.core.StepExecution"
+      ],
+      "captureKind": "transaction",
+      "timerName": "spring batch",
+      "transactionType": "Background",
+      "transactionNameTemplate": "Spring Batch: {{this.name}}"
+    }
+  ],
   "aspects": [
     "org.glowroot.agent.plugin.spring.ControllerAspect"
   ]
