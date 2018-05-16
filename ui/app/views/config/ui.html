@@ -37,7 +37,7 @@
                     id="defaultTransactionType"
                     class="form-control"
                     style="width: auto;">
-              <option ng-repeat="transactionType in allTransactionTypes"
+              <option ng-repeat="transactionType in allTransactionTypes track by transactionType.name"
                       ng-value="transactionType.name"
                       ng-disabled="transactionType.disabled">
                 {{transactionType.name}}
