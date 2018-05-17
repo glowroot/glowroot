@@ -18,6 +18,7 @@ package org.glowroot.agent.init;
 import java.io.File;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
+import java.lang.instrument.UnmodifiableClassException;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Map;
@@ -205,8 +206,15 @@ public class AgentModule {
             }
             logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation.getAllLoadedClasses(),
                     glowrootJarFile, false);
-            if (instrumentation.isRetransformClassesSupported()) {
-                instrumentation.retransformClasses(Thread.class);
+            if (instrumentation.isRetransformClassesSupported()
+                    && instrumentation.isModifiableClass(Thread.class)) {
+                try {
+                    instrumentation.retransformClasses(Thread.class);
+                } catch (UnmodifiableClassException e) {
+                    // IBM JDK 6 throws UnmodifiableClassException even though isModifiableClass()
+                    // above returns true
+                    logger.debug(e.getMessage(), e);
+                }
             }
         }
 
