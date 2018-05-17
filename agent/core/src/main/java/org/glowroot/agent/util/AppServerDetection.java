@@ -24,8 +24,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.util.OnlyUsedByTests;
-
 public class AppServerDetection {
 
     private static final Logger logger = LoggerFactory.getLogger(AppServerDetection.class);
@@ -66,9 +64,15 @@ public class AppServerDetection {
         return "com.ibm.wsspi.bootstrap.WSPreLauncher".equals(MAIN_CLASS);
     }
 
-    @OnlyUsedByTests
-    static @Nullable String buildMainClass() {
+    private static @Nullable String buildMainClass() {
         String sunJavaCommand = System.getProperty("sun.java.command");
+        logger.debug("sun.java.command: {}", sunJavaCommand);
+        String mainClass = buildMainClassInternal(sunJavaCommand);
+        logger.debug("main class: {}", mainClass);
+        return mainClass;
+    }
+
+    private static @Nullable String buildMainClassInternal(@Nullable String sunJavaCommand) {
         if (sunJavaCommand == null) {
             return null;
         }
