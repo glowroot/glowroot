@@ -479,14 +479,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.tree.TypeInsnNode");
         types.add("org.objectweb.asm.tree.Util");
         types.add("org.objectweb.asm.tree.VarInsnNode");
-        types.add("org.objectweb.asm.util.ASMifiable");
-        types.add("org.objectweb.asm.util.ASMifier");
-        types.add("org.objectweb.asm.util.Printer");
-        types.add("org.objectweb.asm.util.TraceAnnotationVisitor");
-        types.add("org.objectweb.asm.util.TraceClassVisitor");
-        types.add("org.objectweb.asm.util.TraceFieldVisitor");
-        types.add("org.objectweb.asm.util.TraceMethodVisitor");
-        types.add("org.objectweb.asm.util.TraceModuleVisitor");
         return types;
     }
 

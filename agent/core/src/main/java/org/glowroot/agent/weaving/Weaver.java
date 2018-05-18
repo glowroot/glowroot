@@ -17,8 +17,6 @@ package org.glowroot.agent.weaving;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.management.LockInfo;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;
@@ -45,8 +43,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
-import org.objectweb.asm.util.ASMifier;
-import org.objectweb.asm.util.TraceClassVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,11 +68,11 @@ public class Weaver {
 
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 
-    // useful for debugging java.lang.VerifyErrors
+    // useful for debugging java.lang.VerifyError and java.lang.ClassFormatError
     private static final @Nullable String DEBUG_CLASS_NAME;
 
     static {
-        String debugClassName = System.getProperty("glowroot.weaving.debugClassName");
+        String debugClassName = System.getProperty("glowroot.debug.transformingClassName");
         if (debugClassName == null) {
             DEBUG_CLASS_NAME = null;
         } else {
@@ -301,19 +297,13 @@ public class Weaver {
                 Files.write(transformedBytes, tempFile);
                 logger.info("class file for {} (transformed) written to: {}", className,
                         tempFile.getAbsolutePath());
+                tempFile = File.createTempFile("glowroot-original-", ".class");
+                Files.write(classBytes, tempFile);
+                logger.info("class file for {} (original) written to: {}", className,
+                        tempFile.getAbsolutePath());
             } catch (IOException e) {
                 logger.warn(e.getMessage(), e);
             }
-            logger.info("ASM for {} (transformed):\n{}", className,
-                    toASM(transformedBytes, expandFrames));
-
-            ClassReader cr2 = new ClassReader(transformedBytes);
-            int computeFrames = expandFrames == 0 ? 0 : ClassWriter.COMPUTE_FRAMES;
-            String extraStr = expandFrames == 0 ? "" : " + COMPUTE_FRAMES";
-            ClassWriter cw2 = new ClassWriter(computeFrames);
-            cr2.accept(cw2, ClassReader.SKIP_FRAMES);
-            logger.warn("ASM for {} (transformed{}):\n{}", className, extraStr,
-                    toASM(cw2.toByteArray(), expandFrames));
         }
         return transformedBytes;
     }
@@ -346,16 +336,6 @@ public class Weaver {
         } finally {
             weavingDisabledForLoggingDeadlock = false;
         }
-    }
-
-    private static String toASM(byte[] transformedBytes, int expandFrames) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        ClassReader cr = new ClassReader(transformedBytes);
-        TraceClassVisitor tcv = new TraceClassVisitor(null, new ASMifier(), pw);
-        cr.accept(tcv, expandFrames);
-        pw.close();
-        return sw.toString();
     }
 
     private static File getTempFile(String className, String prefix, String suffix) {
