@@ -191,9 +191,12 @@ class WeavingClassVisitor extends ClassVisitor {
             return visitInitWithMixins(access, name, desc, signature, exceptions, matchingAdvisors);
         }
         MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-        if (name.equals("main") && desc.equals("([Ljava/lang/String;)V")) {
+        if (Modifier.isStatic(access) && Modifier.isPublic(access) && name.equals("main")
+                && desc.equals("([Ljava/lang/String;)V")) {
+            mv.visitLdcInsn(type.getClassName());
+            mv.visitVarInsn(ALOAD, 0);
             mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(), "enteringMainMethod",
-                    "()V", false);
+                    "(Ljava/lang/String;[Ljava/lang/String;)V", false);
         }
         if (matchingAdvisors.isEmpty()) {
             return mv;

@@ -24,7 +24,7 @@ import org.glowroot.agent.plugin.api.TraceEntry;
 
 public interface BytecodeService {
 
-    void enteringMain();
+    void enteringMain(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs);
 
     void exitingGetPlatformMBeanServer();
 

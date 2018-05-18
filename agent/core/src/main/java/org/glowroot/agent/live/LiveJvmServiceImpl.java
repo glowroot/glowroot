@@ -52,7 +52,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
-import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveJvmService;
@@ -111,7 +110,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public String getJstack(String agentId) throws Exception {
-        if (AppServerDetection.isIbmJvm()) {
+        if (JavaVersion.isIbmJvm()) {
             throw new UnavailableDueToRunningInIbmJvmException();
         }
         long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
@@ -135,7 +134,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             throw new DirectoryDoesNotExistException();
         }
         File file;
-        if (AppServerDetection.isIbmJvm()) {
+        if (JavaVersion.isIbmJvm()) {
             file = ibmHeapDump(dir);
         } else {
             file = heapDump(dir);
@@ -148,7 +147,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public HeapHistogram heapHistogram(String agentId) throws Exception {
-        if (AppServerDetection.isIbmJvm()) {
+        if (JavaVersion.isIbmJvm()) {
             throw new UnavailableDueToRunningInIbmJvmException();
         }
         long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
@@ -331,7 +330,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     private static boolean allowAttachSelf() {
-        if (AppServerDetection.isJRockitJvm()) {
+        if (JavaVersion.isJRockitJvm()) {
             // self attach sporadically logs annoying:
             // [ERROR][attach ] Failed to flush the destination file
             // [ERROR][attach ] OS message: The pipe has been ended (109)

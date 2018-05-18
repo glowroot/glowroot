@@ -143,7 +143,7 @@ class EmbeddedAgentModule {
             @Nullable File glowrootJarFile, Map<String, String> properties,
             @Nullable Instrumentation instrumentation,
             final @Nullable Class<? extends Collector> collectorProxyClass,
-            final String glowrootVersion) throws Exception {
+            final String glowrootVersion, @Nullable String mainClass) throws Exception {
 
         // mem db is only used for testing (by glowroot-agent-it-harness)
         final boolean h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
@@ -161,7 +161,7 @@ class EmbeddedAgentModule {
                     ThreadFactories.create("Glowroot-Background-%d"));
             final CollectorProxy collectorProxy = new CollectorProxy();
             agentModule.onEnteringMain(backgroundExecutor, collectorProxy, instrumentation,
-                    glowrootJarFile);
+                    glowrootJarFile, mainClass);
 
             final ConfigRepositoryImpl configRepository =
                     new ConfigRepositoryImpl(confDir, agentModule.getConfigService(), pluginCache);

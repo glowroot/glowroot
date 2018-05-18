@@ -72,8 +72,8 @@ public class LazyPlatformMBeanServer {
     @GuardedBy("platformMBeanServerAvailability")
     private boolean platformMBeanServerAvailable;
 
-    public static LazyPlatformMBeanServer create() throws Exception {
-        LazyPlatformMBeanServer lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
+    public static LazyPlatformMBeanServer create(@Nullable String mainClass) throws Exception {
+        LazyPlatformMBeanServer lazyPlatformMBeanServer = new LazyPlatformMBeanServer(mainClass);
         if (!lazyPlatformMBeanServer.waitForContainerToCreatePlatformMBeanServer) {
             // it is useful to init right away in this case in order to avoid condition where really
             // should wait for container, but works most of the time by luck due to timing of when
@@ -83,12 +83,15 @@ public class LazyPlatformMBeanServer {
         return lazyPlatformMBeanServer;
     }
 
-    private LazyPlatformMBeanServer() {
-        boolean oldJBoss = AppServerDetection.isOldJBoss();
+    private LazyPlatformMBeanServer(@Nullable String mainClass) {
+        boolean jbossModules = "org.jboss.modules.Main".equals(mainClass);
+        boolean wildflySwarm = "org.wildfly.swarm.bootstrap.Main".equals(mainClass);
+        boolean oldJBoss = "org.jboss.Main".equals(mainClass);
+        boolean glassfish = "com.sun.enterprise.glassfish.bootstrap.ASMain".equals(mainClass);
+        boolean weblogic = "weblogic.Server".equals(mainClass);
+        boolean websphere = "com.ibm.wsspi.bootstrap.WSPreLauncher".equals(mainClass);
         waitForContainerToCreatePlatformMBeanServer =
-                AppServerDetection.isJBossModules() || AppServerDetection.isWildflySwarm()
-                        || oldJBoss || AppServerDetection.isGlassfish()
-                        || AppServerDetection.isWebLogic() || AppServerDetection.isWebSphere();
+                jbossModules || wildflySwarm || oldJBoss || glassfish || weblogic || websphere;
         needsManualPatternMatching = oldJBoss;
     }
 

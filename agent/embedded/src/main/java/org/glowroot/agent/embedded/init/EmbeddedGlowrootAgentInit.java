@@ -64,12 +64,13 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 glowrootVersion, offlineViewer);
         OnEnteringMain onEnteringMain = new OnEnteringMain() {
             @Override
-            public void run() throws Exception {
+            public void run(@Nullable String mainClass) throws Exception {
                 NettyWorkaround.run();
                 // TODO report checker framework issue that occurs without checkNotNull
                 checkNotNull(embeddedAgentModule);
                 embeddedAgentModule.onEnteringMain(confDir, sharedConfDir, dataDir, glowrootJarFile,
-                        properties, instrumentation, collectorProxyClass, glowrootVersion);
+                        properties, instrumentation, collectorProxyClass, glowrootVersion,
+                        mainClass);
                 // starting new thread in order not to block startup
                 Thread thread = new Thread(new Runnable() {
                     @Override
@@ -92,7 +93,7 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
         };
         if (instrumentation == null) {
             // this is for offline viewer and for tests
-            onEnteringMain.run();
+            onEnteringMain.run(null);
         } else {
             embeddedAgentModule.setOnEnteringMain(onEnteringMain);
         }

@@ -80,7 +80,6 @@ class PreInitializeStorageShutdownClasses {
         types.add("org.glowroot.agent.embedded.util.CappedDatabaseOutputStream");
         types.add("org.glowroot.agent.embedded.util.DataSource");
         types.add("org.glowroot.agent.embedded.util.DataSource$ShutdownHookThread");
-        types.add("org.glowroot.agent.util.AppServerDetection");
         types.add("org.glowroot.agent.util.JavaVersion");
         return types;
     }

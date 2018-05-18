@@ -28,8 +28,9 @@ public class Bytecode {
 
     private Bytecode() {}
 
-    public static void enteringMainMethod() {
-        service.enteringMain();
+    public static void enteringMainMethod(String mainClass,
+            @Nullable String /*@Nullable*/ [] mainArgs) {
+        service.enteringMain(mainClass, mainArgs);
     }
 
     public static void exitingGetPlatformMBeanServer() {

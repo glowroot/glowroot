@@ -104,13 +104,13 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 glowrootJarFile, tmpDir, preCheckClassFileTransformer);
         OnEnteringMain onEnteringMain = new OnEnteringMain() {
             @Override
-            public void run() throws Exception {
+            public void run(@Nullable String mainClass) throws Exception {
                 // TODO report checker framework issue that occurs without checkNotNull
                 checkNotNull(agentModule);
                 ScheduledExecutorService backgroundExecutor = Executors.newScheduledThreadPool(2,
                         ThreadFactories.create("Glowroot-Background-%d"));
                 agentModule.onEnteringMain(backgroundExecutor, collectorProxy, instrumentation,
-                        glowrootJarFile);
+                        glowrootJarFile, mainClass);
                 AgentConfigUpdater agentConfigUpdater =
                         new ConfigUpdateService(configService, pluginCache);
                 NettyWorkaround.run();
@@ -148,7 +148,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             }
         };
         if (instrumentation == null) {
-            onEnteringMain.run();
+            onEnteringMain.run(null);
         } else {
             agentModule.setOnEnteringMain(onEnteringMain);
         }

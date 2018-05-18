@@ -48,7 +48,6 @@ import com.ning.compress.lzf.util.ChunkEncoderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.SizeLimitBypassingParser;
@@ -68,7 +67,7 @@ public class CappedDatabase {
                 || "amd64".equals(arch) || "x86_64".equals(arch) || "aarch64".equals(arch)
                 || "ppc64le".equals(arch);
         USE_SAFE_LZF_ENCODER =
-                !unalignedAccessAllowed || (AppServerDetection.isIbmJvm() && JavaVersion.isJava6());
+                !unalignedAccessAllowed || (JavaVersion.isIbmJvm() && JavaVersion.isJava6());
     }
 
     private final File file;

@@ -59,7 +59,6 @@ import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInitFactory;
 import org.glowroot.agent.init.NonEmbeddedGlowrootAgentInit;
 import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
-import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.weaving.Java9;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -163,7 +162,7 @@ public class MainEntryPoint {
             }
         }
         try {
-            if (AppServerDetection.isIbmJvm() && JavaVersion.isJava6()) {
+            if (JavaVersion.isIbmJvm() && JavaVersion.isJava6()) {
                 ClassFileTransformer transformer = new IbmJava6HackClassFileTransformer();
                 instrumentation.addTransformer(transformer);
                 Class.forName("com.google.protobuf.UnsafeUtil");

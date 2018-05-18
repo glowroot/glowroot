@@ -17,14 +17,14 @@ package org.glowroot.agent.init;
 
 import io.netty.util.internal.PlatformDependent;
 
-import org.glowroot.agent.util.AppServerDetection;
+import org.glowroot.agent.util.JavaVersion;
 
 public class NettyWorkaround {
 
     private NettyWorkaround() {}
 
     public static void run() {
-        if (AppServerDetection.isIbmJvm()) {
+        if (JavaVersion.isIbmJvm()) {
             // WebSphere crashes on startup without this workaround (at least when pointing to
             // glowroot central and using WebSphere 8.5.5.11)
             String prior = System.getProperty("io.netty.noUnsafe");

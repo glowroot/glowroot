@@ -62,7 +62,7 @@ import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
 import org.glowroot.agent.plugin.api.internal.PluginService;
 import org.glowroot.agent.plugin.api.internal.PluginServiceHolder;
-import org.glowroot.agent.util.AppServerDetection;
+import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.OptionalService;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
@@ -248,10 +248,6 @@ public class AgentModule {
         if (!pluginNames.isEmpty()) {
             startupLogger.info("plugins loaded: {}", Joiner.on(", ").join(pluginNames));
         }
-        if (instrumentation == null) {
-            // this is for tests
-            bytecodeService.enteringMain();
-        }
     }
 
     public void setOnEnteringMain(OnEnteringMain onEnteringMain) {
@@ -259,8 +255,8 @@ public class AgentModule {
     }
 
     public void onEnteringMain(ScheduledExecutorService backgroundExecutor, Collector collector,
-            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile)
-            throws Exception {
+            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
+            @Nullable String mainClass) throws Exception {
 
         deadlockedActiveWeavingRunnable = new DeadlockedActiveWeavingRunnable(weaver);
         deadlockedActiveWeavingRunnable.scheduleWithFixedDelay(backgroundExecutor, 5, 5, SECONDS);
@@ -275,7 +271,7 @@ public class AgentModule {
                 new TransactionCollector(configService, collector, aggregator, clock, ticker);
         transactionService.setTransactionCollector(transactionCollector);
 
-        lazyPlatformMBeanServer = LazyPlatformMBeanServer.create();
+        lazyPlatformMBeanServer = LazyPlatformMBeanServer.create(mainClass);
         bytecodeService.setOnExitingGetPlatformMBeanServer(new Runnable() {
             @Override
             public void run() {
@@ -434,7 +430,7 @@ public class AgentModule {
     }
 
     private static boolean isIbmHealthcenterArg(String jvmArg) {
-        return AppServerDetection.isIbmJvm()
+        return JavaVersion.isIbmJvm()
                 && (jvmArg.equals("-Xhealthcenter") || jvmArg.startsWith("-Xhealthcenter:"));
     }
 

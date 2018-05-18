@@ -35,6 +35,8 @@ import org.glowroot.agent.weaving.MessageTemplateImpl;
 
 public class BytecodeServiceImpl implements BytecodeService {
 
+    private static final boolean DEBUG_MAIN_CLASS = Boolean.getBoolean("glowroot.debug.mainClass");
+
     private static final Logger logger = LoggerFactory.getLogger(BytecodeServiceImpl.class);
 
     private final TransactionRegistry transactionRegistry;
@@ -61,15 +63,42 @@ public class BytecodeServiceImpl implements BytecodeService {
     }
 
     @Override
-    public void enteringMain() {
+    public void enteringMain(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs) {
         if (onEnteringMain == null) {
             return;
         }
-        if (hasRunOnEnteringMain.getAndSet(true)) {
+        if (hasRunOnEnteringMain.get()) {
+            // no need to spend effort checking anything else
             return;
         }
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        if (ignoreMainClass(mainClass, stackTrace)) {
+            if (DEBUG_MAIN_CLASS) {
+                logger.info("ignoring main class: {}", mainClass,
+                        new Exception("location stack trace"));
+            }
+            return;
+        }
+        if (mainClass.equals("com.ibm.java.diagnostics.healthcenter.agent.mbean.HCLaunchMBean")) {
+            // IBM JVM -Xhealthcenter
+            return;
+        }
+        if (hasRunOnEnteringMain.getAndSet(true)) {
+            // unexpected and strange race condition on valid main methods
+            return;
+        }
+        if (DEBUG_MAIN_CLASS) {
+            logger.info("main class: {}", mainClass);
+        }
+        String unwrappedMainClass;
+        if (mainClass.startsWith("org.tanukisoftware.wrapper.")
+                && mainArgs != null && mainArgs.length > 0) {
+            unwrappedMainClass = mainArgs[0];
+        } else {
+            unwrappedMainClass = mainClass;
+        }
         try {
-            onEnteringMain.run();
+            onEnteringMain.run(unwrappedMainClass);
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
         }
@@ -136,7 +165,16 @@ public class BytecodeServiceImpl implements BytecodeService {
         GenericMessageSupplier.updateWithReturnValue(traceEntry, returnValue);
     }
 
+    private static boolean ignoreMainClass(String mainClass, StackTraceElement[] stackTrace) {
+        if (stackTrace.length == 0) {
+            return true;
+        }
+        StackTraceElement topStackTraceElement = stackTrace[stackTrace.length - 1];
+        return !topStackTraceElement.getClassName().equals(mainClass)
+                || !"main".equals(topStackTraceElement.getMethodName());
+    }
+
     public interface OnEnteringMain {
-        void run() throws Exception;
+        void run(@Nullable String mainClass) throws Exception;
     }
 }
