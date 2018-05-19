@@ -33,7 +33,6 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +108,7 @@ public class LazyPlatformMBeanServer {
                 toBeUnregistered.add(objectName);
             } else {
                 try {
-                    safeRegisterMBean(object, objectName);
+                    safeRegisterMBean(platformMBeanServer, object, objectName);
                     toBeUnregistered.add(objectName);
                 } catch (Throwable t) {
                     logger.warn(t.getMessage(), t);
@@ -165,61 +164,21 @@ public class LazyPlatformMBeanServer {
         }
     }
 
-    @RequiresNonNull("platformMBeanServer")
-    private void safeRegisterMBean(Object object, ObjectName name) {
-        try {
-            platformMBeanServer.registerMBean(object, name);
-        } catch (InstanceAlreadyExistsException e) {
-            // this happens during unit tests when a non-shared local container is used
-            // (so that then there are two local containers in the same jvm)
-            //
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-        } catch (NotCompliantMBeanException e) {
-            if (e.getStackTrace()[0].getClassName()
-                    .equals("org.jboss.mx.metadata.MBeanCapability")) {
-                // this happens in jboss 4.2.3 because it doesn't know about Java 6 "MXBean"
-                // naming convention
-                // it's not really that important if glowroot mbeans aren't registered
-                logger.debug(e.getMessage(), e);
-            } else {
-                logger.warn(e.getMessage(), e);
-            }
-        } catch (Throwable t) {
-            logger.warn(t.getMessage(), t);
-        }
-    }
-
-    @OnlyUsedByTests
-    public void close() throws Exception {
-        ensureInit();
-        for (ObjectName name : toBeUnregistered) {
-            platformMBeanServer.unregisterMBean(name);
-        }
-    }
-
     @EnsuresNonNull("platformMBeanServer")
     private void ensureInit() throws Exception {
+        if (platformMBeanServer != null) {
+            return;
+        }
+        // don't hold initListeners lock while waiting for platform mbean server to be created
+        // as this blocks lazyRegisterMBean
+        if (waitForContainerToCreatePlatformMBeanServer) {
+            waitForContainerToCreatePlatformMBeanServer();
+        }
         synchronized (initListeners) {
             if (platformMBeanServer != null) {
                 return;
             }
-            if (waitForContainerToCreatePlatformMBeanServer) {
-                waitForContainerToCreatePlatformMBeanServer();
-            }
-            platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-            for (InitListener initListener : initListeners) {
-                try {
-                    initListener.postInit(platformMBeanServer);
-                } catch (Throwable t) {
-                    logger.error(t.getMessage(), t);
-                }
-            }
-            initListeners.clear();
-            for (ObjectNamePair objectNamePair : toBeRegistered) {
-                safeRegisterMBean(objectNamePair.object(), objectNamePair.name());
-            }
-            toBeRegistered.clear();
+            platformMBeanServer = init();
         }
     }
 
@@ -241,6 +200,56 @@ public class LazyPlatformMBeanServer {
             if (!platformMBeanServerAvailable) {
                 logger.error("platform mbean server was never created by container");
             }
+        }
+    }
+
+    private MBeanServer init() {
+        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+        for (InitListener initListener : initListeners) {
+            try {
+                initListener.postInit(platformMBeanServer);
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+            }
+        }
+        initListeners.clear();
+        for (ObjectNamePair objectNamePair : toBeRegistered) {
+            safeRegisterMBean(platformMBeanServer, objectNamePair.object(),
+                    objectNamePair.name());
+        }
+        toBeRegistered.clear();
+        return platformMBeanServer;
+    }
+
+    @OnlyUsedByTests
+    public void close() throws Exception {
+        ensureInit();
+        for (ObjectName name : toBeUnregistered) {
+            platformMBeanServer.unregisterMBean(name);
+        }
+    }
+
+    private static void safeRegisterMBean(MBeanServer mbeanServer, Object object, ObjectName name) {
+        try {
+            mbeanServer.registerMBean(object, name);
+        } catch (InstanceAlreadyExistsException e) {
+            // this happens during unit tests when a non-shared local container is used
+            // (so that then there are two local containers in the same jvm)
+            //
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
+        } catch (NotCompliantMBeanException e) {
+            if (e.getStackTrace()[0].getClassName()
+                    .equals("org.jboss.mx.metadata.MBeanCapability")) {
+                // this happens in jboss 4.2.3 because it doesn't know about Java 6 "MXBean"
+                // naming convention
+                // it's not really that important if glowroot mbeans aren't registered
+                logger.debug(e.getMessage(), e);
+            } else {
+                logger.warn(e.getMessage(), e);
+            }
+        } catch (Throwable t) {
+            logger.warn(t.getMessage(), t);
         }
     }
 
