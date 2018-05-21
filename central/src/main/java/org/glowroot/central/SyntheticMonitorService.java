@@ -165,7 +165,7 @@ class SyntheticMonitorService implements Runnable {
             if (index == -1) {
                 shortVersion = "/" + version;
             } else {
-                shortVersion = "/" + version.substring(index);
+                shortVersion = "/" + version.substring(0, index);
             }
         }
         httpClient = HttpAsyncClients.custom()
