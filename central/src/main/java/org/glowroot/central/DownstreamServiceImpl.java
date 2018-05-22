@@ -105,6 +105,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -157,7 +158,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             if (!result.shuttingDown()) {
                 return true;
             }
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
         }
         // received shutting-down response for 5+ seconds
         return false;
@@ -452,7 +453,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             }
             // only other case is shutting-down response
             checkState(result.shuttingDown());
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
         }
         // received shutting-down response for 5+ seconds
         throw new AgentNotConnectedException();

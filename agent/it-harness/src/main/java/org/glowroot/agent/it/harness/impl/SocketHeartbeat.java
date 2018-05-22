@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 class SocketHeartbeat implements Runnable {
 
@@ -56,7 +57,7 @@ class SocketHeartbeat implements Runnable {
                 System.exit(0);
             }
             try {
-                Thread.sleep(1000);
+                SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method above)
                 logger.debug(e.getMessage(), e);

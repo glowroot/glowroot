@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Transaction
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -103,7 +104,7 @@ public class PartialTraceIT {
             if (trace.getHeader().getMainThreadProfileSampleCount() > 0) {
                 break;
             }
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         if (stuckOnNonRoot) {
             // wait for trace to get into nested timer
@@ -113,7 +114,7 @@ public class PartialTraceIT {
                 if (!trace.getHeader().getMainThreadRootTimer().getChildTimerList().isEmpty()) {
                     break;
                 }
-                Thread.sleep(10);
+                MILLISECONDS.sleep(10);
             }
         }
         assertThat(trace).isNotNull();
@@ -146,7 +147,7 @@ public class PartialTraceIT {
         @Override
         public void transactionMarker() {
             try {
-                Thread.sleep(Long.MAX_VALUE);
+                MILLISECONDS.sleep(Long.MAX_VALUE);
             } catch (InterruptedException e) {
             }
         }

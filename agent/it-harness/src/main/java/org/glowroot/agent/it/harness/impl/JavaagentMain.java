@@ -28,6 +28,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.it.harness.Container;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class JavaagentMain {
@@ -90,17 +91,17 @@ class JavaagentMain {
         for (int i = 0; i < 1000; i++) {
             timerMarkerOne();
             timerMarkerTwo();
-            Thread.sleep(1);
+            MILLISECONDS.sleep(1);
         }
         // non-daemon threads started above keep jvm alive after main returns
-        Thread.sleep(Long.MAX_VALUE);
+        MILLISECONDS.sleep(Long.MAX_VALUE);
     }
 
     private static void timerMarkerOne() throws InterruptedException {
-        Thread.sleep(1);
+        MILLISECONDS.sleep(1);
     }
 
     private static void timerMarkerTwo() throws InterruptedException {
-        Thread.sleep(1);
+        MILLISECONDS.sleep(1);
     }
 }

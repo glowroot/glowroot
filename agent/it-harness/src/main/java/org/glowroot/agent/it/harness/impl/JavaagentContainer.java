@@ -61,6 +61,7 @@ import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.Void;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class JavaagentContainer implements Container {
@@ -183,7 +184,7 @@ public class JavaagentContainer implements Container {
             } catch (Exception e) {
                 logger.debug(e.getMessage(), e);
             }
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
         }
         javaagentService = JavaagentServiceGrpc.newBlockingStub(channel)
                 .withCompression("gzip");
@@ -237,7 +238,7 @@ public class JavaagentContainer implements Container {
     public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
         executeInternal(appClass);
         // give a short time to see if trace gets collected
-        Thread.sleep(10);
+        MILLISECONDS.sleep(10);
         if (traceCollector != null && traceCollector.hasTrace()) {
             throw new IllegalStateException("Trace was collected when none was expected");
         }

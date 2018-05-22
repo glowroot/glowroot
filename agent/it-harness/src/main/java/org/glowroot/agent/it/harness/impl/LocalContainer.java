@@ -35,6 +35,7 @@ import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LocalContainer implements Container {
@@ -138,7 +139,7 @@ public class LocalContainer implements Container {
     @Override
     public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
         executeInternal(appClass);
-        Thread.sleep(10);
+        MILLISECONDS.sleep(10);
         if (traceCollector != null && traceCollector.hasTrace()) {
             throw new IllegalStateException("Trace was collected when none was expected");
         }

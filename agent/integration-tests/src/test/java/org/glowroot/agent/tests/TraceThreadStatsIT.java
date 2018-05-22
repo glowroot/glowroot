@@ -168,7 +168,7 @@ public class TraceThreadStatsIT {
                     notify.notify();
                 }
                 // sleeping here while holding lock causes thread blocked time in transaction thread
-                Thread.sleep(20);
+                MILLISECONDS.sleep(20);
             }
             return null;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 @SuppressWarnings("serial")
 public class SleepServlet extends JdbcServlet implements AppUnderTest {
 
@@ -29,7 +31,7 @@ public class SleepServlet extends JdbcServlet implements AppUnderTest {
             throws ServletException {
         super.doGet(request, response);
         try {
-            Thread.sleep(Long.MAX_VALUE);
+            MILLISECONDS.sleep(Long.MAX_VALUE);
         } catch (InterruptedException e) {
             // ok, intentionally stopped by Container.interruptAppUnderTest()
         }

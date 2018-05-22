@@ -37,6 +37,7 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Aggregator {
@@ -190,7 +191,7 @@ public class Aggregator {
                     maybeEndOfInterval();
                 } else {
                     // TODO benchmark other alternatives to sleep (e.g. wait/notify)
-                    Thread.sleep(1);
+                    MILLISECONDS.sleep(1);
                 }
                 return;
             }

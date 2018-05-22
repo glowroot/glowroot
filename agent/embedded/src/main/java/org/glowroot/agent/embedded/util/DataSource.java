@@ -511,7 +511,7 @@ public class DataSource {
                 bytes = queryForLong("call disk_space_used (?)", tableName);
             }
             // sleep a bit to allow some other threads to use the data source
-            Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
+            MILLISECONDS.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
             stopwatch.reset().start();
             long rows;
             synchronized (lock) {
@@ -521,7 +521,7 @@ public class DataSource {
                 rows = queryForLong("select count(*) from " + tableName);
             }
             // sleep a bit to allow some other threads to use the data source
-            Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
+            MILLISECONDS.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
             tables.add(ImmutableH2Table.builder()
                     .name(tableName)
                     .bytes(bytes)

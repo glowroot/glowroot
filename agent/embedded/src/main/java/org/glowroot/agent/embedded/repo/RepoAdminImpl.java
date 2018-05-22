@@ -126,7 +126,7 @@ class RepoAdminImpl implements RepoAdmin {
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 builder.addAllOverallCounts(dataSource.query(new TraceOverallCountQuery()));
                 // sleep a bit to allow some other threads to use the data source
-                Thread.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
+                MILLISECONDS.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
                 builder.addAllCounts(dataSource.query(new TraceCountQuery()));
                 return builder.build();
             }

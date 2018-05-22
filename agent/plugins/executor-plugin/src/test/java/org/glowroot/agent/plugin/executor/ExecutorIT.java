@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -431,7 +431,7 @@ public class ExecutorIT {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(200);
+                        MILLISECONDS.sleep(200);
                     } catch (InterruptedException e) {
                     }
                 }
@@ -440,7 +440,7 @@ public class ExecutorIT {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(200);
+                        MILLISECONDS.sleep(200);
                     } catch (InterruptedException e) {
                     }
                 }
@@ -449,7 +449,7 @@ public class ExecutorIT {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(200);
+                        MILLISECONDS.sleep(200);
                     } catch (InterruptedException e) {
                     }
                 }
@@ -478,7 +478,7 @@ public class ExecutorIT {
                 }
             });
             while (!future.isDone()) {
-                Thread.sleep(1);
+                MILLISECONDS.sleep(1);
             }
             future.get();
         }
@@ -770,7 +770,7 @@ public class ExecutorIT {
         @Override
         public void traceEntryMarker() {
             try {
-                Thread.sleep(100);
+                MILLISECONDS.sleep(100);
             } catch (InterruptedException e) {
             }
         }

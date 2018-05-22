@@ -31,6 +31,7 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class StackTraceCollector {
 
@@ -107,32 +108,33 @@ public class StackTraceCollector {
         @Override
         public void run() {
             // delay for first
-            long remainingInInterval = 0;
+            long remainingMillisInInterval = 0;
             while (!closed) {
                 currIntervalMillis = configService.getTransactionConfig().profilingIntervalMillis();
                 if (currIntervalMillis <= 0) {
                     try {
-                        Thread.sleep(Long.MAX_VALUE);
+                        MILLISECONDS.sleep(Long.MAX_VALUE);
                     } catch (InterruptedException e) {
                         // probably interrupt from config listener (see above)
                         logger.debug(e.getMessage(), e);
                         // re-start loop
-                        remainingInInterval = 0;
+                        remainingMillisInInterval = 0;
                         continue;
                     }
                 }
-                long randomDelayFromIntervalStart =
+                long randomDelayMillisFromIntervalStart =
                         (long) (random.nextFloat() * currIntervalMillis);
                 try {
-                    Thread.sleep(remainingInInterval + randomDelayFromIntervalStart);
+                    MILLISECONDS
+                            .sleep(remainingMillisInInterval + randomDelayMillisFromIntervalStart);
                 } catch (InterruptedException e) {
                     // probably interrupt from config listener (see above)
                     logger.debug(e.getMessage(), e);
                     // re-start loop
-                    remainingInInterval = 0;
+                    remainingMillisInInterval = 0;
                     continue;
                 }
-                remainingInInterval = currIntervalMillis - randomDelayFromIntervalStart;
+                remainingMillisInInterval = currIntervalMillis - randomDelayMillisFromIntervalStart;
                 try {
                     runInternal();
                 } catch (Throwable t) {

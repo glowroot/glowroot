@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AsyncServletIT {
@@ -348,7 +349,7 @@ public class AsyncServletIT {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(200);
+                        MILLISECONDS.sleep(200);
                         ((HttpServletRequest) asyncContext.getRequest()).getSession()
                                 .setAttribute("async", "b");
                         new CreateTraceEntry().traceEntryMarker();
@@ -382,7 +383,7 @@ public class AsyncServletIT {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(200);
+                        MILLISECONDS.sleep(200);
                         ((HttpServletRequest) asyncContext.getRequest()).getSession()
                                 .setAttribute("async", "b");
                         new CreateTraceEntry().traceEntryMarker();
@@ -416,7 +417,7 @@ public class AsyncServletIT {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(200);
+                        MILLISECONDS.sleep(200);
                         ((HttpServletRequest) asyncContext.getRequest()).getSession()
                                 .setAttribute("async", "b");
                         new CreateTraceEntry().traceEntryMarker();

@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
 
     private static final Logger logger =
@@ -68,7 +70,7 @@ abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
         // so give a bit of time here, otherwise end up with sporadic test failures due to
         // ERROR logged by org.apache.catalina.loader.WebappClassLoaderBase, e.g.
         // "The web application [] is still processing a request that has yet to finish"
-        Thread.sleep(200);
+        MILLISECONDS.sleep(200);
         checkForRequestThreads(webappLoader);
         tomcat.stop();
         tomcat.destroy();

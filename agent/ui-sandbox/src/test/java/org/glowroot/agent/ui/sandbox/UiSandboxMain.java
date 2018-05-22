@@ -83,7 +83,7 @@ public class UiSandboxMain {
                     new NestableCall(new NestableCall(20, 50, 5000), 5, 50, 5000).execute();
                 }
                 new NestableCall(new NestableCall(5000, 50, 5000), 100, 50, 5000).execute();
-                Thread.sleep(1000);
+                SECONDS.sleep(1);
             }
         }
         private void startDeadlockingThreads() {
@@ -94,7 +94,7 @@ public class UiSandboxMain {
                 public void run() {
                     synchronized (lock1) {
                         try {
-                            Thread.sleep(1000);
+                            SECONDS.sleep(1);
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
                         }
@@ -109,7 +109,7 @@ public class UiSandboxMain {
                 public void run() {
                     synchronized (lock2) {
                         try {
-                            Thread.sleep(1000);
+                            SECONDS.sleep(1);
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
                         }

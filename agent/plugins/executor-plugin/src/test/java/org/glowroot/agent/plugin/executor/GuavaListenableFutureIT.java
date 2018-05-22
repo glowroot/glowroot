@@ -35,6 +35,7 @@ import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -153,7 +154,7 @@ public class GuavaListenableFutureIT {
             ListenableFuture<Void> future1 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws InterruptedException {
-                    Thread.sleep(100);
+                    MILLISECONDS.sleep(100);
                     return null;
                 }
             });
@@ -163,7 +164,7 @@ public class GuavaListenableFutureIT {
                     new CreateTraceEntry().traceEntryMarker();
                 }
             }, executor);
-            Thread.sleep(200);
+            MILLISECONDS.sleep(200);
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
         }
@@ -186,14 +187,14 @@ public class GuavaListenableFutureIT {
                     return null;
                 }
             });
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
             future1.addListener(new Runnable() {
                 @Override
                 public void run() {
                     new CreateTraceEntry().traceEntryMarker();
                 }
             }, executor);
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
         }
@@ -214,7 +215,7 @@ public class GuavaListenableFutureIT {
             ListenableFuture<Void> future1 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws InterruptedException {
-                    Thread.sleep(100);
+                    MILLISECONDS.sleep(100);
                     return null;
                 }
             });
@@ -224,7 +225,7 @@ public class GuavaListenableFutureIT {
                     new CreateTraceEntry().traceEntryMarker();
                 }
             }, executor);
-            Thread.sleep(200);
+            MILLISECONDS.sleep(200);
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
         }
@@ -248,14 +249,14 @@ public class GuavaListenableFutureIT {
                     return null;
                 }
             });
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
             future1.addListener(new Runnable() {
                 @Override
                 public void run() {
                     new CreateTraceEntry().traceEntryMarker();
                 }
             }, executor);
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
         }

@@ -28,6 +28,7 @@ import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openqa.selenium.By.linkText;
@@ -55,7 +56,7 @@ public class AlertConfigIT extends WebDriverIT {
                     break outer;
                 }
             }
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         if (!found) {
             throw new AssertionError("Timed out waiting for"
@@ -300,7 +301,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         driver.findElement(linkText("Return to list")).click();
 
         // then
@@ -331,7 +332,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         driver.findElement(linkText("Return to list")).click();
 
         // then
@@ -362,7 +363,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         driver.findElement(linkText("Return to list")).click();
 
         // then
@@ -394,7 +395,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         driver.findElement(linkText("Return to list")).click();
 
         // then
@@ -424,7 +425,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         driver.findElement(linkText("Return to list")).click();
 
         // then
@@ -452,7 +453,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         driver.findElement(linkText("Return to list")).click();
 
         // then

@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class JmsPluginIT {
@@ -92,7 +93,7 @@ public class JmsPluginIT {
             MessageProducer producer = session.createProducer(queue);
             Message message = session.createMessage();
             producer.send(message);
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
             connection.close();
         }
     }

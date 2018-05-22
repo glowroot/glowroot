@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Instrumenta
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConfiguredInstrumentationIT {
@@ -56,7 +57,7 @@ public class ConfiguredInstrumentationIT {
         container.getConfigService().updateInstrumentationConfigs(instrumentationConfigs);
         // TODO this sleep currently resolves sporadic grpc related failure, try without sleep after
         // next grpc update
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         // re-start now with pointcut configs
         container.close();
         // see subclass (ReweavePointcutsTest) for JavaagentContainer test

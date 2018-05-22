@@ -27,6 +27,7 @@ import org.glowroot.tests.admin.StorageConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.util.Utils;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openqa.selenium.By.linkText;
 
@@ -47,7 +48,7 @@ public class AdminIT extends WebDriverIT {
         // FIXME currently save overrides active random port with the value 4000
         // page.clickSaveButton();
         // wait for save to finish
-        // Thread.sleep(1000);
+        // SECONDS.sleep(1);
     }
 
     @Test
@@ -81,7 +82,7 @@ public class AdminIT extends WebDriverIT {
         }
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();
@@ -120,20 +121,20 @@ public class AdminIT extends WebDriverIT {
         if (WebDriverSetup.useCentral) {
             page.clickUpdateTwcsWindowSizesButton();
             // wait for save to finish
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
         } else {
             page.clickDefragH2Data();
             // wait for defrag to finish
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
             page.clickCompactH2Data();
             // wait for compact to finish
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
             page.clickAnalyzeH2DiskSpace();
             // wait for analyze to finish
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
             page.clickAnalyzeTraceCounts();
             // wait for trace to finish
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
         }
     }
 
@@ -165,7 +166,7 @@ public class AdminIT extends WebDriverIT {
         page.getFromDisplayNameTextField().sendKeys("User 1234");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();
@@ -206,7 +207,7 @@ public class AdminIT extends WebDriverIT {
         page.getPasswordTextField().sendKeys("p");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();
@@ -252,7 +253,7 @@ public class AdminIT extends WebDriverIT {
         page.getGroupSearchFilterTextField().sendKeys("yf");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();
@@ -286,7 +287,7 @@ public class AdminIT extends WebDriverIT {
         // when
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
     }
 
     @Test
@@ -312,7 +313,7 @@ public class AdminIT extends WebDriverIT {
         page.getPingUrlTextField().sendKeys("http://example.org");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();

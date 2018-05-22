@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class OkHttpClientPluginIT {
@@ -204,7 +205,7 @@ public class OkHttpClientPluginIT {
                         "Unexpected response status code: " + responseStatusCode.get());
             }
             // need to wait just a bit longer to ensure auxiliary thread capture completes
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
         }
     }
 
@@ -240,7 +241,7 @@ public class OkHttpClientPluginIT {
                         "Unexpected response status code: " + responseStatusCode.get());
             }
             // need to wait just a bit longer to ensure auxiliary thread capture completes
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
         }
     }
 

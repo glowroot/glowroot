@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.glowroot.agent.tests.app.LogError;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -89,7 +90,7 @@ public class MaxEntriesLimitIT {
                 break;
             }
             // otherwise continue
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         assertThat(header).isNotNull();
         assertThat(header.getPartial()).isTrue();
@@ -162,7 +163,7 @@ public class MaxEntriesLimitIT {
         }
         @Override
         public void transactionMarker() throws InterruptedException {
-            Thread.sleep(1);
+            MILLISECONDS.sleep(1);
         }
     }
 }

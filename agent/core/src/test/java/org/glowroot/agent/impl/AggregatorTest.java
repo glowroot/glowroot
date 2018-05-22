@@ -59,7 +59,7 @@ public class AggregatorTest {
             if (captureTime > aggregateCaptureTime) {
                 break;
             }
-            Thread.sleep(1);
+            MILLISECONDS.sleep(1);
         }
 
         // then

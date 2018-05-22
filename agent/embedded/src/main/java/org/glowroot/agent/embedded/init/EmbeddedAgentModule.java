@@ -70,6 +70,7 @@ import org.glowroot.ui.UiModule;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class EmbeddedAgentModule {
@@ -328,7 +329,7 @@ class EmbeddedAgentModule {
             if (uiModule != null) {
                 return uiModule;
             }
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         throw new IllegalStateException("UI Module failed to start");
     }

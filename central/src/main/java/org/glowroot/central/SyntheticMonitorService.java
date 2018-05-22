@@ -196,10 +196,10 @@ class SyntheticMonitorService implements Runnable {
     public void run() {
         while (!closed) {
             try {
-                long curr = clock.currentTimeMillis();
-                long next = (long) Math.ceil(curr / 60000.0) * 60000;
+                long currMillis = clock.currentTimeMillis();
+                long nextMillis = (long) Math.ceil(currMillis / 60000.0) * 60000;
                 // scheduling for 5 seconds after the minute (just to avoid exactly on the minute)
-                Thread.sleep(next - curr + 5000);
+                MILLISECONDS.sleep(nextMillis - currMillis + 5000);
                 runInternal();
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method below)

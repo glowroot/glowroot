@@ -179,7 +179,7 @@ class CassandraWrapper {
                 return;
             } catch (NoHostAvailableException e) {
                 cluster.close();
-                Thread.sleep(1000);
+                SECONDS.sleep(1);
             }
         }
     }

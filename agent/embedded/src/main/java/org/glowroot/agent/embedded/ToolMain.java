@@ -39,6 +39,7 @@ import org.glowroot.agent.MainEntryPoint;
 import org.glowroot.agent.embedded.init.EmbeddedGlowrootAgentInitFactory;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ToolMain {
 
@@ -64,7 +65,7 @@ public class ToolMain {
             MainEntryPoint.runOfflineViewer(directories, new EmbeddedGlowrootAgentInitFactory());
             // Glowroot does not create any non-daemon threads, so need to block jvm from exiting
             // when running the offline viewer
-            Thread.sleep(Long.MAX_VALUE);
+            MILLISECONDS.sleep(Long.MAX_VALUE);
             return;
         }
         String command = args[0];

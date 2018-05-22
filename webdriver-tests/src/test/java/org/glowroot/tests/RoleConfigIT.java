@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.glowroot.tests.admin.RoleConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.util.Utils;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.xpath;
@@ -111,7 +112,7 @@ public class RoleConfigIT extends WebDriverIT {
         rolePage.getAdminCheckBox().click();
         rolePage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         driver.findElement(linkText("Return to list")).click();
 
         // then

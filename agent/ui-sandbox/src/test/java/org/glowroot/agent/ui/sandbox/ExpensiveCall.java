@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.ning.http.client.AsyncHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ExpensiveCall {
 
@@ -152,9 +154,9 @@ public class ExpensiveCall {
                 // this loop is used to block threads executing expensive() below
                 while (true) {
                     synchronized (lock) {
-                        Thread.sleep(random.nextInt(10));
+                        MILLISECONDS.sleep(random.nextInt(10));
                     }
-                    Thread.sleep(1);
+                    MILLISECONDS.sleep(1);
                 }
             }
         });
@@ -176,10 +178,10 @@ public class ExpensiveCall {
         start = System.currentTimeMillis();
         while (System.currentTimeMillis() - start < 3 * millis) {
             synchronized (lock) {
-                Thread.sleep(random.nextInt(10));
+                MILLISECONDS.sleep(random.nextInt(10));
                 dummy.incrementAndGet();
             }
-            Thread.sleep(1);
+            MILLISECONDS.sleep(1);
         }
     }
 

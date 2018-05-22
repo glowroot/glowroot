@@ -34,6 +34,7 @@ import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class RollupService implements Runnable {
@@ -68,7 +69,7 @@ class RollupService implements Runnable {
     public void run() {
         while (!closed) {
             try {
-                Thread.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
+                MILLISECONDS.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
                 runInternal();
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method below)

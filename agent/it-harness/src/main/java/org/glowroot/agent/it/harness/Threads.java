@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public class Threads {
                 return;
             }
             // wait a few milliseconds before trying again
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         } while (stopwatch.elapsed(SECONDS) < 10);
         // failure
         if (!rogueThreads.isEmpty()) {
@@ -122,7 +122,7 @@ public class Threads {
                 return;
             }
             // wait a few milliseconds before trying again
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         } while (stopwatch.elapsed(SECONDS) < 10);
         // failure
         throw new RogueThreadsException(rogueThreads);
@@ -132,10 +132,10 @@ public class Threads {
     public static void moreAccurateSleep(long millis) throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         if (millis > 10) {
-            Thread.sleep(millis - 10);
+            MILLISECONDS.sleep(millis - 10);
         }
         while (stopwatch.elapsed(MILLISECONDS) < millis) {
-            Thread.sleep(1);
+            MILLISECONDS.sleep(1);
         }
     }
 

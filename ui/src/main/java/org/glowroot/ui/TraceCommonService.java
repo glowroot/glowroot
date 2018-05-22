@@ -47,6 +47,8 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 class TraceCommonService {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
@@ -242,7 +244,7 @@ class TraceCommonService {
         HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
         while (headerPlus == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
-            Thread.sleep(500);
+            MILLISECONDS.sleep(500);
             headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
         }
         return headerPlus;
@@ -253,7 +255,7 @@ class TraceCommonService {
         Entries entries = traceRepository.readEntries(agentId, traceId);
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
-            Thread.sleep(500);
+            MILLISECONDS.sleep(500);
             entries = traceRepository.readEntries(agentId, traceId);
         }
         return entries;
@@ -264,7 +266,7 @@ class TraceCommonService {
         Queries queries = traceRepository.readQueries(agentId, traceId);
         while (queries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
-            Thread.sleep(500);
+            MILLISECONDS.sleep(500);
             queries = traceRepository.readQueries(agentId, traceId);
         }
         return queries;
@@ -276,7 +278,7 @@ class TraceCommonService {
                 traceRepository.readEntriesAndQueriesForExport(agentId, traceId);
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
-            Thread.sleep(500);
+            MILLISECONDS.sleep(500);
             entries = traceRepository.readEntriesAndQueriesForExport(agentId, traceId);
         }
         return entries;
@@ -287,7 +289,7 @@ class TraceCommonService {
         Profile profile = traceRepository.readMainThreadProfile(agentId, traceId);
         while (profile == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
-            Thread.sleep(500);
+            MILLISECONDS.sleep(500);
             profile = traceRepository.readMainThreadProfile(agentId, traceId);
         }
         return profile;
@@ -298,7 +300,7 @@ class TraceCommonService {
         Profile profile = traceRepository.readAuxThreadProfile(agentId, traceId);
         while (profile == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
-            Thread.sleep(500);
+            MILLISECONDS.sleep(500);
             profile = traceRepository.readAuxThreadProfile(agentId, traceId);
         }
         return profile;

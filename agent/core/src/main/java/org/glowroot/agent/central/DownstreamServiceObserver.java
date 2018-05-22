@@ -88,6 +88,7 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
@@ -201,7 +202,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     private void onNextInternal(CentralRequest request) throws Exception {
         StreamObserver<AgentResponse> responseObserver = currResponseObserver;
         while (responseObserver == null) {
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
             responseObserver = currResponseObserver;
         }
         switch (request.getMessageCase()) {
@@ -789,13 +790,13 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     void close() throws InterruptedException {
         StreamObserver<AgentResponse> responseObserver = currResponseObserver;
         while (responseObserver == null) {
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
             responseObserver = currResponseObserver;
         }
         responseObserver.onCompleted();
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 10 && !closedByCentralCollector) {
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         checkState(closedByCentralCollector);
     }

@@ -25,6 +25,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.io.Files;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class AgentDirsLocking {
@@ -46,7 +47,7 @@ public class AgentDirsLocking {
                 if (fileLock != null) {
                     break;
                 }
-                Thread.sleep(100);
+                MILLISECONDS.sleep(100);
             }
             if (fileLock == null) {
                 throw new AgentDirsLockedException(lockFile, central, offlineViewer);

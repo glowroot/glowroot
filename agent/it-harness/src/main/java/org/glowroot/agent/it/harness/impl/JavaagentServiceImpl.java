@@ -34,6 +34,7 @@ import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.AppUnderTes
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.Void;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class JavaagentServiceImpl extends JavaagentServiceImplBase {
 
@@ -84,7 +85,7 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
         try {
             // this avoids a sporadic gRPC error when running AnalyzedClassPlanBeeIT
             // TODO after next gRPC release, remove this and see if sporadic error still occurs
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
@@ -167,7 +168,7 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
             public void run() {
                 try {
                     // wait a few millis for response to be returned
-                    Thread.sleep(10);
+                    MILLISECONDS.sleep(10);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }

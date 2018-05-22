@@ -27,6 +27,7 @@ import org.glowroot.tests.config.UiConfigPage;
 import org.glowroot.tests.config.UserRecordingConfigPage;
 import org.glowroot.tests.util.Utils;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConfigIT extends WebDriverIT {
@@ -52,7 +53,7 @@ public class ConfigIT extends WebDriverIT {
         page.getCaptureThreadStatsCheckBox().click();
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();
@@ -82,7 +83,7 @@ public class ConfigIT extends WebDriverIT {
         page.getMaskSystemPropertiesTextField().sendKeys("abc,xyz");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();
@@ -109,7 +110,7 @@ public class ConfigIT extends WebDriverIT {
         page.getDefaultPercentilesTextField().sendKeys("3,4,5,6");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();
@@ -138,7 +139,7 @@ public class ConfigIT extends WebDriverIT {
         page.getProfileIntervalTextField().sendKeys("2345");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();
@@ -176,7 +177,7 @@ public class ConfigIT extends WebDriverIT {
         page.getMaxProfileSamplesPerTransactionTextField().sendKeys("3456");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();
@@ -211,7 +212,7 @@ public class ConfigIT extends WebDriverIT {
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Save changes']")).click();
 
         // wait for save to finish
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // then
         app.open();

@@ -157,7 +157,7 @@ public abstract class ClusterManager {
             cacheManager.stop();
             // org.infinispan.factories.NamedExecutorsFactory.stop() calls shutdownNow() on all
             // executors, but does not awaitTermination(), so sleep a bit to allow time
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
         }
 
         private static String getConfigurationFilePropertyValue(File confDir,

@@ -28,6 +28,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class TraceCollector {
@@ -52,7 +53,7 @@ class TraceCollector {
                             || trace.getHeader().getTransactionName().equals(transactionName))) {
                 return trace;
             }
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         if (transactionName != null) {
             throw new IllegalStateException("No trace was collected for transaction type \""
@@ -75,7 +76,7 @@ class TraceCollector {
                 }
                 return trace;
             }
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         throw new IllegalStateException("No trace was collected");
     }
@@ -96,7 +97,7 @@ class TraceCollector {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 10 && !expectedMessages.isEmpty()
                 && unexpectedMessages.isEmpty()) {
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         try {
             if (!unexpectedMessages.isEmpty()) {

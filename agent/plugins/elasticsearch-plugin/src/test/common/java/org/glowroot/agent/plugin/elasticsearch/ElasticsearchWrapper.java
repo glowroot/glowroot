@@ -204,7 +204,7 @@ class ElasticsearchWrapper {
     private static void waitForElasticsearch() throws Exception {
         TransportClient client = Util.client(new InetSocketAddress("127.0.0.1", 9300));
         while (client.connectedNodes().isEmpty()) {
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
         }
         client.close();
     }

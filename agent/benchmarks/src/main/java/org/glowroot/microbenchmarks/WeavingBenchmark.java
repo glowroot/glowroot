@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 @BenchmarkMode(Mode.SingleShotTime)
 @Warmup(iterations = 0)
 @Measurement(iterations = 1)
@@ -73,7 +75,7 @@ public class WeavingBenchmark {
 
     @TearDown
     public void tearDown() throws InterruptedException {
-        Thread.sleep(100);
+        MILLISECONDS.sleep(100);
     }
 
     @Benchmark

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 @SuppressWarnings("serial")
 public class JdbcServlet extends HttpServlet implements AppUnderTest {
 
@@ -64,7 +66,7 @@ public class JdbcServlet extends HttpServlet implements AppUnderTest {
             doGetInternal();
             // sleep long enough to get a few stack trace samples
             // (profiling interval is set to 10 milliseconds for webdriver tests)
-            Thread.sleep(100);
+            MILLISECONDS.sleep(100);
         } catch (SQLException e) {
             throw new ServletException(e);
         } catch (InterruptedException e) {

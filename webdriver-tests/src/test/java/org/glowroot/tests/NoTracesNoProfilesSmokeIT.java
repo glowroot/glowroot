@@ -25,6 +25,8 @@ import org.glowroot.tests.admin.StorageConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.util.Utils;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
 
     @Test
@@ -45,7 +47,7 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
         configSidebar.getStorageLink().click();
         storageConfigPage.clickDeleteAllButton();
         // TODO implement better wait for delete to complete
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         String content = httpGet("http://localhost:" + getUiPort()
                 + "/backend/config/transaction?agent-id=" + agentId);
@@ -59,14 +61,14 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
                         + "\"version\":\"" + version + "\"}");
         container.executeNoExpectedTrace(JdbcServlet.class);
         // give time for aggregates to be collected
-        Thread.sleep(5000);
+        SECONDS.sleep(5);
 
         // when
         app.open();
         Utils.withWait(driver, By.linkText("Slow traces (0)"));
         Utils.withWait(driver, By.partialLinkText("/jdbcservlet")).click();
         // give time for page to load and tab bar to refresh
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         globalNavbar.getErrorsLink().click();
         Utils.withWait(driver, By.xpath("//a[normalize-space()='Error traces (0)']"));
         globalNavbar.getJvmLink().click();

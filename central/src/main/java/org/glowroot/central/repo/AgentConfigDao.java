@@ -45,6 +45,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfi
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 // TODO agent config records never expire for abandoned agent rollup ids
 public class AgentConfigDao {
@@ -206,7 +207,7 @@ public class AgentConfigDao {
                 agentConfigCache.invalidate(agentRollupId);
                 return;
             }
-            Thread.sleep(200);
+            MILLISECONDS.sleep(200);
         }
         throw new OptimisticLockException();
     }

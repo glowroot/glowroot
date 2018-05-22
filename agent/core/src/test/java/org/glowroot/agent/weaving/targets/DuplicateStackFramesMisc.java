@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.weaving.targets;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class DuplicateStackFramesMisc implements Misc {
 
     @Override
@@ -23,7 +25,7 @@ public class DuplicateStackFramesMisc implements Misc {
         // bytecode weaving
         while (true) {
             try {
-                Thread.sleep(5);
+                MILLISECONDS.sleep(5);
             } catch (InterruptedException e) {
                 return;
             }

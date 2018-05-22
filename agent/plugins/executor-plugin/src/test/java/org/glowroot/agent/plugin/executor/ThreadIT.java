@@ -427,7 +427,7 @@ public class ThreadIT {
         @Override
         public void traceEntryMarker() {
             try {
-                Thread.sleep(100);
+                MILLISECONDS.sleep(100);
             } catch (InterruptedException e) {
             }
         }

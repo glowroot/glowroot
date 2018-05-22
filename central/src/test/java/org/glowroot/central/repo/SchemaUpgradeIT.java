@@ -86,7 +86,7 @@ public class SchemaUpgradeIT {
                 return;
             } catch (NoHostAvailableException e) {
             }
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
         }
         // try one last time and let exception bubble up
         wrappedSession.execute(query);

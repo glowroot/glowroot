@@ -713,7 +713,7 @@ public class CentralModule {
                             centralConfig.cassandraConsistencyLevel(),
                             Joiner.on(",").join(centralConfig.cassandraContactPoint()));
                 }
-                Thread.sleep(1000);
+                SECONDS.sleep(1);
             } catch (RuntimeException e) {
                 // clean up
                 if (session != null) {

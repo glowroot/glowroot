@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import org.glowroot.tests.admin.UserConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.util.Utils;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.xpath;
 
@@ -72,9 +74,9 @@ public class LoginIT extends WebDriverIT {
         // TODO validate password change success
         // until then, need to sleep a long time since secure password hashing can take some time on
         // slow travis ci machines
-        Thread.sleep(2000);
+        SECONDS.sleep(2);
         globalNavbar.getAdminConfigLink().click();
-        Thread.sleep(200);
+        MILLISECONDS.sleep(200);
 
         globalNavbar.getSignOutLink().click();
 
@@ -108,7 +110,7 @@ public class LoginIT extends WebDriverIT {
             // previously tried waiting for button to be not(@disabled)
             // but that didn't resolve sporadic issue with login action never occurring
             // (and being left on login page, timing out waiting for "sign out" link below
-            Thread.sleep(500);
+            MILLISECONDS.sleep(500);
         }
         globalNavbar.getLoginButton().click();
         // wait for sign out button to appear, means login success

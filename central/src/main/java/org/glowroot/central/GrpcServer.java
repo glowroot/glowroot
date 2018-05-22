@@ -129,7 +129,7 @@ class GrpcServer {
             httpServer.shutdown();
         }
         // wait for existing requests to complete
-        Thread.sleep(5000);
+        SECONDS.sleep(5);
         if (httpsServer != null) {
             shutdownNow(httpsServer);
         }

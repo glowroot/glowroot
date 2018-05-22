@@ -65,6 +65,7 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -104,7 +105,7 @@ class GrpcServerWrapper {
     AgentConfig getAgentConfig() throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (agentConfig == null && stopwatch.elapsed(SECONDS) < 10) {
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         if (agentConfig == null) {
             throw new IllegalStateException("Timed out waiting to receive agent config");
@@ -124,7 +125,7 @@ class GrpcServerWrapper {
     void close() throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 10 && !downstreamService.closedByAgent) {
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         checkState(downstreamService.closedByAgent);
         // TODO shutdownNow() has been needed to interrupt grpc threads since grpc-java 1.7.0
@@ -135,7 +136,7 @@ class GrpcServerWrapper {
         // not sure why, but server needs a little extra time to shut down properly
         // without this sleep, this warning is logged (but tests still pass):
         // io.grpc.netty.NettyServerHandler - Connection Error: RejectedExecutionException
-        Thread.sleep(100);
+        MILLISECONDS.sleep(100);
         executor.shutdown();
         if (!executor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
@@ -373,7 +374,7 @@ class GrpcServerWrapper {
             ResponseHolder responseHolder = new ResponseHolder();
             responseHolders.put(request.getRequestId(), responseHolder);
             while (requestObserver == null) {
-                Thread.sleep(10);
+                MILLISECONDS.sleep(10);
             }
             requestObserver.onNext(request);
             // timeout is in case agent never responds

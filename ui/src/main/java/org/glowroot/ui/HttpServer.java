@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class HttpServer {
 
@@ -313,7 +314,7 @@ class HttpServer {
             long backoffMillis = 1000;
             while (true) {
                 try {
-                    Thread.sleep(backoffMillis);
+                    MILLISECONDS.sleep(backoffMillis);
                 } catch (InterruptedException f) {
                     Thread.currentThread().interrupt();
                     return;

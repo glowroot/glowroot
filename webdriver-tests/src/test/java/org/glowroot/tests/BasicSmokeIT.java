@@ -47,6 +47,7 @@ import org.glowroot.tests.reporting.AdhocPage;
 import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.xpath;
 
@@ -84,7 +85,7 @@ public class BasicSmokeIT extends WebDriverIT {
                     && transactionNames.contains("/errorservlet")) {
                 break;
             }
-            Thread.sleep(10);
+            MILLISECONDS.sleep(10);
         }
         if (!transactionNames.contains("/jdbcservlet")
                 || !transactionNames.contains("/errorservlet")) {
@@ -142,7 +143,7 @@ public class BasicSmokeIT extends WebDriverIT {
 
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
         // give flame graph a chance to render (only for visual when running locally)
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
         globalNavbar.getTransactionsLink().click();
         Utils.withWait(driver, By.partialLinkText("/jdbcservlet")).click();
         Utils.withWait(driver, By.partialLinkText("percentiles")).click();
@@ -252,7 +253,7 @@ public class BasicSmokeIT extends WebDriverIT {
         globalNavbar.getJvmLink().click();
         // sleep for a second to give time for jvm gauges page to make 2 requests
         // (first to get gauge list and then to get gauge points for default selected gauges)
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         jvmSidebar.getEnvironmentLink().click();
 
@@ -472,7 +473,7 @@ public class BasicSmokeIT extends WebDriverIT {
                 By.xpath("//div[starts-with(normalize-space(.),'jdbc execute:')]"));
         Utils.withWait(driver, By.className("gt-main-thread-profile-toggle")).click();
         // wait for profile to open
-        Thread.sleep(1000);
+        SECONDS.sleep(1);
 
         // "click download", verify no error
         String download;

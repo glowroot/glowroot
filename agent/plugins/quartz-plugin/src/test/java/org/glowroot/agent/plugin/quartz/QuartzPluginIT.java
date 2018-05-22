@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class QuartzPluginIT {
@@ -109,7 +110,7 @@ public class QuartzPluginIT {
                 trigger = createTrigger1x();
             }
             scheduler.scheduleJob(job, trigger);
-            Thread.sleep(1000);
+            SECONDS.sleep(1);
             scheduler.shutdown();
         }
     }
