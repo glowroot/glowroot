@@ -18,11 +18,13 @@ package org.glowroot.agent.embedded.repo;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +39,9 @@ import org.glowroot.common2.repo.RepoAdmin;
 import org.glowroot.common2.repo.TraceAttributeNameRepository;
 import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.common2.repo.util.AlertingService;
+import org.glowroot.common2.repo.util.AlertingService.IncidentKey;
 import org.glowroot.common2.repo.util.HttpClient;
+import org.glowroot.common2.repo.util.LockSet.LockSetImpl;
 import org.glowroot.common2.repo.util.MailService;
 import org.glowroot.common2.repo.util.RollupLevelService;
 
@@ -120,7 +124,8 @@ public class SimpleRepoModule {
         httpClient = new HttpClient(configRepository);
 
         alertingService = new AlertingService(configRepository, incidentDao, aggregateDao,
-                gaugeValueDao, rollupLevelService, new MailService(), httpClient, clock);
+                gaugeValueDao, rollupLevelService, new MailService(), httpClient, newLockSet(),
+                newLockSet(), clock);
         if (backgroundExecutor == null) {
             reaperRunnable = null;
         } else {
@@ -204,5 +209,9 @@ public class SimpleRepoModule {
         }
         traceCappedDatabase.close();
         dataSource.close();
+    }
+
+    private static LockSetImpl<IncidentKey> newLockSet() {
+        return new LockSetImpl<IncidentKey>(Maps.<IncidentKey, UUID>newConcurrentMap());
     }
 }

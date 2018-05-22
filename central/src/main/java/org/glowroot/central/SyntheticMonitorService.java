@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -70,6 +71,7 @@ import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
@@ -131,6 +133,8 @@ class SyntheticMonitorService implements Runnable {
     private final Ticker ticker;
     private final Clock clock;
 
+    private final ConcurrentMap<String, Boolean> executionRateLimiter;
+
     private final CloseableHttpAsyncClient httpClient;
 
     private final UserAgent userAgent;
@@ -148,8 +152,8 @@ class SyntheticMonitorService implements Runnable {
 
     SyntheticMonitorService(AgentDao agentDao, ConfigRepositoryImpl configRepository,
             IncidentDao incidentDao, AlertingService alertingService,
-            SyntheticResultDao syntheticResponseDao, Ticker ticker, Clock clock,
-            String version) {
+            SyntheticResultDao syntheticResponseDao, ClusterManager clusterManager, Ticker ticker,
+            Clock clock, String version) {
         this.agentDao = agentDao;
         this.configRepository = configRepository;
         this.incidentDao = incidentDao;
@@ -157,6 +161,8 @@ class SyntheticMonitorService implements Runnable {
         this.syntheticResponseDao = syntheticResponseDao;
         this.ticker = ticker;
         this.clock = clock;
+        executionRateLimiter = clusterManager
+                .createReplicatedMap("syntheticMonitorExecutionRateLimiter", 30, SECONDS);
         String shortVersion;
         if (version.equals(Version.UNKNOWN_VERSION)) {
             shortVersion = "";
@@ -190,8 +196,10 @@ class SyntheticMonitorService implements Runnable {
     public void run() {
         while (!closed) {
             try {
-                // FIXME spread out agent checks over the minute
-                Thread.sleep(60000);
+                long curr = clock.currentTimeMillis();
+                long next = (long) Math.ceil(curr / 60000.0) * 60000;
+                // scheduling for 5 seconds after the minute (just to avoid exactly on the minute)
+                Thread.sleep(next - curr + 5000);
                 runInternal();
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method below)
@@ -269,6 +277,11 @@ class SyntheticMonitorService implements Runnable {
                 return;
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
+                continue;
+            }
+            String uniqueId = syntheticMonitorConfig.getId() + agentRollup.id();
+            if (executionRateLimiter.putIfAbsent(uniqueId, true) != null) {
+                // was run in the last 30 seconds (probably on a different cluster node)
                 continue;
             }
             checkExecutor.execute(() -> {

@@ -16,11 +16,13 @@
 package org.glowroot.common2.repo.util;
 
 import java.text.DecimalFormat;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 import javax.mail.Message;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,6 +42,8 @@ import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.Utils;
+import org.glowroot.common2.repo.util.AlertingService.IncidentKey;
+import org.glowroot.common2.repo.util.LockSet.LockSetImpl;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
@@ -150,7 +154,9 @@ public class AlertingServiceTest {
         setupForTransaction(1000000);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient, Clock.systemClock());
+                rollupLevelService, mailService, httpClient, newLockSet(),
+                newLockSet(),
+                Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
                 TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
@@ -167,7 +173,9 @@ public class AlertingServiceTest {
         setupForTransaction(999999);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient, Clock.systemClock());
+                rollupLevelService, mailService, httpClient, newLockSet(),
+                newLockSet(),
+                Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
                 TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
@@ -181,7 +189,9 @@ public class AlertingServiceTest {
         setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient, Clock.systemClock());
+                rollupLevelService, mailService, httpClient, newLockSet(),
+                newLockSet(),
+                Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
                 UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
@@ -198,7 +208,9 @@ public class AlertingServiceTest {
         setupForGauge(499);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient, Clock.systemClock());
+                rollupLevelService, mailService, httpClient, newLockSet(),
+                newLockSet(),
+                Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
                 UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
@@ -212,7 +224,9 @@ public class AlertingServiceTest {
         setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient, Clock.systemClock());
+                rollupLevelService, mailService, httpClient, newLockSet(),
+                newLockSet(),
+                Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
                 LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
@@ -229,7 +243,9 @@ public class AlertingServiceTest {
         setupForGauge(501);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
-                rollupLevelService, mailService, httpClient, Clock.systemClock());
+                rollupLevelService, mailService, httpClient, newLockSet(),
+                newLockSet(),
+                Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
                 LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
@@ -303,6 +319,10 @@ public class AlertingServiceTest {
         when(gaugeValueRepository.readGaugeValues(AGENT_ID,
                 "java.lang:type=GarbageCollector,name=ConcurrentMarkSweep:CollectionTime[counter]",
                 60001, 120000, 0)).thenReturn(ImmutableList.of(gaugeValue));
+    }
+
+    private static LockSet<IncidentKey> newLockSet() {
+        return new LockSetImpl<IncidentKey>(Maps.<IncidentKey, UUID>newConcurrentMap());
     }
 
     private static void shouldReturnCorrectPercentileName(double percentile, String suffix) {

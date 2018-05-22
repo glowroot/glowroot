@@ -33,6 +33,13 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>serial</artifactId>
+      <version>${immutables.version}</version>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
       <groupId>org.immutables</groupId>
       <artifactId>android-stub</artifactId>

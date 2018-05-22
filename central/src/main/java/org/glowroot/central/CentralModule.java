@@ -74,7 +74,9 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
 import org.glowroot.common2.repo.util.AlertingService;
+import org.glowroot.common2.repo.util.AlertingService.IncidentKey;
 import org.glowroot.common2.repo.util.HttpClient;
+import org.glowroot.common2.repo.util.LockSet;
 import org.glowroot.common2.repo.util.MailService;
 import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.ui.CommonHandler;
@@ -87,6 +89,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CentralModule {
 
@@ -176,9 +179,14 @@ public class CentralModule {
             RollupLevelService rollupLevelService =
                     new RollupLevelService(repos.getConfigRepository(), clock);
             HttpClient httpClient = new HttpClient(repos.getConfigRepository());
+            LockSet<IncidentKey> openingIncidentLockSet =
+                    clusterManager.createReplicatedLockSet("openingIncidentLockSet", 60, SECONDS);
+            LockSet<IncidentKey> resolvingIncidentLockSet =
+                    clusterManager.createReplicatedLockSet("resolvingIncidentLockSet", 60, SECONDS);
             alertingService = new AlertingService(repos.getConfigRepository(),
                     repos.getIncidentDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
-                    rollupLevelService, new MailService(), httpClient, clock);
+                    rollupLevelService, new MailService(), httpClient, openingIncidentLockSet,
+                    resolvingIncidentLockSet, clock);
             HeartbeatAlertingService heartbeatAlertingService = new HeartbeatAlertingService(
                     repos.getHeartbeatDao(), repos.getIncidentDao(), alertingService,
                     repos.getConfigRepository());
@@ -209,7 +217,7 @@ public class CentralModule {
                     clock);
             syntheticMonitorService = new SyntheticMonitorService(repos.getAgentDao(),
                     repos.getConfigRepository(), repos.getIncidentDao(), alertingService,
-                    repos.getSyntheticResultDao(), ticker, clock, version);
+                    repos.getSyntheticResultDao(), clusterManager, ticker, clock, version);
 
             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
             uiModule = new CreateUiModuleBuilder()

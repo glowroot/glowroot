@@ -16,12 +16,14 @@
 package org.glowroot.common2.repo.util;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -39,6 +41,8 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +80,8 @@ public class AlertingService {
     private final IncidentRepository incidentRepository;
     private final MailService mailService;
     private final HttpClient httpClient;
+    private final LockSet<IncidentKey> openingIncidentLockSet;
+    private final LockSet<IncidentKey> resolvingIncidentLockSet;
     private final Clock clock;
 
     private final MetricService metricService;
@@ -90,11 +96,14 @@ public class AlertingService {
     public AlertingService(ConfigRepository configRepository, IncidentRepository incidentRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
             RollupLevelService rollupLevelService, MailService mailService, HttpClient httpClient,
-            Clock clock) {
+            LockSet<IncidentKey> openingIncidentLockSet,
+            LockSet<IncidentKey> resolvingIncidentLockSet, Clock clock) {
         this.configRepository = configRepository;
         this.incidentRepository = incidentRepository;
         this.mailService = mailService;
         this.httpClient = httpClient;
+        this.openingIncidentLockSet = openingIncidentLockSet;
+        this.resolvingIncidentLockSet = resolvingIncidentLockSet;
         this.clock = clock;
         this.metricService =
                 new MetricService(aggregateRepository, gaugeValueRepository, rollupLevelService);
@@ -148,9 +157,9 @@ public class AlertingService {
         OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
                 alertCondition, alertConfig.getSeverity());
         if (openIncident != null && !currentlyTriggered) {
-            incidentRepository.resolveIncident(openIncident, endTime);
-            sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
-                    metricCondition, endTime, true);
+            // TODO don't close if no data and no heartbeat?
+            resolveIncident(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
+                    metricCondition, endTime, alertCondition, openIncident);
         } else if (openIncident == null && currentlyTriggered) {
             // don't open if min transaction count is not met
             if (hasMinTransactionCount(metricCondition.getMetric())) {
@@ -165,11 +174,53 @@ public class AlertingService {
                     }
                 }
             }
+            openIncident(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
+                    metricCondition, endTime, alertCondition);
+        }
+    }
+
+    private void openIncident(String centralDisplay, String agentRollupId,
+            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
+            long endTime, AlertCondition alertCondition) throws Exception {
+        IncidentKey incidentKey = ImmutableIncidentKey.builder()
+                .agentRollupId(agentRollupId)
+                .condition(alertCondition)
+                .severity(alertConfig.getSeverity())
+                .build();
+        UUID lockToken = openingIncidentLockSet.lock(incidentKey);
+        if (lockToken == null) {
+            return;
+        }
+        try {
             // the start time for the incident is the end time of the interval evaluated above
             incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
                     alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
             sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
                     metricCondition, endTime, false);
+        } finally {
+            openingIncidentLockSet.unlock(incidentKey, lockToken);
+        }
+    }
+
+    private void resolveIncident(String centralDisplay, String agentRollupId,
+            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
+            long endTime, AlertCondition alertCondition, OpenIncident openIncident)
+            throws Exception {
+        IncidentKey incidentKey = ImmutableIncidentKey.builder()
+                .agentRollupId(agentRollupId)
+                .condition(alertCondition)
+                .severity(alertConfig.getSeverity())
+                .build();
+        UUID lockToken = resolvingIncidentLockSet.lock(incidentKey);
+        if (lockToken == null) {
+            return;
+        }
+        try {
+            incidentRepository.resolveIncident(openIncident, endTime);
+            sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
+                    metricCondition, endTime, true);
+        } finally {
+            resolvingIncidentLockSet.unlock(incidentKey, lockToken);
         }
     }
 
@@ -428,6 +479,14 @@ public class AlertingService {
             return "";
         }
         return Encryption.decrypt(password, lazySecretKey);
+    }
+
+    @Value.Immutable
+    @Serial.Structural
+    public interface IncidentKey extends Serializable {
+        String agentRollupId();
+        AlertCondition condition();
+        AlertSeverity severity();
     }
 
     private class SendPagerDuty implements Runnable {

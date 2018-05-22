@@ -25,9 +25,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.infinispan.configuration.cache.CacheMode;
@@ -43,8 +45,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.common2.repo.util.LockSet;
+import org.glowroot.common2.repo.util.LockSet.LockSetImpl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class ClusterManager {
@@ -74,8 +79,14 @@ public abstract class ClusterManager {
     public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createCache(
             String cacheName, CacheLoader<K, V> loader);
 
+    public abstract <K extends /*@NonNull*/ Serializable> LockSet<K> createReplicatedLockSet(
+            String mapName, long expirationTime, TimeUnit expirationUnit);
+
     public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Serializable> ConcurrentMap<K, V> createReplicatedMap(
             String mapName);
+
+    public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Serializable> ConcurrentMap<K, V> createReplicatedMap(
+            String mapName, long expirationTime, TimeUnit expirationUnit);
 
     public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> DistributedExecutionMap<K, V> createDistributedExecutionMap(
             String cacheName);
@@ -108,11 +119,25 @@ public abstract class ClusterManager {
         }
 
         @Override
+        public <K extends /*@NonNull*/ Serializable> LockSet<K> createReplicatedLockSet(
+                String mapName, long expirationTime, TimeUnit expirationUnit) {
+            return new LockSetImpl<K>(createReplicatedMap(mapName, expirationTime, expirationUnit));
+        }
+
+        @Override
         public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Serializable> ConcurrentMap<K, V> createReplicatedMap(
                 String mapName) {
+            return createReplicatedMap(mapName, -1, MILLISECONDS);
+        }
+
+        @Override
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Serializable> ConcurrentMap<K, V> createReplicatedMap(
+                String mapName, long expirationTime, TimeUnit expirationUnit) {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
                     .cacheMode(CacheMode.REPL_ASYNC);
+            configurationBuilder.expiration()
+                    .lifespan(expirationTime, expirationUnit);
             cacheManager.defineConfiguration(mapName, configurationBuilder.build());
             return cacheManager.getCache(mapName);
         }
@@ -194,9 +219,24 @@ public abstract class ClusterManager {
         }
 
         @Override
+        public <K extends /*@NonNull*/ Serializable> LockSet<K> createReplicatedLockSet(
+                String mapName, long expirationTime, TimeUnit expirationUnit) {
+            return new LockSetImpl<>(createReplicatedMap(mapName, expirationTime, expirationUnit));
+        }
+
+        @Override
         public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Serializable> ConcurrentMap<K, V> createReplicatedMap(
                 String mapName) {
             return new ConcurrentHashMap<>();
+        }
+
+        @Override
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Serializable> ConcurrentMap<K, V> createReplicatedMap(
+                String mapName, long expirationTime, TimeUnit expirationUnit) {
+            return CacheBuilder.newBuilder()
+                    .expireAfterWrite(expirationTime, expirationUnit)
+                    .<K, V>build()
+                    .asMap();
         }
 
         @Override
