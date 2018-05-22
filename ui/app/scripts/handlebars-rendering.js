@@ -397,8 +397,7 @@ HandlebarsRendering = (function () {
       } else if (typeof propVal === 'object' && propVal !== null) {
         ret += maybeBoldPropName(propName) + '<br><div class="gt-indent2">' + messageDetailHtml(propVal) + '</div>';
       } else {
-        // outer div with clearfix is needed when propVal is empty
-        ret += '<div class="clearfix"><div style="float: left;">' + maybeBoldPropName(propName) + '&nbsp;</div>'
+        ret += '<div><div class="gt-trace-attr-name">' + maybeBoldPropName(propName) + '&nbsp;</div>'
             + '<div class="gt-trace-attr-value">' + propVal + '</div></div>';
       }
     });
