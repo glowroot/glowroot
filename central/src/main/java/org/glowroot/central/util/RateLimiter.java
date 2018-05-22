@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,13 +40,7 @@ public class RateLimiter<T extends /*@NonNull*/ Object> {
     }
 
     public boolean tryAcquire(T key) {
-        synchronized (acquiredRecently) {
-            if (acquiredRecently.getIfPresent(key) != null) {
-                return false;
-            }
-            acquiredRecently.put(key, true);
-            return true;
-        }
+        return acquiredRecently.asMap().putIfAbsent(key, true) == null;
     }
 
     public void invalidate(T key) {
