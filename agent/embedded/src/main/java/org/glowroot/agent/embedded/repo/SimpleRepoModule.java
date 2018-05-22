@@ -93,7 +93,7 @@ public class SimpleRepoModule {
         SchemaUpgrade schemaUpgrade = new SchemaUpgrade(dataSource);
         Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
         if (initialSchemaVersion == null) {
-            startupLogger.info("creating glowroot schema ...");
+            startupLogger.info("creating glowroot schema...");
         } else {
             schemaUpgrade.upgrade();
         }

@@ -366,7 +366,7 @@ public class WebDriverSetup {
     private static void downloadAndExtractGeckoDriver(File directory, String downloadFilenameSuffix,
             String downloadFilenameExt, String optionalExt, Archiver archiver) throws IOException {
         // using System.out to make sure user sees why there is a delay here
-        System.out.print("Downloading Mozilla geckodriver " + GECKO_DRIVER_VERSION + " ...");
+        System.out.print("Downloading Mozilla geckodriver " + GECKO_DRIVER_VERSION + "...");
         URL url = new URL("https://github.com/mozilla/geckodriver/releases/download/v"
                 + GECKO_DRIVER_VERSION + "/geckodriver-v" + GECKO_DRIVER_VERSION + '-'
                 + downloadFilenameSuffix + '.' + downloadFilenameExt);

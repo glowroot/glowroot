@@ -66,7 +66,7 @@ class SchemaUpgrade {
                     + " be problematic", CURR_SCHEMA_VERSION, initialSchemaVersion);
             return;
         }
-        startupLogger.info("upgrading glowroot schema from version {} to version {} ...",
+        startupLogger.info("upgrading glowroot schema from version {} to version {}...",
                 initialSchemaVersion, CURR_SCHEMA_VERSION);
         // 0.9.28 to 0.10.0
         if (initialSchemaVersion < 3) {
@@ -112,7 +112,7 @@ class SchemaUpgrade {
 
     private void populateNewGaugeNameTable() throws SQLException {
         startupLogger.info("populating new gauge name history table - this could take a few seconds"
-                + " on large data sets ...");
+                + " on large data sets...");
         dataSource.syncTable("gauge_name", GaugeNameDao.columns);
         dataSource.syncIndexes("gauge_name", GaugeNameDao.indexes);
         // truncate in case previously failed prior to updating schema version

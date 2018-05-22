@@ -95,7 +95,7 @@ class ElasticsearchWrapper {
 
     private static void downloadAndExtract(File baseDir) throws IOException {
         // using System.out to make sure user sees why there is a big delay here
-        System.out.print("Downloading Elasticsearch " + ELASTICSEARCH_VERSION + " ...");
+        System.out.print("Downloading Elasticsearch " + ELASTICSEARCH_VERSION + "...");
         URL url;
         if (ELASTICSEARCH_VERSION.startsWith("5.") || ELASTICSEARCH_VERSION.startsWith("6.")) {
             url = new URL("https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-"

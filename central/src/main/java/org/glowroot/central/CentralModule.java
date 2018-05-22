@@ -158,7 +158,7 @@ public class CentralModule {
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, clock, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
-                startupLogger.info("creating glowroot central schema ...");
+                startupLogger.info("creating glowroot central schema...");
             } else {
                 schemaUpgrade.upgrade();
             }
@@ -318,7 +318,7 @@ public class CentralModule {
 
     public void shutdown() {
         if (startupLogger != null) {
-            startupLogger.info("shutting down ...");
+            startupLogger.info("shutting down...");
         }
         try {
             // close down external inputs first (ui and grpc)
@@ -375,7 +375,7 @@ public class CentralModule {
                 startupLogger.error("glowroot central schema already exists, exiting");
                 return;
             }
-            startupLogger.info("creating glowroot central schema ...");
+            startupLogger.info("creating glowroot central schema...");
             new CentralRepoModule(ClusterManager.create(), session,
                     centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
@@ -440,7 +440,7 @@ public class CentralModule {
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, Clock.systemClock(), false);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
-                startupLogger.info("creating glowroot central schema ...");
+                startupLogger.info("creating glowroot central schema...");
             } else if (initialSchemaVersion != schemaUpgrade.getCurrentSchemaVersion()) {
                 startupLogger.warn("running a version of glowroot central that does not match the"
                         + " glowroot central schema version (expecting glowroot central schema"
@@ -705,11 +705,11 @@ public class CentralModule {
                 startupLogger.debug(e.getMessage(), e);
                 lastException = e;
                 if (session == null) {
-                    waitingForCassandraLogger.info("waiting for Cassandra ({}) ...",
+                    waitingForCassandraLogger.info("waiting for Cassandra ({})...",
                             Joiner.on(",").join(centralConfig.cassandraContactPoint()));
                 } else {
                     waitingForCassandraReplicasLogger.info("waiting for enough Cassandra replicas"
-                            + " to run queries at consistency level {} ({}) ...",
+                            + " to run queries at consistency level {} ({})...",
                             centralConfig.cassandraConsistencyLevel(),
                             Joiner.on(",").join(centralConfig.cassandraContactPoint()));
                 }

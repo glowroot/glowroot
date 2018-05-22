@@ -80,7 +80,7 @@ public class Tools {
     public boolean truncateAllData(@SuppressWarnings("unused") List<String> args) throws Exception {
         for (String tableName : session.getAllTableNames()) {
             if (!keepTableNames.contains(tableName)) {
-                startupLogger.info("truncating {} ...", tableName);
+                startupLogger.info("truncating {}...", tableName);
                 session.updateSchemaWithRetry("truncate table " + tableName);
             }
         }
@@ -94,7 +94,7 @@ public class Tools {
     }
 
     public boolean executeDeletes(List<String> args) throws Exception {
-        startupLogger.info("this could take several minutes on large data sets ...");
+        startupLogger.info("this could take several minutes on large data sets...");
         String partialTableName = args.get(0);
         int rollupLevel = Integer.parseInt(args.get(1));
         List<Integer> expirationHours;

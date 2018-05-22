@@ -141,7 +141,7 @@ public class SchemaUpgrade {
                     initialSchemaVersion);
             return;
         }
-        startupLogger.info("upgrading glowroot central schema from version {} to version {} ...",
+        startupLogger.info("upgrading glowroot central schema from version {} to version {}...",
                 initialSchemaVersion, CURR_SCHEMA_VERSION);
         // 0.9.1 to 0.9.2
         if (initialSchemaVersion < 2) {
@@ -514,7 +514,7 @@ public class SchemaUpgrade {
             session.execute("alter table " + tableName
                     + " with compression = { 'class' : 'LZ4Compressor' }");
             if (snappyUpdatedCount++ == 0) {
-                startupLogger.info("upgrading from Snappy to LZ4 compression ...");
+                startupLogger.info("upgrading from Snappy to LZ4 compression...");
             }
         }
         if (snappyUpdatedCount > 0) {
@@ -534,7 +534,7 @@ public class SchemaUpgrade {
                 session.updateTableTwcsProperties(tableName, expirationHours);
                 if (dtcsUpdatedCount++ == 0) {
                     startupLogger.info("upgrading from DateTieredCompactionStrategy to"
-                            + " TimeWindowCompactionStrategy compression ...");
+                            + " TimeWindowCompactionStrategy compression...");
                 }
             } catch (InvalidConfigurationInQueryException e) {
                 logger.debug(e.getMessage(), e);
@@ -659,7 +659,7 @@ public class SchemaUpgrade {
     }
 
     private void updateTwcsDtcsGcSeconds() throws Exception {
-        logger.info("updating gc_grace_seconds on TWCS/DTCS tables ...");
+        logger.info("updating gc_grace_seconds on TWCS/DTCS tables...");
         for (TableMetadata table : session.getTables()) {
             String compactionClass = table.getOptions().getCompaction().get("class");
             if (compactionClass == null) {
@@ -679,7 +679,7 @@ public class SchemaUpgrade {
     }
 
     private void updateNeedsRollupGcSeconds() throws Exception {
-        logger.info("updating gc_grace_seconds on \"needs rollup\" tables ...");
+        logger.info("updating gc_grace_seconds on \"needs rollup\" tables...");
         // reduce from default 10 days to 4 hours
         //
         // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
@@ -1159,7 +1159,7 @@ public class SchemaUpgrade {
 
     private void populateGaugeNameTable() throws Exception {
         logger.info("populating new gauge name history table - this could take several minutes on"
-                + " large data sets ...");
+                + " large data sets...");
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         int maxRollupHours = storageConfig.getMaxRollupHours();
         dropTableIfExists("gauge_name");
@@ -1329,7 +1329,7 @@ public class SchemaUpgrade {
 
     private void populateAgentHistoryTable() throws Exception {
         logger.info("populating new agent history table - this could take a several minutes on"
-                + " large data sets ...");
+                + " large data sets...");
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("agent");
         session.createTableWithTWCS("create table if not exists agent (one int, capture_time"
@@ -1711,7 +1711,7 @@ public class SchemaUpgrade {
             // must be upgrading all the way from a glowroot version prior to heartbeat
             return;
         }
-        logger.info("rewriting heartbeat table (part 1) ...");
+        logger.info("rewriting heartbeat table (part 1)...");
         dropTableIfExists("heartbeat_temp");
         session.updateSchemaWithRetry("create table if not exists heartbeat_temp (agent_id varchar,"
                 + " central_capture_time timestamp, primary key (agent_id, central_capture_time))");
@@ -1735,7 +1735,7 @@ public class SchemaUpgrade {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        logger.info("rewriting heartbeat table (part 2) ...");
+        logger.info("rewriting heartbeat table (part 2)...");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
         dropTableIfExists("heartbeat");
         session.createTableWithTWCS("create table if not exists heartbeat (agent_id varchar,"
@@ -1873,7 +1873,7 @@ public class SchemaUpgrade {
 
     private void rewriteGaugeNameTablePart1() throws Exception {
         logger.info("rewriting gauge_name table (part 1) - this could take several minutes on large"
-                + " data sets ...");
+                + " data sets...");
         dropTableIfExists("gauge_name_temp");
         session.updateSchemaWithRetry("create table if not exists gauge_name_temp (agent_rollup_id"
                 + " varchar, capture_time timestamp, gauge_name varchar, primary key"
@@ -1901,7 +1901,7 @@ public class SchemaUpgrade {
             return;
         }
         logger.info("rewriting gauge_name table (part 2) - this could take several minutes on large"
-                + " data sets ...");
+                + " data sets...");
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("gauge_name");
         Map<String, V09AgentRollup> v09AgentRollups = getV09AgentRollupsFromAgentRollupTable();
@@ -2014,7 +2014,7 @@ public class SchemaUpgrade {
 
     private void populateTraceTtSlowCountAndPointPartialPart1() throws Exception {
         logger.info("populating trace_tt_slow_count_partial and trace_tt_slow_point_partial tables"
-                + " - this could take several minutes on large data sets ...");
+                + " - this could take several minutes on large data sets...");
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("trace_tt_slow_count_partial");
         dropTableIfExists("trace_tt_slow_point_partial");
@@ -2128,7 +2128,7 @@ public class SchemaUpgrade {
 
     private void populateTraceTnSlowCountAndPointPartialPart1() throws Exception {
         logger.info("populating trace_tn_slow_count_partial and trace_tn_slow_point_partial tables"
-                + " - this could take several minutes on large data sets ...");
+                + " - this could take several minutes on large data sets...");
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("trace_tn_slow_count_partial");
         dropTableIfExists("trace_tn_slow_point_partial");
