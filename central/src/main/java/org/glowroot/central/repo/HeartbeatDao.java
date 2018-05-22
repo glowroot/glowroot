@@ -15,12 +15,15 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 
@@ -53,14 +56,16 @@ public class HeartbeatDao {
 
     public void store(String agentId) throws Exception {
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
+        List<Future<?>> futures = new ArrayList<>();
         for (String agentRollupId : agentRollupIds) {
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setTimestamp(i++, new Date(clock.currentTimeMillis()));
             boundStatement.setInt(i++, TTL);
-            session.execute(boundStatement);
+            futures.add(session.executeAsync(boundStatement));
         }
+        MoreFutures.waitForAll(futures);
     }
 
     public boolean exists(String agentRollupId, long centralCaptureFrom, long centralCaptureTo)
