@@ -434,7 +434,8 @@ class AdminJsonService {
                     configRepository.getLazySecretKey(), mailService);
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
-            return createErrorResponse(e.getMessage());
+            // using Throwable.toString() to capture exception class as well
+            return createErrorResponse(e.toString());
         }
         return "{}";
     }
