@@ -25,7 +25,13 @@ public class BytecodeServiceHolder {
 
     public static BytecodeService get() {
         if (service == null) {
-            throw new RuntimeException("Bytecode service retrieved too early");
+            ClassLoader loader = BytecodeServiceHolder.class.getClassLoader();
+            if (loader == null) {
+                throw new RuntimeException("Bytecode service retrieved too early");
+            } else {
+                throw new RuntimeException(
+                        "Bytecode service retrieved from class loader: " + loader);
+            }
         } else {
             return service;
         }
