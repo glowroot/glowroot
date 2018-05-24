@@ -38,7 +38,7 @@ public class RequestDispatcherAspect {
     @Mixin("javax.servlet.RequestDispatcher")
     public abstract static class RequestDispatcherImpl implements RequestDispatcherMixin {
 
-        private @Nullable String glowroot$path;
+        private transient @Nullable String glowroot$path;
 
         @Override
         public @Nullable String glowroot$getPath() {

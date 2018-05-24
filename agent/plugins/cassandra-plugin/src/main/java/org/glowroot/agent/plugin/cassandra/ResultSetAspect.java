@@ -38,7 +38,7 @@ public class ResultSetAspect {
         // needs to be volatile, since ResultSets are thread safe, and therefore app/framework does
         // *not* need to provide visibility when used across threads and so this cannot piggyback
         // (unlike with jdbc ResultSets)
-        private volatile @Nullable QueryEntry glowroot$queryEntry;
+        private transient volatile @Nullable QueryEntry glowroot$queryEntry;
 
         @Override
         public @Nullable QueryEntry glowroot$getQueryEntry() {

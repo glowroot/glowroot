@@ -42,8 +42,8 @@ public class NettyAspect {
     @Mixin({"io.netty.channel.Channel"})
     public abstract static class ChannelImpl implements ChannelMixin {
 
-        private volatile boolean glowroot$completeAsyncTransaction;
-        private volatile @Nullable AuxThreadContext glowroot$auxContext;
+        private transient volatile boolean glowroot$completeAsyncTransaction;
+        private transient volatile @Nullable AuxThreadContext glowroot$auxContext;
 
         @Override
         public boolean glowroot$getCompleteAsyncTransaction() {

@@ -105,7 +105,7 @@ public class ControllerAspect {
             "org.springframework.messaging.support.ExecutorSubscribableChannel$1"})
     public static class WithWebSocketUriImpl implements WithWebSocketUri {
 
-        private @Nullable URI glowroot$webSocketUri;
+        private transient @Nullable URI glowroot$webSocketUri;
 
         @Override
         public @Nullable URI glowroot$getWebSocketUri() {

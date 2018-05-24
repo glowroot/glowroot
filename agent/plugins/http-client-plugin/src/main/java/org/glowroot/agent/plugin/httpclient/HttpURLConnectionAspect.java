@@ -61,7 +61,7 @@ public class HttpURLConnectionAspect {
             "weblogic.utils.io.UnsyncByteArrayOutputStream"})
     public static class HasTraceEntryImpl implements HasTraceEntry {
 
-        private @Nullable TraceEntry glowroot$traceEntry;
+        private transient @Nullable TraceEntry glowroot$traceEntry;
 
         @Override
         public @Nullable TraceEntry glowroot$getTraceEntry() {

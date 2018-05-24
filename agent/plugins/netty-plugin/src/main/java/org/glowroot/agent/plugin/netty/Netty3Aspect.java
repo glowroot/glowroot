@@ -41,7 +41,7 @@ public class Netty3Aspect {
     @Mixin({"org.jboss.netty.channel.Channel"})
     public abstract static class ChannelImpl implements ChannelMixin {
 
-        private volatile boolean glowroot$completeAsyncTransaction;
+        private transient volatile boolean glowroot$completeAsyncTransaction;
 
         @Override
         public boolean glowroot$getCompleteAsyncTransaction() {
@@ -66,7 +66,7 @@ public class Netty3Aspect {
     @Mixin({"org.jboss.netty.channel.ChannelFutureListener"})
     public abstract static class ListenerImpl implements ListenerMixin {
 
-        private volatile @Nullable AuxThreadContext glowroot$auxContext;
+        private transient volatile @Nullable AuxThreadContext glowroot$auxContext;
 
         @Override
         public @Nullable AuxThreadContext glowroot$getAuxContext() {

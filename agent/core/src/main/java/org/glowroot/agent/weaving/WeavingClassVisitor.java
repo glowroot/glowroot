@@ -519,6 +519,13 @@ class WeavingClassVisitor extends ClassVisitor {
     private void addMixin(ClassNode mixinClassNode) {
         List<FieldNode> fieldNodes = mixinClassNode.fields;
         for (FieldNode fieldNode : fieldNodes) {
+            if (!Modifier.isTransient(fieldNode.access)) {
+                // this is needed to avoid serialization issues (even if the new field is
+                // serializable, this can still cause issues in a cluster if glowroot is not
+                // deployed on all nodes)
+                throw new IllegalStateException(
+                        "@Mixin fields must be marked transient: " + mixinClassNode.name);
+            }
             fieldNode.accept(this);
         }
         List<MethodNode> methodNodes = mixinClassNode.methods;

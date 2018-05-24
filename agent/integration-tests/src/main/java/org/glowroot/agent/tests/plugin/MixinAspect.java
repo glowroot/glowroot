@@ -25,7 +25,7 @@ public class MixinAspect {
     @Mixin("java.lang.Runnable")
     public static class RunnableMixinImpl implements RunnableMixin {
 
-        private @Nullable String string;
+        private transient @Nullable String string;
 
         @MixinInit
         private void initHasString() {

@@ -72,7 +72,7 @@ public class AsyncHttpClientAspect {
     public abstract static class ListenableFutureImpl implements ListenableFutureMixin {
 
         // volatile not needed, only accessed by the main thread
-        private @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
+        private transient @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
 
         @Override
         public @Nullable AsyncTraceEntry glowroot$getAsyncTraceEntry() {

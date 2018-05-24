@@ -51,8 +51,8 @@ public class OkHttpClientAspect {
     @Mixin("com.squareup.okhttp.Callback")
     public abstract static class CallbackImpl implements CallbackMixin {
 
-        private volatile @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
-        private volatile @Nullable AuxThreadContext glowroot$auxContext;
+        private transient volatile @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
+        private transient volatile @Nullable AuxThreadContext glowroot$auxContext;
 
         @Override
         public @Nullable AsyncTraceEntry glowroot$getAsyncTraceEntry() {

@@ -53,7 +53,7 @@ public class ExecutorAspect {
             "scala.concurrent.forkjoin.ForkJoinTask"})
     public abstract static class RunnableEtcImpl implements RunnableEtcMixin {
 
-        private volatile @Nullable AuxThreadContext glowroot$auxContext;
+        private transient volatile @Nullable AuxThreadContext glowroot$auxContext;
 
         @Override
         public @Nullable AuxThreadContext glowroot$getAuxContext() {

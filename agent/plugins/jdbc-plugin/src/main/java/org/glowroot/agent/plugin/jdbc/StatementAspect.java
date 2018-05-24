@@ -69,17 +69,21 @@ public class StatementAspect {
     // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin({"java.sql.Statement", "java.sql.ResultSet"})
     public static class HasStatementMirrorImpl implements HasStatementMirror {
+
         // does not need to be volatile, app/framework must provide visibility of Statements and
         // ResultSets if used across threads and this can piggyback
-        private @Nullable StatementMirror glowroot$statementMirror;
+        private transient @Nullable StatementMirror glowroot$statementMirror;
+
         @Override
         public @Nullable StatementMirror glowroot$getStatementMirror() {
             return glowroot$statementMirror;
         }
+
         @Override
         public void glowroot$setStatementMirror(@Nullable StatementMirror statementMirror) {
             glowroot$statementMirror = statementMirror;
         }
+
         @Override
         public boolean glowroot$hasStatementMirror() {
             return glowroot$statementMirror != null;
@@ -88,9 +92,12 @@ public class StatementAspect {
 
     // the method names are verbose since they will be mixed in to existing classes
     public interface HasStatementMirror {
+
         @Nullable
         StatementMirror glowroot$getStatementMirror();
+
         void glowroot$setStatementMirror(@Nullable StatementMirror statementMirror);
+
         boolean glowroot$hasStatementMirror();
     }
 

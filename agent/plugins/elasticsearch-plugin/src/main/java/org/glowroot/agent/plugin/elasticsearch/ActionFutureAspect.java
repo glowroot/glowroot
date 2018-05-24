@@ -35,9 +35,9 @@ public class ActionFutureAspect {
     @Mixin("org.elasticsearch.action.ActionFuture")
     public static class ActionFutureImpl implements ActionFutureMixin {
 
-        private volatile boolean glowroot$completed;
-        private volatile @Nullable Throwable glowroot$exception;
-        private volatile @Nullable AsyncQueryEntry glowroot$asyncQueryEntry;
+        private transient volatile boolean glowroot$completed;
+        private transient volatile @Nullable Throwable glowroot$exception;
+        private transient volatile @Nullable AsyncQueryEntry glowroot$asyncQueryEntry;
 
         @Override
         public void glowroot$setCompleted() {

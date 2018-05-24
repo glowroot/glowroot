@@ -1054,7 +1054,7 @@ public class SomeAspect {
 
     @Mixin("org.glowroot.agent.weaving.targets.BasicMisc")
     public static class HasStringClassMixin implements HasString {
-        private String string;
+        private transient String string;
         @MixinInit
         private void initHasString() {
             if (string == null) {
@@ -1075,7 +1075,7 @@ public class SomeAspect {
 
     @Mixin("org.glowroot.agent.weaving.targets.Misc")
     public static class HasStringInterfaceMixin implements HasString {
-        private String string;
+        private transient String string;
         @MixinInit
         private void initHasString() {
             string = "a string";
@@ -1092,7 +1092,7 @@ public class SomeAspect {
 
     @Mixin({"org.glowroot.agent.weaving.targets.Misc", "org.glowroot.agent.weaving.targets.Misc2"})
     public static class HasStringMultipleMixin implements HasString {
-        private String string;
+        private transient String string;
         @MixinInit
         private void initHasString() {
             string = "a string";

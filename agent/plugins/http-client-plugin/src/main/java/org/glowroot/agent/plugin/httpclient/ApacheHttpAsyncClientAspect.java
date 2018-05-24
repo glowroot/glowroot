@@ -51,7 +51,7 @@ public class ApacheHttpAsyncClientAspect {
     public abstract static class HttpAsyncResponseConsumerImpl
             implements HttpAsyncResponseConsumerMixin {
 
-        private volatile @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
+        private transient volatile @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
 
         @Override
         public @Nullable AsyncTraceEntry glowroot$getAsyncTraceEntry() {
@@ -68,7 +68,7 @@ public class ApacheHttpAsyncClientAspect {
     @Mixin("org.apache.http.concurrent.FutureCallback")
     public abstract static class FutureCallbackImpl implements FutureCallbackMixin {
 
-        private volatile @Nullable AuxThreadContext glowroot$auxContext;
+        private transient volatile @Nullable AuxThreadContext glowroot$auxContext;
 
         @Override
         public @Nullable AuxThreadContext glowroot$getAuxContext() {
