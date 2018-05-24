@@ -72,7 +72,7 @@ public class Weaver {
     private static final @Nullable String DEBUG_CLASS_NAME;
 
     static {
-        String debugClassName = System.getProperty("glowroot.debug.transformingClassName");
+        String debugClassName = System.getProperty("glowroot.debug.className");
         if (debugClassName == null) {
             DEBUG_CLASS_NAME = null;
         } else {
