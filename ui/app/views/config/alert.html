@@ -181,8 +181,8 @@
                 </div>
               </div>
               <div class="help-block">
-                If the {{phraseForValue()}} over the given time period exceeds this threshold, then alert will be
-                triggered.
+                If the {{phraseForValue()}} over the given time period is greater than or equal to this threshold, then
+                alert will be triggered.
               </div>
             </div>
           </div>
@@ -193,8 +193,8 @@
                gt-model="config.condition.lowerBoundThreshold"
                gt-disabled="!agentRollup.permissions.config.edit.alert">
             <div class="help-block">
-              Alert if the {{phraseForValue()}} drops below the threshold, instead of alerting if the
-              {{phraseForValue()}} exceeds the threshold.
+              Alert if the {{phraseForValue()}} is less than or equal to the threshold, instead of alerting if the
+              {{phraseForValue()}} is greater than or equal to the threshold.
             </div>
           </div>
           <div gt-form-group
@@ -280,7 +280,7 @@
                gt-width="7em"
                gt-addon="milliseconds">
             <div class="help-block">
-              If the synthetic monitor takes more than this threshold, then an alert will be triggered.
+              If the synthetic monitor time is greater than or equal to this threshold, then an alert will be triggered.
             </div>
           </div>
         </div>

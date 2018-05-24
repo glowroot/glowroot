@@ -236,9 +236,14 @@ class AlertConfigJsonService {
         sb.append(
                 AlertingService.getOverTheLastMinutesText(metricCondition.getTimePeriodSeconds()));
         if (metricCondition.getLowerBoundThreshold()) {
-            sb.append(" drops below ");
+            if (metric.equals("transaction:count") && metricCondition.getThreshold() == 0) {
+                // this is a common alert, deserves a more common naming
+                sb.append(" is equal to ");
+            } else {
+                sb.append(" is less than or equal to ");
+            }
         } else {
-            sb.append(" exceeds ");
+            sb.append(" is greater than or equal to ");
         }
         if (metric.equals("transaction:x-percentile") || metric.equals("transaction:average")) {
             sb.append(AlertingService.getWithUnit(metricCondition.getThreshold(), "millisecond"));

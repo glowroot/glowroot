@@ -152,9 +152,9 @@ public class AlertingService {
         }
         boolean currentlyTriggered;
         if (metricCondition.getLowerBoundThreshold()) {
-            currentlyTriggered = value.doubleValue() < metricCondition.getThreshold();
+            currentlyTriggered = value.doubleValue() <= metricCondition.getThreshold();
         } else {
-            currentlyTriggered = value.doubleValue() > metricCondition.getThreshold();
+            currentlyTriggered = value.doubleValue() >= metricCondition.getThreshold();
         }
         AlertCondition alertCondition = alertConfig.getCondition();
         OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
@@ -335,9 +335,9 @@ public class AlertingService {
 
     public static String getPreUpperBoundText(boolean ok) {
         if (ok) {
-            return " no longer exceeds alert threshold of ";
+            return " is no longer greater than or equal to the alert threshold of ";
         } else {
-            return " has exceeded alert threshold of ";
+            return " is greater than or equal to the alert threshold of ";
         }
     }
 
@@ -374,9 +374,9 @@ public class AlertingService {
 
     private static String getPreLowerBoundText(boolean ok) {
         if (ok) {
-            return " has risen back above alert threshold of ";
+            return " is no longer less than or equal to the alert threshold of ";
         } else {
-            return " has dropped below alert threshold of ";
+            return " is less than or equal to the alert threshold of ";
         }
     }
 

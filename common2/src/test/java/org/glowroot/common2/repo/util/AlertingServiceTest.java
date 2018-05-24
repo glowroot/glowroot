@@ -147,7 +147,7 @@ public class AlertingServiceTest {
     @Test
     public void shouldSendMailForTransactionAlert() throws Exception {
         // given
-        setupForTransaction(1000001);
+        setupForTransaction(1000000);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
@@ -157,14 +157,14 @@ public class AlertingServiceTest {
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
-                .isEqualTo("95th percentile over the last 1 minute has exceeded alert threshold of"
-                        + " 1 millisecond.");
+                .isEqualTo("95th percentile over the last 1 minute is greater than or equal to the"
+                        + " alert threshold of 1 millisecond.");
     }
 
     @Test
     public void shouldNotSendMailForTransactionAlert() throws Exception {
         // given
-        setupForTransaction(1000000);
+        setupForTransaction(999999);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
@@ -178,7 +178,7 @@ public class AlertingServiceTest {
     @Test
     public void shouldSendMailForGaugeAlert() throws Exception {
         // given
-        setupForGauge(500.1);
+        setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
@@ -188,14 +188,14 @@ public class AlertingServiceTest {
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
-                .isEqualTo("Average over the last 1 minute has exceeded alert threshold of"
-                        + " 500 milliseconds per second.");
+                .isEqualTo("Average over the last 1 minute is greater than or equal to the alert"
+                        + " threshold of 500 milliseconds per second.");
     }
 
     @Test
     public void shouldNotSendMailForGaugeAlert() throws Exception {
         // given
-        setupForGauge(500);
+        setupForGauge(499);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
@@ -209,7 +209,7 @@ public class AlertingServiceTest {
     @Test
     public void shouldSendMailForLowerBoundGaugeAlert() throws Exception {
         // given
-        setupForGauge(499.9);
+        setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());
@@ -219,14 +219,14 @@ public class AlertingServiceTest {
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
-                .isEqualTo("Average over the last 1 minute has dropped below alert threshold of"
-                        + " 500 milliseconds per second.");
+                .isEqualTo("Average over the last 1 minute is less than or equal to the alert"
+                        + " threshold of 500 milliseconds per second.");
     }
 
     @Test
     public void shouldNotSendMailForLowerBoundGaugeAlert() throws Exception {
         // given
-        setupForGauge(500);
+        setupForGauge(501);
         AlertingService alertingService = new AlertingService(configRepository,
                 incidentRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService, httpClient, Clock.systemClock());

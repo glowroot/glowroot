@@ -452,7 +452,7 @@ class SyntheticMonitorService implements Runnable {
                 AlertCondition alertCondition = alertConfig.getCondition();
                 SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
                 boolean currentlyTriggered =
-                        stopwatch.elapsed(MILLISECONDS) > condition.getThresholdMillis();
+                        stopwatch.elapsed(MILLISECONDS) >= condition.getThresholdMillis();
                 sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
                         condition, captureTime, currentlyTriggered, null);
             }

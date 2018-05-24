@@ -80,7 +80,8 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver,
-                linkText("Web - 95th percentile over the last 1 minute exceeds 1,000 milliseconds"))
+                linkText("Web - 95th percentile over the last 1 minute is greater than or equal to"
+                        + " 1,000 milliseconds"))
                 .click();
         if (WebDriverSetup.useCentral) {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
@@ -119,7 +120,8 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver,
-                linkText("Web - XYZ - transaction count over the last 1 minute exceeds 1"))
+                linkText("Web - XYZ - transaction count over the last 1 minute is greater than or"
+                        + " equal to 3"))
                 .click();
         if (WebDriverSetup.useCentral) {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
@@ -130,7 +132,7 @@ public class AlertConfigIT extends WebDriverIT {
                 alertPage.getTransactionTypeSelect().getFirstSelectedOption().getAttribute("value"))
                         .isEqualTo("string:Web");
         assertThat(alertPage.getTransactionNameTextField().getAttribute("value")).isEqualTo("XYZ");
-        assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("1");
+        assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("3");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isFalse();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
@@ -156,7 +158,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver,
-                linkText("Web - XYZ - transaction count over the last 1 minute drops below 1"))
+                linkText("Web - XYZ - transaction count over the last 1 minute is equal to 0"))
                 .click();
         if (WebDriverSetup.useCentral) {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
@@ -167,7 +169,7 @@ public class AlertConfigIT extends WebDriverIT {
                 alertPage.getTransactionTypeSelect().getFirstSelectedOption().getAttribute("value"))
                         .isEqualTo("string:Web");
         assertThat(alertPage.getTransactionNameTextField().getAttribute("value")).isEqualTo("XYZ");
-        assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("1");
+        assertThat(alertPage.getThresholdTextField().getAttribute("value")).isEqualTo("0");
         assertThat(alertPage.getLowerBoundThresholdCheckBox().isSelected()).isTrue();
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getSeveritySelect().getFirstSelectedOption().getAttribute("value"))
@@ -193,7 +195,8 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver,
-                linkText("Web - error rate over the last 1 minute exceeds 5 percent"))
+                linkText("Web - error rate over the last 1 minute is greater than or equal to 5"
+                        + " percent"))
                 .click();
         if (WebDriverSetup.useCentral) {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
@@ -228,7 +231,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 1 minute exceeds 2.0 MB")).click();
+                + " - average over the last 1 minute is greater than or equal to 2.0 MB")).click();
         if (WebDriverSetup.useCentral) {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
@@ -260,7 +263,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 1 minute drops below 2.0 MB")).click();
+                + " - average over the last 1 minute is less than or equal to 2.0 MB")).click();
         if (WebDriverSetup.useCentral) {
             assertThat(alertPage.getMetricRadioButton().isSelected()).isTrue();
         }
@@ -290,7 +293,8 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createTransactionCountAlert(false);
         Utils.withWait(driver,
-                linkText("Web - XYZ - transaction count over the last 1 minute exceeds 1"))
+                linkText("Web - XYZ - transaction count over the last 1 minute is greater than or"
+                        + " equal to 3"))
                 .click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
@@ -301,7 +305,8 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver,
-                linkText("Web - XYZ - transaction count over the last 2 minutes exceeds 1"))
+                linkText("Web - XYZ - transaction count over the last 2 minutes is greater than or"
+                        + " equal to 3"))
                 .click();
     }
 
@@ -320,7 +325,7 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createTransactionCountAlert(true);
         Utils.withWait(driver,
-                linkText("Web - XYZ - transaction count over the last 1 minute drops below 1"))
+                linkText("Web - XYZ - transaction count over the last 1 minute is equal to 0"))
                 .click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
@@ -331,7 +336,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver,
-                linkText("Web - XYZ - transaction count over the last 2 minutes drops below 1"))
+                linkText("Web - XYZ - transaction count over the last 2 minutes is equal to 0"))
                 .click();
     }
 
@@ -350,7 +355,8 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createTransactionXPercentileAlert();
         Utils.withWait(driver,
-                linkText("Web - 95th percentile over the last 1 minute exceeds 1,000 milliseconds"))
+                linkText("Web - 95th percentile over the last 1 minute is greater than or equal to"
+                        + " 1,000 milliseconds"))
                 .click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
@@ -361,8 +367,8 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver,
-                linkText(
-                        "Web - 95th percentile over the last 2 minutes exceeds 1,000 milliseconds"))
+                linkText("Web - 95th percentile over the last 2 minutes is greater than or equal to"
+                        + " 1,000 milliseconds"))
                 .click();
     }
 
@@ -381,7 +387,8 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createErrorRateAlert();
         Utils.withWait(driver,
-                linkText("Web - error rate over the last 1 minute exceeds 5 percent"))
+                linkText("Web - error rate over the last 1 minute is greater than or equal to 5"
+                        + " percent"))
                 .click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
@@ -392,7 +399,8 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver,
-                linkText("Web - error rate over the last 2 minutes exceeds 5 percent"))
+                linkText("Web - error rate over the last 2 minutes is greater than or equal to 5"
+                        + " percent"))
                 .click();
     }
 
@@ -411,7 +419,7 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createGaugeAlert(false);
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 1 minute exceeds 2.0 MB")).click();
+                + " - average over the last 1 minute is greater than or equal to 2.0 MB")).click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
@@ -421,7 +429,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 2 minutes exceeds 2.0 MB")).click();
+                + " - average over the last 2 minutes is greater than or equal to 2.0 MB")).click();
     }
 
     @Test
@@ -439,7 +447,7 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createGaugeAlert(true);
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 1 minute drops below 2.0 MB")).click();
+                + " - average over the last 1 minute is less than or equal to 2.0 MB")).click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
@@ -449,7 +457,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
-                + " - average over the last 2 minutes drops below 2.0 MB")).click();
+                + " - average over the last 2 minutes is less than or equal to 2.0 MB")).click();
     }
 
     @Test
@@ -467,7 +475,8 @@ public class AlertConfigIT extends WebDriverIT {
         // when
         createTransactionXPercentileAlert();
         Utils.withWait(driver,
-                linkText("Web - 95th percentile over the last 1 minute exceeds 1,000 milliseconds"))
+                linkText("Web - 95th percentile over the last 1 minute is greater than or equal to"
+                        + " 1,000 milliseconds"))
                 .click();
         alertPage.getDeleteButton().click();
 
@@ -475,8 +484,8 @@ public class AlertConfigIT extends WebDriverIT {
         getNewAlertButton();
         boolean notFound = false;
         try {
-            driver.findElement(linkText(
-                    "Web - 95th percentile over the last 1 minute exceeds 1,000 milliseconds"));
+            driver.findElement(linkText("Web - 95th percentile over the last 1 minute is greater"
+                    + " than or equal to 1,000 milliseconds"));
         } catch (NoSuchElementException e) {
             notFound = true;
         }
@@ -513,9 +522,11 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getMetricSelect().selectByValue("string:transaction:count");
         alertPage.getTransactionTypeSelect().selectByValue("string:Web");
         alertPage.getTransactionNameTextField().sendKeys("XYZ");
-        alertPage.getThresholdTextField().sendKeys("1");
         if (lowerBoundThreshold) {
+            alertPage.getThresholdTextField().sendKeys("0");
             alertPage.getLowerBoundThresholdCheckBox().click();
+        } else {
+            alertPage.getThresholdTextField().sendKeys("3");
         }
         alertPage.getTimePeriodMinutesTextField().sendKeys("1");
         alertPage.getSeveritySelect().selectByValue("high");
