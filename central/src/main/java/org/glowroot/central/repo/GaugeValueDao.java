@@ -18,6 +18,7 @@ package org.glowroot.central.repo;
 import java.util.List;
 
 import org.glowroot.agent.api.Instrumentation;
+import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
@@ -26,7 +27,8 @@ public interface GaugeValueDao extends GaugeValueRepository {
     void store(String agentId, List<GaugeValue> gaugeValues) throws Exception;
 
     @Instrumentation.Transaction(transactionType = "Background", transactionName = "Rollup gauges",
-            traceHeadline = "Rollup gauges: {{0}}", timer = "rollup gauges")
+            traceHeadline = "Rollup gauges: {{0}}", timer = "rollup gauges",
+            alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
     void rollup(String agentRollupId) throws Exception;
 
     void truncateAll() throws Exception;

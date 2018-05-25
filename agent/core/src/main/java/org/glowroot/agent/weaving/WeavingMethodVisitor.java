@@ -306,7 +306,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         // enabled and traveler locals must be defined outside of the try block so they will be
         // accessible in the catch block
         for (Advice advice : advisors) {
-            defineAndEvaluateEnabledLocalVar(advice);
+            defineEnabledLocalVar(advice);
             defineTravelerLocalVar(advice);
         }
         saveArgsForMethodExit();
@@ -315,6 +315,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void onMethodEnterInternal() {
         for (int i = 0; i < advisors.size(); i++) {
             Advice advice = advisors.get(i);
+            evaluateEnabledLocalVar(advice);
             invokeOnBefore(advice, travelerLocals.get(advice));
             if (advice.onAfterAdvice() != null || advice.onThrowAdvice() != null) {
                 Label catchStartLabel = new Label();
@@ -362,16 +363,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void defineAndEvaluateEnabledLocalVar(Advice advice) {
+    private void defineEnabledLocalVar(Advice advice) {
         Integer enabledLocal = null;
         Method isEnabledAdvice = advice.isEnabledAdvice();
         if (isEnabledAdvice != null) {
-            loadMethodParameters(advice.isEnabledParameters(), 0, null, advice.adviceType(),
-                    IsEnabled.class, false);
-            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
-                    isEnabledAdvice.getName(), isEnabledAdvice.getDescriptor(), false);
             enabledLocal = newLocal(Type.BOOLEAN_TYPE);
             enabledLocals.put(advice, enabledLocal);
+            // temporary initial value needed for Java 7 stack map frames
+            visitInsn(ICONST_0);
             storeLocal(enabledLocal);
         }
         String nestingGroup = advice.pointcut().nestingGroup();
@@ -407,22 +406,44 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitIntInsn(BIPUSH, -1);
             storeLocal(prevSuppressionKeyIdLocal);
         }
+        if (!nestingGroup.isEmpty() || !suppressibleUsingKey.isEmpty() || !suppressionKey.isEmpty()
+                || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext())) {
+            if (enabledLocal == null) {
+                enabledLocal = newLocal(Type.BOOLEAN_TYPE);
+                enabledLocals.put(advice, enabledLocal);
+                // temporary initial value needed for Java 7 stack map frames
+                visitInsn(ICONST_0);
+                storeLocal(enabledLocal);
+            }
+        }
+    }
+
+    private void evaluateEnabledLocalVar(Advice advice) {
+        Method isEnabledAdvice = advice.isEnabledAdvice();
+        if (isEnabledAdvice != null) {
+            loadMethodParameters(advice.isEnabledParameters(), 0, null, advice.adviceType(),
+                    IsEnabled.class, false);
+            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                    isEnabledAdvice.getName(), isEnabledAdvice.getDescriptor(), false);
+            // guaranteed to be non-null via defineEnabledLocalVar() above
+            int enabledLocal = checkNotNull(enabledLocals.get(advice));
+            storeLocal(enabledLocal);
+        }
+        String nestingGroup = advice.pointcut().nestingGroup();
+        String suppressionKey = advice.pointcut().suppressionKey();
+        String suppressibleUsingKey = advice.pointcut().suppressibleUsingKey();
+        Integer prevNestingGroupIdLocal = prevNestingGroupIdLocals.get(advice);
+        Integer prevSuppressionKeyIdLocal = prevSuppressionKeyIdLocals.get(advice);
         // need to load ThreadContext
         if (!nestingGroup.isEmpty() || !suppressibleUsingKey.isEmpty() || !suppressionKey.isEmpty()
                 || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext())) {
             Label disabledLabel = null;
-            if (enabledLocal != null) {
+            // guaranteed to be non-null via defineEnabledLocalVar() above
+            int enabledLocal = checkNotNull(enabledLocals.get(advice));
+            if (isEnabledAdvice != null) {
                 loadLocal(enabledLocal);
-                if (disabledLabel == null) {
-                    disabledLabel = new Label();
-                }
+                disabledLabel = new Label();
                 visitJumpInsn(IFEQ, disabledLabel);
-            } else {
-                enabledLocal = newLocal(Type.BOOLEAN_TYPE);
-                enabledLocals.put(advice, enabledLocal);
-                // temporary initial value to help with Java 7 stack frames
-                visitInsn(ICONST_0);
-                storeLocal(enabledLocal);
             }
             loadThreadContextHolder();
             dup();

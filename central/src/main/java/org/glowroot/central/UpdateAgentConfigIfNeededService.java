@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AgentConfigDao;
 import org.glowroot.central.repo.AgentDao;
@@ -87,7 +86,6 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             transactionName = "Outer update agent config loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
     private void runInternal() throws Exception {
-        Glowroot.setTransactionOuter();
         for (AgentRollup agentRollup : agentDao.readRecentlyActiveAgentRollups(7)) {
             updateAgentConfigIfNeededAndConnected(agentRollup);
         }

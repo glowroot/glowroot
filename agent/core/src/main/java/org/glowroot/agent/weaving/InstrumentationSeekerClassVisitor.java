@@ -17,6 +17,7 @@ package org.glowroot.agent.weaving;
 
 import java.util.List;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -28,8 +29,10 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.config.ImmutableInstrumentationConfig;
 import org.glowroot.agent.config.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.AlreadyInTransactionBehavior;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -136,12 +139,16 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
                         Type.getType(owner).getClassName());
                 return;
             }
+            AlreadyInTransactionBehavior alreadyInTransactionBehavior = MoreObjects.firstNonNull(
+                    transactionAnnotationVisitor.alreadyInTransactionBehavior,
+                    AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY);
             instrumentationConfigs.add(startBuilder()
                     .captureKind(CaptureKind.TRANSACTION)
                     .transactionType(transactionType)
                     .transactionNameTemplate(transactionNameTemplate)
                     .traceEntryMessageTemplate(traceHeadline)
                     .timerName(timerName)
+                    .alreadyInTransactionBehavior(alreadyInTransactionBehavior)
                     .build());
         }
 
@@ -207,6 +214,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
         private @Nullable String transactionNameTemplate;
         private @Nullable String traceHeadline;
         private @Nullable String timerName;
+        private @Nullable AlreadyInTransactionBehavior alreadyInTransactionBehavior;
 
         private TransactionAnnotationVisitor() {
             super(ASM6);
@@ -225,6 +233,22 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
                 traceHeadline = (String) value;
             } else if (name.equals("timer")) {
                 timerName = (String) value;
+            } else if (name.equals("alreadyInTransactionBehavior")) {
+                alreadyInTransactionBehavior = toProto(value);
+            }
+        }
+
+        private static AlreadyInTransactionBehavior toProto(Object value) {
+            if (value.equals(Instrumentation.AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY)) {
+                return AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY;
+            } else if (value
+                    .equals(Instrumentation.AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)) {
+                return AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION;
+            } else if (value.equals(Instrumentation.AlreadyInTransactionBehavior.DO_NOTHING)) {
+                return AlreadyInTransactionBehavior.DO_NOTHING;
+            } else {
+                throw new IllegalStateException(
+                        "Unexpected AlreadyInTransactionBehavior: " + value);
             }
         }
     }

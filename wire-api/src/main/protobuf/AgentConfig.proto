@@ -198,6 +198,7 @@ message AgentConfig {
     string trace_entry_message_template = 13;
     OptionalInt32 trace_entry_stack_threshold_millis = 14; // absent means N/A
     bool trace_entry_capture_self_nested = 15;
+    AlreadyInTransactionBehavior already_in_transaction_behavior = 26;
     string transaction_type = 16;
     string transaction_name_template = 17;
     string transaction_user_template = 18;
@@ -218,6 +219,12 @@ message AgentConfig {
       TRACE_ENTRY = 1;
       TIMER = 2;
       OTHER = 3;
+    }
+
+    enum AlreadyInTransactionBehavior {
+      CAPTURE_TRACE_ENTRY = 0;
+      CAPTURE_NEW_TRANSACTION = 1;
+      DO_NOTHING = 2;
     }
   }
 

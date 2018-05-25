@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.glowroot.agent.plugin.api;
 
 public interface OptionalThreadContext extends ThreadContext {
 
+    boolean isInTransaction();
+
     /**
      * If there is no active transaction, a new transaction is started.
      * 
@@ -26,4 +28,12 @@ public interface OptionalThreadContext extends ThreadContext {
      */
     TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName);
+
+    TraceEntry startTransaction(String transactionType, String transactionName,
+            MessageSupplier messageSupplier, TimerName timerName,
+            AlreadyInTransactionBehavior alreadyInTransactionBehavior);
+
+    enum AlreadyInTransactionBehavior {
+        CAPTURE_TRACE_ENTRY, CAPTURE_NEW_TRANSACTION
+    }
 }

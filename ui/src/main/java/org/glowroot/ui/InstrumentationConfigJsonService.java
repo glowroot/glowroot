@@ -41,6 +41,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.AlreadyInTransactionBehavior;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
@@ -351,6 +352,7 @@ class InstrumentationConfigJsonService {
         abstract String transactionUserTemplate();
         abstract Map<String, String> transactionAttributeTemplates();
         abstract @Nullable Integer transactionSlowThresholdMillis();
+        abstract @Nullable AlreadyInTransactionBehavior alreadyInTransactionBehavior();
         abstract boolean transactionOuter();
         abstract String traceEntryMessageTemplate();
         abstract @Nullable Integer traceEntryStackThresholdMillis();
@@ -388,6 +390,11 @@ class InstrumentationConfigJsonService {
             if (transactionSlowThresholdMillis != null) {
                 builder.setTransactionSlowThresholdMillis(
                         OptionalInt32.newBuilder().setValue(transactionSlowThresholdMillis));
+            }
+            AlreadyInTransactionBehavior alreadyInTransactionBehavior =
+                    alreadyInTransactionBehavior();
+            if (alreadyInTransactionBehavior != null) {
+                builder.setAlreadyInTransactionBehavior(alreadyInTransactionBehavior);
             }
             builder.setTransactionOuter(transactionOuter())
                     .setTraceEntryMessageTemplate(traceEntryMessageTemplate());
@@ -435,6 +442,9 @@ class InstrumentationConfigJsonService {
             if (config.hasTransactionSlowThresholdMillis()) {
                 builder.transactionSlowThresholdMillis(
                         config.getTransactionSlowThresholdMillis().getValue());
+            }
+            if (config.getCaptureKind() == CaptureKind.TRANSACTION) {
+                builder.alreadyInTransactionBehavior(config.getAlreadyInTransactionBehavior());
             }
             builder.transactionOuter(config.getTransactionOuter())
                     .traceEntryMessageTemplate(config.getTraceEntryMessageTemplate());

@@ -64,8 +64,8 @@ import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
+import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.central.RollupService.AgentRollupConsumer;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
@@ -239,7 +239,6 @@ class SyntheticMonitorService implements Runnable {
             traceHeadline = "Outer synthetic monitor loop",
             timer = "outer synthetic monitor loop")
     private void runInternal() throws Exception {
-        Glowroot.setTransactionOuter();
         for (AgentRollup agentRollup : agentDao.readRecentlyActiveAgentRollups(7)) {
             consumeAgentRollups(agentRollup, this::runSyntheticMonitors);
         }
@@ -309,7 +308,8 @@ class SyntheticMonitorService implements Runnable {
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Synthetic monitor", traceHeadline = "Synthetic monitor: {{0.id}}",
-            timer = "synthetic monitor")
+            timer = "synthetic monitor",
+            alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
     private void runPing(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
             List<AlertConfig> alertConfigs) throws Exception {
         runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,

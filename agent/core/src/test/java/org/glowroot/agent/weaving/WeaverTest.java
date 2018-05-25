@@ -1348,7 +1348,7 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(2);
         assertThat(SomeAspectThreadLocals.orderedEvents.get()).containsExactly("isEnabled",
-                "isEnabled", "onBefore", "onReturn", "onAfter", "onBefore", "onReturn", "onAfter");
+                "onBefore", "onReturn", "onAfter", "isEnabled", "onBefore", "onReturn", "onAfter");
     }
 
     @Test

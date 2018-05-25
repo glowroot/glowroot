@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.AlreadyInTransactionBehavior;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
@@ -135,6 +137,21 @@ public abstract class InstrumentationConfig {
     // need to write zero since it is treated different from null
     @JsonInclude(Include.NON_NULL)
     public abstract @Nullable Integer transactionSlowThresholdMillis();
+
+    @JsonInclude(Include.NON_NULL)
+    public abstract @Nullable AlreadyInTransactionBehavior alreadyInTransactionBehavior();
+
+    // corrected for data prior to 0.10.10
+    @JsonIgnore
+    @Value.Derived
+    public @Nullable AlreadyInTransactionBehavior alreadyInTransactionBehaviorCorrected() {
+        if (captureKind() == CaptureKind.TRANSACTION) {
+            return MoreObjects.firstNonNull(alreadyInTransactionBehavior(),
+                    AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY);
+        } else {
+            return null;
+        }
+    }
 
     @Value.Default
     @JsonInclude(Include.NON_EMPTY)
@@ -264,6 +281,11 @@ public abstract class InstrumentationConfig {
             builder.setTransactionSlowThresholdMillis(
                     OptionalInt32.newBuilder().setValue(transactionSlowThresholdMillis));
         }
+        AlreadyInTransactionBehavior alreadyInTransactionBehavior =
+                alreadyInTransactionBehaviorCorrected();
+        if (alreadyInTransactionBehavior != null) {
+            builder.setAlreadyInTransactionBehavior(alreadyInTransactionBehavior);
+        }
         builder.setTransactionOuter(transactionOuter())
                 .setTraceEntryMessageTemplate(traceEntryMessageTemplate());
         Integer traceEntryStackThresholdMillis = traceEntryStackThresholdMillis();
@@ -303,6 +325,9 @@ public abstract class InstrumentationConfig {
         if (config.hasTransactionSlowThresholdMillis()) {
             builder.transactionSlowThresholdMillis(
                     config.getTransactionSlowThresholdMillis().getValue());
+        }
+        if (config.getCaptureKind() == CaptureKind.TRANSACTION) {
+            builder.alreadyInTransactionBehavior(config.getAlreadyInTransactionBehavior());
         }
         builder.transactionOuter(config.getTransactionOuter())
                 .traceEntryMessageTemplate(config.getTraceEntryMessageTemplate());

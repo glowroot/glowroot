@@ -59,8 +59,21 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
+    public boolean isInTransaction() {
+        return threadContext != null;
+    }
+
+    @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName) {
+        return startTransaction(transactionType, transactionName, messageSupplier, timerName,
+                AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY);
+    }
+
+    @Override
+    public TraceEntry startTransaction(String transactionType, String transactionName,
+            MessageSupplier messageSupplier, TimerName timerName,
+            AlreadyInTransactionBehavior alreadyInTransactionBehavior) {
         if (transactionType == null) {
             logger.error("startTransaction(): argument 'transactionType' must be non-null");
             return NopTransactionService.TRACE_ENTRY;
@@ -84,7 +97,7 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
             return traceEntry;
         } else {
             return threadContext.startTransaction(transactionType, transactionName, messageSupplier,
-                    timerName);
+                    timerName, alreadyInTransactionBehavior);
         }
     }
 

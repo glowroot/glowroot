@@ -18,6 +18,7 @@ package org.glowroot.central.repo;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.api.Instrumentation;
+import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.common2.repo.SyntheticResultRepository;
 
 public interface SyntheticResultDao extends SyntheticResultRepository {
@@ -29,6 +30,7 @@ public interface SyntheticResultDao extends SyntheticResultRepository {
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Rollup synthetic results",
-            traceHeadline = "Rollup synthetic results: {{0}}", timer = "rollup synthetic results")
+            traceHeadline = "Rollup synthetic results: {{0}}", timer = "rollup synthetic results",
+            alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
     void rollup(String agentRollupId) throws Exception;
 }

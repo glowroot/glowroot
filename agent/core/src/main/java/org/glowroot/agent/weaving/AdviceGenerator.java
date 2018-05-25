@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.weaving;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,12 +29,14 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.util.ASMifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.AlreadyInTransactionBehavior;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -49,6 +52,8 @@ import static org.objectweb.asm.Opcodes.CHECKCAST;
 import static org.objectweb.asm.Opcodes.GETFIELD;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.GOTO;
+import static org.objectweb.asm.Opcodes.ICONST_0;
+import static org.objectweb.asm.Opcodes.ICONST_1;
 import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.IFNE;
 import static org.objectweb.asm.Opcodes.IFNONNULL;
@@ -123,9 +128,10 @@ class AdviceGenerator {
         addClassAnnotation(cw);
         addStaticFields(cw);
         addStaticInitializer(cw);
-        if (pluginId != null && !config.enabledProperty().isEmpty()) {
-            addIsEnabledMethod(cw);
-        }
+        boolean checkNotInTransaction = config.isTransaction()
+                && config.alreadyInTransactionBehavior() == AlreadyInTransactionBehavior.DO_NOTHING;
+        boolean checkPropertyNotEnabled = pluginId != null && !config.enabledProperty().isEmpty();
+        addIsEnabledMethodIfNeeded(cw, checkNotInTransaction, checkPropertyNotEnabled);
         if (config.isTraceEntryOrGreater()) {
             // methodMetaInternalName is non-null when entry or greater
             checkNotNull(methodMetaInternalName);
@@ -248,17 +254,68 @@ class AdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addIsEnabledMethod(ClassWriter cw) {
-        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", "()Z", null, null);
+    private void addIsEnabledMethodIfNeeded(ClassWriter cw, boolean checkNotInTransaction,
+            boolean checkPropertyNotEnabled) {
+        if (!checkNotInTransaction && !checkPropertyNotEnabled) {
+            return;
+        }
+        String desc;
+        if (checkNotInTransaction) {
+            desc = "(Lorg/glowroot/agent/plugin/api/OptionalThreadContext;)Z";
+        } else {
+            desc = "()Z";
+        }
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", desc, null, null);
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/IsEnabled;");
         mv.visitCode();
-        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "enabled",
-                "Lorg/glowroot/agent/plugin/api/config/BooleanProperty;");
-        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/config/BooleanProperty",
-                "value", "()Z", true);
-        mv.visitInsn(IRETURN);
+        if (checkNotInTransaction && !checkPropertyNotEnabled) {
+            mv.visitMethodInsn(INVOKEINTERFACE,
+                    "org/glowroot/agent/plugin/api/OptionalThreadContext", "isInTransaction", "()Z",
+                    true);
+            Label returnTrueLabel = new Label();
+            mv.visitJumpInsn(IFEQ, returnTrueLabel);
+            mv.visitInsn(ICONST_0);
+            mv.visitInsn(IRETURN);
+            mv.visitLabel(returnTrueLabel);
+            mv.visitInsn(ICONST_1);
+            mv.visitInsn(IRETURN);
+        } else if (checkPropertyNotEnabled && !checkNotInTransaction) {
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "enabled",
+                    "Lorg/glowroot/agent/plugin/api/config/BooleanProperty;");
+            mv.visitMethodInsn(INVOKEINTERFACE,
+                    "org/glowroot/agent/plugin/api/config/BooleanProperty", "value", "()Z", true);
+            mv.visitInsn(IRETURN);
+        } else {
+            mv.visitMethodInsn(INVOKEINTERFACE,
+                    "org/glowroot/agent/plugin/api/OptionalThreadContext", "isInTransaction", "()Z",
+                    true);
+            Label returnTrueLabel = new Label();
+            mv.visitJumpInsn(IFEQ, returnTrueLabel);
+            mv.visitInsn(ICONST_0);
+            mv.visitInsn(IRETURN);
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "enabled",
+                    "Lorg/glowroot/agent/plugin/api/config/BooleanProperty;");
+            mv.visitMethodInsn(INVOKEINTERFACE,
+                    "org/glowroot/agent/plugin/api/config/BooleanProperty", "value", "()Z", true);
+            mv.visitJumpInsn(IFNE, returnTrueLabel);
+            mv.visitInsn(ICONST_0);
+            mv.visitInsn(IRETURN);
+            mv.visitLabel(returnTrueLabel);
+            mv.visitInsn(ICONST_1);
+            mv.visitInsn(IRETURN);
+        }
         mv.visitMaxs(0, 0);
         mv.visitEnd();
+    }
+
+    public static class X {
+        public AlreadyInTransactionBehavior test() {
+            return AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION;
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        ASMifier.main(new String[] {X.class.getName()});
     }
 
     @RequiresNonNull("methodMetaInternalName")
@@ -319,11 +376,28 @@ class AdviceGenerator {
         mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timerName",
                 "Lorg/glowroot/agent/plugin/api/TimerName;");
         if (config.isTransaction()) {
+            String fieldName;
+            if (config
+                    .alreadyInTransactionBehaviorCorrected() == AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION) {
+                fieldName = "CAPTURE_NEW_TRANSACTION";
+            } else {
+                // it doesn't matter what DO_NOTHING is mapped to, since in that case the @OnBefore
+                // method will be bypassed completely if already in a transaction due to @IsEnabled
+                fieldName = "CAPTURE_TRACE_ENTRY";
+            }
+            mv.visitFieldInsn(GETSTATIC,
+                    "org/glowroot/agent/plugin/api/OptionalThreadContext"
+                            + "$AlreadyInTransactionBehavior",
+                    fieldName,
+                    "Lorg/glowroot/agent/plugin/api/OptionalThreadContext"
+                            + "$AlreadyInTransactionBehavior;");
             mv.visitMethodInsn(INVOKEINTERFACE,
                     "org/glowroot/agent/plugin/api/OptionalThreadContext", "startTransaction",
                     "(Ljava/lang/String;Ljava/lang/String;"
                             + "Lorg/glowroot/agent/plugin/api/MessageSupplier;"
-                            + "Lorg/glowroot/agent/plugin/api/TimerName;)"
+                            + "Lorg/glowroot/agent/plugin/api/TimerName;"
+                            + "Lorg/glowroot/agent/plugin/api/OptionalThreadContext"
+                            + "$AlreadyInTransactionBehavior;)"
                             + "Lorg/glowroot/agent/plugin/api/TraceEntry;",
                     true);
         } else {

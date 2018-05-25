@@ -18,6 +18,7 @@ package org.glowroot.central.repo;
 import java.util.List;
 
 import org.glowroot.agent.api.Instrumentation;
+import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -30,7 +31,8 @@ public interface AggregateDao extends AggregateRepository {
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Rollup aggregates", traceHeadline = "Rollup aggregates: {{0}}",
-            timer = "rollup aggregates")
+            timer = "rollup aggregates",
+            alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
     void rollup(String agentRollupId) throws Exception;
 
     @OnlyUsedByTests

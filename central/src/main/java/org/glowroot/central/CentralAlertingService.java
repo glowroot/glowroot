@@ -25,13 +25,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
+import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -144,6 +143,9 @@ class CentralAlertingService {
         checkAlertsAsync(agentId, agentDisplay, endTime, gaugeAndHeartbeatAlertConfigs);
     }
 
+    @Instrumentation.Transaction(transactionType = "Background", transactionName = "Check alert",
+            traceHeadline = "Check alerts: {{0}}", timer = "check alerts",
+            alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
     void checkAggregateAndGaugeAndHeartbeatAlertsAsync(String agentRollupId,
             String agentRollupDisplay, long endTime) throws InterruptedException {
         List<AlertConfig> alertConfigs;
@@ -197,7 +199,9 @@ class CentralAlertingService {
         AlertCondition alertCondition = alertConfig.getCondition();
         switch (alertCondition.getValCase()) {
             case METRIC_CONDITION:
-                checkMetricAlert(agentRollupId, agentDisplay, alertConfig,
+                alertingService.checkMetricAlert(
+                        configRepository.getCentralAdminGeneralConfig().centralDisplayName(),
+                        agentRollupId, agentDisplay, alertConfig,
                         alertCondition.getMetricCondition(), endTime);
                 break;
             case HEARTBEAT_CONDITION:
@@ -206,35 +210,14 @@ class CentralAlertingService {
                     // at least enough time for grpc max reconnect backoff which is 2 minutes
                     // +/- 20% jitter (see io.grpc.internal.ExponentialBackoffPolicy) but better to
                     // give a bit extra (4 minutes above) to avoid false heartbeat alert
-                    checkHeartbeatAlert(agentRollupId, agentDisplay, alertConfig,
-                            alertCondition.getHeartbeatCondition(), endTime);
+                    heartbeatAlertingService.checkHeartbeatAlert(agentRollupId, agentDisplay,
+                            alertConfig, alertCondition.getHeartbeatCondition(), endTime);
                 }
                 break;
             default:
                 throw new IllegalStateException(
                         "Unexpected alert condition: " + alertCondition.getValCase().name());
         }
-    }
-
-    @Instrumentation.Transaction(transactionType = "Background",
-            transactionName = "Check metric alert", traceHeadline = "Check metric alert: {{0}}",
-            timer = "check metric alert")
-    private void checkMetricAlert(String agentRollupId, String agentDisplay,
-            AlertConfig alertConfig, MetricCondition metricCondition, long endTime)
-            throws Exception {
-        alertingService.checkMetricAlert(
-                configRepository.getCentralAdminGeneralConfig().centralDisplayName(), agentRollupId,
-                agentDisplay, alertConfig, metricCondition, endTime);
-    }
-
-    @Instrumentation.Transaction(transactionType = "Background",
-            transactionName = "Check heartbeat alert",
-            traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
-    private void checkHeartbeatAlert(String agentRollupId, String agentDisplay,
-            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime)
-            throws Exception {
-        heartbeatAlertingService.checkHeartbeatAlert(agentRollupId, agentDisplay, alertConfig,
-                heartbeatCondition, endTime);
     }
 
     private static boolean isAggregateMetricCondition(AlertCondition alertCondition) {

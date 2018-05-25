@@ -157,8 +157,8 @@
                 <input type="radio"
                        ng-model="config.captureKind"
                        ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                       value="timer">
-                Timer
+                       value="transaction">
+                Transaction
               </label>
             </div>
             <div class="radio">
@@ -175,8 +175,8 @@
                 <input type="radio"
                        ng-model="config.captureKind"
                        ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                       value="transaction">
-                Transaction
+                       value="timer">
+                Timer
               </label>
             </div>
             <div class="radio">
@@ -189,18 +189,18 @@
               </label>
             </div>
             <div class="help-block">
-              A timer captures the total time and count of the above method(s) to produce the data in the
-              <em>breakdown</em> section on the <a href="transaction/average{{agentQueryString()}}">average response
-              time page</a>, and the data in the <em>breakdown</em> section when viewing an individual trace (on the
-              <a href="transaction/traces{{agentQueryString()}}">slow traces</a> or
-              <a href="error/traces{{agentQueryString()}}">error traces</a> pages).
+              A transaction defines the capture point boundary for a new request or background operation.
             </div>
             <div class="help-block">
               A trace entry is a timer plus it captures a message on each invocation of the above method(s) to produce
               the data in the <em>trace entries</em> section when viewing an individual trace.
             </div>
             <div class="help-block">
-              A transaction defines the capture point boundary for a new request or background operation.
+              A timer captures the total time and count of the above method(s) to produce the data in the
+              <em>breakdown</em> section on the <a href="transaction/average{{agentQueryString()}}">average response
+              time page</a>, and the data in the <em>breakdown</em> section when viewing an individual trace (on the
+              <a href="transaction/traces{{agentQueryString()}}">slow traces</a> or
+              <a href="error/traces{{agentQueryString()}}">error traces</a> pages).
             </div>
           </div>
         </div>
@@ -290,13 +290,48 @@
             in which case their timers are aggregated together.
           </div>
         </div>
+        <div class="form-group gt-form-group-without-help-block"
+             ng-show="captureKindTransaction">
+          <label class="col-lg-3 control-label">
+            What to do if already in a transaction
+          </label>
+          <div class="col-lg-9">
+            <div class="radio">
+              <label>
+                <input type="radio"
+                       ng-model="config.alreadyInTransactionBehavior"
+                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                       value="capture-trace-entry">
+                Capture a trace entry (as part of the existing transaction)
+              </label>
+            </div>
+            <div class="radio">
+              <label>
+                <input type="radio"
+                       ng-model="config.alreadyInTransactionBehavior"
+                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                       value="capture-new-transaction">
+                Capture a new transaction
+              </label>
+            </div>
+            <div class="radio">
+              <label>
+                <input type="radio"
+                       ng-model="config.alreadyInTransactionBehavior"
+                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                       value="do-nothing">
+                Do nothing
+              </label>
+            </div>
+          </div>
+        </div>
         <div gt-form-group
              gt-type="checkbox"
              gt-label="Self nesting"
              gt-checkbox-label="Capture self nested trace entries"
              gt-model="config.traceEntryCaptureSelfNested"
              gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
-             ng-show="showTraceEntry">
+             ng-show="showTraceEntryExtra">
           <div class="help-block">
             If checked, and this custom instrumentation is encountered beneath itself or beneath another pointcut that
             shares the same timer name, a nested trace entry <em>will</em> be captured.
@@ -312,7 +347,7 @@
              gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="7em"
              gt-addon="milliseconds"
-             ng-show="showTraceEntryStackThreshold">
+             ng-show="showTraceEntryExtra">
           <div class="help-block">
             Any trace entry that exceeds this threshold will have a stack trace captured and attached to it
             in order to help identify the source of this trace entry.

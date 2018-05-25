@@ -25,7 +25,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AggregateDao;
@@ -94,7 +93,6 @@ class RollupService implements Runnable {
             transactionName = "Outer rollup loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
     private void runInternal() throws Exception {
-        Glowroot.setTransactionOuter();
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
         for (AgentRollup agentRollup : shuffle(agentDao.readRecentlyActiveAgentRollups(7))) {

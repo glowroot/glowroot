@@ -252,6 +252,7 @@ public class PreInitializeWeavingClasses {
 
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
+        types.add("org.glowroot.agent.api.Instrumentation$AlreadyInTransactionBehavior");
         types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig");
         types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig$Builder");
         types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig$InitShim");
@@ -397,6 +398,10 @@ public class PreInitializeWeavingClasses {
                 + "$InstrumentationConfig$CaptureKind");
         types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"
                 + "$InstrumentationConfig$CaptureKind$1");
+        types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"
+                + "$InstrumentationConfig$AlreadyInTransactionBehavior");
+        types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"
+                + "$InstrumentationConfig$AlreadyInTransactionBehavior$1");
         return types;
     }
 
