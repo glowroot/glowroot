@@ -116,7 +116,9 @@ abstract class Advice {
             }
             String leftTimerName = left.pointcut().timerName();
             String rightTimerName = right.pointcut().timerName();
-            // empty timer names are placed at the end
+            // empty timer names are placed at the end (this applies to "Optional transaction
+            // overrides only" which is good so that those can update things after transaction is
+            // started in advice for the same method)
             if (leftTimerName.isEmpty() && rightTimerName.isEmpty()) {
                 return 0;
             }
