@@ -258,6 +258,8 @@ public class AgentModule {
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
             @Nullable String mainClass) throws Exception {
 
+        weaver.setNoLongerNeedToWeaveMainMethods();
+
         deadlockedActiveWeavingRunnable = new DeadlockedActiveWeavingRunnable(weaver);
         deadlockedActiveWeavingRunnable.scheduleWithFixedDelay(backgroundExecutor, 5, 5, SECONDS);
 

@@ -276,8 +276,9 @@ public class AnalyzedWorld {
                 mergeInstrumentationAnnotations(this.advisors.get(), bytes, loader, className);
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(bytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
+        // passing noLongerNeedToWeaveMainMethods=true since not really weaving bytecode here
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
-                mixinTypes, loader, this, null, bytes);
+                mixinTypes, loader, this, null, bytes, true);
         classAnalyzer.analyzeMethods();
         return classAnalyzer.getAnalyzedClass();
     }

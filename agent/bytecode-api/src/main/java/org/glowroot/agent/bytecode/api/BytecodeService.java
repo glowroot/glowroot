@@ -26,6 +26,9 @@ public interface BytecodeService {
 
     void enteringMain(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs);
 
+    void enteringApacheCommonsDaemonLoad(String mainClass,
+            @Nullable String /*@Nullable*/ [] mainArgs);
+
     void exitingGetPlatformMBeanServer();
 
     ThreadContextThreadLocal.Holder getCurrentThreadContextHolder();

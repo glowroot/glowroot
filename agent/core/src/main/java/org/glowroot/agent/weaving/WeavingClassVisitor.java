@@ -94,6 +94,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private final @Nullable ClassLoader loader;
 
     private final boolean frames;
+    private final boolean noLongerNeedToWeaveMainMethods;
     private final AnalyzedClass analyzedClass;
     private final List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice;
 
@@ -115,13 +116,15 @@ class WeavingClassVisitor extends ClassVisitor {
     private int methodMetaCounter;
 
     public WeavingClassVisitor(ClassWriter cw, @Nullable ClassLoader loader, boolean frames,
-            AnalyzedClass analyzedClass, List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice,
-            List<ShimType> shimTypes, List<MixinType> mixinTypes,
-            Map<String, List<Advice>> methodAdvisors, AnalyzedWorld analyzedWorld) {
+            boolean noLongerNeedToWeaveMainMethods, AnalyzedClass analyzedClass,
+            List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice, List<ShimType> shimTypes,
+            List<MixinType> mixinTypes, Map<String, List<Advice>> methodAdvisors,
+            AnalyzedWorld analyzedWorld) {
         super(ASM6, cw);
         this.cw = cw;
         this.loader = loader;
         this.frames = frames;
+        this.noLongerNeedToWeaveMainMethods = noLongerNeedToWeaveMainMethods;
         this.analyzedClass = analyzedClass;
         this.methodsThatOnlyNowFulfillAdvice = methodsThatOnlyNowFulfillAdvice;
         this.shimTypes = shimTypes;
@@ -191,12 +194,23 @@ class WeavingClassVisitor extends ClassVisitor {
             return visitInitWithMixins(access, name, desc, signature, exceptions, matchingAdvisors);
         }
         MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-        if (Modifier.isStatic(access) && Modifier.isPublic(access) && name.equals("main")
-                && desc.equals("([Ljava/lang/String;)V")) {
-            mv.visitLdcInsn(type.getClassName());
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(), "enteringMainMethod",
-                    "(Ljava/lang/String;[Ljava/lang/String;)V", false);
+        if (!noLongerNeedToWeaveMainMethods) {
+            if (Modifier.isPublic(access) && Modifier.isStatic(access) && name.equals("main")
+                    && desc.equals("([Ljava/lang/String;)V")) {
+                mv.visitLdcInsn(type.getClassName());
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
+                        "enteringMainMethod", "(Ljava/lang/String;[Ljava/lang/String;)V", false);
+            } else if (type.getInternalName()
+                    .equals("org/apache/commons/daemon/support/DaemonLoader")
+                    && Modifier.isPublic(access) && Modifier.isStatic(access) && name.equals("load")
+                    && desc.equals("(Ljava/lang/String;[Ljava/lang/String;)Z")) {
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitVarInsn(ALOAD, 1);
+                mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
+                        "enteringApacheCommonsDaemonLoadMethod",
+                        "(Ljava/lang/String;[Ljava/lang/String;)V", false);
+            }
         }
         if (matchingAdvisors.isEmpty()) {
             return mv;

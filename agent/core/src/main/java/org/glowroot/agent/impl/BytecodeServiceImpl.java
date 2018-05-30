@@ -64,44 +64,14 @@ public class BytecodeServiceImpl implements BytecodeService {
 
     @Override
     public void enteringMain(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs) {
-        if (onEnteringMain == null) {
-            return;
-        }
-        if (hasRunOnEnteringMain.get()) {
-            // no need to spend effort checking anything else
-            return;
-        }
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        if (ignoreMainClass(mainClass, stackTrace)) {
-            if (DEBUG_MAIN_CLASS) {
-                logger.info("ignoring main class: {}", mainClass,
-                        new Exception("location stack trace"));
-            }
-            return;
-        }
-        if (mainClass.equals("com.ibm.java.diagnostics.healthcenter.agent.mbean.HCLaunchMBean")) {
-            // IBM JVM -Xhealthcenter
-            return;
-        }
-        if (hasRunOnEnteringMain.getAndSet(true)) {
-            // unexpected and strange race condition on valid main methods
-            return;
-        }
-        if (DEBUG_MAIN_CLASS) {
-            logger.info("main class: {}", mainClass);
-        }
-        String unwrappedMainClass;
-        if (mainClass.startsWith("org.tanukisoftware.wrapper.")
-                && mainArgs != null && mainArgs.length > 0) {
-            unwrappedMainClass = mainArgs[0];
-        } else {
-            unwrappedMainClass = mainClass;
-        }
-        try {
-            onEnteringMain.run(unwrappedMainClass);
-        } catch (Throwable t) {
-            logger.error(t.getMessage(), t);
-        }
+        enteringMainCommon(mainClass, mainArgs, mainClass, "main");
+    }
+
+    @Override
+    public void enteringApacheCommonsDaemonLoad(String mainClass,
+            @Nullable String /*@Nullable*/ [] mainArgs) {
+        enteringMainCommon(mainClass, mainArgs, "org.apache.commons.daemon.support.DaemonLoader",
+                "load");
     }
 
     @Override
@@ -165,13 +135,60 @@ public class BytecodeServiceImpl implements BytecodeService {
         GenericMessageSupplier.updateWithReturnValue(traceEntry, returnValue);
     }
 
-    private static boolean ignoreMainClass(String mainClass, StackTraceElement[] stackTrace) {
+    public void enteringMainCommon(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs,
+            String expectedTopLevelClass, String expectedTopLevelMethodName) {
+        if (onEnteringMain == null) {
+            if (DEBUG_MAIN_CLASS) {
+                logger.info("callback not set yet: {}", mainClass,
+                        new Exception("location stack trace"));
+            }
+            return;
+        }
+        if (hasRunOnEnteringMain.get()) {
+            // no need to spend effort checking anything else
+            return;
+        }
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        if (ignoreMainClass(expectedTopLevelClass, expectedTopLevelMethodName, stackTrace)) {
+            if (DEBUG_MAIN_CLASS) {
+                logger.info("ignoring main class: {}", mainClass,
+                        new Exception("location stack trace"));
+            }
+            return;
+        }
+        if (mainClass.equals("com.ibm.java.diagnostics.healthcenter.agent.mbean.HCLaunchMBean")) {
+            // IBM JVM -Xhealthcenter
+            return;
+        }
+        if (hasRunOnEnteringMain.getAndSet(true)) {
+            // unexpected and strange race condition on valid main methods
+            return;
+        }
+        if (DEBUG_MAIN_CLASS) {
+            logger.info("main class: {}", mainClass);
+        }
+        String unwrappedMainClass;
+        if (mainClass.startsWith("org.tanukisoftware.wrapper.")
+                && mainArgs != null && mainArgs.length > 0) {
+            unwrappedMainClass = mainArgs[0];
+        } else {
+            unwrappedMainClass = mainClass;
+        }
+        try {
+            onEnteringMain.run(unwrappedMainClass);
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
+        }
+    }
+
+    private static boolean ignoreMainClass(String expectedTopLevelClass,
+            String expectedTopLevelMethodName, StackTraceElement[] stackTrace) {
         if (stackTrace.length == 0) {
             return true;
         }
         StackTraceElement topStackTraceElement = stackTrace[stackTrace.length - 1];
-        return !topStackTraceElement.getClassName().equals(mainClass)
-                || !"main".equals(topStackTraceElement.getMethodName());
+        return !topStackTraceElement.getClassName().equals(expectedTopLevelClass)
+                || !expectedTopLevelMethodName.equals(topStackTraceElement.getMethodName());
     }
 
     public interface OnEnteringMain {

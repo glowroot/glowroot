@@ -90,6 +90,8 @@ public class Weaver {
 
     private volatile boolean weavingTimerEnabled;
 
+    private volatile boolean noLongerNeedToWeaveMainMethods;
+
     private volatile boolean weavingDisabledForLoggingDeadlock;
 
     private final IterableWithSelfRemovableEntries<ActiveWeaving> activeWeavings =
@@ -112,6 +114,10 @@ public class Weaver {
             }
         });
         this.timerName = timerNameCache.getTimerName(OnlyForTheTimerName.class);
+    }
+
+    public void setNoLongerNeedToWeaveMainMethods() {
+        noLongerNeedToWeaveMainMethods = true;
     }
 
     public void checkForDeadlockedActiveWeaving() {
@@ -230,7 +236,8 @@ public class Weaver {
             maybeProcessedBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
-                mixinTypes, loader, analyzedWorld, codeSource, classBytes);
+                mixinTypes, loader, analyzedWorld, codeSource, classBytes,
+                noLongerNeedToWeaveMainMethods);
         classAnalyzer.analyzeMethods();
         if (!classAnalyzer.isWeavingRequired()) {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
@@ -269,10 +276,10 @@ public class Weaver {
             }
         }
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        WeavingClassVisitor cv =
-                new WeavingClassVisitor(cw, loader, frames, classAnalyzer.getAnalyzedClass(),
-                        classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(), matchedShimTypes,
-                        matchedMixinTypes, classAnalyzer.getMethodAdvisors(), analyzedWorld);
+        WeavingClassVisitor cv = new WeavingClassVisitor(cw, loader, frames,
+                noLongerNeedToWeaveMainMethods, classAnalyzer.getAnalyzedClass(),
+                classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(), matchedShimTypes,
+                matchedMixinTypes, classAnalyzer.getMethodAdvisors(), analyzedWorld);
         ClassReader cr =
                 new ClassReader(maybeProcessedBytes == null ? classBytes : maybeProcessedBytes);
         byte[] transformedBytes;

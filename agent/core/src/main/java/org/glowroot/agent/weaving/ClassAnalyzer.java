@@ -84,7 +84,8 @@ class ClassAnalyzer {
 
     ClassAnalyzer(ThinClass thinClass, List<Advice> advisors, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
-            @Nullable CodeSource codeSource, byte[] classBytes) {
+            @Nullable CodeSource codeSource, byte[] classBytes,
+            boolean noLongerNeedToWeaveMainMethods) {
         this.thinClass = thinClass;
         ImmutableList<String> interfaceNames = ClassNames.fromInternalNames(thinClass.interfaces());
         className = ClassNames.fromInternalName(thinClass.name());
@@ -132,7 +133,12 @@ class ClassAnalyzer {
                     interfaceAnalyzedHierarchy);
             matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, superAnalyzedHierarchy,
                     interfaceAnalyzedHierarchy);
-            hasMainMethod = hasMainMethod(thinClass.nonBridgeMethods());
+            if (noLongerNeedToWeaveMainMethods) {
+                hasMainMethod = false;
+            } else {
+                hasMainMethod = hasMainMethod(thinClass.nonBridgeMethods())
+                        || className.equals("org.apache.commons.daemon.support.DaemonLoader");
+            }
         }
         analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
         analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);

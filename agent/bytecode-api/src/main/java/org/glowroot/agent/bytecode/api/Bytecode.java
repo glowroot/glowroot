@@ -33,6 +33,12 @@ public class Bytecode {
         service.enteringMain(mainClass, mainArgs);
     }
 
+    // this can bypass "main" method
+    public static void enteringApacheCommonsDaemonLoadMethod(String mainClass,
+            @Nullable String /*@Nullable*/ [] mainArgs) {
+        service.enteringApacheCommonsDaemonLoad(mainClass, mainArgs);
+    }
+
     public static void exitingGetPlatformMBeanServer() {
         service.exitingGetPlatformMBeanServer();
     }
