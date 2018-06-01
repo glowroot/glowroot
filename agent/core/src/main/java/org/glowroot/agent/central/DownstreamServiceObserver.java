@@ -199,7 +199,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 .build());
     }
 
-    private void onNextInternal(CentralRequest request) throws Exception {
+    private void onNextInternal(CentralRequest request) throws InterruptedException {
         StreamObserver<AgentResponse> responseObserver = currResponseObserver;
         while (responseObserver == null) {
             MILLISECONDS.sleep(10);
@@ -649,7 +649,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     }
 
     private void reweaveAndRespond(CentralRequest request,
-            StreamObserver<AgentResponse> responseObserver) throws Exception {
+            StreamObserver<AgentResponse> responseObserver) {
         int classUpdateCount;
         try {
             classUpdateCount = liveWeavingService.reweave("");
@@ -666,7 +666,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     }
 
     private void getHeaderAndRespond(CentralRequest request,
-            StreamObserver<AgentResponse> responseObserver) throws Exception {
+            StreamObserver<AgentResponse> responseObserver) {
         Trace.Header header;
         try {
             header = liveTraceRepository.getHeader("", request.getHeaderRequest().getTraceId());
@@ -690,7 +690,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     }
 
     private void getEntriesAndRespond(CentralRequest request,
-            StreamObserver<AgentResponse> responseObserver) throws Exception {
+            StreamObserver<AgentResponse> responseObserver) {
         Entries entries;
         try {
             entries = liveTraceRepository.getEntries("", request.getEntriesRequest().getTraceId());
@@ -712,7 +712,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     }
 
     private void getMainThreadProfileAndRespond(CentralRequest request,
-            StreamObserver<AgentResponse> responseObserver) throws Exception {
+            StreamObserver<AgentResponse> responseObserver) {
         Profile profile;
         try {
             profile = liveTraceRepository.getMainThreadProfile("",
@@ -737,7 +737,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     }
 
     private void getAuxThreadProfileAndRespond(CentralRequest request,
-            StreamObserver<AgentResponse> responseObserver) throws Exception {
+            StreamObserver<AgentResponse> responseObserver) {
         Profile profile;
         try {
             profile = liveTraceRepository.getAuxThreadProfile("",
@@ -762,7 +762,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     }
 
     private void getFullTraceAndRespond(CentralRequest request,
-            StreamObserver<AgentResponse> responseObserver) throws Exception {
+            StreamObserver<AgentResponse> responseObserver) {
         Trace trace;
         try {
             trace = liveTraceRepository.getFullTrace("",

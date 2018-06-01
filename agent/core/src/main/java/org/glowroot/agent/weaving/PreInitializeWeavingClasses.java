@@ -329,10 +329,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ClassNames");
         types.add("org.glowroot.agent.weaving.FrameDeduppingMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$ActiveWeaving");
-        types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackClassVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackMethodVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$OsgiHackClassVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$OsgiHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$HikariCpProxyHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$HikariCpProxyHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossModulesHackClassVisitor");
@@ -343,6 +339,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$ManagementFactoryHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$ManagementFactoryHackMethodVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackClassVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackMethodVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$OsgiHackClassVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$OsgiHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$InitShim");

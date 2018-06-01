@@ -533,6 +533,73 @@ public class Weaver {
         }
     }
 
+    private static class JBossUrlHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        private JBossUrlHackClassVisitor(ClassWriter cw) {
+            super(ASM6, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            if (name.equals("<clinit>") && desc.equals("()V")) {
+                return new JBossUrlHackMethodVisitor(mv, access, name, desc);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class JBossUrlHackMethodVisitor extends AdviceAdapter {
+
+        private JBossUrlHackMethodVisitor(MethodVisitor mv, int access, String name,
+                String desc) {
+            super(ASM6, mv, access, name, desc);
+        }
+
+        @Override
+        protected void onMethodEnter() {
+            // these classes can be initialized inside of ClassFileTransformer.transform(), via
+            // Resources.toByteArray(url) inside of AnalyzedWorld.createAnalyzedClass()
+            // because jboss registers org.jboss.net.protocol.URLStreamHandlerFactory to handle
+            // "file" and "resource" URLs
+            //
+            // these classes can not be initialized in PreInitializeWeavingClasses since they are
+            // not accessible from the bootstrap or system class loader, and thus, this hack
+            Label l0 = new Label();
+            Label l1 = new Label();
+            Label l2 = new Label();
+            mv.visitTryCatchBlock(l0, l1, l2, "java/lang/Throwable");
+            mv.visitLabel(l0);
+            visitClassForName("org.jboss.net.protocol.file.Handler");
+            visitClassForName("org.jboss.net.protocol.file.FileURLConnection");
+            visitClassForName("org.jboss.net.protocol.resource.Handler");
+            visitClassForName("org.jboss.net.protocol.resource.ResourceURLConnection");
+            mv.visitLabel(l1);
+            Label l3 = new Label();
+            mv.visitJumpInsn(GOTO, l3);
+            mv.visitLabel(l2);
+            if (logger.isDebugEnabled()) {
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Throwable", "printStackTrace", "()V",
+                        false);
+            } else {
+                mv.visitInsn(POP);
+            }
+            mv.visitLabel(l3);
+        }
+
+        private void visitClassForName(String className) {
+            mv.visitLdcInsn(className);
+            mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
+                    "(Ljava/lang/String;)Ljava/lang/Class;", false);
+            mv.visitInsn(POP);
+        }
+    }
+
     private static class OsgiHackClassVisitor extends ClassVisitor {
 
         private final ClassWriter cw;
@@ -665,73 +732,6 @@ public class Weaver {
                 super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
                         "stripGlowrootClasses", "(Ljava/util/Set;)Ljava/util/Set;", false);
             }
-        }
-    }
-
-    private static class JBossUrlHackClassVisitor extends ClassVisitor {
-
-        private final ClassWriter cw;
-
-        private JBossUrlHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
-            this.cw = cw;
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals("<clinit>") && desc.equals("()V")) {
-                return new JBossUrlHackMethodVisitor(mv, access, name, desc);
-            } else {
-                return mv;
-            }
-        }
-    }
-
-    private static class JBossUrlHackMethodVisitor extends AdviceAdapter {
-
-        private JBossUrlHackMethodVisitor(MethodVisitor mv, int access, String name,
-                String desc) {
-            super(ASM6, mv, access, name, desc);
-        }
-
-        @Override
-        protected void onMethodEnter() {
-            // these classes can be initialized inside of ClassFileTransformer.transform(), via
-            // Resources.toByteArray(url) inside of AnalyzedWorld.createAnalyzedClass()
-            // because jboss registers org.jboss.net.protocol.URLStreamHandlerFactory to handle
-            // "file" and "resource" URLs
-            //
-            // these classes can not be initialized in PreInitializeWeavingClasses since they are
-            // not accessible from the bootstrap or system class loader, and thus, this hack
-            Label l0 = new Label();
-            Label l1 = new Label();
-            Label l2 = new Label();
-            mv.visitTryCatchBlock(l0, l1, l2, "java/lang/Throwable");
-            mv.visitLabel(l0);
-            visitClassForName("org.jboss.net.protocol.file.Handler");
-            visitClassForName("org.jboss.net.protocol.file.FileURLConnection");
-            visitClassForName("org.jboss.net.protocol.resource.Handler");
-            visitClassForName("org.jboss.net.protocol.resource.ResourceURLConnection");
-            mv.visitLabel(l1);
-            Label l3 = new Label();
-            mv.visitJumpInsn(GOTO, l3);
-            mv.visitLabel(l2);
-            if (logger.isDebugEnabled()) {
-                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Throwable", "printStackTrace", "()V",
-                        false);
-            } else {
-                mv.visitInsn(POP);
-            }
-            mv.visitLabel(l3);
-        }
-
-        private void visitClassForName(String className) {
-            mv.visitLdcInsn(className);
-            mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
-                    "(Ljava/lang/String;)Ljava/lang/Class;", false);
-            mv.visitInsn(POP);
         }
     }
 

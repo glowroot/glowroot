@@ -52,7 +52,7 @@ public class MutableAggregateTimer implements AggregatedTimer {
     }
 
     @Override
-    public List<? extends AggregatedTimer> getChildTimers() {
+    public List<MutableAggregateTimer> getChildTimers() {
         return childTimers;
     }
 
