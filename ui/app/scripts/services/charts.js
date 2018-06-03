@@ -264,6 +264,9 @@ glowroot.factory('charts', [
       $(document).on('touchstart.chart', function () {
         chartState.plot.hideTooltip();
       });
+      $scope.$on('$destroy',function () {
+        chartState.plot.hideTooltip();
+      });
     }
 
     function refreshData(url, chartState, $scope, autoRefresh, addToQuery, onRefreshData) {
