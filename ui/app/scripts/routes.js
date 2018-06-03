@@ -244,8 +244,8 @@ glowroot.config([
       url: '/services?transaction-type&transaction-name',
       views: {
         'main@transaction': {
-          templateUrl: 'views/transaction/services.html',
-          controller: 'TransactionServicesCtrl'
+          templateUrl: 'views/transaction/service-calls.html',
+          controller: 'TransactionServiceCallsCtrl'
         }
       }
     });

@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('TransactionServicesCtrl', [
+glowroot.controller('TransactionServiceCallsCtrl', [
   '$scope',
   '$http',
   '$location',
@@ -26,7 +26,7 @@ glowroot.controller('TransactionServicesCtrl', [
   'httpErrors',
   function ($scope, $http, $location, locationChanges, modals, queryStrings, httpErrors) {
 
-    $scope.$parent.activeTabItem = 'services';
+    $scope.$parent.activeTabItem = 'service-calls';
 
     if ($scope.hideMainContent()) {
       return;
