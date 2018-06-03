@@ -1,5 +1,5 @@
 <!--
-  Copyright 2017 the original author or authors.
+  Copyright 2017-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,21 +13,26 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div class="gt-config-return-outer-div">
+  <a class="gt-config-return-link"
+     href="admin/integration-list">
+    Return to list
+  </a>
+</div>
 <div class="panel panel-default">
   <div class="panel-heading">
     <h2>
-      <a class="pull-right"
-         style="font-size: 16px; padding-top: 16px;"
-         href="admin/integration-list">
-        Return to integration list
-      </a>
-      Healthchecks.io
+      Integrations
+      <span class="gt-inline-block gt-separator">
+        |
+      </span>
+      <span style="font-size: 24px;">Healthchecks.io</span>
     </h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <div ng-if="layout.central" class="alert alert-danger">
+    <div ng-if="layout.central" class="alert alert-danger" role="alert">
       Use glowroot agent (with embedded database and UI, not pointing to central) to monitor glowroot central itself.
     </div>
     <div ng-form

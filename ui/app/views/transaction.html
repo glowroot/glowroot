@@ -17,10 +17,10 @@
      style="padding-bottom: 45px;">
   <div class="gt-header-page-name pull-left">
     <div style="margin-top: -16px;">
-      <span class="gt-inline-block"
+      <h1 class="gt-inline-block"
             ng-show="!layout.central">
         {{headerDisplay}}
-      </span>
+      </h1>
       <!-- negative margin-left is so background doesn't bleed through transparent 1px border when menu is open -->
       <span class="gt-inline-block gt-header-menu"
             ng-show="layout.central"
@@ -96,7 +96,7 @@
 <div class="gt-transaction-sidebar">
   <div ui-view="sidebar"></div>
 </div>
-<div class="gt-transaction-main-column" ng-style="{'min-height': (windowHeight - 160) + 'px'}">
+<div class="gt-transaction-main-column">
   <div class="panel panel-default">
     <div class="panel-heading" style="word-break: break-all;">
       <h2>{{transactionName ? transactionName : 'All ' + transactionType + ' Transactions'}}</h2>

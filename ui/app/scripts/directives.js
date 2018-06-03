@@ -242,7 +242,8 @@ glowroot.directive('gtNavbarItem', [
       scope: {
         gtDisplay: '@',
         gtItemName: '@',
-        gtUrl: '@'
+        gtUrl: '@',
+        gtClick: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
@@ -251,12 +252,6 @@ glowroot.directive('gtNavbarItem', [
       link: function (scope) {
         scope.isActive = function () {
           return scope.$parent.activeNavbarItem === scope.gtItemName;
-        };
-        scope.ngClick = function () {
-          // need to collapse the navbar in mobile view
-          var $navbarCollapse = $('.navbar-collapse');
-          $navbarCollapse.removeClass('in');
-          $navbarCollapse.addClass('collapse');
         };
       }
     };

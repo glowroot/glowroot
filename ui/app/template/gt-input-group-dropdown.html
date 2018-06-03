@@ -1,4 +1,7 @@
-<div uib-dropdown class="input-group-btn" ng-class="gtClass">
+<div uib-dropdown
+     keyboard-nav="true"
+     class="input-group-btn"
+     ng-class="gtClass">
   <button uib-dropdown-toggle type="button" class="btn btn-default gt-btn-input-group-addon">
     {{gtDisplay}} <span class="caret"></span>
   </button>
@@ -6,7 +9,10 @@
   <ul class="dropdown-menu" style="min-width: 0;">
     <li ng-repeat="item in gtItems()">
       <!-- using $parent.gtModel below since ng-repeat create child scopes -->
-      <a ng-click="$parent.gtModel = item.value" href="">{{item.display}}</a>
+      <a ng-click="$parent.gtModel = item.value"
+         href="">
+        {{item.display}}
+      </a>
     </li>
   </ul>
 </div>

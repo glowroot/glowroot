@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2016 the original author or authors.
+  Copyright 2013-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 -->
 <div ng-include src="'template/gt-loading-overlay.html'"></div>
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-<div ng-if="agentNotConnected" class="alert alert-danger">
+<div ng-if="agentNotConnected" class="alert alert-danger" role="alert">
   This feature is only available when the agent is running and connected
 </div>
 <!-- intentionally not using gt-form-with-primary-button to prevent accidental heap dumps -->
@@ -48,7 +48,7 @@
     <div class="col-lg-offset-2 col-lg-10">
       <div gt-button-group>
         <div gt-button
-             gt-btn-class="btn-danger"
+             gt-btn-class="gt-btn-danger"
              gt-label="Heap dump"
              gt-click="heapDump(deferred)"
              gt-confirm-header="Perform heap dump?"
@@ -93,23 +93,6 @@
             <td><strong>{{heapDumpResponse.fileSizeBytes | gtBytes}}</strong></td>
           </tr>
         </table>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="modal" id="confirmationModal" tabindex="-1">
-  <div class="modal-dialog"
-       style="max-width: 500px;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3></h3>
-      </div>
-      <div class="modal-body">
-        <p></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-default" id="confirmationModalButton">Yes</button>
-        <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>
   </div>

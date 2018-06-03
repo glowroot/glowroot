@@ -14,24 +14,27 @@
   limitations under the License.
 -->
 <div class="gt-sidebar hidden-print">
+  <div class="panel panel-default" style="margin-bottom: 4px;">
+    <!-- display: none is used so that screen readers do not think this is part of the display -->
+    <select gt-selectpicker
+            gt-selectpicker-options="{width: '100%', style: 'gt-transaction-sidebar-by'}"
+            gt-model="summarySortOrder"
+            gt-title="summarySortOrders[summarySortOrder]"
+            id="summarySortDropdown"
+            style="display: none !important;">
+      <option ng-repeat="(value, display) in summarySortOrders"
+              data-href="{{currentTabUrl()}}{{summarySortQueryString(value, transactionType)}}"
+              value="{{value}}">
+        {{display}}
+      </option>
+    </select>
+  </div>
   <div class="panel panel-default">
-    <ul class="list-group">
-      <select gt-selectpicker
-              gt-selectpicker-options="{width: '100%', style: 'gt-transaction-sidebar-by'}"
-              gt-model="summarySortOrder"
-              gt-title="summarySortOrders[summarySortOrder]"
-              id="summarySortDropdown">
-        <option ng-repeat="(value, display) in summarySortOrders"
-                data-href="{{currentTabUrl()}}{{summarySortQueryString(value, transactionType)}}"
-                value="{{value}}">
-          {{display}}
-        </option>
-      </select>
-
+    <div class="list-group">
       <div style="position: relative;">
-        <div ng-show="summariesNoData || summariesNoSearch"
+        <div ng-if="summariesNoData || summariesNoSearch"
              style="display: table; width: 100%; height: 100px;">
-          <div ng-show="summariesNoData && !showSpinner"
+          <div ng-if="summariesNoData && !showSpinner"
                style="font-weight: 600; display: table-cell; text-align: center; vertical-align: middle;">
             No data for this time period
           </div>
@@ -41,25 +44,22 @@
           </div>
         </div>
         <div class="gt-panel-overlay"
-             ng-show="summariesLoadingMore">
+             ng-if="summariesLoadingMore">
           <div gt-spinner
                gt-show="summariesLoadingMore"
                gt-no-delay="true"
                style="position: absolute; width: 100%; bottom: 70px;">
           </div>
         </div>
-        <div style="height: 2px; border-top: 1px solid #eee;"
-             ng-show="transactionSummaries.length">
-        </div>
         <div gt-sidebar-item
-             ng-show="transactionSummaries.length"
+             ng-if="transactionSummaries.length"
              gt-display="{{'All ' + transactionType + ' Transactions'}}"
              gt-display-right="{{overallSummaryValue()}}"
              gt-url="{{currentTabUrl()}}{{sidebarQueryString(null)}}"
              gt-active="!transactionName">
         </div>
         <div style="height: 3px;"
-             ng-show="transactionSummaries.length">
+             ng-if="transactionSummaries.length">
         </div>
         <div gt-sidebar-item
              ng-repeat="transactionSummary in transactionSummaries"
@@ -75,6 +75,6 @@
           Show more
         </button>
       </div>
-    </ul>
+    </div>
   </div>
 </div>

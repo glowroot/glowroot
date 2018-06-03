@@ -56,7 +56,7 @@
         </div>
         <div gt-form-group
              gt-type="checkbox"
-             gt-label="Capture JVM thread stats"
+             gt-label="Thread stats"
              gt-checkbox-label="Capture JVM thread stats"
              gt-model="config.captureThreadStats"
              gt-disabled="!agentRollup.permissions.config.edit.transaction">
@@ -117,7 +117,7 @@
                ng-if="agentRollup.permissions.config.edit.transaction"
                style="padding-top: 5px;">
             <div class="col-lg-offset-3 col-lg-9">
-              <button class="btn gt-btn-danger-light"
+              <button class="btn gt-btn-danger"
                       ng-click="removeSlowThreshold(slowThreshold)"
                       style="float: right;">
                 Remove this slow threshold override

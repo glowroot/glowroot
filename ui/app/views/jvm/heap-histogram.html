@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2017 the original author or authors.
+  Copyright 2013-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,31 +15,33 @@
 -->
 <div ng-include src="'template/gt-loading-overlay.html'"></div>
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-<div ng-if="agentNotConnected" class="alert alert-danger">
+<div ng-if="agentNotConnected" class="alert alert-danger" role="alert">
   This feature is only available when the agent is running and connected
 </div>
-<div ng-if="agentUnsupportedOperation" class="alert alert-danger">
+<div ng-if="agentUnsupportedOperation" class="alert alert-danger" role="alert">
   This feature is only supported by Glowroot agent 0.9.2 and later
   (currently reporting agent version is {{agentUnsupportedOperation}})
 </div>
-<div ng-if="unavailableDueToRunningInJre" class="alert alert-danger">
+<div ng-if="unavailableDueToRunningInJre" class="alert alert-danger" role="alert">
   This feature is only available when the agent is running in a JDK (currently running in a JRE).
 </div>
-<div ng-if="unavailableDueToRunningInIbmJvm" class="alert alert-danger">
+<div ng-if="unavailableDueToRunningInIbmJvm" class="alert alert-danger" role="alert">
   This feature is not available when the agent is running in IBM J9 VM.
 </div>
-<div ng-if="loaded && !agentNotConnected && !agentUnsupportedOperation && !unavailableDueToRunningInJre && !unavailableDueToRunningInIbmJvm">
-  <div class="clearfix"
-       style="float: right;">
-    <button class="btn btn-default"
-            ng-click="exportAsCsv()">
-      Export as text
-    </button>
-  </div>
-  <div gt-button
-       gt-label="Refresh"
-       gt-click="refresh(deferred)"
-       style="margin-bottom: 20px;">
+<div
+    ng-if="loaded && !agentNotConnected && !agentUnsupportedOperation && !unavailableDueToRunningInJre && !unavailableDueToRunningInIbmJvm">
+  <div class="clearfix">
+    <div gt-button
+         gt-label="Refresh"
+         gt-click="refresh(deferred)"
+         style="float: left; margin-bottom: 20px;">
+    </div>
+    <div style="float: right;">
+      <button class="btn btn-default"
+              ng-click="exportAsCsv()">
+        Export as text
+      </button>
+    </div>
   </div>
   <div ng-form
        class="form-horizontal well">
@@ -53,13 +55,15 @@
           <input type="text"
                  ng-model="page.filterValue"
                  class="form-control"
-                 placeholder="Filter by class name">
+                 placeholder="Filter by class name"
+                 aria-label="Filter by class name">
         </div>
       </div>
       <div class="col-md-3">
         <select ng-model="page.filterLimit"
                 class="heap-histogram-limit form-control inline-block"
-                style="max-width: 8em;">
+                style="max-width: 8em;"
+                aria-label="Display limit">
           <option value="" disabled>Display limit</option>
           <option value="" disabled>&mdash;&mdash;&mdash;&mdash;&mdash;</option>
           <option value="100">100</option>
@@ -75,7 +79,8 @@
   <table class="table table-sortable" style="table-layout: fixed;">
     <thead>
     <tr>
-      <th>
+      <th scope="col"
+          ng-attr-aria-sort="{{ngAttrAriaSort('class-name')}}">
         <a ng-href="jvm/heap-histogram{{sortQueryString('class-name')}}" class="gt-sortable-table-header">
           <span ng-class="sortIconClass('class-name')"
                 ng-show="sortAttribute === 'class-name'">
@@ -83,7 +88,9 @@
           Class name
         </a>
       </th>
-      <th class="gt-heap-histogram-other-column">
+      <th class="gt-heap-histogram-other-column"
+          scope="col"
+          ng-attr-aria-sort="{{ngAttrAriaSort('bytes')}}">
         <a ng-href="jvm/heap-histogram{{sortQueryString('bytes')}}" class="gt-sortable-table-header">
           <span ng-class="sortIconClass('bytes')"
                 ng-show="sortAttribute === 'bytes'">
@@ -91,7 +98,9 @@
           Bytes
         </a>
       </th>
-      <th class="gt-heap-histogram-other-column">
+      <th class="gt-heap-histogram-other-column"
+          scope="col"
+          ng-attr-aria-sort="{{ngAttrAriaSort('count')}}">
         <a ng-href="jvm/heap-histogram{{sortQueryString('count')}}" class="gt-sortable-table-header">
           <span ng-class="sortIconClass('count')"
                 ng-show="sortAttribute === 'count'">
@@ -103,7 +112,7 @@
     </thead>
     <tfoot>
     <tr>
-      <td>Total</td>
+      <th scope="row">Total</th>
       <td class="gt-heap-histogram-other-column">{{filteredTotalBytes}}</td>
       <td class="gt-heap-histogram-other-column">{{filteredTotalCount}}</td>
     </tr>

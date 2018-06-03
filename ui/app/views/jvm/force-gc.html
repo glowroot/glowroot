@@ -15,10 +15,10 @@
 -->
 <div ng-include src="'template/gt-loading-overlay.html'"></div>
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-<div ng-if="agentNotConnected" class="alert alert-danger">
+<div ng-if="agentNotConnected" class="alert alert-danger" role="alert">
   This feature is only available when the agent is running and connected
 </div>
-<div ng-if="explicitGcDisabled" class="alert alert-danger">
+<div ng-if="explicitGcDisabled" class="alert alert-danger" role="alert">
   This feature is not available because the JVM is running with -XX:+DisableExplicitGC
 </div>
 <div ng-if="loaded && !agentNotConnected && !explicitGcDisabled">

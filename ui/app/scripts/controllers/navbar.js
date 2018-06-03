@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, moment */
+/* global glowroot, moment, $ */
 
 glowroot.controller('NavbarCtrl', [
   '$scope',
@@ -92,6 +92,13 @@ glowroot.controller('NavbarCtrl', [
       } else {
         return 'config/transaction';
       }
+    };
+
+    $scope.collapseIfNeeded = function () {
+      // need to collapse the navbar in mobile view
+      var $navbarCollapse = $('.navbar-collapse');
+      $navbarCollapse.removeClass('in');
+      $navbarCollapse.addClass('collapse');
     };
 
     $scope.isAnonymous = function () {

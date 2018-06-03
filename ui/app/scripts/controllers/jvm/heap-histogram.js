@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,13 @@ glowroot.controller('JvmHeapHistogramCtrl', [
     var maxBytes;
 
     $scope.classNameBarWidth = function (bytes) {
-      return (bytes / maxBytes) * 100 + '%';
+      var width = (bytes / maxBytes) * 100;
+      if (width < 0.1) {
+        // this avoids thin line on left hand side looking like a border
+        return 0;
+      } else {
+        return width + '%';
+      }
     };
 
     $scope.$watch('page.filterComparator', function (newValue, oldValue) {
@@ -149,6 +155,13 @@ glowroot.controller('JvmHeapHistogramCtrl', [
       appliedSortAttribute = $scope.sortAttribute;
       appliedSortAsc = $scope.sortAsc;
     }
+
+    $scope.ngAttrAriaSort = function (sortAttribute) {
+      if (sortAttribute !== appliedSortAttribute) {
+        return undefined;
+      }
+      return $scope.sortAsc ? 'ascending' : 'descending';
+    };
 
     $scope.refresh = function (deferred) {
       $http.post('backend/jvm/heap-histogram?agent-id=' + encodeURIComponent($scope.agentId))

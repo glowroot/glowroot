@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2017 the original author or authors.
+  Copyright 2013-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,22 +13,20 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div class="gt-config-return-outer-div">
+  <a class="gt-config-return-link"
+     href="config/plugin-list{{agentQueryString()}}">
+    Return to list
+  </a>
+</div>
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>
-      <a class="pull-right"
-         style="font-size: 16px; padding-top: 16px;"
-         href="config/plugin-list{{agentQueryString()}}">
-        Return to list
-      </a>
-
-      <span ng-class="{'gt-lighten-font': !loaded && !httpError}">
-        Plugins
-        <span class="gt-inline-block gt-separator">
-          |
-        </span>
-        <span style="font-size: 24px;">{{config.name}}</span>
+    <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
+      Plugins
+      <span class="gt-inline-block gt-separator">
+        |
       </span>
+      <span style="font-size: 24px;">{{config.name}}</span>
     </h2>
   </div>
   <div class="panel-body">

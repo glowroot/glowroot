@@ -13,21 +13,20 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div class="gt-config-return-outer-div">
+  <a class="gt-config-return-link"
+     href="admin/user-list">
+    Return to list
+  </a>
+</div>
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>
-      <a class="pull-right"
-         style="font-size: 16px; padding-top: 16px;"
-         href="admin/user-list">
-        Return to list
-      </a>
-      <span ng-class="{'gt-lighten-font': !loaded && !httpError}">
-        Users
-        <span class="gt-inline-block gt-separator">
-          |
-        </span>
-        <span style="font-size: 24px;">{{heading}}</span>
+    <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
+      Users
+      <span class="gt-inline-block gt-separator">
+        |
       </span>
+      <span style="font-size: 24px;">{{heading}}</span>
     </h2>
   </div>
   <div class="panel-body">
@@ -48,7 +47,8 @@
       </div>
       <div gt-form-group
            gt-type="checkbox"
-           gt-label="Use LDAP for password"
+           gt-label="LDAP"
+           gt-checkbox-label="Use LDAP for password"
            gt-model="config.ldap"
            gt-disabled="!layout.adminEdit"
            class="gt-form-group-without-help-block"
@@ -114,7 +114,7 @@
             </div>
             <button ng-click="displayDeleteConfirmationModal()"
                     ng-show="config.version"
-                    class="btn gt-btn-danger-light gt-button-spacing">
+                    class="btn gt-btn-danger gt-button-spacing">
               Delete
             </button>
           </div>
@@ -123,7 +123,10 @@
     </div>
   </div>
 </div>
-<div class="modal" id="deleteConfirmationModal" tabindex="-1">
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="deleteConfirmationModal">
   <div class="modal-dialog"
        style="max-width: 500px;">
     <div class="modal-content">
@@ -148,7 +151,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn gt-btn-danger-light" ng-click="delete()">Yes</button>
+        <button class="btn gt-btn-danger" ng-click="delete()">Yes</button>
         <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>

@@ -65,11 +65,11 @@
             </button>
             <button ng-click="displayDeleteAllConfirmationModal()"
                     ng-if="configs.length"
-                    class="btn gt-btn-danger-light gt-button-spacing">
+                    class="btn gt-btn-danger gt-button-spacing">
               Delete all
             </button>
             <div gt-button
-                 gt-btn-class="btn-warning"
+                 gt-btn-class="gt-btn-warning"
                  gt-label="Apply changes without restart"
                  gt-click="retransformClasses(deferred)"
                  gt-confirm-header="Apply changes without restart?"
@@ -157,7 +157,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn gt-btn-danger-light" ng-click="deleteAll()">Yes</button>
+        <button class="btn gt-btn-danger" ng-click="deleteAll()">Yes</button>
         <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>

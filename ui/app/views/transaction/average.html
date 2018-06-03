@@ -15,7 +15,9 @@
 -->
 <div style="position: relative;">
   <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-  <div style="text-align: center; margin-top: -2px; margin-bottom: 6px; color: #555;">
+  <div style="text-align: center; margin-top: -2px; margin-bottom: 6px; color: #555;"
+       role="group"
+       aria-label="View">
     <label class="radio-inline">
       <input type="radio" name="view" value="average" ng-click="clickTopRadioButton('average')" checked>
       <a class="gt-radio-link"

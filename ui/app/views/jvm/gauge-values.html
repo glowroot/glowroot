@@ -90,13 +90,17 @@
            style="margin-top: 10px;">
       <thead>
       <tr>
-        <th style="padding-left: 20px; width: 70%;">
+        <th style="padding-left: 20px; width: 70%;"
+            scope="col"
+            aria-sort="ascending">
           Gauge
         </th>
-        <th style="width: 100px;">
+        <th style="width: 100px;"
+            scope="col">
           Color
         </th>
-        <th style="min-width: 120px;">
+        <th style="min-width: 120px;"
+            scope="col">
           Scale
         </th>
       </tr>
@@ -107,7 +111,8 @@
           <input type="text"
                  class="form-control gt-inline-block"
                  ng-model="page.gaugeFilter"
-                 placeholder="filter the gauge list">
+                 placeholder="filter the gauge list"
+                 aria-label="filter the gauge list">
         </td>
         <td></td>
         <td></td>

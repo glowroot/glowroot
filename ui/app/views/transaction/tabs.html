@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2017 the original author or authors.
+  Copyright 2015-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
   limitations under the License.
 -->
 <ul class="nav nav-tabs gt-transaction-tabs">
-  <li ng-class="{active: activeTabItem === 'time'}">
+  <li role="presentation" ng-class="{active: activeTabItem === 'time'}">
     <a ng-href="transaction/average{{tabQueryString()}}"
        ng-click="clickTab('time', $event)"
        ng-keydown="keydownTab(null, 'tab_traces', $event)"
@@ -22,7 +22,7 @@
       Response time
     </a>
   </li>
-  <li ng-class="{active: activeTabItem === 'traces'}">
+  <li role="presentation" ng-class="{active: activeTabItem === 'traces'}">
     <a ng-href="transaction/traces{{tabQueryString()}}"
        ng-click="clickTab('traces', $event)"
        ng-keydown="keydownTab('tab_time', 'tab_queries', $event)"
@@ -31,7 +31,7 @@
       {{transactionType === 'Startup' ? 'Traces' : 'Slow traces'}} ({{traceCountDisplay()}})
     </a>
   </li>
-  <li ng-class="{active: activeTabItem === 'queries'}">
+  <li role="presentation" ng-class="{active: activeTabItem === 'queries'}">
     <a ng-href="transaction/queries{{tabQueryString()}}"
        ng-click="clickTab('queries', $event)"
        ng-keydown="keydownTab('tab_traces', 'tab_services', $event)"
@@ -40,7 +40,7 @@
       Queries
     </a>
   </li>
-  <li ng-class="{active: activeTabItem === 'services'}">
+  <li role="presentation" ng-class="{active: activeTabItem === 'services'}">
     <a ng-href="transaction/services{{tabQueryString()}}"
        ng-click="clickTab('services', $event)"
        ng-keydown="keydownTab('tab_queries', 'tab_profile', $event)"
@@ -49,7 +49,7 @@
       Service calls
     </a>
   </li>
-  <li ng-class="{active: activeTabItem === 'profile'}">
+  <li role="presentation" ng-class="{active: activeTabItem === 'profile'}">
     <a ng-href="transaction/thread-profile{{tabQueryString()}}"
        ng-click="clickTab('profile', $event)"
        ng-keydown="keydownTab('tab_services', null, $event)"

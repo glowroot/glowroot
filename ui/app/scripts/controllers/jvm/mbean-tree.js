@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,10 @@ glowroot.controller('JvmMBeanTreeCtrl', [
   '$scope',
   '$location',
   '$http',
+  '$timeout',
   'httpErrors',
   'queryStrings',
-  function ($scope, $location, $http, httpErrors, queryStrings) {
+  function ($scope, $location, $http, $timeout, httpErrors, queryStrings) {
 
     $scope.$parent.heading = 'MBean tree';
 
@@ -101,6 +102,7 @@ glowroot.controller('JvmMBeanTreeCtrl', [
               return;
             }
             var flattened = [];
+
             function recurse(list, depth) {
               angular.forEach(list, function (node) {
                 node.depth = depth;
@@ -113,6 +115,7 @@ glowroot.controller('JvmMBeanTreeCtrl', [
                 }
               });
             }
+
             recurse(response.data, 0);
             $('#mbeanTree').empty();
             renderNext(flattened, 0);
@@ -140,7 +143,13 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       mousedownPageY = e.pageY;
     });
 
-    $('#mbeanTree').on('click', '.gt-mbean-expanded-content', function(e, keyboard) {
+    $('#mbeanTree').on('keypress', '.gt-mbean-expanded-content, .gt-mbean-unexpanded-content', function (e) {
+      if (e.which === 13) {
+        $(this).click();
+      }
+    });
+
+    $('#mbeanTree').on('click', '.gt-mbean-expanded-content', function (e, keyboard) {
       if (!keyboard && (Math.abs(e.pageX - mousedownPageX) > 5 || Math.abs(e.pageY - mousedownPageY) > 5)) {
         // not a simple single click, probably highlighting text
         return;
@@ -156,7 +165,7 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       $parent.html(JST['mbean-node-unexpanded'](node));
     });
 
-    $('#mbeanTree').on('click', '.gt-mbean-unexpanded-content', function(e, keyboard) {
+    $('#mbeanTree').on('click', '.gt-mbean-unexpanded-content', function (e, keyboard) {
       if (!keyboard && (Math.abs(e.pageX - mousedownPageX) > 5 || Math.abs(e.pageY - mousedownPageY) > 5)) {
         // not a simple single click, probably highlighting text
         return;

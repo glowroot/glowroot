@@ -1,5 +1,5 @@
 <!--
-  Copyright 2017 the original author or authors.
+  Copyright 2017-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,37 +15,20 @@
 -->
 <div class="gt-header" style="margin-bottom: 6px;">
   <div class="gt-header-page-name">
-      <span class="gt-inline-block">
-        Profile
-      </span>
+    <h1 class="gt-inline-block">
+      Profile
+    </h1>
   </div>
 </div>
 <div class="gt-sidebar hidden-print">
   <div class="panel panel-default">
-    <ul class="list-group">
+    <div class="list-group">
       <div gt-sidebar-item
            gt-display="Change my password"
            gt-url="profile/change-password">
       </div>
-    </ul>
+    </div>
   </div>
 </div>
 <div ui-view class="gt-main-column">
-</div>
-<div class="modal" id="confirmationModal" tabindex="-1">
-  <div class="modal-dialog"
-       style="max-width: 500px;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3></h3>
-      </div>
-      <div class="modal-body">
-        <p></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-default" id="confirmationModalButton">Yes</button>
-        <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
-      </div>
-    </div>
-  </div>
 </div>

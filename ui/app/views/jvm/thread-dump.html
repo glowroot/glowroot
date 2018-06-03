@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2016 the original author or authors.
+  Copyright 2012-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,22 +15,23 @@
 -->
 <div ng-include src="'template/gt-loading-overlay.html'"></div>
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-<div ng-if="agentNotConnected" class="alert alert-danger">
+<div ng-if="agentNotConnected" class="alert alert-danger" role="alert">
   This feature is only available when the agent is running and connected
 </div>
 <!-- ng-show explicitly needed here instead of ng-if because thread-dump.js binds directly to #threadDump -->
 <div ng-show="loaded && !agentNotConnected">
-  <div class="clearfix"
-       style="float: right;">
-    <button class="btn btn-default"
-            ng-click="exportAsText()">
-      Export as text
-    </button>
-  </div>
-  <div gt-button
-       gt-label="Refresh"
-       gt-click="refresh(deferred)"
-       style="margin-bottom: 20px;">
+  <div class="clearfix">
+    <div gt-button
+         gt-label="Refresh"
+         gt-click="refresh(deferred)"
+         style="float: left; margin-bottom: 20px;">
+    </div>
+    <div style="float: right;">
+      <button class="btn btn-default"
+              ng-click="exportAsText()">
+        Export as text
+      </button>
+    </div>
   </div>
   <div class="gt-thread-dump-flat-pre"
        id="threadDump">

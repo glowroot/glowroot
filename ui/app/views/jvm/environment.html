@@ -15,7 +15,7 @@
 -->
 <div ng-include src="'template/gt-loading-overlay.html'"></div>
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-<div ng-if="data.agentNotConnected" class="alert alert-danger">
+<div ng-if="data.agentNotConnected" class="alert alert-danger" role="alert">
   The agent is not currently connected. The values below were reported at last JVM start.
 </div>
 <div ng-if="layout.offlineViewer" class="alert alert-warning">

@@ -3,18 +3,17 @@
     "Since you cannot dynamically generate the name attribute of input elements using interpolation, you have
      to wrap each set of repeated inputs in an ngForm directive and nest these in an outer form element."
 -->
-<div ng-form="formGroupCtrl" class="form-group" ng-class="{'has-error': formGroupCtrl.property.$invalid}">
+<div ng-form="formGroupCtrl" class="form-group" ng-class="{'has-error': formGroupCtrl['property' + gtId].$invalid}">
   <div ng-switch="gtType">
     <div ng-switch-when="checkbox">
       <label class="control-label {{gtColClass1 || 'col-lg-3'}}"
-             for="{{gtId}}"
              style="margin-top: -7px;">
         {{gtLabel}}
       </label>
     </div>
     <div ng-switch-default>
       <label class="control-label {{gtColClass1 || 'col-lg-3'}}"
-             for="{{gtId}}">
+             for="{{'property' + gtId}}">
         {{gtLabel}}
       </label>
     </div>
@@ -28,8 +27,8 @@
             <input type="checkbox"
                    ng-model="$parent.ngModel"
                    ng-disabled="gtDisabled()"
-                   name="property"
-                   id="{{gtId}}">
+                   name="{{'property' + gtId}}"
+                   id="{{'property' + gtId}}">
             {{gtCheckboxLabel}}
           </label>
         </div>
@@ -37,8 +36,8 @@
       <div ng-switch-when="textarea">
         <textarea class="form-control"
                   ng-model="$parent.ngModel"
-                  name="property"
-                  id="{{gtId}}"
+                  name="{{'property' + gtId}}"
+                  id="{{'property' + gtId}}"
                   ng-required="gtRequired()"
                   ng-disabled="gtDisabled()"
                   ng-style="{'max-width': gtWidth ? gtWidth : 'none'}"
@@ -60,8 +59,8 @@
             <input type="{{gtType}}"
                    class="form-control"
                    ng-model="$parent.ngModel"
-                   name="property"
-                   id="{{gtId}}"
+                   name="{{'property' + gtId}}"
+                   id="{{'property' + gtId}}"
                    ng-pattern="ngPattern"
                    ng-required="gtRequired()"
                    ng-disabled="gtDisabled()"

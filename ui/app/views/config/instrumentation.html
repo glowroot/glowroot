@@ -13,21 +13,20 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div class="gt-config-return-outer-div">
+  <a class="gt-config-return-link"
+     href="config/instrumentation-list{{agentQueryString()}}">
+    Return to list
+  </a>
+</div>
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>
-      <a class="pull-right"
-         style="font-size: 16px; padding-top: 16px;"
-         href="config/instrumentation-list{{agentQueryString()}}">
-        Return to list
-      </a>
-      <span ng-class="{'gt-lighten-font': !loaded && !httpError}">
-        Instrumentation
-        <span class="gt-inline-block gt-separator">
-          |
-        </span>
-        <span style="font-size: 24px; word-wrap: break-word;">{{heading}}</span>
+    <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
+      Instrumentation
+      <span class="gt-inline-block gt-separator">
+        |
       </span>
+      <span style="font-size: 24px; word-wrap: break-word;">{{heading}}</span>
     </h2>
   </div>
   <div class="panel-body">
@@ -115,7 +114,8 @@
           </div>
         </div>
         <div class="form-group" style="margin-top: -7px;">
-          <label class="col-lg-3 control-label">
+          <label class="col-lg-3 control-label"
+                 id="gtMethodSignatureLabel">
             Method signature
           </label>
           <div class="col-lg-9">
@@ -129,7 +129,8 @@
                          ng-model="$parent.selectedMethodSignature"
                          ng-value="methodSignature"
                          ng-required="true"
-                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation">
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                         aria-labelledby="gtMethodSignatureLabel">
                   {{methodSignatureText(methodSignature)}}
                   <div class="gt-red"
                        ng-show="methodSignature.notAvailable">
@@ -447,7 +448,7 @@
                  ng-show="config.version"
                  gt-label="Delete"
                  gt-click="delete(deferred)"
-                 gt-btn-class="gt-btn-danger-light"
+                 gt-btn-class="gt-btn-danger"
                  ng-if="agentRollup.permissions.config.edit.instrumentation"
                  class="gt-inline-block">
             </div>

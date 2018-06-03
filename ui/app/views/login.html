@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2016 the original author or authors.
+  Copyright 2013-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 -->
 <div class="gt-header">
   <div class="gt-header-page-name">
-    Login
+    <h1>Login</h1>
   </div>
 </div>
 <div ng-form
@@ -27,7 +27,8 @@
            ng-model="page.username"
            id="username"
            placeholder="Enter username"
-           style="max-width: 20em;">
+           style="max-width: 20em;"
+           aria-label="Username">
     <span class="gt-red"
           ng-show="message"
           style="padding-left: 15px;">
@@ -40,7 +41,8 @@
            ng-model="page.password"
            id="password"
            placeholder="Enter password"
-           style="max-width: 20em;">
+           style="max-width: 20em;"
+           aria-label="Password">
   </div>
   <div class="form-group gt-form-buttons">
     <div gt-button

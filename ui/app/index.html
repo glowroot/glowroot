@@ -97,7 +97,8 @@
   Glowroot UI does not support IE8 or prior
 </p>
 <![endif]-->
-<header class="navbar navbar-inverse navbar-static-top">
+<header class="navbar navbar-inverse navbar-static-top"
+        role="banner">
   <div class="container">
     <div class="navbar-header">
       <button type="button"
@@ -117,82 +118,94 @@
          ng-hide="hideNavbar()"
          ng-controller="NavbarCtrl">
       <nav class="collapse navbar-collapse">
-        <ul class="nav navbar-nav">
+        <ul class="nav navbar-nav"
+            style="margin-bottom: 0;">
           <div gt-navbar-item
                gt-display="Transactions"
                gt-item-name="transaction"
                gt-url="transaction/average{{queryString(true, true)}}"
+               gt-click="collapseIfNeeded()"
                ng-if="layout.showNavbarTransaction">
           </div>
           <div gt-navbar-item
                gt-display="Errors"
                gt-item-name="error"
                gt-url="error/messages{{queryString(true, true)}}"
+               gt-click="collapseIfNeeded()"
                ng-if="layout.showNavbarError">
           </div>
           <div gt-navbar-item
                gt-display="JVM"
                gt-item-name="jvm"
                gt-url="jvm/gauges{{queryString(true, false, true)}}"
+               gt-click="collapseIfNeeded()"
                ng-if="layout.showNavbarJvm">
           </div>
           <div gt-navbar-item
                gt-display="Synthetic"
                gt-item-name="syntheticMonitor"
                gt-url="synthetic-monitors{{queryString(true)}}"
+               gt-click="collapseIfNeeded()"
                ng-if="layout.central && layout.showNavbarSyntheticMonitor">
           </div>
           <div gt-navbar-item
                gt-display="Incidents"
                gt-item-name="incident"
                gt-url="incidents"
+               gt-click="collapseIfNeeded()"
                ng-if="layout.showNavbarIncident">
           </div>
           <div gt-navbar-item
                gt-display="Reporting"
                gt-item-name="report"
                gt-url="report/ad-hoc{{reportQueryString()}}"
+               gt-click="collapseIfNeeded()"
                ng-if="layout.showNavbarReport">
           </div>
         </ul>
         <ul class="nav navbar-nav navbar-right"
-            style="margin-right: 0;">
+            style="margin-top: 0;">
           <li class="dropdown ng-cloak"
               ng-class="{active: activeNavbarItem === 'gears'}"
               ng-if="layout.showNavbarConfig || layout.adminView || !layout.loggedIn && layout.loginEnabled || layout.loggedIn && !layout.ldap">
             <!-- id is used by webdriver tests -->
-            <a role="button"
-               class="dropdown-toggle"
-               data-toggle="dropdown"
-               href="#"
-               id="gtGearsMenuToggle">
-              <span class="fas fa-cogs"
-                    style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></span>
-            </a>
+            <button type="button"
+                    class="btn gt-gears-btn dropdown-toggle"
+                    data-toggle="dropdown"
+                    id="gtGearsMenuToggle"
+                    aria-label="Settings"
+                    aria-haspopup="true"
+                    aria-expanded="false">
+                <span class="fas fa-cogs"
+                      style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></span>
+            </button>
             <!-- id is used by webdriver tests -->
             <ul class="dropdown-menu"
                 id="gtGearsMenu">
               <li ng-if="layout.showNavbarConfig">
                 <a ng-href="{{configUrl()}}"
+                   ng-click="collapseIfNeeded()"
                    style="padding-top: 5px; padding-bottom: 5px;">
                   Configuration
                 </a>
               </li>
               <li ng-if="layout.adminView">
                 <a href="admin/general"
+                   ng-click="collapseIfNeeded()"
                    style="padding-top: 5px; padding-bottom: 5px;">
                   Administration
                 </a>
               </li>
               <li ng-if="!layout.loggedIn && layout.loginEnabled">
                 <a href="login"
-                   ng-click="goToLogin($event)"
+                   ng-click="collapseIfNeeded(); goToLogin($event)"
                    style="padding-top: 5px; padding-bottom: 5px;">
                   Login
                 </a>
               </li>
               <li ng-if="layout.loggedIn && !layout.ldap">
                 <a ng-href="profile/change-password"
+                   ng-click="collapseIfNeeded()"
                    style="padding-top: 5px; padding-bottom: 5px;">
                   Change my password
                 </a>
@@ -213,24 +226,52 @@
     </div>
   </div>
 </header>
-<div class="ng-cloak gt-button-message-success"
-     ng-if="displaySignOutMessage"
-     style="text-align: center; font-size: 20px; font-weight: 600;">
-  You have been signed out
-</div>
-<div class="ng-cloak gt-button-message-error"
-     ng-if="navbarErrorMessage"
-     style="text-align: center; font-size: 20px; font-weight: 600;">
-  {{navbarErrorMessage}}
-</div>
-<div class="container" id="container">
-  <!-- autoscroll=true behavior is overridden to scroll to top of page, see $uiViewScroll decorator in routes.js -->
+<main class="container"
+      role="main"
+      id="container">
+  <div class="ng-cloak gt-button-message-success"
+       ng-if="displaySignOutMessage"
+       style="text-align: center; font-size: 20px; font-weight: 600; height: 0;">
+    You have been signed out
+  </div>
+  <div class="ng-cloak gt-button-message-error"
+       ng-if="navbarErrorMessage"
+       style="text-align: center; font-size: 20px; font-weight: 600; height: 0;">
+    {{navbarErrorMessage}}
+  </div>
   <div ui-view></div>
-  <div id="push"></div>
-</div>
-<div class="ng-cloak" id="footer">
+  <!-- modals need to be outside other content so that aria-hidden="true" can be applied to all other content when a
+   modal is visible (see modals.js), but modals still need to be inside of the "main" region -->
+  <div id="modalContent">
+    <!-- this modal is shared, other modals are appended to the parent div as needed -->
+    <div class="modal"
+         role="dialog"
+         tabindex="-1"
+         id="confirmationModal"
+         aria-label="Trace">
+      <div class="modal-dialog"
+           style="max-width: 500px;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3></h3>
+          </div>
+          <div class="modal-body">
+            <p></p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-default" id="confirmationModalButton">Yes</button>
+            <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="ng-cloak"
+        role="contentinfo"
+        id="footer">
   Glowroot version {{layout.glowrootVersion}}
-</div>
+</footer>
 
 <!-- build:js({.tmp,.}) scripts/vendor.js -->
 <script src="bower_components/jquery/dist/jquery.js"></script>

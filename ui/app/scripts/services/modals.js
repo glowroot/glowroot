@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,9 @@ glowroot.factory('modals', [
         $('.navbar-fixed-top').css('padding-right', '');
         $('.navbar-fixed-bottom').css('padding-right', '');
         $('#chart canvas').show();
+        $('body > header').removeAttr('aria-hidden');
+        $('body > main > :not(#modalContent)').removeAttr('aria-hidden');
+        $('body > footer').removeAttr('aria-hidden');
       });
       $timeout(function () {
         // need to focus on something inside the modal, otherwise keyboard events won't be captured,
@@ -60,6 +63,12 @@ glowroot.factory('modals', [
         $selector.find('.modal-body').css('outline', 'none');
         $selector.find('.modal-body').focus();
       });
+      if (!$selector.parents('#modalContent').length) {
+        $selector.detach().appendTo($('#modalContent'));
+      }
+      $('body > header').attr('aria-hidden', 'true');
+      $('body > main > :not(#modalContent)').attr('aria-hidden', 'true');
+      $('body > footer').attr('aria-hidden', 'true');
     }
 
     return {

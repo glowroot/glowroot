@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2017 the original author or authors.
+  Copyright 2015-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -47,14 +47,15 @@
            class="gt-form-group-without-help-block">
       </div>
       <div class="form-group gt-form-group-without-help-block">
-        <label class="col-lg-3 control-label">
+        <label for="gtConnectionSecurity" class="col-lg-3 control-label">
           Connection security
         </label>
         <div class="col-lg-9">
           <select ng-model="page.connectionSecurity"
                   ng-disabled="!layout.adminEdit"
                   class="form-control"
-                  style="width: auto;">
+                  style="width: auto;"
+                  id="gtConnectionSecurity">
             <option value="none">None</option>
             <option value="ssl-tls">SSL/TLS</option>
             <option value="starttls">STARTTLS</option>

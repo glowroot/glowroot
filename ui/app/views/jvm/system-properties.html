@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2016 the original author or authors.
+  Copyright 2013-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
 -->
 <div ng-include src="'template/gt-loading-overlay.html'"></div>
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-<div ng-if="agentNotConnected" class="alert alert-danger">
+<div ng-if="agentNotConnected" class="alert alert-danger" role="alert">
   This feature is only available when the agent is running and connected
 </div>
-<div ng-if="agentUnsupportedOperation" class="alert alert-danger">
+<div ng-if="agentUnsupportedOperation" class="alert alert-danger" role="alert">
   This feature is only supported by Glowroot agent 0.9.2 and later
   (currently reporting agent version is {{agentUnsupportedOperation}})
 </div>

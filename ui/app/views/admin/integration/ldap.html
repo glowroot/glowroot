@@ -13,15 +13,20 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div class="gt-config-return-outer-div">
+  <a class="gt-config-return-link"
+     href="admin/integration-list">
+    Return to list
+  </a>
+</div>
 <div class="panel panel-default">
   <div class="panel-heading">
     <h2>
-      <a class="pull-right"
-         style="font-size: 16px; padding-top: 16px;"
-         href="admin/integration-list">
-        Return to integration list
-      </a>
-      LDAP
+      Integrations
+      <span class="gt-inline-block gt-separator">
+        |
+      </span>
+      <span style="font-size: 24px;">LDAP</span>
     </h2>
   </div>
   <div class="panel-body">
@@ -60,7 +65,8 @@
         </div>
         <div gt-form-group
              gt-type="checkbox"
-             gt-label="Use SSL"
+             gt-label="SSL"
+             gt-checkbox-label="Use SSL"
              gt-model="config.ssl"
              gt-disabled="!layout.adminEdit"
              gt-col-class1="col-lg-4"
@@ -191,7 +197,7 @@
              ng-if="layout.adminEdit"
              style="padding-top: 5px;">
           <div class="col-lg-offset-4 col-lg-8">
-            <button class="btn gt-btn-danger-light"
+            <button class="btn gt-btn-danger"
                     ng-click="removeRoleMappingBlock(roleMappingBlock)"
                     style="float: right;">
               Remove this role mapping
