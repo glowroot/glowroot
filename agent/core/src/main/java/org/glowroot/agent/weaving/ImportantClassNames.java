@@ -32,6 +32,10 @@ public class ImportantClassNames {
             "org/eclipse/osgi/internal/framework/EquinoxContainer";
     public static final String OPENEJB_HACK_CLASS_NAME =
             "org/apache/openejb/util/classloader/URLClassLoaderFirst";
+    // this is needed for HikariCP prior to 2.3.10, specifically, prior to
+    // https://github.com/brettwooldridge/HikariCP/commit/33a4bbe54a99de14a704c1a26e3f953cfa7888ad
+    public static final String HIKARI_CP_PROXY_HACK_CLASS_NAME =
+            "com/zaxxer/hikari/proxy/JavassistProxyFactory";
 
     private ImportantClassNames() {}
 }

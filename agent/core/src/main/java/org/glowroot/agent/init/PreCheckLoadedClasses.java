@@ -54,7 +54,8 @@ public class PreCheckLoadedClasses {
                 ImportantClassNames.FELIX_OSGI_HACK_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.FELIX3_OSGI_HACK_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.ECLIPSE_OSGI_HACK_CLASS_NAME.replace('/', '.'),
-                ImportantClassNames.OPENEJB_HACK_CLASS_NAME.replace('/', '.'));
+                ImportantClassNames.OPENEJB_HACK_CLASS_NAME.replace('/', '.'),
+                ImportantClassNames.HIKARI_CP_PROXY_HACK_CLASS_NAME.replace('/', '.'));
         IMPORTANT_CLASS_NAMES = new HashSet<String>(importantClassNames);
     }
 

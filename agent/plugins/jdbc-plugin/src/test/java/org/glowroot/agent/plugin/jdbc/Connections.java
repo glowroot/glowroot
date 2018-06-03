@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,15 @@ import java.util.Properties;
 import javax.sql.DataSource;
 
 import com.sun.gjc.spi.DMManagedConnectionFactory;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.glassfish.api.jdbc.SQLTraceListener;
 import org.glassfish.api.jdbc.SQLTraceRecord;
 import org.h2.jdbc.JdbcConnection;
 import org.hsqldb.jdbc.JDBCDriver;
+
+import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 
 public class Connections {
 
@@ -46,7 +50,7 @@ public class Connections {
 
     enum ConnectionType {
         HSQLDB, H2, COMMONS_DBCP_WRAPPED, TOMCAT_JDBC_POOL_WRAPPED, GLASSFISH_JDBC_POOL_WRAPPED,
-        POSTGRES, ORACLE, MSSQL
+        HIKARI_CP_WRAPPED, POSTGRES, ORACLE, MSSQL
     }
 
     static Connection createConnection() throws Exception {
@@ -61,6 +65,8 @@ public class Connections {
                 return createTomcatJdbcPoolWrappedConnection();
             case GLASSFISH_JDBC_POOL_WRAPPED:
                 return createGlassfishJdbcPoolWrappedConnection();
+            case HIKARI_CP_WRAPPED:
+                return createHikariCpWrappedConnection();
             case POSTGRES:
                 return createPostgresConnection();
             case ORACLE:
@@ -135,6 +141,29 @@ public class Connections {
         connectionFactory.setSqlTraceListeners(
                 "org.glowroot.agent.plugin.jdbc.Connections$GlassfishSQLTraceListener");
         DataSource ds = (DataSource) connectionFactory.createConnectionFactory();
+        Connection connection = ds.getConnection();
+        insertRecords(connection);
+        return connection;
+    }
+
+    private static Connection createHikariCpWrappedConnection() throws SQLException {
+        if (Connections.class.getClassLoader() instanceof IsolatedWeavingClassLoader) {
+            try {
+                Class.forName("com.zaxxer.hikari.proxy.JavassistProxyFactory");
+                throw new AssertionError("Old HikariCP versions define proxies using"
+                        + " ClassLoader.defineClass() which is final so IsolatedWeavingClassLoader"
+                        + " cannot override and weave them, must use JavaagentContainer");
+            } catch (ClassNotFoundException e) {
+            }
+        }
+        HikariConfig config = new HikariConfig();
+        config.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
+        config.setJdbcUrl("jdbc:hsqldb:mem:test");
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        @SuppressWarnings("resource")
+        HikariDataSource ds = new HikariDataSource(config);
         Connection connection = ds.getConnection();
         insertRecords(connection);
         return connection;

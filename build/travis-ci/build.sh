@@ -106,6 +106,16 @@ case "$1" in
                                 -B
                if [[ "$GLOWROOT_HARNESS" == "javaagent" ]]
                then
+                 # HIKARI_CP_WRAPPED tests using old versions of HikariCP (old versions are needed
+                 # in order to test HikariCpProxyHackClassVisitor) only work with javaagent container,
+                 # see org.glowroot.agent.plugin.jdbc.Connections#createHikariCpWrappedConnection()
+                 mvn clean verify -pl :glowroot-agent-jdbc-plugin \
+                                  -DargLine="$surefire_jvm_args" \
+                                  $test_shaded_opt \
+                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                  -Dglowroot.test.jdbcConnectionType=HIKARI_CP_WRAPPED \
+                                  --no-snapshot-updates \
+                                  -B
                  # GLASSFISH_JDBC_POOL_WRAPPED tests only work with javaagent container because they
                  # depend on weaving bootstrap classes (e.g. java.sql.Statement)
                  mvn clean verify -pl :glowroot-agent-jdbc-plugin \

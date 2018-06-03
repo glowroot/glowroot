@@ -234,6 +234,12 @@ public class Weaver {
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals(ImportantClassNames.HIKARI_CP_PROXY_HACK_CLASS_NAME)) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new HikariCpProxyHackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            maybeProcessedBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
                 mixinTypes, loader, analyzedWorld, codeSource, classBytes,
@@ -618,6 +624,46 @@ public class Weaver {
                 visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "add",
                         "(Ljava/lang/Object;)Z", true);
                 pop();
+            }
+        }
+    }
+
+    private static class HikariCpProxyHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        private HikariCpProxyHackClassVisitor(ClassWriter cw) {
+            super(ASM6, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            if (name.equals("generateProxyClass")) {
+                return new HikariCpProxyHackMethodVisitor(mv);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class HikariCpProxyHackMethodVisitor extends MethodVisitor {
+
+        private HikariCpProxyHackMethodVisitor(MethodVisitor mv) {
+            super(ASM6, mv);
+        }
+
+        @Override
+        public void visitMethodInsn(int opcode, String owner, String name, String desc,
+                boolean itf) {
+            super.visitMethodInsn(opcode, owner, name, desc, itf);
+            if (owner.equals("com/zaxxer/hikari/util/ClassLoaderUtils")
+                    && name.equals("getAllInterfaces")
+                    && desc.equals("(Ljava/lang/Class;)Ljava/util/Set;")) {
+                super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
+                        "stripGlowrootClasses", "(Ljava/util/Set;)Ljava/util/Set;", false);
             }
         }
     }
