@@ -29,7 +29,8 @@
                 gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
                 data-live-search="true"
                 data-style="btn-flat"
-                id="agentRollupDropdown">
+                id="agentRollupDropdown"
+                aria-label="Agent">
           <option ng-repeat="item in agentRollups track by item.id"
                   data-href="{{agentRollupUrl(item.id)}}"
                   data-tokens="{{item.display}}"

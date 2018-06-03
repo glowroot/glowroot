@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,14 @@
   line-height: 1;
   color: @close-color;
   text-shadow: @close-text-shadow;
-  .opacity(.4);
+  .opacity(.42); // just enough opacity to meet accessibility contrast ratio
 
   &:hover,
   &:focus {
     color: @close-color;
     text-decoration: none;
     cursor: pointer;
-    .opacity(.6);
+    .opacity(.62);
   }
 
   // Additional properties for button version

@@ -18,7 +18,7 @@
   <div class="gt-header-page-name pull-left">
     <div style="margin-top: -16px;">
       <h1 class="gt-inline-block"
-            ng-show="!layout.central">
+          ng-show="!layout.central">
         {{headerDisplay}}
       </h1>
       <!-- negative margin-left is so background doesn't bleed through transparent 1px border when menu is open -->
@@ -29,7 +29,8 @@
                 gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
                 data-live-search="true"
                 data-style="btn-flat"
-                id="agentRollupDropdown">
+                id="agentRollupDropdown"
+                aria-label="Agent">
           <option ng-repeat="item in agentRollups track by item.id"
                   data-href="{{currentTabUrl()}}{{headerQueryString(item.id, transactionType)}}"
                   data-tokens="{{item.display}}"

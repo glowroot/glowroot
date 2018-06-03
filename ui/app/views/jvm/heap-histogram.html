@@ -56,7 +56,7 @@
                  ng-model="page.filterValue"
                  class="form-control"
                  placeholder="Filter by class name"
-                 aria-label="Filter by class name">
+                 aria-label="Class name filter">
         </div>
       </div>
       <div class="col-md-3">
@@ -112,15 +112,16 @@
     </thead>
     <tfoot>
     <tr>
-      <th scope="row">Total</th>
+      <th scope="row" style="font-weight: normal;">Total</th>
       <td class="gt-heap-histogram-other-column">{{filteredTotalBytes}}</td>
       <td class="gt-heap-histogram-other-column">{{filteredTotalCount}}</td>
     </tr>
     </tfoot>
     <tbody ng-if="!smallScreen()">
     <tr ng-repeat="item in displayedItems track by item.className">
-      <td ng-if="sortAttribute === 'bytes' && !sortAsc"
-          style="padding: 0;">
+      <th scope="row"
+          ng-if="sortAttribute === 'bytes' && !sortAsc"
+          style="font-weight: normal; padding: 0;">
         <!-- cannot apply relative positioning to td elements in firefox
          see https://bugzilla.mozilla.org/show_bug.cgi?id=35168 -->
         <div style="position: relative;">
@@ -131,8 +132,12 @@
             {{item.className}}
           </div>
         </div>
-      </td>
-      <td ng-if="sortAttribute !== 'bytes' || sortAsc">{{item.className}}</td>
+      </th>
+      <th scope="row"
+          ng-if="sortAttribute !== 'bytes' || sortAsc"
+          style="font-weight: normal;">
+        {{item.className}}
+      </th>
       <td class="gt-heap-histogram-other-column">{{item.bytes | number}}</td>
       <td class="gt-heap-histogram-other-column">{{item.count | number}}</td>
     </tr>
@@ -142,6 +147,7 @@
       <td></td>
     </tr>
     </tbody>
+    <!-- TODO apply scope="row" appropriately for small screens -->
     <tbody ng-if="smallScreen()">
     <tr ng-repeat-start="item in displayedItems track by item.className">
       <td colspan="3"

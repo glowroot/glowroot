@@ -44,10 +44,10 @@
       <table class="table"
              style="table-layout: fixed;">
         <thead>
-        <th style="width: 105px;">Severity</th>
-        <th style="width: 110px;">Duration</th>
-        <th style="width: 180px;" ng-if="layout.central">Agent</th>
-        <th>Condition</th>
+        <th scope="col" style="width: 105px;">Severity</th>
+        <th scope="col" style="width: 110px;">Duration</th>
+        <th scope="col" style="width: 180px;" ng-if="layout.central">Agent</th>
+        <th scope="col">Condition</th>
         </thead>
         <tbody>
         <tr ng-repeat="incident in openIncidents"
@@ -81,11 +81,11 @@
       <table class="table"
              style="table-layout: fixed;">
         <thead>
-        <th style="width: 105px;">Severity</th>
-        <th style="width: 220px;">Resolved</th>
-        <th style="width: 110px;">Duration</th>
-        <th style="width: 180px;" ng-if="layout.central">Agent</th>
-        <th>Condition</th>
+        <th scope="col" style="width: 105px;">Severity</th>
+        <th scope="col" style="width: 220px;">Resolved</th>
+        <th scope="col" style="width: 110px;">Duration</th>
+        <th scope="col" style="width: 180px;" ng-if="layout.central">Agent</th>
+        <th scope="col">Condition</th>
         </thead>
         <tbody>
         <tr ng-repeat="incident in resolvedIncidents"

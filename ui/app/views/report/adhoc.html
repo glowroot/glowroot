@@ -216,8 +216,10 @@
            ng-if="seriesLabels && !chartNoData">
       <thead>
       <tr>
-        <th ng-if="layout.central"></th>
-        <th ng-repeat="xval in allXvals" style="text-align: right;">
+        <th scope="col" ng-if="layout.central"></th>
+        <th ng-repeat="xval in allXvals"
+            scope="col"
+            style="text-align: right;">
           <a ng-click="sort(xval)"
              class="gt-sortable-table-header"
              style="cursor: pointer;">
@@ -226,7 +228,8 @@
             {{columnHeader(xval)}}
           </a>
         </th>
-        <th style="text-align: right;">
+        <th scope="col"
+            style="text-align: right;">
           <a ng-click="sort('overall')"
              class="gt-sortable-table-header"
              style="cursor: pointer; white-space: nowrap;">
@@ -239,7 +242,7 @@
       </thead>
       <tbody>
       <tr ng-repeat="tableRow in tableRows | orderBy:[sortAttr,'-overall']:sortAsc">
-        <td ng-if="layout.central">{{tableRow.label}}</td>
+        <th scope="row" ng-if="layout.central">{{tableRow.label}}</th>
         <td ng-repeat="xval in allXvals" style="text-align: right;">
           <a ng-href="{{drillDownLink(tableRow.agentRollupId, xval)}}"
              ng-if="tableRow[xval] !== NEGATIVE_INFINITY">

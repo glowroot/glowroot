@@ -79,6 +79,13 @@ glowroot.controller('TransactionQueriesCtrl', [
       }
     };
 
+    $scope.ngAttrAriaSort = function (sortAttribute) {
+      if (sortAttribute !== $scope.sortAttribute) {
+        return undefined;
+      }
+      return $scope.sortAsc ? 'ascending' : 'descending';
+    };
+
     locationChanges.on($scope, function () {
       $scope.sortAttribute = $location.search()['sort-attribute'] || 'total-time';
       $scope.sortAsc = $location.search()['sort-direction'] === 'asc';

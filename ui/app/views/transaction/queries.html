@@ -59,7 +59,9 @@
             <option ng-repeat="queryType in queryTypes" ng-value="queryType">{{queryType}}</option>
           </select>
         </th>
-        <th class="gt-query-total-column">
+        <th scope="col"
+            class="gt-query-total-column"
+            ng-attr-aria-sort="{{ngAttrAriaSort('total-time')}}">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('total-time')}}" class="gt-sortable-table-header">
             Total<br>
             time<br>
@@ -69,7 +71,9 @@
             (ms)
           </a>
         </th>
-        <th class="gt-query-other-column">
+        <th scope="col"
+            class="gt-query-other-column"
+            ng-attr-aria-sort="{{ngAttrAriaSort('execution-count')}}">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('execution-count')}}" class="gt-sortable-table-header">
             Execution<br>
             <span ng-class="sortIconClass('execution-count')"
@@ -78,7 +82,9 @@
             count
           </a>
         </th>
-        <th class="gt-query-other-column">
+        <th scope="col"
+            class="gt-query-other-column"
+            ng-attr-aria-sort="{{ngAttrAriaSort('time-per-execution')}}">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('time-per-execution')}}" class="gt-sortable-table-header">
             Time per<br>
             execution<br>
@@ -88,7 +94,9 @@
             (ms)
           </a>
         </th>
-        <th class="gt-query-rows-column">
+        <th scope="col"
+            class="gt-query-rows-column"
+            ng-attr-aria-sort="{{ngAttrAriaSort('rows-per-execution')}}">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('rows-per-execution')}}" class="gt-sortable-table-header">
             Rows per<br>
             <span ng-class="sortIconClass('rows-per-execution')"
@@ -101,10 +109,11 @@
       </thead>
       <tbody ng-if="!smallScreen()">
       <tr ng-repeat="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortAsc">
-        <td class="gt-query-text-column"
-            ng-click="showQueryModal(query)">
+        <th scope="row" class="gt-query-text-column"
+            ng-click="showQueryModal(query)"
+            style="font-weight: normal;">
           {{query.truncatedQueryText}}
-        </td>
+        </th>
         <td class="gt-query-total-column">
           {{query.totalDurationNanos / 1000000 | gtMillis}}
         </td>
@@ -119,6 +128,7 @@
         </td>
       </tr>
       </tbody>
+      <!-- TODO apply scope="row" appropriately for small screens -->
       <tbody ng-if="smallScreen()">
       <tr ng-repeat-start="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortAsc">
         <td class="gt-query-text-column"

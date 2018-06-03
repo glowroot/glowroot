@@ -30,17 +30,18 @@
 </div>
 <!-- ng-show explicitly needed here instead of ng-if because thread-dump.js binds directly to #threadDump -->
 <div ng-show="loaded && !agentNotConnected && !agentUnsupportedOperation && !unavailableDueToRunningInJre && !unavailableDueToRunningInIbmJvm">
-  <div class="clearfix"
-       style="float: right;">
-    <button class="btn btn-default"
-            ng-click="exportAsText()">
-      Export as text
-    </button>
-  </div>
-  <div gt-button
-       gt-label="Refresh"
-       gt-click="refresh(deferred)"
-       style="margin-bottom: 20px;">
+  <div class="clearfix">
+    <div gt-button
+         gt-label="Refresh"
+         gt-click="refresh(deferred)"
+         style="float: left; margin-bottom: 20px;">
+    </div>
+    <div style="float: right;">
+      <button class="btn btn-default"
+              ng-click="exportAsText()">
+        Export as text
+      </button>
+    </div>
   </div>
   <div class="gt-thread-dump-flat-pre"
        id="jstack">

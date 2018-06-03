@@ -49,13 +49,13 @@
   // important: IE9 (haven't tried other IE versions) has strange behavior after hovering over and out of close button
   // this override is no longer applied and the button gets very light (default bootstrap opacity .2)
   // so bootstrap close.less is duplicated/modified to handle this
-  opacity: .5 !important;
+  opacity: .42 !important; // just enough opacity to meet accessibility contrast ratio
   font-size: 24px !important;
 }
 
 // override bootstrap styling for modal close icon
 .modal .close:hover, .modal .close:focus {
-  opacity: .7 !important;
+  opacity: .62 !important;
 }
 
 @media screen and (min-width: @screen-lg-min) {

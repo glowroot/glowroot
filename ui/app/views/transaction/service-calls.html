@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2017 the original author or authors.
+  Copyright 2015-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -59,7 +59,9 @@
             <option ng-repeat="type in types" ng-value="type">{{type}}</option>
           </select>
         </th>
-        <th class="gt-query-total-column">
+        <th scope="col"
+            ng-attr-aria-sort="{{ngAttrAriaSort('total-time')}}"
+            class="gt-query-total-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('total-time')}}" class="gt-sortable-table-header">
             Total<br>
             time<br>
@@ -69,7 +71,9 @@
             (ms)
           </a>
         </th>
-        <th class="gt-query-other-column">
+        <th scope="col"
+            ng-attr-aria-sort="{{ngAttrAriaSort('execution-count')}}"
+            class="gt-query-other-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('execution-count')}}" class="gt-sortable-table-header">
             Execution<br>
             <span ng-class="sortIconClass('execution-count')"
@@ -78,7 +82,9 @@
             count
           </a>
         </th>
-        <th class="gt-query-other-column">
+        <th scope="col"
+            ng-attr-aria-sort="{{ngAttrAriaSort('time-per-execution')}}"
+            class="gt-query-other-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('time-per-execution')}}" class="gt-sortable-table-header">
             Time per<br>
             execution<br>
@@ -92,9 +98,11 @@
       </thead>
       <tbody>
       <tr ng-repeat="serviceCall in serviceCalls | filter:{type: type} | orderBy:sortAttr:sortAsc">
-        <td class="gt-monospace gt-break-word">
+        <th scope="row"
+            class="gt-monospace gt-break-word"
+            style="font-weight: normal;">
           {{serviceCall.text}}
-        </td>
+        </th>
         <td class="gt-query-total-column">
           {{serviceCall.totalDurationNanos / 1000000 | gtMillis}}
         </td>
