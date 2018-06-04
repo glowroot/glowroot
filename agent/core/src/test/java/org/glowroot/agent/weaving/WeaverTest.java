@@ -137,6 +137,7 @@ import org.glowroot.agent.weaving.targets.OnlyThrowingMisc;
 import org.glowroot.agent.weaving.targets.PrimitiveMisc;
 import org.glowroot.agent.weaving.targets.ShimmedMisc;
 import org.glowroot.agent.weaving.targets.StaticMisc;
+import org.glowroot.agent.weaving.targets.StaticSubbedMisc;
 import org.glowroot.agent.weaving.targets.SubBasicMisc;
 import org.glowroot.agent.weaving.targets.SubException;
 import org.glowroot.agent.weaving.targets.SubMisc;
@@ -1108,6 +1109,19 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotWeaveStaticSubbedMethod() throws Exception {
+        // given
+        Misc test = newWovenObject(StaticSubbedMisc.class, Misc.class, StaticAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
     }
 
     // ===================== primitive args =====================

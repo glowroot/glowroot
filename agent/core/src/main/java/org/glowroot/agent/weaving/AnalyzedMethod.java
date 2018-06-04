@@ -55,6 +55,9 @@ abstract class AnalyzedMethod {
     // TODO there is a bit more to overriding, see
     // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-5.html#jvms-5.4.5
     boolean isOverriddenBy(String methodName, List<Type> parameterTypes) {
+        if (Modifier.isStatic(modifiers())) {
+            return false;
+        }
         if (Modifier.isPrivate(modifiers())) {
             return false;
         }

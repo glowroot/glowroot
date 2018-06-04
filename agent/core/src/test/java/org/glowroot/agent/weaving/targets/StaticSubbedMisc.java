@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,12 @@
  */
 package org.glowroot.agent.weaving.targets;
 
-public class StaticMisc implements Misc {
+public class StaticSubbedMisc extends StaticMisc {
 
     @Override
     public void execute1() {
         executeStatic();
     }
-
-    @Override
-    public String executeWithReturn() {
-        return "xyz";
-    }
-
-    @Override
-    public void executeWithArgs(String one, int two) {}
 
     static void executeStatic() {}
 }
