@@ -476,7 +476,8 @@ public class AnalyzedWorld {
                 matchingAdvisors.addAll(extraAdvisors);
             }
             ClassAnalyzer.sortAdvisors(matchingAdvisors);
-            if (intf || !matchingAdvisors.isEmpty()) {
+            boolean intfMethod = intf && !Modifier.isStatic(modifiers);
+            if (!matchingAdvisors.isEmpty() || intfMethod) {
                 ImmutableAnalyzedMethod.Builder methodBuilder = ImmutableAnalyzedMethod.builder();
                 methodBuilder.name(method.getName());
                 for (Type parameterType : parameterTypes) {

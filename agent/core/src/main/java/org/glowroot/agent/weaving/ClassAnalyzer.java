@@ -62,6 +62,7 @@ class ClassAnalyzer {
 
     private final ThinClass thinClass;
     private final String className;
+    private final boolean intf;
 
     private final ImmutableAnalyzedClass.Builder analyzedClassBuilder;
     private final ImmutableList<AdviceMatcher> adviceMatchers;
@@ -89,6 +90,7 @@ class ClassAnalyzer {
         this.thinClass = thinClass;
         ImmutableList<String> interfaceNames = ClassNames.fromInternalNames(thinClass.interfaces());
         className = ClassNames.fromInternalName(thinClass.name());
+        intf = Modifier.isInterface(thinClass.access());
         String superClassName = ClassNames.fromInternalName(thinClass.superName());
         analyzedClassBuilder = ImmutableAnalyzedClass.builder()
                 .modifiers(thinClass.access())
@@ -118,7 +120,6 @@ class ClassAnalyzer {
         }
         superAnalyzedClasses.addAll(interfaceAnalyzedHierarchy);
 
-        boolean intf = Modifier.isInterface(thinClass.access());
         if (intf) {
             matchedShimTypes = getMatchedShimTypes(shimTypes, className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
@@ -256,9 +257,8 @@ class ClassAnalyzer {
         List<String> methodAnnotations = thinMethod.annotations();
         List<Advice> matchingAdvisors = getMatchingAdvisors(thinMethod, methodAnnotations,
                 parameterTypes, returnType);
-        // FIXME don't need to calculate this every time
-        boolean intf = Modifier.isInterface(thinClass.access());
-        if (matchingAdvisors.isEmpty() && !intf) {
+        boolean intfMethod = intf && !Modifier.isStatic(thinMethod.access());
+        if (matchingAdvisors.isEmpty() && !intfMethod) {
             return ImmutableList.of();
         }
         ImmutableAnalyzedMethod.Builder builder = ImmutableAnalyzedMethod.builder();

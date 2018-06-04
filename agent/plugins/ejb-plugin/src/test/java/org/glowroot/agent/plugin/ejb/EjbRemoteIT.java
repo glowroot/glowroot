@@ -299,11 +299,18 @@ public class EjbRemoteIT {
     }
 
     public interface ARemoteOne {
+        String VALUE = Init.value();
         void one();
     }
 
     public interface ARemoteTwo {
         void two(int x);
+    }
+
+    private static class Init {
+        private static String value() {
+            return "";
+        }
     }
 
     @Remote
