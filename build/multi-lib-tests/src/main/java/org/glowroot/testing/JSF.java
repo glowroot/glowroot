@@ -53,10 +53,13 @@ public class JSF {
         for (int i = 1; i <= 27; i++) {
             run("2.2.8-" + String.format("%02d", i));
         }
-        for (int i = 0; i <= 4; i++) {
+        for (int i = 0; i <= 5; i++) {
             runJava8("2.3." + i);
         }
         runJava8("2.3.3.99");
+        runJava8("2.3.3.100");
+        runJava8("2.3.3.101");
+        runJava8("2.3.3.102");
         runJava8("2.4.0");
     }
 

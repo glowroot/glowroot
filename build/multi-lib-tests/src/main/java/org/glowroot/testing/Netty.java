@@ -57,7 +57,7 @@ public class Netty {
         for (int i = 1; i <= 7; i++) {
             runNetty("4.1.0.CR" + i, "netty-4.x");
         }
-        for (int i = 0; i <= 22; i++) {
+        for (int i = 0; i <= 25; i++) {
             runNetty("4.1." + i + ".Final", "netty-4.x");
         }
     }
@@ -93,6 +93,7 @@ public class Netty {
         runVertxJava8("3.4.2", "4.1.8.Final", "vertx-3.x");
         runVertxJava8("3.5.0", "4.1.15.Final", "vertx-3.x");
         runVertxJava8("3.5.1", "4.1.19.Final", "vertx-3.x");
+        runVertxJava8("3.5.2", "4.1.19.Final", "vertx-3.x");
     }
 
     private static void runNetty(String version, String... profile) throws Exception {

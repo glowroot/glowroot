@@ -39,7 +39,7 @@ public class Cassandra {
         run("2.1.10.1", "guava-19.0");
         run("2.1.10.2", "guava-19.0");
         run("2.1.10.3", "guava-19.0");
-        for (int i = 0; i <= 7; i++) {
+        for (int i = 0; i <= 8; i++) {
             run("3.0." + i, "guava-19.0");
         }
         for (int i = 0; i <= 4; i++) {

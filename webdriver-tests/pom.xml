@@ -18,7 +18,7 @@
 
   <properties>
     <selenium.version>3.12.0</selenium.version>
-    <jetty.version>9.4.10.v20180503</jetty.version>
+    <jetty.version>9.4.11.v20180605</jetty.version>
   </properties>
 
   <dependencies>
@@ -40,7 +40,7 @@
         since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
         methods still return com.google.common.base.Function, which only extends
         java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>25.0-jre</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>25.1-jre</version> <!-- $NO-MVN-MAN-VER$ -->
       <scope>test</scope>
     </dependency>
     <dependency>

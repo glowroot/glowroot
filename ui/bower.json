@@ -1,16 +1,16 @@
 {
   "name": "glowroot",
   "dependencies": {
-    "angular": "1.6.9",
-    "angular-sanitize": "1.6.9",
+    "angular": "1.7.1",
+    "angular-sanitize": "1.7.1",
     "angular-ui-bootstrap": "2.5.6",
     "angular-ui-codemirror": "0.3.0",
-    "angular-ui-router": "1.0.15",
+    "angular-ui-router": "1.0.18",
     "angular-ui-select": "trask/angular-ui-select#glowroot-0.10.0",
     "bootstrap": "trask/bootstrap#glowroot-0.10.10",
     "bootstrap-select": "trask/bootstrap-select#glowroot-0.10.10",
-    "clipboard": "trask/clipboard.js#glowroot-0.9.25",
-    "codemirror": "5.37.0",
+    "clipboard": "trask/clipboard.js#fb27b92296f9a973402e0ae6a5d87e5635a94ba6",
+    "codemirror": "5.38.0",
     "d3-flame-graph": "1.0.11",
     "eonasdan-bootstrap-datetimepicker": "4.17.47",
     "flot": "trask/flot#glowroot-0.10.9",
@@ -18,8 +18,8 @@
     "fontawesome": "5.0.13",
     "handlebars": "4.0.11",
     "jquery": "3.3.1",
-    "moment": "2.22.1",
-    "moment-timezone": "0.5.16",
+    "moment": "2.22.2",
+    "moment-timezone": "0.5.17",
     "sequeljs": "trask/sequeljs#glowroot-0.9.8",
     "spinjs": "2.3.2"
   }

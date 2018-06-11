@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global $, Clipboard */
+/* global $, ClipboardJS */
 
 var nextClipboardId = 1;
 
@@ -40,7 +40,7 @@ window.gtClipboard = function (clipboardSelector, clipboardContainer, textFn) {
     var $clipboardContainer = $(clipboardContainer);
     clipboardOptions.container = $clipboardContainer[0];
     tooltipOptions.container = $clipboardContainer;
-    var clipboard = new Clipboard('#' + clipboardId, clipboardOptions);
+    var clipboard = new ClipboardJS('#' + clipboardId, clipboardOptions);
     $clipboardIcon.tooltip(tooltipOptions);
 
     clipboard.on('success', function () {
