@@ -391,7 +391,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         $scope.config.traceEntryStackThresholdMillis = '';
       }
       if (!$scope.captureKindTransaction) {
-        delete $scope.config.alreadyInTransactionBehavior;
+        $scope.config.alreadyInTransactionBehavior = null;
       } else if (!$scope.config.alreadyInTransactionBehavior) {
         $scope.config.alreadyInTransactionBehavior = 'capture-trace-entry';
       }
