@@ -22,6 +22,15 @@ glowroot.factory('modals', [
   function ($timeout, $location) {
     function display(selector, centerVertically) {
       var $selector = $(selector);
+      if (!$selector.parents('#modalContent').length) {
+        $selector.scope().$on('$destroy', function () {
+          $selector.remove();
+          // close modal backdrop if open
+          $('.modal-backdrop').remove();
+        });
+        $selector.detach().appendTo($('#modalContent'));
+      }
+
       if (centerVertically) {
         // see http://stackoverflow.com/questions/18053408/vertically-centering-bootstrap-modal-window/20444744#20444744
         $selector.off('show.bs.modal');
@@ -63,9 +72,6 @@ glowroot.factory('modals', [
         $selector.find('.modal-body').css('outline', 'none');
         $selector.find('.modal-body').focus();
       });
-      if (!$selector.parents('#modalContent').length) {
-        $selector.detach().appendTo($('#modalContent'));
-      }
       $('body > header').attr('aria-hidden', 'true');
       $('body > main > :not(#modalContent)').attr('aria-hidden', 'true');
       $('body > footer').attr('aria-hidden', 'true');

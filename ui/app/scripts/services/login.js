@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, $ */
+/* global glowroot */
 
 glowroot.factory('login', [
   '$location',
@@ -26,8 +26,6 @@ glowroot.factory('login', [
         message = msg;
         originalUrl = doNotSaveLocation ? '/' : $location.url();
         if (originalUrl !== '/login') {
-          // close modal backdrop if open, this is needed if click on trace point results in 401 response
-          $('.modal-backdrop').remove();
           // don't do .replace() here, since then back button doesn't work after clicking login
           // (this is relevant when anonymous access is enabled)
           $location.url('/login');

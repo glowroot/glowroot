@@ -242,30 +242,7 @@
   <div ui-view></div>
   <!-- modals need to be outside other content so that aria-hidden="true" can be applied to all other content when a
    modal is visible (see modals.js), but modals still need to be inside of the "main" region -->
-  <div id="modalContent">
-    <!-- this modal is shared, other modals are appended to the parent div as needed -->
-    <div class="modal"
-         role="dialog"
-         tabindex="-1"
-         id="confirmationModal"
-         aria-label="Trace">
-      <div class="modal-dialog"
-           style="max-width: 500px;">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3></h3>
-          </div>
-          <div class="modal-body">
-            <p></p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-default" id="confirmationModalButton">Yes</button>
-            <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div id="modalContent"></div>
 </main>
 <footer class="ng-cloak"
         role="contentinfo"
