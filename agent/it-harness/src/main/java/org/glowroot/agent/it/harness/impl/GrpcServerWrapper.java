@@ -196,6 +196,7 @@ class GrpcServerWrapper {
                 final StreamObserver<EmptyMessage> responseObserver) {
             return new StreamObserver<TraceStreamMessage>() {
 
+                private @MonotonicNonNull String traceId;
                 private List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
                 private List<Trace.Entry> entries = Lists.newArrayList();
                 private List<Aggregate.Query> queries = Lists.newArrayList();
@@ -207,6 +208,7 @@ class GrpcServerWrapper {
                 public void onNext(TraceStreamMessage value) {
                     switch (value.getMessageCase()) {
                         case STREAM_HEADER:
+                            traceId = value.getStreamHeader().getTraceId();
                             break;
                         case SHARED_QUERY_TEXT:
                             sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
@@ -243,9 +245,9 @@ class GrpcServerWrapper {
 
                 @Override
                 public void onCompleted() {
-                    checkNotNull(header);
                     Trace.Builder trace = Trace.newBuilder()
-                            .setHeader(header)
+                            .setId(checkNotNull(traceId))
+                            .setHeader(checkNotNull(header))
                             .addAllSharedQueryText(sharedQueryTexts)
                             .addAllEntry(entries)
                             .addAllQuery(queries);
@@ -258,6 +260,7 @@ class GrpcServerWrapper {
                     try {
                         collector.collectTrace(trace.build());
                     } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
                         responseObserver.onError(t);
                         return;
                     }
@@ -272,6 +275,7 @@ class GrpcServerWrapper {
             try {
                 collector.log(request.getLogEvent());
             } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }

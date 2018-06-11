@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,7 @@ public class WebServiceIT {
         container.getConfigService().setPluginProperty("jaxws", "useAltTransactionNaming", true);
 
         // when
-        Trace trace = container.execute(WithNormalServletMapping.class);
+        Trace trace = container.execute(WithNormalServletMapping.class, "Web");
 
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloService#echo");

@@ -33,7 +33,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 class TraceCollector {
 
-    private volatile @Nullable Trace trace;
+    private final List<Trace> traces = Lists.newCopyOnWriteArrayList();
 
     private final List<ExpectedLogMessage> expectedMessages = Lists.newCopyOnWriteArrayList();
     private final List<LogEvent> unexpectedMessages = Lists.newCopyOnWriteArrayList();
@@ -45,13 +45,14 @@ class TraceCollector {
         }
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(unit) < timeout) {
-            Trace trace = this.trace;
-            if (trace != null && !trace.getHeader().getPartial()
-                    && (transactionType == null
-                            || trace.getHeader().getTransactionType().equals(transactionType))
-                    && (transactionName == null
-                            || trace.getHeader().getTransactionName().equals(transactionName))) {
-                return trace;
+            for (Trace trace : traces) {
+                if (!trace.getHeader().getPartial()
+                        && (transactionType == null
+                                || trace.getHeader().getTransactionType().equals(transactionType))
+                        && (transactionName == null || trace.getHeader().getTransactionName()
+                                .equals(transactionName))) {
+                    return trace;
+                }
             }
             MILLISECONDS.sleep(10);
         }
@@ -69,24 +70,26 @@ class TraceCollector {
     Trace getPartialTrace(int timeout, TimeUnit unit) throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(unit) < timeout) {
-            Trace trace = this.trace;
-            if (trace != null) {
-                if (!trace.getHeader().getPartial()) {
-                    throw new IllegalStateException("Trace was collected but is not partial");
+            for (Trace trace : traces) {
+                if (trace.getHeader().getPartial()) {
+                    return trace;
                 }
-                return trace;
             }
             MILLISECONDS.sleep(10);
         }
-        throw new IllegalStateException("No trace was collected");
+        if (traces.isEmpty()) {
+            throw new IllegalStateException("No trace was collected");
+        } else {
+            throw new IllegalStateException("Trace was collected but is not partial");
+        }
     }
 
     boolean hasTrace() {
-        return trace != null;
+        return !traces.isEmpty();
     }
 
     void clearTrace() {
-        trace = null;
+        traces.clear();
     }
 
     void addExpectedLogMessage(String loggerName, String partialMessage) {
@@ -114,11 +117,17 @@ class TraceCollector {
     }
 
     public void collectTrace(Trace trace) {
-        Trace currTrace = this.trace;
-        if (currTrace == null
-                || currTrace.getHeader().getCaptureTime() <= trace.getHeader().getCaptureTime()) {
-            this.trace = trace;
+        for (int i = 0; i < traces.size(); i++) {
+            Trace loopTrace = traces.get(i);
+            if (loopTrace.getId().equals(trace.getId())) {
+                if (trace.getHeader().getDurationNanos() >= loopTrace.getHeader()
+                        .getDurationNanos()) {
+                    traces.set(i, trace);
+                }
+                return;
+            }
         }
+        traces.add(trace);
     }
 
     public void log(LogEvent logEvent) {
