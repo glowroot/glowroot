@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,11 @@ glowroot.controller('ProfileChangePasswordCtrl', [
     $scope.page = {};
 
     $scope.loaded = true;
+
+    $scope.hasChanges = function () {
+      return $scope.page.currentPassword || $scope.page.newPassword || $scope.page.verifyNewPassword;
+    };
+    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.changePassword = function (deferred) {
       if ($scope.page.newPassword !== $scope.page.verifyNewPassword) {
