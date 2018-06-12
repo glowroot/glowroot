@@ -1744,7 +1744,8 @@ HandlebarsRendering = (function () {
       if (agentId !== undefined) {
         $selector.data('gtAgentId', agentId);
         $selector.data('gtTraceId', traceId);
-        $selector.data('gtCheckLiveTraces', checkLiveTraces);
+        // !! is needed to convert undefined to false (see https://api.jquery.com/data)
+        $selector.data('gtCheckLiveTraces', !!checkLiveTraces);
       }
       traceDurationNanos = traceHeader.durationNanos;
 
