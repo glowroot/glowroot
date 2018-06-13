@@ -9,7 +9,7 @@
     "angular-ui-select": "trask/angular-ui-select#glowroot-0.10.0",
     "bootstrap": "trask/bootstrap#glowroot-0.10.10",
     "bootstrap-select": "trask/bootstrap-select#glowroot-0.10.10",
-    "clipboard": "trask/clipboard.js#fb27b92296f9a973402e0ae6a5d87e5635a94ba6",
+    "clipboard": "trask/clipboard.js#glowroot-0.10.11",
     "codemirror": "5.38.0",
     "d3-flame-graph": "1.0.11",
     "eonasdan-bootstrap-datetimepicker": "4.17.47",
