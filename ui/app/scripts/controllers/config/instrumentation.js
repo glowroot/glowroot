@@ -246,6 +246,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     }
 
     $scope.onBlurMethodName = function () {
+      if (!$scope.config.className) {
+        return;
+      }
       if ($scope.config.methodName) {
         onBlurDebouncer = $timeout(function () {
           $scope.onSelectMethodName();
