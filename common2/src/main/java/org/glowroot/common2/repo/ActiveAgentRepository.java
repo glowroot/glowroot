@@ -21,15 +21,11 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
 
-public interface AgentRollupRepository {
+public interface ActiveAgentRepository {
 
     List<AgentRollup> readRecentlyActiveAgentRollups(int lastXDays) throws Exception;
 
-    List<AgentRollup> readAgentRollups(long from, long to) throws Exception;
-
-    String readAgentRollupDisplay(String agentRollupId) throws Exception;
-
-    List<String> readAgentRollupDisplayParts(String agentRollupId) throws Exception;
+    List<AgentRollup> readActiveAgentRollups(long from, long to) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

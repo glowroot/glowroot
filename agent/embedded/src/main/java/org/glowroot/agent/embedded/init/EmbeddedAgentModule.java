@@ -62,7 +62,7 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.common2.config.ImmutableRoleConfig;
 import org.glowroot.common2.config.RoleConfig;
 import org.glowroot.common2.config.RoleConfig.SimplePermission;
-import org.glowroot.common2.repo.AgentRollupRepository;
+import org.glowroot.common2.repo.ActiveAgentRepository;
 import org.glowroot.common2.repo.ImmutableAgentRollup;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.SessionMapFactory;
@@ -239,7 +239,7 @@ class EmbeddedAgentModule {
                     .clock(clock)
                     .liveJvmService(agentModule.getLiveJvmService())
                     .configRepository(simpleRepoModule.getConfigRepository())
-                    .agentRollupRepository(new AgentRollupRepositoryImpl())
+                    .activeAgentRepository(new ActiveAgentRepositoryImpl())
                     .environmentRepository(simpleRepoModule.getEnvironmentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .traceAttributeNameRepository(
@@ -278,7 +278,7 @@ class EmbeddedAgentModule {
                     .clock(clock)
                     .liveJvmService(null)
                     .configRepository(simpleRepoModule.getConfigRepository())
-                    .agentRollupRepository(new AgentRollupRepositoryImpl())
+                    .activeAgentRepository(new ActiveAgentRepositoryImpl())
                     .environmentRepository(simpleRepoModule.getEnvironmentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .traceAttributeNameRepository(
@@ -405,7 +405,7 @@ class EmbeddedAgentModule {
         }
     }
 
-    private static class AgentRollupRepositoryImpl implements AgentRollupRepository {
+    private static class ActiveAgentRepositoryImpl implements ActiveAgentRepository {
 
         @Override
         public List<AgentRollup> readRecentlyActiveAgentRollups(int lastXDays) {
@@ -417,22 +417,12 @@ class EmbeddedAgentModule {
         }
 
         @Override
-        public List<AgentRollup> readAgentRollups(long from, long to) {
+        public List<AgentRollup> readActiveAgentRollups(long from, long to) {
             return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
                     .id("")
                     .display("")
                     .lastDisplayPart("")
                     .build());
-        }
-
-        @Override
-        public String readAgentRollupDisplay(String agentRollupId) {
-            return "";
-        }
-
-        @Override
-        public List<String> readAgentRollupDisplayParts(String agentRollupId) {
-            return ImmutableList.of("");
         }
     }
 }

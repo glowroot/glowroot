@@ -26,12 +26,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
+import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -40,7 +40,7 @@ class RollupService implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RollupService.class);
 
-    private final AgentDao agentDao;
+    private final ActiveAgentDao activeAgentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
     private final SyntheticResultDao syntheticResultDao;
@@ -51,10 +51,10 @@ class RollupService implements Runnable {
 
     private volatile boolean closed;
 
-    RollupService(AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
-            SyntheticResultDao syntheticResultDao, CentralAlertingService centralAlertingService,
-            Clock clock) {
-        this.agentDao = agentDao;
+    RollupService(ActiveAgentDao activeAgentDao, AggregateDao aggregateDao,
+            GaugeValueDao gaugeValueDao, SyntheticResultDao syntheticResultDao,
+            CentralAlertingService centralAlertingService, Clock clock) {
+        this.activeAgentDao = activeAgentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
         this.syntheticResultDao = syntheticResultDao;
@@ -95,7 +95,7 @@ class RollupService implements Runnable {
     private void runInternal() throws Exception {
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
-        for (AgentRollup agentRollup : shuffle(agentDao.readRecentlyActiveAgentRollups(7))) {
+        for (AgentRollup agentRollup : shuffle(activeAgentDao.readRecentlyActiveAgentRollups(7))) {
             rollupAggregates(agentRollup);
             rollupGauges(agentRollup);
             rollupSyntheticMonitors(agentRollup);

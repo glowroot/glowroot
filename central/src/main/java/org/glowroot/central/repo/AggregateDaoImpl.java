@@ -198,7 +198,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .build();
 
     private final Session session;
-    private final AgentDao agentDao;
+    private final ActiveAgentDao activeAgentDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final ConfigRepositoryImpl configRepository;
@@ -229,11 +229,11 @@ public class AggregateDaoImpl implements AggregateDao {
 
     private final ImmutableList<Table> allTables;
 
-    AggregateDaoImpl(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, ConfigRepositoryImpl configRepository, Clock clock)
-            throws Exception {
+    AggregateDaoImpl(Session session, ActiveAgentDao activeAgentDao,
+            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+            ConfigRepositoryImpl configRepository, Clock clock) throws Exception {
         this.session = session;
-        this.agentDao = agentDao;
+        this.activeAgentDao = activeAgentDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.configRepository = configRepository;
@@ -416,7 +416,7 @@ public class AggregateDaoImpl implements AggregateDao {
             List<OldAggregatesByType> aggregatesByTypeList,
             List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
         if (aggregatesByTypeList.isEmpty()) {
-            agentDao.insert(agentIdForMeta, captureTime).get();
+            MoreFutures.waitForAll(activeAgentDao.insert(agentIdForMeta, captureTime));
             return;
         }
         TTL adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime, clock);
@@ -480,7 +480,7 @@ public class AggregateDaoImpl implements AggregateDao {
             }
             futures.addAll(transactionTypeDao.store(agentRollupIdsForMeta, transactionType));
         }
-        futures.add(agentDao.insert(agentIdForMeta, captureTime));
+        futures.addAll(activeAgentDao.insert(agentIdForMeta, captureTime));
         // wait for success before inserting "needs rollup" records
         MoreFutures.waitForAll(futures);
         futures.clear();

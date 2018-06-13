@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.central.RollupService.AgentRollupConsumer;
-import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
@@ -78,7 +78,7 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Version;
 import org.glowroot.common2.config.HttpProxyConfig;
 import org.glowroot.common2.config.MoreConfigDefaults;
-import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
+import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common2.repo.util.AlertingService;
@@ -124,7 +124,7 @@ class SyntheticMonitorService implements Runnable {
         REQUEST_HEADERS = new RequestHeaders(headersTmp);
     }
 
-    private final AgentDao agentDao;
+    private final ActiveAgentDao activeAgentDao;
     private final ConfigRepositoryImpl configRepository;
     private final IncidentDao incidentDao;
     private final AlertingService alertingService;
@@ -150,11 +150,11 @@ class SyntheticMonitorService implements Runnable {
 
     private volatile boolean closed;
 
-    SyntheticMonitorService(AgentDao agentDao, ConfigRepositoryImpl configRepository,
+    SyntheticMonitorService(ActiveAgentDao activeAgentDao, ConfigRepositoryImpl configRepository,
             IncidentDao incidentDao, AlertingService alertingService,
             SyntheticResultDao syntheticResponseDao, ClusterManager clusterManager, Ticker ticker,
             Clock clock, String version) {
-        this.agentDao = agentDao;
+        this.activeAgentDao = activeAgentDao;
         this.configRepository = configRepository;
         this.incidentDao = incidentDao;
         this.alertingService = alertingService;
@@ -239,7 +239,7 @@ class SyntheticMonitorService implements Runnable {
             traceHeadline = "Outer synthetic monitor loop",
             timer = "outer synthetic monitor loop")
     private void runInternal() throws Exception {
-        for (AgentRollup agentRollup : agentDao.readRecentlyActiveAgentRollups(7)) {
+        for (AgentRollup agentRollup : activeAgentDao.readRecentlyActiveAgentRollups(7)) {
             consumeAgentRollups(agentRollup, this::runSyntheticMonitors);
         }
     }

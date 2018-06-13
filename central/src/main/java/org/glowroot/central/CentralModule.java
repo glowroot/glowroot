@@ -78,7 +78,6 @@ import org.glowroot.common2.repo.util.AlertingService.IncidentKey;
 import org.glowroot.common2.repo.util.HttpClient;
 import org.glowroot.common2.repo.util.LockSet;
 import org.glowroot.common2.repo.util.MailService;
-import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.ui.CommonHandler;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.SessionMapFactory;
@@ -176,8 +175,6 @@ public class CentralModule {
                         repos.getConfigRepository().getCentralStorageConfig());
             }
 
-            RollupLevelService rollupLevelService =
-                    new RollupLevelService(repos.getConfigRepository(), clock);
             HttpClient httpClient = new HttpClient(repos.getConfigRepository());
             LockSet<IncidentKey> openingIncidentLockSet =
                     clusterManager.createReplicatedLockSet("openingIncidentLockSet", 60, SECONDS);
@@ -185,8 +182,8 @@ public class CentralModule {
                     clusterManager.createReplicatedLockSet("resolvingIncidentLockSet", 60, SECONDS);
             alertingService = new AlertingService(repos.getConfigRepository(),
                     repos.getIncidentDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
-                    rollupLevelService, new MailService(), httpClient, openingIncidentLockSet,
-                    resolvingIncidentLockSet, clock);
+                    repos.getRollupLevelService(), new MailService(), httpClient,
+                    openingIncidentLockSet, resolvingIncidentLockSet, clock);
             HeartbeatAlertingService heartbeatAlertingService = new HeartbeatAlertingService(
                     repos.getHeartbeatDao(), repos.getIncidentDao(), alertingService,
                     repos.getConfigRepository());
@@ -195,13 +192,13 @@ public class CentralModule {
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(),
                     centralConfig.grpcHttpPort(), centralConfig.grpcHttpsPort(),
-                    directories.getConfDir(), repos.getAgentConfigDao(), repos.getAgentDao(),
+                    directories.getConfDir(), repos.getAgentConfigDao(), repos.getActiveAgentDao(),
                     repos.getEnvironmentDao(), repos.getHeartbeatDao(), repos.getAggregateDao(),
                     repos.getGaugeValueDao(), repos.getTraceDao(), repos.getV09AgentRollupDao(),
                     centralAlertingService, clusterManager, clock, version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
-                    repos.getAgentDao(), repos.getAgentConfigDao(), downstreamService, clock);
+                    repos.getActiveAgentDao(), repos.getAgentConfigDao(), downstreamService, clock);
             UpdateAgentConfigIfNeededService updateAgentConfigIfNeededServiceEffectivelyFinal =
                     updateAgentConfigIfNeededService;
             repos.getConfigRepository().addAgentConfigListener(new AgentConfigListener() {
@@ -212,10 +209,10 @@ public class CentralModule {
                             .updateAgentConfigIfNeededAndConnected(agentId);
                 }
             });
-            rollupService = new RollupService(repos.getAgentDao(), repos.getAggregateDao(),
+            rollupService = new RollupService(repos.getActiveAgentDao(), repos.getAggregateDao(),
                     repos.getGaugeValueDao(), repos.getSyntheticResultDao(), centralAlertingService,
                     clock);
-            syntheticMonitorService = new SyntheticMonitorService(repos.getAgentDao(),
+            syntheticMonitorService = new SyntheticMonitorService(repos.getActiveAgentDao(),
                     repos.getConfigRepository(), repos.getIncidentDao(), alertingService,
                     repos.getSyntheticResultDao(), clusterManager, ticker, clock, version);
 
@@ -234,7 +231,7 @@ public class CentralModule {
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(repos.getConfigRepository())
-                    .agentRollupRepository(repos.getAgentDao())
+                    .activeAgentRepository(repos.getActiveAgentDao())
                     .environmentRepository(repos.getEnvironmentDao())
                     .transactionTypeRepository(repos.getTransactionTypeDao())
                     .traceAttributeNameRepository(repos.getTraceAttributeNameDao())
@@ -243,9 +240,9 @@ public class CentralModule {
                     .gaugeValueRepository(repos.getGaugeValueDao())
                     .syntheticResultRepository(repos.getSyntheticResultDao())
                     .incidentRepository(repos.getIncidentDao())
-                    .repoAdmin(new RepoAdminImpl(session, repos.getAgentDao(),
+                    .repoAdmin(new RepoAdminImpl(session, repos.getActiveAgentDao(),
                             repos.getConfigRepository(), session.getCassandraWriteMetrics(), clock))
-                    .rollupLevelService(rollupLevelService)
+                    .rollupLevelService(repos.getRollupLevelService())
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(new LiveWeavingServiceImpl(downstreamService))

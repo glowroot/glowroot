@@ -51,6 +51,7 @@ import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -74,7 +75,7 @@ public class AggregateDaoIT {
     private static Session session;
     private static ClusterManager clusterManager;
     private static AgentConfigDao agentConfigDao;
-    private static AgentDao agentDao;
+    private static ActiveAgentDao activeAgentDao;
     private static AggregateDao aggregateDao;
 
     @BeforeClass
@@ -93,9 +94,12 @@ public class AggregateDaoIT {
         TransactionTypeDao transactionTypeDao =
                 new TransactionTypeDao(session, configRepository, clusterManager);
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
-        agentDao = new AgentDao(session, agentConfigDao, configRepository, Clock.systemClock());
+        RollupLevelService rollupLevelService =
+                new RollupLevelService(configRepository, Clock.systemClock());
+        activeAgentDao = new ActiveAgentDao(session, agentConfigDao, configRepository,
+                rollupLevelService, Clock.systemClock());
         aggregateDao = new AggregateDaoWithV09Support(ImmutableSet.of(), 0, 0, Clock.systemClock(),
-                new AggregateDaoImpl(session, agentDao, transactionTypeDao, fullQueryTextDao,
+                new AggregateDaoImpl(session, activeAgentDao, transactionTypeDao, fullQueryTextDao,
                         configRepository, Clock.systemClock()));
     }
 
@@ -110,7 +114,6 @@ public class AggregateDaoIT {
     @Before
     public void before() throws Exception {
         session.execute("truncate agent_config");
-        session.execute("truncate agent");
     }
 
     @Test

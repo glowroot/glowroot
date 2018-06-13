@@ -75,6 +75,10 @@ public interface ConfigRepository {
     long ROLLUP_3_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.3.intervalMillis", HOURS.toMillis(4));
 
+    String readAgentRollupDisplay(String agentRollupId) throws Exception;
+
+    List<String> readAgentRollupDisplayParts(String agentRollupId) throws Exception;
+
     GeneralConfig getGeneralConfig(String agentRollupId) throws Exception;
 
     TransactionConfig getTransactionConfig(String agentId) throws Exception;

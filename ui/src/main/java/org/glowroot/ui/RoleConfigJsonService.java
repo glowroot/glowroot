@@ -35,8 +35,8 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.config.ImmutableRoleConfig;
 import org.glowroot.common2.config.PermissionParser;
 import org.glowroot.common2.config.RoleConfig;
-import org.glowroot.common2.repo.AgentRollupRepository;
-import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
+import org.glowroot.common2.repo.ActiveAgentRepository;
+import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.CannotDeleteLastRoleException;
 import org.glowroot.common2.repo.ConfigRepository.DuplicateRoleNameException;
@@ -58,13 +58,13 @@ class RoleConfigJsonService {
 
     private final boolean central;
     private final ConfigRepository configRepository;
-    private final AgentRollupRepository agentRollupRepository;
+    private final ActiveAgentRepository activeAgentRepository;
 
     RoleConfigJsonService(boolean central, ConfigRepository configRepository,
-            AgentRollupRepository agentRollupRepository) {
+            ActiveAgentRepository activeAgentRepository) {
         this.central = central;
         this.configRepository = configRepository;
-        this.agentRollupRepository = agentRollupRepository;
+        this.activeAgentRepository = activeAgentRepository;
     }
 
     @GET(path = "/backend/admin/roles", permission = "admin:view:role")
@@ -140,7 +140,7 @@ class RoleConfigJsonService {
     }
 
     private List<FlattenedAgentRollup> getFlattenedAgentRollups() throws Exception {
-        List<AgentRollup> agentRollups = agentRollupRepository.readRecentlyActiveAgentRollups(7);
+        List<AgentRollup> agentRollups = activeAgentRepository.readRecentlyActiveAgentRollups(7);
         List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
             flattenedAgentRollups.addAll(getFlattenedAgentRollups(agentRollup, 0));

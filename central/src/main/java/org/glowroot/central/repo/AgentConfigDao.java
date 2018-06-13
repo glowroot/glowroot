@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -28,16 +29,18 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
+import org.glowroot.central.repo.ActiveAgentDao.AgentConfigUpdate;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
+import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -212,6 +215,21 @@ public class AgentConfigDao {
         throw new OptimisticLockException();
     }
 
+    public String readAgentRollupDisplay(String agentRollupId) throws Exception {
+        List<String> displayParts = readAgentRollupDisplayParts(agentRollupId);
+        return Joiner.on(" :: ").join(displayParts);
+    }
+
+    public List<String> readAgentRollupDisplayParts(String agentRollupId) throws Exception {
+        List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
+        List<String> displayParts = new ArrayList<>();
+        for (ListIterator<String> i = agentRollupIds.listIterator(agentRollupIds.size()); i
+                .hasPrevious();) {
+            displayParts.add(readAgentRollupLastDisplayPart(i.previous()));
+        }
+        return displayParts;
+    }
+
     public @Nullable AgentConfig read(String agentRollupId) throws Exception {
         return agentConfigCache.get(agentRollupId).orNull();
     }
@@ -241,6 +259,18 @@ public class AgentConfigDao {
         boundStatement.setString(i++, agentId);
         boundStatement.setUUID(i++, configUpdateToken);
         session.execute(boundStatement);
+    }
+
+    private String readAgentRollupLastDisplayPart(String agentRollupId) throws Exception {
+        AgentConfig agentConfig = read(agentRollupId);
+        if (agentConfig == null) {
+            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+        }
+        String display = agentConfig.getGeneralConfig().getDisplay();
+        if (display.isEmpty()) {
+            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+        }
+        return display;
     }
 
     static String generateNewId() {

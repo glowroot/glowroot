@@ -39,7 +39,7 @@ import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.util.Styles;
-import org.glowroot.common2.repo.AgentRollupRepository;
+import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.common2.repo.TraceRepository.HeaderPlus;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -55,13 +55,13 @@ class TraceCommonService {
 
     private final TraceRepository traceRepository;
     private final LiveTraceRepository liveTraceRepository;
-    private final AgentRollupRepository agentRollupRepository;
+    private final ConfigRepository configRepository;
 
     TraceCommonService(TraceRepository traceRepository, LiveTraceRepository liveTraceRepository,
-            AgentRollupRepository agentRollupRepository) {
+            ConfigRepository configRepository) {
         this.traceRepository = traceRepository;
         this.liveTraceRepository = liveTraceRepository;
-        this.agentRollupRepository = agentRollupRepository;
+        this.configRepository = configRepository;
     }
 
     @Nullable
@@ -477,7 +477,7 @@ class TraceCommonService {
         try {
             jg.writeStartObject();
             if (!agentId.isEmpty()) {
-                jg.writeStringField("agent", agentRollupRepository.readAgentRollupDisplay(agentId));
+                jg.writeStringField("agent", configRepository.readAgentRollupDisplay(agentId));
             }
             if (active) {
                 jg.writeBooleanField("active", active);

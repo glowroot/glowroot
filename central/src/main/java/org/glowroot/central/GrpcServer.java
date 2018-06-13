@@ -26,8 +26,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AgentConfigDao;
-import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
@@ -50,17 +50,17 @@ class GrpcServer {
     private final @Nullable Server httpsServer;
 
     GrpcServer(String bindAddress, @Nullable Integer httpPort, @Nullable Integer httpsPort,
-            File confDir, AgentConfigDao agentConfigDao, AgentDao agentDao,
+            File confDir, AgentConfigDao agentConfigDao, ActiveAgentDao activeAgentDao,
             EnvironmentDao environmentDao, HeartbeatDao heartbeatDao, AggregateDao aggregateDao,
             GaugeValueDao gaugeValueDao, TraceDao traceDao, V09AgentRollupDao v09AgentRollupDao,
             CentralAlertingService centralAlertingService, ClusterManager clusterManager,
             Clock clock, String version) throws IOException {
 
-        GrpcCommon grpcCommon = new GrpcCommon(agentDao, v09AgentRollupDao);
+        GrpcCommon grpcCommon = new GrpcCommon(agentConfigDao, v09AgentRollupDao);
         downstreamService = new DownstreamServiceImpl(grpcCommon, clusterManager);
 
-        CollectorServiceImpl collectorService = new CollectorServiceImpl(agentDao, agentConfigDao,
-                environmentDao, heartbeatDao, aggregateDao, gaugeValueDao, traceDao,
+        CollectorServiceImpl collectorService = new CollectorServiceImpl(activeAgentDao,
+                agentConfigDao, environmentDao, heartbeatDao, aggregateDao, gaugeValueDao, traceDao,
                 v09AgentRollupDao, grpcCommon, centralAlertingService, clock, version);
 
         if (httpPort == null) {

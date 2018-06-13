@@ -25,8 +25,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.common2.repo.AgentRollupRepository;
-import org.glowroot.common2.repo.AgentRollupRepository.AgentRollup;
+import org.glowroot.common2.repo.ActiveAgentRepository;
+import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.LayoutService.AgentRollupLayout;
 import org.glowroot.ui.LayoutService.FilteredAgentRollup;
@@ -36,11 +36,11 @@ class LayoutJsonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final AgentRollupRepository agentRollupRepository;
+    private final ActiveAgentRepository activeAgentRepository;
     private final LayoutService layoutService;
 
-    LayoutJsonService(AgentRollupRepository agentRollupRepository, LayoutService layoutService) {
-        this.agentRollupRepository = agentRollupRepository;
+    LayoutJsonService(ActiveAgentRepository activeAgentRepository, LayoutService layoutService) {
+        this.activeAgentRepository = activeAgentRepository;
         this.layoutService = layoutService;
     }
 
@@ -48,7 +48,7 @@ class LayoutJsonService {
     String getAgentRollups(@BindRequest AgentRollupsRequest agentRollupsRequest,
             @BindAuthentication Authentication authentication) throws Exception {
         List<FilteredAgentRollup> agentRollups =
-                filter(agentRollupRepository.readAgentRollups(agentRollupsRequest.from(),
+                filter(activeAgentRepository.readActiveAgentRollups(agentRollupsRequest.from(),
                         agentRollupsRequest.to()), authentication, new Predicate<Permissions>() {
                             @Override
                             public boolean apply(@Nullable Permissions permissions) {

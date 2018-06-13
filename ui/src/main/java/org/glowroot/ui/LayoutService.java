@@ -33,7 +33,6 @@ import org.glowroot.common.ConfigDefaults;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
-import org.glowroot.common2.repo.AgentRollupRepository;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
@@ -56,13 +55,11 @@ class LayoutService {
     private final ConfigRepository configRepository;
     private final TransactionTypeRepository transactionTypeRepository;
     private final TraceAttributeNameRepository traceAttributeNameRepository;
-    private final AgentRollupRepository agentRollupRepository;
     private final LiveAggregateRepository liveAggregateRepository;
 
     LayoutService(boolean central, boolean offlineViewer, String version,
             ConfigRepository configRepository, TransactionTypeRepository transactionTypeRepository,
             TraceAttributeNameRepository traceAttributeNameRepository,
-            AgentRollupRepository agentRollupRepository,
             LiveAggregateRepository liveAggregateRepository) {
         this.central = central;
         this.offlineViewer = offlineViewer;
@@ -70,7 +67,6 @@ class LayoutService {
         this.configRepository = configRepository;
         this.transactionTypeRepository = transactionTypeRepository;
         this.traceAttributeNameRepository = traceAttributeNameRepository;
-        this.agentRollupRepository = agentRollupRepository;
         this.liveAggregateRepository = liveAggregateRepository;
     }
 
@@ -106,7 +102,7 @@ class LayoutService {
         Permissions permissions =
                 LayoutService.getPermissions(authentication, agentRollupId);
         List<String> agentRollupDisplayParts =
-                agentRollupRepository.readAgentRollupDisplayParts(agentRollupId);
+                configRepository.readAgentRollupDisplayParts(agentRollupId);
         FilteredAgentRollup agentRollup = ImmutableFilteredAgentRollup.builder()
                 .id(agentRollupId)
                 .display(Joiner.on(" :: ").join(agentRollupDisplayParts))

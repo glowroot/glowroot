@@ -29,6 +29,7 @@ import org.glowroot.central.v09support.GaugeValueDaoWithV09Support;
 import org.glowroot.central.v09support.SyntheticResultDaoWithV09Support;
 import org.glowroot.central.v09support.TraceDaoWithV09Support;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.util.RollupLevelService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -38,7 +39,8 @@ public class CentralRepoModule {
     private final UserDao userDao;
     private final RoleDao roleDao;
     private final ConfigRepositoryImpl configRepository;
-    private final AgentDao agentDao;
+    private final RollupLevelService rollupLevelService;
+    private final ActiveAgentDao activeAgentDao;
     private final EnvironmentDao environmentDao;
     private final HeartbeatDao heartbeatDao;
     private final IncidentDao incidentDao;
@@ -58,7 +60,9 @@ public class CentralRepoModule {
         roleDao = new RoleDao(session, clusterManager);
         configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao,
                 roleDao, cassandraSymmetricEncryptionKey);
-        agentDao = new AgentDao(session, agentConfigDao, configRepository, clock);
+        rollupLevelService = new RollupLevelService(configRepository, clock);
+        activeAgentDao = new ActiveAgentDao(session, agentConfigDao, configRepository,
+                rollupLevelService, clock);
         environmentDao = new EnvironmentDao(session);
         heartbeatDao = new HeartbeatDao(session, clock);
         incidentDao = new IncidentDao(session, clock);
@@ -98,7 +102,7 @@ public class CentralRepoModule {
             v09AggregateLastExpirationTime = checkNotNull(row.getTimestamp(i++)).getTime();
         }
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
-        AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, agentDao,
+        AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, activeAgentDao,
                 transactionTypeDao, fullQueryTextDao, configRepository, clock);
         GaugeValueDaoImpl gaugeValueDaoImpl =
                 new GaugeValueDaoImpl(session, configRepository, clock);
@@ -144,8 +148,12 @@ public class CentralRepoModule {
         return configRepository;
     }
 
-    public AgentDao getAgentDao() {
-        return agentDao;
+    public RollupLevelService getRollupLevelService() {
+        return rollupLevelService;
+    }
+
+    public ActiveAgentDao getActiveAgentDao() {
+        return activeAgentDao;
     }
 
     public EnvironmentDao getEnvironmentDao() {

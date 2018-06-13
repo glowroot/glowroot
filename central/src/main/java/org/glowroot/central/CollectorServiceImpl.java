@@ -34,8 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
+import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AgentConfigDao;
-import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.EnvironmentDao;
 import org.glowroot.central.repo.GaugeValueDao;
@@ -43,6 +43,7 @@ import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.V09AgentRollupDao;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -80,7 +81,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
     private static final Logger logger = LoggerFactory.getLogger(CollectorServiceImpl.class);
 
-    private final AgentDao agentDao;
+    private final ActiveAgentDao activeAgentDao;
     private final AgentConfigDao agentConfigDao;
     private final EnvironmentDao environmentDao;
     private final HeartbeatDao heartbeatDao;
@@ -105,12 +106,12 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                 }
             });
 
-    CollectorServiceImpl(AgentDao agentDao, AgentConfigDao agentConfigDao,
+    CollectorServiceImpl(ActiveAgentDao activeAgentDao, AgentConfigDao agentConfigDao,
             EnvironmentDao environmentDao, HeartbeatDao heartbeatDao, AggregateDao aggregateDao,
             GaugeValueDao gaugeValueDao, TraceDao traceDao, V09AgentRollupDao v09AgentRollupDao,
             GrpcCommon grpcCommon, CentralAlertingService centralAlertingService, Clock clock,
             String version) {
-        this.agentDao = agentDao;
+        this.activeAgentDao = activeAgentDao;
         this.agentConfigDao = agentConfigDao;
         this.environmentDao = environmentDao;
         this.heartbeatDao = heartbeatDao;
@@ -147,7 +148,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             updatedAgentConfig = SchemaUpgrade.upgradeOldAgentConfig(request.getAgentConfig());
             updatedAgentConfig = agentConfigDao.store(agentId, updatedAgentConfig);
             environmentDao.store(agentId, request.getEnvironment());
-            agentDao.insert(agentId, clock.currentTimeMillis()).get();
+            MoreFutures.waitForAll(activeAgentDao.insert(agentId, clock.currentTimeMillis()));
         } catch (Throwable t) {
             logger.error("{} - {}", getDisplayForLogging(agentId), t.getMessage(), t);
             responseObserver.onError(t);
@@ -231,7 +232,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         try {
             LogEvent logEvent = request.getLogEvent();
             Level level = logEvent.getLevel();
-            String agentDisplay = agentDao.readAgentRollupDisplay(agentId);
+            String agentDisplay = agentConfigDao.readAgentRollupDisplay(agentId);
             String formattedTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
                     .format(new Date(logEvent.getTimestamp()));
             if (logEvent.hasThrowable()) {
@@ -329,7 +330,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         String agentDisplay;
         try {
-            agentDisplay = agentDao.readAgentRollupDisplay(postV09AgentId);
+            agentDisplay = agentConfigDao.readAgentRollupDisplay(postV09AgentId);
         } catch (Exception e) {
             logger.error("{} - {}", getDisplayForLogging(postV09AgentId), e.getMessage(), e);
             responseObserver.onError(e);
@@ -381,7 +382,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         String agentDisplay;
         try {
-            agentDisplay = agentDao.readAgentRollupDisplay(postV09AgentId);
+            agentDisplay = agentConfigDao.readAgentRollupDisplay(postV09AgentId);
         } catch (Throwable t) {
             logger.error("{} - {}", getDisplayForLogging(postV09AgentId), t.getMessage(), t);
             responseObserver.onError(t);

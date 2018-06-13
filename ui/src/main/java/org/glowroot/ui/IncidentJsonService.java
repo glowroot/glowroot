@@ -28,7 +28,6 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.common2.repo.AgentRollupRepository;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
@@ -51,16 +50,13 @@ class IncidentJsonService {
     private final boolean central;
     private final IncidentRepository incidentRepository;
     private final ConfigRepository configRepository;
-    private final AgentRollupRepository agentRollupRepository;
     private final Clock clock;
 
     IncidentJsonService(boolean central, IncidentRepository incidentRepository,
-            ConfigRepository configRepository, AgentRollupRepository agentRollupRepository,
-            Clock clock) {
+            ConfigRepository configRepository, Clock clock) {
         this.central = central;
         this.incidentRepository = incidentRepository;
         this.configRepository = configRepository;
-        this.agentRollupRepository = agentRollupRepository;
         this.clock = clock;
     }
 
@@ -95,7 +91,7 @@ class IncidentJsonService {
     private DisplayedIncident createDisplayedIncident(OpenIncident incident) throws Exception {
         ImmutableDisplayedIncident.Builder builder = ImmutableDisplayedIncident.builder()
                 .agentRollupDisplay(
-                        agentRollupRepository.readAgentRollupDisplay(incident.agentRollupId()))
+                        configRepository.readAgentRollupDisplay(incident.agentRollupId()))
                 .openTime(incident.openTime())
                 .durationMillis(clock.currentTimeMillis() - incident.openTime())
                 .severity(toString(incident.severity()))
@@ -109,7 +105,7 @@ class IncidentJsonService {
     private DisplayedIncident createDisplayedIncident(ResolvedIncident incident) throws Exception {
         ImmutableDisplayedIncident.Builder builder = ImmutableDisplayedIncident.builder()
                 .agentRollupDisplay(
-                        agentRollupRepository.readAgentRollupDisplay(incident.agentRollupId()))
+                        configRepository.readAgentRollupDisplay(incident.agentRollupId()))
                 .openTime(incident.openTime())
                 .durationMillis(incident.resolveTime() - incident.openTime())
                 .resolveTime(incident.resolveTime())

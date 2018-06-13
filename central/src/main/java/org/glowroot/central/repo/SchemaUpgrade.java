@@ -73,6 +73,7 @@ import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.config.ImmutableCentralWebConfig;
 import org.glowroot.common2.config.PermissionParser;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -102,7 +103,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 76;
+    private static final int CURR_SCHEMA_VERSION = 81;
 
     private final Session session;
     private final Clock clock;
@@ -467,6 +468,27 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 76) {
             updateTraceAttributeNamePartitionKeyPart2();
             updateSchemaVersion(76);
+        }
+        // 0.10.11 to 0.10.12
+        if (initialSchemaVersion < 77) {
+            populateActiveAgentTable(0);
+            updateSchemaVersion(77);
+        }
+        if (initialSchemaVersion < 78) {
+            populateActiveAgentTable(1);
+            updateSchemaVersion(78);
+        }
+        if (initialSchemaVersion < 79) {
+            populateActiveAgentTable(2);
+            updateSchemaVersion(79);
+        }
+        if (initialSchemaVersion < 80) {
+            populateActiveAgentTable(3);
+            updateSchemaVersion(80);
+        }
+        if (initialSchemaVersion < 81) {
+            dropTableIfExists("agent");
+            updateSchemaVersion(81);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -1328,8 +1350,8 @@ public class SchemaUpgrade {
     }
 
     private void populateAgentHistoryTable() throws Exception {
-        logger.info("populating new agent history table - this could take a several minutes on"
-                + " large data sets...");
+        logger.info("populating new agent history table - this could take several minutes on large"
+                + " data sets...");
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("agent");
         session.createTableWithTWCS("create table if not exists agent (one int, capture_time"
@@ -2430,6 +2452,58 @@ public class SchemaUpgrade {
         }
         MoreFutures.waitForAll(futures);
         dropTableIfExists("trace_attribute_name_temp");
+    }
+
+    private void populateActiveAgentTable(int rollupLevel) throws Exception {
+        logger.info("populating active_agent_rollup_" + rollupLevel + " table - this could take"
+                + " several minutes on large data sets...");
+        CentralStorageConfig storageConfig = getCentralStorageConfig(session);
+        dropTableIfExists("active_agent_rollup_" + rollupLevel);
+        session.createTableWithTWCS("create table if not exists active_agent_rollup_" + rollupLevel
+                + " (one int, capture_time timestamp, agent_id varchar, primary key (one,"
+                + " capture_time, agent_id))", storageConfig.getMaxRollupHours());
+        PreparedStatement insertPS = session.prepare("insert into active_agent_rollup_"
+                + rollupLevel + " (one, capture_time, agent_id) values (1, ?, ?) using ttl ?");
+        int expirationHours =
+                getCentralStorageConfig(session).rollupExpirationHours().get(rollupLevel);
+        int ttl = Ints.saturatedCast(HOURS.toSeconds(expirationHours));
+        long rollupIntervalMillis;
+        if (rollupLevel < 3) {
+            rollupIntervalMillis =
+                    RollupConfig.buildRollupConfigs().get(rollupLevel + 1).intervalMillis();
+        } else {
+            rollupIntervalMillis = DAYS.toMillis(1);
+        }
+        int[] negativeOffsets = new int[(int) (DAYS.toMillis(1) / rollupIntervalMillis)];
+        for (int i = 0; i < negativeOffsets.length; i++) {
+            negativeOffsets[i] = (int) (rollupIntervalMillis * (i + 1 - negativeOffsets.length));
+        }
+        PreparedStatement readPS = session.prepare(
+                "select capture_time, agent_id from agent where one = 1 and capture_time > ?");
+        BoundStatement boundStatement = readPS.bind();
+        long now = clock.currentTimeMillis();
+        boundStatement.setTimestamp(0, new Date(now - HOURS.toMillis(expirationHours)));
+        ResultSet results = session.execute(boundStatement);
+        Queue<ListenableFuture<ResultSet>> futures = new ArrayDeque<>();
+        for (Row row : results) {
+            Date captureDate = checkNotNull(row.getTimestamp(0));
+            String agentId = row.getString(1);
+            for (int negativeOffset : negativeOffsets) {
+                long offsetCaptureTime = captureDate.getTime() + negativeOffset;
+                int adjustedTTL = Common.getAdjustedTTL(ttl, offsetCaptureTime, clock);
+                boundStatement = insertPS.bind();
+                boundStatement.setTimestamp(0, new Date(offsetCaptureTime));
+                boundStatement.setString(1, agentId);
+                boundStatement.setInt(2, adjustedTTL);
+                futures.add(session.executeAsync(boundStatement));
+                waitForSome(futures);
+                if (offsetCaptureTime > now) {
+                    break;
+                }
+            }
+        }
+        MoreFutures.waitForAll(futures);
+        logger.info("populating active_agent_rollup_" + rollupLevel + " table - complete");
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
