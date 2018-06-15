@@ -16,7 +16,6 @@
 package org.glowroot.agent.embedded.util;
 
 import java.io.File;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -70,7 +69,7 @@ public class DataSource {
     private final Thread shutdownHookThread;
     private final Object lock = new Object();
     @GuardedBy("lock")
-    private Connection connection;
+    private JdbcConnection connection;
     private volatile boolean closed;
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
@@ -119,9 +118,10 @@ public class DataSource {
             if (closed) {
                 return;
             }
+            checkConnectionUnderLock();
             execute("shutdown defrag");
-            preparedStatementCache.invalidateAll();
             connection = createConnection(dbFile);
+            preparedStatementCache.invalidateAll();
         }
     }
 
@@ -133,9 +133,10 @@ public class DataSource {
             if (closed) {
                 return;
             }
+            checkConnectionUnderLock();
             execute("shutdown compact");
-            preparedStatementCache.invalidateAll();
             connection = createConnection(dbFile);
+            preparedStatementCache.invalidateAll();
         }
     }
 
@@ -160,14 +161,15 @@ public class DataSource {
             if (closed) {
                 return;
             }
+            checkConnectionUnderLock();
             List<String> schemaVersionRows =
                     queryForStringList("select schema_version from schema_version");
             connection.close();
-            preparedStatementCache.invalidateAll();
             if (!dbFile.delete()) {
                 throw new SQLException("Could not delete file: " + dbFile.getAbsolutePath());
             }
             connection = createConnection(dbFile);
+            preparedStatementCache.invalidateAll();
             for (Map.Entry</*@Untainted*/ String, ImmutableList<Column>> entry : tables
                     .entrySet()) {
                 syncTable(entry.getKey(), entry.getValue());
@@ -188,6 +190,7 @@ public class DataSource {
             if (closed) {
                 return;
             }
+            checkConnectionUnderLock();
             Statement statement = connection.createStatement();
             StatementCloser closer = new StatementCloser(statement);
             try {
@@ -209,6 +212,7 @@ public class DataSource {
             if (closed) {
                 return 0;
             }
+            checkConnectionUnderLock();
             return queryUnderLock(sql, args, new ResultSetExtractor<Long>() {
                 @Override
                 public Long extractData(ResultSet resultSet) throws SQLException {
@@ -235,6 +239,7 @@ public class DataSource {
             if (closed) {
                 return null;
             }
+            checkConnectionUnderLock();
             return queryUnderLock(sql, args, new ResultSetExtractor</*@Nullable*/ Long>() {
                 @Override
                 public @Nullable Long extractData(ResultSet resultSet) throws SQLException {
@@ -272,8 +277,9 @@ public class DataSource {
             if (closed) {
                 return jdbcQuery.valueIfDataSourceClosed();
             }
+            checkConnectionUnderLock();
             PreparedStatement preparedStatement =
-                    prepareStatement(jdbcQuery.getSql(), QUERY_TIMEOUT_SECONDS);
+                    prepareStatementUnderLock(jdbcQuery.getSql(), QUERY_TIMEOUT_SECONDS);
             jdbcQuery.bind(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -306,8 +312,9 @@ public class DataSource {
             if (closed) {
                 return ImmutableList.of();
             }
+            checkConnectionUnderLock();
             PreparedStatement preparedStatement =
-                    prepareStatement(jdbcQuery.getSql(), QUERY_TIMEOUT_SECONDS);
+                    prepareStatementUnderLock(jdbcQuery.getSql(), QUERY_TIMEOUT_SECONDS);
             jdbcQuery.bind(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -354,7 +361,8 @@ public class DataSource {
             if (closed) {
                 return 0;
             }
-            PreparedStatement preparedStatement = prepareStatement(jdbcUpdate.getSql(), 0);
+            checkConnectionUnderLock();
+            PreparedStatement preparedStatement = prepareStatementUnderLock(jdbcUpdate.getSql(), 0);
             jdbcUpdate.bind(preparedStatement);
             return preparedStatement.executeUpdate();
             // don't need to close statement since they are all cached and used under lock
@@ -373,7 +381,8 @@ public class DataSource {
             if (closed) {
                 return new int[0];
             }
-            PreparedStatement preparedStatement = prepareStatement(jdbcUpdate.getSql(), 0);
+            checkConnectionUnderLock();
+            PreparedStatement preparedStatement = prepareStatementUnderLock(jdbcUpdate.getSql(), 0);
             jdbcUpdate.bind(preparedStatement);
             return preparedStatement.executeBatch();
             // don't need to close statement since they are all cached and used under lock
@@ -396,12 +405,12 @@ public class DataSource {
     }
 
     public void deleteBeforeUsingLock(@Untainted String tableName, @Untainted String columnName,
-            long captureTime, Object lock) throws SQLException {
+            long captureTime, Object externalLock) throws SQLException {
         // delete 100 at a time, which is both faster than deleting all at once, and doesn't
         // lock the single jdbc connection for one large chunk of time
         int deleted;
         do {
-            synchronized (lock) {
+            synchronized (externalLock) {
                 deleted = update(
                         "delete from " + tableName + " where " + columnName + " < ? limit 100",
                         captureTime);
@@ -414,6 +423,7 @@ public class DataSource {
             if (closed) {
                 return;
             }
+            checkConnectionUnderLock();
             Schemas.syncTable(tableName, columns, connection);
             tables.put(tableName, ImmutableList.copyOf(columns));
         }
@@ -425,6 +435,7 @@ public class DataSource {
             if (closed) {
                 return;
             }
+            checkConnectionUnderLock();
             Schemas.syncIndexes(tableName, indexes, connection);
             this.indexes.put(tableName, indexes);
         }
@@ -437,14 +448,22 @@ public class DataSource {
     // helpful for upgrading schema
     public boolean tableExists(String tableName) throws SQLException {
         synchronized (lock) {
-            return !closed && Schemas.tableExists(tableName, connection);
+            if (closed) {
+                return false;
+            }
+            checkConnectionUnderLock();
+            return Schemas.tableExists(tableName, connection);
         }
     }
 
     // helpful for upgrading schema
     public boolean columnExists(String tableName, String columnName) throws SQLException {
         synchronized (lock) {
-            return !closed && Schemas.columnExists(tableName, columnName, connection);
+            if (closed) {
+                return false;
+            }
+            checkConnectionUnderLock();
+            return Schemas.columnExists(tableName, columnName, connection);
         }
     }
 
@@ -452,6 +471,10 @@ public class DataSource {
     public void renameTable(@Untainted String oldTableName, @Untainted String newTableName)
             throws SQLException {
         synchronized (lock) {
+            if (closed) {
+                return;
+            }
+            checkConnectionUnderLock();
             if (Schemas.tableExists(oldTableName, connection)) {
                 execute("alter table " + oldTableName + " rename to " + newTableName);
             }
@@ -462,6 +485,10 @@ public class DataSource {
     public void renameColumn(@Untainted String tableName, @Untainted String oldColumnName,
             @Untainted String newColumnName) throws SQLException {
         synchronized (lock) {
+            if (closed) {
+                return;
+            }
+            checkConnectionUnderLock();
             if (Schemas.columnExists(tableName, oldColumnName, connection)) {
                 execute("alter table " + tableName + " alter column " + oldColumnName
                         + " rename to "
@@ -492,79 +519,18 @@ public class DataSource {
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
-    private List<H2Table> analyzeH2DiskSpaceUnderSuppressQueryTimeout() throws Exception {
-        List</*@Untainted*/ String> tableNames;
-        synchronized (lock) {
-            if (closed) {
-                return ImmutableList.of();
-            }
-            tableNames = getAllTableNamesUnderLock();
+    @GuardedBy("lock")
+    private void checkConnectionUnderLock() throws SQLException {
+        if (connection.getPowerOffCount() == -1) {
+            // connection was closed internally due to OutOfMemoryError
+            connection = createConnection(dbFile);
+            preparedStatementCache.invalidateAll();
         }
-        List<H2Table> tables = Lists.newArrayList();
-        for (String tableName : tableNames) {
-            long bytes;
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            synchronized (lock) {
-                if (closed) {
-                    return tables;
-                }
-                bytes = queryForLong("call disk_space_used (?)", tableName);
-            }
-            // sleep a bit to allow some other threads to use the data source
-            MILLISECONDS.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
-            stopwatch.reset().start();
-            long rows;
-            synchronized (lock) {
-                if (closed) {
-                    return tables;
-                }
-                rows = queryForLong("select count(*) from " + tableName);
-            }
-            // sleep a bit to allow some other threads to use the data source
-            MILLISECONDS.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
-            tables.add(ImmutableH2Table.builder()
-                    .name(tableName)
-                    .bytes(bytes)
-                    .rows(rows)
-                    .build());
-        }
-        return tables;
     }
 
     @GuardedBy("lock")
-    private <T extends /*@Nullable*/ Object> T queryUnderLock(@Untainted String sql, Object[] args,
-            ResultSetExtractor<T> rse) throws SQLException {
-        PreparedStatement preparedStatement = prepareStatement(sql, QUERY_TIMEOUT_SECONDS);
-        for (int i = 0; i < args.length; i++) {
-            preparedStatement.setObject(i + 1, args[i]);
-        }
-        ResultSet resultSet = preparedStatement.executeQuery();
-        return extractAndClose(resultSet, rse);
-        // don't need to close statement since they are all cached and used under lock
-    }
-
-    @GuardedBy("lock")
-    private List</*@Untainted*/ String> getAllTableNamesUnderLock() throws SQLException {
-        ResultSet resultSet = connection.getMetaData().getTables(null, null, null, null);
-        return extractAndClose(resultSet, new ResultSetExtractor<List</*@Untainted*/ String>>() {
-            @Override
-            public List</*@Untainted*/ String> extractData(ResultSet resultSet) throws Exception {
-                List</*@Untainted*/ String> tableNames = Lists.newArrayList();
-                while (resultSet.next()) {
-                    String tableType = checkNotNull(resultSet.getString(4));
-                    if (tableType.equals("TABLE")) {
-                        String tableName = checkNotNull(resultSet.getString(3));
-                        tableNames.add(castUntainted(tableName));
-                    }
-                }
-                return tableNames;
-            }
-        });
-    }
-
-    @GuardedBy("lock")
-    private PreparedStatement prepareStatement(@Untainted String sql, int queryTimeoutSeconds)
-            throws SQLException {
+    private PreparedStatement prepareStatementUnderLock(@Untainted String sql,
+            int queryTimeoutSeconds) throws SQLException {
         try {
             PreparedStatement preparedStatement = preparedStatementCache.get(sql);
             // setQueryTimeout() affects all statements of this connection (at least with h2)
@@ -584,19 +550,66 @@ public class DataSource {
         }
     }
 
-    private static <T> T extractAndClose(ResultSet resultSet, ResultSetExtractor<T> rse)
-            throws SQLException {
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            return rse.extractData(resultSet);
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
+    @GuardedBy("lock")
+    private <T extends /*@Nullable*/ Object> T queryUnderLock(@Untainted String sql, Object[] args,
+            ResultSetExtractor<T> rse) throws SQLException {
+        PreparedStatement preparedStatement = prepareStatementUnderLock(sql, QUERY_TIMEOUT_SECONDS);
+        for (int i = 0; i < args.length; i++) {
+            preparedStatement.setObject(i + 1, args[i]);
+        }
+        ResultSet resultSet = preparedStatement.executeQuery();
+        return extractAndClose(resultSet, rse);
+        // don't need to close statement since they are all cached and used under lock
+    }
+
+    private List<H2Table> analyzeH2DiskSpaceUnderSuppressQueryTimeout() throws Exception {
+        List<H2Table> tables = Lists.newArrayList();
+        for (String tableName : getAllTableNames()) {
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            long bytes = queryForLong("call disk_space_used (?)", tableName);
+            // sleep a bit to allow some other threads to use the data source
+            MILLISECONDS.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
+            stopwatch.reset().start();
+            long rows = queryForLong("select count(*) from " + tableName);
+            // sleep a bit to allow some other threads to use the data source
+            MILLISECONDS.sleep(stopwatch.elapsed(MILLISECONDS) / 10);
+            tables.add(ImmutableH2Table.builder()
+                    .name(tableName)
+                    .bytes(bytes)
+                    .rows(rows)
+                    .build());
+        }
+        return tables;
+    }
+
+    @GuardedBy("lock")
+    private List</*@Untainted*/ String> getAllTableNames() throws SQLException {
+        synchronized (lock) {
+            if (closed) {
+                return ImmutableList.of();
+            }
+            checkConnectionUnderLock();
+            ResultSet resultSet = connection.getMetaData().getTables(null, null, null, null);
+            return extractAndClose(resultSet,
+                    new ResultSetExtractor<List</*@Untainted*/ String>>() {
+                        @Override
+                        public List</*@Untainted*/ String> extractData(ResultSet resultSet)
+                                throws Exception {
+                            List</*@Untainted*/ String> tableNames = Lists.newArrayList();
+                            while (resultSet.next()) {
+                                String tableType = checkNotNull(resultSet.getString(4));
+                                if (tableType.equals("TABLE")) {
+                                    String tableName = checkNotNull(resultSet.getString(3));
+                                    tableNames.add(castUntainted(tableName));
+                                }
+                            }
+                            return tableNames;
+                        }
+                    });
         }
     }
 
-    private static Connection createConnection(@Nullable File dbFile) throws SQLException {
+    private static JdbcConnection createConnection(@Nullable File dbFile) throws SQLException {
         if (dbFile == null) {
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
             return new JdbcConnection("jdbc:h2:mem:;compress=true;db_close_on_exit=false",
@@ -611,6 +624,18 @@ public class DataSource {
             String url = "jdbc:h2:" + dbPath + ";compress=true;db_close_on_exit=false;cache_size="
                     + CACHE_SIZE;
             return new JdbcConnection(url, props);
+        }
+    }
+
+    private static <T> T extractAndClose(ResultSet resultSet, ResultSetExtractor<T> rse)
+            throws SQLException {
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
+        try {
+            return rse.extractData(resultSet);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
         }
     }
 
