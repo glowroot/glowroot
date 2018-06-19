@@ -470,8 +470,8 @@ glowroot.run([
       //   display: 'Breakdown metric count'
       // },
       // {
-      //   id: 'transaction:profile-sample-count',
-      //   display: 'Profile sample count'
+      //   id: 'transaction:thread-profile-sample-count',
+      //   display: 'Thread profile sample count'
       // },
       {
         id: 'transaction:count',

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,8 +55,8 @@ public class RoleConfigPage {
         return withWait(xpath("//input[@ng-model='page.permissions.transaction.serviceCalls']"));
     }
 
-    public WebElement getTransactionProfileCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.transaction.profile']"));
+    public WebElement getTransactionThreadProfileCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.transaction.threadProfile']"));
     }
 
     public WebElement getErrorCheckBox() {
@@ -115,20 +115,24 @@ public class RoleConfigPage {
         return withWait(xpath("//input[@ng-model='page.permissions.config.edit.transaction']"));
     }
 
-    public WebElement getConfigEditGaugeCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.gauge']"));
+    public WebElement getConfigEditGaugesCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.gauges']"));
     }
 
-    public WebElement getConfigEditAlertCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.alert']"));
+    public WebElement getConfigEditJvmCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.jvm']"));
     }
 
-    public WebElement getConfigEditUiCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.ui']"));
+    public WebElement getConfigEditAlertsCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.alerts']"));
     }
 
-    public WebElement getConfigEditPluginCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.plugin']"));
+    public WebElement getConfigEditUiDefaultsCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.uiDefaults']"));
+    }
+
+    public WebElement getConfigEditPluginsCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.plugins']"));
     }
 
     public WebElement getConfigEditInstrumentationCheckBox() {

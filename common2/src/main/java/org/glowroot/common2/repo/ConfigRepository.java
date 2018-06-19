@@ -48,7 +48,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfi
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -86,7 +86,7 @@ public interface ConfigRepository {
     JvmConfig getJvmConfig(String agentId) throws Exception;
 
     // central supports ui config on rollups
-    UiConfig getUiConfig(String agentRollupId) throws Exception;
+    UiDefaultsConfig getUiDefaultsConfig(String agentRollupId) throws Exception;
 
     UserRecordingConfig getUserRecordingConfig(String agentId) throws Exception;
 
@@ -202,8 +202,8 @@ public interface ConfigRepository {
     void deleteAlertConfig(String agentRollupId, String version) throws Exception;
 
     // central supports ui config on rollups
-    void updateUiConfig(String agentRollupId, UiConfig uiConfig, String priorVersion)
-            throws Exception;
+    void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig uiConfig,
+            String priorVersion) throws Exception;
 
     // only name, type and value of properties is used
     void updatePluginConfig(String agentId, String pluginId, List<PluginProperty> properties,

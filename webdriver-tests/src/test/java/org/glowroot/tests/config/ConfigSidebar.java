@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,8 @@ public class ConfigSidebar {
         return Utils.withWait(driver, getSidebar(), linkText("Alerts"));
     }
 
-    public WebElement getUiLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("UI"));
+    public WebElement getUiDefaultsLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("UI Defaults"));
     }
 
     public WebElement getPluginsLink() {

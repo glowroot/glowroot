@@ -34,28 +34,28 @@
   <li role="presentation" ng-class="{active: activeTabItem === 'queries'}">
     <a ng-href="transaction/queries{{tabQueryString()}}"
        ng-click="clickTab('queries', $event)"
-       ng-keydown="keydownTab('tab_traces', 'tab_services', $event)"
+       ng-keydown="keydownTab('tab_traces', 'tab_service_calls', $event)"
        ng-if="agentRollup.permissions.transaction.queries"
        id="tab_queries">
       Queries
     </a>
   </li>
   <li role="presentation" ng-class="{active: activeTabItem === 'service-calls'}">
-    <a ng-href="transaction/services{{tabQueryString()}}"
-       ng-click="clickTab('services', $event)"
-       ng-keydown="keydownTab('tab_queries', 'tab_profile', $event)"
+    <a ng-href="transaction/service-calls{{tabQueryString()}}"
+       ng-click="clickTab('service-calls', $event)"
+       ng-keydown="keydownTab('tab_queries', 'tab_thread_profile', $event)"
        ng-if="agentRollup.permissions.transaction.serviceCalls"
-       id="tab_services">
+       id="tab_service_calls">
       Service calls
     </a>
   </li>
-  <li role="presentation" ng-class="{active: activeTabItem === 'profile'}">
+  <li role="presentation" ng-class="{active: activeTabItem === 'thread-profile'}">
     <a ng-href="transaction/thread-profile{{tabQueryString()}}"
-       ng-click="clickTab('profile', $event)"
-       ng-keydown="keydownTab('tab_services', null, $event)"
-       ng-if="agentRollup.permissions.transaction.profile"
-       id="tab_profile">
-      Continuous profiling
+       ng-click="clickTab('thread-profile', $event)"
+       ng-keydown="keydownTab('tab_service_calls', null, $event)"
+       ng-if="agentRollup.permissions.transaction.threadProfile"
+       id="tab_thread_profile">
+      Thread profile
     </a>
   </li>
 </ul>

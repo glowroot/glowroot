@@ -33,12 +33,6 @@ public abstract class AdvancedConfig {
     public static final int TRANSACTION_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER = 2;
 
     @Value.Default
-    @JsonInclude(Include.NON_EMPTY)
-    public boolean weavingTimer() {
-        return false;
-    }
-
-    @Value.Default
     public int immediatePartialStoreThresholdSeconds() {
         return 60;
     }
@@ -80,9 +74,14 @@ public abstract class AdvancedConfig {
         return 60;
     }
 
+    @Value.Default
+    @JsonInclude(Include.NON_EMPTY)
+    public boolean weavingTimer() {
+        return false;
+    }
+
     public AgentConfig.AdvancedConfig toProto() {
         return AgentConfig.AdvancedConfig.newBuilder()
-                .setWeavingTimer(weavingTimer())
                 .setImmediatePartialStoreThresholdSeconds(
                         of(immediatePartialStoreThresholdSeconds()))
                 .setMaxTransactionAggregates(of(maxTransactionAggregates()))
@@ -91,12 +90,12 @@ public abstract class AdvancedConfig {
                 .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
                 .setMaxProfileSamplesPerTransaction(of(maxProfileSamplesPerTransaction()))
                 .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
+                .setWeavingTimer(weavingTimer())
                 .build();
     }
 
     public static AdvancedConfig create(AgentConfig.AdvancedConfig config) {
-        ImmutableAdvancedConfig.Builder builder = ImmutableAdvancedConfig.builder()
-                .weavingTimer(config.getWeavingTimer());
+        ImmutableAdvancedConfig.Builder builder = ImmutableAdvancedConfig.builder();
         if (config.hasImmediatePartialStoreThresholdSeconds()) {
             builder.immediatePartialStoreThresholdSeconds(
                     config.getImmediatePartialStoreThresholdSeconds().getValue());
@@ -122,7 +121,8 @@ public abstract class AdvancedConfig {
             builder.mbeanGaugeNotFoundDelaySeconds(
                     config.getMbeanGaugeNotFoundDelaySeconds().getValue());
         }
-        return builder.build();
+        return builder.weavingTimer(config.getWeavingTimer())
+                .build();
     }
 
     private static OptionalInt32 of(int value) {

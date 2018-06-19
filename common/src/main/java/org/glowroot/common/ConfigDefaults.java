@@ -22,10 +22,10 @@ public final class ConfigDefaults {
     public static final ImmutableList<String> JVM_MASK_SYSTEM_PROPERTIES =
             ImmutableList.of("*password*");
 
-    public static final String UI_DEFAULT_TRANSACTION_TYPE = "Web";
-    public static final ImmutableList<Double> UI_DEFAULT_PERCENTILES =
+    public static final String UI_DEFAULTS_TRANSACTION_TYPE = "Web";
+    public static final ImmutableList<Double> UI_DEFAULTS_PERCENTILES =
             ImmutableList.of(50.0, 95.0, 99.0);
-    public static final ImmutableList<String> UI_DEFAULT_GAUGE_NAMES =
+    public static final ImmutableList<String> UI_DEFAULTS_GAUGE_NAMES =
             ImmutableList.of("java.lang:type=Memory:HeapMemoryUsage.used");
 
     public static final int ADVANCED_MAX_TRANSACTION_AGGREGATES = 500;

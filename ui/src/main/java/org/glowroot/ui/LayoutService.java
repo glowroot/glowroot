@@ -40,7 +40,7 @@ import org.glowroot.common2.repo.EnvironmentRepository;
 import org.glowroot.common2.repo.TraceAttributeNameRepository;
 import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -124,14 +124,14 @@ class LayoutService {
     private @Nullable AgentRollupLayout buildAgentRollupLayout(FilteredAgentRollup agentRollup,
             Set<String> transactionTypes, Map<String, List<String>> traceAttributeNames)
             throws Exception {
-        UiConfig uiConfig;
+        UiDefaultsConfig uiConfig;
         try {
-            uiConfig = configRepository.getUiConfig(agentRollup.id());
+            uiConfig = configRepository.getUiDefaultsConfig(agentRollup.id());
         } catch (AgentConfigNotFoundException e) {
-            uiConfig = UiConfig.newBuilder()
-                    .setDefaultTransactionType(ConfigDefaults.UI_DEFAULT_TRANSACTION_TYPE)
-                    .addAllDefaultPercentile(ConfigDefaults.UI_DEFAULT_PERCENTILES)
-                    .addAllDefaultGaugeName(ConfigDefaults.UI_DEFAULT_GAUGE_NAMES)
+            uiConfig = UiDefaultsConfig.newBuilder()
+                    .setDefaultTransactionType(ConfigDefaults.UI_DEFAULTS_TRANSACTION_TYPE)
+                    .addAllDefaultPercentile(ConfigDefaults.UI_DEFAULTS_PERCENTILES)
+                    .addAllDefaultGaugeName(ConfigDefaults.UI_DEFAULTS_GAUGE_NAMES)
                     .build();
         }
         String glowrootVersion;
@@ -188,7 +188,7 @@ class LayoutService {
                 && permissions.error().overview() && permissions.jvm().gauges();
         boolean showNavbarConfig = permissions.config().view();
         // a couple of special cases for embedded ui
-        UiConfig uiConfig = configRepository.getUiConfig(AGENT_ID);
+        UiDefaultsConfig uiConfig = configRepository.getUiDefaultsConfig(AGENT_ID);
         String defaultTransactionType = uiConfig.getDefaultTransactionType();
         Set<String> transactionTypes = Sets.newTreeSet();
         List<String> storedTransactionTypes = transactionTypeRepository.read(AGENT_ID);
@@ -313,8 +313,8 @@ class LayoutService {
                                 "agent:transaction:queries"))
                         .serviceCalls(authentication.isPermittedForAgentRollup(agentRollupId,
                                 "agent:transaction:serviceCalls"))
-                        .profile(authentication.isPermittedForAgentRollup(agentRollupId,
-                                "agent:transaction:profile"))
+                        .threadProfile(authentication.isPermittedForAgentRollup(agentRollupId,
+                                "agent:transaction:threadProfile"))
                         .build())
                 .error(ImmutableErrorPermissions.builder()
                         .overview(authentication.isPermittedForAgentRollup(agentRollupId,
@@ -354,21 +354,21 @@ class LayoutService {
                                         "agent:config:edit:general"))
                                 .transaction(authentication.isPermittedForAgentRollup(agentRollupId,
                                         "agent:config:edit:transaction"))
-                                .gauge(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:gauge"))
+                                .gauges(authentication.isPermittedForAgentRollup(agentRollupId,
+                                        "agent:config:edit:gauges"))
                                 .jvm(authentication.isPermittedForAgentRollup(agentRollupId,
                                         "agent:config:edit:jvm"))
                                 // central supports synthetic monitor configs on rollups
-                                .syntheticMonitor(authentication.isPermittedForAgentRollup(
-                                        agentRollupId, "agent:config:edit:syntheticMonitor"))
+                                .syntheticMonitors(authentication.isPermittedForAgentRollup(
+                                        agentRollupId, "agent:config:edit:syntheticMonitors"))
                                 // central supports alert configs on rollups
-                                .alert(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:alert"))
-                                // central supports ui config on rollups
-                                .ui(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:ui"))
-                                .plugin(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:plugin"))
+                                .alerts(authentication.isPermittedForAgentRollup(agentRollupId,
+                                        "agent:config:edit:alerts"))
+                                // central supports ui defaults config on rollups
+                                .uiDefaults(authentication.isPermittedForAgentRollup(agentRollupId,
+                                        "agent:config:edit:uiDefaults"))
+                                .plugins(authentication.isPermittedForAgentRollup(agentRollupId,
+                                        "agent:config:edit:plugins"))
                                 .instrumentation(authentication.isPermittedForAgentRollup(
                                         agentRollupId, "agent:config:edit:instrumentation"))
                                 // central supports advanced config on rollups (maxQueryAggregates
@@ -476,10 +476,10 @@ class LayoutService {
         abstract boolean traces();
         abstract boolean queries();
         abstract boolean serviceCalls();
-        abstract boolean profile();
+        abstract boolean threadProfile();
 
         private boolean hasSomeAccess() {
-            return overview() || traces() || queries() || serviceCalls() || profile();
+            return overview() || traces() || queries() || serviceCalls() || threadProfile();
         }
     }
 
@@ -524,12 +524,12 @@ class LayoutService {
     interface EditConfigPermissions {
         boolean general();
         boolean transaction();
-        boolean gauge();
+        boolean gauges();
         boolean jvm();
-        boolean syntheticMonitor();
-        boolean alert();
-        boolean ui();
-        boolean plugin();
+        boolean syntheticMonitors();
+        boolean alerts();
+        boolean uiDefaults();
+        boolean plugins();
         boolean instrumentation();
         boolean userRecording();
         boolean advanced();

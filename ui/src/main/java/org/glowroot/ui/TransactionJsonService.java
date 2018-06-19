@@ -305,7 +305,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/profile", permission = "agent:transaction:profile")
+    @GET(path = "/backend/transaction/profile", permission = "agent:transaction:threadProfile")
     String getProfile(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionProfileRequest request) throws Exception {
         TransactionQuery query = toQuery(request, DataKind.PROFILE);
@@ -396,7 +396,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/flame-graph", permission = "agent:transaction:profile")
+    @GET(path = "/backend/transaction/flame-graph", permission = "agent:transaction:threadProfile")
     String getFlameGraph(@BindAgentRollupId String agentRollupId,
             @BindRequest FlameGraphRequest request) throws Exception {
         TransactionQuery query = toQuery(request, DataKind.PROFILE);

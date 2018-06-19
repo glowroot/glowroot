@@ -15,7 +15,7 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>UI</h2>
+    <h2>UI Defaults</h2>
   </div>
   <div class="panel-body">
     <div ng-hide="hideMainContent()">
@@ -33,7 +33,7 @@
           </label>
           <div class="col-lg-8">
             <select ng-model="config.defaultTransactionType"
-                    ng-disabled="!agentRollup.permissions.config.edit.ui"
+                    ng-disabled="!agentRollup.permissions.config.edit.uiDefaults"
                     id="defaultTransactionType"
                     class="form-control"
                     style="width: auto;">
@@ -53,7 +53,7 @@
              gt-model="page.defaultPercentiles"
              gt-pattern="pattern.percentageList"
              gt-required="loaded"
-             gt-disabled="!agentRollup.permissions.config.edit.ui"
+             gt-disabled="!agentRollup.permissions.config.edit.uiDefaults"
              gt-width="20em"
              gt-col-class1="col-lg-4"
              gt-col-class2="col-lg-8">
@@ -73,7 +73,7 @@
           <div class="col-lg-8">
             <select multiple
                     ng-model="config.defaultGaugeNames"
-                    ng-disabled="!agentRollup.permissions.config.edit.ui"
+                    ng-disabled="!agentRollup.permissions.config.edit.uiDefaults"
                     id="defaultGaugeNames"
                     class="form-control"
                     style="width: auto; height: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
@@ -89,7 +89,7 @@
           </div>
         </div>
         <div class="form-group gt-form-buttons"
-             ng-if="agentRollup.permissions.config.edit.ui">
+             ng-if="agentRollup.permissions.config.edit.uiDefaults">
           <div class="col-lg-offset-4 col-lg-8">
             <div gt-button
                  gt-label="Save changes"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import org.glowroot.agent.config.PluginConfig;
 import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.SyntheticMonitorConfig;
 import org.glowroot.agent.config.TransactionConfig;
-import org.glowroot.agent.config.UiConfig;
+import org.glowroot.agent.config.UiDefaultsConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
@@ -58,7 +58,8 @@ class ConfigUpdateService implements AgentConfigUpdater {
             configService.updateTransactionConfig(
                     TransactionConfig.create(agentConfig.getTransactionConfig()));
             configService.updateJvmConfig(JvmConfig.create(agentConfig.getJvmConfig()));
-            configService.updateUiConfig(UiConfig.create(agentConfig.getUiConfig()));
+            configService.updateUiDefaultsConfig(
+                    UiDefaultsConfig.create(agentConfig.getUiDefaultsConfig()));
             configService.updateUserRecordingConfig(
                     UserRecordingConfig.create(agentConfig.getUserRecordingConfig()));
             configService

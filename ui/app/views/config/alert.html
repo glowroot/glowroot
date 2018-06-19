@@ -49,7 +49,7 @@
               <label>
                 <input type="radio"
                        ng-model="config.condition.conditionType"
-                       ng-disabled="!agentRollup.permissions.config.edit.alert"
+                       ng-disabled="!agentRollup.permissions.config.edit.alerts"
                        value="metric">
                 Metric
               </label>
@@ -58,7 +58,7 @@
               <label>
                 <input type="radio"
                        ng-model="config.condition.conditionType"
-                       ng-disabled="!agentRollup.permissions.config.edit.alert"
+                       ng-disabled="!agentRollup.permissions.config.edit.alerts"
                        value="synthetic-monitor">
                 Synthetic monitor
               </label>
@@ -67,7 +67,7 @@
               <label>
                 <input type="radio"
                        ng-model="config.condition.conditionType"
-                       ng-disabled="!agentRollup.permissions.config.edit.alert"
+                       ng-disabled="!agentRollup.permissions.config.edit.alerts"
                        value="heartbeat">
                 Heartbeat
               </label>
@@ -83,7 +83,7 @@
             </label>
             <div class="col-lg-9">
               <select ng-model="config.condition.metric"
-                      ng-disabled="!agentRollup.permissions.config.edit.alert"
+                      ng-disabled="!agentRollup.permissions.config.edit.alerts"
                       ng-required="config.condition.conditionType === 'metric'"
                       class="form-control"
                       name="conditionMetric"
@@ -112,7 +112,7 @@
               <select ng-model="config.condition.transactionType"
                       class="form-control"
                       ng-required="loaded"
-                      ng-disabled="!agentRollup.permissions.config.edit.alert"
+                      ng-disabled="!agentRollup.permissions.config.edit.alerts"
                       name="transactionType"
                       id="transactionType"
                       style="width: auto;">
@@ -134,7 +134,7 @@
           <div gt-form-group
                gt-label="Transaction name"
                gt-model="config.condition.transactionName"
-               gt-disabled="!agentRollup.permissions.config.edit.alert"
+               gt-disabled="!agentRollup.permissions.config.edit.alerts"
                gt-width="30em"
                ng-if="showTransactionTypeAndName()">
             <div class="help-block">
@@ -147,7 +147,7 @@
                gt-number="true"
                gt-pattern="pattern.percentage"
                gt-required="loaded"
-               gt-disabled="!agentRollup.permissions.config.edit.alert"
+               gt-disabled="!agentRollup.permissions.config.edit.alerts"
                gt-width="7em"
                gt-addon="percentile"
                ng-if="config.condition.metric === 'transaction:x-percentile'">
@@ -166,7 +166,7 @@
                        class="form-control"
                        ng-model="page.conditionThreshold"
                        ng-pattern="config.condition.metric === 'error:rate' ? pattern.percentage : pattern.double"
-                       ng-disabled="!agentRollup.permissions.config.edit.alert"
+                       ng-disabled="!agentRollup.permissions.config.edit.alerts"
                        ng-required="loaded"
                        name="conditionThreshold"
                        id="conditionThreshold"
@@ -190,7 +190,7 @@
                gt-label="Lower bound threshold?"
                gt-checkbox-label="Lower bound threshold"
                gt-model="config.condition.lowerBoundThreshold"
-               gt-disabled="!agentRollup.permissions.config.edit.alert">
+               gt-disabled="!agentRollup.permissions.config.edit.alerts">
             <div class="help-block">
               Alert if the {{phraseForValue()}} is less than or equal to the threshold, instead of alerting if the
               {{phraseForValue()}} is greater than or equal to the threshold.
@@ -202,7 +202,7 @@
                gt-number="true"
                gt-pattern="pattern.integer"
                gt-required="loaded"
-               gt-disabled="!agentRollup.permissions.config.edit.alert"
+               gt-disabled="!agentRollup.permissions.config.edit.alerts"
                gt-width="7em"
                gt-addon="minutes">
             <div class="help-block">
@@ -215,7 +215,7 @@
                gt-number="true"
                gt-pattern="pattern.integer"
                gt-required="loaded"
-               gt-disabled="!agentRollup.permissions.config.edit.alert"
+               gt-disabled="!agentRollup.permissions.config.edit.alerts"
                gt-width="7em"
                ng-if="showMinTransactionCount()">
             <div class="help-block">
@@ -231,7 +231,7 @@
                gt-number="true"
                gt-pattern="pattern.integer"
                gt-required="loaded"
-               gt-disabled="!agentRollup.permissions.config.edit.alert"
+               gt-disabled="!agentRollup.permissions.config.edit.alerts"
                gt-width="7em"
                gt-addon="seconds">
             <div class="help-block">
@@ -250,7 +250,7 @@
               <select ng-model="config.condition.syntheticMonitorId"
                       class="form-control"
                       ng-required="loaded"
-                      ng-disabled="!agentRollup.permissions.config.edit.alert"
+                      ng-disabled="!agentRollup.permissions.config.edit.alerts"
                       name="syntheticMonitorId"
                       id="syntheticMonitorId"
                       style="width: auto;">
@@ -275,7 +275,7 @@
                gt-number="true"
                gt-pattern="pattern.integer"
                gt-required="loaded"
-               gt-disabled="!agentRollup.permissions.config.edit.alert"
+               gt-disabled="!agentRollup.permissions.config.edit.alerts"
                gt-width="7em"
                gt-addon="milliseconds">
             <div class="help-block">
@@ -298,7 +298,7 @@
                     id="severity"
                     name="severity"
                     ng-required="loaded"
-                    ng-disabled="!agentRollup.permissions.config.edit.alert"
+                    ng-disabled="!agentRollup.permissions.config.edit.alerts"
                     style="width: auto;">
               <option value="" ng-if="!config.severity"></option>
               <option value="critical">Critical</option>
@@ -315,7 +315,7 @@
              gt-type="textarea"
              gt-label="Email addresses"
              gt-model="page.emailAddresses"
-             gt-disabled="!agentRollup.permissions.config.edit.alert"
+             gt-disabled="!agentRollup.permissions.config.edit.alerts"
              gt-width="30em">
           <div class="help-block">
             Comma separated list of email addresses.
@@ -332,7 +332,7 @@
           </label>
           <div class="col-lg-9 gt-form-group-without-help-block">
             <select ng-model="config.pagerDutyNotification.pagerDutyIntegrationKey"
-                    ng-disabled="!agentRollup.permissions.config.edit.alert"
+                    ng-disabled="!agentRollup.permissions.config.edit.alerts"
                     class="form-control"
                     name="pagerDutyIntegrationKey"
                     id="pagerDutyIntegrationKey"
@@ -353,7 +353,7 @@
         </div>
       </fieldset>
       <div class="form-group gt-form-buttons"
-           ng-if="agentRollup.permissions.config.edit.alert">
+           ng-if="agentRollup.permissions.config.edit.alerts">
         <div class="col-lg-offset-3 col-lg-9 gt-sometimes-legend-padding">
           <div gt-button-group>
             <div gt-button

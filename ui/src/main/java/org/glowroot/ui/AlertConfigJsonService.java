@@ -118,7 +118,7 @@ class AlertConfigJsonService {
     }
 
     // central supports alert configs on rollups
-    @POST(path = "/backend/config/alerts/add", permission = "agent:config:edit:alert")
+    @POST(path = "/backend/config/alerts/add", permission = "agent:config:edit:alerts")
     String addAlert(@BindAgentRollupId String agentRollupId, @BindRequest AlertConfigDto configDto)
             throws Exception {
         AlertConfig alertConfig = configDto.toProto();
@@ -127,7 +127,7 @@ class AlertConfigJsonService {
     }
 
     // central supports alert configs on rollups
-    @POST(path = "/backend/config/alerts/update", permission = "agent:config:edit:alert")
+    @POST(path = "/backend/config/alerts/update", permission = "agent:config:edit:alerts")
     String updateAlert(@BindAgentRollupId String agentRollupId,
             @BindRequest AlertConfigDto configDto) throws Exception {
         AlertConfig alertConfig = configDto.toProto();
@@ -136,7 +136,7 @@ class AlertConfigJsonService {
     }
 
     // central supports alert configs on rollups
-    @POST(path = "/backend/config/alerts/remove", permission = "agent:config:edit:alert")
+    @POST(path = "/backend/config/alerts/remove", permission = "agent:config:edit:alerts")
     void removeAlert(@BindAgentRollupId String agentRollupId,
             @BindRequest AlertConfigRequest request) throws Exception {
         configRepository.deleteAlertConfig(agentRollupId, request.version().get());

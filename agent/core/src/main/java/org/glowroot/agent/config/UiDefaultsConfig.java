@@ -22,33 +22,33 @@ import org.glowroot.common.ConfigDefaults;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 @Value.Immutable
-public abstract class UiConfig {
+public abstract class UiDefaultsConfig {
 
     @Value.Default
     public String defaultTransactionType() {
-        return ConfigDefaults.UI_DEFAULT_TRANSACTION_TYPE;
+        return ConfigDefaults.UI_DEFAULTS_TRANSACTION_TYPE;
     }
 
     @Value.Default
     public ImmutableList<Double> defaultPercentiles() {
-        return ConfigDefaults.UI_DEFAULT_PERCENTILES;
+        return ConfigDefaults.UI_DEFAULTS_PERCENTILES;
     }
 
     @Value.Default
     public ImmutableList<String> defaultGaugeNames() {
-        return ConfigDefaults.UI_DEFAULT_GAUGE_NAMES;
+        return ConfigDefaults.UI_DEFAULTS_GAUGE_NAMES;
     }
 
-    public AgentConfig.UiConfig toProto() {
-        return AgentConfig.UiConfig.newBuilder()
+    public AgentConfig.UiDefaultsConfig toProto() {
+        return AgentConfig.UiDefaultsConfig.newBuilder()
                 .setDefaultTransactionType(defaultTransactionType())
                 .addAllDefaultPercentile(defaultPercentiles())
                 .addAllDefaultGaugeName(defaultGaugeNames())
                 .build();
     }
 
-    public static UiConfig create(AgentConfig.UiConfig config) {
-        return ImmutableUiConfig.builder()
+    public static UiDefaultsConfig create(AgentConfig.UiDefaultsConfig config) {
+        return ImmutableUiDefaultsConfig.builder()
                 .defaultTransactionType(config.getDefaultTransactionType())
                 .defaultPercentiles(config.getDefaultPercentileList())
                 .addAllDefaultGaugeNames(config.getDefaultGaugeNameList())

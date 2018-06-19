@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('ConfigUiCtrl', [
+glowroot.controller('ConfigUiDefaultsCtrl', [
   '$scope',
   '$http',
   '$rootScope',
@@ -91,7 +91,7 @@ glowroot.controller('ConfigUiCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      $http.post('backend/config/ui?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId), postData)
+      $http.post('backend/config/ui-defaults?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId), postData)
           .then(function (response) {
             onNewData(response.data);
             deferred.resolve('Saved');
@@ -100,7 +100,7 @@ glowroot.controller('ConfigUiCtrl', [
           });
     };
 
-    $http.get('backend/config/ui?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
+    $http.get('backend/config/ui-defaults?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
         .then(function (response) {
           onNewData(response.data);
         }, function (response) {

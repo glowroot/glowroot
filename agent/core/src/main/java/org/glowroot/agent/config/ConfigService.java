@@ -54,7 +54,7 @@ public class ConfigService {
 
     private volatile TransactionConfig transactionConfig;
     private volatile JvmConfig jvmConfig;
-    private volatile UiConfig uiConfig;
+    private volatile UiDefaultsConfig uiDefaultsConfig;
     private volatile UserRecordingConfig userRecordingConfig;
     private volatile AdvancedConfig advancedConfig;
     private volatile ImmutableList<GaugeConfig> gaugeConfigs;
@@ -95,11 +95,12 @@ public class ConfigService {
         } else {
             this.jvmConfig = jvmConfig;
         }
-        UiConfig uiConfig = configFile.getConfig("ui", ImmutableUiConfig.class);
-        if (uiConfig == null) {
-            this.uiConfig = ImmutableUiConfig.builder().build();
+        UiDefaultsConfig uiDefaultsConfig =
+                configFile.getConfig("uiDefaults", ImmutableUiDefaultsConfig.class);
+        if (uiDefaultsConfig == null) {
+            this.uiDefaultsConfig = ImmutableUiDefaultsConfig.builder().build();
         } else {
-            this.uiConfig = uiConfig;
+            this.uiDefaultsConfig = uiDefaultsConfig;
         }
         UserRecordingConfig userRecordingConfig =
                 configFile.getConfig("userRecording", ImmutableUserRecordingConfig.class);
@@ -163,8 +164,8 @@ public class ConfigService {
         return jvmConfig;
     }
 
-    public UiConfig getUiConfig() {
-        return uiConfig;
+    public UiDefaultsConfig getUiDefaultsConfig() {
+        return uiDefaultsConfig;
     }
 
     public UserRecordingConfig getUserRecordingConfig() {
@@ -217,7 +218,7 @@ public class ConfigService {
         for (AlertConfig alertConfig : alertConfigs) {
             builder.addAlertConfig(alertConfig.toProto());
         }
-        builder.setUiConfig(uiConfig.toProto());
+        builder.setUiDefaultsConfig(uiDefaultsConfig.toProto());
         for (PluginConfig pluginConfig : pluginConfigs) {
             builder.addPluginConfig(pluginConfig.toProto());
         }
@@ -269,9 +270,9 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public void updateUiConfig(UiConfig config) throws IOException {
-        configFile.writeConfig("ui", config);
-        uiConfig = config;
+    public void updateUiDefaultsConfig(UiDefaultsConfig config) throws IOException {
+        configFile.writeConfig("uiDefaults", config);
+        uiDefaultsConfig = config;
         notifyConfigListeners();
     }
 
@@ -341,7 +342,7 @@ public class ConfigService {
                 .slowThresholdMillis(0)
                 .build();
         jvmConfig = ImmutableJvmConfig.builder().build();
-        uiConfig = ImmutableUiConfig.builder().build();
+        uiDefaultsConfig = ImmutableUiDefaultsConfig.builder().build();
         userRecordingConfig = ImmutableUserRecordingConfig.builder().build();
         advancedConfig = ImmutableAdvancedConfig.builder().build();
         gaugeConfigs = getDefaultGaugeConfigs();
@@ -360,7 +361,7 @@ public class ConfigService {
         Map<String, Object> configs = Maps.newLinkedHashMap();
         configs.put("transactions", transactionConfig);
         configs.put("jvm", jvmConfig);
-        configs.put("ui", uiConfig);
+        configs.put("uiDefaults", uiDefaultsConfig);
         configs.put("userRecording", userRecordingConfig);
         configs.put("advanced", advancedConfig);
         configs.put("gauges", gaugeConfigs);

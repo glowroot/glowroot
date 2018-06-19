@@ -16,7 +16,7 @@
 
 /* global glowroot, HandlebarsRendering, gtParseIncludesExcludes, $ */
 
-glowroot.controller('TransactionProfileCtrl', [
+glowroot.controller('TransactionThreadProfileCtrl', [
   '$scope',
   '$http',
   '$location',
@@ -26,7 +26,7 @@ glowroot.controller('TransactionProfileCtrl', [
   'httpErrors',
   function ($scope, $http, $location, locationChanges, charts, queryStrings, httpErrors) {
 
-    $scope.$parent.activeTabItem = 'profile';
+    $scope.$parent.activeTabItem = 'thread-profile';
 
     if ($scope.hideMainContent()) {
       return;

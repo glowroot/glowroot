@@ -169,7 +169,7 @@ public class AgentConfigDao {
                 boundStatement.setString(i++, loopAgentRollupId);
                 AdvancedConfig advancedConfig = updatedAgentConfig.getAdvancedConfig();
                 boundStatement.setBytes(i++, ByteBuffer.wrap(AgentConfig.newBuilder()
-                        .setUiConfig(updatedAgentConfig.getUiConfig())
+                        .setUiDefaultsConfig(updatedAgentConfig.getUiDefaultsConfig())
                         .setAdvancedConfig(AdvancedConfig.newBuilder()
                                 .setMaxQueryAggregates(advancedConfig.getMaxQueryAggregates())
                                 .setMaxServiceCallAggregates(

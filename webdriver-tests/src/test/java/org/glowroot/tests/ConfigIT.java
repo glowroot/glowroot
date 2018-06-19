@@ -23,7 +23,7 @@ import org.glowroot.tests.config.AdvancedConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.config.JvmConfigPage;
 import org.glowroot.tests.config.TransactionConfigPage;
-import org.glowroot.tests.config.UiConfigPage;
+import org.glowroot.tests.config.UiDefaultsConfigPage;
 import org.glowroot.tests.config.UserRecordingConfigPage;
 import org.glowroot.tests.util.Utils;
 
@@ -94,16 +94,16 @@ public class ConfigIT extends WebDriverIT {
     }
 
     @Test
-    public void shouldUpdateUiConfig() throws Exception {
+    public void shouldUpdateUiDefaultsConfig() throws Exception {
         // given
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        UiConfigPage page = new UiConfigPage(driver);
+        UiDefaultsConfigPage page = new UiDefaultsConfigPage(driver);
 
         app.open();
         globalNavbar.getConfigLink().click();
-        configSidebar.getUiLink().click();
+        configSidebar.getUiDefaultsLink().click();
 
         // when
         page.getDefaultPercentilesTextField().clear();
@@ -115,7 +115,7 @@ public class ConfigIT extends WebDriverIT {
         // then
         app.open();
         globalNavbar.getConfigLink().click();
-        configSidebar.getUiLink().click();
+        configSidebar.getUiDefaultsLink().click();
         assertThat(page.getDefaultPercentilesTextField().getAttribute("value"))
                 .isEqualTo("3, 4, 5, 6");
     }

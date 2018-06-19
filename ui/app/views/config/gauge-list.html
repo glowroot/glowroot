@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2017 the original author or authors.
+  Copyright 2012-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@
         </div>
         <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
              before it gets pushed down by existing gauges -->
-        <div ng-if="loaded && agentRollup.permissions.config.edit.gauge"
+        <div ng-if="loaded && agentRollup.permissions.config.edit.gauges"
              style="margin-top: 30px;">
           <a class="btn btn-primary"
              href="config/gauge{{newQueryString()}}">

@@ -75,7 +75,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.Value.ValCase;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -154,12 +154,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports ui config on rollups
     @Override
-    public UiConfig getUiConfig(String agentRollupId) throws Exception {
+    public UiDefaultsConfig getUiDefaultsConfig(String agentRollupId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
-        return agentConfig.getUiConfig();
+        return agentConfig.getUiDefaultsConfig();
     }
 
     @Override
@@ -751,17 +751,17 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports ui config on rollups
     @Override
-    public void updateUiConfig(String agentRollupId, UiConfig config, String priorVersion)
-            throws Exception {
+    public void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config,
+            String priorVersion) throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String existingVersion = Versions.getVersion(agentConfig.getUiConfig());
+                String existingVersion = Versions.getVersion(agentConfig.getUiDefaultsConfig());
                 if (!priorVersion.equals(existingVersion)) {
                     throw new OptimisticLockException();
                 }
                 return agentConfig.toBuilder()
-                        .setUiConfig(config)
+                        .setUiDefaultsConfig(config)
                         .build();
             }
         });

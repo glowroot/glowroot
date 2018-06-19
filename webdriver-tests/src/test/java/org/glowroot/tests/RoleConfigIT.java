@@ -68,7 +68,7 @@ public class RoleConfigIT extends WebDriverIT {
         assertThat(rolePage.getTransactionTracesCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getTransactionQueriesCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getTransactionServiceCallsCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getTransactionProfileCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getTransactionThreadProfileCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getErrorCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getErrorOverviewCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getErrorTracesCheckBox().isSelected()).isFalse();
@@ -83,10 +83,11 @@ public class RoleConfigIT extends WebDriverIT {
         assertThat(rolePage.getConfigViewCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getConfigEditCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getConfigEditTransactionCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditGaugeCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditAlertCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditUiCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditPluginCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getConfigEditGaugesCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getConfigEditJvmCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getConfigEditAlertsCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getConfigEditUiDefaultsCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getConfigEditPluginsCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getConfigEditInstrumentationCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getConfigEditAdvancedCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getAdminCheckBox().isSelected()).isFalse();

@@ -82,7 +82,7 @@ glowroot.controller('ConfigCtrl', [
       }
       if ($scope.isRollup(agentRollupId)) {
         if (path !== 'config/general' && path !== 'config/synthetic-monitor-list' && path !== 'config/alert-list'
-            && path !== 'config/ui' && path !== 'config/advanced') {
+            && path !== 'config/ui-defaults' && path !== 'config/advanced') {
           path = 'config/general';
         }
       }

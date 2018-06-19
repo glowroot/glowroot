@@ -13,7 +13,7 @@ message AgentConfig {
   GeneralConfig general_config = 16;
   TransactionConfig transaction_config = 2;
   JvmConfig jvm_config = 17;
-  UiConfig ui_config = 3;
+  UiDefaultsConfig ui_defaults_config = 3;
   UserRecordingConfig user_recording_config = 4;
   AdvancedConfig advanced_config = 5;
 
@@ -46,7 +46,7 @@ message AgentConfig {
     repeated string mask_system_property = 1;
   }
 
-  message UiConfig {
+  message UiDefaultsConfig {
     string default_transaction_type = 1;
     repeated double default_percentile = 2;
     repeated string default_gauge_name = 3;

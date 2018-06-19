@@ -93,13 +93,13 @@ class GaugeConfigJsonService {
     }
 
     @GET(path = "/backend/config/new-gauge-check-agent-connected",
-            permission = "agent:config:edit:gauge")
+            permission = "agent:config:edit:gauges")
     String checkAgentConnected(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService); // agent:config:edit is disabled in offline viewer
         return Boolean.toString(liveJvmService.isAvailable(agentId));
     }
 
-    @GET(path = "/backend/config/matching-mbean-objects", permission = "agent:config:edit:gauge")
+    @GET(path = "/backend/config/matching-mbean-objects", permission = "agent:config:edit:gauges")
     String getMatchingMBeanObjects(@BindAgentId String agentId,
             @BindRequest MBeanObjectNameRequest request) throws Exception {
         checkNotNull(liveJvmService); // agent:config:edit is disabled in offline viewer
@@ -112,7 +112,7 @@ class GaugeConfigJsonService {
         }
     }
 
-    @GET(path = "/backend/config/mbean-attributes", permission = "agent:config:edit:gauge")
+    @GET(path = "/backend/config/mbean-attributes", permission = "agent:config:edit:gauges")
     String getMBeanAttributes(@BindAgentId String agentId,
             @BindRequest MBeanAttributeNamesRequest request) throws Exception {
         checkNotNull(liveJvmService); // agent:config:edit is disabled in offline viewer
@@ -133,7 +133,7 @@ class GaugeConfigJsonService {
                 .build());
     }
 
-    @POST(path = "/backend/config/gauges/add", permission = "agent:config:edit:gauge")
+    @POST(path = "/backend/config/gauges/add", permission = "agent:config:edit:gauges")
     String addGauge(@BindAgentId String agentId, @BindRequest GaugeConfigDto gaugeConfigDto)
             throws Exception {
         GaugeConfig gaugeConfig = gaugeConfigDto.convert();
@@ -147,7 +147,7 @@ class GaugeConfigJsonService {
         return getGaugeResponse(agentId, gaugeConfig);
     }
 
-    @POST(path = "/backend/config/gauges/update", permission = "agent:config:edit:gauge")
+    @POST(path = "/backend/config/gauges/update", permission = "agent:config:edit:gauges")
     String updateGauge(@BindAgentId String agentId, @BindRequest GaugeConfigDto gaugeConfigDto)
             throws Exception {
         GaugeConfig gaugeConfig = gaugeConfigDto.convert();
@@ -162,7 +162,7 @@ class GaugeConfigJsonService {
         return getGaugeResponse(agentId, gaugeConfig);
     }
 
-    @POST(path = "/backend/config/gauges/remove", permission = "agent:config:edit:gauge")
+    @POST(path = "/backend/config/gauges/remove", permission = "agent:config:edit:gauges")
     void removeGauge(@BindAgentId String agentId, @BindRequest GaugeConfigRequest request)
             throws Exception {
         configRepository.deleteGaugeConfig(agentId, request.version().get());

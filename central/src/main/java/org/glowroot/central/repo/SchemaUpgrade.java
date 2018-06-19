@@ -83,7 +83,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.OldAlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -103,7 +103,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 81;
+    private static final int CURR_SCHEMA_VERSION = 82;
 
     private final Session session;
     private final Clock clock;
@@ -490,6 +490,11 @@ public class SchemaUpgrade {
             dropTableIfExists("agent");
             updateSchemaVersion(81);
         }
+        // 0.10.12 to 0.11.0
+        if (initialSchemaVersion < 82) {
+            updateRolePermissionName2();
+            updateSchemaVersion(82);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded glowroot central schema from version {} to version {}",
@@ -870,9 +875,9 @@ public class SchemaUpgrade {
         }
 
         AgentConfig defaultAgentConfig = AgentConfig.newBuilder()
-                .setUiConfig(UiConfig.newBuilder()
-                        .setDefaultTransactionType(ConfigDefaults.UI_DEFAULT_TRANSACTION_TYPE)
-                        .addAllDefaultPercentile(ConfigDefaults.UI_DEFAULT_PERCENTILES))
+                .setUiDefaultsConfig(UiDefaultsConfig.newBuilder()
+                        .setDefaultTransactionType(ConfigDefaults.UI_DEFAULTS_TRANSACTION_TYPE)
+                        .addAllDefaultPercentile(ConfigDefaults.UI_DEFAULTS_PERCENTILES))
                 .setAdvancedConfig(AdvancedConfig.newBuilder()
                         .setMaxQueryAggregates(OptionalInt32.newBuilder()
                                 .setValue(ConfigDefaults.ADVANCED_MAX_QUERY_AGGREGATES))
@@ -909,7 +914,7 @@ public class SchemaUpgrade {
                     AgentConfig agentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(0)));
                     AdvancedConfig advancedConfig = agentConfig.getAdvancedConfig();
                     AgentConfig updatedAgentConfig = AgentConfig.newBuilder()
-                            .setUiConfig(agentConfig.getUiConfig())
+                            .setUiDefaultsConfig(agentConfig.getUiDefaultsConfig())
                             .setAdvancedConfig(AdvancedConfig.newBuilder()
                                     .setMaxQueryAggregates(advancedConfig.getMaxQueryAggregates())
                                     .setMaxServiceCallAggregates(
@@ -1132,8 +1137,8 @@ public class SchemaUpgrade {
                 continue;
             }
             AgentConfig agentConfig = oldAgentConfig.toBuilder()
-                    .setUiConfig(oldAgentConfig.getUiConfig().toBuilder()
-                            .addAllDefaultGaugeName(ConfigDefaults.UI_DEFAULT_GAUGE_NAMES))
+                    .setUiDefaultsConfig(oldAgentConfig.getUiDefaultsConfig().toBuilder()
+                            .addAllDefaultGaugeName(ConfigDefaults.UI_DEFAULTS_GAUGE_NAMES))
                     .build();
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;
@@ -2504,6 +2509,61 @@ public class SchemaUpgrade {
         }
         MoreFutures.waitForAll(futures);
         logger.info("populating active_agent_rollup_{} table - complete", rollupLevel);
+    }
+
+    private void updateRolePermissionName2() throws Exception {
+        PreparedStatement insertPS =
+                session.prepare("insert into role (name, permissions) values (?, ?)");
+        ResultSet results = session.execute("select name, permissions from role");
+        for (Row row : results) {
+            String name = row.getString(0);
+            Set<String> permissions = row.getSet(1, String.class);
+            boolean updated = false;
+            Set<String> upgradedPermissions = new HashSet<>();
+            for (String permission : permissions) {
+                PermissionParser parser = new PermissionParser(permission);
+                parser.parse();
+                if (parser.getPermission().equals("agent:transaction:profile")) {
+                    upgradedPermissions.add("agent:"
+                            + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                            + ":transaction:threadProfile");
+                    updated = true;
+                } else if (parser.getPermission().equals("agent:config:edit:gauge")) {
+                    upgradedPermissions.add("agent:"
+                            + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                            + ":config:edit:gauges");
+                    updated = true;
+                } else if (parser.getPermission().equals("agent:config:edit:syntheticMonitor")) {
+                    upgradedPermissions.add("agent:"
+                            + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                            + ":config:edit:syntheticMonitors");
+                    updated = true;
+                } else if (parser.getPermission().equals("agent:config:edit:alert")) {
+                    upgradedPermissions.add("agent:"
+                            + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                            + ":config:edit:alerts");
+                    updated = true;
+                } else if (parser.getPermission().equals("agent:config:edit:plugin")) {
+                    upgradedPermissions.add("agent:"
+                            + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                            + ":config:edit:plugins");
+                    updated = true;
+                } else if (parser.getPermission().equals("agent:config:edit:ui")) {
+                    upgradedPermissions.add("agent:"
+                            + PermissionParser.quoteIfNeededAndJoin(parser.getAgentRollupIds())
+                            + ":config:edit:uiDefaults");
+                    updated = true;
+                } else {
+                    upgradedPermissions.add(permission);
+                }
+            }
+            if (updated) {
+                BoundStatement boundStatement = insertPS.bind();
+                boundStatement.setString(0, name);
+                boundStatement.setSet(1, upgradedPermissions, String.class);
+                session.execute(boundStatement);
+            }
+        }
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

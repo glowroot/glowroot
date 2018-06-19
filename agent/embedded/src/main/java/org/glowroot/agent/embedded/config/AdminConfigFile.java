@@ -126,14 +126,26 @@ class AdminConfigFile {
                 permissions.add("admin");
             }
             // upgrade from 0.9.19 to 0.9.20
-            int index = permissions.indexOf("agent:alert");
-            if (index != -1) {
-                permissions.set(index, "agent:incident");
-            }
+            update(permissions, "agent:alert", "agent:incident");
+            // upgrade from 0.10.12 to 0.11.0
+            update(permissions, "agent:transaction:profile", "agent:transaction:threadProfile");
+            update(permissions, "agent:config:edit:gauge", "agent:config:edit:gauges");
+            update(permissions, "agent:config:edit:syntheticMonitor",
+                    "agent:config:edit:syntheticMonitors");
+            update(permissions, "agent:config:edit:alert", "agent:config:edit:alerts");
+            update(permissions, "agent:config:edit:plugin", "agent:config:edit:plugins");
+            update(permissions, "agent:config:edit:ui", "agent:config:edit:uiDefaults");
             permissionsArrayNode.removeAll();
             for (String permission : permissions) {
                 permissionsArrayNode.add(new TextNode(permission));
             }
+        }
+    }
+
+    private static void update(List<String> permissions, String from, String to) {
+        int index = permissions.indexOf(from);
+        if (index != -1) {
+            permissions.set(index, to);
         }
     }
 

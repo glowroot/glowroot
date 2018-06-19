@@ -116,8 +116,8 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.transaction.queries = true;
       } else if (permission === 'agent:transaction:serviceCalls') {
         permissionBlock.transaction.serviceCalls = true;
-      } else if (permission === 'agent:transaction:profile') {
-        permissionBlock.transaction.profile = true;
+      } else if (permission === 'agent:transaction:threadProfile') {
+        permissionBlock.transaction.threadProfile = true;
       } else if (permission === 'agent:error') {
         permissionBlock.error._ = true;
       } else if (permission === 'agent:error:overview') {
@@ -156,18 +156,18 @@ glowroot.controller('AdminRoleCtrl', [
         permissionBlock.config.edit.general = true;
       } else if (permission === 'agent:config:edit:transaction') {
         permissionBlock.config.edit.transaction = true;
-      } else if (permission === 'agent:config:edit:gauge') {
-        permissionBlock.config.edit.gauge = true;
+      } else if (permission === 'agent:config:edit:gauges') {
+        permissionBlock.config.edit.gauges = true;
       } else if (permission === 'agent:config:edit:jvm') {
         permissionBlock.config.edit.jvm = true;
-      } else if ($scope.layout.central && permission === 'agent:config:edit:syntheticMonitor') {
-        permissionBlock.config.edit.syntheticMonitor = true;
-      } else if (permission === 'agent:config:edit:alert') {
-        permissionBlock.config.edit.alert = true;
-      } else if (permission === 'agent:config:edit:ui') {
-        permissionBlock.config.edit.ui = true;
-      } else if (permission === 'agent:config:edit:plugin') {
-        permissionBlock.config.edit.plugin = true;
+      } else if ($scope.layout.central && permission === 'agent:config:edit:syntheticMonitors') {
+        permissionBlock.config.edit.syntheticMonitors = true;
+      } else if (permission === 'agent:config:edit:alerts') {
+        permissionBlock.config.edit.alerts = true;
+      } else if (permission === 'agent:config:edit:uiDefaults') {
+        permissionBlock.config.edit.uiDefaults = true;
+      } else if (permission === 'agent:config:edit:plugins') {
+        permissionBlock.config.edit.plugins = true;
       } else if (permission === 'agent:config:edit:instrumentation') {
         permissionBlock.config.edit.instrumentation = true;
       } else if (permission === 'agent:config:edit:advanced') {
@@ -181,7 +181,7 @@ glowroot.controller('AdminRoleCtrl', [
         permissionsObj.transaction.traces = false;
         permissionsObj.transaction.queries = false;
         permissionsObj.transaction.serviceCalls = false;
-        permissionsObj.transaction.profile = false;
+        permissionsObj.transaction.threadProfile = false;
       }
       if (permissionsObj.error._) {
         permissionsObj.error.overview = false;
@@ -206,16 +206,15 @@ glowroot.controller('AdminRoleCtrl', [
           permissionsObj.config.edit.general = false;
         }
         permissionsObj.config.edit.transaction = false;
-        permissionsObj.config.edit.gauge = false;
+        permissionsObj.config.edit.gauges = false;
         permissionsObj.config.edit.jvm = false;
         if ($scope.layout.central) {
-          permissionsObj.config.edit.syntheticMonitor = false;
+          permissionsObj.config.edit.syntheticMonitors = false;
         }
-        permissionsObj.config.edit.alert = false;
-        permissionsObj.config.edit.ui = false;
-        permissionsObj.config.edit.plugin = false;
+        permissionsObj.config.edit.alerts = false;
+        permissionsObj.config.edit.uiDefaults = false;
+        permissionsObj.config.edit.plugins = false;
         permissionsObj.config.edit.instrumentation = false;
-        permissionsObj.config.edit.reweave = false;
         permissionsObj.config.edit.advanced = false;
       }
       if (permissionsObj.admin && permissionsObj.admin._) {
@@ -229,7 +228,7 @@ glowroot.controller('AdminRoleCtrl', [
         return false;
       }
       return permissionsObj.transaction.traces || permissionsObj.transaction.queries
-          || permissionsObj.transaction.serviceCalls || permissionsObj.transaction.profile;
+          || permissionsObj.transaction.serviceCalls || permissionsObj.transaction.threadProfile;
     };
 
     $scope.viewConfigRequired = function (permissionsObj) {
@@ -237,10 +236,10 @@ glowroot.controller('AdminRoleCtrl', [
         return false;
       }
       return permissionsObj.config.edit._ || ($scope.layout.central && permissionsObj.config.edit.general)
-          || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
-          || permissionsObj.config.edit.jvm || ($scope.layout.central && permissionsObj.config.edit.syntheticMonitor)
-          || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui || permissionsObj.config.edit.plugin
-          || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.reweave
+          || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauges
+          || permissionsObj.config.edit.jvm || ($scope.layout.central && permissionsObj.config.edit.syntheticMonitors)
+          || permissionsObj.config.edit.alerts || permissionsObj.config.edit.uiDefaults
+          || permissionsObj.config.edit.plugins || permissionsObj.config.edit.instrumentation
           || permissionsObj.config.edit.advanced;
     };
 
@@ -261,8 +260,8 @@ glowroot.controller('AdminRoleCtrl', [
       if (permissionsObj.transaction.serviceCalls) {
         permissions.push('agent:transaction:serviceCalls');
       }
-      if (permissionsObj.transaction.profile) {
-        permissions.push('agent:transaction:profile');
+      if (permissionsObj.transaction.threadProfile) {
+        permissions.push('agent:transaction:threadProfile');
       }
       if (permissionsObj.error._) {
         permissions.push('agent:error');
@@ -321,23 +320,23 @@ glowroot.controller('AdminRoleCtrl', [
       if (permissionsObj.config.edit.transaction) {
         permissions.push('agent:config:edit:transaction');
       }
-      if (permissionsObj.config.edit.gauge) {
-        permissions.push('agent:config:edit:gauge');
+      if (permissionsObj.config.edit.gauges) {
+        permissions.push('agent:config:edit:gauges');
       }
       if (permissionsObj.config.edit.jvm) {
         permissions.push('agent:config:edit:jvm');
       }
-      if ($scope.layout.central && permissionsObj.config.edit.syntheticMonitor) {
-        permissions.push('agent:config:edit:syntheticMonitor');
+      if ($scope.layout.central && permissionsObj.config.edit.syntheticMonitors) {
+        permissions.push('agent:config:edit:syntheticMonitors');
       }
-      if (permissionsObj.config.edit.alert) {
-        permissions.push('agent:config:edit:alert');
+      if (permissionsObj.config.edit.alerts) {
+        permissions.push('agent:config:edit:alerts');
       }
-      if (permissionsObj.config.edit.ui) {
-        permissions.push('agent:config:edit:ui');
+      if (permissionsObj.config.edit.uiDefaults) {
+        permissions.push('agent:config:edit:uiDefaults');
       }
-      if (permissionsObj.config.edit.plugin) {
-        permissions.push('agent:config:edit:plugin');
+      if (permissionsObj.config.edit.plugins) {
+        permissions.push('agent:config:edit:plugins');
       }
       if (permissionsObj.config.edit.instrumentation) {
         permissions.push('agent:config:edit:instrumentation');
@@ -442,10 +441,10 @@ glowroot.controller('AdminRoleCtrl', [
           edit: {
             _: false,
             transaction: false,
-            gauge: false,
+            gauges: false,
             jvm: false,
-            alert: false,
-            ui: false,
+            alerts: false,
+            uiDefaults: false,
             plugin: false,
             instrumentation: false,
             advanced: false

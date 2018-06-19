@@ -149,19 +149,19 @@ public abstract class WebDriverIT {
                 + "\"profilingIntervalMillis\":1000,"
                 + "\"captureThreadStats\":true,"
                 + "\"version\":\"$version\"}");
-        resetCentralConfig("ui", true, "{\"defaultTransactionType\":\"Web\","
+        resetCentralConfig("ui-defaults", true, "{\"defaultTransactionType\":\"Web\","
                 + "\"defaultPercentiles\":[50.0,95.0,99.0],"
                 + "\"defaultGaugeNames\":[\"java.lang:type=Memory:HeapMemoryUsage.used\"],"
                 + "\"version\":\"$version\"}");
         resetCentralConfig("user-recording", false, "{\"version\":\"$version\"}");
-        resetCentralConfig("advanced", true, "{\"weavingTimer\":false,"
-                + "\"immediatePartialStoreThresholdSeconds\":60,"
+        resetCentralConfig("advanced", true, "{\"immediatePartialStoreThresholdSeconds\":60,"
                 + "\"maxTransactionAggregates\":500,"
                 + "\"maxQueryAggregates\":500,"
                 + "\"maxServiceCallAggregates\":500,"
                 + "\"maxTraceEntriesPerTransaction\":2000,"
                 + "\"maxProfileSamplesPerTransaction\":50000,"
                 + "\"mbeanGaugeNotFoundDelaySeconds\":60,"
+                + "\"weavingTimer\":false,"
                 + "\"version\":\"$version\"}");
         deleteAllGauges();
         deleteAllAlerts();

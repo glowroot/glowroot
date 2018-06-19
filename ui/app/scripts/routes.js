@@ -244,8 +244,8 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('transaction.detail.services', {
-      url: '/services?transaction-type&transaction-name',
+    $stateProvider.state('transaction.detail.serviceCalls', {
+      url: '/service-calls?transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/service-calls.html',
@@ -257,8 +257,8 @@ glowroot.config([
       url: '/thread-profile?transaction-type&transaction-name',
       views: {
         'main@transaction': {
-          templateUrl: 'views/transaction/profile.html',
-          controller: 'TransactionProfileCtrl'
+          templateUrl: 'views/transaction/thread-profile.html',
+          controller: 'TransactionThreadProfileCtrl'
         }
       }
     });
@@ -500,10 +500,10 @@ glowroot.config([
       templateUrl: 'views/config/alert.html',
       controller: 'ConfigAlertCtrl'
     });
-    $stateProvider.state('config.ui', {
-      url: '/ui',
-      templateUrl: 'views/config/ui.html',
-      controller: 'ConfigUiCtrl'
+    $stateProvider.state('config.uiDefaults', {
+      url: '/ui-defaults',
+      templateUrl: 'views/config/ui-defaults.html',
+      controller: 'ConfigUiDefaultsCtrl'
     });
     $stateProvider.state('config.pluginList', {
       url: '/plugin-list',

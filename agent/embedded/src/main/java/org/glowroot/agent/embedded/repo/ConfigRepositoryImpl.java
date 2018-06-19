@@ -36,7 +36,7 @@ import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.config.PluginConfig;
 import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.TransactionConfig;
-import org.glowroot.agent.config.UiConfig;
+import org.glowroot.agent.config.UiDefaultsConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.agent.embedded.config.AdminConfigService;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -111,8 +111,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AgentConfig.UiConfig getUiConfig(String agentRollupId) {
-        return configService.getUiConfig().toProto();
+    public AgentConfig.UiDefaultsConfig getUiDefaultsConfig(String agentRollupId) {
+        return configService.getUiDefaultsConfig().toProto();
     }
 
     @Override
@@ -505,13 +505,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateUiConfig(String agentId, AgentConfig.UiConfig protoConfig,
+    public void updateUiDefaultsConfig(String agentId, AgentConfig.UiDefaultsConfig protoConfig,
             String priorVersion) throws Exception {
-        UiConfig config = UiConfig.create(protoConfig);
+        UiDefaultsConfig config = UiDefaultsConfig.create(protoConfig);
         synchronized (writeLock) {
-            String currVersion = Versions.getVersion(configService.getUiConfig().toProto());
+            String currVersion = Versions.getVersion(configService.getUiDefaultsConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
-            configService.updateUiConfig(config);
+            configService.updateUiDefaultsConfig(config);
         }
     }
 

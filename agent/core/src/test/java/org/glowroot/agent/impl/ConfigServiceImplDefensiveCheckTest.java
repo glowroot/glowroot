@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,11 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.ImmutableAdvancedConfig;
-import org.glowroot.agent.config.ImmutableTransactionConfig;
 import org.glowroot.agent.config.PluginDescriptor;
-import org.glowroot.agent.config.TransactionConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ConfigServiceImplDefensiveCheckTest {
 
@@ -37,11 +32,6 @@ public class ConfigServiceImplDefensiveCheckTest {
     @Before
     public void beforeEachTest() {
         ConfigService configService = mock(ConfigService.class);
-        TransactionConfig transactionConfig = ImmutableTransactionConfig.builder().build();
-        AdvancedConfig advancedConfig = ImmutableAdvancedConfig.builder().build();
-        when(configService.getTransactionConfig()).thenReturn(transactionConfig);
-        when(configService.getAdvancedConfig()).thenReturn(advancedConfig);
-
         this.configService = ConfigServiceImpl.create(configService,
                 ImmutableList.<PluginDescriptor>of(), "dummy");
     }

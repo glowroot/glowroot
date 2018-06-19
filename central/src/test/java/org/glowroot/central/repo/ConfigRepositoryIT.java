@@ -57,7 +57,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Instrumenta
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
@@ -151,8 +151,8 @@ public class ConfigRepositoryIT {
         // given
         String agentId = UUID.randomUUID().toString();
         agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
-        UiConfig config = configRepository.getUiConfig(agentId);
-        UiConfig updatedConfig = UiConfig.newBuilder()
+        UiDefaultsConfig config = configRepository.getUiDefaultsConfig(agentId);
+        UiDefaultsConfig updatedConfig = UiDefaultsConfig.newBuilder()
                 .setDefaultTransactionType("xyz")
                 .addDefaultPercentile(99.0)
                 .addDefaultPercentile(99.9)
@@ -160,8 +160,9 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateUiConfig(agentId, updatedConfig, Versions.getVersion(config));
-        config = configRepository.getUiConfig(agentId);
+        configRepository.updateUiDefaultsConfig(agentId, updatedConfig,
+                Versions.getVersion(config));
+        config = configRepository.getUiDefaultsConfig(agentId);
 
         // then
         assertThat(config).isEqualTo(updatedConfig);

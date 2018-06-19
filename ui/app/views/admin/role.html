@@ -101,8 +101,8 @@
             <label ng-class="{'gt-label-disabled': page.permissions.transaction._}"
                    style="margin-left: 30px;">
               <input type="checkbox"
-                     ng-model="page.permissions.transaction.profile"
-                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Profile
+                     ng-model="page.permissions.transaction.threadProfile"
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Thread profile
             </label>
           </div>
           <div class="checkbox">
@@ -227,7 +227,7 @@
                      ng-model="page.permissions.config.view"
                      ng-disabled="page.permissions.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(page.permissions)">
-              View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
+              View (Transactions, Gauges, JVM, Alerts, UI Defaults, Plugins, Instrumentation, Advanced)
               <span ng-if="!page.permissions.config.view && viewConfigRequired(page.permissions)"
                     style="font-style: italic;">
                 -- required for edit permission
@@ -254,7 +254,7 @@
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit.gauge"
+                     ng-model="page.permissions.config.edit.gauges"
                      ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Gauges
             </label>
           </div>
@@ -270,7 +270,7 @@
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit.alert"
+                     ng-model="page.permissions.config.edit.alerts"
                      ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Alerts
             </label>
           </div>
@@ -278,15 +278,15 @@
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit.ui"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">UI
+                     ng-model="page.permissions.config.edit.uiDefaults"
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">UI Defaults
             </label>
           </div>
           <div class="checkbox">
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit.plugin"
+                     ng-model="page.permissions.config.edit.plugins"
                      ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Plugins
             </label>
           </div>
@@ -403,8 +403,8 @@
             <label ng-class="{'gt-label-disabled': page.permissions.transaction._}"
                    style="margin-left: 30px;">
               <input type="checkbox"
-                     ng-model="page.permissions.transaction.profile"
-                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Profile
+                     ng-model="page.permissions.transaction.threadProfile"
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Thread profile
             </label>
           </div>
           <div class="checkbox">
@@ -536,7 +536,8 @@
                      ng-model="page.permissions.config.view"
                      ng-disabled="page.permissions.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(page.permissions)">
-              View (General, Transactions, Gauges, Synthetic monitors, Alerts, UI, Plugins, Instrumentation, Advanced)
+              View (General, Transaction, Gauges, JVM, Synthetic monitors, Alerts, UI Defaults, Plugins,
+              Instrumentation, Advanced)
               <span ng-if="!page.permissions.config.view && viewConfigRequired(page.permissions)"
                     style="font-style: italic;">
                 -- required for edit permission
@@ -564,14 +565,14 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.transaction"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Transactions
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Transaction
             </label>
           </div>
           <div class="checkbox">
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit.gauge"
+                     ng-model="page.permissions.config.edit.gauges"
                      ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Gauges
             </label>
           </div>
@@ -587,7 +588,7 @@
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit.syntheticMonitor"
+                     ng-model="page.permissions.config.edit.syntheticMonitors"
                      ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Synthetic
               monitors
             </label>
@@ -596,7 +597,7 @@
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit.alert"
+                     ng-model="page.permissions.config.edit.alerts"
                      ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Alerts
             </label>
           </div>
@@ -604,15 +605,15 @@
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit.ui"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">UI
+                     ng-model="page.permissions.config.edit.uiDefaults"
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">UI Defaults
             </label>
           </div>
           <div class="checkbox">
             <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit.plugin"
+                     ng-model="page.permissions.config.edit.plugins"
                      ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Plugins
             </label>
           </div>
@@ -750,8 +751,8 @@
             <label ng-class="{'gt-label-disabled': permissionBlock.transaction._}"
                    style="margin-left: 30px;">
               <input type="checkbox"
-                     ng-model="permissionBlock.transaction.profile"
-                     ng-disabled="permissionBlock.transaction._ || !layout.adminEdit">Profile
+                     ng-model="permissionBlock.transaction.threadProfile"
+                     ng-disabled="permissionBlock.transaction._ || !layout.adminEdit">Thread profile
             </label>
           </div>
           <div class="checkbox">
@@ -883,7 +884,8 @@
                      ng-model="permissionBlock.config.view"
                      ng-disabled="permissionBlock.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(permissionBlock)">
-              View (General, Transactions, Gauges, Synthetic monitors, Alerts, UI, Plugins, Instrumentation, Advanced)
+              View (General, Transaction, Gauges, JVM, Synthetic monitors, Alerts, UI Defaults, Plugins,
+              Instrumentation, Advanced)
               <span ng-if="!permissionBlock.config.view && viewConfigRequired(permissionBlock)"
                     style="font-style: italic;">
                 -- required for edit permission
@@ -911,14 +913,14 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.transaction"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Transactions
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Transaction
             </label>
           </div>
           <div class="checkbox">
             <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="permissionBlock.config.edit.gauge"
+                     ng-model="permissionBlock.config.edit.gauges"
                      ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Gauges
             </label>
           </div>
@@ -934,7 +936,7 @@
             <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="permissionBlock.config.edit.syntheticMonitor"
+                     ng-model="permissionBlock.config.edit.syntheticMonitors"
                      ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Synthetic
               monitors
             </label>
@@ -943,7 +945,7 @@
             <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="permissionBlock.config.edit.alert"
+                     ng-model="permissionBlock.config.edit.alerts"
                      ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Alerts
             </label>
           </div>
@@ -951,15 +953,15 @@
             <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="permissionBlock.config.edit.ui"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">UI
+                     ng-model="permissionBlock.config.edit.uiDefaults"
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">UI Defaults
             </label>
           </div>
           <div class="checkbox">
             <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
                    style="margin-left: 60px;">
               <input type="checkbox"
-                     ng-model="permissionBlock.config.edit.plugin"
+                     ng-model="permissionBlock.config.edit.plugins"
                      ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Plugins
             </label>
           </div>

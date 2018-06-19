@@ -97,7 +97,7 @@ class SyntheticMonitorConfigJsonService {
 
     // central supports synthetic monitor configs on rollups
     @POST(path = "/backend/config/synthetic-monitors/add",
-            permission = "agent:config:edit:syntheticMonitor")
+            permission = "agent:config:edit:syntheticMonitors")
     String addSyntheticMonitor(@BindAgentRollupId String agentRollupId,
             @BindRequest SyntheticMonitorConfigDto configDto)
             throws Exception {
@@ -120,7 +120,7 @@ class SyntheticMonitorConfigJsonService {
 
     // central supports synthetic monitor configs on rollups
     @POST(path = "/backend/config/synthetic-monitors/update",
-            permission = "agent:config:edit:syntheticMonitor")
+            permission = "agent:config:edit:syntheticMonitors")
     String updateSyntheticMonitor(@BindAgentRollupId String agentRollupId,
             @BindRequest SyntheticMonitorConfigDto configDto) throws Exception {
         SyntheticMonitorConfig config;
@@ -140,7 +140,7 @@ class SyntheticMonitorConfigJsonService {
 
     // central supports synthetic monitor configs on rollups
     @POST(path = "/backend/config/synthetic-monitors/remove",
-            permission = "agent:config:edit:syntheticMonitor")
+            permission = "agent:config:edit:syntheticMonitors")
     void removeSyntheticMonitor(@BindAgentRollupId String agentRollupId,
             @BindRequest SyntheticMonitorConfigRequest request) throws Exception {
         configRepository.deleteSyntheticMonitorConfig(agentRollupId, request.id().get());

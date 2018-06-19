@@ -23,11 +23,11 @@ import org.glowroot.tests.util.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class UiConfigPage {
+public class UiDefaultsConfigPage {
 
     private final WebDriver driver;
 
-    public UiConfigPage(WebDriver driver) {
+    public UiDefaultsConfigPage(WebDriver driver) {
         this.driver = driver;
     }
 
