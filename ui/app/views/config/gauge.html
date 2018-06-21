@@ -40,7 +40,7 @@
          class="form-horizontal"
          name="formCtrl"
          style="padding-top: 15px;">
-      <div class="form-group gt-form-group-without-help-block"
+      <div class="form-group"
            ng-class="{'has-error': hasMBeanObjectNameError()}">
         <label class="col-lg-3 control-label"
                for="mbeanObjectName{{$id}}">
@@ -79,6 +79,14 @@
                class="gt-red"
                style="padding-top: 10px;">
             There is already a gauge for this MBean
+          </div>
+          <div class="help-block">
+            If the object name includes at least one occurrence of the wildcard characters asterisk (*) or question mark
+            (?), then the object name is a pattern. The asterisk matches any sequence of zero or more characters, while
+            the question mark matches any single character.
+            (see
+            <a href="https://docs.oracle.com/javase/8/docs/api/javax/management/ObjectName.html">
+              https://docs.oracle.com/javase/8/docs/api/javax/management/ObjectName.html</a>)
           </div>
         </div>
       </div>
