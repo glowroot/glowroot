@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,26 +15,19 @@
  */
 package org.glowroot.tests.admin;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class WebConfigPage {
-
-    private final WebDriver driver;
+public class WebConfigPage extends Page {
 
     public WebConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public void clickSaveButton() {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
     }
 }

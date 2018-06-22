@@ -1,0 +1,408 @@
+/*
+ * Copyright 2012-2018 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+$primary: #417998;
+$secondary: #edeae4;
+$danger: #bf380b;
+$success: darken(#28a745, 5%); // #28a745 is bootstrap $green
+$form-group-margin-bottom: 1.5rem; // a little more spacing between form elements
+
+// fontawesome is used for gear and sign out icons in top right of navbar and also for help icon
+@import "../../bower_components/fontawesome/web-fonts-with-css/scss/variables";
+@import "../../bower_components/fontawesome/web-fonts-with-css/scss/mixins";
+@import "../../bower_components/fontawesome/web-fonts-with-css/scss/core";
+@import "../../bower_components/fontawesome/web-fonts-with-css/scss/icons";
+@import "../../bower_components/bootstrap/scss/functions";
+@import "../../bower_components/bootstrap/scss/variables";
+@import "../../bower_components/bootstrap/scss/mixins";
+@import "../../bower_components/bootstrap/scss/reboot";
+@import "../../bower_components/bootstrap/scss/alert";
+@import "../../bower_components/bootstrap/scss/buttons";
+// dropdown is used by the trace search form (e.g. begins with / equals / ends with / contains)
+@import "../../bower_components/bootstrap/scss/dropdown";
+@import "../../bower_components/bootstrap/scss/forms";
+@import "../../bower_components/bootstrap/scss/custom-forms";
+@import "../../bower_components/bootstrap/scss/input-group";
+// list-group is used by configuration sidebar
+@import "../../bower_components/bootstrap/scss/list-group";
+@import "../../bower_components/bootstrap/scss/modal";
+@import "../../bower_components/bootstrap/scss/close";
+// popover is used by chart help
+@import "../../bower_components/bootstrap/scss/popover";
+// tooltip is used by chart help
+@import "../../bower_components/bootstrap/scss/tooltip";
+// nav import needs to be before navbar import, othewise navbar is messed up
+@import "../../bower_components/bootstrap/scss/nav";
+@import "../../bower_components/bootstrap/scss/navbar";
+// card is used by config views
+@import "../../bower_components/bootstrap/scss/card";
+// basic bootstrap foundation
+@import "../../bower_components/bootstrap/scss/grid";
+@import "../../bower_components/bootstrap/scss/type";
+// needed for mobile navbar
+@import "../../bower_components/bootstrap/scss/transitions";
+@import "../../bower_components/bootstrap/scss/utilities";
+@import "../../bower_components/bootstrap/scss/tables";
+// bootstrap-select is used by transaction selection sidebar
+@import "../../bower_components/bootstrap-select/sass/bootstrap-select";
+@import "../../bower_components/tempusdominus/src/sass/tempusdominus-bootstrap-4";
+
+@import "common";
+@import "common-trace";
+@import "chart";
+@import "transaction-sidebar";
+@import "traces";
+@import "report";
+@import "gauges";
+@import "thread-dump";
+@import "environment";
+@import "config";
+@import "sidebar";
+@import "header";
+@import "navbar";
+@import "sticky-footer";
+@import "variables";
+@import "validation";
+
+$input-border-focus: $gt-blue;
+
+// this is for bootstrap-datetimepicker
+$btn-primary-color: #fff;
+
+$brand-primary: $gt-blue;
+
+$state-danger-text: $gt-red;
+
+@font-face {
+  font-family: 'Open Sans';
+  font-weight: 400;
+  src: local('Open Sans'),
+  local('OpenSans'),
+  url(../fonts/opensans-regular.woff2) format('woff2'),
+  url(../fonts/opensans-regular.woff) format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-weight: 600;
+  src: local('Open Sans Semibold'),
+  local('OpenSans-Semibold'),
+  url(../fonts/opensans-semibold.woff2) format('woff2'),
+  url(../fonts/opensans-semibold.woff) format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-weight: 700;
+  src: local('Open Sans Bold'),
+  local('OpenSans-Bold'),
+  url(../fonts/opensans-bold.woff2) format('woff2'),
+  url(../fonts/opensans-bold.woff) format('woff');
+}
+
+@font-face {
+  font-family: Cousine;
+  font-weight: 400;
+  src: local('Cousine'),
+  local('Cousine'),
+  url(../fonts/cousine-regular.woff2) format('woff2'),
+  url(../fonts/cousine-regular.woff) format('woff');
+}
+
+// explicitly specifiying font-face for font-awesome since only supporting IE9+ and so only need
+// woff/woff2 this also helps by removing ?v=... versioning url which causes some issue keeping the
+// font preloading url (see index.html) in sync when new font-awesome versions are released, and the
+// urls are revved during grunt build already so the versioned url is not needed
+@font-face {
+  font-family: 'Font Awesome 5 Free';
+  src: url('../fonts/fa-regular-400.woff2') format('woff2'),
+  url('../fonts/fa-regular-400.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Font Awesome 5 Free';
+  src: url('../fonts/fa-solid-900.woff2') format('woff2'),
+  url('../fonts/fa-solid-900.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+}
+
+.far {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 400;
+}
+
+.fa,
+.fas {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+}
+
+body {
+  font-family: 'Open Sans', sans-serif;
+}
+
+body {
+  // always display vertical scrollbar so content doesn't shift horizontally when the vertical
+  // scrollbar shows up because the page dynamically expanded greater than a single screen, or
+  // contracted down to a single screen, e.g. when showing or hiding content
+  overflow-y: scroll;
+  font-family: 'Open Sans', sans-serif;
+}
+
+
+.container {
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+}
+
+@media screen and (min-width: 1400px) {
+  .container {
+    max-width: 1340px;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  .container {
+    max-width: 1540px;
+  }
+}
+
+// since the angular script is not loaded in the html head, the ng-cloak css style is needed here
+.ng-cloak {
+  display: none !important;
+}
+
+.gt-inline-spinner {
+  // relative position needed for spinner
+  position: relative;
+  display: inline-block;
+  // using padding-left because margin-left works in chrome and IE but not firefox
+  padding-left: 32px;
+  vertical-align: middle;
+}
+
+.gt-http-error {
+  color: #660099;
+  font-size: 24px;
+  padding-left: 30px;
+  font-weight: bold;
+  font-family: Cousine, monospace;
+}
+
+// margin at top of config pages pushes down entire sidebar
+.gt-http-error {
+  margin-top: 0;
+}
+
+// put back margin inside of cards
+.gt-panel-overlay .gt-http-error {
+  margin-top: 20px;
+}
+
+.gt-http-error a {
+  color: #660099;
+  text-decoration: underline;
+}
+
+.gt-http-error a:hover {
+  color: lighten(#660099, 15);
+}
+
+.gt-http-error-message {
+  font-size: 18px;
+  padding-top: 5px;
+  // not sure what this error message might contain
+  // grunt connect server, for example, returns json string with no spaces so need to break-word
+  word-wrap: break-word;
+}
+
+.gt-http-error-stack-trace {
+  font-size: 14px;
+  overflow-x: visible;
+  // no line wrapping so stack trace will look nice
+  white-space: pre;
+  padding-top: 5px;
+  // padding-bottom gives stack trace a bit of padding from the bottom of the page
+  padding-bottom: 100px;
+}
+
+.gt-secondary-text {
+  color: #737373;
+}
+
+hr.soften {
+  height: 1px;
+  margin-left: 50px;
+  margin-right: 50px;
+  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
+  background-image: -moz-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
+  background-image: -ms-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
+  background-image: -o-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
+  border: 0;
+}
+
+.modal-header {
+  // this is to match padding on modal-body
+  padding-left: 30px;
+}
+
+.gt-heap-histogram-table th, .gt-heap-histogram-table td {
+  padding: .625rem;
+}
+
+.gt-heap-histogram-bytes-column {
+  width: 120px;
+  text-align: right;
+  word-wrap: normal; // overriding "word-break" from .card so that numbers are not wrapped at commas and periods
+}
+
+.gt-heap-histogram-count-column {
+  width: 80px;
+  text-align: right;
+  word-wrap: normal; // overriding "word-break" from .card so that numbers are not wrapped at commas and periods
+}
+
+.gt-flame-graph-link {
+  margin-top: -10px;
+  margin-bottom: 10px;
+  @include gt-link-with-focus-ring;
+}
+
+.gt-radio-link {
+  color: #555;
+  @include gt-link-with-focus-ring(.125rem);
+}
+
+.gt-radio-link:hover, .gt-radio-link:focus {
+  text-decoration: none;
+}
+
+.gt-radio-disabled {
+  color: #888;
+}
+
+.form-check-input {
+  @include gt-focus-ring;
+}
+
+#formattingToggle {
+  text-decoration: none !important;
+  display: inline-block;
+}
+
+#formattingToggle:focus:not(:hover) {
+  color: $gt-blue;
+}
+
+select.form-control {
+  // override default 12px so that the left padding lines up with text inputs
+  // (e.g. adhoc report page)
+  padding-left: 8px !important;
+}
+
+.ui-select-multiple.ui-select-bootstrap {
+  // override default 3px
+  padding: 6px 6px 0 6px !important;
+}
+
+.ui-select-multiple.ui-select-bootstrap .ui-select-match-item {
+  // override default 3px
+  margin: 0 6px 6px 0 !important;
+}
+
+.ui-select-multiple.ui-select-bootstrap input.ui-select-search {
+  // override default 3px
+  margin-bottom: 6px !important;
+}
+
+.gt-btn-input-group {
+  @include button-variant($secondary, #ced4da);
+  @include gt-focus-ring;
+}
+
+.btn-secondary {
+  // overriding border from button-variant to use .focus-visible (and to be blue instead of hard to see tan)
+  @include gt-focus-ring;
+}
+
+.btn-primary {
+  // overriding border from button-variant to use .focus-visible
+  @include gt-focus-ring(0.5);
+}
+
+.dropdown-menu {
+  // overriding default because using .focus-visible, so doesn't need padding
+  // (at least not most of the time, and still looks fine without padding when toggle button has focus ring)
+  margin-top: 0;
+}
+
+.gt-nav-tabs .nav-link {
+  @include gt-focus-ring;
+  position: relative; // this is needed to prevent focus ring from appearing behind active neighbor
+}
+
+@include media-breakpoint-up(xl) {
+  .gt-heap-histogram-count-column {
+    width: 120px;
+  }
+}
+
+.gt-everything-below-throughput-chart {
+  padding: 0 20px;
+}
+
+@include media-breakpoint-up(md) {
+  .gt-gauge-chart-tools {
+    margin-top: -20px;
+  }
+}
+
+@include media-breakpoint-up(lg) {
+  .gt-everything-below-throughput-chart {
+    padding: 0 40px;
+  }
+
+  .gt-everything-below-average-chart {
+    padding: 0 20px;
+  }
+}
+
+.gt-error-messages-chart-tools {
+  margin-top: -7px;
+}
+
+@include media-breakpoint-up(xl) {
+  .gt-error-messages-chart-tools {
+    margin-top: -22px;
+  }
+
+  .gt-everything-below-average-chart {
+    padding: 0 40px;
+  }
+
+  .gt-flame-graph-link {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+.form-check + .form-check {
+  // add space in between consecutive checkboxes, e.g. gauge attributes and role permissions
+  @extend .pt-1;
+}

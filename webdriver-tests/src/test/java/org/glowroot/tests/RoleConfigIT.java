@@ -24,7 +24,6 @@ import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.xpath;
 
 public class RoleConfigIT extends WebDriverIT {
@@ -37,12 +36,12 @@ public class RoleConfigIT extends WebDriverIT {
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getRolesLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickRolesLink();
 
         // when
-        Utils.withWait(driver, linkText("Administrator")).click();
-        Utils.withWait(driver, linkText("Return to list")).click();
+        clickLinkWithWait("Administrator");
+        clickLink("Return to list");
     }
 
     @Test
@@ -54,45 +53,45 @@ public class RoleConfigIT extends WebDriverIT {
         RoleConfigPage rolePage = new RoleConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getRolesLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickRolesLink();
 
         // when
         createRole();
 
         // then
-        Utils.withWait(driver, linkText("Test")).click();
+        clickLinkWithWait("Test");
         assertThat(rolePage.getNameTextField().getAttribute("value")).isEqualTo("Test");
-        assertThat(rolePage.getTransactionCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getTransactionOverviewCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getTransactionTracesCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getTransactionQueriesCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getTransactionServiceCallsCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getTransactionThreadProfileCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getErrorCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getErrorOverviewCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getErrorTracesCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getJvmCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getJvmGaugesCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getJvmThreadDumpCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getJvmHeapDumpCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getJvmHeapHistogramCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getJvmMBeanTreeCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getJvmSystemPropertiesCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getJvmEnvironmentCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigViewCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditTransactionCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditGaugesCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditJvmCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditAlertsCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditUiDefaultsCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditPluginsCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditInstrumentationCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getConfigEditAdvancedCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getAdminCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getAdminViewCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getAdminEditCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getTransactionCheckBoxValue()).isFalse();
+        assertThat(rolePage.getTransactionOverviewCheckBoxValue()).isFalse();
+        assertThat(rolePage.getTransactionTracesCheckBoxValue()).isFalse();
+        assertThat(rolePage.getTransactionQueriesCheckBoxValue()).isFalse();
+        assertThat(rolePage.getTransactionServiceCallsCheckBoxValue()).isFalse();
+        assertThat(rolePage.getTransactionThreadProfileCheckBoxValue()).isFalse();
+        assertThat(rolePage.getErrorCheckBoxValue()).isFalse();
+        assertThat(rolePage.getErrorOverviewCheckBoxValue()).isFalse();
+        assertThat(rolePage.getErrorTracesCheckBoxValue()).isFalse();
+        assertThat(rolePage.getJvmCheckBoxValue()).isFalse();
+        assertThat(rolePage.getJvmGaugesCheckBoxValue()).isFalse();
+        assertThat(rolePage.getJvmThreadDumpCheckBoxValue()).isFalse();
+        assertThat(rolePage.getJvmHeapDumpCheckBoxValue()).isFalse();
+        assertThat(rolePage.getJvmHeapHistogramCheckBoxValue()).isFalse();
+        assertThat(rolePage.getJvmMBeanTreeCheckBoxValue()).isFalse();
+        assertThat(rolePage.getJvmSystemPropertiesCheckBoxValue()).isFalse();
+        assertThat(rolePage.getJvmEnvironmentCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigViewCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigEditCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigEditTransactionCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigEditGaugesCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigEditJvmCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigEditAlertsCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigEditUiDefaultsCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigEditPluginsCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigEditInstrumentationCheckBoxValue()).isFalse();
+        assertThat(rolePage.getConfigEditAdvancedCheckBoxValue()).isFalse();
+        assertThat(rolePage.getAdminCheckBoxValue()).isFalse();
+        assertThat(rolePage.getAdminViewCheckBoxValue()).isFalse();
+        assertThat(rolePage.getAdminEditCheckBoxValue()).isFalse();
     }
 
     @Test
@@ -104,21 +103,21 @@ public class RoleConfigIT extends WebDriverIT {
         RoleConfigPage rolePage = new RoleConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getRolesLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickRolesLink();
 
         // when
         createRole();
-        Utils.withWait(driver, linkText("Test")).click();
-        rolePage.getAdminCheckBox().click();
+        clickLinkWithWait("Test");
+        rolePage.clickAdminCheckBox();
         rolePage.clickSaveButton();
         // wait for save to finish
         SECONDS.sleep(1);
-        driver.findElement(linkText("Return to list")).click();
+        clickLink("Return to list");
 
         // then
-        Utils.withWait(driver, linkText("Test")).click();
-        assertThat(rolePage.getAdminCheckBox().isSelected()).isTrue();
+        clickLinkWithWait("Test");
+        assertThat(rolePage.getAdminCheckBoxValue()).isTrue();
     }
 
     @Test
@@ -130,19 +129,19 @@ public class RoleConfigIT extends WebDriverIT {
         RoleConfigPage rolePage = new RoleConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getRolesLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickRolesLink();
 
         // when
         createRole();
-        Utils.withWait(driver, linkText("Test")).click();
-        rolePage.getDeleteButton().click();
+        clickLinkWithWait("Test");
+        rolePage.clickDeleteButton();
 
         // then
-        Utils.withWait(driver, linkText("Administrator"));
+        waitFor(Utils.linkText("Administrator"));
         boolean notFound = false;
         try {
-            driver.findElement(linkText("Test"));
+            driver.findElement(Utils.linkText("Test"));
         } catch (NoSuchElementException e) {
             notFound = true;
         }
@@ -158,26 +157,26 @@ public class RoleConfigIT extends WebDriverIT {
         RoleConfigPage rolePage = new RoleConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getRolesLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickRolesLink();
 
         createRole();
 
         // when
-        Utils.withWait(driver, xpath("//a[@href='admin/role?new']")).click();
+        clickWithWait(xpath("//a[@href='admin/role?new']"));
         rolePage.getNameTextField().sendKeys("Test");
         rolePage.clickAddButton();
         rolePage.getDuplicateRoleMessage();
     }
 
     private void createRole() {
-        Utils.withWait(driver, xpath("//a[@href='admin/role?new']")).click();
+        clickWithWait(xpath("//a[@href='admin/role?new']"));
         RoleConfigPage rolePage = new RoleConfigPage(driver);
         rolePage.getNameTextField().sendKeys("Test");
         rolePage.clickAddButton();
         // getDeleteButton() waits for the save/redirect
         // (the delete button does not appear until after the save/redirect)
-        rolePage.getDeleteButton();
-        driver.findElement(linkText("Return to list")).click();
+        rolePage.waitForDeleteButton();
+        clickLink("Return to list");
     }
 }

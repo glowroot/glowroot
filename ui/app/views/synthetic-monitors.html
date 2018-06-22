@@ -15,15 +15,14 @@
 -->
 <div class="gt-header clearfix"
      style="padding-bottom: 45px;">
-  <div class="gt-header-page-name pull-left">
-    <div style="margin-top: -16px;">
-      <!-- negative margin-left is so background doesn't bleed through transparent 1px border when menu is open -->
-      <span class="gt-inline-block gt-header-menu"
-            style="margin-left: -1px; vertical-align: 2px;">
+  <div class="gt-header-lhs float-left">
+    <div class="gt-header-lhs">
+      <div class="gt-header-menu">
         <select gt-selectpicker
                 gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
+                data-width="fit"
                 data-live-search="true"
-                data-style="btn-flat"
+                data-style="btn-secondary"
                 id="agentRollupDropdown"
                 aria-label="Agent">
           <option ng-repeat="item in agentRollups track by item.id"
@@ -36,78 +35,70 @@
             {{item.indentedDisplay}}
           </option>
           <option disabled
-                  class="gt-agent-rollup-dropdown-message hide"
-                  style="font-style: italic; font-size: 16px; cursor: inherit;"
+                  class="gt-agent-rollup-dropdown-message d-none"
+                  style="font-style: italic; font-size: 1rem; cursor: inherit;"
                   ng-if="agentRollups.length === 0">
             No active agents in this time period
           </option>
           <!-- can't use gt-spinner due to selectpicker behavior -->
           <option disabled
-                  class="gt-agent-rollup-dropdown-spinner hide"
+                  class="gt-agent-rollup-dropdown-spinner d-none"
                   style="position: relative; height: 30px; cursor: inherit;">
           </option>
         </select>
-      </span>
+      </div>
       <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
            while chrome guesses the placement of the border based on default font and then it moves slightly
            once font is available -->
-      <span class="gt-inline-block gt-separator">
+      <div class="gt-header-text gt-separator">
         |
-      </span>
-      <h1 class="gt-inline-block">
+      </div>
+      <h1 class="gt-header-text">
         Synthetic monitors
       </h1>
     </div>
   </div>
-  <div class="pull-right">
+  <div class="gt-header-rhs float-right">
     <div ng-controller="ChartRangeCtrl" ng-include="'template/gt-chart-range.html'"></div>
   </div>
 </div>
-
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>Synthetic monitors</h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-hide="hideMainContent()">
       <div ng-include src="'template/gt-loading-overlay.html'"></div>
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <!-- ng-show needed here instead of ng-if because synthetic-monitor.js binds directly to #chart -->
       <div ng-show="loaded">
-        <div ng-hide="allSyntheticMonitors.length" style="font-size: 16px; margin-top: 20px;">
+        <div ng-hide="allSyntheticMonitors.length" style="font-size: 1rem; margin-top: 20px;">
           No synthetic monitors configured.
           See <a href="config/synthetic-monitor-list{{agentQueryString()}}">Synthetic monitor configuration</a>.
         </div>
+        <!-- ng-show needed here instead of ng-if because synthetic-monitor.js binds directly to #chart -->
         <div ng-show="allSyntheticMonitors.length">
-          <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
-          <div class="clearfix" style="position: relative; z-index: 800; margin-top: 25px;">
-            <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 20px;">
-              <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-              <a role="button"
-                 class="gt-chart-button"
-                 href="#"
-                 ng-click="zoomOut()">
-                <span title="Zoom out"
-                      class="fas fa-search-minus"></span><!-- lack of space here is significant
-         --></a>
-              <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-              <a role="button"
-                 class="gt-chart-button"
-                 href="#"
-                 ng-click="refresh()">
-                <span title="Refresh"
-                      class="fas fa-sync"></span><!-- lack of space here is significant
-         --></a>
-              <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-              <a role="button"
-                 class="gt-chart-button"
-                 href="#"
-                 uib-popover-template="'template/help/chart.html'"
-                 popover-placement="left"
-                 popover-trigger="'outsideClick'">
-                <span title="Help"
-                      class="fas fa-question-circle"></span><!-- lack of space here is significant
-         --></a>
-            </div>
+          <div class="gt-chart-controls float-right">
+            <button class="gt-chart-button"
+                    ng-click="zoomOut()">
+              <span title="Zoom out"
+                    class="fas fa-search-minus">
+              </span>
+            </button>
+            <button class="gt-chart-button"
+                    ng-click="refresh()">
+              <span title="Refresh"
+                    class="fas fa-sync">
+              </span>
+            </button>
+            <button class="gt-chart-button"
+                    uib-popover-template="'template/help/chart.html'"
+                    popover-placement="left"
+                    popover-trigger="'outsideClick'">
+              <span title="Help"
+                    class="fas fa-question-circle">
+              </span>
+            </button>
           </div>
           <div class="gt-chart-container">
             <div gt-spinner
@@ -117,7 +108,7 @@
                  id="chartSpinner">
             </div>
             <div class="gt-chart-dimensions" id="chart"></div>
-            <div ng-show="chartNoData && !showChartSpinner"
+            <div ng-if="chartNoData && !showChartSpinner"
                  class="gt-chart-panel"
                  style="display: table;">
               <div style="display: table-cell; text-align: center; vertical-align: middle;">
@@ -128,33 +119,35 @@
               </div>
             </div>
           </div>
-
           <div class="gt-everything-below-gauge-chart">
             <div class="legend" id="chartLegend"
                  style="text-align: center; margin-top: 10px; width: 100%;">
-              <div class="gt-inline-block">
-                <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
+              <div class="d-inline-block">
+                <div class="d-inline-block" ng-repeat="seriesLabel in seriesLabels"
                      style="white-space: nowrap; margin: 0 6px;">
-                  <div class="legendColorBox gt-inline-block"
+                  <div class="legendColorBox d-inline-block"
                        style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
                     <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
                          ng-style="{'border': '5px solid ' + seriesLabel.color}">
                     </div>
                   </div>
-                  <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
+                  <div class="legendLabel d-inline-block">{{seriesLabel.text}}</div>
                 </div>
               </div>
             </div>
             <br>
-
-            <div ng-repeat="syntheticMonitor in allSyntheticMonitors"
-                 class="checkbox gt-gauge-second-line-indent"
-                 style="padding-left: 62px;">
+            <div class="pl-5">
               <label ng-class="{'gt-bold': syntheticMonitorIds.indexOf(syntheticMonitor.id) !== -1}"
+                     class="custom-control custom-checkbox"
+                     ng-repeat="syntheticMonitor in allSyntheticMonitors"
                      style="cursor: pointer;">
-                <input type="checkbox" ng-checked="syntheticMonitorIds.indexOf(syntheticMonitor.id) !== -1"
+                <input type="checkbox"
+                       class="custom-control-input"
+                       ng-checked="syntheticMonitorIds.indexOf(syntheticMonitor.id) !== -1"
                        ng-click="clickSyntheticMonitor(syntheticMonitor.id)">
-                {{syntheticMonitor.display}}
+                <div class="custom-control-label">
+                  {{syntheticMonitor.display}}
+                </div>
               </label>
             </div>
           </div>

@@ -2,23 +2,22 @@
   <td class="gt-trace-query-text-column">
     {{#ifLongQuery .}}
     {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
-      <div class="gt-inline-block gt-unexpanded-content gt-monospace"
-           style="margin-right: 0; margin-left: -3px;">
+      <div class="d-inline-block gt-unexpanded-content gt-monospace">
         {{queryFirstPart .}}&nbsp;<span class="gt-link-color"><strong
           class="gt-opensans gt-dotdotdot">...</strong></span>&nbsp;{{queryLastPart .}}
       </div>
       <!-- only convert newlines to <br>s for long messages -->
-      <div class="gt-expanded-content hide"
+      <div class="gt-expanded-content d-none"
            style="position: relative; margin-left: -3px;">
-        <i class="fas fa-clipboard gt-clip hide"></i>
+        <i class="fas fa-clipboard gt-clip d-none"></i>
         <div class="gt-break-word gt-pre-wrap gt-monospace gt-clip-text gt-expanded-trace-query"
              data-gt-trace-query-index="{{index}}"></div>
         <div>
-          <div class="hide gt-trace-detail-spinner"></div>
+          <div class="d-none gt-trace-detail-spinner"></div>
         </div>
       </div>
     {{^}}
-      <div class="gt-inline-block gt-content-padding gt-monospace">
+      <div class="d-inline-block gt-content-padding gt-monospace">
         {{sharedQueryText.fullText}}
       </div>
     {{/ifLongQuery}}

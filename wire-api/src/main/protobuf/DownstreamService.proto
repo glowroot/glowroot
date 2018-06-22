@@ -422,8 +422,9 @@ message MBeanDump {
 }
 
 message MBeanMeta {
-  bool unmatched = 1;
-  bool unavailable = 2;
+  bool no_match_found = 1;
+  bool unavailable_old = 2; // deprecated in 0.12.0 (previously two responses for no match found, one
+                        // for patterns and one for non-patterns, merged into single no_match_found)
   repeated string attribute_name = 3;
 }
 

@@ -15,26 +15,19 @@
  */
 package org.glowroot.tests.admin;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class PagerDutyConfigPage {
-
-    private final WebDriver driver;
+public class PagerDutyConfigPage extends Page {
 
     public PagerDutyConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public void clickSaveButton() {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
     }
 }

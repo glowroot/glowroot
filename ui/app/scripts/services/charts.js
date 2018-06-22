@@ -322,6 +322,7 @@ glowroot.factory('charts', [
               var label = labels[index];
               var plotDataItem = {
                 data: dataSeries.data,
+                name: dataSeries.name,
                 label: label,
                 shortLabel: dataSeries.shortLabel,
                 color: chartState.keyedColorPool.get(label),
@@ -377,7 +378,8 @@ glowroot.factory('charts', [
       for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
         $scope.seriesLabels.push({
           color: plotData[seriesIndex].color,
-          text: plotData[seriesIndex].label
+          text: plotData[seriesIndex].label,
+          name: plotData[seriesIndex].name
         });
       }
     }
@@ -471,8 +473,6 @@ glowroot.factory('charts', [
       function scheduleNextRefresh() {
         timer = $timeout(function () {
           if ($scope.range.last) {
-            // document.hidden is not supported by IE9 but that's ok, the condition will just evaluate to false
-            // and auto refresh will continue even while hidden under IE9
             if (document.hidden) {
               document.addEventListener('visibilitychange', onVisible);
             } else {

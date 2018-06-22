@@ -89,7 +89,14 @@ class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public MBeanMeta getMBeanMeta(String agentId, String objectName) throws Exception {
-        return downstreamService.mbeanMeta(agentId, objectName);
+        MBeanMeta mbeanMeta = downstreamService.mbeanMeta(agentId, objectName);
+        if (mbeanMeta.getUnavailableOld()) {
+            // agent version prior to 0.12.0
+            return mbeanMeta.toBuilder()
+                    .setNoMatchFound(true)
+                    .build();
+        }
+        return mbeanMeta;
     }
 
     @Override

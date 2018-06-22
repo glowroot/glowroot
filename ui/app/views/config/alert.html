@@ -13,59 +13,64 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-config-return-outer-div">
+<!-- clearfix is needed for smaller screens where gt-config-return-link is floated  -->
+<div class="clearfix">
   <a class="gt-config-return-link"
      href="config/alert-list{{agentQueryString()}}">
     Return to list
   </a>
 </div>
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
       Alerts
-      <span class="gt-inline-block gt-separator">
+      <span class="d-inline-block gt-separator">
         |
       </span>
       <span style="font-size: 24px;">{{heading}}</span>
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <!-- intentionally not using gt-form-autofocus-on-first-input as it doesn't make the most sense on this form -->
-    <div ng-form
-         class="form-horizontal"
-         name="formCtrl"
-         style="padding-top: 15px;">
-      <fieldset>
-        <legend>Condition</legend>
-        <div class="form-group gt-form-group-without-help-block"
+    <form name="formCtrl"
+          style="padding-top: 15px;"
+          novalidate>
+      <fieldset class="gt-fieldset">
+        <legend class="gt-legend">
+          Condition
+        </legend>
+        <div class="form-group row"
              ng-if="layout.central">
-          <label class="col-lg-3 control-label">
+          <div class="col-xl-3 gt-form-label-xl">
             Based on
-          </label>
-          <div class="col-lg-9">
-            <div class="radio">
-              <label>
+          </div>
+          <div class="col-xl-9">
+            <div class="form-check">
+              <label class="form-check-label">
                 <input type="radio"
+                       class="form-check-input"
                        ng-model="config.condition.conditionType"
                        ng-disabled="!agentRollup.permissions.config.edit.alerts"
                        value="metric">
                 Metric
               </label>
             </div>
-            <div class="radio">
-              <label>
+            <div class="form-check">
+              <label class="form-check-label">
                 <input type="radio"
+                       class="form-check-input"
                        ng-model="config.condition.conditionType"
                        ng-disabled="!agentRollup.permissions.config.edit.alerts"
                        value="synthetic-monitor">
                 Synthetic monitor
               </label>
             </div>
-            <div class="radio">
-              <label>
+            <div class="form-check">
+              <label class="form-check-label">
                 <input type="radio"
+                       class="form-check-input"
                        ng-model="config.condition.conditionType"
                        ng-disabled="!agentRollup.permissions.config.edit.alerts"
                        value="heartbeat">
@@ -75,17 +80,16 @@
           </div>
         </div>
         <div ng-if="config.condition.conditionType === 'metric'">
-          <div class="form-group"
-               ng-class="{'has-error': formCtrl.conditionMetric.$invalid}">
-            <label class="col-lg-3 control-label"
+          <div class="form-group row">
+            <label class="col-xl-3 gt-form-label-xl"
                    for="conditionMetric">
               Metric
             </label>
-            <div class="col-lg-9">
+            <div class="col-xl-9">
               <select ng-model="config.condition.metric"
                       ng-disabled="!agentRollup.permissions.config.edit.alerts"
                       ng-required="config.condition.conditionType === 'metric'"
-                      class="form-control"
+                      class="custom-select"
                       name="conditionMetric"
                       id="conditionMetric"
                       style="width: auto;">
@@ -102,15 +106,15 @@
               </div>
             </div>
           </div>
-          <div class="form-group" ng-class="{'has-error': formCtrl.transactionType.$invalid}"
+          <div class="form-group row"
                ng-if="showTransactionTypeAndName()">
-            <label class="col-lg-3 control-label"
+            <label class="col-xl-3 gt-form-label-xl"
                    for="transactionType">
               Transaction type
             </label>
-            <div class="col-lg-9">
+            <div class="col-xl-9">
               <select ng-model="config.condition.transactionType"
-                      class="form-control"
+                      class="custom-select"
                       ng-required="loaded"
                       ng-disabled="!agentRollup.permissions.config.edit.alerts"
                       name="transactionType"
@@ -155,12 +159,12 @@
               The transaction response time percentile to use for alerting.
             </div>
           </div>
-          <div class="form-group" ng-class="{'has-error': formCtrl.conditionThreshold.$invalid}">
-            <label class="col-lg-3 control-label"
+          <div class="form-group row">
+            <label class="col-xl-3 gt-form-label-xl"
                    for="conditionThreshold">
               Threshold
             </label>
-            <div class="col-lg-9">
+            <div class="col-xl-9">
               <div ng-class="{'input-group' : unit}">
                 <input type="text"
                        class="form-control"
@@ -171,7 +175,10 @@
                        name="conditionThreshold"
                        id="conditionThreshold"
                        style="max-width: 7em;">
-                <span ng-if="unit && unit !== ' bytes'" class="input-group-addon">{{unit}}</span>
+                <div class="input-group-append"
+                     ng-if="unit && unit !== ' bytes'">
+                  <span class="input-group-text">{{unit}}</span>
+                </div>
                 <div gt-input-group-dropdown
                      gt-model="page.conditionThresholdByteUnit"
                      gt-items="conditionThresholdByteUnits"
@@ -241,14 +248,14 @@
           </div>
         </div>
         <div ng-if="config.condition.conditionType === 'synthetic-monitor'">
-          <div class="form-group" ng-class="{'has-error': formCtrl.syntheticMonitorId.$invalid}">
-            <label class="col-lg-3 control-label"
+          <div class="form-group row">
+            <label class="col-xl-3 gt-form-label-xl"
                    for="syntheticMonitorId">
               Synthetic monitor
             </label>
-            <div class="col-lg-9">
+            <div class="col-xl-9">
               <select ng-model="config.condition.syntheticMonitorId"
-                      class="form-control"
+                      class="custom-select"
                       ng-required="loaded"
                       ng-disabled="!agentRollup.permissions.config.edit.alerts"
                       name="syntheticMonitorId"
@@ -284,17 +291,18 @@
           </div>
         </div>
       </fieldset>
-      <fieldset>
-        <legend>Severity</legend>
-        <div class="form-group gt-form-group-without-help-block"
-             ng-class="{'has-error': formCtrl.severity.$invalid}">
-          <label class="col-lg-3 control-label"
+      <fieldset class="gt-fieldset">
+        <legend class="gt-legend">
+          Severity
+        </legend>
+        <div class="form-group row">
+          <label class="col-xl-3 gt-form-label-xl"
                  for="severity">
             Severity
           </label>
-          <div class="col-lg-9">
+          <div class="col-xl-9">
             <select ng-model="config.severity"
-                    class="form-control"
+                    class="custom-select"
                     id="severity"
                     name="severity"
                     ng-required="loaded"
@@ -309,8 +317,10 @@
           </div>
         </div>
       </fieldset>
-      <fieldset>
-        <legend>Email notification</legend>
+      <fieldset class="gt-fieldset">
+        <legend class="gt-legend">
+          Email notification
+        </legend>
         <div gt-form-group
              gt-type="textarea"
              gt-label="Email addresses"
@@ -322,18 +332,20 @@
           </div>
         </div>
       </fieldset>
-      <fieldset ng-if="pagerDutyIntegrationKeys.length">
-        <legend>PagerDuty notification</legend>
-        <div class="form-group"
-             ng-class="{'has-error': formCtrl.pagerDutyIntegrationKey.$invalid}">
-          <label class="col-lg-3 control-label"
+      <fieldset class="gt-fieldset"
+                ng-if="pagerDutyIntegrationKeys.length">
+        <legend class="gt-legend">
+          PagerDuty notification
+        </legend>
+        <div class="form-group row">
+          <label class="col-xl-3 gt-form-label-xl"
                  for="pagerDutyIntegrationKey">
             Integration key
           </label>
-          <div class="col-lg-9 gt-form-group-without-help-block">
+          <div class="col-xl-9">
             <select ng-model="config.pagerDutyNotification.pagerDutyIntegrationKey"
                     ng-disabled="!agentRollup.permissions.config.edit.alerts"
-                    class="form-control"
+                    class="custom-select"
                     name="pagerDutyIntegrationKey"
                     id="pagerDutyIntegrationKey"
                     style="width: auto;">
@@ -352,28 +364,27 @@
           </div>
         </div>
       </fieldset>
-      <div class="form-group gt-form-buttons"
+      <div class="form-group row gt-form-buttons-below-fieldset"
            ng-if="agentRollup.permissions.config.edit.alerts">
-        <div class="col-lg-offset-3 col-lg-9 gt-sometimes-legend-padding">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button-group>
             <div gt-button
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"
                  gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid"
-                 class="gt-inline-block">
+                 gt-validate-form="formCtrl"
+                 class="d-inline-block">
             </div>
-            <!-- using ng-show instead of gt-show -->
             <div gt-button
-                 ng-show="config.version"
+                 ng-if="config.version"
                  gt-label="Delete"
                  gt-click="delete(deferred)"
-                 gt-btn-class="gt-btn-danger"
-                 class="gt-inline-block">
+                 gt-btn-class="btn-danger"
+                 class="d-inline-block">
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 <!-- each page with confirmation dialog needs its own confirmation dom so that it is deleted on $destroy -->

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,14 @@ glowroot.controller('AdminHttpProxyCtrl', [
     };
 
     $scope.testHttpProxy = function (deferred) {
+      if (!$scope.page.testUrl) {
+        deferred.reject('Test URL is required');
+        return;
+      }
+      if (!$scope.config.host) {
+        deferred.reject('Host is required');
+        return;
+      }
       delete $scope.testHttpProxyResponse;
       var postData = angular.copy($scope.config);
       postData.testUrl = $scope.page.testUrl;

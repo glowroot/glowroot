@@ -158,8 +158,6 @@ glowroot.controller('IncidentsCtrl', [
 
     function scheduleNextRefresh() {
       timer = $timeout(function () {
-        // document.hidden is not supported by IE9 but that's ok, the condition will just evaluate to false
-        // and auto refresh will continue even while hidden under IE9
         if (document.hidden) {
           document.addEventListener('visibilitychange', onVisible);
         } else {

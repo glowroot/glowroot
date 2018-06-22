@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,39 +15,28 @@
  */
 package org.glowroot.tests.config;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class UserRecordingConfigPage {
-
-    private final WebDriver driver;
+public class UserRecordingConfigPage extends Page {
 
     public UserRecordingConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getUsersTextField() {
-        return withWait(xpath("//div[@gt-label='Users']//input"));
+        return getWithWait(xpath("//div[@gt-label='Users']//input"));
     }
 
     public WebElement getProfileIntervalTextField() {
-        return withWait(xpath("//div[@gt-label='Profile interval']//input"));
+        return getWithWait(xpath("//div[@gt-label='Profile interval']//input"));
     }
 
     public void clickSaveButton() {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
-    }
-
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
     }
 }

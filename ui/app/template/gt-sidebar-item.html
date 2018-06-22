@@ -1,4 +1,4 @@
-<a class="list-group-item selectable-list-group-item"
+<a class="list-group-item"
    aria-label="{{gtDisplay}}"
    ng-class="{active: isActive() || isSubActive()}"
    ng-href="{{gtUrl}}"
@@ -6,11 +6,13 @@
   <div ng-if="!gtDisplayRight">
     {{gtDisplay}}
   </div>
-  <table ng-if="gtDisplayRight"
-         style="width: 100%;">
-    <tr>
-      <td style="word-break: break-all; padding-right: 15px;">{{gtDisplay}}</td>
-      <td style="text-align: right; vertical-align: top; white-space: nowrap;">{{gtDisplayRight}}</td>
-    </tr>
-  </table>
+  <div class="d-flex justify-content-between"
+       ng-if="gtDisplayRight">
+    <div style="word-break: break-all;">
+      {{gtDisplay}}
+    </div>
+    <div class="pl-3" style="white-space: nowrap;">
+      {{gtDisplayRight}}
+    </div>
+  </div>
 </a>

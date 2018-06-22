@@ -15,7 +15,7 @@
  */
 
 .gt-full-screen-modal .modal-dialog {
-  width: auto;
+  max-width: inherit;
   overflow-y: scroll;
   position: fixed;
   left: 25px;
@@ -31,8 +31,12 @@
 
 .gt-full-screen-modal.modal .close {
   position: absolute;
-  right: 60px;
-  top: 35px;
+  right: 25px;
+  top: 25px;
+}
+
+.gt-full-screen-modal .modal-content {
+  border: none;
 }
 
 #queryModal .gt-clip {
@@ -46,9 +50,10 @@
 .modal .close {
   z-index: 100;
   // override bootstrap styling for modal close icon
-  // important: IE9 (haven't tried other IE versions) has strange behavior after hovering over and out of close button
-  // this override is no longer applied and the button gets very light (default bootstrap opacity .2)
-  // so bootstrap close.less is duplicated/modified to handle this
+  // important: IE9 (haven't tried other IE versions) has strange behavior after hovering over and
+  // out of close button
+  // this override is no longer applied and the button gets too light (default bootstrap opacity .2)
+  // so bootstrap close.scss is duplicated/modified to handle this
   opacity: .42 !important; // just enough opacity to meet accessibility contrast ratio
   font-size: 24px !important;
 }
@@ -58,13 +63,7 @@
   opacity: .62 !important;
 }
 
-@media screen and (min-width: @screen-lg-min) {
-  .trace-filters label {
-    padding-left: 0;
-  }
-}
-
-@media screen and (min-width: @screen-md-min) {
+@include media-breakpoint-up(lg) {
   .gt-trace-timer-table {
     max-width: 80%;
   }

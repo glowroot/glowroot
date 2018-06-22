@@ -13,17 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@import "../../bower_components/bootstrap/less/mixins";
+@import "../../bower_components/bootstrap/scss/mixins";
 @import "variables";
-
-.gt-form-group-without-help-block {
-  margin-bottom: 30px;
-}
-
-.gt-form-buttons {
-  /* give button same space as form elements */
-  padding-top: 10px;
-}
 
 .help-block {
   // override bootstrap styling to give a bit more space
@@ -31,13 +22,13 @@
   color: #767676; // override bootstrap to meet accessibility contrast ratio
 }
 
-.panel-heading h2 {
+.card-header h2 {
   margin: 10px 20px;
   font-weight: 600;
 }
 
 // add more padding to the panels
-.panel-body {
+.card-body {
   position: relative;
   padding: 30px;
   // min-height is needed for initial load spinner since no other content on page at that time
@@ -49,9 +40,10 @@
   position: absolute;
   top: 0;
   left: 0;
-  bottom: 0;
-  right: 0;
-  border-radius: 0 0 4px 4px;
+  width: 100%;
+  height: 100%;
+  padding-top: 20px;
+  padding-left: 20px;
   z-index: 500;
 }
 
@@ -66,10 +58,6 @@
   height: 80px;
 }
 
-.form-horizontal .control-label {
-  padding-bottom: 7px;
-}
-
 .gt-disabled {
   color: gray;
 }
@@ -79,16 +67,59 @@
   font-weight: bold;
 }
 
-// override bootstrap defaults
-.panel-body legend {
-  width: inherit;
-  padding: 0 10px;
+.gt-fieldset {
+  @extend .gt-fieldset-base;
+  @extend .pb-3;
+  @extend .pt-xl-3;
 }
 
-.panel-body fieldset {
-  margin-bottom: 20px;
-  padding-left: 20px;
-  padding-right: 20px;
+.gt-fieldset-environment {
+  @extend .gt-fieldset-base;
+  @extend .pb-4;
+}
+
+.gt-fieldset-base {
+  @extend .border;
+  @extend .px-4; // this needs to match padding in .gt-form-buttons-under-fieldset below
+  @extend .pt-1;
+  @extend .mb-3;
+}
+
+.gt-form-buttons-below-fieldset {
+  @extend .px-xl-4; // this needs to match padding in .gt-fieldset above
+  @extend .pt-3;
+}
+
+@include media-breakpoint-up(xl) {
+  .gt-fieldset-under-normal-form {
+    margin-left: -1.5rem !important; // this needs to match padding in .gt-fieldset above
+    margin-right: -1.5rem !important; // this needs to match padding in .gt-fieldset above
+  }
+}
+
+.gt-fieldset-under-normal-form .col-xl-3 {
+  @extend .pl-xl-4;
+}
+
+.gt-fieldset-under-normal-form .col-xl-9 {
+  @extend .pr-xl-4;
+}
+
+.gt-legend {
+  @extend .px-3;
+  @extend .w-auto;
+}
+
+.gt-form-label-xl {
+  @extend .col-form-label;
+  @extend .text-xl-right;
+  @extend .font-weight-600;
+  @extend .font-weight-xl-normal;
+}
+
+.gt-check-legend-xl {
+  @extend .gt-form-label-xl;
+  @extend .py-xl-0;
 }
 
 .has-error .help-block {
@@ -97,13 +128,8 @@
   color: #767676 !important;
 }
 
-.gt-send-email-fieldset {
-  margin-left: 0;
-  margin-right: 0;
-}
-
-.btn-default:not(.btn-primary) .gt-role-inactive-agent {
-  .gt-red;
+.btn-secondary:not(.btn-primary) .gt-role-inactive-agent {
+  color: $gt-red;
 }
 
 .gt-synthetic-java-source textarea {
@@ -115,7 +141,7 @@
 }
 
 .has-error .CodeMirror {
-  border: 1px solid @gt-red;
+  border: 1px solid $gt-red;
 }
 
 #gtSyntheticJavaSource .CodeMirror {
@@ -128,62 +154,29 @@
   background-color: #eee;
 }
 
-@media screen and (min-width: @screen-lg-min) {
-  .gt-send-email-fieldset {
-    margin-left: 20px;
-    margin-right: 20px;
+@include media-breakpoint-up(md) {
+  .modal-dialog.gt-modal-dialog-md {
+    max-width: 700px;
+    margin: 1.75rem auto;
   }
-
-  .form-horizontal fieldset .form-group {
-    margin-left: 0;
-    margin-right: 0;
-  }
-
-  .gt-sometimes-legend-padding {
-    padding-left: 34px;
-  }
-
-  .gt-sometimes-legend-padding-storage {
-    padding-left: 28px;
-  }
-
-  .gt-sometimes-legend-padding-smtp {
-    padding-left: 38px;
-  }
-}
-
-@media (min-width: @screen-sm-min) {
-  .modal-dialog.gt-modal-dialog-lg {
-    width: auto;
-    margin: 10px;
-  }
-}
-
-@media (min-width: 840px) {
-  .modal-dialog.gt-modal-dialog-lg {
-    width: 800px;
-    margin: 30px auto;
-  }
-}
-
-.gt-config-return-outer-div {
-  .clearfix;
 }
 
 .gt-config-return-link {
   display: block;
   float: right;
   margin: -10px 0 6px;
-  font-size: 16px;
+  font-size: 1rem;
 }
 
-@media (min-width: @screen-md-min) {
-  .gt-config-return-outer-div {
-    height: 0;
-  }
+@include media-breakpoint-up(lg) {
   .gt-config-return-link {
     position: relative;
-    top: -28px;
-    margin: 0;
+    top: -.75rem;
+    height: 1rem; // needs some minimal height or else webdriver will not click on it
+    margin: -1rem 0 0;
   }
+}
+
+.role-page label.custom-checkbox {
+  margin-bottom: 0.25rem;
 }

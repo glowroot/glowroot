@@ -3,39 +3,41 @@
     "Since you cannot dynamically generate the name attribute of input elements using interpolation, you have
      to wrap each set of repeated inputs in an ngForm directive and nest these in an outer form element."
 -->
-<div ng-form="formGroupCtrl" class="form-group" ng-class="{'has-error': formGroupCtrl['property' + gtId].$invalid}">
-  <div ng-switch="gtType">
-    <div ng-switch-when="checkbox">
-      <label class="control-label {{gtColClass1 || 'col-lg-3'}}"
-             style="margin-top: -7px;">
-        {{gtLabel}}
+<fieldset ng-form="formGroupCtrl"
+          class="form-group"
+          ng-if="gtType === 'checkbox'">
+  <div class="row">
+    <legend class="{{gtColClass1 || 'col-xl-3'}} gt-check-legend-xl">
+      {{gtLabel}}
+    </legend>
+    <div class="{{gtColClass2 || 'col-xl-9'}}">
+      <label class="custom-control custom-checkbox">
+        <input class="custom-control-input"
+               type="checkbox"
+               ng-model="$parent.ngModel"
+               ng-disabled="gtDisabled()"
+               name="{{'property' + gtId}}"
+               id="{{'property' + gtId}}">
+        <div class="custom-control-label">
+          {{gtCheckboxLabel}}
+        </div>
       </label>
-    </div>
-    <div ng-switch-default>
-      <label class="control-label {{gtColClass1 || 'col-lg-3'}}"
-             for="{{'property' + gtId}}">
-        {{gtLabel}}
-      </label>
+      <div ng-transclude></div>
     </div>
   </div>
-  <div class="{{gtColClass2 || 'col-lg-9'}}">
+</fieldset>
+<div ng-form="formGroupCtrl"
+     class="form-group row"
+     ng-if="gtType !== 'checkbox'">
+  <label class="{{gtColClass1 || 'col-xl-3'}} gt-form-label-xl"
+         for="{{'property' + gtId}}">
+    {{gtLabel}}
+  </label>
+  <div class="{{gtColClass2 || 'col-xl-9'}}">
     <div ng-switch="gtType">
-      <div ng-switch-when="checkbox">
-        <div class="checkbox"
-             style="margin-top: -7px;">
-          <label>
-            <input type="checkbox"
-                   ng-model="$parent.ngModel"
-                   ng-disabled="gtDisabled()"
-                   name="{{'property' + gtId}}"
-                   id="{{'property' + gtId}}">
-            {{gtCheckboxLabel}}
-          </label>
-        </div>
-      </div>
       <div ng-switch-when="textarea">
         <textarea class="form-control"
-                  ng-model="$parent.ngModel"
+                  ng-model="$parent.$parent.ngModel"
                   name="{{'property' + gtId}}"
                   id="{{'property' + gtId}}"
                   ng-required="gtRequired()"
@@ -43,30 +45,42 @@
                   ng-style="{'max-width': gtWidth ? gtWidth : 'none'}"
                   rows="{{gtRows ? gtRows : ''}}">
         </textarea>
+        <div class="gt-invalid-required-feedback"
+             ng-required="gtRequired()">
+          This is required.
+        </div>
       </div>
       <div ng-switch-when="codemirror">
         <div ui-codemirror
              ui-codemirror-opts="codeMirrorOpts"
-             ng-model="$parent.ngModel"
+             ng-model="$parent.$parent.ngModel"
              ng-class="{'codemirror-disabled': gtDisabled()}">
         </div>
       </div>
-      <div ng-switch-default>
-        <div ng-style="{display : gtWidth ? 'inline' : 'block'}">
-          <div ng-class="{'input-group' : gtAddon}">
-            <!-- gtType "text" and "password" are both used -->
-            <!-- using max-width below (instead of width) results in the addon floating to the right in IE9 -->
-            <input type="{{gtType}}"
-                   class="form-control"
-                   ng-model="$parent.ngModel"
-                   name="{{'property' + gtId}}"
-                   id="{{'property' + gtId}}"
-                   ng-pattern="ngPattern"
-                   ng-required="gtRequired()"
-                   ng-disabled="gtDisabled()"
-                   placeholder="{{gtPlaceholder}}"
-                   ng-style="{'max-width': gtWidth ? gtWidth : 'none'}">
-            <span ng-if="gtAddon" class="input-group-addon">{{gtAddon}}</span>
+      <div ng-switch-default
+           ng-style="{display : gtWidth ? 'inline' : 'block'}">
+        <div ng-class="{'input-group' : gtAddon}">
+          <!-- gtType "text" and "password" are both used -->
+          <!-- using max-width below (instead of width) results in the addon floating to the right in IE9 -->
+          <input type="{{gtType}}"
+                 class="form-control"
+                 ng-model="$parent.$parent.ngModel"
+                 name="{{'property' + gtId}}"
+                 id="{{'property' + gtId}}"
+                 ng-pattern="ngPattern"
+                 ng-required="gtRequired()"
+                 ng-disabled="gtDisabled()"
+                 placeholder="{{gtPlaceholder}}"
+                 ng-style="{'max-width': gtWidth ? gtWidth : 'none'}">
+          <div class="input-group-append"
+               ng-if="gtAddon">
+            <span class="input-group-text">{{gtAddon}}</span>
+          </div>
+          <div class="gt-invalid-required-feedback">
+            This is required.
+          </div>
+          <div class="gt-invalid-other-feedback">
+            This is invalid.
           </div>
         </div>
       </div>

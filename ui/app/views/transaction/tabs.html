@@ -13,17 +13,21 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<ul class="nav nav-tabs gt-transaction-tabs">
-  <li role="presentation" ng-class="{active: activeTabItem === 'time'}">
-    <a ng-href="transaction/average{{tabQueryString()}}"
+<ul class="nav nav-tabs gt-nav-tabs mb-3">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link"
+       ng-class="{active: activeTabItem === 'time'}"
+       ng-href="transaction/average{{tabQueryString()}}"
        ng-click="clickTab('time', $event)"
        ng-keydown="keydownTab(null, 'tab_traces', $event)"
        id="tab_time">
       Response time
     </a>
   </li>
-  <li role="presentation" ng-class="{active: activeTabItem === 'traces'}">
-    <a ng-href="transaction/traces{{tabQueryString()}}"
+  <li class="nav-item" role="presentation">
+    <a class="nav-link"
+       ng-class="{active: activeTabItem === 'traces'}"
+       ng-href="transaction/traces{{tabQueryString()}}"
        ng-click="clickTab('traces', $event)"
        ng-keydown="keydownTab('tab_time', 'tab_queries', $event)"
        ng-if="agentRollup.permissions.transaction.traces"
@@ -31,8 +35,10 @@
       {{transactionType === 'Startup' ? 'Traces' : 'Slow traces'}} ({{traceCountDisplay()}})
     </a>
   </li>
-  <li role="presentation" ng-class="{active: activeTabItem === 'queries'}">
-    <a ng-href="transaction/queries{{tabQueryString()}}"
+  <li class="nav-item" role="presentation">
+    <a class="nav-link"
+       ng-class="{active: activeTabItem === 'queries'}"
+       ng-href="transaction/queries{{tabQueryString()}}"
        ng-click="clickTab('queries', $event)"
        ng-keydown="keydownTab('tab_traces', 'tab_service_calls', $event)"
        ng-if="agentRollup.permissions.transaction.queries"
@@ -40,8 +46,10 @@
       Queries
     </a>
   </li>
-  <li role="presentation" ng-class="{active: activeTabItem === 'service-calls'}">
-    <a ng-href="transaction/service-calls{{tabQueryString()}}"
+  <li class="nav-item" role="presentation">
+    <a class="nav-link"
+       ng-class="{active: activeTabItem === 'service-calls'}"
+       ng-href="transaction/service-calls{{tabQueryString()}}"
        ng-click="clickTab('service-calls', $event)"
        ng-keydown="keydownTab('tab_queries', 'tab_thread_profile', $event)"
        ng-if="agentRollup.permissions.transaction.serviceCalls"
@@ -49,8 +57,10 @@
       Service calls
     </a>
   </li>
-  <li role="presentation" ng-class="{active: activeTabItem === 'thread-profile'}">
-    <a ng-href="transaction/thread-profile{{tabQueryString()}}"
+  <li class="nav-item" role="presentation">
+    <a class="nav-link"
+       ng-class="{active: activeTabItem === 'thread-profile'}"
+       ng-href="transaction/thread-profile{{tabQueryString()}}"
        ng-click="clickTab('thread-profile', $event)"
        ng-keydown="keydownTab('tab_service_calls', null, $event)"
        ng-if="agentRollup.permissions.transaction.threadProfile"

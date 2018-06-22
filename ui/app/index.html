@@ -17,9 +17,6 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- intentionally not using <meta http-equiv="X-UA-Compatible" content="IE=edge">
-       and instead sending http response header X-UA-Compatible: IE=edge
-       see https://github.com/h5bp/html5-boilerplate/blob/master/src/doc/html.md#x-ua-compatible -->
   <title>Glowroot</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -32,29 +29,12 @@
 
   <!-- build:css({.tmp,.}) styles/main.css -->
   <link rel="stylesheet" href="styles/main.css">
-  <link rel="stylesheet" href="bower_components/angular-ui-bootstrap/src/typeahead/typeahead.css">
-  <link rel="stylesheet" href="bower_components/angular-ui-bootstrap/src/tooltip/tooltip.css">
-  <link rel="stylesheet" href="bower_components/angular-ui-select/dist/select.css">
+  <link rel="stylesheet" href="bower_components/angular-ui-bootstrap4/src/typeahead/typeahead.css">
+  <link rel="stylesheet" href="bower_components/angular-ui-bootstrap4/src/tooltip/tooltip.css">
+  <link rel="stylesheet" href="bower_components/bootstrap-multiselect/dist/css/bootstrap-multiselect.css">
   <link rel="stylesheet" href="bower_components/d3-flame-graph/src/d3.flameGraph.css">
   <link rel="stylesheet" href="bower_components/codemirror/lib/codemirror.css">
   <!-- endbuild -->
-
-  <!--[if IE 9]>
-  <script>
-    if (typeof contextPath !== 'undefined' && contextPath !== '/' && location.pathname === contextPath) {
-      location.pathname += '/';
-    }
-    if (typeof console === 'undefined') {
-      // angular-ui-router doesn't protect calls to console.log and console.error
-      window.console = {
-        log: function () {
-        },
-        error: function () {
-        }
-      }
-    }
-  </script>
-  <![endif]-->
 
   <script>
     if (document.fonts) {
@@ -87,39 +67,41 @@
 </head>
 <body ng-app="glowroot"
       id="ng-app">
-<!--[if lt IE 9]>
+<!--[if lt IE 10]>
 <style>
   body div {
     display: none;
   }
 </style>
-<p style="text-align: center; padding-top: 50px; font-size: 20px;">
-  Glowroot UI does not support IE8 or prior
+<p style="text-align: center; padding-top: 50px; font-size: 1.25rem;">
+  Glowroot UI does not support IE9 or prior
 </p>
 <![endif]-->
-<header class="navbar navbar-inverse navbar-static-top"
-        role="banner">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button"
-              class="navbar-toggle"
-              ng-if="!hideNavbar()"
-              data-toggle="collapse"
-              data-target=".navbar-collapse">
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <div class="navbar-brand">
+<!-- the outer div is needed to fix IE11 flex bug, see https://github.com/philipwalton/flexbugs#flexbug-3 -->
+<div style="display: flex; flex-direction: column;">
+  <nav class="navbar navbar-expand-md navbar-dark gt-navbar py-0 align-items-stretch">
+    <div class="container align-items-stretch">
+      <div class="navbar-brand align-items-center"
+           style="margin-right: 1.25rem; margin-top: -0.25rem;">
         Glowroot
       </div>
-    </div>
-    <div class="ng-cloak"
-         ng-hide="hideNavbar()"
-         ng-controller="NavbarCtrl">
-      <nav class="collapse navbar-collapse">
-        <ul class="nav navbar-nav"
-            style="margin-bottom: 0;">
+      <button class="gt-navbar-toggler d-flex d-md-none"
+              type="button"
+              ng-if="!hideNavbar()"
+              data-toggle="collapse"
+              data-target="#navbarCollapse"
+              aria-controls="navbarCollapse"
+              aria-expanded="false"
+              aria-label="Toggle navigation">
+        <div class="navbar-toggler">
+          <span class="navbar-toggler-icon"></span>
+        </div>
+      </button>
+      <div class="collapse navbar-collapse ng-cloak align-items-stretch"
+           ng-hide="hideNavbar()"
+           ng-controller="NavbarCtrl"
+           id="navbarCollapse">
+        <ul class="navbar-nav mr-auto align-items-stretch">
           <div gt-navbar-item
                gt-display="Transactions"
                gt-item-name="transaction"
@@ -163,80 +145,78 @@
                ng-if="layout.showNavbarReport">
           </div>
         </ul>
-        <ul class="nav navbar-nav navbar-right"
-            style="margin-top: 0;">
-          <li class="dropdown ng-cloak"
+        <ul class="nav navbar-nav navbar-right align-items-stretch">
+          <li class="dropdown ng-cloak gt-gears-li"
               ng-class="{active: activeNavbarItem === 'gears'}"
               ng-if="layout.showNavbarConfig || layout.adminView || !layout.loggedIn && layout.loginEnabled || layout.loggedIn && !layout.ldap">
             <!-- id is used by webdriver tests -->
-            <button type="button"
-                    class="btn gt-gears-btn dropdown-toggle"
+            <button class="gt-gears-btn"
+                    type="button"
                     data-toggle="dropdown"
                     id="gtGearsMenuToggle"
                     aria-label="Settings"
                     aria-haspopup="true"
-                    aria-expanded="false">
-                <span class="fas fa-cogs"
-                      style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></span>
+                    aria-expanded="false"
+                    style="font-size: 1.5rem;">
+              <span class="fas fa-cogs"></span>
             </button>
             <!-- id is used by webdriver tests -->
-            <ul class="dropdown-menu"
-                id="gtGearsMenu">
-              <li ng-if="layout.showNavbarConfig">
-                <a ng-href="{{configUrl()}}"
-                   ng-click="collapseIfNeeded()"
-                   style="padding-top: 5px; padding-bottom: 5px;">
-                  Configuration
-                </a>
-              </li>
-              <li ng-if="layout.adminView">
-                <a href="admin/general"
-                   ng-click="collapseIfNeeded()"
-                   style="padding-top: 5px; padding-bottom: 5px;">
-                  Administration
-                </a>
-              </li>
-              <li ng-if="!layout.loggedIn && layout.loginEnabled">
-                <a href="login"
-                   ng-click="collapseIfNeeded(); goToLogin($event)"
-                   style="padding-top: 5px; padding-bottom: 5px;">
-                  Login
-                </a>
-              </li>
-              <li ng-if="layout.loggedIn && !layout.ldap">
-                <a ng-href="profile/change-password"
-                   ng-click="collapseIfNeeded()"
-                   style="padding-top: 5px; padding-bottom: 5px;">
-                  Change my password
-                </a>
-              </li>
-            </ul>
+            <div class="dropdown-menu dropdown-menu-right gt-gears-menu mt-0"
+                 id="gtGearsMenu">
+              <a class="dropdown-item"
+                 ng-href="{{configUrl()}}"
+                 ng-click="collapseIfNeeded()"
+                 ng-if="layout.showNavbarConfig"
+                 style="padding-top: 5px; padding-bottom: 5px;">
+                Configuration
+              </a>
+              <a class="dropdown-item"
+                 href="admin/general"
+                 ng-click="collapseIfNeeded()"
+                 ng-if="layout.adminView"
+                 style="padding-top: 5px; padding-bottom: 5px;">
+                Administration
+              </a>
+              <a class="dropdown-item"
+                 href="login"
+                 ng-click="collapseIfNeeded(); goToLogin($event)"
+                 ng-if="!layout.loggedIn && layout.loginEnabled"
+                 style="padding-top: 5px; padding-bottom: 5px;">
+                Login
+              </a>
+              <a class="dropdown-item"
+                 ng-href="profile/change-password"
+                 ng-click="collapseIfNeeded()"
+                 ng-if="layout.loggedIn && !layout.ldap"
+                 style="padding-top: 5px; padding-bottom: 5px;">
+                Change my password
+              </a>
+            </div>
           </li>
           <li class="ng-cloak" ng-if="layout.loggedIn">
-            <a href="#"
-               ng-click="signOut()"
-               style="padding-top: 14px; padding-bottom: 0; height: 50px;">
-              <span title="Sign out"
-                    class="fas fa-sign-out-alt"
-                    style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></span>
-            </a>
+            <button class="gt-gears-btn"
+                    type="button"
+                    ng-click="signOut()"
+                    style="font-size: 1.5rem;">
+              <span title="Sign out" class="fas fa-sign-out-alt"></span>
+            </button>
           </li>
         </ul>
-      </nav>
+      </div>
     </div>
-  </div>
-</header>
+  </nav>
+</div>
 <main class="container"
       role="main"
       id="container">
   <div class="ng-cloak gt-button-message-success"
        ng-if="displaySignOutMessage"
-       style="text-align: center; font-size: 20px; font-weight: 600; height: 0;">
+       style="text-align: center; font-size: 1.25rem; font-weight: 600; height: 0;">
     You have been signed out
   </div>
   <div class="ng-cloak gt-button-message-error"
        ng-if="navbarErrorMessage"
-       style="text-align: center; font-size: 20px; font-weight: 600; height: 0;">
+       style="text-align: center; font-size: 1.25rem; font-weight: 600; height: 0;">
     {{navbarErrorMessage}}
   </div>
   <div ui-view></div>
@@ -257,44 +237,35 @@
 <script src="bower_components/angular/angular.js"></script>
 <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
 <script src="bower_components/handlebars/handlebars.runtime.js"></script>
+<script src="bower_components/bootstrap/js/dist/util.js"></script>
 <!-- bootstrap modal is much better than angular-ui-modal
      in particular around dealing with vertical scrollbar to prevent background jitter -->
-<script src="bower_components/bootstrap/js/modal.js"></script>
+<script src="bower_components/bootstrap/js/dist/modal.js"></script>
 <!-- collapse is needed for the navbar on small screen (mobile) -->
-<script src="bower_components/bootstrap/js/collapse.js"></script>
-<!-- transition is needed for the navbar open/close effect on small screen (mobile) -->
-<script src="bower_components/bootstrap/js/transition.js"></script>
+<script src="bower_components/bootstrap/js/dist/collapse.js"></script>
+<!-- popper is needed by dropdown -->
+<script src="bower_components/popper.js/dist/umd/popper.js"></script>
 <!-- dropdown is needed for bootstrap-select (used by transaction sidebar) -->
-<script src="bower_components/bootstrap/js/dropdown.js"></script>
+<script src="bower_components/bootstrap/js/dist/dropdown.js"></script>
 <!-- tooltip is used by copy to clipboard -->
-<script src="bower_components/bootstrap/js/tooltip.js"></script>
-<!-- buttons is used by button-group styled radio buttons (e.g. On/Off) -->
-<script src="bower_components/angular-ui-bootstrap/src/buttons/buttons.js"></script>
-<!-- dropdown is used by the trace search form (e.g. begins with / equals / ends with / contains) -->
-<script src="bower_components/angular-ui-bootstrap/src/dropdown/dropdown.js"></script>
+<script src="bower_components/bootstrap/js/dist/tooltip.js"></script>
 <!-- typeahead is used by instrumentation view -->
-<script src="bower_components/angular-ui-bootstrap/src/typeahead/typeahead.js"></script>
+<script src="bower_components/angular-ui-bootstrap4/src/typeahead/typeahead.js"></script>
 <!-- position is needed by typeahead -->
-<script src="bower_components/angular-ui-bootstrap/src/position/position.js"></script>
+<script src="bower_components/angular-ui-bootstrap4/src/position/position.js"></script>
 <!-- debounce is needed by typeahead -->
-<script src="bower_components/angular-ui-bootstrap/src/debounce/debounce.js"></script>
-<!-- modal is used for config unsaved changes confirmation -->
-<script src="bower_components/angular-ui-bootstrap/src/modal/modal.js"></script>
+<script src="bower_components/angular-ui-bootstrap4/src/debounce/debounce.js"></script>
 <!-- popover is used for chart help -->
-<script src="bower_components/angular-ui-bootstrap/src/popover/popover.js"></script>
+<script src="bower_components/angular-ui-bootstrap4/src/popover/popover.js"></script>
 <!-- tooltip is needed by popover -->
-<script src="bower_components/angular-ui-bootstrap/src/tooltip/tooltip.js"></script>
+<script src="bower_components/angular-ui-bootstrap4/src/tooltip/tooltip.js"></script>
 <!-- stackedMap is needed by tooltip -->
-<script src="bower_components/angular-ui-bootstrap/src/stackedMap/stackedMap.js"></script>
-<!-- multiMap is needed by dropdown and modal -->
-<script src="bower_components/angular-ui-bootstrap/src/multiMap/multiMap.js"></script>
-<script src="bower_components/angular-ui-select/dist/select.js"></script>
-<!-- angular-sanitize is needed by angular-ui-select -->
-<script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
+<script src="bower_components/angular-ui-bootstrap4/src/stackedMap/stackedMap.js"></script>
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/moment-timezone/builds/moment-timezone-with-data.js"></script>
-<script src="bower_components/eonasdan-bootstrap-datetimepicker/src/js/bootstrap-datetimepicker.js"></script>
+<script src="bower_components/tempusdominus/build/js/tempusdominus-bootstrap-4.js"></script>
 <script src="bower_components/bootstrap-select/js/bootstrap-select.js"></script>
+<script src="bower_components/bootstrap-multiselect/dist/js/bootstrap-multiselect.js"></script>
 <script src="bower_components/flot/src/jquery.flot.js"></script>
 <script src="bower_components/flot/lib/jquery.colorhelpers.js"></script>
 <script src="bower_components/flot/lib/jquery.mousewheel.js"></script>
@@ -311,8 +282,9 @@
 <script src="bower_components/codemirror/mode/clike/clike.js"></script>
 <script src="bower_components/codemirror/addon/edit/matchbrackets.js"></script>
 <script src="bower_components/angular-ui-codemirror/ui-codemirror.js"></script>
-<!-- angular-ui-bootstrap-templates.js is generated at build time by grunt-angular-templates -->
-<script src="scripts/generated/angular-ui-bootstrap-templates.js"></script>
+<!-- angular-ui-bootstrap4-templates.js is generated at build time by grunt-angular-templates -->
+<script src="scripts/generated/angular-ui-bootstrap4-templates.js"></script>
+<script src="bower_components/focus-visible/src/focus-visible.js"></script>
 <!-- endbuild -->
 
 <!-- build:js({.tmp,app}) scripts/scripts.js -->

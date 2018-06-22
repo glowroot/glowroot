@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
@@ -262,10 +263,8 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         Set<ObjectName> objectNames = getObjectNames(mbeanObjectName);
         ImmutableList<String> attributeNames =
                 Ordering.natural().immutableSortedCopy(getAttributeNames(objectNames));
-        boolean pattern = mbeanObjectName.contains("*");
         return MBeanMeta.newBuilder()
-                .setUnmatched(objectNames.isEmpty() && pattern)
-                .setUnavailable(objectNames.isEmpty() && !pattern)
+                .setNoMatchFound(objectNames.isEmpty())
                 .addAllAttributeName(attributeNames)
                 .build();
     }
@@ -479,6 +478,11 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         if (objectName.isPattern()) {
             return lazyPlatformMBeanServer.queryNames(objectName, null);
         } else {
+            try {
+                lazyPlatformMBeanServer.getMBeanInfo(objectName);
+            } catch (InstanceNotFoundException e) {
+                return ImmutableSet.of();
+            }
             return ImmutableSet.of(objectName);
         }
     }

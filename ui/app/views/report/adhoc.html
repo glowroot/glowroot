@@ -16,69 +16,68 @@
 
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
 <div style="margin: 15px;">
-  <div ng-form
-       class="form-horizontal"
-       name="formCtrl"
-       style="padding-top: 15px;">
-
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
+  <form name="formCtrl"
+        style="padding-top: 15px;"
+        novalidate>
+    <div class="form-group row">
+      <label class="col-xl-3 gt-form-label-xl"
              for="reportFromDate">
         From
       </label>
-      <div class="col-lg-9">
-        <div gt-date-picker gt-model="report.fromDate" gt-id="reportFromDate"></div>
+      <div class="col-xl-9">
+        <div gt-date-picker
+             gt-model="report.fromDate"
+             gt-form="formCtrl"
+             gt-id="reportFromDate"></div>
       </div>
     </div>
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
+    <div class="form-group row">
+      <label class="col-xl-3 gt-form-label-xl"
              for="reportToDate">
         To
       </label>
-      <div class="col-lg-9">
-        <div gt-date-picker gt-model="report.toDate" gt-id="reportToDate"></div>
+      <div class="col-xl-9">
+        <div gt-date-picker
+             gt-model="report.toDate"
+             gt-form="formCtrl"
+             gt-id="reportToDate"></div>
       </div>
     </div>
-    <div class="form-group"
-         ng-class="{'has-error': !report.agentRollupIds.length}"
+    <div class="form-group row"
          ng-if="layout.central">
-      <label class="col-lg-3 control-label"
+      <label class="col-xl-3 gt-form-label-xl"
              for="reportAgentRollupIds">
         Agents
       </label>
-      <div class="col-lg-9">
-        <!-- using remove-selected="false" in order to preserve hierarchy when parent agent rollups are selected -->
-        <ui-select multiple
-                   ng-model="report.agentRollupIds"
-                   ng-required="true"
-                   theme="bootstrap"
-                   close-on-select="false"
-                   style="min-width: 200px; max-width: 650px;"
-                   title="Choose agents"
-                   remove-selected="false">
-          <ui-select-match placeholder="Select agents...">{{$item.display}}</ui-select-match>
-          <ui-select-choices
-              repeat="agentRollup.id as agentRollup in allAgentRollups | filter: {display: $select.search}"
-              ui-disable-choice="agentRollup.disabled">
-            <div ng-bind-html="agentRollup.indentedDisplay | highlight: $select.search"
-                 ng-class="{'gt-italic': agentRollup.italic}"></div>
-          </ui-select-choices>
-        </ui-select>
+      <div class="col-xl-9">
+        <select gt-multiselect
+                multiple
+                ng-model="report.agentRollupIds"
+                required
+                class="d-none"
+                style="min-width: 200px; max-width: 650px;"
+                gt-none-selected-text="Select agents..."
+                id="reportAgentRollupIdSelect">
+          <option ng-repeat="agentRollup in allAgentRollups track by agentRollup.id"
+                  ng-value="agentRollup.id" data-val="{{agentRollup}}">
+            {{agentRollup.indentedDisplay}}
+          </option>
+        </select>
       </div>
     </div>
-    <div class="form-group"
-         ng-class="{'has-error': formCtrl.reportMetric.$invalid}">
-      <label class="col-lg-3 control-label"
+    <div class="form-group row">
+      <label class="col-xl-3 gt-form-label-xl"
              for="reportMetric">
         Metric
       </label>
-      <div class="col-lg-9">
+      <div class="col-xl-9">
         <select ng-model="report.metric"
                 ng-required="true"
-                class="form-control"
+                class="custom-select"
                 name="reportMetric"
                 id="reportMetric"
                 style="width: auto;">
+          <option value="" ng-if="!report.metric" disabled></option>
           <option ng-repeat="metric in metrics track by metric.id"
                   ng-value="metric.id"
                   ng-disabled="metric.disabled"
@@ -88,25 +87,25 @@
         </select>
       </div>
     </div>
-    <div class="form-group"
-         ng-class="{'has-error': formCtrl.reportTransactionType.$invalid}"
+    <div class="form-group row"
          ng-if="showTransactionTypeAndName()">
-      <label class="col-lg-3 control-label"
+      <label class="col-xl-3 gt-form-label-xl"
              for="reportTransactionType">
         Transaction type
       </label>
-      <div class="col-lg-9">
+      <div class="col-xl-9">
         <select ng-model="report.transactionType"
-                ng-required="true"
-                class="form-control"
+                class="custom-select"
                 name="reportTransactionType"
                 id="reportTransactionType"
-                style="width: 100%; max-width: 25em;">
+                style="width: 100%; max-width: 25em;"
+                required>
           <option value="__________"
                   disabled
                   ng-if="!report.agentRollupIds.length">
             (select one or more agents to see available transaction types)
           </option>
+          <option value="" ng-if="report.agentRollupIds.length && !report.transactionType" disabled></option>
           <option ng-repeat="transactionType in transactionTypes"
                   ng-value="transactionType">
             {{transactionType}}
@@ -130,29 +129,29 @@
          gt-required="report.metric === 'transaction:x-percentile'"
          ng-if="report.metric === 'transaction:x-percentile'">
     </div>
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
+    <div class="form-group row">
+      <label class="col-xl-3 gt-form-label-xl"
              for="reportRollup">
         Rollup
       </label>
-      <div class="col-lg-9">
+      <div class="col-xl-9">
         <select ng-model="report.rollup"
                 ng-options="rollup.toLowerCase() as rollup for rollup in rollups"
-                class="form-control"
+                class="custom-select"
                 id="reportRollup"
                 style="width: 100%; max-width: 10em;">
         </select>
       </div>
     </div>
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
+    <div class="form-group row">
+      <label class="col-xl-3 gt-form-label-xl"
              for="reportTimeZone">
         Time zone
       </label>
-      <div class="col-lg-9">
+      <div class="col-xl-9">
         <select ng-model="report.timeZoneId"
                 ng-options="timeZoneId for timeZoneId in timeZoneIds"
-                class="form-control"
+                class="custom-select"
                 id="reportTimeZone"
                 style="width: 100%; width: auto;">
         </select>
@@ -162,20 +161,20 @@
         </div>
       </div>
     </div>
-    <div class="form-group gt-form-buttons">
-      <div class="col-lg-offset-3 col-lg-9">
+    <div class="form-group row pt-3 pt-xl-0">
+      <div class="offset-xl-3 col-xl-9">
         <div gt-button
              gt-label="Run report"
              gt-click="runReport(deferred)"
-             gt-disabled="formCtrl.$invalid"
-             class="gt-inline-block">
+             gt-validate-form="formCtrl"
+             class="d-inline-block">
         </div>
       </div>
     </div>
-  </div>
-  <div ng-show="showChart" style="position: relative;">
+  </form>
+  <div ng-if="showChart" style="position: relative;">
     <div class="gt-panel-overlay"
-         ng-show="showChartSpinner"
+         ng-if="showChartSpinner"
          style="right: -20px; pointer-events: none;">
     </div>
     <div class="gt-chart-container">
@@ -186,7 +185,7 @@
            class="gt-chart-panel">
       </div>
       <div class="gt-chart-dimensions" id="chart"></div>
-      <div ng-show="chartNoData && !showChartSpinner"
+      <div ng-if="chartNoData && !showChartSpinner"
            class="gt-chart-panel"
            style="display: table;">
         <div style="display: table-cell; text-align: center; vertical-align: middle;">
@@ -197,16 +196,16 @@
     <div class="legend" id="chartLegend"
          ng-hide="chartNoData || !layout.central"
          style="text-align: center; margin-top: 10px; width: 100%;">
-      <div class="gt-inline-block" style="max-width: 600px;">
-        <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
+      <div class="d-inline-block" style="max-width: 600px;">
+        <div class="d-inline-block" ng-repeat="seriesLabel in seriesLabels"
              style="margin: 0 6px;">
-          <div class="legendColorBox gt-inline-block"
+          <div class="legendColorBox d-inline-block"
                style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
             <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
                  ng-style="{'border': '5px solid ' + seriesLabel.color}">
             </div>
           </div>
-          <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
+          <div class="legendLabel d-inline-block">{{seriesLabel.text}}</div>
         </div>
       </div>
     </div>
@@ -222,21 +221,27 @@
             style="text-align: right;">
           <a ng-click="sort(xval)"
              class="gt-sortable-table-header"
+             ng-if="layout.central"
              style="cursor: pointer;">
-              <span ng-class="sortIconClass(xval)">
-              </span>
+            <span ng-class="sortIconClass(xval)"></span>
             {{columnHeader(xval)}}
           </a>
+          <span ng-if="!layout.central">
+            {{columnHeader(xval)}}
+          </span>
         </th>
         <th scope="col"
             style="text-align: right;">
           <a ng-click="sort('overall')"
              class="gt-sortable-table-header"
+             ng-if="layout.central"
              style="cursor: pointer; white-space: nowrap;">
-              <span ng-class="sortIconClass('overall')">
-              </span>
+            <span ng-class="sortIconClass('overall')"></span>
             Overall
           </a>
+          <span ng-if="!layout.central">
+            Overall
+          </span>
         </th>
       </tr>
       </thead>
@@ -264,7 +269,7 @@
       </tr>
       </tbody>
     </table>
-    <button class="btn btn-default"
+    <button class="btn btn-secondary"
             ng-click="exportAsCsv()"
             ng-if="!chartNoData">
       Export as CSV

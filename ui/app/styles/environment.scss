@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@import "../../bower_components/bootstrap/less/variables";
+@import "../../bower_components/bootstrap/scss/variables";
 
 .gt-jvm-general-row {
   padding-top: 5px;
@@ -24,13 +24,17 @@
   padding-bottom: 10px;
 }
 
+.gt-jvm-general-row .gt-jvm-argument:last-of-type {
+  padding-bottom: 0;
+}
+
 .gt-capability {
   padding-top: 5px;
   padding-bottom: 5px;
 }
 
 .gt-capability label {
-  margin-bottom: 0px !important;
+  margin-bottom: 0 !important;
 }
 
 .gt-heap-dump-response td {

@@ -426,28 +426,13 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       }
     };
 
-    $scope.gaugeColorStyle = function (gaugeName) {
-      var style = {
-        width: '60px',
-        height: '18px'
-      };
-      var color = chartState.keyedColorPool.get(gaugeName);
-      if (color) {
-        style['background-color'] = color;
+    $scope.showGaugeScales = function () {
+      for (var i = 0; i < $scope.seriesLabels.length; i++) {
+        if (gaugeScales[$scope.seriesLabels[i].name] !== 1) {
+          return true;
+        }
       }
-      return style;
-    };
-
-    $scope.hasGaugeScale = function (gaugeName) {
-      return gaugeScales[gaugeName] || emptyGaugeNames[gaugeName];
-    };
-
-    $scope.gaugeScaleStyle = function (gaugeName) {
-      if (gaugeScales[gaugeName]) {
-        return {};
-      } else {
-        return {'font-style': 'italic'};
-      }
+      return false;
     };
 
     $scope.getGaugeScale = function (gaugeName) {

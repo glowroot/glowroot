@@ -26,10 +26,10 @@
   </div>
   <!-- negative right position is so overlay will cover view flame graph link which sticks slightly beyond container -->
   <div class="gt-panel-overlay"
-       ng-show="showSpinner"
+       ng-if="showSpinner"
        style="right: -20px;">
   </div>
-  <div ng-show="!showSpinner && !showServiceCalls && !httpError"
+  <div ng-if="!showSpinner && !showServiceCalls && !httpError"
        style="display: table; width: 100%; height: 100%; margin-top: 50px;">
     <div style="display: table-cell; text-align: center; vertical-align: middle;">
       <div class="gt-chart-no-data"
@@ -37,7 +37,7 @@
         No data for this time period
       </div>
       <div class="gt-chart-no-data"
-           ng-show="showOverwrittenMessage">
+           ng-if="showOverwrittenMessage">
         There was service data but it has expired, see
         <a href="admin/storage#rollup-capped-database-size">
           Configuration &gt; Storage &gt; Queries, service calls and continuous profiling tab data
@@ -45,16 +45,16 @@
       </div>
     </div>
   </div>
-  <div ng-show="showServiceCalls">
-    <table class="table query-table"
+  <div ng-if="showServiceCalls">
+    <table class="table gt-query-table"
            style="table-layout: fixed;">
       <thead>
       <tr>
         <th style="vertical-align: middle;">
-          <select class="form-control"
+          <select class="custom-select"
                   ng-model="type"
                   style="width: inherit;"
-                  ng-show="types.length > 1">
+                  ng-if="types.length > 1">
             <option selected value="">(All)</option>
             <option ng-repeat="type in types" ng-value="type">{{type}}</option>
           </select>
@@ -66,7 +66,7 @@
             Total<br>
             time<br>
             <span ng-class="sortIconClass('total-time')"
-                  ng-show="sortAttribute === 'total-time'">
+                  ng-if="sortAttribute === 'total-time'">
             </span>
             (ms)
           </a>
@@ -75,9 +75,9 @@
             ng-attr-aria-sort="{{ngAttrAriaSort('execution-count')}}"
             class="gt-query-other-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('execution-count')}}" class="gt-sortable-table-header">
-            Execution<br>
+            Total<br>
             <span ng-class="sortIconClass('execution-count')"
-                  ng-show="sortAttribute === 'execution-count'">
+                  ng-if="sortAttribute === 'execution-count'">
             </span>
             count
           </a>
@@ -86,10 +86,10 @@
             ng-attr-aria-sort="{{ngAttrAriaSort('time-per-execution')}}"
             class="gt-query-other-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('time-per-execution')}}" class="gt-sortable-table-header">
-            Time per<br>
-            execution<br>
+            Avg<br>
+            time<br>
             <span ng-class="sortIconClass('time-per-execution')"
-                  ng-show="sortAttribute === 'time-per-execution'">
+                  ng-if="sortAttribute === 'time-per-execution'">
             </span>
             (ms)
           </a>

@@ -13,31 +13,31 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-config-return-outer-div">
+<!-- clearfix is needed for smaller screens where gt-config-return-link is floated  -->
+<div class="clearfix">
   <a class="gt-config-return-link"
      href="config/plugin-list{{agentQueryString()}}">
     Return to list
   </a>
 </div>
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
       Plugins
-      <span class="gt-inline-block gt-separator">
+      <span class="d-inline-block gt-separator">
         |
       </span>
       <span style="font-size: 24px;">{{config.name}}</span>
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <div ng-form
-         gt-form-autofocus-on-first-input
-         ng-show="loaded"
-         class="form-horizontal"
-         name="formCtrl"
-         style="padding-top: 15px;">
+    <form gt-form-autofocus-on-first-input
+          ng-if="loaded"
+          name="formCtrl"
+          style="padding-top: 15px;"
+          novalidate>
       <div ng-repeat="property in config.properties">
         <div ng-switch on="property.type">
           <div ng-switch-when="string">
@@ -45,11 +45,9 @@
                  gt-label="{{property.label}}"
                  gt-model="property.value"
                  gt-disabled="!agentRollup.permissions.config.edit.plugins"
-                 gt-width="25em"
-                 ng-class="{ 'gt-form-group-without-help-block': property.description === null }"
-                 gt-col-class1="col-lg-4"
-                 gt-col-class2="col-lg-8">
-              <div class="help-block">
+                 gt-width="25em">
+              <div class="help-block"
+                   ng-if="property.description">
                 {{property.description}}
               </div>
             </div>
@@ -60,11 +58,9 @@
                  gt-label="{{property.label}}"
                  gt-checkbox-label="{{property.checkboxLabel}}"
                  gt-model="property.value"
-                 gt-disabled="!agentRollup.permissions.config.edit.plugins"
-                 ng-class="{ 'gt-form-group-without-help-block': property.description === null }"
-                 gt-col-class1="col-lg-4"
-                 gt-col-class2="col-lg-8">
-              <div class="help-block">
+                 gt-disabled="!agentRollup.permissions.config.edit.plugins">
+              <div class="help-block"
+                   ng-if="property.description">
                 {{property.description}}
               </div>
             </div>
@@ -76,28 +72,26 @@
                  gt-disabled="!agentRollup.permissions.config.edit.plugins"
                  gt-number="true"
                  gt-pattern="pattern.double"
-                 gt-width="7em"
-                 ng-class="{ 'gt-form-group-without-help-block': property.description === null }"
-                 gt-col-class1="col-lg-4"
-                 gt-col-class2="col-lg-8">
-              <div class="help-block">
+                 gt-width="7em">
+              <div class="help-block"
+                   ng-if="property.description">
                 {{property.description}}
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="form-group gt-form-buttons"
+      <div class="form-group row"
            ng-if="agentRollup.permissions.config.edit.plugins">
-        <div class="col-lg-offset-4 col-lg-8">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button
                gt-label="Save changes"
                gt-click="save(deferred)"
-               gt-disabled="formCtrl.$invalid">
+               gt-validate-form="formCtrl">
           </div>
         </div>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 <!-- each page with confirmation dialog needs its own confirmation dom so that it is deleted on $destroy -->

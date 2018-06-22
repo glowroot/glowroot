@@ -25,9 +25,9 @@ module.exports = function (grunt) {
 
     // Watches files for changes and runs tasks based on the changed files
     watch: {
-      less: {
-        files: ['<%= yeoman.app %>/styles/*.less'],
-        tasks: ['less']
+      sass: {
+        files: ['<%= yeoman.app %>/styles/*.scss'],
+        tasks: ['sass', 'postcss:autoprefixonly']
       },
       handlebars: {
         files: ['<%= yeoman.app %>/hbs/*.hbs'],
@@ -45,7 +45,7 @@ module.exports = function (grunt) {
           '<%= yeoman.app %>/scripts/**/*.js',
           '<%= yeoman.app %>/views/**/*.html',
           '<%= yeoman.app %>/template/**/*.html',
-          // watch:less output
+          // watch:sass output
           '.tmp/styles/main.css',
           // watch:handlebars output
           '.tmp/scripts/generated/handlebars-templates.js'
@@ -105,7 +105,7 @@ module.exports = function (grunt) {
             connect().use('/bower_components', serveStatic('bower_components')),
             serveStatic(appConfig.app),
             connect().use('/fonts', serveStatic('bower_components/fontawesome/web-fonts-with-css/webfonts')),
-            connect().use('/uib/template', serveStatic('bower_components/angular-ui-bootstrap/template'))
+            connect().use('/uib/template', serveStatic('bower_components/angular-ui-bootstrap4/template'))
           ];
         }
       },
@@ -201,12 +201,42 @@ module.exports = function (grunt) {
       }
     },
 
-    less: {
+    sass: {
+      options: {
+        implementation: require('node-sass'),
+        sourceMap: true
+      },
       dist: {
         files: {
-          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.less',
-          '.tmp/styles/export.css': '<%= yeoman.app %>/styles/export.less'
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss',
+          '.tmp/styles/export.css': '<%= yeoman.app %>/styles/export.scss'
         }
+      }
+    },
+
+    postcss: {
+      autoprefixonly: {
+        options: {
+          processors: [
+            require('autoprefixer')({browsers: 'last 2 versions'})
+          ]
+        },
+        // FIXME NEED TO WRITE TO ANOTHER PLACE SO IT DOESN'T END UP IN LOOP!
+        src: '.tmp/styles/*.css'
+      },
+      dist: {
+        options: {
+          map: {
+            inline: false,
+            annotation: '.tmp/styles/maps/'
+          },
+          processors: [
+            require('autoprefixer')({browsers: 'last 2 versions'}),
+            require('cssnano')()
+          ]
+        },
+        // FIXME NEED TO WRITE TO ANOTHER PLACE SO IT DOESN'T END UP IN LOOP!
+        src: '.tmp/styles/*.css'
       }
     },
 
@@ -227,13 +257,13 @@ module.exports = function (grunt) {
           module: 'ui.bootstrap.typeahead',
           prefix: 'uib'
         },
-        cwd: 'bower_components/angular-ui-bootstrap',
+        cwd: 'bower_components/angular-ui-bootstrap4',
         src: [
           'template/typeahead/*.html',
           'template/modal/*.html',
           'template/popover/*.html'
         ],
-        dest: '.tmp/scripts/generated/angular-ui-bootstrap-templates.js'
+        dest: '.tmp/scripts/generated/angular-ui-bootstrap4-templates.js'
       },
       appTemplates: {
         options: {
@@ -288,7 +318,6 @@ module.exports = function (grunt) {
             cwd: 'bower_components/fontawesome/web-fonts-with-css/webfonts',
             dest: '<%= yeoman.dist %>/fonts',
             src: [
-              // only supporting IE9+ so only need woff/woff2
               'fa-regular-400.woff{,2}',
               'fa-solid-900.woff{,2}'
             ]
@@ -390,7 +419,8 @@ module.exports = function (grunt) {
     }
     grunt.task.run([
       'clean:serve',
-      'less',
+      'sass',
+      'postcss:autoprefixonly',
       'handlebars',
       'configureRewriteRules',
       'configureProxies:' + target,
@@ -402,7 +432,8 @@ module.exports = function (grunt) {
   grunt.registerTask('build', [
     'clean:dist',
     'useminPrepare',
-    'less',
+    'sass',
+    'postcss:dist',
     'ngtemplates',
     'handlebars',
     'concat',

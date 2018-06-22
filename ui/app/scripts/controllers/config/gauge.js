@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ glowroot.controller('ConfigGaugeCtrl', [
       if (data.config.mbeanObjectName) {
         $scope.heading = data.config.display;
         $scope.selectedMBeanObjectName = data.config.mbeanObjectName;
-        $scope.mbeanUnavailable = data.mbeanUnavailable;
-        $scope.mbeanUnmatched = data.mbeanUnmatched;
+        $scope.noMatchFoundForPattern = data.noMatchFoundForPattern;
+        $scope.noMatchFoundForNonPattern = data.noMatchFoundForNonPattern;
         var allMBeanAttributes = {};
         angular.forEach(data.mbeanAvailableAttributeNames, function (mbeanAttributeName) {
           allMBeanAttributes[mbeanAttributeName] = {
@@ -163,8 +163,8 @@ glowroot.controller('ConfigGaugeCtrl', [
     $scope.onBlurMBeanObjectName = function () {
       if (!$scope.config.mbeanObjectName) {
         // the user cleared the text input and tabbed away
-        $scope.mbeanUnavailable = false;
-        $scope.mbeanUnmatched = false;
+        $scope.noMatchFoundForPattern = false;
+        $scope.noMatchFoundForNonPattern = false;
         $scope.duplicateMBean = false;
         $scope.allMBeanAttributes = [];
       }
@@ -181,8 +181,8 @@ glowroot.controller('ConfigGaugeCtrl', [
           .then(function (response) {
             $scope.mbeanAttributesLoading = false;
             var data = response.data;
-            $scope.mbeanUnavailable = data.mbeanUnavailable;
-            $scope.mbeanUnmatched = data.mbeanUnmatched;
+            $scope.noMatchFoundForPattern = data.noMatchFoundForPattern;
+            $scope.noMatchFoundForNonPattern = data.noMatchFoundForNonPattern;
             $scope.duplicateMBean = data.duplicateMBean;
             $scope.allMBeanAttributes = [];
             angular.forEach(data.mbeanAttributes, function (mbeanAttribute) {
@@ -199,17 +199,23 @@ glowroot.controller('ConfigGaugeCtrl', [
           });
     }
 
-    $scope.hasMBeanObjectNameError = function () {
-      return $scope.config && (!$scope.config.mbeanObjectName || $scope.mbeanUnavailable
-          || $scope.mbeanUnmatched || $scope.duplicateMBean);
-    };
-
-    $scope.saveDisabled = function () {
-      return !$scope.config || !$scope.config.mbeanAttributes.length || $scope.formCtrl.$invalid
-          || $scope.mbeanUnavailable || $scope.mbeanUnmatched || $scope.duplicateMBean;
-    };
-
     $scope.save = function (deferred) {
+      if (!$scope.config.mbeanAttributes.length) {
+        deferred.reject('At least one MBean attribute must be selected');
+        return;
+      }
+      if ($scope.noMatchFoundForPattern) {
+        deferred.reject('Cannot save because MBean is unmatched');
+        return;
+      }
+      if ($scope.noMatchFoundForNonPattern) {
+        deferred.reject('Cannot save because MBean is unavailable');
+        return;
+      }
+      if ($scope.duplicateMBean) {
+        deferred.reject('Cannot save because MBean is a duplicate of another gauge');
+        return;
+      }
       var postData = angular.copy($scope.config);
       var url;
       if (version) {

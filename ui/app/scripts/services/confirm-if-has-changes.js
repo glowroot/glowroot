@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ glowroot.factory('confirmIfHasChanges', [
           event.preventDefault();
 
           var $modal = $('#confirmationModal');
-          $modal.find('.modal-header h3').text('You have unsaved changes');
+          $modal.find('.modal-title').text('You have unsaved changes');
           $modal.find('.modal-body p').text('Are you sure you want to navigate away from this page?');
           modals.display('#confirmationModal', true);
 

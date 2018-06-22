@@ -13,19 +13,18 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>JVM</h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-hide="hideMainContent()">
       <div ng-include src="'template/gt-loading-overlay.html'"></div>
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-      <div ng-form
-           gt-form-autofocus-on-first-input
-           class="form-horizontal"
-           name="formCtrl"
-           style="padding-top: 15px;">
+      <form gt-form-autofocus-on-first-input
+            name="formCtrl"
+            style="padding-top: 15px;"
+            novalidate>
         <div gt-form-group
              gt-label="Mask system properties"
              gt-model="page.maskSystemProperties"
@@ -36,17 +35,17 @@
             anywhere in the property.
           </div>
         </div>
-        <div class="form-group gt-form-buttons"
+        <div class="form-group row"
              ng-if="agentRollup.permissions.config.edit.jvm">
-          <div class="col-lg-offset-3 col-lg-9">
+          <div class="offset-xl-3 col-xl-9">
             <div gt-button
                  gt-label="Save changes"
                  gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid">
+                 gt-validate-form="formCtrl">
             </div>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 </div>

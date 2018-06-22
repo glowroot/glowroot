@@ -33,11 +33,12 @@ var HandlebarsRendering;
 var SHOW_ELLIPSED_NODE_MARKERS = false;
 
 HandlebarsRendering = (function () {
-  // indent1 must be sync'd with $indent1 variable in common-trace.less
+  // indent1 must be sync'd with $indent1 variable in common-trace.scss
   var indent1 = 8.41; // px
   var indent2 = indent1 * 2; // px
 
-  var monospaceCharWidth = 8.41;
+  $('body').append('<div class="gt-monospace gt-offscreen" id="offscreenText">x</div>');
+  var monospaceCharWidth = $('#offscreenText').width();
 
   var traceEntryMessageLength;
   var traceEntryBarWidth = 50;
@@ -113,9 +114,9 @@ HandlebarsRendering = (function () {
   function updateOneLimit(breakdown, prefix, timers) {
     traverseTimers(timers, function (timer) {
       if (timer.show) {
-        $('#' + breakdown.prefix + prefix + timer.id).show();
+        $('#' + breakdown.prefix + prefix + timer.id).removeClass('d-none');
       } else {
-        $('#' + breakdown.prefix + prefix + timer.id).hide();
+        $('#' + breakdown.prefix + prefix + timer.id).addClass('d-none');
       }
     });
   }
@@ -151,17 +152,19 @@ HandlebarsRendering = (function () {
       updateOneLimit(breakdown, 'tt', breakdown.treeTimers);
       updateOneLimit(breakdown, 'ft', breakdown.flattenedTimers);
 
-      $('#' + breakdown.prefix + 'ttShowMore').toggle(breakdown.ttShowMore);
-      $('#' + breakdown.prefix + 'ttShowAll').toggle(breakdown.ttShowMore);
+      $('#' + breakdown.prefix + 'ttShowMore').toggleClass('d-none', !breakdown.ttShowMore);
+      $('#' + breakdown.prefix + 'ttShowAll').toggleClass('d-none', !breakdown.ttShowMore);
 
-      $('#' + breakdown.prefix + 'ftShowMore').toggle(breakdown.ftShowMore);
-      $('#' + breakdown.prefix + 'ftShowAll').toggle(breakdown.ftShowMore);
+      $('#' + breakdown.prefix + 'ftShowMore').toggleClass('d-none', !breakdown.ftShowMore);
+      $('#' + breakdown.prefix + 'ftShowAll').toggleClass('d-none', !breakdown.ftShowMore);
 
-      $('#' + breakdown.prefix + 'ttShowLess').toggle(breakdown.showLess);
-      $('#' + breakdown.prefix + 'ftShowLess').toggle(breakdown.showLess);
+      $('#' + breakdown.prefix + 'ttShowLess').toggleClass('d-none', !breakdown.showLess);
+      $('#' + breakdown.prefix + 'ftShowLess').toggleClass('d-none', !breakdown.showLess);
 
-      $('#' + breakdown.prefix + 'ttShowMoreAndLess').toggle(breakdown.ttShowMore && breakdown.showLess);
-      $('#' + breakdown.prefix + 'ftShowMoreAndLess').toggle(breakdown.ftShowMore && breakdown.showLess);
+      $('#' + breakdown.prefix + 'ttShowMoreAndLess')
+          .toggleClass('d-none', !breakdown.ttShowMore || !breakdown.showLess);
+      $('#' + breakdown.prefix + 'ftShowMoreAndLess')
+          .toggleClass('d-none', !breakdown.ftShowMore || !breakdown.showLess);
     });
   }
 
@@ -360,7 +363,7 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('headerDetailHtml', function (detail) {
-    return messageDetailHtml(detail, true);
+    return messageDetailHtml(detail);
   });
 
   Handlebars.registerHelper('entryDetailHtml', function (detail) {
@@ -375,15 +378,7 @@ HandlebarsRendering = (function () {
     }
   });
 
-  function messageDetailHtml(detail, bold) {
-    function maybeBoldPropName(propName) {
-      if (bold) {
-        return '<span class="gt-bold">' + propName + ':</span>';
-      } else {
-        return propName + ':';
-      }
-    }
-
+  function messageDetailHtml(detail) {
     var ret = '';
     $.each(detail, function (propName, propVal) {
       if ($.isArray(propVal)) {
@@ -392,12 +387,13 @@ HandlebarsRendering = (function () {
         $.each(propVal, function (i, propv) {
           var subdetail = {};
           subdetail[propName] = propv;
-          ret += messageDetailHtml(subdetail, bold);
+          ret += messageDetailHtml(subdetail);
         });
       } else if (typeof propVal === 'object' && propVal !== null) {
-        ret += maybeBoldPropName(propName) + '<br><div class="gt-indent2">' + messageDetailHtml(propVal) + '</div>';
+        ret += '<div class="gt-trace-attr-name">' + propName + ':</div>'
+            + '<div class="gt-indent2">' + messageDetailHtml(propVal) + '</div>';
       } else {
-        ret += '<div><div class="gt-trace-attr-name">' + maybeBoldPropName(propName) + '&nbsp;</div>'
+        ret += '<div><div class="gt-trace-attr-name">' + propName + ':&nbsp;</div>'
             + '<div class="gt-trace-attr-value">' + propVal + '</div></div>';
       }
     });
@@ -584,7 +580,7 @@ HandlebarsRendering = (function () {
 
   $(document).on('click', '.gt-timers-view-toggle', function () {
     var $timers = $(this).parents('.gt-timers');
-    $timers.children('.gt-timers-table').toggleClass('hide');
+    $timers.children('.gt-timers-table').toggleClass('d-none');
     // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
     var $timersViewToggle = $timers.find('.gt-timers-view-toggle:visible');
     $timersViewToggle.attr('tabindex', -1);
@@ -627,7 +623,7 @@ HandlebarsRendering = (function () {
         mergeSharedQueryTextsIntoEntries(entries, sharedQueryTexts);
         flattenedTraceEntries = flattenTraceEntries(entries);
         // un-hide before building in case there are lots of trace entries, at least can see first few quickly
-        $selector.removeClass('hide');
+        $selector.removeClass('d-none');
         renderNextEntries(flattenedTraceEntries, 0);
       } else {
         // this is not an export file
@@ -658,7 +654,7 @@ HandlebarsRendering = (function () {
                 traceDurationNanos = Math.max(traceDurationNanos, last.startOffsetNanos + last.durationNanos);
                 flattenedTraceEntries = flattenTraceEntries(data.entries);
                 // un-hide before building in case there are lots of trace entries, at least can see first few quickly
-                $selector.removeClass('hide');
+                $selector.removeClass('d-none');
                 renderNextEntries(flattenedTraceEntries, 0);
               }
             })
@@ -676,10 +672,10 @@ HandlebarsRendering = (function () {
               $selector.data('gtLoaded', true);
             });
       }
-    } else if ($selector.hasClass('hide')) {
-      $selector.removeClass('hide');
+    } else if ($selector.hasClass('d-none')) {
+      $selector.removeClass('d-none');
     } else {
-      $selector.addClass('hide');
+      $selector.addClass('d-none');
     }
   });
 
@@ -689,9 +685,9 @@ HandlebarsRendering = (function () {
       for (i = 0; i < parentTraceEntry.childEntries.length; i++) {
         var entry = parentTraceEntry.childEntries[i];
         if (collapse) {
-          $('#gtTraceEntry' + entry.index).hide();
+          $('#gtTraceEntry' + entry.index).addClass('d-none');
         } else {
-          $('#gtTraceEntry' + entry.index).show();
+          $('#gtTraceEntry' + entry.index).removeClass('d-none');
         }
         if (entry.childEntries && !entry.collapsed) {
           toggleChildren(entry, collapse);
@@ -730,7 +726,7 @@ HandlebarsRendering = (function () {
         var sharedQueryTexts = $traceParent.data('gtSharedQueryTexts');
         prepareQueries(queries, sharedQueryTexts);
         // un-hide before building in case there are lots of queries, at least can see first few quickly
-        $selector.removeClass('hide');
+        $selector.removeClass('d-none');
         renderNextQueries(queries, 0);
       } else {
         // this is not an export file
@@ -758,7 +754,7 @@ HandlebarsRendering = (function () {
                 prepareQueries(data.queries, data.sharedQueryTexts);
                 queries = data.queries;
                 // un-hide before building in case there are lots of trace entries, at least can see first few quickly
-                $selector.removeClass('hide');
+                $selector.removeClass('d-none');
                 renderNextQueries(queries, 0);
               }
             })
@@ -776,31 +772,31 @@ HandlebarsRendering = (function () {
               $selector.data('gtLoaded', true);
             });
       }
-    } else if ($selector.hasClass('hide')) {
-      $selector.removeClass('hide');
+    } else if ($selector.hasClass('d-none')) {
+      $selector.removeClass('d-none');
     } else {
-      $selector.addClass('hide');
+      $selector.addClass('d-none');
     }
   });
 
   $(document).on('click', '.gt-trace-query-sort-button', function () {
-    var currProperty = $('.query-table').data('curr-sort-property');
+    var currProperty = $('.gt-query-table').data('curr-sort-property');
     var property = $(this).data('sort-property');
     var direction;
     if (property === currProperty) {
-      direction = -1 * Number($('.query-table').data('curr-sort-direction'));
+      direction = -1 * Number($('.gt-query-table').data('curr-sort-direction'));
     } else {
       direction = 1;
     }
-    $('.query-table').data('curr-sort-property', property);
-    $('.query-table').data('curr-sort-direction', direction);
+    $('.gt-query-table').data('curr-sort-property', property);
+    $('.gt-query-table').data('curr-sort-direction', direction);
 
-    var $allSortIcons = $('.query-table .caret');
-    $allSortIcons.addClass('hide');
+    var $allSortIcons = $('.gt-query-table .gt-caret');
+    $allSortIcons.addClass('d-none');
     $allSortIcons.removeClass('gt-caret-sort-ascending');
 
-    var $currSortIcon = $(this).find('.caret');
-    $currSortIcon.removeClass('hide');
+    var $currSortIcon = $(this).find('.gt-caret');
+    $currSortIcon.removeClass('d-none');
     if (direction === -1) {
       $currSortIcon.addClass('gt-caret-sort-ascending');
     }
@@ -864,7 +860,7 @@ HandlebarsRendering = (function () {
       if (profile) {
         // this is an export file or transaction profile tab
         buildMergedStackTree(profile, $selector);
-        $selector.removeClass('hide');
+        $selector.removeClass('d-none');
         $selector.data('gtLoaded', true);
       } else {
         $selector.data('gtLoading', true);
@@ -880,7 +876,7 @@ HandlebarsRendering = (function () {
               } else {
                 buildMergedStackTree(data, $selector);
               }
-              $selector.removeClass('hide');
+              $selector.removeClass('d-none');
             })
             .fail(function (jqXHR) {
               if (jqXHR.status === 401) {
@@ -888,7 +884,7 @@ HandlebarsRendering = (function () {
               } else {
                 $selector.find('.gt-profile').html(
                     '<div class="gt-red" style="padding: 1em 0;">An error occurred retrieving the profile</div>');
-                $selector.removeClass('hide');
+                $selector.removeClass('d-none');
               }
             })
             .always(function () {
@@ -897,10 +893,10 @@ HandlebarsRendering = (function () {
               $selector.data('gtLoaded', true);
             });
       }
-    } else if ($selector.hasClass('hide')) {
-      $selector.removeClass('hide');
+    } else if ($selector.hasClass('d-none')) {
+      $selector.removeClass('d-none');
     } else {
-      $selector.addClass('hide');
+      $selector.addClass('d-none');
     }
   }
 
@@ -1036,11 +1032,8 @@ HandlebarsRendering = (function () {
     var formatted = SqlPrettyPrinter.format(sql);
     if (typeof formatted === 'object') {
       // intentional console logging
-      // need conditional since console does not exist in IE9 unless dev tools is open
-      if (window.console) {
-        console.log(formatted.message);
-        console.log(sql);
-      }
+      console.log(formatted.message);
+      console.log(sql);
     } else {
       if (comment.length) {
         var spaces = '';
@@ -1060,7 +1053,7 @@ HandlebarsRendering = (function () {
         html = prefix;
         // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
         // there are extra newlines after the pre tag
-        html += '\n\n<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
+        html += '\n\n<span class="gt-indent2 d-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
         if (parameters) {
           html += '\n\n<span class="gt-indent2">parameters:</span>\n\n' + '<span class="gt-indent2">  ' + parameters
               + '</span>';
@@ -1071,7 +1064,7 @@ HandlebarsRendering = (function () {
       } else {
         // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
         // there are extra newlines after the pre tag
-        html = '<span class="gt-indent1 gt-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
+        html = '<span class="gt-indent1 d-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
         expanded.addClass('gt-padding-top-override');
       }
       expanded.css('padding-bottom', '10px');
@@ -1089,13 +1082,13 @@ HandlebarsRendering = (function () {
     var unexpanded = parent.find('.gt-unexpanded-content');
 
     function doAfter() {
-      unexpanded.toggleClass('hide');
-      expanded.toggleClass('hide');
+      unexpanded.toggleClass('d-none');
+      expanded.toggleClass('d-none');
       if (expanded.width() >= expanded.parent().width()) {
         expanded.css('display', 'block');
       }
       // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
-      if (unexpanded.hasClass('hide')) {
+      if (unexpanded.hasClass('d-none')) {
         expanded.attr('tabindex', -1);
         expanded.css('outline', 'none');
         expanded.focus();
@@ -1106,7 +1099,7 @@ HandlebarsRendering = (function () {
       }
     }
 
-    if (expanded.hasClass('hide') && !expanded.data('gtExpandedPreviously')) {
+    if (expanded.hasClass('d-none') && !expanded.data('gtExpandedPreviously')) {
       var $clipboardIcon = expanded.find('.fa-clipboard');
       var clipTextNode = expanded.find('.gt-clip-text');
       var clipboardContainer;
@@ -1161,7 +1154,7 @@ HandlebarsRendering = (function () {
                   // so other trace entries with same shared query text don't need to go to server
                   queryMessage.sharedQueryText.fullText = data.fullText;
                   expanded.addClass('gt-with-clip');
-                  expanded.find('.gt-clip').removeClass('hide');
+                  expanded.find('.gt-clip').removeClass('d-none');
                 }
               })
               .fail(function (jqXHR) {
@@ -1226,7 +1219,7 @@ HandlebarsRendering = (function () {
                   // so other trace entries with same shared query text don't need to go to server
                   query.sharedQueryText.fullText = data.fullText;
                   expanded.addClass('gt-with-clip');
-                  expanded.find('.gt-clip').removeClass('hide');
+                  expanded.find('.gt-clip').removeClass('d-none');
                 }
               })
               .fail(function (jqXHR) {
@@ -1416,13 +1409,13 @@ HandlebarsRendering = (function () {
           }
         }
         if (lastNode.ellipsedSampleCount && lastNode.filteredEllipsedSampleCount) {
-          $('#gtProfileNodeEllipsed' + lastNode.id).show();
+          $('#gtProfileNodeEllipsed' + lastNode.id).removeClass('d-none');
         } else if (lastNode.ellipsedSampleCount) {
-          $('#gtProfileNodeEllipsed' + lastNode.id).hide();
+          $('#gtProfileNodeEllipsed' + lastNode.id).addClass('d-none');
         }
         if (lastNode.filteredSampleCount === 0) {
           // TODO hide all nodes
-          $('#gtProfileNode' + lastNode.id).hide();
+          $('#gtProfileNode' + lastNode.id).addClass('d-none');
           return 0;
         }
         for (i = 0; i < nodes.length; i++) {
@@ -1440,11 +1433,11 @@ HandlebarsRendering = (function () {
           var nodeTextParentParent = $('#gtProfileNodeText' + lastNode.id).parent().parent();
           var unexpanded = nodeTextParentParent.find('.gt-unexpanded-content');
           if (currMatchingNode && includes.length) {
-            unexpanded.addClass('hide');
-            nodeTextParent.removeClass('hide');
+            unexpanded.addClass('d-none');
+            nodeTextParent.removeClass('d-none');
           } else {
-            unexpanded.removeClass('hide');
-            nodeTextParent.addClass('hide');
+            unexpanded.removeClass('d-none');
+            nodeTextParent.addClass('d-none');
           }
         }
         if (lastNode.leafThreadState) {
@@ -1489,7 +1482,7 @@ HandlebarsRendering = (function () {
           nodeSampleCount = nodes[nodes.length - 1].sampleCount;
         }
         var ret = '<span id="gtProfileNode' + node.id + '">';
-        ret += '<span class="gt-inline-block gt-width6" style="margin-left: ' + (2 * level * indent1) + 'px;"';
+        ret += '<span class="d-inline-block gt-width6" style="margin-left: ' + (2 * level * indent1) + 'px;"';
         ret += ' id="gtProfileNodePercent' + node.id + '">';
         var samplePercentage = (nodeSampleCount / profile.unfilteredSampleCount) * 100;
         ret += formatPercent(samplePercentage);
@@ -1500,18 +1493,18 @@ HandlebarsRendering = (function () {
         ret += '% </span>';
         if (nodes.length === 1) {
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block gt-pad1profile">';
+          ret += '<span class="d-inline-block gt-pad1profile">';
           ret += '<span class="gt-monospace" id="gtProfileNodeText' + node.id + '">';
           ret += escapeHtml(node.stackTraceElement);
           ret += '</span></span><br>';
         } else {
           ret += '<span>';
-          ret += '<span class="gt-inline-block gt-unexpanded-content" style="vertical-align: top;">';
+          ret += '<span class="d-inline-block gt-unexpanded-content" style="vertical-align: top;">';
           ret += '<span class="gt-link-color"><strong>...</strong> </span>';
           ret += '<span class="gt-monospace" id="gtProfileNodeTextUnexpanded' + nodes[nodes.length - 1].id + '">';
           ret += escapeHtml(nodes[nodes.length - 1].stackTraceElement) + '</span><br></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block gt-expanded-content hide" style="vertical-align: top;">';
+          ret += '<span class="d-inline-block gt-expanded-content d-none" style="vertical-align: top;">';
           $.each(nodes, function (index, node) {
             ret += '<span class="gt-monospace" id="gtProfileNodeText' + node.id + '">'
                 + escapeHtml(node.stackTraceElement) + '</span><br>';
@@ -1519,10 +1512,10 @@ HandlebarsRendering = (function () {
           ret += '</span></span><br>';
         }
         if (node.leafThreadState) {
-          ret += '<span class="gt-inline-block gt-width4" style="margin-left: ' + (level + 5) * indent2
+          ret += '<span class="d-inline-block gt-width4" style="margin-left: ' + (level + 5) * indent2
               + 'px;"></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block gt-pad1profile gt-monospace" id="gtProfileNodeThreadState';
+          ret += '<span class="d-inline-block gt-pad1profile gt-monospace" id="gtProfileNodeThreadState';
           ret += node.id + '">';
           ret += escapeHtml(node.leafThreadState);
           ret += '</span><br>';
@@ -1544,19 +1537,19 @@ HandlebarsRendering = (function () {
         if (SHOW_ELLIPSED_NODE_MARKERS && node.ellipsedSampleCount) {
           var ellipsedSamplePercentage = (node.ellipsedSampleCount / rootNode.sampleCount) * 100;
           ret += '<div id="gtProfileNodeEllipsed' + node.id + '">';
-          ret += '<span class="gt-inline-block gt-width4" style="margin-left: ' + (level + 5) * indent2
+          ret += '<span class="d-inline-block gt-width4" style="margin-left: ' + (level + 5) * indent2
               + 'px;"></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block gt-pad1profile">(one or more branches ~ ';
+          ret += '<span class="d-inline-block gt-pad1profile">(one or more branches ~ ';
           ret += formatPercent(ellipsedSamplePercentage);
           ret += '%)</span></div>';
         }
         if (!SHOW_ELLIPSED_NODE_MARKERS && !node.childNodes && !node.leafThreadState) {
           ret += '<div id="gtProfileNodeEllipsed' + node.id + '">';
-          ret += '<span class="gt-inline-block gt-width4" style="margin-left: ' + (level + 5) * indent2
+          ret += '<span class="d-inline-block gt-width4" style="margin-left: ' + (level + 5) * indent2
               + 'px;"></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block gt-pad1profile" style="font-style: italic;">truncated branches';
+          ret += '<span class="d-inline-block gt-pad1profile" style="font-style: italic;">truncated branches';
           ret += '</span></div>';
         }
         ret += '</span>';

@@ -34,7 +34,6 @@ import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.StaleElementReferenceException;
@@ -49,6 +48,7 @@ import org.glowroot.tests.util.Utils;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.xpath;
 
 public class BasicSmokeIT extends WebDriverIT {
@@ -114,43 +114,24 @@ public class BasicSmokeIT extends WebDriverIT {
         app.open();
 
         // hitting F5 is just to test 304 responses
-        Utils.withWait(driver, By.partialLinkText("Response time")).sendKeys(Keys.F5);
+        Utils.getWithWait(driver, Utils.linkText("Response time")).sendKeys(Keys.F5);
 
-        Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
-        driver.findElement(By.xpath("//button[@title='By percent of total time']")).click();
-        driver.findElement(By.linkText("By average time")).click();
-        Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Web Transactions'][contains(., 'ms')]"));
-        driver.findElement(By.xpath("//button[@title='By average time']")).click();
-        driver.findElement(By.linkText("By throughput (per min)")).click();
-        Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Web Transactions'][contains(., '/min')]"));
-        driver.findElement(By.xpath("//button[@title='By throughput (per min)']")).click();
-        driver.findElement(By.linkText("By percent of total time")).click();
-        Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
+        waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
+        click(xpath("//button[normalize-space()='By percent of total time']"));
+        clickLink("By average time");
+        waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., 'ms')]"));
+        click(xpath("//button[normalize-space()='By average time']"));
+        clickLink("By throughput (per min)");
+        waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '/min')]"));
+        click(xpath("//button[normalize-space()='By throughput (per min)']"));
+        clickLink("By percent of total time");
+        waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
 
-        Utils.withWait(driver, By.partialLinkText("percentiles")).click();
-        Utils.withWait(driver, By.partialLinkText("throughput")).click();
-        Utils.withWait(driver, By.partialLinkText("Slow traces")).click();
-        Utils.withWait(driver, By.partialLinkText("Queries")).click();
-        Utils.withWait(driver, By.partialLinkText("Thread profile")).click();
-        Utils.withWait(driver, By.xpath("//input[@ng-model='filter']")).sendKeys("JdbcServlet");
-        Utils.withWait(driver, By.xpath("//button[@ng-click='refresh()']")).click();
-        new WebDriverWait(driver, 30).until(ExpectedConditions
-                .textToBePresentInElementLocated(By.className("gt-profile"), "JdbcServlet"));
+        clickAcross();
 
-        Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
-        // give flame graph a chance to render (only for visual when running locally)
-        SECONDS.sleep(1);
-        globalNavbar.getTransactionsLink().click();
-        Utils.withWait(driver, By.partialLinkText("/jdbcservlet")).click();
-        Utils.withWait(driver, By.partialLinkText("percentiles")).click();
-        Utils.withWait(driver, By.partialLinkText("Slow traces")).click();
-        Utils.withWait(driver, By.partialLinkText("Queries")).click();
-        Utils.withWait(driver, By.partialLinkText("Thread profile")).click();
-        Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
+        globalNavbar.clickTransactionsLink();
+        clickPartialLinkWithWait("/jdbcservlet");
+        clickAcross();
     }
 
     @Test
@@ -159,7 +140,7 @@ public class BasicSmokeIT extends WebDriverIT {
 
         app.open();
 
-        Utils.withWait(driver, By.partialLinkText("Slow traces")).click();
+        clickPartialLinkWithWait("Slow traces");
 
         String url = "http://localhost:" + getUiPort() + "/backend/transaction/points"
                 + "?transaction-type=Web"
@@ -200,13 +181,13 @@ public class BasicSmokeIT extends WebDriverIT {
         JvmSidebar jvmSidebar = new JvmSidebar(driver);
 
         app.open();
-        globalNavbar.getJvmLink().click();
-        jvmSidebar.getThreadDumpLink().click();
+        globalNavbar.clickJvmLink();
+        jvmSidebar.clickThreadDumpLink();
 
-        WebElement viewTraceLink = Utils.withWait(driver, By.linkText("view trace"));
+        WebElement viewTraceLink = Utils.getWithWait(driver, Utils.linkText("view trace"));
         String href = viewTraceLink.getAttribute("href");
         String traceId = new QueryStringDecoder(href).parameters().get("modal-trace-id").get(0);
-        viewTraceLink.click();
+        clickLink("view trace");
         clickAroundInTraceModal(traceId, true);
     }
 
@@ -216,31 +197,30 @@ public class BasicSmokeIT extends WebDriverIT {
         GlobalNavbar globalNavbar = globalNavbar();
 
         app.open();
-        globalNavbar.getErrorsLink().click();
+        globalNavbar.clickErrorsLink();
 
-        Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Web Transactions'][not(contains(., '%'))]"));
-        driver.findElement(By.xpath("//button[@title='By error count']")).click();
-        driver.findElement(By.linkText("By error rate")).click();
-        Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
-        driver.findElement(By.xpath("//button[@title='By error rate']")).click();
-        driver.findElement(By.linkText("By error count")).click();
-        Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Web Transactions'][not(contains(., '%'))]"));
+        waitFor(xpath("//a[@gt-display='All Web Transactions'][not(contains(., '%'))]"));
+        click(xpath("//button[normalize-space()='By error count']"));
+        clickLink("By error rate");
+        waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
+        click(xpath("//button[normalize-space()='By error rate']"));
+        clickLink("By error count");
+        waitFor(xpath("//a[@gt-display='All Web Transactions'][not(contains(., '%'))]"));
 
-        Utils.withWait(driver, By.xpath("//input[@ng-model='filter']")).sendKeys("xyz");
-        Utils.withWait(driver, By.xpath("//button[@ng-click='refresh()']")).click();
-        Utils.withWait(driver, By.partialLinkText("Error traces")).click();
-        globalNavbar.getErrorsLink().click();
+        Utils.getWithWait(driver, xpath("//input[@ng-model='filter']")).sendKeys("xyz");
+        click(xpath("//button[@ng-click='refresh()']"));
+        clickPartialLink("Error traces");
+        waitFor(xpath("//label[normalize-space()='Response time']"));
+        globalNavbar.clickErrorsLink();
         try {
-            Utils.withWait(driver, By.partialLinkText("/errorservlet")).click();
+            clickPartialLinkWithWait("/errorservlet");
         } catch (StaleElementReferenceException e) {
             // this happens occassionally during travis-ci builds now that sidebar refresh is
             // delayed by 100 ms
-            Utils.withWait(driver, By.partialLinkText("/errorservlet")).click();
+            clickPartialLink("/errorservlet");
         }
-        Utils.withWait(driver, By.partialLinkText("Error traces")).click();
+        clickPartialLink("Error traces");
+        waitFor(xpath("//label[normalize-space()='Response time']"));
     }
 
     @Test
@@ -250,18 +230,18 @@ public class BasicSmokeIT extends WebDriverIT {
         JvmSidebar jvmSidebar = new JvmSidebar(driver);
 
         app.open();
-        globalNavbar.getJvmLink().click();
+        globalNavbar.clickJvmLink();
         // sleep for a second to give time for jvm gauges page to make 2 requests
         // (first to get gauge list and then to get gauge points for default selected gauges)
         SECONDS.sleep(1);
 
-        jvmSidebar.getEnvironmentLink().click();
+        jvmSidebar.clickEnvironmentLink();
 
-        jvmSidebar.getThreadDumpLink().click();
+        jvmSidebar.clickThreadDumpLink();
         // jstack view is not accessible via jvm sidebar currently
         app.open("/jvm/jstack");
 
-        jvmSidebar.getHeapDumpLink().click();
+        jvmSidebar.clickHeapDumpLink();
         if (!WebDriverSetup.useCentral) {
             // heap dump is somehow causing cassandra connection to be lost on travis-ci:
             //
@@ -269,27 +249,27 @@ public class BasicSmokeIT extends WebDriverIT {
             // query failed (tried: /127.0.0.1:9042
             // (com.datastax.driver.core.exceptions.ConnectionException: [/127.0.0.1] Write attempt
             // on defunct connection))
-            Utils.withWait(driver, By.xpath("//button[normalize-space()='Heap dump']")).click();
-            Utils.withWait(driver, By.xpath("//button[normalize-space()='Yes']")).click();
+            click(xpath("//button[normalize-space()='Heap dump']"));
+            click(xpath("//button[normalize-space()='Yes']"));
             String heapDumpFileName = Utils
-                    .withWait(driver,
-                            By.xpath("//div[@ng-show='heapDumpResponse']//table//tr[1]/td[2]"))
+                    .getWithWait(driver,
+                            xpath("//div[@ng-if='heapDumpResponse']//table//tr[1]/td[2]"))
                     .getText();
             if (!new File(heapDumpFileName).delete()) {
                 throw new IOException("Could not delete heap dump file: " + heapDumpFileName);
             }
         }
-        Utils.withWait(driver, By.xpath("//button[normalize-space()='Check disk space']")).click();
-        Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpaceBytes !== undefined']"));
+        click(xpath("//button[normalize-space()='Check disk space']"));
+        waitFor(xpath("//div[@ng-if='availableDiskSpaceBytes !== undefined']"));
 
-        jvmSidebar.getHeapHistogramLink().click();
+        jvmSidebar.clickHeapHistogramLink();
 
-        jvmSidebar.getForceGcLink().click();
-        Utils.withWait(driver, By.xpath("//button[normalize-space()='Force GC']")).click();
+        jvmSidebar.clickForceGcLink();
+        click(xpath("//button[normalize-space()='Force GC']"));
 
-        jvmSidebar.getMBeanTreeLink().click();
+        jvmSidebar.clickMBeanTreeLink();
         List<WebElement> elements = new WebDriverWait(driver, 30).until(ExpectedConditions
-                .visibilityOfAllElementsLocatedBy(By.className("gt-mbean-unexpanded-content")));
+                .visibilityOfAllElementsLocatedBy(className("gt-mbean-unexpanded-content")));
         for (WebElement element : elements) {
             element.click();
         }
@@ -313,12 +293,9 @@ public class BasicSmokeIT extends WebDriverIT {
         AdhocPage adhocPage = new AdhocPage(driver);
 
         app.open();
-        globalNavbar.getReportingLink().click();
+        globalNavbar.clickReportingLink();
         if (WebDriverSetup.useCentral) {
-            adhocPage.getAgentTextField().click();
-            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
-            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
-            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
+            adhocPage.selectAgent(InetAddress.getLocalHost().getHostName());
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:average");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -327,7 +304,7 @@ public class BasicSmokeIT extends WebDriverIT {
         adhocPage.clickRunReportButton();
 
         // then
-        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+        waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
     @Test
@@ -338,12 +315,9 @@ public class BasicSmokeIT extends WebDriverIT {
         AdhocPage adhocPage = new AdhocPage(driver);
 
         app.open();
-        globalNavbar.getReportingLink().click();
+        globalNavbar.clickReportingLink();
         if (WebDriverSetup.useCentral) {
-            adhocPage.getAgentTextField().click();
-            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
-            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
-            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
+            adhocPage.selectAgent(InetAddress.getLocalHost().getHostName());
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:x-percentile");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -353,7 +327,7 @@ public class BasicSmokeIT extends WebDriverIT {
         adhocPage.clickRunReportButton();
 
         // then
-        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+        waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
     @Test
@@ -364,12 +338,9 @@ public class BasicSmokeIT extends WebDriverIT {
         AdhocPage adhocPage = new AdhocPage(driver);
 
         app.open();
-        globalNavbar.getReportingLink().click();
+        globalNavbar.clickReportingLink();
         if (WebDriverSetup.useCentral) {
-            adhocPage.getAgentTextField().click();
-            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
-            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
-            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
+            adhocPage.selectAgent(InetAddress.getLocalHost().getHostName());
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:count");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -378,7 +349,7 @@ public class BasicSmokeIT extends WebDriverIT {
         adhocPage.clickRunReportButton();
 
         // then
-        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+        waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
     @Test
@@ -389,12 +360,9 @@ public class BasicSmokeIT extends WebDriverIT {
         AdhocPage adhocPage = new AdhocPage(driver);
 
         app.open();
-        globalNavbar.getReportingLink().click();
+        globalNavbar.clickReportingLink();
         if (WebDriverSetup.useCentral) {
-            adhocPage.getAgentTextField().click();
-            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
-            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
-            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
+            adhocPage.selectAgent(InetAddress.getLocalHost().getHostName());
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:count");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -403,7 +371,7 @@ public class BasicSmokeIT extends WebDriverIT {
         adhocPage.clickRunReportButton();
 
         // then
-        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+        waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
     @Test
@@ -414,12 +382,9 @@ public class BasicSmokeIT extends WebDriverIT {
         AdhocPage adhocPage = new AdhocPage(driver);
 
         app.open();
-        globalNavbar.getReportingLink().click();
+        globalNavbar.clickReportingLink();
         if (WebDriverSetup.useCentral) {
-            adhocPage.getAgentTextField().click();
-            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
-            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
-            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
+            adhocPage.selectAgent(InetAddress.getLocalHost().getHostName());
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:count");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -428,7 +393,7 @@ public class BasicSmokeIT extends WebDriverIT {
         adhocPage.clickRunReportButton();
 
         // then
-        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+        waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
     @Test
@@ -439,12 +404,9 @@ public class BasicSmokeIT extends WebDriverIT {
         AdhocPage adhocPage = new AdhocPage(driver);
 
         app.open();
-        globalNavbar.getReportingLink().click();
+        globalNavbar.clickReportingLink();
         if (WebDriverSetup.useCentral) {
-            adhocPage.getAgentTextField().click();
-            adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
-            adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
-            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
+            adhocPage.selectAgent(InetAddress.getLocalHost().getHostName());
         }
         adhocPage.getMetricSelect()
                 .selectByValue("string:gauge:java.lang:type=Memory:HeapMemoryUsage.used");
@@ -453,7 +415,7 @@ public class BasicSmokeIT extends WebDriverIT {
         adhocPage.clickRunReportButton();
 
         // then
-        Utils.withWait(driver, xpath("//div[@ng-show='showChart']"));
+        waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
     @Test
@@ -473,11 +435,32 @@ public class BasicSmokeIT extends WebDriverIT {
                 + "/backend/admin/cassandra-write-totals?limit=10");
     }
 
+    private void clickAcross() throws InterruptedException {
+        waitFor(xpath("//td[normalize-space()='Breakdown:']"));
+        clickLink("percentiles");
+        waitFor(xpath("//label[normalize-space()='95th percentile:']"));
+        clickLink("throughput");
+        waitFor(xpath("//label[normalize-space()='Throughput:']"));
+        clickPartialLink("Slow traces");
+        waitFor(xpath("//label[normalize-space()='Response time']"));
+        clickLink("Queries");
+        waitFor(xpath("//*[normalize-space()='select * from employee']"));
+        clickLink("Service calls");
+        waitFor(xpath("//div[normalize-space()='No data for this time period']"));
+        clickLink("Thread profile");
+        Utils.getWithWait(driver, xpath("//input[@ng-model='filter']")).sendKeys("JdbcServlet");
+        click(xpath("//button[@ng-click='refresh()']"));
+        new WebDriverWait(driver, 30).until(ExpectedConditions
+                .textToBePresentInElementLocated(className("gt-profile"), "JdbcServlet"));
+        clickLink("View flame graph (experimental)");
+        // give flame graph a chance to render (only for visual when running locally)
+        SECONDS.sleep(1);
+    }
+
     private void clickAroundInTraceModal(String traceId, boolean active) throws Exception {
-        Utils.withWait(driver, By.className("gt-entries-toggle")).click();
-        Utils.withWait(driver,
-                By.xpath("//div[starts-with(normalize-space(.),'jdbc execute:')]"));
-        Utils.withWait(driver, By.className("gt-main-thread-profile-toggle")).click();
+        clickWithWait(className("gt-entries-toggle"));
+        waitFor(xpath("//div[starts-with(normalize-space(),'jdbc execute:')]"));
+        clickWithWait(className("gt-main-thread-profile-toggle"));
         // wait for profile to open
         SECONDS.sleep(1);
 

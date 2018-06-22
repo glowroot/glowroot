@@ -76,10 +76,6 @@ class IndexHtmlHttpService implements HttpService {
                             + "'//www.google-analytics.com/analytics.js','ga');ga('create', '"
                             + GOOGLE_ANALYTICS_TRACKING_ID + "', 'auto')</script>\n</body>");
         }
-        CommonResponse response = new CommonResponse(OK, MediaType.HTML_UTF_8, indexHtml);
-        // X-UA-Compatible must be set via header (as opposed to via meta tag)
-        // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
-        response.setHeader("X-UA-Compatible", "IE=edge");
-        return response;
+        return new CommonResponse(OK, MediaType.HTML_UTF_8, indexHtml);
     }
 }

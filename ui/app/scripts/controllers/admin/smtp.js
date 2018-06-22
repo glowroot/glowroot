@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,14 @@ glowroot.controller('AdminSmtpCtrl', [
     };
 
     $scope.sendTestEmail = function (deferred) {
+      if (!$scope.page.testEmailRecipient) {
+        deferred.reject('Test email recipient is required');
+        return;
+      }
+      if (!$scope.config.host) {
+        deferred.reject('Host is required');
+        return;
+      }
       var postData = angular.copy($scope.config);
       postData.testEmailRecipient = $scope.page.testEmailRecipient;
       $http.post('backend/admin/send-test-email', postData)

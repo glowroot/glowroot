@@ -66,9 +66,9 @@ glowroot.controller('TransactionServiceCallsCtrl', [
         return '';
       }
       if ($scope.sortAsc) {
-        return 'caret gt-caret-sort-ascending';
+        return 'gt-caret gt-caret-sort-ascending';
       } else {
-        return 'caret';
+        return 'gt-caret';
       }
     };
 

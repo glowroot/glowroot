@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, angular, $ */
 
 glowroot.controller('AdminRoleCtrl', [
   '$scope',
   '$location',
   '$http',
+  '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $location, $http, confirmIfHasChanges, httpErrors) {
+  function ($scope, $location, $http, $timeout, confirmIfHasChanges, httpErrors) {
 
     // initialize page binding object
     $scope.page = {};
@@ -102,6 +103,9 @@ glowroot.controller('AdminRoleCtrl', [
         angular.forEach(configPermissionBlock.permissions, function (permission) {
           populatePermissionBlock(permissionBlock, permission);
         });
+      });
+      $timeout(function () {
+        $('.multiselect-native-select select').multiselect('rebuild');
       });
     }
 
@@ -458,6 +462,9 @@ glowroot.controller('AdminRoleCtrl', [
       permissionBlock.agentRollupIds = [];
       permissionBlock.allActiveAgentRollupsPlus = angular.copy($scope.allActiveAgentRollups);
       $scope.page.permissionBlocks.push(permissionBlock);
+      $timeout(function () {
+        $('.multiselect-native-select select').multiselect('rebuild');
+      });
     };
 
     $scope.removePermissionBlock = function (permissionBlock) {

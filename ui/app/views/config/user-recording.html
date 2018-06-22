@@ -13,16 +13,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>User recording</h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
          gt-form-autofocus-on-first-input
-         class="form-horizontal"
          name="formCtrl"
          style="padding-top: 15px;">
       <div gt-form-group
@@ -48,13 +47,13 @@
           The interval at which the profiler captures stack traces.
         </div>
       </div>
-      <div class="form-group gt-form-buttons"
+      <div class="form-group row"
            ng-if="agentRollup.permissions.config.edit.userRecording">
-        <div class="col-lg-offset-3 col-lg-9">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button
                gt-label="Save changes"
                gt-click="save(deferred)"
-               gt-disabled="formCtrl.$invalid">
+               gt-validate-form="formCtrl">
           </div>
         </div>
       </div>

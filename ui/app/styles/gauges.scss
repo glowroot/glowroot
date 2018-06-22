@@ -14,19 +14,6 @@
  * limitations under the License.
  */
 
-/* override some bootstrap .close attributes */
-.gt-gauges-displayed-close {
-  .close;
-  float: none !important;
-  vertical-align: -2px;
-  // without reducing line-height, it expands the container vertically a bit and doesn't match with All Transactions
-  line-height: 0.5;
-  .opacity(.3);
-  // make larger hitbox for easy clicking
-  padding: 10px !important;
-  margin: -10px -10px -10px -5px;
-}
-
 table.gt-gauge-table thead th {
   border-bottom: 1px solid #ddd;
   vertical-align: bottom;
@@ -37,10 +24,4 @@ table.gt-gauge-table td {
   // vertical align is for the color bars when the gauge name wraps on two lines
   vertical-align: top;
   padding: 2px 20px;
-}
-
-.gt-gauge-second-line-indent {
-  padding-left: (4 * @indent1);
-  text-indent: -(2 * @indent1);
-  margin-right: -(2 * @indent1);
 }

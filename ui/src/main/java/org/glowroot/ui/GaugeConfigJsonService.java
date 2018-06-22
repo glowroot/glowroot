@@ -17,6 +17,8 @@ package org.glowroot.ui;
 
 import java.util.List;
 
+import javax.management.ObjectName;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
@@ -125,10 +127,11 @@ class GaugeConfigJsonService {
             }
         }
         MBeanMeta mbeanMeta = liveJvmService.getMBeanMeta(agentId, request.objectName());
+        boolean pattern = ObjectName.getInstance(request.objectName()).isPattern();
         return mapper.writeValueAsString(ImmutableMBeanAttributeNamesResponse.builder()
                 .duplicateMBean(duplicateMBean)
-                .mbeanUnmatched(mbeanMeta.getUnmatched())
-                .mbeanUnavailable(mbeanMeta.getUnavailable())
+                .noMatchFoundForPattern(mbeanMeta.getNoMatchFound() && pattern)
+                .noMatchFoundForNonPattern(mbeanMeta.getNoMatchFound() && !pattern)
                 .addAllMbeanAttributes(mbeanMeta.getAttributeNameList())
                 .build());
     }
@@ -179,9 +182,11 @@ class GaugeConfigJsonService {
                 logger.debug(e.getMessage(), e);
             }
         }
+        boolean pattern = ObjectName.getInstance(gaugeConfig.getMbeanObjectName()).isPattern();
         builder.agentNotConnected(mbeanMeta == null)
-                .mbeanUnmatched(mbeanMeta != null && mbeanMeta.getUnmatched())
-                .mbeanUnavailable(mbeanMeta != null && mbeanMeta.getUnavailable());
+                .noMatchFoundForPattern(mbeanMeta != null && mbeanMeta.getNoMatchFound() && pattern)
+                .noMatchFoundForNonPattern(
+                        mbeanMeta != null && mbeanMeta.getNoMatchFound() && !pattern);
         if (mbeanMeta == null) {
             // agent not connected
             for (MBeanAttribute mbeanAttribute : gaugeConfig.getMbeanAttributeList()) {
@@ -219,8 +224,8 @@ class GaugeConfigJsonService {
 
     @Value.Immutable
     interface MBeanAttributeNamesResponse {
-        boolean mbeanUnavailable();
-        boolean mbeanUnmatched();
+        boolean noMatchFoundForPattern();
+        boolean noMatchFoundForNonPattern();
         boolean duplicateMBean();
         ImmutableList<String> mbeanAttributes();
     }
@@ -229,8 +234,8 @@ class GaugeConfigJsonService {
     interface GaugeResponse {
         GaugeConfigDto config();
         boolean agentNotConnected();
-        boolean mbeanUnavailable();
-        boolean mbeanUnmatched();
+        boolean noMatchFoundForPattern();
+        boolean noMatchFoundForNonPattern();
         ImmutableList<String> mbeanAvailableAttributeNames();
     }
 

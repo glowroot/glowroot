@@ -45,10 +45,8 @@ window.gtClipboard = function (clipboardSelector, clipboardContainer, textFn) {
 
     clipboard.on('success', function () {
       $clipboardIcon.attr('title', 'Copied!')
-          .tooltip('fixTitle')
           .tooltip('show');
-      $clipboardIcon.attr('title', 'Copy to clipboard')
-          .tooltip('fixTitle');
+      $clipboardIcon.attr('title', 'Copy to clipboard');
     });
 
     $clipboardIcon.data('gtClipboard', true);

@@ -21,53 +21,50 @@
 <!-- intentionally not using gt-form-with-primary-button to prevent accidental heap dumps -->
 <div ng-form
      gt-form-autofocus-on-first-input
-     class="form-horizontal"
      name="formCtrl"
      ng-if="loaded && !agentNotConnected"
      style="margin-top: 10px;">
-  <div class="form-group">
-    <label class="control-label col-lg-2" for="directory">
+  <div class="form-group row">
+    <label class="col-form-label col-md-2 text-right" for="directory">
       Directory
     </label>
-    <!-- col-lg-9 instead of col-lg-10 in order to leave a bit of padding to the right -->
-    <div class="col-lg-9">
+    <!-- col-md-9 instead of col-md-10 in order to leave a bit of padding to the right -->
+    <div class="col-md-9">
       <input type="text"
              class="form-control"
              ng-model="page.directory"
              id="directory"
              name="directory">
+      <div class="help-block">
+        Use the jvm arg <code style="white-space: nowrap;">-XX:HeapDumpPath=&lt;directory&gt;</code>
+        to change the default heap dump location.
+      </div>
     </div>
   </div>
-  <div class="form-group" style="margin-bottom: 5px;">
-    <div class="col-lg-offset-2 col-lg-9 help-block">
-      Use the jvm arg <code style="white-space: nowrap;">-XX:HeapDumpPath=&lt;directory&gt;</code>
-      to change the default heap dump location.
-    </div>
-  </div>
-  <div class="form-group gt-form-buttons">
-    <div class="col-lg-offset-2 col-lg-10">
+  <div class="form-group row">
+    <div class="offset-md-2 col-md-10">
       <div gt-button-group>
         <div gt-button
-             gt-btn-class="gt-btn-danger"
+             gt-btn-class="btn-danger"
              gt-label="Heap dump"
              gt-click="heapDump(deferred)"
              gt-confirm-header="Perform heap dump?"
              gt-confirm-body="Note: This may hang the JVM for a bit while the heap dump is generated."
-             class="gt-inline-block">
+             class="d-inline-block">
         </div>
         <div gt-button
              gt-label="Check disk space"
              gt-click="checkDiskSpace(deferred)"
-             gt-btn-class="btn-default"
-             class="gt-inline-block">
+             gt-btn-class="btn-secondary"
+             class="d-inline-block">
         </div>
       </div>
     </div>
   </div>
   <!-- checking against undefined so it will still show when availableDiskSpaceBytes === 0 -->
-  <div class="form-group gt-form-buttons"
-       ng-show="availableDiskSpaceBytes !== undefined">
-    <div class="col-lg-offset-2 col-lg-9">
+  <div class="form-group row"
+       ng-if="availableDiskSpaceBytes !== undefined">
+    <div class="col-md-offset-2 col-md-9">
       <div class="well">
         <table class="gt-heap-dump-response">
           <tr>
@@ -78,9 +75,9 @@
       </div>
     </div>
   </div>
-  <div class="form-group gt-form-buttons"
-       ng-show="heapDumpResponse">
-    <div class="col-lg-offset-2 col-lg-9">
+  <div class="form-group row"
+       ng-if="heapDumpResponse">
+    <div class="col-md-offset-2 col-md-9">
       <div class="well">
         <table class="gt-heap-dump-response">
           <tr>

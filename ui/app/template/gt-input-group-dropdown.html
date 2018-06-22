@@ -1,18 +1,18 @@
-<div uib-dropdown
-     keyboard-nav="true"
-     class="input-group-btn"
+<div class="dropdown input-group-prepend"
      ng-class="gtClass">
-  <button uib-dropdown-toggle type="button" class="btn btn-default gt-btn-input-group-addon">
-    {{gtDisplay}} <span class="caret"></span>
+  <button class="btn gt-btn-input-group dropdown-toggle"
+          type="button"
+          data-toggle="dropdown">
+    {{gtDisplay}}
   </button>
-  <!-- override bootstrap .dropdown-menu { min-width: 160px } -->
-  <ul class="dropdown-menu" style="min-width: 0;">
-    <li ng-repeat="item in gtItems()">
-      <!-- using $parent.gtModel below since ng-repeat create child scopes -->
-      <a ng-click="$parent.gtModel = item.value"
-         href="">
-        {{item.display}}
-      </a>
-    </li>
-  </ul>
+  <div class="dropdown-menu">
+    <!-- using $parent.gtModel below since ng-repeat create child scopes -->
+    <button class="dropdown-item"
+            type="button"
+            ng-repeat="item in gtItems()"
+            ng-click="$parent.gtModel = item.value"
+            style="cursor: pointer;">
+      {{item.display}}
+    </button>
+  </div>
 </div>

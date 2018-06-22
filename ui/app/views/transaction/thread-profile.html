@@ -52,10 +52,10 @@
   </div>
   <!-- negative right position is so overlay will cover view flame graph link which sticks slightly beyond container -->
   <div class="gt-panel-overlay"
-       ng-show="showSpinner"
+       ng-if="showSpinner"
        style="right: -20px;">
   </div>
-  <div ng-show="!showSpinner && !showProfile && !httpError"
+  <div ng-if="!showSpinner && !showProfile && !httpError"
        style="display: table; width: 100%; height: 100%;"
        ng-style="{'padding-top': auxiliary || hasUnfilteredAuxThreadProfile ? '25px' : '30px'}">
     <div style="display: table-cell; text-align: center; vertical-align: middle;">
@@ -64,7 +64,7 @@
         No data for this time period
       </div>
       <div class="gt-chart-no-data"
-           ng-show="showOverwrittenMessage">
+           ng-if="showOverwrittenMessage">
         There was profile data but it has expired, see
         <a href="admin/storage#rollup-capped-database-size">
           Configuration &gt; Storage &gt; Queries, service calls and continuous profiling tab data
@@ -72,42 +72,40 @@
       </div>
     </div>
   </div>
+  <!-- ng-show needed here instead of ng-if because thread-profile.js binds directly to #profileOuter -->
   <div ng-show="showProfile">
-    <div class="gt-nowrap hide" id="profileOuter">
+    <div class="gt-nowrap d-none" id="profileOuter">
       <div class="clearfix" style="padding: 10px 0;">
         <!-- margin-bottom: 15px is for smaller screens where the link is above the select -->
-        <a class="pull-right gt-flame-graph-link" ng-href="{{flameGraphHref()}}">
+        <a class="float-right gt-flame-graph-link" ng-href="{{flameGraphHref()}}">
           <em>View flame graph (experimental)</em>
         </a>
 
-        <div class="pull-left" style="font-weight: 700;">
+        <div class="float-left" style="font-weight: 700;">
           Total of {{sampleCount | number}} sampled stack traces in selected time period
         </div>
       </div>
       <div ng-form
            gt-form-with-primary-button
            style="margin-bottom: 10px;">
-        <input class="form-control gt-profile-text-filter"
+        <input class="gt-profile-text-filter form-control d-inline-block align-middle mr-1"
                ng-model="filter"
-               style="display: inline-block; vertical-align: middle; width: 25em;"
                placeholder="filter the profile tree"
-               aria-label="Profile tree filter">
-        <button class="btn btn-primary gt-profile-text-filter-refresh"
-                ng-click="refresh()"
-                style="vertical-align: middle; margin-left: 5px;">
+               aria-label="Profile tree filter"
+               style="max-width: 25em;">
+        <button class="gt-profile-text-filter-refresh btn btn-primary align-middle mr-1"
+                ng-click="refresh()">
           Refresh
         </button>
-        <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-        <a role="button"
-           class="gt-chart-button gt-inline-block gt-profile-text-filter-help"
-           href="#"
-           uib-popover-template="'template/help/profile-filter.html'"
-           popover-placement="top"
-           popover-trigger="'outsideClick'">
+        <button class="gt-chart-button align-middle"
+                uib-popover-template="'template/help/profile-filter.html'"
+                popover-placement="top"
+                popover-trigger="'outsideClick'"
+                style="font-size: 28px;">
           <span title="Help"
-                class="fas fa-question-circle"
-                style="font-size: 28px; vertical-align: middle; margin-left: 3px;"></span><!-- lack of space here is significant
-     --></a>
+                class="fas fa-question-circle">
+          </span>
+        </button>
         <div ng-if="parsingError" class="gt-red" style="margin-top: 10px; margin-bottom: -5px;">
           {{parsingError}}
         </div>

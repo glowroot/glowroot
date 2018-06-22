@@ -15,77 +15,79 @@
  */
 package org.glowroot.tests.config;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class AlertConfigPage {
-
-    private final WebDriver driver;
+public class AlertConfigPage extends Page {
 
     public AlertConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getMetricRadioButton() {
-        return withWait(
+        return getWithWait(
                 xpath("//input[@ng-model='config.condition.conditionType'][@value='metric']"));
     }
 
     public WebElement getSyntheticMonitorRadioButton() {
-        return withWait(xpath(
+        return getWithWait(xpath(
                 "//input[@ng-model='config.condition.conditionType'][@value='synthetic-monitor']"));
     }
 
     public WebElement getHeartbeatRadioButton() {
-        return withWait(
+        return getWithWait(
                 xpath("//input[@ng-model='config.condition.conditionType'][@value='heartbeat']"));
     }
 
     public Select getMetricSelect() {
-        return new Select(withWait(xpath("//select[@ng-model='config.condition.metric']")));
+        return new Select(getWithWait(xpath("//select[@ng-model='config.condition.metric']")));
     }
 
     public Select getTransactionTypeSelect() {
         return new Select(
-                withWait(xpath("//select[@ng-model='config.condition.transactionType']")));
+                getWithWait(xpath("//select[@ng-model='config.condition.transactionType']")));
     }
 
     public WebElement getTransactionNameTextField() {
-        return withWait(xpath("//div[@gt-model='config.condition.transactionName']//input"));
+        return getWithWait(xpath("//div[@gt-model='config.condition.transactionName']//input"));
     }
 
     public WebElement getTransactionPercentileTextField() {
-        return withWait(xpath("//div[@gt-model='config.condition.percentile']//input"));
+        return getWithWait(xpath("//div[@gt-model='config.condition.percentile']//input"));
     }
 
-    public WebElement getLowerBoundThresholdCheckBox() {
-        return withWait(xpath("//div[@gt-model='config.condition.lowerBoundThreshold']//input"));
+    public void clickLowerBoundThresholdCheckBox() {
+        clickWithWait(xpath("//div[@gt-model='config.condition.lowerBoundThreshold']//label"));
+    }
+
+    public boolean getLowerBoundThresholdCheckBoxValue() {
+        return getWithWait(xpath("//div[@gt-model='config.condition.lowerBoundThreshold']//input"))
+                .isSelected();
     }
 
     public WebElement getThresholdTextField() {
-        return withWait(xpath("//input[@ng-model='page.conditionThreshold']"));
+        return getWithWait(xpath("//input[@ng-model='page.conditionThreshold']"));
     }
 
     public WebElement getTimePeriodMinutesTextField() {
-        return withWait(xpath("//div[@gt-model='page.timePeriodMinutes']//input"));
+        return getWithWait(xpath("//div[@gt-model='page.timePeriodMinutes']//input"));
     }
 
     public WebElement getMinTransactionCountTextField() {
-        return withWait(xpath("//div[@gt-model='config.condition.minTransactionCount']//input"));
+        return getWithWait(xpath("//div[@gt-model='config.condition.minTransactionCount']//input"));
     }
 
     public Select getSeveritySelect() {
-        return new Select(withWait(xpath("//select[@ng-model='config.severity']")));
+        return new Select(getWithWait(xpath("//select[@ng-model='config.severity']")));
     }
 
     public WebElement getEmailAddressesTextField() {
-        return withWait(xpath("//div[@gt-model='page.emailAddresses']//textarea"));
+        return getWithWait(xpath("//div[@gt-model='page.emailAddresses']//textarea"));
     }
 
     public void clickAddButton() {
@@ -97,14 +99,6 @@ public class AlertConfigPage {
     }
 
     public WebElement getDeleteButton() {
-        return withWait(xpath("//button[normalize-space()='Delete']"));
-    }
-
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
+        return getWithWait(xpath("//button[normalize-space()='Delete']"));
     }
 }

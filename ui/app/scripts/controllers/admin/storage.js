@@ -196,13 +196,13 @@ glowroot.controller('AdminStorageCtrl', [
 
     // not using gt-form-autofocus-on-first-input in order to handle special case #rollup-capped-database-size and
     // #trace-capped-database-size urls
-    var selector = 'input:not(.gt-autofocus-ignore)';
+    var selector = 'input';
     if ($location.hash() === 'rollup-capped-database-size') {
       selector = '.gt-rollup-capped-database-size input';
     } else if ($location.hash() === 'trace-capped-database-size') {
       selector = '.gt-trace-capped-database-size input';
     }
-    var $form = $('.form-horizontal');
+    var $form = $('#storageConfigCard');
     var unregisterWatch = $scope.$watch(function () {
       return $form.find(selector).length && $form.find('input').first().is(':visible');
     }, function (newValue) {

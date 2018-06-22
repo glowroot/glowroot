@@ -15,35 +15,24 @@
  */
 package org.glowroot.tests.admin;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class HealthchecksIoConfigPage {
-
-    private final WebDriver driver;
+public class HealthchecksIoConfigPage extends Page {
 
     public HealthchecksIoConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getPingUrlTextField() {
-        return withWait(xpath("//div[@gt-model='config.pingUrl']//input"));
+        return getWithWait(xpath("//div[@gt-model='config.pingUrl']//input"));
     }
 
     public void clickSaveButton() {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
-    }
-
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
     }
 }

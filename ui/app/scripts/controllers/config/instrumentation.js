@@ -330,7 +330,8 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           });
     };
 
-    $scope.exportToJson = function () {
+    $scope.exportToJson = function (deferred) {
+      deferred.resolve();
       var config = angular.copy($scope.config);
       instrumentationExport.clean(config);
       $scope.jsonExport = JSON.stringify(config, null, 2);

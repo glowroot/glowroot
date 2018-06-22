@@ -15,26 +15,29 @@
  */
 @import "variables";
 
-// @indent1 must be sync'd with indent1 javascript variable in trace-renderer.js
-@indent1: 8.41px;
-@horizontal-padding: 8.41px;
+// $indent1 must be sync'd with indent1 javascript variable in trace-renderer.js
+$indent1: 8.41px;
+$horizontal-padding: 8.41px;
 // by default using flatButtonVerticalPadding, but these are really independent vars
-@vertical-padding: @gt-flat-button-vertical-padding;
+$vertical-padding: $gt-flat-button-vertical-padding;
+
+.font-weight-600 {
+  font-weight: 600;
+}
 
 .gt-content-detail {
-  margin-left: 6 * @indent1;
+  margin-left: 6 * $indent1;
 }
 
 .gt-timers-table td {
-  padding-left: 0px;
-  padding-right: 16px;
+  padding: 0 16px 0 0;
   text-align: right;
   vertical-align: top;
 }
 
 // some elements need the same padding as expanding elements
 .gt-content-padding {
-  padding: @vertical-padding @horizontal-padding;
+  padding: $vertical-padding $horizontal-padding;
 }
 
 .gt-expanded-content {
@@ -43,12 +46,12 @@
 
 .gt-unexpanded-content,
 .gt-expanded-content {
+  @extend .gt-content-padding;
   cursor: pointer;
   // margin-right is used (instead of padding-right on the container) so that stack traces which
   // require horizontal scrolling still have padding to their right
   margin-right: 20px;
   border-radius: 4px;
-  .gt-content-padding;
 }
 
 .gt-unexpanded-content:hover,
@@ -74,65 +77,65 @@
 .gt-left-numeric-column {
   text-align: right;
   // needs the same vertical padding as content
-  padding: @vertical-padding 0;
+  padding: $vertical-padding 0;
 }
 
 .gt-indent1 {
-  margin-left: @indent1;
+  margin-left: $indent1;
 }
 
 .gt-indent2 {
-  margin-left: 2 * @indent1;
+  margin-left: 2 * $indent1;
 }
 
 .gt-indent4 {
-  margin-left: 4 * @indent1;
+  margin-left: 4 * $indent1;
 }
 
 .gt-indent6 {
-  margin-left: 6 * @indent1;
+  margin-left: 6 * $indent1;
 }
 
 .gt-width2 {
-  width: 2 * @indent1;
+  width: 2 * $indent1;
 }
 
 .gt-width6 {
-  width: 6 * @indent1;
+  width: 6 * $indent1;
 }
 
 .gt-pad1 {
-  padding-left: @horizontal-padding;
-  padding-right: @horizontal-padding;
+  padding-left: $horizontal-padding;
+  padding-right: $horizontal-padding;
 }
 
 .gt-pad1aligned {
-  margin-left: -@horizontal-padding;
-  .gt-pad1;
+  @extend .gt-pad1;
+  margin-left: -$horizontal-padding;
 }
 
 .gt-pad1profile {
+  @extend .gt-pad1;
   padding-top: 1px;
   padding-bottom: 1px;
-  .gt-pad1;
 }
 
 .gt-flat-btn.gt-flat-btn-big-pad1aligned {
-  margin-left: -@horizontal-padding;
-  .gt-pad1;
+  @extend .gt-pad1;
+  margin-left: -$horizontal-padding;
   padding-top: 6px;
   padding-bottom: 6px;
 }
 
 .gt-flat-btn.gt-flat-btn-big {
-  .gt-pad1;
+  @extend .gt-pad1;
   padding-top: 6px;
   padding-bottom: 6px;
 }
 
 .gt-second-line-indent {
-  padding-left: (4 * @indent1);
-  text-indent: -(4 * @indent1);
+  padding-left: (4 * $indent1);
+  text-indent: -(4 * $indent1);
 }
 
 .gt-trace-query-text-column {
@@ -168,13 +171,13 @@
   border: none;
   padding: 0;
   background-color: transparent;
-  color: darken(@gt-blue, 5%); // see .gt-link-color
+  color: darken($gt-blue, 5%); // see .gt-link-color
   text-align: right;
 }
 
 .gt-trace-query-sort-button:hover {
-  // this matches bootstrap's 'a' behavior (see scaffolding.less)
-  color: darken(darken(@gt-blue, 5%), 15%);
+  // this matches bootstrap's 'a' behavior (see scaffolding.scss)
+  color: darken(darken($gt-blue, 5%), 15%);
 }
 
 /* text-indent is inherited by default, so need to reset it on buttons inside .second-level-indent,
@@ -185,7 +188,7 @@
 }
 
 .gt-trace-exception-indent {
-  padding-left: (3 * @indent1);
+  padding-left: (3 * $indent1);
 }
 
 .gt-break-word {
@@ -212,14 +215,14 @@
 }
 
 .gt-trace-attr-value {
+  @extend .gt-break-word;
+  @extend .gt-pre-wrap;
   // using table-cell so that copy pasting from attributes sections
   // will not put newline in between attribute names/values
   // (IE 9 and 10 will still use default display 'block' since this is applied to divs
   // which looks the same but copy pasting will have the newline oh well)
   display: table-cell;
   overflow: hidden;
-  .gt-break-word;
-  .gt-pre-wrap;
 }
 
 .gt-breakdown-header {
@@ -234,7 +237,7 @@
 }
 
 .gt-trace-entry-bar {
-  background-color: @gt-yellow;
+  background-color: $gt-yellow;
   height: 100%;
 }
 
@@ -256,32 +259,78 @@
   // margin and padding are just to increase size of hitbox for ease of clicking
   margin: -5px;
   padding: 5px;
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 // .gt-clip:hover is for exported traces
 .gt-clip.zeroclipboard-is-hover, .gt-clip:hover {
   // important is needed to override .gt-full-screen-modal.modal .gt-clip
-  color: @gt-blue !important;
+  color: $gt-blue !important;
 }
 
 // .gt-clip:active is for exported traces
 .gt-clip.zeroclipboard-is-hover.zeroclipboard-is-active, .gt-clip:active {
   // important is needed to override .gt-full-screen-modal.modal .gt-clip
-  color: darken(@gt-blue, 12%) !important;
+  color: darken($gt-blue, 12%) !important;
 }
 
-@media screen and (min-width: @screen-xs) {
+@include media-breakpoint-up(md) {
   body {
-    font-size: 14px;
+    font-size: 0.9rem;
   }
 
   .btn, .form-control, .input-group-addon {
-    font-size: 14px !important;
+    font-size: 0.9rem !important;
   }
 
-  .form-control, .input-group .input-group-btn button {
-    // this is related to font-size
-    height: 34px;
+  .dropdown-menu {
+    font-size: 0.9rem;
   }
+}
+
+.gt-query-table th, .gt-query-table td {
+  padding: .625rem;
+}
+
+.gt-query-text-column {
+  font-family: Cousine, monospace;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-query-text-column:hover {
+  color: $gt-blue;
+}
+
+.gt-query-total-column {
+  width: 5rem;
+  text-align: right;
+  padding-left: 0 !important; // create more space
+  word-wrap: normal; // overriding "word-break" from .card so that numbers are not wrapped at commas and periods
+}
+
+.gt-query-other-column {
+  width: 4rem;
+  text-align: right;
+  padding-left: 0 !important; // create more space
+  word-wrap: normal; // overriding "word-break" from .card so that numbers are not wrapped at commas and periods
+}
+
+.gt-query-rows-column {
+  width: 4rem;
+  text-align: right;
+  padding-left: 0 !important; // create more space
+  word-wrap: normal; // overriding "word-break" from .card so that numbers are not wrapped at commas and periods
+}
+
+.gt-sortable-table-header {
+  text-decoration: none !important;
+  display: inline-block;
+  @include gt-link-with-focus-ring;
+}
+
+.gt-sortable-table-header:focus:not(:hover) {
+  color: $gt-blue;
 }

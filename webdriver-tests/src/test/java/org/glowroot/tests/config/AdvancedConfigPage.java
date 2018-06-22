@@ -15,58 +15,48 @@
  */
 package org.glowroot.tests.config;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class AdvancedConfigPage {
-
-    private final WebDriver driver;
+public class AdvancedConfigPage extends Page {
 
     public AdvancedConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getImmediatePartialStoreThresholdTextField() {
-        return withWait(xpath("//div[@gt-label='Immediate partial trace store threshold']//input"));
+        return getWithWait(
+                xpath("//div[@gt-label='Immediate partial trace store threshold']//input"));
     }
 
     public WebElement getMaxTransactionAggregatesTextField() {
-        return withWait(
+        return getWithWait(
                 xpath("//div[@gt-label='Max transaction aggregates per transaction type']//input"));
     }
 
     public WebElement getMaxQueryAggregatesTextField() {
-        return withWait(
+        return getWithWait(
                 xpath("//div[@gt-label='Max query aggregates per transaction aggregate']//input"));
     }
 
     public WebElement getMaxServiceCallAggregatesTextField() {
-        return withWait(xpath(
+        return getWithWait(xpath(
                 "//div[@gt-label='Max service call aggregates per transaction aggregate']//input"));
     }
 
     public WebElement getMaxTraceEntriesPerTransactionTextField() {
-        return withWait(xpath("//div[@gt-label='Max trace entries per transaction']//input"));
+        return getWithWait(xpath("//div[@gt-label='Max trace entries per transaction']//input"));
     }
 
     public WebElement getMaxProfileSamplesPerTransactionTextField() {
-        return withWait(xpath("//div[@gt-label='Max profile samples per transaction']//input"));
+        return getWithWait(xpath("//div[@gt-label='Max profile samples per transaction']//input"));
     }
 
     public void clickSaveButton() {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
-    }
-
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
     }
 }

@@ -1,0 +1,265 @@
+/*
+ * Copyright 2012-2018 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/* styles shared between app.scss and export.scss */
+@import "../../bower_components/bootstrap/scss/variables";
+@import "../../bower_components/bootstrap/scss/mixins";
+@import "variables";
+
+.gt-monospace {
+  font-family: Cousine, monospace;
+}
+
+.gt-opensans {
+  font-family: 'Open Sans', sans-serif;
+}
+
+@mixin gt-focus-ring($opacity: .25, $color: $primary) {
+  &:focus {
+    outline: none;
+    box-shadow: none !important;
+  }
+  &.focus-visible {
+    z-index: 3; // to make the focus ring appear above neighboring items (sidebar items and tabs)
+    @if $enable-shadows {
+      box-shadow: $btn-box-shadow, 0 0 0 $btn-focus-width rgba($color, $opacity) !important;
+    } @else {
+      box-shadow: 0 0 0 $btn-focus-width rgba($color, $opacity) !important;
+    }
+  }
+}
+
+@mixin gt-focus-ring-inset($opacity: .25, $color: $primary) {
+  &:focus {
+    outline: none;
+    box-shadow: none !important;
+  }
+  &.focus-visible {
+    z-index: 3; // to make the focus ring appear above neighboring items (sidebar items and tabs)
+    @if $enable-shadows {
+      box-shadow: inset $btn-box-shadow, 0 0 0 $btn-focus-width rgba($color, $opacity) !important;
+    } @else {
+      box-shadow: inset 0 0 0 $btn-focus-width rgba($color, $opacity) !important;
+    }
+  }
+}
+
+@mixin gt-link-with-focus-ring($padding: .25rem) {
+  @include gt-focus-ring;
+  border-radius: .25rem;
+  margin-left: -$padding;
+  margin-right: -$padding;
+  padding-left: $padding;
+  padding-right: $padding;
+}
+
+// -----------
+// gt-flat-btn
+// -----------
+
+.gt-flat-btn {
+  // upside to using a real button: mouse click does not focus on button, can use :active to provide
+  // feedback on clicking already focused button
+  // also good keyboard navigation, can be selected by tabbing and activated by <enter>
+  // downside to real button: button text is not selectable
+  border: none;
+  background-color: transparent;
+  // inherit vertical-align so it can be used inline with other text
+  vertical-align: inherit;
+  border-radius: 4px;
+  @include gt-focus-ring;
+}
+
+.gt-flat-btn:hover {
+  background-color: #ddd;
+}
+
+.gt-flat-btn:active {
+  background-color: #ccc;
+}
+
+.gt-flat-btn-big {
+  padding: 6px 12px;
+}
+
+.gt-link-with-focus-ring {
+  @include gt-link-with-focus-ring;
+}
+
+// ---------
+// utilities
+// ---------
+
+.gt-button-spacing {
+  margin-right: .25rem;
+  margin-bottom: .5rem;
+}
+
+.gt-button-message {
+  display: inline-block;
+  font-size: 1rem;
+  vertical-align: .125rem;
+  white-space: pre-line; // so that newlines can be used to break up long messages
+}
+
+.gt-button-message-success {
+  color: darken(#28a745, 10%); // #28a745 is bootstrap $green
+  font-weight: 600; // these are short and short-lived, this helps for them to show up better
+}
+
+.gt-button-message-error {
+  color: $gt-red;
+}
+
+// this is to dynamically hide the validation error message immediately after it is fixed
+form.ng-valid .button-validation-error {
+  display: none;
+}
+
+.gt-button-spinner {
+  // relative position needed spinner
+  position: relative;
+  display: inline-block;
+  margin-top: -8px;
+  margin-left: 20px;
+  vertical-align: middle;
+}
+
+.gt-link-color {
+  color: darken($gt-blue, 5%);
+  font-weight: bold;
+}
+
+.gt-red {
+  color: $gt-red;
+}
+
+.gt-yellow {
+  color: $gt-yellow;
+}
+
+.gt-nowrap {
+  white-space: nowrap;
+}
+
+.d-inline-block.d-none {
+  display: none !important;
+}
+
+.gt-offscreen {
+  position: absolute;
+  left: -999em;
+}
+
+span.disabled {
+  color: #777;
+  cursor: not-allowed;
+}
+
+.gt-input-xlarge {
+  width: 270px;
+}
+
+// global modal customization
+
+.modal-body {
+  padding: 40px 30px;
+}
+
+.modal-backdrop {
+  background-color: #ddd;
+}
+
+.modal-backdrop.in {
+  opacity: 0.8;
+}
+
+// this is for typeahead dropdowns
+.dropdown-menu > .active > a {
+  cursor: pointer;
+}
+
+.gt-bold {
+  font-weight: bold;
+}
+
+.modal-backdrop.in {
+  opacity: 0.6;
+}
+
+.gt-label-disabled {
+  color: #777;
+  cursor: not-allowed;
+}
+
+// carried over from
+.gt-caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  vertical-align: middle;
+  border-top: 4px dashed;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}
+
+.gt-caret.gt-caret-sort-ascending {
+  border-top-width: 0;
+  border-bottom: 4px solid;
+}
+
+@each $breakpoint in map-keys($grid-breakpoints) {
+  @include media-breakpoint-up($breakpoint) {
+    $infix: breakpoint-infix($breakpoint, $grid-breakpoints);
+
+    .font-weight#{$infix}-normal {
+      font-weight: normal !important;
+    }
+    .font-weight#{$infix}-600 {
+      font-weight: 600 !important;
+    }
+  }
+}
+
+table thead th {
+  @extend .border-top-0;
+}
+
+.uib-typeahead-match.active > a, .uib-typeahead-match.active > a:focus, .uib-typeahead-match.active > a:hover {
+  color: $list-group-active-color;
+  background-color: $list-group-active-bg;
+}
+
+.multiselect-filter {
+  padding-bottom: .25rem !important;
+}
+
+.multiselect-container input[type='checkbox'] {
+  margin-left: .25rem;
+  margin-right: .125rem;
+}
+
+.multiselect-native-select select:invalid + .dropdown button {
+  @extend .form-control:invalid;
+}
+
+.multiselect-native-select select.is-invalid + .dropdown button {
+  @extend .form-control.is-invalid;
+}
+
+.multiselect-native-select select.ng-touched.ng-invalid + .dropdown button {
+  @extend .form-control:invalid;
+}

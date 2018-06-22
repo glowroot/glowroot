@@ -51,7 +51,7 @@ glowroot.controller('TransactionQueriesCtrl', [
 
     $scope.smallScreen = function () {
       // using innerWidth so it will match to screen media queries
-      return window.innerWidth < 992;
+      return window.innerWidth < 1200;
     };
 
     $scope.sortQueryString = function (attributeName) {
@@ -73,9 +73,9 @@ glowroot.controller('TransactionQueriesCtrl', [
         return '';
       }
       if ($scope.sortAsc) {
-        return 'caret gt-caret-sort-ascending';
+        return 'gt-caret gt-caret-sort-ascending';
       } else {
-        return 'caret';
+        return 'gt-caret';
       }
     };
 
@@ -210,7 +210,7 @@ glowroot.controller('TransactionQueriesCtrl', [
         $unformattedQuery.text($scope.unformattedQuery);
         $unformattedQuery.show();
         $formattedQuery.hide();
-        $('#queryModal').find('.gt-clip').removeClass('hide');
+        $('#queryModal').find('.gt-clip').removeClass('d-none');
 
         gtClipboard($clipboardIcon, '#queryModal', function () {
           return $scope.showFormatted ? $scope.formattedQuery : $scope.unformattedQuery;
@@ -228,12 +228,8 @@ glowroot.controller('TransactionQueriesCtrl', [
         }
         var formatted = SqlPrettyPrinter.format(fullText);
         if (typeof formatted === 'object') {
-          // intentional console logging
-          // need conditional since console does not exist in IE9 unless dev tools is open
-          if (window.console) {
-            console.log(formatted.message);
-            console.log(fullText);
-          }
+          console.log(formatted.message);
+          console.log(fullText);
           return;
         }
         if (comment.length) {

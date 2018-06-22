@@ -18,15 +18,10 @@
 
 var glowroot = angular.module('glowroot', [
   'ui.router',
-  'ui.bootstrap.buttons',
-  'ui.bootstrap.dropdown',
   'ui.bootstrap.popover',
   'ui.bootstrap.typeahead',
-  'ui.bootstrap.modal',
   'ui.bootstrap.debounce',
-  'ui.codemirror',
-  'ui.select',
-  'ngSanitize'
+  'ui.codemirror'
 ]);
 
 var Glowroot;
@@ -356,7 +351,7 @@ glowroot.run([
       var $selector = $('a.gt-agent-rollup-dropdown-spinner');
       if ($rootScope.showRefreshAgentRollupSpinner && !refreshAgentRollupSpinner && $selector.length) {
         refreshAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4);
-        $('a.gt-agent-rollup-dropdown-message').addClass('hide');
+        $('a.gt-agent-rollup-dropdown-message').addClass('d-none');
       }
       $http.get('backend/agent-rollups?from=' + from + '&to=' + to)
           .then(function (response) {
@@ -377,7 +372,7 @@ glowroot.run([
                 var $selector = $('a.gt-agent-rollup-dropdown-spinner');
                 refreshAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4, true);
               } else {
-                $('a.gt-agent-rollup-dropdown-message').removeClass('hide');
+                $('a.gt-agent-rollup-dropdown-message').removeClass('d-none');
                 if (message) {
                   $('a.gt-agent-rollup-dropdown-message').text(message);
                 }
@@ -528,7 +523,7 @@ Glowroot = (function () {
         clearTimeout($this.data('gtTimeout'));
       }
       $this.stop().animate({opacity: '100'});
-      $this.removeClass('hide');
+      $this.removeClass('d-none');
       var outerThis = this;
       $this.data('gtTimeout', setTimeout(function () {
         fadeOut(outerThis, 1000);
@@ -543,7 +538,7 @@ Glowroot = (function () {
         clearTimeout($this.data('gtTimeout'));
       }
       $this.stop().animate({opacity: '100'});
-      $this.removeClass('hide');
+      $this.removeClass('d-none');
     });
   }
 
@@ -551,7 +546,7 @@ Glowroot = (function () {
     // fade out and then override jquery behavior and use hide class instead of display: none
     var $selector = $(selector);
     $selector.fadeOut(duration, function () {
-      $selector.addClass('hide');
+      $selector.addClass('d-none');
       $selector.css('display', '');
     });
   }
@@ -570,7 +565,7 @@ Glowroot = (function () {
     var spinner = new Spinner(options);
 
     if (noDelay) {
-      $(element).removeClass('hide');
+      $(element).removeClass('d-none');
       spinner.spin(element);
       if (callbackOnStart) {
         callbackOnStart();
@@ -578,7 +573,7 @@ Glowroot = (function () {
     } else {
       // small delay so that if there is an immediate response the spinner doesn't blink
       var timer = setTimeout(function () {
-        $(element).removeClass('hide');
+        $(element).removeClass('d-none');
         spinner.spin(element);
         if (callbackOnStart) {
           callbackOnStart();
@@ -589,7 +584,7 @@ Glowroot = (function () {
     return {
       stop: function () {
         clearTimeout(timer);
-        $(element).addClass('hide');
+        $(element).addClass('d-none');
         spinner.stop();
       }
     };
@@ -597,7 +592,7 @@ Glowroot = (function () {
 
   return {
     showAndFadeSuccessMessage: function (selector) {
-      showAndFadeMessage(selector, 1500);
+      showAndFadeMessage(selector, 2000);
     },
     cancelFadeSuccessMessage: cancelFadeMessage,
     fadeOut: fadeOut,
@@ -606,7 +601,7 @@ Glowroot = (function () {
 })();
 
 // hack using some code from bootstrap's button.js until https://github.com/angular-ui/bootstrap/issues/3264
-$(document)
-    .on('focus.bs.button.data-api blur.bs.button.data-api', '[data-toggle^="button"]', function (e) {
-      $(e.target).closest('.btn').toggleClass('focus', /^focus(in)?$/.test(e.type));
-    });
+// $(document)
+//     .on('focus.bs.button.data-api blur.bs.button.data-api', '[data-toggle^="button"]', function (e) {
+//       $(e.target).closest('.btn').toggleClass('focus', /^focus(in)?$/.test(e.type));
+//     });

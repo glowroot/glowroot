@@ -1,0 +1,81 @@
+/*
+ * Copyright 2018 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.gt-header {
+  padding: 1.75rem 0 2.25rem;
+}
+
+.gt-header-height {
+  height: 3.5rem;
+}
+
+.gt-header-text {
+  font-size: 2.25rem;
+  color: $gt-page-title-color;
+  font-weight: 700;
+  line-height: inherit; // override h1
+  margin: 0; // override h1
+}
+
+.gt-header .dropdown-toggle, .gt-not-header .dropdown-toggle {
+  font-size: 1.875rem !important;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-block;
+  padding: .125rem 1rem .25rem 1rem;
+  border-radius: .5rem;
+  color: #505050 !important;
+}
+
+.gt-header .dropdown-menu, .gt-not-header .dropdown-menu {
+  min-width: 100%;
+  border-radius: .5rem;
+}
+
+.gt-header-lhs, .gt-header-rhs {
+  height: 6rem;
+  display: flex;
+  align-items: center;
+}
+
+.gt-header-lhs .dropdown-item {
+  font-size: 1.5rem;
+}
+
+.gt-header-rhs .dropdown-item {
+  font-size: 1.25rem;
+}
+
+.dropdown-item {
+  @include gt-focus-ring;
+}
+
+.dropdown-item:focus, .dropdown-item:hover {
+  background-color: $secondary;
+}
+
+.gt-header-lhs .bootstrap-select .dropdown-toggle:focus {
+  // override focus outline specified in bootstrap-select.scss
+  outline: none !important;
+}
+
+.gt-header .gt-separator {
+  padding-bottom: .75rem;
+  font-size: 3.25rem;
+  font-weight: 400;
+  margin-left: .25rem;
+  margin-right: calc(.25rem + 1px);
+}

@@ -13,84 +13,75 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-header clearfix"
-     style="padding-bottom: 45px;">
-  <div class="gt-header-page-name pull-left">
-    <div style="margin-top: -16px;">
-      <h1 class="gt-inline-block"
-          ng-show="!layout.central">
-        {{headerDisplay}}
-      </h1>
-      <!-- negative margin-left is so background doesn't bleed through transparent 1px border when menu is open -->
-      <span class="gt-inline-block gt-header-menu"
-            ng-show="layout.central"
-            style="margin-left: -1px; vertical-align: 2px;">
-        <select gt-selectpicker
-                gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
-                data-live-search="true"
-                data-style="btn-flat"
-                id="agentRollupDropdown"
-                aria-label="Agent">
-          <option ng-repeat="item in agentRollups track by item.id"
-                  data-href="{{currentTabUrl()}}{{headerQueryString(item.id, transactionType)}}"
-                  data-tokens="{{item.display}}"
-                  value="{{item.id}}"
-                  title="{{agentRollup.display}}"
-                  ng-disabled="item.disabled"
-                  ng-selected="item.id == agentRollup.id">
-            {{item.indentedDisplay}}
-          </option>
-          <option disabled
-                  class="gt-agent-rollup-dropdown-message hide"
-                  style="font-style: italic; font-size: 16px; cursor: inherit;"
-                  ng-if="agentRollups.length === 0">
-            No active agents in this time period
-          </option>
-          <!-- can't use gt-spinner due to selectpicker behavior -->
-          <option disabled
-                  class="gt-agent-rollup-dropdown-spinner hide"
-                  style="position: relative; height: 30px; cursor: inherit;">
-          </option>
-        </select>
-      </span>
-      <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
-           while chrome guesses the placement of the border based on default font and then it moves slightly
-           once font is available -->
-      <span class="gt-inline-block gt-separator">
-        |
-      </span>
-      <span class="gt-inline-block"
-            ng-show="hideTransactionTypeDropdown()">
-        {{transactionType}}
-      </span>
-      <span class="gt-inline-block gt-header-menu"
-            ng-hide="hideTransactionTypeDropdown()"
-            style="vertical-align: 2px;">
-        <span class="dropdown">
-          <button type="button"
-                  class="btn dropdown-toggle btn-flat"
-                  data-toggle="dropdown"
-                  role="button"
-                  style="padding-right: 16px;">
-            {{transactionType || '&lt;transaction type&gt;'}}
-            <span class="bs-caret"><span class="caret" style="margin-top: -2px; margin-left: 2px;"></span></span>
-          </button>
-          <ul class="dropdown-menu"
-              role="menu">
-            <li ng-repeat="tt in agentRollup.transactionTypes"
-                ng-hide="tt === transactionType">
-              <a role="menuitem"
-                 tabindex="-1"
-                 ng-href="{{currentTabUrl()}}{{headerQueryString(null, tt)}}">
-                {{tt}}
-              </a>
-            </li>
-          </ul>
-        </span>
-      </span>
+<div class="gt-header clearfix">
+  <div class="gt-header-lhs float-left">
+    <h1 class="gt-header-text"
+        ng-if="!layout.central">
+      {{headerDisplay}}
+    </h1>
+    <!-- ng-show needed here instead of ng-if because transaction.js binds directly to #agentRollupDropdown -->
+    <div ng-show="layout.central">
+      <select gt-selectpicker
+              gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
+              data-width="fit"
+              data-live-search="true"
+              data-style="btn-secondary"
+              id="agentRollupDropdown"
+              aria-label="Agent">
+        <option ng-repeat="item in agentRollups track by item.id"
+                data-href="{{currentTabUrl()}}{{headerQueryString(item.id, transactionType)}}"
+                data-tokens="{{item.display}}"
+                value="{{item.id}}"
+                title="{{agentRollup.display}}"
+                ng-disabled="item.disabled"
+                ng-selected="item.id == agentRollup.id">
+          {{item.indentedDisplay}}
+        </option>
+        <option disabled
+                class="gt-agent-rollup-dropdown-message d-none"
+                style="font-style: italic; font-size: 1rem; cursor: inherit;"
+                ng-if="agentRollups.length === 0">
+          No active agents in this time period
+        </option>
+        <!-- can't use gt-spinner due to selectpicker behavior -->
+        <option disabled
+                class="gt-agent-rollup-dropdown-spinner d-none"
+                style="position: relative; height: 30px; cursor: inherit;">
+        </option>
+      </select>
+    </div>
+    <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+         while chrome guesses the placement of the border based on default font and then it moves slightly
+         once font is available -->
+    <div class="gt-header-text gt-separator">
+      |
+    </div>
+    <div class="gt-header-text"
+         ng-if="hideTransactionTypeDropdown()">
+      {{transactionType}}
+    </div>
+    <div ng-if="!hideTransactionTypeDropdown()">
+      <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle"
+                type="button"
+                data-toggle="dropdown"
+                style="padding-right: 1rem;"
+                id="gtTransactionType">
+          {{transactionType || '&lt;transaction type&gt;'}}
+        </button>
+        <div class="dropdown-menu"
+             aria-labelledby="gtTransactionType">
+          <a class="dropdown-item"
+             ng-repeat="tt in agentRollup.transactionTypes"
+             ng-if="tt !== transactionType"
+             ng-href="{{currentTabUrl()}}{{headerQueryString(null, tt)}}">
+            {{tt}}
+          </a>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="pull-right">
+  <div class="gt-header-rhs float-right">
     <div ng-controller="ChartRangeCtrl" ng-include="'template/gt-chart-range.html'"></div>
   </div>
 </div>
@@ -98,11 +89,11 @@
   <div ui-view="sidebar"></div>
 </div>
 <div class="gt-transaction-main-column">
-  <div class="panel panel-default">
-    <div class="panel-heading" style="word-break: break-all;">
+  <div class="card">
+    <div class="card-header" style="word-break: break-all;">
       <h2>{{transactionName ? transactionName : 'All ' + transactionType + ' Transactions'}}</h2>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
       <div ui-view="tabs"></div>
       <div ui-view="main" ng-hide="hideMainContent()"></div>
     </div>

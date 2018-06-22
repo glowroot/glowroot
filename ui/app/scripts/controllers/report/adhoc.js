@@ -90,19 +90,19 @@ glowroot.controller('ReportAdhocCtrl', [
               angular.forEach($scope.allAgentRollups, function (agentRollup) {
                 var indent = '';
                 for (var i = 0; i < agentRollup.depth; i++) {
-                  indent += '\u00a0\u00a0\u00a0\u00a0';
+                  indent += '\u00a0\u00a0\u00a0\u00a0\u00a0';
                 }
                 agentRollup.indentedDisplay = indent + agentRollup.lastDisplayPart;
               });
-              if ($scope.allAgentRollups.length === 0) {
-                $scope.allAgentRollups = [{
-                  id: '',
-                  display: 'No active agents in this time period',
-                  indentedDisplay: 'No active agents in this time period',
-                  disabled: true,
-                  italic: true
-                }];
-              }
+              $timeout(function () {
+                var $reportAgentRollupIdSelect = $('#reportAgentRollupIdSelect');
+                $reportAgentRollupIdSelect.multiselect('rebuild');
+                if (!$scope.allAgentRollups.length) {
+                  var $button = $('button.multiselect');
+                  $button.prop('disabled', true);
+                  $button.find('.multiselect-selected-text').text('No active agents in selected time period');
+                }
+              });
             }, function (response) {
               // TODO equivalent of $scope.showChartSpinner--;
               httpErrors.handle(response, $scope);
@@ -111,7 +111,7 @@ glowroot.controller('ReportAdhocCtrl', [
     }
 
     $scope.$watchGroup(['report.agentRollupIds', 'report.fromDate', 'report.toDate'], function () {
-      if ($scope.report.agentRollupIds.length) {
+      if ($scope.report.agentRollupIds && $scope.report.agentRollupIds.length) {
         var query = {
           agentRollupIds: $scope.report.agentRollupIds,
           fromDate: moment($scope.report.fromDate).format('YYYYMMDD'),
@@ -362,7 +362,7 @@ glowroot.controller('ReportAdhocCtrl', [
 
     $scope.$watch('report', function () {
       // clear button error message if any
-      var $buttonMessage = $('.gt-form-buttons .gt-button-message');
+      var $buttonMessage = $('.gt-button-message');
       $buttonMessage.text('');
       $buttonMessage.removeClass('gt-button-message-error');
       $buttonMessage.addClass('gt-button-message-success');
@@ -669,12 +669,13 @@ glowroot.controller('ReportAdhocCtrl', [
 
     $scope.sortIconClass = function (attr) {
       if ($scope.sortAttribute !== attr) {
-        return 'caret gt-visibility-hidden';
+        // this is to retain size and avoid expanding/contracting columns
+        return 'gt-caret invisible';
       }
       if ($scope.sortAsc) {
-        return 'caret gt-caret-sort-ascending';
+        return 'gt-caret gt-caret-sort-ascending';
       } else {
-        return 'caret';
+        return 'gt-caret';
       }
     };
 

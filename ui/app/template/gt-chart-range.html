@@ -13,54 +13,54 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!-- negative margin-right is so background doesn't bleed through transparent 1px border when menu is open -->
-<div class="gt-header-page-name"
-     ng-form
-     gt-form-with-primary-button
-     style="margin-right: -1px;">
-    <span class="gt-inline-block gt-header-menu gt-header-smaller-menu">
-      <span class="dropdown">
+<div ng-form
+     gt-form-with-primary-button>
+    <div class="d-inline gt-header-menu gt-header-smaller-menu">
+      <div class="dropdown">
         <button type="button"
-                class="btn dropdown-toggle btn-flat"
+                class="btn btn-secondary dropdown-toggle"
                 data-toggle="dropdown"
-                style="font-size: 24px !important; padding-right: 16px;"
                 id="gtChartRange"
                 aria-haspopup="true"
-                aria-expanded="false">
+                aria-expanded="false"
+                style="font-size: 1.5rem !important; padding-right: 1rem;">
           {{timeDisplay()}}
-          <span class="bs-caret"><span class="caret" style="margin-top: -2px; margin-left: 2px;"></span></span>
         </button>
-        <ul class="dropdown-menu" aria-labelledby="gtChartRange">
-          <li ng-repeat="last in rangeSelections">
-            <a ng-href="{{currentTabUrl()}}{{headerRangeQueryString(last)}}"
-               ng-click="updateLast(last, $event)">
-              {{lastDisplay(last)}}
-            </a>
-          </li>
-          <li>
-            <button type="button"
-                    class="btn btn-link"
-                    ng-click="openCustomRange()">
-              Custom range...
-            </button>
-          </li>
-        </ul>
-      </span>
-    </span>
+        <div class="dropdown-menu dropdown-menu-right"
+             aria-labelledby="gtChartRange">
+          <a class="dropdown-item"
+             ng-repeat="last in rangeSelections"
+             ng-href="{{currentTabUrl()}}{{headerRangeQueryString(last)}}"
+             ng-click="updateLast(last, $event)">
+            {{lastDisplay(last)}}
+          </a>
+          <button type="button"
+                  class="dropdown-item"
+                  ng-click="openCustomRange()">
+            Custom range...
+          </button>
+        </div>
+      </div>
+    </div>
 </div>
-<div class="modal" id="customDateRangeModal" tabindex="-1">
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="customDateRangeModal">
   <div class="modal-dialog"
-       style="max-width: 500px; font-size: 14px; ">
+       role="document"
+       style="max-width: 500px;">
     <div class="modal-content">
       <div ng-form
            gt-form-with-primary-button>
         <div class="modal-header">
+          <h4 class="modal-title">Custom date range</h4>
           <button type="button"
                   class="close"
-                  data-dismiss="modal">
-            &times;
+                  data-dismiss="modal"
+                  aria-label="Close">
+            <span aria-hidden="true">&times;</span>
           </button>
-          <h4 class="modal-title">Custom date range</h4>
         </div>
         <div class="modal-body">
           <div class="container">
@@ -69,15 +69,29 @@
               <div>
                 <!-- margin-bottom is for small screen where time wraps to next line -->
                 <div style="width: 12em; float: left; margin-right: 10px; margin-bottom: 10px;">
-                  <div class="input-group date" id="customDateRangeFromDate">
-                    <input type="text" class="form-control" aria-label="Date">
-                    <span class="input-group-addon"><span class="fas fa-calendar"></span></span>
+                  <div class="input-group date" id="customDateRangeFromDate" data-target-input="nearest">
+                    <input type="text"
+                           class="form-control datetimepicker-input"
+                           data-target="#customDateRangeFromDate"
+                           aria-label="Date">
+                    <div class="input-group-append"
+                         data-target="#customDateRangeFromDate"
+                         data-toggle="datetimepicker">
+                      <div class="input-group-text"><i class="fas fa-calendar"></i></div>
+                    </div>
                   </div>
                 </div>
                 <div style="width: 10em; float: left;">
-                  <div class="input-group date" id="customDateRangeFromTime">
-                    <input type="text" class="form-control" aria-label="Time">
-                    <span class="input-group-addon"><span class="fas fa-clock"></span></span>
+                  <div class="input-group date" id="customDateRangeFromTime" data-target-input="nearest">
+                    <input type="text"
+                           class="form-control datetimepicker-input"
+                           data-target="#customDateRangeFromTime"
+                           aria-label="Time">
+                    <div class="input-group-append"
+                         data-target="#customDateRangeFromTime"
+                         data-toggle="datetimepicker">
+                      <div class="input-group-text"><i class="fas fa-clock"></i></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -87,15 +101,29 @@
               <div>
                 <!-- margin-bottom is for small screen where time wraps to next line -->
                 <div style="width: 12em; float: left; margin-right: 10px; margin-bottom: 10px;">
-                  <div class="input-group date" id="customDateRangeToDate">
-                    <input type="text" class="form-control" aria-label="Date">
-                    <span class="input-group-addon"><span class="fas fa-calendar"></span></span>
+                  <div class="input-group date" id="customDateRangeToDate" data-target-input="nearest">
+                    <input type="text"
+                           class="form-control datetimepicker-input"
+                           data-target="#customDateRangeToDate"
+                           aria-label="Date">
+                    <div class="input-group-append"
+                         data-target="#customDateRangeToDate"
+                         data-toggle="datetimepicker">
+                      <div class="input-group-text"><i class="fas fa-calendar"></i></div>
+                    </div>
                   </div>
                 </div>
                 <div style="width: 10em; float: left;">
-                  <div class="input-group date" id="customDateRangeToTime">
-                    <input type="text" class="form-control" aria-label="Time">
-                    <span class="input-group-addon"><span class="fas fa-clock"></span></span>
+                  <div class="input-group date" id="customDateRangeToTime" data-target-input="nearest">
+                    <input type="text"
+                           class="form-control datetimepicker-input"
+                           data-target="#customDateRangeToTime"
+                           aria-label="Time">
+                    <div class="input-group-append"
+                         data-target="#customDateRangeToTime"
+                         data-toggle="datetimepicker">
+                      <div class="input-group-text"><i class="fas fa-clock"></i></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -103,7 +131,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
           <button type="button" class="btn btn-primary" ng-click="applyCustomDateRange()">Apply</button>
         </div>
       </div>

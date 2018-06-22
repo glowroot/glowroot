@@ -3,24 +3,29 @@
   "dependencies": {
     "angular": "1.7.3",
     "angular-sanitize": "1.7.3",
-    "angular-ui-bootstrap": "2.5.6",
+    "angular-ui-bootstrap4": "Morgul/ui-bootstrap4#3.0.4",
     "angular-ui-codemirror": "0.3.0",
     "angular-ui-router": "1.0.20",
-    "angular-ui-select": "trask/angular-ui-select#glowroot-0.10.0",
-    "bootstrap": "trask/bootstrap#glowroot-0.10.10",
-    "bootstrap-select": "trask/bootstrap-select#glowroot-0.10.10",
+    "bootstrap": "trask/bootstrap#242c852d53d5df82108dc9c4fa6d40fb68a257e4",
+    "bootstrap-multiselect": "trask/bootstrap-multiselect#694354bfe721061c064d01f3cfd3ae57377a0325",
+    "bootstrap-select": "trask/bootstrap-select#e90f6903ee9040d54201546374edc1a94461520a",
     "clipboard": "trask/clipboard.js#glowroot-0.10.11",
     "codemirror": "5.39.2",
     "d3-flame-graph": "1.0.11",
-    "eonasdan-bootstrap-datetimepicker": "4.17.47",
-    "flot": "trask/flot#glowroot-0.10.9",
+    "tempusdominus": "tempusdominus/bootstrap-4#5.0.1",
+    "flot": "trask/flot#d77b64fce83381b12faf0ef526749e3d1715a341",
     "flot.tooltip": "trask/flot.tooltip#glowroot-0.9.27",
+    "focus-visible": "WICG/focus-visible#4.1.4",
     "fontawesome": "5.2.0",
     "handlebars": "4.0.11",
     "jquery": "3.3.1",
     "moment": "2.22.2",
     "moment-timezone": "0.5.17",
+    "popper.js": "1.14.4",
     "sequeljs": "trask/sequeljs#glowroot-0.9.8",
     "spinjs": "2.3.2"
+  },
+  "resolutions": {
+    "bootstrap": "242c852d53"
   }
 }

@@ -13,28 +13,28 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-config-return-outer-div">
+<!-- clearfix is needed for smaller screens where gt-config-return-link is floated  -->
+<div class="clearfix">
   <a class="gt-config-return-link"
      href="admin/user-list">
     Return to list
   </a>
 </div>
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
       Users
-      <span class="gt-inline-block gt-separator">
+      <span class="d-inline-block gt-separator">
         |
       </span>
       <span style="font-size: 24px;">{{heading}}</span>
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
          gt-form-autofocus-on-first-input
-         class="form-horizontal"
          name="formCtrl"
          style="padding-top: 15px;">
       <div gt-form-group
@@ -42,8 +42,7 @@
            gt-model="config.username"
            gt-disabled="!layout.adminEdit || username"
            gt-width="40em"
-           gt-required="loaded"
-           class="gt-form-group-without-help-block">
+           gt-required="loaded">
       </div>
       <div gt-form-group
            gt-type="checkbox"
@@ -51,8 +50,6 @@
            gt-checkbox-label="Use LDAP for password"
            gt-model="config.ldap"
            gt-disabled="!layout.adminEdit"
-           class="gt-form-group-without-help-block"
-           style="padding-top: 7px;"
            ng-if="ldapAvailable && config.username.toLowerCase() !== 'anonymous'">
       </div>
       <div gt-form-group
@@ -62,7 +59,6 @@
            gt-disabled="!layout.adminEdit"
            gt-width="20em"
            gt-required="loaded && (!username || originalConfig.ldap && !config.ldap)"
-           class="gt-form-group-without-help-block"
            ng-if="!config.ldap && config.username.toLowerCase() !== 'anonymous'">
       </div>
       <div gt-form-group
@@ -72,49 +68,51 @@
            gt-disabled="!layout.adminEdit"
            gt-width="20em"
            gt-required="loaded && (!username || originalConfig.ldap && !config.ldap)"
-           class="gt-form-group-without-help-block"
            ng-if="!config.ldap && config.username.toLowerCase() !== 'anonymous'">
       </div>
-      <div class="form-group gt-form-group-without-help-block">
-        <label class="col-lg-3 control-label">
-          Roles
-        </label>
-        <div class="col-lg-9">
-          <div gt-spinner
-               gt-show="rolesLoading && !httpError"
-               class="gt-inline-spinner hide"
-               style="height: 50px;">
-          </div>
-          <div ng-repeat="role in allRoles | orderBy:'name'"
-               class="checkbox">
-            <label>
+      <fieldset class="form-group">
+        <div class="row">
+          <legend class="col-xl-3 gt-check-legend-xl">
+            Roles
+          </legend>
+          <div class="col-xl-9">
+            <div gt-spinner
+                 gt-show="rolesLoading && !httpError"
+                 class="gt-inline-spinner d-none"
+                 style="height: 50px;">
+            </div>
+            <label class="custom-control custom-checkbox"
+                   ng-repeat="role in allRoles | orderBy:'name'">
               <input type="checkbox"
+                     class="custom-control-input"
                      ng-model="role.checked"
                      ng-disabled="!layout.adminEdit">
-              <span ng-if="role.available">
-                <a href="admin/role?name={{role.name}}">{{role.name}}</a>
-              </span>
-              <span ng-if="!role.available">
-                {{role.name}} <span class="gt-red" style="font-weight: 600; padding-left: 10px;">Role not found</span>
-              </span>
+              <div class="custom-control-label">
+                <span ng-if="role.available">
+                  <a href="admin/role?name={{role.name}}">{{role.name}}</a>
+                </span>
+                <span ng-if="!role.available">
+                  {{role.name}} <span class="gt-red" style="font-weight: 600; padding-left: 10px;">Role not found</span>
+                </span>
+              </div>
             </label>
           </div>
         </div>
-      </div>
-      <div class="form-group gt-form-buttons"
+      </fieldset>
+      <div class="form-group row"
            ng-if="layout.adminEdit">
-        <div class="col-lg-offset-3 col-lg-9">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button-group>
             <div gt-button
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"
                  gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid"
-                 class="gt-inline-block"
+                 gt-validate-form="formCtrl"
+                 class="d-inline-block"
                  id="gtSaveChanges">
             </div>
             <button ng-click="displayDeleteConfirmationModal()"
-                    ng-show="config.version"
-                    class="btn gt-btn-danger gt-button-spacing">
+                    ng-if="config.version"
+                    class="btn btn-danger gt-button-spacing">
               Delete
             </button>
           </div>
@@ -128,15 +126,22 @@
      tabindex="-1"
      id="deleteConfirmationModal">
   <div class="modal-dialog"
+       role="document"
        style="max-width: 500px;">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Delete user</h3>
+        <h3 class="modal-title">Delete user</h3>
+        <button type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
       <div class="modal-body">
         <p>Are you sure you want to delete this user?</p>
         <div style="min-height: 60px;">
-          <div class="gt-inline-block">
+          <div class="d-inline-block">
             <div gt-spinner
                  gt-show="deleting"
                  class="gt-left-aligned-spinner"
@@ -145,31 +150,41 @@
           </div>
           <div class="gt-button-message gt-button-message-error"
                style="display: block;"
-               ng-show="errorCannotDeleteLastUser">
+               ng-if="errorCannotDeleteLastUser">
             Cannot delete last user
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn gt-btn-danger" ng-click="delete()">Yes</button>
+        <button class="btn btn-danger" ng-click="delete()">Yes</button>
         <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>
   </div>
 </div>
-<div class="modal" id="saveWithNoRolesConfirmationModal" tabindex="-1">
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="saveWithNoRolesConfirmationModal">
   <div class="modal-dialog"
+       role="document"
        style="max-width: 500px;">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>User has no role assignments</h3>
+        <h3 class="modal-title">User has no role assignments</h3>
+        <button type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
       <div class="modal-body">
         <p>Are you sure you want to save this user with no roles?</p>
         <p>Without any role assignments, this user will have no permissions.</p>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-default" ng-click="saveWithNoRoles()">Yes</button>
+        <button class="btn btn-secondary" ng-click="saveWithNoRoles()">Yes</button>
         <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>

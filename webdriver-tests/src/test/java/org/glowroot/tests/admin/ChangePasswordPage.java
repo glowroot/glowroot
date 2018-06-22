@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,40 +15,32 @@
  */
 package org.glowroot.tests.admin;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class ChangePasswordPage {
-
-    private final WebDriver driver;
+public class ChangePasswordPage extends Page {
 
     public ChangePasswordPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getCurrentPasswordTextField() {
-        return withWait(xpath("//div[@gt-label='Current password']//input"));
+        return getWithWait(xpath("//div[@gt-label='Current password']//input"));
     }
 
     public WebElement getNewPasswordTextField() {
-        return withWait(xpath("//div[@gt-label='New password']//input"));
+        return getWithWait(xpath("//div[@gt-label='New password']//input"));
     }
 
     public WebElement getVerifyNewPasswordTextField() {
-        return withWait(xpath("//div[@gt-label='Verify new password']//input"));
+        return getWithWait(xpath("//div[@gt-label='Verify new password']//input"));
     }
 
     public void clickChangePasswordButton() {
-        WebElement saveButton = withWait(xpath("//button[normalize-space()='Change password']"));
-        saveButton.click();
-    }
-
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
+        clickWithWait(xpath("//button[normalize-space()='Change password']"));
     }
 }

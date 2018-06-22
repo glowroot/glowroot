@@ -13,41 +13,39 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-config-return-outer-div">
+<!-- clearfix is needed for smaller screens where gt-config-return-link is floated  -->
+<div class="clearfix">
   <a class="gt-config-return-link"
      href="config/gauge-list{{agentQueryString()}}">
     Return to list
   </a>
 </div>
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
       Gauges
-      <span class="gt-inline-block gt-separator">
+      <span class="d-inline-block gt-separator">
         |
       </span>
       <span style="font-size: 24px;">{{heading}}</span>
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-if="agentNotConnected" class="alert alert-warning">
       Limited functionality since agent is not currently connected
     </div>
-    <div ng-form
-         gt-form-autofocus-on-first-input
-         class="form-horizontal"
-         name="formCtrl"
-         style="padding-top: 15px;">
-      <div class="form-group"
-           ng-class="{'has-error': hasMBeanObjectNameError()}">
-        <label class="col-lg-3 control-label"
+    <form gt-form-autofocus-on-first-input
+          name="formCtrl"
+          style="padding-top: 15px;"
+          novalidate>
+      <div class="form-group row">
+        <label class="col-xl-3 gt-form-label-xl"
                for="mbeanObjectName{{$id}}">
           MBean object name
         </label>
-
-        <div class="col-lg-9">
+        <div class="col-xl-9">
           <input type="text"
                  class="form-control"
                  ng-model="config.mbeanObjectName"
@@ -59,24 +57,23 @@
                  name="mbeanObjectName"
                  id="mbeanObjectName{{$id}}"
                  style="max-width: 40em; display: inline-block">
-
           <div gt-spinner
                gt-spinner-inline="true"
                gt-show="showMBeanObjectNameSpinner"
                class="gt-inline-spinner">
           </div>
-          <div ng-show="mbeanUnavailable"
-               class="gt-red"
-               style="padding-top: 10px;">
-            MBean not found
-          </div>
-          <div ng-show="mbeanUnmatched"
-               class="gt-red"
+          <div class="gt-red"
+               ng-if="noMatchFoundForPattern"
                style="padding-top: 10px;">
             No matching MBean found
           </div>
-          <div ng-show="duplicateMBean"
-               class="gt-red"
+          <div class="gt-red"
+               ng-if="noMatchFoundForNonPattern"
+               style="padding-top: 10px;">
+            MBean not found
+          </div>
+          <div class="gt-red"
+               ng-if="duplicateMBean"
                style="padding-top: 10px;">
             There is already a gauge for this MBean
           </div>
@@ -90,82 +87,83 @@
           </div>
         </div>
       </div>
-      <div class="form-group">
-        <label class="col-lg-3 control-label">
-          MBean attributes
-        </label>
-
-        <div class="col-lg-9">
-          <div gt-spinner
-               gt-show="mbeanAttributesLoading && !httpError"
-               class="gt-inline-spinner hide"
-               style="height: 50px;">
-          </div>
-          <table>
-            <tr ng-repeat="mbeanAttribute in allMBeanAttributes | orderBy:'name'">
-              <td class="checkbox">
-                <label>
-                  <input type="checkbox"
-                         ng-model="mbeanAttribute.checked"
-                         ng-disabled="!agentRollup.permissions.config.edit.gauges">
+      <fieldset class="form-group">
+        <div class="row">
+          <legend class="col-xl-3 gt-check-legend-xl">
+            MBean attributes
+          </legend>
+          <div class="col-xl-9">
+            <div gt-spinner
+                 gt-show="mbeanAttributesLoading && !httpError"
+                 class="gt-inline-spinner d-none"
+                 style="height: 50px;">
+            </div>
+            <div ng-repeat="mbeanAttribute in allMBeanAttributes | orderBy:'name'">
+              <label class="custom-control custom-checkbox d-inline-block">
+                <input type="checkbox"
+                       class="custom-control-input"
+                       ng-model="mbeanAttribute.checked"
+                       ng-disabled="!agentRollup.permissions.config.edit.gauges">
+                <div class="custom-control-label">
                   {{mbeanAttribute.name.replace('/', ' / ')}}
-                  <span ng-show="!mbeanAttribute.available && !mbeanUnavailable && !mbeanUnmatched"
+                  <span ng-if="!mbeanAttribute.available && !noMatchFoundForPattern && !noMatchFoundForNonPattern"
                         class="gt-red"
                         style="padding-left: 10px;">
                     Attribute not found
                   </span>
-                </label>
-              </td>
-              <td style="padding-left: 40px;">
-                <div class="checkbox"
-                     ng-show="mbeanAttribute.checked">
-                  <label>
-                    <input type="checkbox"
-                           ng-model="mbeanAttribute.counter"
-                           ng-disabled="!agentRollup.permissions.config.edit.gauges">
-                    Counter?
-                  </label>
                 </div>
-              </td>
-            </tr>
-          </table>
-          <div
-              ng-show="!allMBeanAttributes.length && !mbeanUnavailable && !mbeanUnmatched && selectedMBeanObjectName"
-              class="gt-red"
-              style="padding-top: 7px;">
-            There are no number-valued attributes for this MBean
-          </div>
-          <div ng-show="config.mbeanAttributes.length"
-               class="help-block">
-            MBean attributes can be marked as counters when they represent monotonically increasing values (e.g. the
-            total garbage collection time since JVM startup). When an mbean attribute is marked as a counter, the deltas
-            are captured and displayed instead of the raw values (e.g. the total garbage collection time since the last
-            capture). Also, when rolling up mbean attributes that are marked as counters, the (delta) values are
-            weighted by the time between captures instead of a straight average.
+              </label>
+              <label class="custom-control custom-checkbox d-inline-block ml-5"
+                     ng-if="mbeanAttribute.checked">
+                <input type="checkbox"
+                       class="custom-control-input"
+                       ng-model="mbeanAttribute.counter"
+                       ng-disabled="!agentRollup.permissions.config.edit.gauges">
+                <div class="custom-control-label">
+                  Counter?
+                </div>
+              </label>
+            </div>
+            <div class="font-italic"
+                 ng-if="!config.mbeanObjectName">
+              (select MBean object name first)
+            </div>
+            <div class="gt-red pt-0"
+                 ng-if="config.mbeanObjectName && !allMBeanAttributes.length && !noMatchFoundForPattern && !noMatchFoundForNonPattern && selectedMBeanObjectName">
+              There are no number-valued attributes for this MBean
+            </div>
+            <div class="help-block"
+                 ng-if="config.mbeanAttributes.length">
+              Marking an MBean attribute as a counter indicates that it is a monotonically increasing value (e.g. the
+              total garbage collection time since JVM startup). When an mbean attribute is marked as a counter, the
+              deltas are captured and displayed instead of the raw values (e.g. the total garbage collection time since
+              the last capture). Also, when rolling up mbean attributes that are marked as counters, the (delta) values
+              are weighted by the time between captures instead of a straight average.
+            </div>
           </div>
         </div>
-      </div>
-      <div class="form-group gt-form-buttons"
+      </fieldset>
+      <div class="form-group row"
            ng-if="agentRollup.permissions.config.edit.gauges">
-        <div class="col-lg-offset-3 col-lg-9">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button-group>
             <div gt-button
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"
                  gt-click="save(deferred)"
-                 gt-disabled="saveDisabled()"
-                 class="gt-inline-block">
+                 gt-validate-form="formCtrl"
+                 class="d-inline-block">
             </div>
             <div gt-button
-                 ng-show="config.version"
+                 ng-if="config.version"
                  gt-label="Delete"
                  gt-click="delete(deferred)"
-                 gt-btn-class="gt-btn-danger"
-                 class="gt-inline-block">
+                 gt-btn-class="btn-danger"
+                 class="d-inline-block">
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 <!-- each page with confirmation dialog needs its own confirmation dom so that it is deleted on $destroy -->

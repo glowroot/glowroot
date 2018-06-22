@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,32 +23,34 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class GaugeConfigPage {
-
-    private final WebDriver driver;
+public class GaugeConfigPage extends Page {
 
     public GaugeConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getMBeanObjectNameTextField() {
-        return withWait(xpath("//input[@ng-model='config.mbeanObjectName']"));
+        return getWithWait(xpath("//input[@ng-model='config.mbeanObjectName']"));
     }
 
     public void clickMBeanObjectNameAutoCompleteItem(String className) {
         clickTypeAheadItem("MBean object name", className);
     }
 
-    public WebElement getMBeanAttributeCheckBox(String label) {
-        return withWait(xpath("//label[text()[normalize-space()='" + label + "']]//input"));
+    public void clickMBeanAttributeCheckBox(String label) {
+        clickWithWait(xpath("//label[normalize-space()='" + label + "']"));
+    }
+
+    public boolean getMBeanAttributeCheckBoxValue(String label) {
+        return getWithWait(xpath("//label[normalize-space()='" + label + "']//input")).isSelected();
     }
 
     public WebElement getDuplicateMBeanMessage() {
-        return withWait(xpath("//div[@ng-show='duplicateMBean']"));
+        return getWithWait(xpath("//div[@ng-if='duplicateMBean']"));
     }
 
     public void clickAddButton() {
@@ -59,16 +61,12 @@ public class GaugeConfigPage {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
     }
 
-    public WebElement getDeleteButton() {
-        return withWait(xpath("//button[normalize-space()='Delete']"));
+    public void clickDeleteButton() {
+        clickWithWait(xpath("//button[normalize-space()='Delete']"));
     }
 
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
+    public void waitForDeleteButton() {
+        getWithWait(xpath("//button[normalize-space()='Delete']"));
     }
 
     private void clickTypeAheadItem(String label, final String text) {

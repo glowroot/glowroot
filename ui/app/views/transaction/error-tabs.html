@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015-2017 the original author or authors.
+  Copyright 2015-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,17 +13,21 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<ul class="nav nav-tabs gt-transaction-tabs">
-  <li ng-class="{active: activeTabItem === 'messages'}">
-    <a ng-href="error/messages{{tabQueryString()}}"
+<ul class="nav nav-tabs gt-nav-tabs mb-3">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link"
+       ng-class="{active: activeTabItem === 'messages'}"
+       ng-href="error/messages{{tabQueryString()}}"
        ng-click="clickTab('messages', $event)"
        ng-keydown="keydownTab(null, 'tab_traces', $event)"
        id="tab_messages">
       Error messages
     </a>
   </li>
-  <li ng-class="{active: activeTabItem === 'traces'}">
-    <a ng-href="error/traces{{tabQueryString()}}"
+  <li class="nav-item" role="presentation">
+    <a class="nav-link"
+       ng-class="{active: activeTabItem === 'traces'}"
+       ng-href="error/traces{{tabQueryString()}}"
        ng-click="clickTab('traces', $event)"
        ng-keydown="keydownTab('tab_messages', null, $event)"
        ng-if="agentRollup.permissions.error.traces"

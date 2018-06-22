@@ -15,144 +15,261 @@
  */
 package org.glowroot.tests.admin;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class RoleConfigPage {
-
-    private final WebDriver driver;
+public class RoleConfigPage extends Page {
 
     public RoleConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getNameTextField() {
-        return withWait(xpath("//div[@gt-label='Name']//input"));
+        return getWithWait(xpath("//div[@gt-label='Name']//input"));
     }
 
-    public WebElement getTransactionCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.transaction._']"));
+    public void clickTransactionCheckBox() {
+        clickPermission("transaction._");
     }
 
-    public WebElement getTransactionOverviewCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.transaction.overview']"));
+    public boolean getTransactionCheckBoxValue() {
+        return getPermission("transaction._");
     }
 
-    public WebElement getTransactionTracesCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.transaction.traces']"));
+    public void clickTransactionOverviewCheckBox() {
+        clickPermission("transaction.overview");
     }
 
-    public WebElement getTransactionQueriesCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.transaction.queries']"));
+    public boolean getTransactionOverviewCheckBoxValue() {
+        return getPermission("transaction.overview");
     }
 
-    public WebElement getTransactionServiceCallsCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.transaction.serviceCalls']"));
+    public void clickTransactionTracesCheckBox() {
+        clickPermission("transaction.traces");
     }
 
-    public WebElement getTransactionThreadProfileCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.transaction.threadProfile']"));
+    public boolean getTransactionTracesCheckBoxValue() {
+        return getPermission("transaction.traces");
     }
 
-    public WebElement getErrorCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.error._']"));
+    public void clickTransactionQueriesCheckBox() {
+        clickPermission("transaction.queries");
     }
 
-    public WebElement getErrorOverviewCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.error.overview']"));
+    public boolean getTransactionQueriesCheckBoxValue() {
+        return getPermission("transaction.queries");
     }
 
-    public WebElement getErrorTracesCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.error.traces']"));
+    public void clickTransactionServiceCallsCheckBox() {
+        clickPermission("transaction.serviceCalls");
     }
 
-    public WebElement getJvmCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.jvm._']"));
+    public boolean getTransactionServiceCallsCheckBoxValue() {
+        return getPermission("transaction.serviceCalls");
     }
 
-    public WebElement getJvmGaugesCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.jvm.gauges']"));
+    public void clickTransactionThreadProfileCheckBox() {
+        clickPermission("transaction.threadProfile");
     }
 
-    public WebElement getJvmThreadDumpCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.jvm.threadDump']"));
+    public boolean getTransactionThreadProfileCheckBoxValue() {
+        return getPermission("transaction.threadProfile");
     }
 
-    public WebElement getJvmHeapDumpCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.jvm.heapDump']"));
+    public void clickErrorCheckBox() {
+        clickPermission("error._");
     }
 
-    public WebElement getJvmHeapHistogramCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.jvm.heapHistogram']"));
+    public boolean getErrorCheckBoxValue() {
+        return getPermission("error._");
     }
 
-    public WebElement getJvmMBeanTreeCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.jvm.mbeanTree']"));
+    public void clickErrorOverviewCheckBox() {
+        clickPermission("error.overview");
     }
 
-    public WebElement getJvmSystemPropertiesCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.jvm.systemProperties']"));
+    public boolean getErrorOverviewCheckBoxValue() {
+        return getPermission("error.overview");
     }
 
-    public WebElement getJvmEnvironmentCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.jvm.environment']"));
+    public void clickErrorTracesCheckBox() {
+        clickPermission("error.traces");
     }
 
-    public WebElement getConfigViewCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.view']"));
+    public boolean getErrorTracesCheckBoxValue() {
+        return getPermission("error.traces");
     }
 
-    public WebElement getConfigEditCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit._']"));
+    public void clickJvmCheckBox() {
+        clickPermission("jvm._");
     }
 
-    public WebElement getConfigEditTransactionCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.transaction']"));
+    public boolean getJvmCheckBoxValue() {
+        return getPermission("jvm._");
     }
 
-    public WebElement getConfigEditGaugesCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.gauges']"));
+    public void clickJvmGaugesCheckBox() {
+        clickPermission("jvm.gauges");
     }
 
-    public WebElement getConfigEditJvmCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.jvm']"));
+    public boolean getJvmGaugesCheckBoxValue() {
+        return getPermission("jvm.gauges");
     }
 
-    public WebElement getConfigEditAlertsCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.alerts']"));
+    public void clickJvmThreadDumpCheckBox() {
+        clickPermission("jvm.threadDump");
     }
 
-    public WebElement getConfigEditUiDefaultsCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.uiDefaults']"));
+    public boolean getJvmThreadDumpCheckBoxValue() {
+        return getPermission("jvm.threadDump");
     }
 
-    public WebElement getConfigEditPluginsCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.plugins']"));
+    public void clickJvmHeapDumpCheckBox() {
+        clickPermission("jvm.heapDump");
     }
 
-    public WebElement getConfigEditInstrumentationCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.instrumentation']"));
+    public boolean getJvmHeapDumpCheckBoxValue() {
+        return getPermission("jvm.heapDump");
     }
 
-    public WebElement getConfigEditAdvancedCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.config.edit.advanced']"));
+    public void clickJvmHeapHistogramCheckBox() {
+        clickPermission("jvm.heapHistogram");
     }
 
-    public WebElement getAdminCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.admin._']"));
+    public boolean getJvmHeapHistogramCheckBoxValue() {
+        return getPermission("jvm.heapHistogram");
     }
 
-    public WebElement getAdminViewCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.admin.view']"));
+    public void clickJvmMBeanTreeCheckBox() {
+        clickPermission("jvm.mbeanTree");
     }
 
-    public WebElement getAdminEditCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.admin.edit']"));
+    public boolean getJvmMBeanTreeCheckBoxValue() {
+        return getPermission("jvm.mbeanTree");
+    }
+
+    public void clickJvmSystemPropertiesCheckBox() {
+        clickPermission("jvm.systemProperties");
+    }
+
+    public boolean getJvmSystemPropertiesCheckBoxValue() {
+        return getPermission("jvm.systemProperties");
+    }
+
+    public void clickJvmEnvironmentCheckBox() {
+        clickPermission("jvm.environment");
+    }
+
+    public boolean getJvmEnvironmentCheckBoxValue() {
+        return getPermission("jvm.environment");
+    }
+
+    public void clickConfigViewCheckBox() {
+        clickPermission("config.view");
+    }
+
+    public boolean getConfigViewCheckBoxValue() {
+        return getPermission("config.view");
+    }
+
+    public void clickConfigEditCheckBox() {
+        clickPermission("config.edit._");
+    }
+
+    public boolean getConfigEditCheckBoxValue() {
+        return getPermission("config.edit._");
+    }
+
+    public void clickConfigEditTransactionCheckBox() {
+        clickPermission("config.edit.transaction");
+    }
+
+    public boolean getConfigEditTransactionCheckBoxValue() {
+        return getPermission("config.edit.transaction");
+    }
+
+    public void clickConfigEditGaugesCheckBox() {
+        clickPermission("config.edit.gauges");
+    }
+
+    public boolean getConfigEditGaugesCheckBoxValue() {
+        return getPermission("config.edit.gauges");
+    }
+
+    public void clickConfigEditJvmCheckBox() {
+        clickPermission("config.edit.jvm");
+    }
+
+    public boolean getConfigEditJvmCheckBoxValue() {
+        return getPermission("config.edit.jvm");
+    }
+
+    public void clickConfigEditAlertsCheckBox() {
+        clickPermission("config.edit.alerts");
+    }
+
+    public boolean getConfigEditAlertsCheckBoxValue() {
+        return getPermission("config.edit.alerts");
+    }
+
+    public void clickConfigEditUiDefaultsCheckBox() {
+        clickPermission("config.edit.uiDefaults");
+    }
+
+    public boolean getConfigEditUiDefaultsCheckBoxValue() {
+        return getPermission("config.edit.uiDefaults");
+    }
+
+    public void clickConfigEditPluginsCheckBox() {
+        clickPermission("config.edit.plugins");
+    }
+
+    public boolean getConfigEditPluginsCheckBoxValue() {
+        return getPermission("config.edit.plugins");
+    }
+
+    public void clickConfigEditInstrumentationCheckBox() {
+        clickPermission("config.edit.instrumentation");
+    }
+
+    public boolean getConfigEditInstrumentationCheckBoxValue() {
+        return getPermission("config.edit.instrumentation");
+    }
+
+    public void clickConfigEditAdvancedCheckBox() {
+        clickPermission("config.edit.advanced");
+    }
+
+    public boolean getConfigEditAdvancedCheckBoxValue() {
+        return getPermission("config.edit.advanced");
+    }
+
+    public void clickAdminCheckBox() {
+        clickPermission("admin._");
+    }
+
+    public boolean getAdminCheckBoxValue() {
+        return getPermission("admin._");
+    }
+
+    public void clickAdminViewCheckBox() {
+        clickPermission("admin.view");
+    }
+
+    public boolean getAdminViewCheckBoxValue() {
+        return getPermission("admin.view");
+    }
+
+    public void clickAdminEditCheckBox() {
+        clickPermission("admin.edit");
+    }
+
+    public boolean getAdminEditCheckBoxValue() {
+        return getPermission("admin.edit");
     }
 
     public void clickAddButton() {
@@ -162,22 +279,27 @@ public class RoleConfigPage {
     }
 
     public WebElement getDuplicateRoleMessage() {
-        return withWait(xpath("//div[text()='There is already a role with this name']"));
+        return getWithWait(xpath("//div[text()='There is already a role with this name']"));
     }
 
     public void clickSaveButton() {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
     }
 
-    public WebElement getDeleteButton() {
-        return withWait(xpath("//button[normalize-space()='Delete']"));
+    public void clickDeleteButton() {
+        clickWithWait(xpath("//button[normalize-space()='Delete']"));
     }
 
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
+    public void waitForDeleteButton() {
+        waitFor(xpath("//button[normalize-space()='Delete']"));
     }
 
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
+    private void clickPermission(String permission) {
+        clickWithWait(xpath("//input[@ng-model='page.permissions." + permission + "']/.."));
+    }
+
+    private boolean getPermission(String permission) {
+        return getWithWait(xpath("//input[@ng-model='page.permissions." + permission + "']"))
+                .isSelected();
     }
 }

@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@import "../../bower_components/bootstrap/less/variables";
-@import "../../bower_components/bootstrap/less/mixins";
-@import "../../bower_components/bootstrap/less/buttons";
-@import "../../bower_components/bootstrap/less/dropdowns"; // needed for .caret class for sorting query stats
-@import "../../bower_components/bootstrap/less/forms";
-@import "../../bower_components/bootstrap/less/tooltip";
-@import "../../bower_components/bootstrap/less/grid";
-@import "../../bower_components/bootstrap/less/normalize";
-@import "../../bower_components/bootstrap/less/scaffolding";
-@import "../../bower_components/bootstrap/less/utilities";
-@import "../../bower_components/bootstrap/less/tables";
+@import "../../bower_components/bootstrap/scss/functions";
+@import "../../bower_components/bootstrap/scss/variables";
+@import "../../bower_components/bootstrap/scss/mixins";
+@import "../../bower_components/bootstrap/scss/reboot";
+@import "../../bower_components/bootstrap/scss/buttons";
+@import "../../bower_components/bootstrap/scss/forms";
+@import "../../bower_components/bootstrap/scss/tooltip";
+@import "../../bower_components/bootstrap/scss/grid";
+@import "../../bower_components/bootstrap/scss/utilities";
+@import "../../bower_components/bootstrap/scss/tables";
 @import "common";
 @import "common-trace";
 @import "sticky-footer";
@@ -38,9 +37,9 @@ body {
   padding: 40px 0 30px;
 }
 
-.gt-header-page-name h1 {
+.gt-header-lhs h1 {
   font-size: 36px;
-  color: @gt-page-title-color;
+  color: $gt-page-title-color;
   font-weight: 700;
   line-height: inherit; // override h1
   margin: 0; // override h1

@@ -1,5 +1,5 @@
 <div>
-  <table class="gt-timers-table gt-inline-block"
+  <table class="gt-timers-table d-inline-block"
          ng-hide="showTreeView"
          style="border-spacing: 0;">
     <thead>
@@ -56,8 +56,8 @@
           style="vertical-align: top; margin-top: -1px;">
     switch to tree view
   </button>
-  <table class="gt-timers-table gt-inline-block"
-         ng-show="showTreeView"
+  <table class="gt-timers-table d-inline-block"
+         ng-if="showTreeView"
          style="border-spacing: 0;">
     <thead>
     <tr>
@@ -110,7 +110,7 @@
     </tbody>
   </table>
   <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color"
-          ng-show="showTreeView"
+          ng-if="showTreeView"
           ng-click="showTreeView = false"
           style="vertical-align: top; margin-top: -1px;">
     switch to flattened view

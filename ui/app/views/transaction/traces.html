@@ -13,280 +13,263 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="clearfix" style="position: relative;">
-  <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-  <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
-  <div class="clearfix" style="position: relative; z-index: 800; margin-top: 26px;">
-    <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 20px;">
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         ng-click="zoomOut()">
+<div ng-include src="'template/gt-http-error-overlay.html'"></div>
+<div style="height: 30px;"></div>
+<div class="gt-chart-controls float-right">
+  <button class="gt-chart-button"
+          ng-click="zoomOut()">
         <span title="Zoom out"
-              class="fas fa-search-minus"></span><!-- lack of space here is significant
-   --></a>
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         ng-click="refresh()">
+              class="fas fa-search-minus">
+        </span>
+  </button>
+  <button class="gt-chart-button"
+          ng-click="refresh()">
         <span title="Refresh"
-              class="fas fa-sync"></span><!-- lack of space here is significant
-   --></a>
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         uib-popover-template="'template/help/traces-chart.html'"
-         popover-placement="left"
-         popover-trigger="'outsideClick'">
+              class="fas fa-sync">
+        </span>
+  </button>
+  <button class="gt-chart-button"
+          uib-popover-template="'template/help/traces-chart.html'"
+          popover-placement="left"
+          popover-trigger="'outsideClick'">
         <span title="Help"
-              class="fas fa-question-circle"></span><!-- lack of space here is significant
-   --></a>
-    </div>
-  </div>
-  <div class="gt-chart-container">
-    <div gt-spinner
-         gt-show="showChartSpinner"
-         gt-no-delay="true"
-         id="chartSpinner"
-         class="gt-chart-panel">
-    </div>
-    <div class="gt-chart-panel">
-      <!-- negative positions are so that overlay will cover chart legend which sometimes stick beyond container -->
-      <div class="gt-panel-overlay"
-           ng-show="showChartSpinner"
-           style="right: -20px; bottom: -20px;">
-      </div>
-    </div>
-    <div class="gt-chart-dimensions" id="chart"></div>
-    <div ng-show="chartNoData && !showChartSpinner"
-         class="gt-chart-panel"
-         style="display: table;">
-      <div style="display: table-cell; text-align: center; vertical-align: middle;">
-        <div class="gt-chart-no-data"
-             ng-hide="showExpiredMessage">
-          No data
-        </div>
-        <div class="gt-chart-no-data"
-             ng-show="showExpiredMessage">
-          *There were traces but they have expired, see
-          <!-- pointer-events: auto is to override pointer-events: none from gt-chart-panel -->
-          <a href="admin/storage#rollup-capped-database-size"
-             style="pointer-events: auto;">
-            Configuration &gt; Storage &gt; Trace detail data
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-  <br>
-
-  <div class="col-lg-3 col-lg-push-9"
-       style="margin: 10px auto 0; padding-right: 0;">
-    <div ng-show="chartLimitExceeded">
-      <div class="gt-chart-warning">
-        <strong>
-          Specified limit exceeded,
-          only displaying slowest
-          {{chartLimit}} matching traces
-        </strong>
-      </div>
-    </div>
-  </div>
-  <div ng-form="formCtrl"
-       gt-form-with-primary-button
-       class="col-lg-9 col-lg-pull-3 form-horizontal trace-filters"
-       style="margin: 20px auto 0 auto;">
-    <div class="form-group"
-         ng-class="{'has-error': formCtrl.filterDurationMillisLow.$invalid || formCtrl.filterDurationMillisHigh.$invalid}">
-      <label class="col-lg-4 control-label"
-             for="{{filterDurationComparator !== 'less' ? 'filterDurationMillisLow' : 'filterDurationMillisHigh'}}">
-        Response time
-      </label>
-      <div class="col-lg-8">
-        <!-- input-group needs to be in a sub-div so it doesn't try to fill the entire width,
-             which would push the addon "milliseconds" label flush right -->
-        <div class="input-group"
-             style="width: 100%;"
-             ng-style="{'max-width': filterDurationComparator === 'between' ? '30em' : '25em'}">
-          <div gt-input-group-dropdown
-               gt-model="filterDurationComparator"
-               gt-items="filterDurationComparatorOptions"
-               class="input-group-left">
-          </div>
-          <input type="text"
-                 ng-model="filter.durationMillisLow"
-                 ng-show="filterDurationComparator !== 'less'"
-                 ng-pattern="/^(0|[1-9][0-9]*)$/"
-                 class="form-control"
-                 id="filterDurationMillisLow"
-                 name="filterDurationMillisLow"
-                 data-lpignore="true">
-          <span ng-show="filterDurationComparator === 'between'"
-                class="input-group-addon"
-                style="border-left-width: 0; border-right-width: 0;">
-          and
+              class="fas fa-question-circle">
         </span>
-          <input type="text"
-                 ng-model="filter.durationMillisHigh"
-                 ng-show="filterDurationComparator !== 'greater'"
-                 ng-pattern="/^(0|[1-9][0-9]*)$/"
-                 class="form-control"
-                 id="filterDurationMillisHigh"
-                 name="filterDurationMillisHigh">
-          <span class="input-group-addon">
-          milliseconds
-        </span>
+  </button>
+</div>
+<div class="gt-chart-container">
+  <div gt-spinner
+       gt-show="showChartSpinner"
+       gt-no-delay="true"
+       id="chartSpinner"
+       class="gt-chart-panel">
+  </div>
+  <div class="gt-chart-panel">
+    <!-- negative positions are so that overlay will cover chart legend which sometimes stick beyond container -->
+    <div class="gt-panel-overlay"
+         ng-if="showChartSpinner"
+         style="right: -20px; bottom: -20px;">
+    </div>
+  </div>
+  <div class="gt-chart-dimensions" id="chart"></div>
+  <div ng-if="chartNoData && !showChartSpinner"
+       class="gt-chart-panel"
+       style="display: table;">
+    <div style="display: table-cell; text-align: center; vertical-align: middle;">
+      <div class="gt-chart-no-data"
+           ng-hide="showExpiredMessage">
+        No data
+      </div>
+      <div class="gt-chart-no-data"
+           ng-if="showExpiredMessage">
+        *There were traces but they have expired, see
+        <!-- pointer-events: auto is to override pointer-events: none from gt-chart-panel -->
+        <a href="admin/storage#rollup-capped-database-size"
+           style="pointer-events: auto;">
+          Configuration &gt; Storage &gt; Trace detail data
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row"
+     ng-if="chartLimitExceeded">
+  <div class="offset-xl-4 col-xl-8 mt-4">
+    <div class="gt-chart-warning">
+      Specified limit exceeded, only displaying slowest {{chartLimit}} matching traces
+    </div>
+  </div>
+</div>
+<div ng-form="formCtrl"
+     gt-form-with-primary-button
+     class="mt-4">
+  <div class="form-group row">
+    <label class="col-xl-4 gt-form-label-xl"
+           for="{{filterDurationComparator !== 'less' ? 'filterDurationMillisLow' : 'filterDurationMillisHigh'}}">
+      Response time
+    </label>
+    <div class="col-xl-8">
+      <!-- input-group needs to be in a sub-div so it doesn't try to fill the entire width,
+           which would push the addon "milliseconds" label flush right -->
+      <div class="input-group"
+           style="width: 100%;"
+           ng-style="{'max-width': filterDurationComparator === 'between' ? '30em' : '25em'}">
+        <div gt-input-group-dropdown
+             gt-model="filterDurationComparator"
+             gt-items="filterDurationComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.durationMillisLow"
+               ng-if="filterDurationComparator !== 'less'"
+               ng-pattern="/^(0|[1-9][0-9]*)$/"
+               class="form-control"
+               id="filterDurationMillisLow"
+               name="filterDurationMillisLow"
+               data-lpignore="true">
+        <span ng-if="filterDurationComparator === 'between'"
+              class="input-group-append"
+              style="border-left-width: 0; border-right-width: 0;">
+                <span class="input-group-text border-right-0">and</span>
+              </span>
+        <input type="text"
+               ng-model="filter.durationMillisHigh"
+               ng-if="filterDurationComparator !== 'greater'"
+               ng-pattern="/^(0|[1-9][0-9]*)$/"
+               class="form-control"
+               id="filterDurationMillisHigh"
+               name="filterDurationMillisHigh">
+        <div class="input-group-append">
+          <span class="input-group-text">milliseconds</span>
+        </div>
+        <div class="gt-invalid-other-feedback">
+          This is invalid.
         </div>
       </div>
     </div>
-    <div class="form-group">
-      <label class="col-lg-4 control-label"
-             for="searchHeadline">
-        Headline/URL
-      </label>
-      <div class="col-lg-8">
-        <div class="input-group"
-             style="width: 100%; max-width: 25em;">
-          <div gt-input-group-dropdown
-               gt-model="filter.headlineComparator"
-               gt-items="filterTextComparatorOptions"
-               class="input-group-left">
-          </div>
-          <!-- id containing text "search" prevents lastpass from adding icon to input field -->
-          <input type="text"
-                 ng-model="filter.headline"
-                 class="form-control"
-                 id="searchHeadline">
+  </div>
+  <div class="form-group row">
+    <label class="col-xl-4 gt-form-label-xl"
+           for="searchHeadline">
+      Headline/URL
+    </label>
+    <div class="col-xl-8">
+      <div class="input-group"
+           style="width: 100%; max-width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.headlineComparator"
+             gt-items="filterTextComparatorOptions">
         </div>
+        <!-- id containing text "search" prevents lastpass from adding icon to input field -->
+        <input type="text"
+               ng-model="filter.headline"
+               class="form-control"
+               id="searchHeadline">
       </div>
     </div>
-    <div class="form-group"
-         ng-show="showErrorMessageFilter">
-      <label class="col-lg-4 control-label"
-             for="searchErrorMessage">
-        Error
-      </label>
-      <div class="col-lg-8">
-        <div class="input-group"
-             style="width: 100%; max-width: 25em;">
-          <div gt-input-group-dropdown
-               gt-model="filter.errorMessageComparator"
-               gt-items="filterTextComparatorOptions"
-               class="input-group-left">
-          </div>
-          <!-- id containing text "search" prevents lastpass from adding icon to input field -->
-          <input type="text"
-                 ng-model="filter.errorMessage"
-                 class="form-control"
-                 id="searchErrorMessage">
+  </div>
+  <div class="form-group row"
+       ng-if="showErrorMessageFilter">
+    <label class="col-xl-4 gt-form-label-xl"
+           for="searchErrorMessage">
+      Error
+    </label>
+    <div class="col-xl-8">
+      <div class="input-group"
+           style="width: 100%; max-width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.errorMessageComparator"
+             gt-items="filterTextComparatorOptions">
         </div>
+        <!-- id containing text "search" prevents lastpass from adding icon to input field -->
+        <input type="text"
+               ng-model="filter.errorMessage"
+               class="form-control"
+               id="searchErrorMessage">
       </div>
     </div>
-    <div class="form-group">
-      <label class="col-lg-4 control-label"
-             for="searchUser">
-        User
-      </label>
-      <div class="col-lg-8">
-        <div class="input-group"
-             style="width: 100%; max-width: 25em;">
-          <div gt-input-group-dropdown
-               gt-model="filter.userComparator"
-               gt-items="filterTextComparatorOptions"
-               class="input-group-left">
-          </div>
-          <!-- id containing text "search" prevents lastpass from adding icon to input field -->
-          <input type="text"
-                 ng-model="filter.user"
-                 class="form-control"
-                 id="searchUser">
+  </div>
+  <div class="form-group row">
+    <label class="col-xl-4 gt-form-label-xl"
+           for="searchUser">
+      User
+    </label>
+    <div class="col-xl-8">
+      <div class="input-group"
+           style="width: 100%; max-width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.userComparator"
+             gt-items="filterTextComparatorOptions">
         </div>
+        <!-- id containing text "search" prevents lastpass from adding icon to input field -->
+        <input type="text"
+               ng-model="filter.user"
+               class="form-control"
+               id="searchUser">
       </div>
     </div>
-    <div class="form-group" ng-if="traceAttributeNames.length">
-      <label class="col-lg-4 control-label"
-             for="searchAttributeName">
-        Attribute name
-      </label>
-      <div class="col-lg-8">
-        <select ng-model="filter.attributeName"
-                class="form-control"
-                id="searchAttributeName"
-                style="width: 100%; max-width: 25em;">
-          <option value=""></option>
-          <option ng-repeat="attributeName in traceAttributeNames"
-                  ng-value="attributeName">
-            {{attributeName}}
-          </option>
-        </select>
-      </div>
+  </div>
+  <div class="form-group row" ng-if="traceAttributeNames.length">
+    <label class="col-xl-4 gt-form-label-xl"
+           for="searchAttributeName">
+      Attribute name
+    </label>
+    <div class="col-xl-8">
+      <select ng-model="filter.attributeName"
+              class="custom-select"
+              id="searchAttributeName"
+              style="width: 100%; max-width: 25em;">
+        <option value=""></option>
+        <option ng-repeat="attributeName in traceAttributeNames"
+                ng-value="attributeName">
+          {{attributeName}}
+        </option>
+      </select>
     </div>
-    <div class="form-group" ng-if="traceAttributeNames.length">
-      <label class="col-lg-4 control-label"
-             for="searchAttributeValue">
-        Attribute value
-      </label>
-      <div class="col-lg-8">
-        <div class="input-group"
-             style="width: 100%; max-width: 25em;">
-          <div gt-input-group-dropdown
-               gt-model="filter.attributeValueComparator"
-               gt-items="filterTextComparatorOptions"
-               class="input-group-left">
-          </div>
-          <!-- id containing text "search" prevents lastpass from adding icon to input field -->
-          <input type="text"
-                 ng-model="filter.attributeValue"
-                 class="form-control"
-                 id="searchAttributeValue">
+  </div>
+  <div class="form-group row" ng-if="traceAttributeNames.length">
+    <label class="col-xl-4 gt-form-label-xl"
+           for="searchAttributeValue">
+      Attribute value
+    </label>
+    <div class="col-xl-8">
+      <div class="input-group"
+           style="width: 100%; max-width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.attributeValueComparator"
+             gt-items="filterTextComparatorOptions">
         </div>
+        <!-- id containing text "search" prevents lastpass from adding icon to input field -->
+        <input type="text"
+               ng-model="filter.attributeValue"
+               class="form-control"
+               id="searchAttributeValue">
       </div>
     </div>
-    <div class="form-group">
-      <label class="col-lg-4 control-label"
-             for="searchLimit">
-        Result limit
-      </label>
-      <div class="col-lg-8">
-        <select ng-model="filter.limit"
-                ng-options="option.value as option.text for option in filterLimitOptions"
-                class="form-control"
-                id="searchLimit"
-                style="width: 100%; max-width: 8em;">
-        </select>
-      </div>
+  </div>
+  <div class="form-group row">
+    <label class="col-xl-4 gt-form-label-xl"
+           for="searchLimit">
+      Result limit
+    </label>
+    <div class="col-xl-8">
+      <select ng-model="filter.limit"
+              ng-options="option.value as option.text for option in filterLimitOptions"
+              class="custom-select"
+              id="searchLimit"
+              style="width: 100%; max-width: 8em;">
+      </select>
     </div>
-    <div class="form-group">
-      <div class="col-lg-offset-4 col-lg-8">
-        <button class="btn btn-primary pull-left"
-                ng-click="refresh()"
-                ng-disabled="formCtrl.$invalid">
-          Refresh
-        </button>
-        <button class="btn btn-default pull-left"
-                ng-click="clearCriteria()"
-                style="margin-left: 8px;">
+  </div>
+  <div class="form-group row pt-3 pt-xl-0">
+    <div class="offset-xl-4 col-xl-8">
+      <div gt-button-group>
+        <div gt-button
+             gt-label="Refresh"
+             gt-click="refresh(deferred)"
+             gt-validate-form="formCtrl"
+             class="d-inline-block">
+        </div>
+        <button class="btn btn-secondary gt-button-spacing"
+                ng-click="clearCriteria()">
           Clear criteria
         </button>
       </div>
     </div>
   </div>
-  <!-- escape key doesn't close modal in some situations without tabindex="-1"
-       in particular, open trace modal, expand trace entries, then expand a concatenated span (one with ...)
-       then hit escape key and modal doesn't close (at least not in chrome) -->
-  <div class="modal gt-full-screen-modal"
-       role="dialog"
-       tabindex="-1"
-       id="traceModal">
-    <button type="button"
-            class="close"
-            data-dismiss="modal">
-      &times;
-    </button>
-    <div class="modal-dialog">
+</div>
+<!-- escape key doesn't close modal in some situations without tabindex="-1"
+     in particular, open trace modal, expand trace entries, then expand a concatenated span (one with ...)
+     then hit escape key and modal doesn't close (at least not in chrome) -->
+<div class="modal gt-full-screen-modal"
+     role="dialog"
+     tabindex="-1"
+     id="traceModal">
+  <div class="modal-dialog"
+       role="document">
+    <div class="modal-content">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
       <div class="modal-body"></div>
     </div>
   </div>

@@ -13,19 +13,18 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>Advanced</h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-hide="hideMainContent()">
       <div ng-include src="'template/gt-loading-overlay.html'"></div>
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-      <div ng-form
-           gt-form-autofocus-on-first-input
-           class="form-horizontal"
-           name="formCtrl"
-           style="padding-top: 15px;">
+      <form gt-form-autofocus-on-first-input
+            name="formCtrl"
+            style="padding-top: 15px;"
+            novalidate>
         <div gt-form-group
              gt-label="Immediate partial trace store threshold"
              gt-model="config.immediatePartialStoreThresholdSeconds"
@@ -35,8 +34,6 @@
              gt-disabled="!agentRollup.permissions.config.edit.advanced"
              gt-width="7em"
              gt-addon="seconds"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8"
              ng-if="!isAgentRollup()">
           <div class="help-block">
             Any transaction that exceeds this amount of time will have its partial trace stored to
@@ -56,8 +53,6 @@
              gt-required="loaded"
              gt-disabled="!agentRollup.permissions.config.edit.advanced"
              gt-width="7em"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8"
              ng-if="!isAgentRollup()">
           <div class="help-block">
             The maximum number of transaction aggregates (aggregated by transaction name) that are stored per
@@ -74,9 +69,7 @@
              gt-pattern="pattern.integer"
              gt-required="loaded"
              gt-disabled="!agentRollup.permissions.config.edit.advanced"
-             gt-width="7em"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-width="7em">
           <div class="help-block">
             The maximum number of query aggregates (aggregated by query text) that are stored per transaction aggregate
             for any given minute.
@@ -99,9 +92,7 @@
              gt-pattern="pattern.integer"
              gt-required="loaded"
              gt-disabled="!agentRollup.permissions.config.edit.advanced"
-             gt-width="7em"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-width="7em">
           <div class="help-block">
             The maximum number of service call aggregates (aggregated by service call text) that are stored per
             transaction aggregate for any given minute.
@@ -125,8 +116,6 @@
              gt-required="loaded"
              gt-disabled="!agentRollup.permissions.config.edit.advanced"
              gt-width="7em"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8"
              ng-if="!isAgentRollup()">
           <div class="help-block">
             Maximum number of trace entries collected for any given transaction.
@@ -144,8 +133,6 @@
              gt-required="loaded"
              gt-disabled="!agentRollup.permissions.config.edit.advanced"
              gt-width="7em"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8"
              ng-if="!isAgentRollup()">
           <div class="help-block">
             Maximum number of profile samples collected for any given transaction.
@@ -155,17 +142,17 @@
             Profile samples are merged where possible so this can generally be quite large.
           </div>
         </div>
-        <div class="form-group gt-form-buttons"
+        <div class="form-group row"
              ng-if="agentRollup.permissions.config.edit.advanced">
-          <div class="col-lg-offset-4 col-lg-8">
+          <div class="offset-xl-3 col-xl-9">
             <div gt-button
                  gt-label="Save changes"
                  gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid">
+                 gt-validate-form="formCtrl">
             </div>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 </div>

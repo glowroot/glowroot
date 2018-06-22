@@ -3,7 +3,7 @@
   <strong style="font-size: 18px;">{{headline}}</strong>
   {{#if showExport}}
     <button class="gt-flat-btn gt-flat-btn-big gt-link-color download-trace"
-            style="font-size: 16px; margin: -6px 0;">
+            style="font-size: 1rem; margin: -6px 0;">
       export
     </button>
   {{/if}}
@@ -48,9 +48,9 @@
     <div class="gt-trace-attr-value">{{error.message}}</div>
     {{#if error.exception}}
       <div class="gt-trace-exception-indent">
-        <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
+        <span class="d-inline-block gt-unexpanded-content gt-link-color">exception</span>
         {{! using span so background will stretch beyond page border if needed }}
-        <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide">
+        <div class="d-inline-block gt-expanded-content gt-nowrap gt-with-clip d-none">
           <div class="gt-link-color">exception</div>
           <div class="gt-monospace gt-clip-text">
             {{{exceptionHtml error.exception}}}
@@ -91,7 +91,7 @@
 {{#if mainThreadRootTimer}}
   <div class="gt-timers">
     <div class="gt-timers-table">
-      <table class="gt-inline-block gt-trace-timer-table" style="border-spacing: 0;">
+      <table class="d-inline-block gt-trace-timer-table" style="border-spacing: 0;">
         <thead>
         <tr>
           <td class="gt-bold gt-breakdown-header" style="text-align: left;">
@@ -103,7 +103,7 @@
         </thead>
         <tbody>
         {{#each mainBreakdown.flattenedTimers}}
-          <tr class="align-top" id="mft{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
+          <tr class="align-top{{#unless show}} d-none{{/unless}}" id="mft{{id}}">
             <td style="text-align: left;">
               <div class="gt-indent2 gt-break-word gt-second-line-indent">
                 {{name}}
@@ -118,17 +118,16 @@
             <div class="gt-indent2">
               <div style="margin-left: -6px;">
                 <span tabindex="-1" id="mftForFocus"></span>
-                <button class="gt-flat-btn gt-link-color"
-                        id="mftShowMore"{{#unless mainBreakdown.ftShowMore}} style="display: none;"{{/unless}}>
+                <button class="gt-flat-btn gt-link-color{{#unless mainBreakdown.ftShowMore}} d-none{{/unless}}"
+                        id="mftShowMore">
                   show more
                 </button>
-                <span id="mftShowMoreAndLess" style="display: none;">/</span>
-                <button class="gt-flat-btn gt-link-color"
-                        id="mftShowLess"
-                        style="display: none;">
+                <span class="d-none" id="mftShowMoreAndLess">/</span>
+                <button class="gt-flat-btn gt-link-color d-none"
+                        id="mftShowLess">
                   show less
                 </button>
-                <span id="mftShowAll"{{#unless mainBreakdown.ftShowMore}} style="display: none;"{{/unless}}>
+                <span{{#unless mainBreakdown.ftShowMore}} class="d-none"{{/unless}} id="mftShowAll">
                   /
                   <button class="gt-flat-btn gt-link-color">
                     show all
@@ -146,8 +145,8 @@
         </button>
       </div>
     </div>
-    <div class="hide gt-timers-table">
-      <table class="gt-inline-block gt-trace-timer-table" style="border-spacing: 0;">
+    <div class="d-none gt-timers-table">
+      <table class="d-inline-block gt-trace-timer-table" style="border-spacing: 0;">
         <thead>
         <tr>
           <td class="gt-bold gt-breakdown-header" style="text-align: left;">
@@ -159,7 +158,7 @@
         </thead>
         <tbody>
         {{#each mainBreakdown.timers}}
-          <tr class="align-top" id="mtt{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
+          <tr class="align-top{{#unless show}} d-none{{/unless}}" id="mtt{{id}}">
             <td style="text-align: left;">
               <div class="gt-indent2">
                 <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
@@ -176,17 +175,16 @@
             <div class="gt-indent2">
               <div style="margin-left: -6px;">
                 <span tabindex="-1" id="mttForFocus"></span>
-                <button class="gt-flat-btn gt-link-color"
-                        id="mttShowMore"{{#unless mainBreakdown.ttShowMore}} style="display: none;"{{/unless}}>
+                <button class="gt-flat-btn gt-link-color{{#unless mainBreakdown.ttShowMore}} d-none{{/unless}}"
+                        id="mttShowMore">
                   show more
                 </button>
-                <span id="mttShowMoreAndLess" style="display: none;">/</span>
-                <button class="gt-flat-btn gt-link-color"
-                        id="mttShowLess"
-                        style="display: none;">
+                <span class="d-none" id="mttShowMoreAndLess">/</span>
+                <button class="gt-flat-btn gt-link-color d-none"
+                        id="mttShowLess">
                   show less
                 </button>
-                <span id="mttShowAll"{{#unless mainBreakdown.ttShowMore}} style="display: none;"{{/unless}}>
+                <span{{#unless mainBreakdown.ttShowMore}} class="d-none"{{/unless}} id="mttShowAll">
                   /
                   <button class="gt-flat-btn gt-link-color">
                     show all
@@ -208,7 +206,7 @@
 {{#if auxThreadRootTimers}}
   <div class="gt-timers">
     <div class="gt-timers-table">
-      <table class="gt-inline-block gt-trace-timer-table" style="border-spacing: 0;">
+      <table class="d-inline-block gt-trace-timer-table" style="border-spacing: 0;">
         <thead>
         <tr>
           <td class="gt-bold gt-breakdown-header" style="text-align: left;">
@@ -220,7 +218,7 @@
         </thead>
         <tbody>
         {{#each auxBreakdown.flattenedTimers}}
-          <tr class="align-top" id="aft{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
+          <tr class="align-top{{#unless show}} d-none{{/unless}}" id="aft{{id}}">
             <td style="text-align: left;">
               <div class="gt-indent2 gt-break-word gt-second-line-indent">
                 {{name}}
@@ -235,17 +233,16 @@
             <div class="gt-indent2">
               <div style="margin-left: -6px;">
                 <span tabindex="-1" id="aftForFocus"></span>
-                <button class="gt-flat-btn gt-link-color"
-                        id="aftShowMore"{{#unless auxBreakdown.ftShowMore}} style="display: none;"{{/unless}}>
+                <button class="gt-flat-btn gt-link-color{{#unless auxBreakdown.ftShowMore}} d-none{{/unless}}"
+                        id="aftShowMore">
                   show more
                 </button>
-                <span id="aftShowMoreAndLess" style="display: none;">/</span>
-                <button class="gt-flat-btn gt-link-color"
-                        id="aftShowLess"
-                        style="display: none;">
+                <span class="d-none" id="aftShowMoreAndLess">/</span>
+                <button class="gt-flat-btn gt-link-color d-none"
+                        id="aftShowLess">
                   show less
                 </button>
-                <span id="aftShowAll"{{#unless auxBreakdown.ftShowMore}} style="display: none;"{{/unless}}>
+                <span{{#unless auxBreakdown.ftShowMore}} class="d-none"{{/unless}} id="aftShowAll">
                   /
                   <button class="gt-flat-btn gt-link-color">
                     show all
@@ -262,8 +259,8 @@
         switch to tree view
       </button>
     </div>
-    <div class="hide gt-timers-table">
-      <table class="gt-inline-block gt-trace-timer-table" style="border-spacing: 0;">
+    <div class="d-none gt-timers-table">
+      <table class="d-inline-block gt-trace-timer-table" style="border-spacing: 0;">
         <thead>
         <tr>
           <td class="gt-bold gt-breakdown-header" style="text-align: left;">
@@ -275,7 +272,7 @@
         </thead>
         <tbody>
         {{#each auxBreakdown.timers}}
-          <tr class="align-top" id="att{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
+          <tr class="align-top {{#unless show}} d-none{{/unless}}" id="att{{id}}">
             <td style="text-align: left;">
               <div class="gt-indent2">
                 <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
@@ -292,17 +289,16 @@
             <div class="gt-indent2">
               <div style="margin-left: -6px;">
                 <span tabindex="-1" id="attForFocus"></span>
-                <button class="gt-flat-btn gt-link-color"
-                        id="attShowMore"{{#unless auxBreakdown.ttShowMore}} style="display: none;"{{/unless}}>
+                <button class="gt-flat-btn gt-link-color{{#unless auxBreakdown.ttShowMore}} d-none{{/unless}}"
+                        id="attShowMore">
                   show more
                 </button>
-                <span id="attShowMoreAndLess" style="display: none;">/</span>
-                <button class="gt-flat-btn gt-link-color"
-                        id="attShowLess"
-                        style="display: none;">
+                <span class="d-none" id="attShowMoreAndLess">/</span>
+                <button class="gt-flat-btn gt-link-color d-none"
+                        id="attShowLess">
                   show less
                 </button>
-                <span id="attShowAll"{{#unless auxBreakdown.ttShowMore}} style="display: none;"{{/unless}}>
+                <span{{#unless auxBreakdown.ttShowMore}} class="d-none"{{/unless}} id="attShowAll">
                   /
                   <button class="gt-flat-btn gt-link-color">
                     show all
@@ -324,7 +320,7 @@
 {{#if asyncTimers}}
   <div class="gt-timers">
     <div class="gt-timers-table">
-      <table class="gt-inline-block" style="border-spacing: 0;">
+      <table class="d-inline-block" style="border-spacing: 0;">
         <thead>
         <tr>
           <td class="gt-bold gt-breakdown-header" style="text-align: left;">
@@ -419,11 +415,11 @@
     </button>
     {{! spinner is not used in export file }}
     <div>
-      <div class="hide gt-trace-detail-spinner"></div>
+      <div class="d-none gt-trace-detail-spinner"></div>
     </div>
   </div>
   <div id="checkThisForWidth" style="margin: 10px 0 0 1em;">
-    <div id="entries" class="hide" style="font-family: Cousine, monospace;"></div>
+    <div id="entries" class="d-none" style="font-family: Cousine, monospace;"></div>
   </div>
 {{/ifExistenceYes}}
 {{#ifExistenceYes queriesExistence}}
@@ -433,15 +429,15 @@
     </button>
     {{! spinner is not used in export file }}
     <div>
-      <div class="hide gt-trace-detail-spinner"></div>
+      <div class="d-none gt-trace-detail-spinner"></div>
     </div>
   </div>
   <div style="margin: 10px 0 0 1em;">
-    <div id="queries" class="hide">
-      <table class="table query-table"
+    <div id="queries" class="d-none"
+         style="margin-top: -40px;">
+      <table class="table gt-query-table"
              data-curr-sort-property="totalDurationNanos"
-             data-curr-sort-direction="1"
-             style="table-layout: fixed; margin: -40px 0 0;">
+             data-curr-sort-direction="1">
         <thead>
         <tr>
           <th></th>
@@ -450,7 +446,7 @@
                     data-sort-property="totalDurationNanos">
               Total<br>
               time<br>
-              <span class="caret"></span>
+              <span class="gt-caret"></span>
               (ms)
             </button>
           </th>
@@ -458,7 +454,7 @@
             <button class="gt-trace-query-sort-button"
                     data-sort-property="executionCount">
               Execution<br>
-              <span class="caret hide"></span>
+              <span class="gt-caret d-none"></span>
               count
             </button>
           </th>
@@ -467,7 +463,7 @@
                     data-sort-property="timePerExecution">
               Time per<br>
               execution<br>
-              <span class="caret hide"></span>
+              <span class="gt-caret d-none"></span>
               (ms)
             </button>
           </th>
@@ -475,7 +471,7 @@
             <button class="gt-trace-query-sort-button"
                     data-sort-property="rowsPerExecution">
               Rows per<br>
-              <span class="caret hide"></span>
+              <span class="gt-caret d-none"></span>
               execution
             </button>
           </th>
@@ -494,11 +490,11 @@
       </button>
       {{! spinner is not used in export file }}
       <div>
-        <div class="hide gt-trace-detail-spinner"></div>
+        <div class="d-none gt-trace-detail-spinner"></div>
       </div>
     </div>
     <div style="margin: 10px 0;">
-      <div class="gt-indent2 gt-nowrap hide" id="mainThreadProfileOuter">
+      <div class="gt-indent2 gt-nowrap d-none" id="mainThreadProfileOuter">
         <div style="padding-bottom: 10px;">
           <input class="form-control gt-profile-text-filter"
                  style="display: inline-block; width: 25em;"
@@ -517,11 +513,11 @@
       </button>
       {{! spinner is not used in export file }}
       <div>
-        <div class="hide gt-trace-detail-spinner"></div>
+        <div class="d-none gt-trace-detail-spinner"></div>
       </div>
     </div>
     <div style="margin: 10px 0;">
-      <div class="gt-indent2 gt-nowrap hide" id="auxThreadProfileOuter">
+      <div class="gt-indent2 gt-nowrap d-none" id="auxThreadProfileOuter">
         <div style="padding-bottom: 10px;">
           <input class="form-control gt-profile-text-filter"
                  style="display: inline-block; width: 25em;"

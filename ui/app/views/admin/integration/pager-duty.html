@@ -13,32 +13,36 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-config-return-outer-div">
+<!-- clearfix is needed for smaller screens where gt-config-return-link is floated  -->
+<div class="clearfix">
   <a class="gt-config-return-link"
      href="admin/integration-list">
     Return to list
   </a>
 </div>
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>
       Integrations
-      <span class="gt-inline-block gt-separator">
+      <span class="d-inline-block gt-separator">
         |
       </span>
       <span style="font-size: 24px;">PagerDuty</span>
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
          gt-form-autofocus-on-first-input
-         class="form-horizontal"
          name="formCtrl"
          style="padding-top: 15px;">
-      <fieldset ng-repeat="integrationKey in config.integrationKeys">
-        <legend style="margin-bottom: 20px;">Integration key</legend>
+      <fieldset class="gt-fieldset"
+                ng-repeat="integrationKey in config.integrationKeys">
+        <legend class="gt-legend"
+                style="margin-bottom: 20px;">
+          Integration key
+        </legend>
         <div gt-form-group
              gt-label="Integration key"
              gt-model="integrationKey.key"
@@ -60,34 +64,35 @@
             Can be any text. Only used when displaying the integration key on the alert configuration page.
           </div>
         </div>
-        <div class="form-group gt-form-buttons"
-             ng-if="layout.adminEdit"
-             style="padding-top: 5px;">
-          <div class="col-lg-offset-3 col-lg-9">
-            <button class="btn gt-btn-danger"
+        <div class="form-group row"
+             ng-if="layout.adminEdit">
+          <div class="offset-xl-3 col-xl-9">
+            <button class="btn btn-danger float-right"
                     ng-click="removeIntegrationKey(integrationKey)"
-                    ng-if="layout.adminEdit"
-                    style="float: right;">
+                    ng-if="layout.adminEdit">
               Remove this integration key
             </button>
           </div>
         </div>
       </fieldset>
-      <fieldset ng-if="layout.adminEdit">
-        <legend>Add {{config.integrationKeys.length ? 'another' : 'an'}} integration key</legend>
-        <button class="btn btn-default"
+      <fieldset class="gt-fieldset"
+                ng-if="layout.adminEdit">
+        <legend class="gt-legend">
+          Add {{config.integrationKeys.length ? 'another' : 'an'}} integration key
+        </legend>
+        <button class="btn btn-secondary"
                 ng-click="addIntegrationKey()"
                 style="margin-bottom: 23px; margin-left: 14px;">
           Add
         </button>
       </fieldset>
-      <div class="form-group gt-form-buttons"
+      <div class="form-group row gt-form-buttons-below-fieldset"
            ng-if="layout.adminEdit">
-        <div class="col-lg-offset-3 col-lg-9 gt-sometimes-legend-padding">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button
                gt-label="Save changes"
                gt-click="save(deferred)"
-               gt-disabled="formCtrl.$invalid">
+               gt-validate-form="formCtrl">
           </div>
         </div>
       </div>

@@ -13,171 +13,187 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div style="position: relative;">
-  <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-  <div style="text-align: center; margin-top: -2px; margin-bottom: 6px; color: #555;"
-       role="group"
-       aria-label="View">
-    <label class="radio-inline">
-      <input type="radio" name="view" value="average" ng-click="clickTopRadioButton('average')">
+<div ng-include src="'template/gt-http-error-overlay.html'"></div>
+<div style="text-align: center; position: relative; color: #555; height: 30px;"
+     role="group"
+     aria-label="View">
+  <div class="form-check-inline">
+    <input class="form-check-input"
+           type="radio"
+           name="view"
+           value="average"
+           ng-click="clickTopRadioButton('average')"
+           id="viewAverage">
+    <label class="form-check-label" for="viewAverage">
       <a class="gt-radio-link"
          href="transaction/average{{tabQueryString()}}">
         average
       </a>
     </label>
-    <label class="radio-inline">
-      <input type="radio" name="view" value="percentiles" ng-click="clickTopRadioButton('percentiles')" checked>
+  </div>
+  <div class="form-check-inline">
+    <input class="form-check-input"
+           type="radio"
+           name="view"
+           value="percentiles"
+           ng-click="clickTopRadioButton('percentiles')"
+           id="viewPercentiles"
+           checked>
+    <label class="form-check-label" for="viewPercentiles">
       <a class="gt-radio-link"
          href="transaction/percentiles{{tabQueryString()}}"
          ng-click="clickActiveTopLink($event)">
         percentiles
       </a>
     </label>
-    <label class="radio-inline">
-      <input type="radio" name="view" value="throughput" ng-click="clickTopRadioButton('throughput')">
+  </div>
+  <div class="form-check-inline">
+    <input class="form-check-input"
+           type="radio"
+           name="view"
+           value="throughput"
+           ng-click="clickTopRadioButton('throughput')"
+           id="viewThroughput">
+    <label class="form-check-label" for="viewThroughput">
       <a class="gt-radio-link"
          href="transaction/throughput{{tabQueryString()}}">
         throughput
       </a>
     </label>
   </div>
-  <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
-  <div class="clearfix" style="position: relative; z-index: 800;">
-    <div class="pull-right gt-response-time-chart-tools" style="margin-bottom: -8px; font-size: 20px;">
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         ng-click="zoomOut()">
-        <span title="Zoom out"
-              class="fas fa-search-minus"></span><!-- lack of space here is significant
-   --></a>
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         ng-click="refresh()">
-        <span title="Refresh"
-              class="fas fa-sync"></span><!-- lack of space here is significant
-   --></a>
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         uib-popover-template="'template/help/chart.html'"
-         popover-placement="left"
-         popover-trigger="'outsideClick'">
-        <span title="Help"
-              class="fas fa-question-circle"></span><!-- lack of space here is significant
-   --></a>
-    </div>
+</div>
+<div class="gt-chart-controls float-right">
+  <button class="gt-chart-button"
+          ng-click="zoomOut()">
+    <span title="Zoom out"
+          class="fas fa-search-minus">
+    </span>
+  </button>
+  <button class="gt-chart-button"
+          ng-click="refresh()">
+    <span title="Refresh"
+          class="fas fa-sync">
+    </span>
+  </button>
+  <button class="gt-chart-button"
+          uib-popover-template="'template/help/chart.html'"
+          popover-placement="left"
+          popover-trigger="'outsideClick'">
+    <span title="Help"
+          class="fas fa-question-circle">
+    </span>
+  </button>
+</div>
+<div style="position: relative;">
+  <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
+  <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming
+       and to prevent the browser from intercepting rapid ctrl + scrollwheel and doing browser level zoom -->
+  <div class="gt-panel-overlay"
+       ng-if="showChartSpinner"
+       style="right: -20px; pointer-events: none;">
   </div>
-  <div style="position: relative;">
-    <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
-    <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming
-         and to prevent the browser from intercepting rapid ctrl + scrollwheel and doing browser level zoom -->
-    <div class="gt-panel-overlay"
-         ng-show="showChartSpinner"
-         style="right: -20px; pointer-events: none;">
+  <div class="gt-chart-container">
+    <div gt-spinner
+         gt-show="showChartSpinner"
+         gt-no-delay="true"
+         id="chartSpinner"
+         class="gt-chart-panel">
     </div>
-    <div class="gt-chart-container">
-      <div gt-spinner
-           gt-show="showChartSpinner"
-           gt-no-delay="true"
-           id="chartSpinner"
-           class="gt-chart-panel">
-      </div>
-      <div class="gt-chart-dimensions" id="chart"></div>
-      <div ng-show="chartNoData && !showChartSpinner"
-           class="gt-chart-panel"
-           style="display: table;">
-        <div style="display: table-cell; text-align: center; vertical-align: middle;">
-          <div class="gt-chart-no-data">No data for this time period</div>
-        </div>
-      </div>
-    </div>
-    <div class="legend" id="chartLegend"
-         ng-hide="chartNoData"
-         style="position: relative; text-align: center; margin-top: 10px; width: 100%;">
-      <div class="gt-inline-block" style="max-width: 600px;">
-        <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
-             style="margin: 0 6px;">
-          <div class="legendColorBox gt-inline-block"
-               style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
-            <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
-                 ng-style="{'border': '5px solid ' + seriesLabel.color}">
-            </div>
-          </div>
-          <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
-        </div>
-        <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-        <a role="button"
-           class="gt-chart-button"
-           href="#"
-           ng-click="openCustomPercentilesModal()"
-           style="padding-left: 3px; vertical-align: -6px; font-size: 20px;">
-          <span title="Change currently displayed percentiles"
-                class="far fa-edit"
-                style="font-size: 14px; vertical-align: 6px; margin-left: -1px;"></span>&nbsp;<!-- lack of space here is significant
- --></a>
-      </div>
-    </div>
-    <div ng-show="mergedAggregate.transactionCount"
-         style="position: relative; padding-top: 30px; margin-left: 40px;">
-      <div ng-repeat="percentileValue in mergedAggregate.percentileValues">
-        <label>{{percentileValue.dataSeriesName}}:</label>
-        {{percentileValue.value / 1000000 | gtMillis}} ms
+    <div class="gt-chart-dimensions" id="chart"></div>
+    <div ng-if="chartNoData && !showChartSpinner"
+         class="gt-chart-panel"
+         style="display: table;">
+      <div style="display: table-cell; text-align: center; vertical-align: middle;">
+        <div class="gt-chart-no-data">No data for this time period</div>
       </div>
     </div>
   </div>
-  <div class="modal" id="customPercentilesModal" tabindex="-1">
-    <div class="modal-dialog"
-         style="max-width: 500px;">
-      <div class="modal-content">
-        <div ng-form
-             gt-form-with-primary-button
-             name="formCtrl">
-          <div class="modal-header">
-            <button type="button"
-                    class="close"
-                    data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">Currently displayed percentiles</h4>
+  <div class="legend" id="chartLegend"
+       ng-hide="chartNoData"
+       style="position: relative; text-align: center; margin-top: 10px; width: 100%;">
+    <div class="d-inline-block" style="max-width: 600px;">
+      <div class="d-inline-block" ng-repeat="seriesLabel in seriesLabels"
+           style="margin: 0 6px;">
+        <div class="legendColorBox d-inline-block"
+             style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
+          <div style="width: 4px; height: 0; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
+               ng-style="{'border': '5px solid ' + seriesLabel.color}">
           </div>
-          <div class="modal-body">
-            <div ng-form="customPercentilesForm"
-                 class="form-group"
-                 ng-class="{'has-error': customPercentilesForm.customPercentiles.$invalid}">
-              <label class="control-label" for="customPercentiles">
-                Comma-separated percentiles
-              </label>
-
-              <input class="form-control"
-                     ng-model="customPercentiles"
-                     ng-pattern="pattern.percentageList"
-                     name="customPercentiles"
-                     id="customPercentiles"
-                     style="width: 20em;">
-
-              <div class="help-block">
-                Custom list of percentiles to display.
-                <a href="http://hdrhistogram.github.io/HdrHistogram/">HdrHistogram</a> is used to bucket and store the
-                full range of values so that any percentile value can be reported with at most 1% error,
-                e.g. if the 99.9<sup>th</sup> percentile is reported as 1400 milliseconds, then that would be at most
-                14 milliseconds from the true 99.9<sup>th</sup> percentile value.
-              </div>
+        </div>
+        <div class="legendLabel d-inline-block">{{seriesLabel.text}}</div>
+      </div>
+      <button class="gt-chart-button"
+              ng-click="openCustomPercentilesModal()"
+              style="margin-left: 3px; font-size: 14px;">
+        <span title="Change currently displayed percentiles"
+              class="far fa-edit">
+        </span>
+      </button>
+    </div>
+  </div>
+  <div ng-if="mergedAggregate.transactionCount"
+       style="position: relative; padding-top: 30px; margin-left: 40px;">
+    <div ng-repeat="percentileValue in mergedAggregate.percentileValues">
+      <label>{{percentileValue.dataSeriesName}}:</label>
+      {{percentileValue.value / 1000000 | gtMillis}} ms
+    </div>
+  </div>
+</div>
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="customPercentilesModal">
+  <div class="modal-dialog"
+       role="document"
+       style="max-width: 500px;">
+    <div class="modal-content">
+      <div ng-form
+           gt-form-with-primary-button
+           name="formCtrl">
+        <div class="modal-header">
+          <h4 class="modal-title">Currently displayed percentiles</h4>
+          <button type="button"
+                  class="close"
+                  data-dismiss="modal"
+                  aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div ng-form="customPercentilesForm"
+               class="form-group">
+            <label class="col-form-label" for="customPercentiles">
+              Comma-separated percentiles
+            </label>
+            <input class="form-control"
+                   ng-model="customPercentiles"
+                   ng-pattern="pattern.percentageList"
+                   name="customPercentiles"
+                   id="customPercentiles"
+                   style="width: 20em;"
+                   required>
+            <div class="gt-invalid-required-feedback">
+              This is required.
+            </div>
+            <div class="gt-invalid-other-feedback">
+              This is invalid.
+            </div>
+            <div class="help-block">
+              Custom list of percentiles to display.
+              <a class="gt-link-with-focus-ring" href="http://hdrhistogram.github.io/HdrHistogram/">HdrHistogram</a>
+              is used to bucket and store the full range of values so that any percentile value can be reported with at
+              most 1% error, e.g. if the 99.9<sup>th</sup> percentile is reported as 1400 milliseconds, then that would
+              be at most 14 milliseconds from the true 99.9<sup>th</sup> percentile value.
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button type="button"
-                    class="btn btn-primary"
-                    ng-disabled="formCtrl.$invalid"
-                    ng-click="applyCustomPercentiles()">
-              Apply
-            </button>
-          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="button"
+                  class="btn btn-primary"
+                  ng-click="applyCustomPercentiles()">
+            Apply
+          </button>
         </div>
       </div>
     </div>

@@ -21,7 +21,6 @@ import org.openqa.selenium.WebElement;
 import org.glowroot.tests.util.Utils;
 
 import static org.openqa.selenium.By.cssSelector;
-import static org.openqa.selenium.By.linkText;
 
 public class JvmSidebar {
 
@@ -31,35 +30,36 @@ public class JvmSidebar {
         this.driver = driver;
     }
 
-    public WebElement getGaugesLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Gauges"));
+    public void clickGaugesLink() {
+        clickWithWait("Gauges");
     }
 
-    public WebElement getMBeanTreeLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("MBean tree"));
+    public void clickMBeanTreeLink() {
+        clickWithWait("MBean tree");
     }
 
-    public WebElement getThreadDumpLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Thread dump"));
+    public void clickThreadDumpLink() {
+        clickWithWait("Thread dump");
     }
 
-    public WebElement getHeapDumpLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Heap dump"));
+    public void clickHeapDumpLink() {
+        clickWithWait("Heap dump");
     }
 
-    public WebElement getHeapHistogramLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Heap histogram"));
+    public void clickHeapHistogramLink() {
+        clickWithWait("Heap histogram");
     }
 
-    public WebElement getForceGcLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Force GC"));
+    public void clickForceGcLink() {
+        clickWithWait("Force GC");
     }
 
-    public WebElement getEnvironmentLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Environment"));
+    public void clickEnvironmentLink() {
+        clickWithWait("Environment");
     }
 
-    private WebElement getSidebar() {
-        return Utils.withWait(driver, cssSelector("div.gt-sidebar"));
+    private void clickWithWait(String linkText) {
+        WebElement sidebar = Utils.getWithWait(driver, cssSelector("div.gt-sidebar"));
+        Utils.clickWithWait(driver, sidebar, Utils.linkText(linkText));
     }
 }

@@ -39,9 +39,11 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
 import org.glowroot.agent.it.harness.Container;
+import org.glowroot.tests.util.Utils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -117,6 +119,34 @@ public abstract class WebDriverIT {
 
     protected static int getUiPort() throws Exception {
         return setup.getUiPort();
+    }
+
+    protected void click(By by) {
+        Utils.click(driver, by);
+    }
+
+    protected void clickWithWait(By by) {
+        Utils.clickWithWait(driver, by);
+    }
+
+    protected void clickLink(String linkText) {
+        Utils.click(driver, Utils.linkText(linkText));
+    }
+
+    protected void clickLinkWithWait(String linkText) {
+        Utils.clickWithWait(driver, Utils.linkText(linkText));
+    }
+
+    protected void clickPartialLink(String partialLinkText) {
+        Utils.click(driver, Utils.partialLinkText(partialLinkText));
+    }
+
+    protected void clickPartialLinkWithWait(String partialLinkText) {
+        Utils.clickWithWait(driver, Utils.partialLinkText(partialLinkText));
+    }
+
+    protected void waitFor(By by) {
+        Utils.getWithWait(driver, by);
     }
 
     static String httpGet(String url) throws Exception {

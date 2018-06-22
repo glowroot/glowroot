@@ -87,7 +87,8 @@ glowroot.controller('JvmCtrl', [
         $scope.refreshAgentRollups(from, to, $scope, message);
       };
 
-      $('#agentRollupDropdown').on('show.bs.select', refreshAgentRollups);
+      // the show.bs.dropdown event target is the button which is a sibling of the select
+      $('#agentRollupDropdown').parent().on('show.bs.dropdown', refreshAgentRollups);
 
       if ($scope.agentRollups === undefined) {
         // timeout is needed to give gauge controller a chance to set chartFrom/chartTo

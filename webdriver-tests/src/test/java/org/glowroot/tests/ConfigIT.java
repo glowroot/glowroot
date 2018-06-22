@@ -16,7 +16,6 @@
 package org.glowroot.tests;
 
 import org.junit.Test;
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
 import org.glowroot.tests.config.AdvancedConfigPage;
@@ -29,6 +28,7 @@ import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openqa.selenium.By.xpath;
 
 public class ConfigIT extends WebDriverIT {
 
@@ -40,9 +40,9 @@ public class ConfigIT extends WebDriverIT {
         TransactionConfigPage page = new TransactionConfigPage(driver);
 
         app.open();
-        globalNavbar.getConfigLink().click();
+        globalNavbar.clickConfigLink();
         if (WebDriverSetup.useCentral) {
-            new ConfigSidebar(driver).getTransactionsLink().click();
+            new ConfigSidebar(driver).clickTransactionsLink();
         }
 
         // when
@@ -50,20 +50,20 @@ public class ConfigIT extends WebDriverIT {
         page.getSlowThresholdTextField().sendKeys("2345");
         page.getProfilingIntervalTextField().clear();
         page.getProfilingIntervalTextField().sendKeys("3456");
-        page.getCaptureThreadStatsCheckBox().click();
+        page.clickCaptureThreadStatsCheckBox();
         page.clickSaveButton();
         // wait for save to finish
         SECONDS.sleep(1);
 
         // then
         app.open();
-        globalNavbar.getConfigLink().click();
+        globalNavbar.clickConfigLink();
         if (WebDriverSetup.useCentral) {
-            new ConfigSidebar(driver).getTransactionsLink().click();
+            new ConfigSidebar(driver).clickTransactionsLink();
         }
         assertThat(page.getSlowThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
-        assertThat(page.getCaptureThreadStatsCheckBox().isSelected()).isFalse();
+        assertThat(page.getCaptureThreadStatsCheckBoxValue()).isFalse();
     }
 
     @Test
@@ -75,8 +75,8 @@ public class ConfigIT extends WebDriverIT {
         JvmConfigPage page = new JvmConfigPage(driver);
 
         app.open();
-        globalNavbar.getConfigLink().click();
-        configSidebar.getJvmLink().click();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickJvmLink();
 
         // when
         page.getMaskSystemPropertiesTextField().clear();
@@ -87,8 +87,8 @@ public class ConfigIT extends WebDriverIT {
 
         // then
         app.open();
-        globalNavbar.getConfigLink().click();
-        configSidebar.getJvmLink().click();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickJvmLink();
         assertThat(page.getMaskSystemPropertiesTextField().getAttribute("value"))
                 .isEqualTo("abc, xyz");
     }
@@ -102,8 +102,8 @@ public class ConfigIT extends WebDriverIT {
         UiDefaultsConfigPage page = new UiDefaultsConfigPage(driver);
 
         app.open();
-        globalNavbar.getConfigLink().click();
-        configSidebar.getUiDefaultsLink().click();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickUiDefaultsLink();
 
         // when
         page.getDefaultPercentilesTextField().clear();
@@ -114,8 +114,8 @@ public class ConfigIT extends WebDriverIT {
 
         // then
         app.open();
-        globalNavbar.getConfigLink().click();
-        configSidebar.getUiDefaultsLink().click();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickUiDefaultsLink();
         assertThat(page.getDefaultPercentilesTextField().getAttribute("value"))
                 .isEqualTo("3, 4, 5, 6");
     }
@@ -128,7 +128,7 @@ public class ConfigIT extends WebDriverIT {
         UserRecordingConfigPage page = new UserRecordingConfigPage(driver);
 
         app.open();
-        globalNavbar.getConfigLink().click();
+        globalNavbar.clickConfigLink();
         // user recording config is not accessible via config sidebar currently
         app.open("/config/user-recording");
 
@@ -143,7 +143,7 @@ public class ConfigIT extends WebDriverIT {
 
         // then
         app.open();
-        globalNavbar.getConfigLink().click();
+        globalNavbar.clickConfigLink();
         // user recording config is not accessible via config sidebar currently
         app.open("/config/user-recording");
         assertThat(page.getUsersTextField().getAttribute("value")).isEqualTo("abc, xyz");
@@ -159,8 +159,8 @@ public class ConfigIT extends WebDriverIT {
         AdvancedConfigPage page = new AdvancedConfigPage(driver);
 
         app.open();
-        globalNavbar.getConfigLink().click();
-        configSidebar.getAdvancedLink().click();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickAdvancedLink();
 
         // when
         page.getImmediatePartialStoreThresholdTextField().clear();
@@ -181,8 +181,8 @@ public class ConfigIT extends WebDriverIT {
 
         // then
         app.open();
-        globalNavbar.getConfigLink().click();
-        configSidebar.getAdvancedLink().click();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickAdvancedLink();
         assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("1234");
         assertThat(page.getMaxTransactionAggregatesTextField().getAttribute("value"))
@@ -204,24 +204,24 @@ public class ConfigIT extends WebDriverIT {
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
 
         app.open();
-        globalNavbar.getConfigLink().click();
-        configSidebar.getPluginsLink().click();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickPluginsLink();
 
-        Utils.withWait(driver, By.linkText("Jdbc Plugin")).click();
-        Utils.withWait(driver, By.xpath("//div[@gt-label='Bind parameters']//input")).click();
-        Utils.withWait(driver, By.xpath("//button[normalize-space()='Save changes']")).click();
+        clickLinkWithWait("Jdbc Plugin");
+        clickWithWait(xpath("//div[@gt-label='Bind parameters']//label"));
+        clickWithWait(xpath("//button[normalize-space()='Save changes']"));
 
         // wait for save to finish
         SECONDS.sleep(1);
 
         // then
         app.open();
-        globalNavbar.getConfigLink().click();
-        configSidebar.getPluginsLink().click();
+        globalNavbar.clickConfigLink();
+        configSidebar.clickPluginsLink();
 
-        Utils.withWait(driver, By.linkText("Jdbc Plugin")).click();
+        clickLinkWithWait("Jdbc Plugin");
         WebElement element =
-                Utils.withWait(driver, By.xpath("//div[@gt-label='Bind parameters']//input"));
+                Utils.getWithWait(driver, xpath("//div[@gt-label='Bind parameters']//input"));
         assertThat(element.isSelected()).isFalse();
     }
 }

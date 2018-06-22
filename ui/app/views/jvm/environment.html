@@ -21,70 +21,74 @@
 <div ng-if="layout.offlineViewer" class="alert alert-warning">
   The values below were reported at last JVM start.
 </div>
-<fieldset style="padding-bottom: 22px;">
-  <legend style="margin-bottom: 10px;">Host</legend>
+<fieldset class="gt-fieldset-environment">
+  <legend class="gt-legend">
+    Host
+  </legend>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">Host name</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      Host name
     </div>
     <div class="col-md-9">
       {{data.host.hostName}}
     </div>
   </div>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">Available processors</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      Available processors
     </div>
     <div class="col-md-9">
       {{data.host.availableProcessors}}
     </div>
   </div>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">Total physical memory</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      Total physical memory
     </div>
     <div class="col-md-9">
       {{data.host.totalPhysicalMemoryBytes | gtBytes}}
     </div>
   </div>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">OS name</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      OS name
     </div>
     <div class="col-md-9">
       {{data.host.osName}}
     </div>
   </div>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">OS version</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      OS version
     </div>
     <div class="col-md-9">
       {{data.host.osVersion}}
     </div>
   </div>
 </fieldset>
-<fieldset style="padding-bottom: 22px;">
-  <legend style="margin-bottom: 10px;">Process</legend>
+<fieldset class="gt-fieldset-environment">
+  <legend class="gt-legend">
+    Process
+  </legend>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">Process ID</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      Process ID
     </div>
     <div class="col-md-9">
       {{data.process.processId === undefined ? 'N/A' : data.process.processId}}
     </div>
   </div>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">Start time</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      Start time
     </div>
     <div class="col-md-9">
       {{data.process.startTime | date:'medium'}}
     </div>
   </div>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">Uptime</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      Uptime
     </div>
     <div class="col-md-9" ng-if="data.agentNotConnected || layout.offlineViewer">
       -
@@ -94,43 +98,46 @@
     </div>
   </div>
 </fieldset>
-<fieldset style="padding-bottom: 17px;">
-  <legend style="margin-bottom: 10px;">Java</legend>
+<fieldset class="gt-fieldset-environment">
+  <legend class="gt-legend">
+    Java
+  </legend>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">Version</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      Version
     </div>
     <div class="col-md-9">
       {{data.java.version}}
     </div>
   </div>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">VM</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      VM
     </div>
     <div class="col-md-9">
       {{data.java.vm}}
     </div>
   </div>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">Args</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      Args
     </div>
     <div class="col-md-9">
       <!-- track by $index is needed since duplicates are possible in this list -->
-      <div ng-repeat="arg in data.java.args track by $index">
-        <div class="gt-jvm-argument gt-break-word">
-          <span style="white-space: nowrap;">{{argFirstPart(arg)}}</span>{{argSecondPart(arg)}}
-        </div>
+      <div class="gt-jvm-argument gt-break-word"
+           ng-repeat="arg in data.java.args track by $index">
+        <span style="white-space: nowrap;">{{argFirstPart(arg)}}</span>{{argSecondPart(arg)}}
       </div>
     </div>
   </div>
 </fieldset>
-<fieldset style="padding-bottom: 22px;">
-  <legend style="margin-bottom: 10px;">Glowroot agent</legend>
+<fieldset class="gt-fieldset-environment">
+  <legend class="gt-legend">
+    Glowroot agent
+  </legend>
   <div class="row gt-jvm-general-row">
-    <div>
-      <label class="col-md-3" style="text-align: right;">Version</label>
+    <div class="col-md-3 text-md-right font-weight-600">
+      Version
     </div>
     <div class="col-md-9">
       {{data.java.glowrootAgentVersion}}

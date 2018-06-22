@@ -18,20 +18,17 @@
 <div ng-if="agentNotConnected" class="alert alert-danger" role="alert">
   This feature is only available when the agent is running and connected
 </div>
-<!-- ng-show explicitly needed here instead of ng-if because thread-dump.js binds directly to #threadDump -->
+<!-- ng-show needed here instead of ng-if because thread-dump.js binds directly to #threadDump -->
 <div ng-show="loaded && !agentNotConnected">
-  <div class="clearfix">
+  <div class="d-flex justify-content-between pb-4">
     <div gt-button
          gt-label="Refresh"
-         gt-click="refresh(deferred)"
-         style="float: left; margin-bottom: 20px;">
+         gt-click="refresh(deferred)">
     </div>
-    <div style="float: right;">
-      <button class="btn btn-default"
-              ng-click="exportAsText()">
-        Export as text
-      </button>
-    </div>
+    <button class="btn btn-secondary"
+            ng-click="exportAsText()">
+      Export as text
+    </button>
   </div>
   <div class="gt-thread-dump-flat-pre"
        id="threadDump">
@@ -40,13 +37,17 @@
 <!-- escape key doesn't close modal in some situations without tabindex="-1"
      in particular, open trace modal, expand trace entries, then expand a concatenated span (one with ...)
      then hit escape key and modal doesn't close (at least not in chrome) -->
-<div class="modal gt-full-screen-modal" id="traceModal" tabindex="-1">
-  <button type="button"
-          class="close"
-          data-dismiss="modal">
-    &times;
-  </button>
-  <div class="modal-dialog">
-    <div class="modal-body"></div>
+<div class="modal gt-full-screen-modal"
+     role="dialog"
+     tabindex="-1"
+     id="traceModal">
+  <div class="modal-dialog"
+       role="document">
+    <div class="modal-content">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+      <div class="modal-body"></div>
+    </div>
   </div>
 </div>

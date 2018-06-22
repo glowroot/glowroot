@@ -86,9 +86,9 @@ public class CommonHandler {
     private static final ImmutableMap<String, MediaType> mediaTypes =
             ImmutableMap.<String, MediaType>builder()
                     .put("html", MediaType.HTML_UTF_8)
-                    .put("js", MediaType.JAVASCRIPT_UTF_8)
+                    .put("js", MediaType.TEXT_JAVASCRIPT_UTF_8)
                     .put("css", MediaType.CSS_UTF_8)
-                    .put("ico", MediaType.ICO)
+                    .put("ico", MediaType.create("image", "x-icon"))
                     .put("woff", MediaType.WOFF)
                     .put("woff2", MediaType.create("application", "font-woff2"))
                     .put("swf", MediaType.create("application", "vnd.adobe.flash-movie"))
@@ -396,10 +396,14 @@ public class CommonHandler {
         CommonResponse response = new CommonResponse(OK, mediaType, url);
         if (expires != null) {
             response.setHeader(HttpHeaderNames.EXPIRES, expires);
+            response.setHeader(HttpHeaderNames.CACHE_CONTROL,
+                    "public, max-age=" + expires.getTime());
         } else {
             response.setHeader(HttpHeaderNames.LAST_MODIFIED, new Date(0));
             response.setHeader(HttpHeaderNames.EXPIRES,
                     new Date(clock.currentTimeMillis() + TEN_YEARS));
+            response.setHeader(HttpHeaderNames.CACHE_CONTROL,
+                    "public, max-age=" + TEN_YEARS + ", immutable");
         }
         return response;
     }
@@ -678,9 +682,7 @@ public class CommonHandler {
                 // prevent caching of dynamic json data, using 'definitive' minimum set of headers
                 // from http://stackoverflow.com/questions/49547/
                 // making-sure-a-web-page-is-not-cached-across-all-browsers/2068407#2068407
-                headers.set(HttpHeaderNames.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
-                headers.set(HttpHeaderNames.PRAGMA, "no-cache");
-                headers.set(HttpHeaderNames.EXPIRES, new Date(0));
+                headers.set(HttpHeaderNames.CACHE_CONTROL, "no-store, must-revalidate");
             }
         }
 

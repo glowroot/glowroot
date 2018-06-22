@@ -13,63 +13,64 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-header"
-     ng-style="{'margin-bottom': layout.central || layout.embeddedAgentRollup.display ? '5px' : '15px'}">
-  <div class="gt-header-page-name">
-    <h1 ng-show="!layout.central && !layout.embeddedAgentRollup.display">
+<div class="gt-header">
+  <div class="gt-header-lhs"
+       ng-if="!layout.central && !layout.embeddedAgentRollup.display">
+    <h1 class="gt-header-text">
       Configuration
     </h1>
-    <div style="margin-top: -16px;"
-         ng-show="layout.central || layout.embeddedAgentRollup.display">
-      <!-- negative margin-left is so background doesn't bleed through transparent 1px border when menu is open -->
-      <span class="gt-inline-block gt-header-menu"
-            style="margin-left: -1px; vertical-align: 2px;"
-            ng-show="layout.central">
-        <select gt-selectpicker
-                gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
-                data-live-search="true"
-                data-style="btn-flat"
-                id="agentRollupDropdown"
-                aria-label="Agent">
-          <option ng-repeat="item in agentRollups track by item.id"
-                  data-href="{{agentRollupUrl(item.id)}}"
-                  data-tokens="{{item.display}}"
-                  value="{{item.id}}"
-                  title="{{agentRollup.display}}"
-                  ng-disabled="item.disabled"
-                  ng-selected="item.id == agentRollup.id">
-            {{item.indentedDisplay}}
-          </option>
-          <option disabled
-                  class="gt-agent-rollup-dropdown-message hide"
-                  style="font-style: italic; font-size: 16px; cursor: inherit;"
-                  ng-if="agentRollups.length === 0">
-            No active agents in the past 7 days
-          </option>
-          <!-- can't use gt-spinner due to selectpicker behavior -->
-          <option disabled
-                  class="gt-agent-rollup-dropdown-spinner hide"
-                  style="position: relative; height: 30px; cursor: inherit;">
-          </option>
-        </select>
-      </span>
-      <span ng-if="layout.embeddedAgentRollup.display">
-        {{layout.embeddedAgentRollup.display}}
-      </span>
-      <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
-           while chrome guesses the placement of the border based on default font and then it moves slightly
-           once font is available -->
-      <span class="gt-inline-block gt-separator">
-        |
-      </span>
-      <h1 class="gt-inline-block">
-        Configuration
-      </h1>
+  </div>
+  <!-- ng-show needed here instead of ng-if because transaction.js binds directly to #agentRollupDropdown -->
+  <div class="gt-header-lhs"
+       ng-show="layout.central || layout.embeddedAgentRollup.display">
+    <div class="gt-header-menu"
+         ng-if="layout.central">
+      <select gt-selectpicker
+              gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
+              data-width="fit"
+              data-live-search="true"
+              data-style="btn-secondary"
+              id="agentRollupDropdown"
+              aria-label="Agent">
+        <option ng-repeat="item in agentRollups track by item.id"
+                data-href="{{agentRollupUrl(item.id)}}"
+                data-tokens="{{item.display}}"
+                value="{{item.id}}"
+                title="{{agentRollup.display}}"
+                ng-disabled="item.disabled"
+                ng-selected="item.id == agentRollup.id">
+          {{item.indentedDisplay}}
+        </option>
+        <option disabled
+                class="gt-agent-rollup-dropdown-message d-none"
+                style="font-style: italic; font-size: 1rem; cursor: inherit;"
+                ng-if="agentRollups.length === 0">
+          No active agents in the past 7 days
+        </option>
+        <!-- can't use gt-spinner due to selectpicker behavior -->
+        <option disabled
+                class="gt-agent-rollup-dropdown-spinner d-none"
+                style="position: relative; height: 30px; cursor: inherit;">
+        </option>
+      </select>
     </div>
+    <div class="gt-header-text"
+         ng-if="layout.embeddedAgentRollup.display">
+      {{layout.embeddedAgentRollup.display}}
+    </div>
+    <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+         while chrome guesses the placement of the border based on default font and then it moves slightly
+         once font is available -->
+    <div class="gt-header-text gt-separator">
+      |
+    </div>
+    <h1 class="gt-header-text">
+      Configuration
+    </h1>
   </div>
 </div>
 <div class="gt-sidebar hidden-print">
-  <div class="panel panel-default">
+  <div class="card">
     <div class="list-group">
       <div gt-sidebar-item
            gt-display="General"

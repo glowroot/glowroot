@@ -15,67 +15,60 @@
  */
 package org.glowroot.tests.admin;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class LdapConfigPage {
-
-    private final WebDriver driver;
+public class LdapConfigPage extends Page {
 
     public LdapConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getHostTextField() {
-        return withWait(xpath("//div[@gt-label='Host']//input"));
+        return getWithWait(xpath("//div[@gt-label='Host']//input"));
     }
 
     public WebElement getPortTextField() {
-        return withWait(xpath("//div[@gt-label='Port']//input"));
+        return getWithWait(xpath("//div[@gt-label='Port']//input"));
     }
 
-    public WebElement getUseSslCheckBox() {
-        return withWait(xpath("//div[@gt-label='SSL']//input"));
+    public void clickUseSslCheckBox() {
+        clickWithWait(xpath("//div[@gt-label='SSL']//label"));
+    }
+
+    public boolean getUseSslCheckBoxValue() {
+        return getWithWait(xpath("//div[@gt-label='SSL']//label//input")).isSelected();
     }
 
     public WebElement getUsernameTextField() {
-        return withWait(xpath("//div[@gt-label='Username']//input"));
+        return getWithWait(xpath("//div[@gt-label='Username']//input"));
     }
 
     public WebElement getPasswordTextField() {
-        return withWait(xpath("//input[@ng-model='password']"));
+        return getWithWait(xpath("//input[@ng-model='password']"));
     }
 
     public WebElement getUserBaseDnTextField() {
-        return withWait(xpath("//div[@gt-label='User base DN']//input"));
+        return getWithWait(xpath("//div[@gt-label='User base DN']//input"));
     }
 
     public WebElement getUserSearchFilterTextField() {
-        return withWait(xpath("//div[@gt-label='User search filter']//input"));
+        return getWithWait(xpath("//div[@gt-label='User search filter']//input"));
     }
 
     public WebElement getGroupBaseDnTextField() {
-        return withWait(xpath("//div[@gt-label='Group base DN']//input"));
+        return getWithWait(xpath("//div[@gt-label='Group base DN']//input"));
     }
 
     public WebElement getGroupSearchFilterTextField() {
-        return withWait(xpath("//div[@gt-label='Group search filter']//input"));
+        return getWithWait(xpath("//div[@gt-label='Group search filter']//input"));
     }
 
     public void clickSaveButton() {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
-    }
-
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
     }
 }

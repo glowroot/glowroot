@@ -13,167 +13,168 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div ng-include src="'template/gt-http-error-overlay.html'"></div>
+<div style="text-align: center; position: relative; color: #555; height: 30px;"
+     role="group"
+     aria-label="View">
+  <div class="form-check-inline">
+    <input class="form-check-input"
+           type="radio"
+           name="view"
+           value="average"
+           ng-click="clickTopRadioButton('average')"
+           id="viewAverage"
+           checked>
+    <a class="gt-radio-link"
+       href="transaction/average{{tabQueryString()}}"
+       ng-click="clickActiveTopLink($event)">
+      <label class="form-check-label" for="viewAverage">average</label>
+    </a>
+  </div>
+  <div class="form-check-inline">
+    <input class="form-check-input"
+           type="radio"
+           name="view"
+           value="percentiles"
+           ng-click="clickTopRadioButton('percentiles')"
+           id="viewPercentiles">
+    <a class="gt-radio-link"
+       href="transaction/percentiles{{tabQueryString()}}">
+      <label class="form-check-label" for="viewPercentiles">percentiles</label>
+    </a>
+  </div>
+  <div class="form-check-inline">
+    <input class="form-check-input"
+           type="radio"
+           name="view"
+           value="throughput"
+           ng-click="clickTopRadioButton('throughput')"
+           id="viewThroughput">
+    <a class="gt-radio-link"
+       href="transaction/throughput{{tabQueryString()}}">
+      <label class="form-check-label" for="viewThroughput">throughput</label>
+    </a>
+  </div>
+</div>
+<div class="gt-chart-controls float-right">
+  <button class="gt-chart-button"
+          ng-click="zoomOut()">
+    <span title="Zoom out"
+          class="fas fa-search-minus">
+    </span>
+  </button>
+  <button class="gt-chart-button"
+          ng-click="refresh()">
+    <span title="Refresh"
+          class="fas fa-sync">
+    </span>
+  </button>
+  <button class="gt-chart-button"
+          uib-popover-template="'template/help/chart.html'"
+          popover-placement="left"
+          popover-trigger="'outsideClick'">
+    <span title="Help"
+          class="fas fa-question-circle">
+    </span>
+  </button>
+</div>
 <div style="position: relative;">
-  <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-  <div style="text-align: center; margin-top: -2px; margin-bottom: 6px; color: #555;"
-       role="group"
-       aria-label="View">
-    <label class="radio-inline">
-      <input type="radio" name="view" value="average" ng-click="clickTopRadioButton('average')" checked>
-      <a class="gt-radio-link"
-         href="transaction/average{{tabQueryString()}}"
-         ng-click="clickActiveTopLink($event)">
-        average
-      </a>
-    </label>
-    <label class="radio-inline">
-      <input type="radio" name="view" value="percentiles" ng-click="clickTopRadioButton('percentiles')">
-      <a class="gt-radio-link"
-         href="transaction/percentiles{{tabQueryString()}}">
-        percentiles
-      </a>
-    </label>
-    <label class="radio-inline">
-      <input type="radio" name="view" value="throughput" ng-click="clickTopRadioButton('throughput')">
-      <a class="gt-radio-link"
-         href="transaction/throughput{{tabQueryString()}}">
-        throughput
-      </a>
-    </label>
+  <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
+  <div class="gt-panel-overlay"
+       ng-if="showChartSpinner"
+       style="right: -20px; pointer-events: none;">
   </div>
-  <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
-  <div class="clearfix" style="position: relative; z-index: 800;">
-    <div class="pull-right gt-response-time-chart-tools" style="margin-bottom: -8px; font-size: 20px;">
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         ng-click="zoomOut()">
-        <span title="Zoom out"
-              class="fas fa-search-minus"></span><!-- lack of space here is significant
-   --></a>
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         ng-click="refresh()">
-        <span title="Refresh"
-              class="fas fa-sync"></span><!-- lack of space here is significant
-   --></a>
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         uib-popover-template="'template/help/chart.html'"
-         popover-placement="left"
-         popover-trigger="'outsideClick'">
-        <span title="Help"
-              class="fas fa-question-circle"></span><!-- lack of space here is significant
-   --></a>
+  <div class="gt-chart-container">
+    <div gt-spinner
+         gt-show="showChartSpinner"
+         gt-no-delay="true"
+         id="chartSpinner"
+         class="gt-chart-panel">
     </div>
-  </div>
-  <div style="position: relative;">
-    <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
-    <div class="gt-panel-overlay"
-         ng-show="showChartSpinner"
-         style="right: -20px; pointer-events: none;">
-    </div>
-    <div class="gt-chart-container">
-      <div gt-spinner
-           gt-show="showChartSpinner"
-           gt-no-delay="true"
-           id="chartSpinner"
-           class="gt-chart-panel">
-      </div>
-      <div class="gt-chart-dimensions" id="chart"></div>
-      <div ng-show="chartNoData && !showChartSpinner"
-           class="gt-chart-panel"
-           style="display: table;">
-        <div style="display: table-cell; text-align: center; vertical-align: middle;">
-          <div class="gt-chart-no-data">No data for this time period</div>
-        </div>
+    <div class="gt-chart-dimensions" id="chart"></div>
+    <div ng-if="chartNoData && !showChartSpinner"
+         class="gt-chart-panel"
+         style="display: table;">
+      <div style="display: table-cell; text-align: center; vertical-align: middle;">
+        <div class="gt-chart-no-data">No data for this time period</div>
       </div>
     </div>
-    <div class="legend" id="chartLegend"
-         ng-hide="chartNoData"
-         style="text-align: center; margin-top: 10px; width: 100%;">
-      <div class="gt-inline-block" style="max-width: 600px;">
-        <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
-             style="margin: 0 6px;">
-          <div class="legendColorBox gt-inline-block"
-               style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
-            <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
-                 ng-style="{'border': '5px solid ' + seriesLabel.color}">
-            </div>
+  </div>
+  <div class="legend" id="chartLegend"
+       ng-hide="chartNoData"
+       style="text-align: center; margin-top: 10px; width: 100%;">
+    <div class="d-inline-block" style="max-width: 600px;">
+      <div class="d-inline-block" ng-repeat="seriesLabel in seriesLabels"
+           style="margin: 0 6px;">
+        <div class="legendColorBox d-inline-block"
+             style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
+          <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
+               ng-style="{'border': '5px solid ' + seriesLabel.color}">
           </div>
-          <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
         </div>
+        <div class="legendLabel d-inline-block">{{seriesLabel.text}}</div>
       </div>
     </div>
-    <div ng-if="mergedAggregate.transactionCount"
-         class="gt-everything-below-average-chart"
-         style="position: relative; padding-top: 30px;">
-      <div ng-if="mainThreadFlattenedTimers.length">
-        <div gt-timer-display
-             heading="Breakdown{{auxThreadFlattenedTimers.length ? ' (Main Thread)' : ''}}:"
-             flattened-timers="mainThreadFlattenedTimers"
-             tree-timers="mainThreadTreeTimers"
-             transaction-count="mergedAggregate.transactionCount">
-        </div>
+  </div>
+  <div ng-if="mergedAggregate.transactionCount"
+       class="gt-everything-below-average-chart"
+       style="position: relative; padding-top: 30px;">
+    <div ng-if="mainThreadFlattenedTimers.length">
+      <div gt-timer-display
+           heading="Breakdown{{auxThreadFlattenedTimers.length ? ' (Main Thread)' : ''}}:"
+           flattened-timers="mainThreadFlattenedTimers"
+           tree-timers="mainThreadTreeTimers"
+           transaction-count="mergedAggregate.transactionCount">
       </div>
-
-      <div ng-if="auxThreadFlattenedTimers.length" style="margin-top: 10px;">
-        <div gt-timer-display
-             heading="Breakdown{{mainThreadFlattenedTimers.length ? ' (Auxiliary Thread)' : ''}}:"
-             flattened-timers="auxThreadFlattenedTimers"
-             tree-timers="auxThreadTreeTimers"
-             transaction-count="mergedAggregate.transactionCount">
-        </div>
+    </div>
+    <div ng-if="auxThreadFlattenedTimers.length" style="margin-top: 10px;">
+      <div gt-timer-display
+           heading="Breakdown{{mainThreadFlattenedTimers.length ? ' (Auxiliary Thread)' : ''}}:"
+           flattened-timers="auxThreadFlattenedTimers"
+           tree-timers="auxThreadTreeTimers"
+           transaction-count="mergedAggregate.transactionCount">
       </div>
-
-      <div ng-if="mergedAggregate.asyncTimers.length" style="margin-top: 10px;">
-        <table class="gt-timers-table gt-inline-block"
-               style="border-spacing: 0;">
-          <thead>
-          <tr>
-            <td class="gt-breakdown-header gt-bold" style="text-align: left;">Breakdown (Async Timers):</td>
-            <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
-            <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
-          </tr>
-          </thead>
-          <tbody>
-          <tr class="align-top"
-              ng-repeat="asyncTimer in mergedAggregate.asyncTimers">
-            <td style="text-align: left;">
-              <div class="gt-indent2">
-                <div class="gt-break-word gt-second-line-indent">{{asyncTimer.name}}</div>
-              </div>
-            </td>
-            <td>{{asyncTimer.totalNanos / (1000000 * mergedAggregate.transactionCount) | gtMillis}}</td>
-            <td>{{asyncTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
-          </tr>
-          </tbody>
-        </table>
+    </div>
+    <div ng-if="mergedAggregate.asyncTimers.length" style="margin-top: 10px;">
+      <table class="gt-timers-table d-inline-block"
+             style="border-spacing: 0;">
+        <thead>
+        <tr>
+          <td class="gt-breakdown-header gt-bold" style="text-align: left;">Breakdown (Async Timers):</td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr class="align-top"
+            ng-repeat="asyncTimer in mergedAggregate.asyncTimers">
+          <td style="text-align: left;">
+            <div class="gt-indent2">
+              <div class="gt-break-word gt-second-line-indent">{{asyncTimer.name}}</div>
+            </div>
+          </td>
+          <td>{{asyncTimer.totalNanos / (1000000 * mergedAggregate.transactionCount) | gtMillis}}</td>
+          <td>{{asyncTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div ng-if="displayThreadStats(mergedAggregate.mainThreadStats)" style="margin-top: 15px;">
+      <div class="gt-bold">
+        JVM Thread Stats<span ng-if="mergedAggregate.auxThreadStats"> (Main Thread)</span>:
       </div>
-
-      <div ng-if="displayThreadStats(mergedAggregate.mainThreadStats)" style="margin-top: 15px;">
-        <label>
-          JVM Thread Stats<span ng-if="mergedAggregate.auxThreadStats"> (Main Thread)</span>:
-        </label>
-        <div gt-thread-stats
-             thread-stats="mergedAggregate.mainThreadStats"
-             transaction-count="mergedAggregate.transactionCount">
-        </div>
+      <div gt-thread-stats
+           thread-stats="mergedAggregate.mainThreadStats"
+           transaction-count="mergedAggregate.transactionCount">
       </div>
-
-      <div ng-if="displayThreadStats(mergedAggregate.auxThreadStats)" style="margin-top: 15px;">
-        <label>
-          JVM Thread Stats<span ng-if="mergedAggregate.mainThreadStats"> (Auxiliary Threads)</span>:
-        </label>
-        <div gt-thread-stats
-             thread-stats="mergedAggregate.auxThreadStats"
-             transaction-count="mergedAggregate.transactionCount">
-        </div>
+    </div>
+    <div ng-if="displayThreadStats(mergedAggregate.auxThreadStats)" style="margin-top: 15px;">
+      <div class="gt-bold">
+        JVM Thread Stats<span ng-if="mergedAggregate.mainThreadStats"> (Auxiliary Threads)</span>:
+      </div>
+      <div gt-thread-stats
+           thread-stats="mergedAggregate.auxThreadStats"
+           transaction-count="mergedAggregate.transactionCount">
       </div>
     </div>
   </div>

@@ -23,7 +23,7 @@
   font-style: italic;
 }
 
-@media screen and (min-width: @screen-sm-min) {
+@include media-breakpoint-up(md) {
   .gt-report-sidebar {
     display: inline-block;
     width: 220px;
@@ -32,36 +32,36 @@
 
   .gt-report-main-column {
     display: inline-block;
-    width: 476px;
+    width: 449px;
     // this makes total 20px gap between sidebar and main
     margin-left: 16px;
   }
 }
 
-@media screen and (min-width: @screen-md-min) {
+@include media-breakpoint-up(lg) {
   .gt-report-sidebar {
     width: 300px;
   }
 
   .gt-report-main-column {
-    width: 620px;
+    width: 609px;
   }
 }
 
-@media screen and (min-width: @screen-lg-min) {
+@include media-breakpoint-up(xl) {
   .gt-report-main-column {
-    width: 820px;
+    width: 789px;
   }
 }
 
 @media screen and (min-width: 1400px) {
   .gt-report-main-column {
-    width: 1020px;
+    width: 989px;
   }
 }
 
 @media screen and (min-width: 1600px) {
   .gt-report-main-column {
-    width: 1220px;
+    width: 1189px;
   }
 }

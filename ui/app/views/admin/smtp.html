@@ -13,18 +13,17 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>
       SMTP configuration
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
          gt-form-autofocus-on-first-input
-         class="form-horizontal gt-sometimes-legend-padding-smtp"
          name="formCtrl"
          style="padding-top: 15px;">
       <div gt-form-group
@@ -43,17 +42,16 @@
            gt-pattern="pattern.integer"
            gt-disabled="!layout.adminEdit"
            gt-placeholder="25"
-           gt-width="7em"
-           class="gt-form-group-without-help-block">
+           gt-width="7em">
       </div>
-      <div class="form-group gt-form-group-without-help-block">
-        <label for="gtConnectionSecurity" class="col-lg-3 control-label">
+      <div class="form-group row">
+        <label for="gtConnectionSecurity" class="col-xl-3 gt-form-label-xl">
           Connection security
         </label>
-        <div class="col-lg-9">
+        <div class="col-xl-9">
           <select ng-model="page.connectionSecurity"
                   ng-disabled="!layout.adminEdit"
-                  class="form-control"
+                  class="custom-select"
                   style="width: auto;"
                   id="gtConnectionSecurity">
             <option value="none">None</option>
@@ -66,16 +64,14 @@
            gt-label="Username"
            gt-model="config.username"
            gt-disabled="!layout.adminEdit"
-           gt-width="20em"
-           class="gt-form-group-without-help-block">
+           gt-width="20em">
       </div>
-      <div class="form-group gt-form-group-without-help-block"
-           ng-class="{'has-error': formCtrl.password.$invalid}">
-        <label class="col-lg-3 control-label"
+      <div class="form-group row">
+        <label class="col-xl-3 gt-form-label-xl"
                for="password">
           Password
         </label>
-        <div class="col-lg-9">
+        <div class="col-xl-9">
           <input type="password"
                  class="form-control"
                  ng-model="password"
@@ -92,50 +88,51 @@
            gt-model="config.fromEmailAddress"
            gt-disabled="!layout.adminEdit"
            gt-placeholder="glowroot@{{localServerName}}"
-           gt-width="20em"
-           class="gt-form-group-without-help-block">
+           gt-width="20em">
       </div>
       <div gt-form-group
            gt-label="From display name"
            gt-model="config.fromDisplayName"
            gt-disabled="!layout.adminEdit"
            gt-placeholder="Glowroot"
-           gt-width="20em"
-           class="gt-form-group-without-help-block">
+           gt-width="20em">
       </div>
-      <div class="form-group gt-form-buttons"
+      <div class="form-group row"
            ng-if="layout.adminEdit">
-        <div class="col-lg-offset-3 col-lg-9">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button
                gt-label="Save changes"
                gt-click="save(deferred)"
-               gt-disabled="formCtrl.$invalid">
+               gt-validate-form="formCtrl">
           </div>
         </div>
       </div>
     </div>
     <div ng-form
-         ng-if="layout.adminEdit"
-         class="form-horizontal"
-         style="padding-top: 30px;">
-      <fieldset class="gt-send-email-fieldset">
-        <legend>Send test email</legend>
-        <div class="form-group">
-          <label class="col-lg-3 control-label" for="testEmailRecipient">
-            Test email recipient
-          </label>
-          <div class="col-lg-9">
-            <input type="text"
-                   class="form-control"
-                   ng-model="page.testEmailRecipient"
-                   id="testEmailRecipient"
-                   style="max-width: 25em; float: left; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
-            <div gt-button
-                 gt-btn-class="btn-default"
-                 gt-label="Send test email"
-                 gt-click="sendTestEmail(deferred)"
-                 gt-disabled="!page.testEmailRecipient || !config.host"
-                 style="vertical-align: top; margin-bottom: 10px;">
+         class="pt-3"
+         ng-if="layout.adminEdit">
+      <fieldset class="gt-fieldset">
+        <legend class="gt-legend">
+          Send test email
+        </legend>
+        <div class="gt-fieldset-under-normal-form">
+          <div class="form-group row">
+            <label class="col-xl-3 gt-form-label-xl"
+                   for="testEmailRecipient">
+              Test email recipient
+            </label>
+            <div class="col-xl-9">
+              <input type="text"
+                     class="form-control"
+                     ng-model="page.testEmailRecipient"
+                     id="testEmailRecipient"
+                     style="max-width: 25em; float: left; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
+              <div gt-button
+                   gt-btn-class="btn-secondary"
+                   gt-label="Send test email"
+                   gt-click="sendTestEmail(deferred)"
+                   style="vertical-align: top; margin-bottom: 10px;">
+              </div>
             </div>
           </div>
         </div>

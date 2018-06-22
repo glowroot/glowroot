@@ -13,11 +13,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>Instrumentation</h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-hide="hideMainContent()">
       <div ng-include src="'template/gt-loading-overlay.html'"></div>
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
@@ -45,27 +45,26 @@
         <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
              before it gets pushed down by existing instrumentation -->
         <div ng-if="loaded && agentRollup.permissions.config.edit.instrumentation"
-             style="font-size: 16px; margin-top: 30px;">
+             style="font-size: 1rem; margin-top: 30px;">
           <!-- using gt-button-group even though only a single gt-button because otherwise the success message will be
-               tied to the gt-button which will then get hidden due to ng-show="dirty" -->
+               tied to the gt-button which will then get hidden due to ng-if="dirty" -->
           <div gt-button-group>
-            <a class="btn btn-primary pull-left"
-               href="config/instrumentation{{newQueryString()}}"
-               style="margin-right: 8px; margin-bottom: 8px;">
+            <a class="btn btn-primary gt-button-spacing"
+               href="config/instrumentation{{newQueryString()}}">
               Add new
             </a>
             <button ng-click="displayImportModal()"
-                    class="btn btn-default gt-button-spacing">
+                    class="btn btn-secondary gt-button-spacing">
               Import
             </button>
             <button ng-click="displayExportModal()"
                     ng-if="configs.length"
-                    class="btn btn-default gt-button-spacing">
+                    class="btn btn-secondary gt-button-spacing">
               Export all
             </button>
             <button ng-click="displayDeleteAllConfirmationModal()"
                     ng-if="configs.length"
-                    class="btn gt-btn-danger gt-button-spacing">
+                    class="btn btn-danger gt-button-spacing">
               Delete all
             </button>
             <div gt-button
@@ -75,7 +74,7 @@
                  gt-confirm-header="Apply changes without restart?"
                  gt-confirm-body="Warning: This has chance of crashing the JVM (especially on older JVMs)."
                  ng-if="dirty && jvmRetransformClassesSupported"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
           </div>
         </div>
@@ -83,16 +82,26 @@
     </div>
   </div>
 </div>
-<div class="modal" id="importModal" tabindex="-1">
-  <div class="modal-dialog gt-modal-dialog-lg">
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="importModal">
+  <div class="modal-dialog gt-modal-dialog-md"
+       role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Import instrumentation</h3>
+        <h3 class="modal-title">Import instrumentation</h3>
+        <button type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
       <div class="modal-body" style="padding-top: 20px; padding-bottom: 20px;">
         <div ng-include src="'template/gt-http-error-overlay.html'"></div>
         <div class="form-group" style="margin-bottom: 0;">
-          <label for="jsonToImport" class="control-label">JSON definition</label>
+          <label for="jsonToImport" class="col-form-label">JSON definition</label>
           <textarea class="form-control"
                     ng-model="jsonToImport"
                     id="jsonToImport"
@@ -100,7 +109,7 @@
           </textarea>
         </div>
         <div style="min-height: 60px;">
-          <div class="gt-inline-block">
+          <div class="d-inline-block">
             <div gt-spinner
                  gt-show="importing"
                  class="gt-left-aligned-spinner"
@@ -109,27 +118,37 @@
           </div>
           <div class="gt-button-message gt-button-message-error"
                style="margin-left: 0; padding-top: 20px;"
-               ng-show="importErrorMessage">
+               ng-if="importErrorMessage">
             {{importErrorMessage}}
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-default" ng-click="importFromJson()">Import</button>
+        <button class="btn btn-secondary" ng-click="importFromJson()">Import</button>
         <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>
   </div>
 </div>
-<div class="modal" id="exportModal" tabindex="-1">
-  <div class="modal-dialog gt-modal-dialog-lg">
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="exportModal">
+  <div class="modal-dialog gt-modal-dialog-md"
+       role="document">
     <div class="modal-content">
-      <div class="modal-header gt-with-clip">
-        <h3>
+      <div class="modal-header">
+        <h3 class="modal-title">
           Instrumentation JSON
           <span class="fas fa-clipboard gt-clip"
-                style="font-size: 14px; position: inherit; margin-left: 5px;"></span>
+                style="font-size: 14px; vertical-align: 5px; position: inherit; margin-left: 5px;"></span>
         </h3>
+        <button type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
       <div class="modal-body" style="padding-top: 20px; height: 500px; overflow-y: auto;">
         <pre id="jsonExport" style="white-space: pre-wrap; word-wrap: break-word;">{{jsonExport}}</pre>
@@ -147,7 +166,7 @@
       <div class="modal-body">
         <p>Are you sure you want to delete all configured instrumentation?</p>
         <div style="min-height: 60px;">
-          <div class="gt-inline-block">
+          <div class="d-inline-block">
             <div gt-spinner
                  gt-show="deletingAll"
                  class="gt-left-aligned-spinner"
@@ -157,7 +176,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn gt-btn-danger" ng-click="deleteAll()">Yes</button>
+        <button class="btn btn-danger" ng-click="deleteAll()">Yes</button>
         <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>

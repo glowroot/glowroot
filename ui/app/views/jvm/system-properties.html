@@ -25,17 +25,17 @@
 <div ng-if="loaded && !agentNotConnected && !agentUnsupportedOperation"
      style="margin-top: 10px;">
   <div ng-repeat="property in properties">
-    <div class="row gt-system-property">
-      <div class="col-lg-4 gt-break-word">
-        <label>{{property.name}}</label>
+    <div class="row py-1">
+      <div class="col-md-4 gt-break-word font-weight-600">
+        {{property.name}}
       </div>
       <div gt-display-whitespace
            gt-bind="property.value"
            ng-if="!isArray(property.value)"
-           class="col-lg-8 gt-break-word">
+           class="col-md-8 gt-break-word">
       </div>
       <div ng-if="isArray(property.value)"
-           class="col-lg-8 gt-break-word"
+           class="col-md-8 gt-break-word"
            ng-style="{'margin-bottom': property.value.length > 1 ? '5px' : '0'}">
         <!-- track by $index is needed since duplicates are possible in this list -->
         <div ng-repeat="val in property.value track by $index"

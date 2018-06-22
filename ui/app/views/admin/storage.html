@@ -13,20 +13,23 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<!-- id is used for auto focus, see storage.js -->
+<div class="card" id="storageConfigCard">
+  <div class="card-header">
     <h2>Storage</h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <!-- not using gt-form-autofocus-on-first-input in order to handle special case #rollup-detail-capped-size
          and trace-detail-capped-size urls (see storage.js) -->
     <div ng-form
-         class="form-horizontal"
          name="formCtrl">
-      <fieldset ng-if="!layout.central">
-        <legend>data.h2.db</legend>
+      <fieldset class="gt-fieldset"
+                ng-if="!layout.central">
+        <legend class="gt-legend">
+          data.h2.db
+        </legend>
         <div gt-form-group
              gt-label="Response time and JVM gauge data (1&nbsp;minute&nbsp;aggregates)"
              gt-model="page.rollupExpirationDays[0]"
@@ -36,8 +39,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             The data that is displayed under the transaction response time tab and on the JVM gauge screen is collected
             continuously and stored at 1 minute intervals. This setting defines how long to retain these 1 minute
@@ -53,8 +56,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Response time and JVM gauge data is rolled up at 5 minute intervals.
             This setting defines how long to retain these 5 minute aggregates.
@@ -69,8 +72,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Response time and JVM gauge data is rolled up again at 30 minute intervals.
             This setting defines how long to retain these 30 minute aggregates.
@@ -85,8 +88,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Response time and JVM gauge data is rolled up again at 4 hour intervals.
             This setting defines how long to retain these 4 hour aggregates.
@@ -101,8 +104,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             This setting defines how long to retain the trace points and trace header data that is displayed under the
             transaction traces tab.
@@ -117,16 +120,19 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             This setting defines how long to retain the full query text that is displayed under the transaction queries
             tab. The truncated query text and query stats are retained according to *.capped.db settings below.
           </div>
         </div>
       </fieldset>
-      <fieldset ng-if="!layout.central">
-        <legend>*.capped.db</legend>
+      <fieldset class="gt-fieldset"
+                ng-if="!layout.central">
+        <legend class="gt-legend">
+          *.capped.db
+        </legend>
         <div gt-form-group
              gt-label="Query, service call and profile data (1&nbsp;minute&nbsp;aggregates)"
              gt-model="config.rollupCappedDatabaseSizesMb[0]"
@@ -136,8 +142,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="MB"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8"
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8"
              class="gt-rollup-capped-database-size">
           <div class="help-block">
             The data that is displayed under the transaction queries, service calls and continuous profiling tabs is
@@ -154,8 +160,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="MB"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Query, service call and continuous profiling data is rolled up at 5 minute intervals.
             This setting defines the size of the capped data file used to store these 5 minute aggregates.
@@ -170,8 +176,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="MB"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Query, service call and continuous profiling data is rolled up again at 30 minute intervals.
             This setting defines the size of the capped data file used to store these 30 minute aggregates.
@@ -186,8 +192,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="MB"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Query, service call and continuous profiling data is rolled up again at 4 hour intervals.
             This setting defines the size of the capped data file used to store these 4 hour aggregates.
@@ -202,8 +208,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="MB"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8"
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8"
              class="gt-trace-capped-database-size">
           <div class="help-block">
             This setting defines the size of the capped data file used to store the trace detail data
@@ -211,8 +217,11 @@
           </div>
         </div>
       </fieldset>
-      <fieldset ng-if="layout.central">
-        <legend>Response time and JVM gauge data</legend>
+      <fieldset class="gt-fieldset"
+                ng-if="layout.central">
+        <legend class="gt-legend">
+          Response time and JVM gauge data
+        </legend>
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.rollupExpirationDays[0]"
@@ -222,8 +231,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             The data that is displayed under the transaction response time tab and on the JVM gauge screen is collected
             continuously by the agents and sent to the central collector (and stored) at 1 minute intervals.
@@ -240,8 +249,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Response time and JVM gauge data is rolled up at 5 minute intervals.
             This setting defines how long to retain these 5 minute aggregates.
@@ -256,8 +265,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Response time and JVM gauge data is rolled up again at 30 minute intervals.
             This setting defines how long to retain these 30 minute aggregates.
@@ -272,16 +281,19 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Response time and JVM gauge data is rolled up again at 4 hour intervals.
             This setting defines how long to retain these 4 hour aggregates.
           </div>
         </div>
       </fieldset>
-      <fieldset ng-if="layout.central">
-        <legend>Query and service call data</legend>
+      <fieldset class="gt-fieldset"
+                ng-if="layout.central">
+        <legend class="gt-legend">
+          Query and service call data
+        </legend>
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.queryAndServiceCallRollupExpirationDays[0]"
@@ -291,8 +303,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             The data that is displayed under the transaction queries and service calls tabs is collected continuously by
             the agents and sent to the central collector (and stored) at 1 minute intervals.
@@ -308,8 +320,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Query and service call data is rolled up at 5 minute intervals.
             This setting defines how long to retain these 5 minute aggregates.
@@ -324,8 +336,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Query and service call data is rolled up again at 30 minute intervals.
             This setting defines how long to retain these 30 minute aggregates.
@@ -340,16 +352,19 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Query and service call data is rolled up again at 4 hour intervals.
             This setting defines how long to retain these 4 hour aggregates.
           </div>
         </div>
       </fieldset>
-      <fieldset ng-if="layout.central">
-        <legend>Profile data</legend>
+      <fieldset class="gt-fieldset"
+                ng-if="layout.central">
+        <legend class="gt-legend">
+          Profile data
+        </legend>
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.profileRollupExpirationDays[0]"
@@ -359,8 +374,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             The data that is displayed under the transaction continuous profiling tab is collected continuously by the
             agents and sent to the central collector (and stored) at 1 minute intervals.
@@ -376,8 +391,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Profile data is rolled up at 5 minute intervals.
             This setting defines how long to retain these 5 minute aggregates.
@@ -392,8 +407,8 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Profile data is rolled up again at 30 minute intervals.
             This setting defines how long to retain these 30 minute aggregates.
@@ -408,16 +423,19 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             Profile data is rolled up again at 4 hour intervals.
             This setting defines how long to retain these 4 hour aggregates.
           </div>
         </div>
       </fieldset>
-      <fieldset ng-if="layout.central">
-        <legend>Trace data</legend>
+      <fieldset class="gt-fieldset"
+                ng-if="layout.central">
+        <legend class="gt-legend">
+          Trace data
+        </legend>
         <div gt-form-group
              gt-label="Trace data"
              gt-model="page.traceExpirationDays"
@@ -427,23 +445,23 @@
              gt-disabled="!layout.adminEdit"
              gt-width="7em"
              gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
+             gt-col-class1="col-xl-4"
+             gt-col-class2="col-xl-8">
           <div class="help-block">
             This setting defines how long to retain trace data. This includes individual traces and error message data.
           </div>
         </div>
       </fieldset>
-      <div class="form-group gt-form-buttons"
+      <div class="form-group row gt-form-buttons-below-fieldset"
            ng-if="layout.adminEdit || layout.offlineViewer">
-        <div class="col-lg-offset-4 col-lg-8 gt-sometimes-legend-padding-storage">
+        <div class="offset-xl-4 col-xl-8">
           <div gt-button-group>
             <div gt-button
                  gt-label="Save changes"
                  gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid"
+                 gt-validate-form="formCtrl"
                  ng-if="layout.adminEdit"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Update TWCS window sizes"
@@ -453,7 +471,7 @@
                  gt-confirm-header="Update TWCS window sizes?"
                  gt-confirm-body="This could trigger a lot of window major compactions."
                  ng-if="layout.adminEdit && layout.central"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Defrag H2 data"
@@ -463,7 +481,7 @@
                  gt-confirm-header="Defrag H2 data?"
                  gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
                  ng-if="layout.adminEdit && !layout.central"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Compact H2 data"
@@ -473,7 +491,7 @@
                  gt-confirm-header="Compact H2 data?"
                  gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
                  ng-if="layout.adminEdit && !layout.central"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Analyze H2 disk space"
@@ -483,7 +501,7 @@
                  gt-confirm-header="Analyze H2 disk space?"
                  gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot data capture will be impacted."
                  ng-if="layout.adminEdit && !layout.central"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Analyze trace counts"
@@ -493,45 +511,45 @@
                  gt-confirm-header="Analyze trace counts?"
                  gt-confirm-body="This could take several minutes depending on the number of traces, during which time Glowroot data capture will be impacted."
                  ng-if="layout.adminEdit && !layout.central"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Delete all data"
                  gt-click="deleteAllStoredData(deferred)"
-                 gt-btn-class="gt-btn-danger"
+                 gt-btn-class="btn-danger"
                  gt-dont-validate-form="true"
                  gt-confirm-header="Delete all data?"
                  gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
                  ng-if="layout.adminEdit && !layout.central"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Defrag H2 data"
                  gt-click="defragH2Data(deferred)"
-                 gt-btn-class="btn-default"
+                 gt-btn-class="btn-secondary"
                  ng-if="layout.offlineViewer"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Compact H2 data"
                  gt-click="compactH2Data(deferred)"
-                 gt-btn-class="btn-default"
+                 gt-btn-class="btn-secondary"
                  ng-if="layout.offlineViewer"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Analyze H2 disk space"
                  gt-click="analyzeH2DiskSpace(deferred)"
-                 gt-btn-class="btn-default"
+                 gt-btn-class="btn-secondary"
                  ng-if="layout.offlineViewer"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
                  gt-label="Analyze trace counts"
                  gt-click="analyzeTraceCounts(deferred)"
-                 gt-btn-class="btn-default"
+                 gt-btn-class="btn-secondary"
                  ng-if="layout.offlineViewer"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
           </div>
           <div class="help-block" ng-if="layout.central">

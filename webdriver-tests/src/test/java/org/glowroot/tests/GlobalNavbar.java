@@ -19,83 +19,98 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import org.glowroot.tests.util.Page;
 import org.glowroot.tests.util.Utils;
 
+import static org.openqa.selenium.By.className;
+import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.id;
-import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.xpath;
 
-class GlobalNavbar {
-
-    private final WebDriver driver;
+class GlobalNavbar extends Page {
 
     GlobalNavbar(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
-    WebElement getTransactionsLink() {
-        return getNavbarLink(driver, linkText("Transactions"));
+    void clickTransactionsLink() {
+        clickNavbarLink(Utils.linkText("Transactions"));
     }
 
-    WebElement getErrorsLink() {
-        return getNavbarLink(driver, linkText("Errors"));
+    void clickErrorsLink() {
+        clickNavbarLink(Utils.linkText("Errors"));
     }
 
-    WebElement getJvmLink() {
-        return getNavbarLink(driver, linkText("JVM"));
+    void clickJvmLink() {
+        clickNavbarLink(Utils.linkText("JVM"));
     }
 
-    WebElement getReportingLink() {
-        return getNavbarLink(driver, linkText("Reporting"));
+    void clickReportingLink() {
+        clickNavbarLink(Utils.linkText("Reporting"));
     }
 
-    WebElement getConfigLink() {
-        getNavbarLink(driver, id("gtGearsMenuToggle")).click();
-        WebElement gearsMenu = Utils.withWait(driver, id("gtGearsMenu"));
-        return Utils.withWait(driver, gearsMenu, linkText("Configuration"));
+    void clickConfigLink() {
+        clickNavbarLink(id("gtGearsMenuToggle"));
+        WebElement gearsMenu = getWithWait(id("gtGearsMenu"));
+        clickLinkWithWait(gearsMenu, "Configuration");
     }
 
-    WebElement getAdminConfigLink() {
-        getNavbarLink(driver, id("gtGearsMenuToggle")).click();
-        WebElement gearsMenu = Utils.withWait(driver, id("gtGearsMenu"));
-        return Utils.withWait(driver, gearsMenu, linkText("Administration"));
+    void clickAdminConfigLink() {
+        clickNavbarLink(id("gtGearsMenuToggle"));
+        WebElement gearsMenu = getWithWait(id("gtGearsMenu"));
+        clickLinkWithWait(gearsMenu, "Administration");
     }
 
-    WebElement getChangeMyPasswordLink() {
-        getNavbarLink(driver, id("gtGearsMenuToggle")).click();
-        WebElement gearsMenu = Utils.withWait(driver, id("gtGearsMenu"));
-        return Utils.withWait(driver, gearsMenu, linkText("Change my password"));
+    void clickChangeMyPasswordLink() {
+        clickNavbarLink(id("gtGearsMenuToggle"));
+        WebElement gearsMenu = getWithWait(id("gtGearsMenu"));
+        clickLinkWithWait(gearsMenu, "Change my password");
     }
 
-    WebElement getSignInLink() {
-        getNavbarLink(driver, id("gtGearsMenuToggle")).click();
-        WebElement gearsMenu = Utils.withWait(driver, id("gtGearsMenu"));
-        return Utils.withWait(driver, gearsMenu, linkText("Login"));
+    void clickSignInLink() {
+        clickNavbarLink(id("gtGearsMenuToggle"));
+        WebElement gearsMenu = getWithWait(id("gtGearsMenu"));
+        clickLinkWithWait(gearsMenu, "Login");
     }
 
-    WebElement getSignOutLink() {
-        return getNavbarLink(driver, xpath("//nav//a[@ng-click='signOut()']"));
+    void clickSignOutLink() {
+        clickNavbarLink(xpath("//nav//button[@ng-click='signOut()']"));
+        // wait for sign in link to appear
+        clickNavbarLink(id("gtGearsMenuToggle"));
+        WebElement gearsMenu = getWithWait(id("gtGearsMenu"));
+        waitFor(gearsMenu, Utils.linkText("Login"));
+        // close the menu back up
+        clickWithWait(id("gtGearsMenuToggle"));
     }
 
     WebElement getLoginUsernameTextField() {
-        return Utils.withWait(driver, xpath("//input[@ng-model='page.username']"));
+        return getWithWait(xpath("//input[@ng-model='page.username']"));
     }
 
     WebElement getLoginPasswordTextField() {
-        return Utils.withWait(driver, xpath("//input[@ng-model='page.password']"));
+        return getWithWait(xpath("//input[@ng-model='page.password']"));
     }
 
-    WebElement getLoginButton() {
-        return Utils.withWait(driver, xpath("//div[@gt-label='Login']//button"));
+    void clickLoginButton() {
+        clickWithWait(xpath("//div[@gt-label='Login']//button"));
+        // wait for sign out button to appear, means login success
+        getNavbarLink(driver, xpath("//nav//button[@ng-click='signOut()']"));
     }
 
-    public static WebElement getNavbarLink(final WebDriver driver, final By by) {
-        return new WebDriverWait(driver, 30).until(new Function<WebDriver, WebElement>() {
+    private void clickNavbarLink(By by) {
+        Utils.click(driver, getNavbarLink(driver, by));
+    }
+
+    private static WebElement getNavbarLink(final WebDriver driver, final By by) {
+        // scrolling to top seems to be needed for Edge
+        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0,0)");
+        return new WebDriverWait(driver, 60).until(new Function<WebDriver, WebElement>() {
             @Override
             public WebElement apply(WebDriver driver) {
                 List<WebElement> elements = driver.findElements(by);
@@ -114,7 +129,7 @@ class GlobalNavbar {
                     return null;
                 }
                 List<WebElement> overlayElements =
-                        driver.findElements(By.className("gt-panel-overlay"));
+                        driver.findElements(className("gt-panel-overlay"));
                 for (WebElement overlayElement : overlayElements) {
                     try {
                         if (overlayElement.isDisplayed()) {
@@ -129,7 +144,7 @@ class GlobalNavbar {
             }
             private void openNavbar() {
                 List<WebElement> navbarToggleElements =
-                        driver.findElements(By.cssSelector("button.navbar-toggle"));
+                        driver.findElements(cssSelector("button.navbar-toggle"));
                 if (!navbarToggleElements.isEmpty() && navbarToggleElements.get(0).isDisplayed()) {
                     navbarToggleElements.get(0).click();
                 }

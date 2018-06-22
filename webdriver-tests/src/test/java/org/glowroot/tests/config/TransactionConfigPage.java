@@ -15,43 +15,36 @@
  */
 package org.glowroot.tests.config;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class TransactionConfigPage {
-
-    private final WebDriver driver;
+public class TransactionConfigPage extends Page {
 
     public TransactionConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getProfilingIntervalTextField() {
-        return withWait(xpath("//div[@gt-label='Profiling interval']//input"));
+        return getWithWait(xpath("//div[@gt-label='Profiling interval']//input"));
     }
 
     public WebElement getSlowThresholdTextField() {
-        return withWait(xpath("//div[@gt-label='Slow threshold']//input"));
+        return getWithWait(xpath("//div[@gt-label='Slow threshold']//input"));
     }
 
-    public WebElement getCaptureThreadStatsCheckBox() {
-        return withWait(xpath("//div[@gt-label='Thread stats']//input"));
+    public void clickCaptureThreadStatsCheckBox() {
+        clickWithWait(xpath("//div[@gt-label='Thread stats']//label"));
+    }
+
+    public boolean getCaptureThreadStatsCheckBoxValue() {
+        return getWithWait(xpath("//div[@gt-label='Thread stats']//input")).isSelected();
     }
 
     public void clickSaveButton() {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
-    }
-
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
     }
 }

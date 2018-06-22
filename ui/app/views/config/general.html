@@ -13,25 +13,23 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>General</h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-hide="hideMainContent()">
       <div ng-include src="'template/gt-loading-overlay.html'"></div>
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
       <!-- intentionally not using gt-form-autofocus-on-first-input as it doesn't make the most sense on this form -->
       <div ng-form
-           class="form-horizontal"
            name="formCtrl"
            style="padding-top: 15px;">
         <div gt-form-group
              gt-label="Agent{{ isAgentRollup() ? ' rollup' : '' }} ID"
              gt-model="agentRollupId"
              gt-disabled="true"
-             gt-width="40em"
-             class="gt-form-group-without-help-block">
+             gt-width="40em">
           <div class="help-block">
             Cannot be changed, used for storing and querying the agent{{ isAgentRollup() ? ' rollup' : '' }}'s data.
           </div>
@@ -47,19 +45,19 @@
           </div>
         </div>
         <div class="form-group" ng-if="isAgentRollup()">
-          <div class="col-lg-offset-3 col-lg-9 help-block">
+          <div class="offset-xl-3 col-xl-9 help-block">
             <em>NOTE: the agent rollup configuration (synthetic monitors, alerts, UI and advanced) applies directly to
               the agent rollup data. This configuration has no affect on individual agents under the rollup.</em>
           </div>
         </div>
-        <div class="form-group gt-form-buttons"
+        <div class="form-group row"
              ng-if="agentRollup.permissions.config.edit.general">
-          <div class="col-lg-offset-3 col-lg-9">
+          <div class="offset-xl-3 col-xl-9">
             <div gt-button
                  gt-label="Save changes"
                  gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid"
-                 class="gt-inline-block">
+                 gt-validate-form="formCtrl"
+                 class="d-inline-block">
             </div>
           </div>
         </div>

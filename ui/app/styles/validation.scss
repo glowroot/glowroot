@@ -1,0 +1,63 @@
+/*
+ * Copyright 2018 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.ng-touched.ng-invalid {
+  @extend .is-invalid;
+}
+
+.gt-invalid-feedback {
+  // copied from bootstraps .invalid-feedback (cannot extend because then inherit too much)
+  display: none;
+  width: 100%;
+  margin-top: $form-feedback-margin-top;
+  // font-size: $form-feedback-font-size;
+  color: $form-feedback-invalid-color;
+}
+
+.gt-invalid-required-feedback {
+  @extend .gt-invalid-feedback
+}
+
+.was-validated .ng-invalid, .ng-touched.ng-invalid {
+  z-index: 3; // needed to overlay bordering dropdown, e.g. slow traces duration filter
+}
+
+.ng-invalid.ng-invalid-required {
+  .was-validated &, &.ng-touched {
+    & ~ .gt-invalid-required-feedback {
+      display: block;
+    }
+  }
+}
+
+.gt-invalid-other-feedback {
+  @extend .gt-invalid-feedback
+}
+
+.ng-invalid:not(.ng-invalid-required) {
+  .was-validated &, &.ng-touched {
+    & ~ .gt-invalid-other-feedback {
+      display: block;
+    }
+  }
+}
+
+// see https://github.com/twbs/bootstrap/issues/25110
+// caused by invalid-feedback siblings
+.input-group-append .input-group-text {
+  border-top-right-radius: $input-border-radius !important;
+  border-bottom-right-radius: $input-border-radius !important;
+}

@@ -15,53 +15,45 @@
  */
 package org.glowroot.tests.reporting;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class AdhocPage {
-
-    private final WebDriver driver;
+public class AdhocPage extends Page {
 
     public AdhocPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
-    public WebElement getAgentTextField() {
-        return withWait(xpath("//input[@ng-model='$select.search']"));
+    public void selectAgent(String agentId) {
+        getWithWait(xpath("//select[@ng-model='report.agentRollupIds']/..//button")).click();
+        getWithWait(xpath("//select[@ng-model='report.agentRollupIds']/..//input[@value='string:"
+                + agentId + "']/..")).click();
+        getWithWait(xpath("//select[@ng-model='report.agentRollupIds']/..//button")).click();
     }
 
     public Select getMetricSelect() {
-        return new Select(withWait(xpath("//select[@ng-model='report.metric']")));
+        return new Select(getWithWait(xpath("//select[@ng-model='report.metric']")));
     }
 
     public Select getTransactionTypeSelect() {
         return new Select(
-                withWait(xpath("//select[@ng-model='report.transactionType']")));
+                getWithWait(xpath("//select[@ng-model='report.transactionType']")));
     }
 
     public WebElement getTransactionNameTextField() {
-        return withWait(xpath("//div[@gt-model='report.transactionName']//input"));
+        return getWithWait(xpath("//div[@gt-model='report.transactionName']//input"));
     }
 
     public WebElement getTransactionPercentileTextField() {
-        return withWait(xpath("//div[@gt-model='report.percentile']//input"));
+        return getWithWait(xpath("//div[@gt-model='report.percentile']//input"));
     }
 
     public void clickRunReportButton() {
         clickWithWait(xpath("//button[normalize-space()='Run report']"));
-    }
-
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
     }
 }

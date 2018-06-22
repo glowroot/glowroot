@@ -57,15 +57,13 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       return buildQueryObject(last);
     };
 
-    function buildQueryObject (last) {
+    function buildQueryObject(last) {
       var query = {};
-      if ($scope.layout.central) {
-        var agentId = $location.search()['agent-id'];
-        if (agentId) {
-          query['agent-id'] = agentId;
-        } else {
-          query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
-        }
+      var agentId = $location.search()['agent-id'];
+      if (agentId) {
+        query['agent-id'] = agentId;
+      } else {
+        query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
       }
       var allSyntheticMonitorIds = [];
       angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
@@ -311,27 +309,25 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     charts.initResize(chartState.plot, $scope);
     charts.startAutoRefresh($scope, 60000);
 
-    if ($scope.layout.central) {
-
-      $scope.$watchGroup(['range.chartFrom', 'range.chartTo'], function (newValue, oldValue) {
-        if (newValue !== oldValue) {
-          // need to refresh selectpicker in order to update hrefs of the items
-          $timeout(function () {
-            // timeout is needed so this runs after dom is updated
-            $('#agentRollupDropdown').selectpicker('refresh');
-          });
-        }
-      });
-
-      var refreshAgentRollups = function () {
-        $scope.refreshAgentRollups($scope.range.chartFrom, $scope.range.chartTo, $scope);
-      };
-
-      $('#agentRollupDropdown').on('show.bs.select', refreshAgentRollups);
-
-      if ($scope.agentRollups === undefined) {
-        refreshAgentRollups();
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo'], function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        // need to refresh selectpicker in order to update hrefs of the items
+        $timeout(function () {
+          // timeout is needed so this runs after dom is updated
+          $('#agentRollupDropdown').selectpicker('refresh');
+        });
       }
+    });
+
+    var refreshAgentRollups = function () {
+      $scope.refreshAgentRollups($scope.range.chartFrom, $scope.range.chartTo, $scope);
+    };
+
+    // the show.bs.dropdown event target is the button which is a sibling of the select
+    $('#agentRollupDropdown').parent().on('show.bs.dropdown', refreshAgentRollups);
+
+    if ($scope.agentRollups === undefined) {
+      refreshAgentRollups();
     }
   }
 ]);

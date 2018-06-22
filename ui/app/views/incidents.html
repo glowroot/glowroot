@@ -13,31 +13,35 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-header" style="margin-bottom: 5px;">
-  <div class="gt-header-page-name">
-    <h1 style="margin-bottom: 10px;">
+<div class="gt-header">
+  <div class="gt-header-lhs"
+       ng-if="!layout.embeddedAgentRollup.display">
+    <h1 class="gt-header-text">
       Incidents
     </h1>
-    <div style="margin-top: -16px;" ng-show="layout.embeddedAgentRollup.display">
+  </div>
+  <div class="gt-header-lhs"
+       ng-if="layout.embeddedAgentRollup.display">
+    <div class="gt-header-text">
       {{layout.embeddedAgentRollup.display}}
-      <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
-           while chrome guesses the placement of the border based on default font and then it moves slightly
-           once font is available -->
-      <span class="gt-inline-block gt-separator">
-        |
-      </span>
-      <h1 class="gt-inline-block">
-        Incidents
-      </h1>
     </div>
+    <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+         while chrome guesses the placement of the border based on default font and then it moves slightly
+         once font is available -->
+    <div class="gt-header-text gt-separator">
+      |
+    </div>
+    <h1 class="gt-header-text">
+      Incidents
+    </h1>
   </div>
 </div>
 
-<div class="panel panel-default gt-incident-active">
-  <div class="panel-heading">
+<div class="card gt-incident-active">
+  <div class="card-header">
     <h2>Open</h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div style="margin: 15px;">
@@ -52,7 +56,7 @@
         <tbody>
         <tr ng-repeat="incident in openIncidents"
             class="gt-red"
-            style="font-weight: 600; font-size: 16px;">
+            style="font-weight: 600; font-size: 1rem;">
           <td>{{incident.severity}}</td>
           <td>{{incident.durationMillis | gtDuration}}</td>
           <td ng-if="layout.central">{{incident.agentRollupDisplay}}</td>
@@ -67,15 +71,15 @@
   </div>
 </div>
 
-<div class="panel panel-default"
+<div class="card"
      ng-if="loaded"
      style="margin-top: 50px;">
-  <div class="panel-heading">
+  <div class="card-header">
     <h2>Resolved
       <div style="float: right; padding-top: 10px; font-size: 24px;">(last 30 days)</div>
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div style="margin: 15px;">
       <table class="table"
@@ -89,7 +93,7 @@
         </thead>
         <tbody>
         <tr ng-repeat="incident in resolvedIncidents"
-            style="font-size: 16px;">
+            style="font-size: 1rem;">
           <td>{{incident.severity}}</td>
           <td>{{incident.resolveTime | date:'medium'}}</td>
           <td>{{incident.durationMillis | gtDuration}}</td>

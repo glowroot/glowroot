@@ -25,11 +25,9 @@ import org.glowroot.tests.admin.PagerDutyConfigPage;
 import org.glowroot.tests.admin.SmtpConfigPage;
 import org.glowroot.tests.admin.StorageConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
-import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.openqa.selenium.By.linkText;
 
 public class AdminIT extends WebDriverIT {
 
@@ -42,8 +40,8 @@ public class AdminIT extends WebDriverIT {
         // WebConfigPage page = new WebConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getWebLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickWebLink();
 
         // FIXME currently save overrides active random port with the value 4000
         // page.clickSaveButton();
@@ -60,8 +58,8 @@ public class AdminIT extends WebDriverIT {
         StorageConfigPage page = new StorageConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getStorageLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickStorageLink();
 
         // when
         for (int i = 0; i < 3; i++) {
@@ -86,8 +84,8 @@ public class AdminIT extends WebDriverIT {
 
         // then
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getStorageLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickStorageLink();
         for (int i = 0; i < 3; i++) {
             assertThat(page.getRollupExpirationTextField(i).getAttribute("value"))
                     .isEqualTo("44" + i);
@@ -114,8 +112,8 @@ public class AdminIT extends WebDriverIT {
         StorageConfigPage page = new StorageConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getStorageLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickStorageLink();
 
         // when
         if (WebDriverSetup.useCentral) {
@@ -147,8 +145,8 @@ public class AdminIT extends WebDriverIT {
         SmtpConfigPage page = new SmtpConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getSmtpLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickSmtpLink();
 
         // when
         page.getHostTextField().clear();
@@ -170,8 +168,8 @@ public class AdminIT extends WebDriverIT {
 
         // then
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getSmtpLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickSmtpLink();
         assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
         assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("5678");
         assertThat(
@@ -192,7 +190,7 @@ public class AdminIT extends WebDriverIT {
         HttpProxyConfigPage page = new HttpProxyConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
+        globalNavbar.clickAdminConfigLink();
         // http proxy config is not accessible via admin sidebar currently
         app.open("/admin/http-proxy");
 
@@ -211,7 +209,7 @@ public class AdminIT extends WebDriverIT {
 
         // then
         app.open();
-        globalNavbar.getAdminConfigLink().click();
+        globalNavbar.clickAdminConfigLink();
         // http proxy config is not accessible via admin sidebar currently
         app.open("/admin/http-proxy");
         assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
@@ -229,16 +227,16 @@ public class AdminIT extends WebDriverIT {
         LdapConfigPage page = new LdapConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getIntegrationsLink().click();
-        Utils.withWait(driver, linkText("LDAP")).click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickIntegrationsLink();
+        clickLinkWithWait("LDAP");
 
         // when
         page.getHostTextField().clear();
         page.getHostTextField().sendKeys("example.org");
         page.getPortTextField().clear();
         page.getPortTextField().sendKeys("5678");
-        page.getUseSslCheckBox().click();
+        page.clickUseSslCheckBox();
         page.getUsernameTextField().clear();
         page.getUsernameTextField().sendKeys("user1234");
         page.getPasswordTextField().clear();
@@ -257,12 +255,12 @@ public class AdminIT extends WebDriverIT {
 
         // then
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getIntegrationsLink().click();
-        Utils.withWait(driver, linkText("LDAP")).click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickIntegrationsLink();
+        clickLinkWithWait("LDAP");
         assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
         assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("5678");
-        assertThat(page.getUseSslCheckBox().isSelected()).isTrue();
+        assertThat(page.getUseSslCheckBoxValue()).isTrue();
         assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
         assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
         assertThat(page.getUserBaseDnTextField().getAttribute("value")).isEqualTo("x");
@@ -280,9 +278,9 @@ public class AdminIT extends WebDriverIT {
         PagerDutyConfigPage page = new PagerDutyConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getIntegrationsLink().click();
-        Utils.withWait(driver, linkText("PagerDuty")).click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickIntegrationsLink();
+        clickLinkWithWait("PagerDuty");
 
         // when
         page.clickSaveButton();
@@ -304,9 +302,9 @@ public class AdminIT extends WebDriverIT {
         HealthchecksIoConfigPage page = new HealthchecksIoConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getIntegrationsLink().click();
-        Utils.withWait(driver, linkText("Healthchecks.io")).click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickIntegrationsLink();
+        clickLinkWithWait("Healthchecks.io");
 
         // when
         page.getPingUrlTextField().clear();
@@ -317,9 +315,9 @@ public class AdminIT extends WebDriverIT {
 
         // then
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getIntegrationsLink().click();
-        Utils.withWait(driver, linkText("Healthchecks.io")).click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickIntegrationsLink();
+        clickLinkWithWait("Healthchecks.io");
         assertThat(page.getPingUrlTextField().getAttribute("value"))
                 .isEqualTo("http://example.org");
     }

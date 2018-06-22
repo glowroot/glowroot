@@ -13,102 +13,107 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div ng-include src="'template/gt-http-error-overlay.html'"></div>
+<div style="text-align: center; position: relative; color: #555; height: 30px;"
+     role="group"
+     aria-label="View">
+  <div class="form-check-inline">
+    <input class="form-check-input"
+           type="radio"
+           name="view"
+           value="average"
+           ng-click="clickTopRadioButton('average')"
+           id="viewAverage">
+    <a class="gt-radio-link"
+       href="transaction/average{{tabQueryString()}}">
+      <label class="form-check-label" for="viewAverage">average</label>
+    </a>
+  </div>
+  <div class="form-check-inline">
+    <input class="form-check-input"
+           type="radio"
+           name="view"
+           value="percentiles"
+           ng-click="clickTopRadioButton('percentiles')"
+           id="viewPercentiles">
+    <a class="gt-radio-link"
+       href="transaction/percentiles{{tabQueryString()}}">
+      <label class="form-check-label" for="viewPercentiles">percentiles</label>
+    </a>
+  </div>
+  <div class="form-check-inline">
+    <input class="form-check-input"
+           type="radio"
+           name="view"
+           value="throughput"
+           ng-click="clickTopRadioButton('throughput')"
+           id="viewThroughput"
+           checked>
+    <a class="gt-radio-link"
+       href="transaction/throughput{{tabQueryString()}}"
+       ng-click="clickActiveTopLink($event)">
+      <label class="form-check-label" for="viewThroughput">throughput</label>
+    </a>
+  </div>
+</div>
+<div class="gt-chart-controls float-right">
+  <button class="gt-chart-button"
+          ng-click="zoomOut()">
+    <span title="Zoom out"
+          class="fas fa-search-minus">
+    </span>
+  </button>
+  <button class="gt-chart-button"
+          ng-click="refresh()">
+    <span title="Refresh"
+          class="fas fa-sync">
+    </span>
+  </button>
+  <button class="gt-chart-button"
+          uib-popover-template="'template/help/chart.html'"
+          popover-placement="left"
+          popover-trigger="'outsideClick'">
+    <span title="Help"
+          class="fas fa-question-circle">
+    </span>
+  </button>
+</div>
 <div style="position: relative;">
-  <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-  <div style="text-align: center; margin-top: -2px; margin-bottom: 6px; color: #555;"
-       role="group"
-       aria-label="View">
-    <label class="radio-inline">
-      <input type="radio" name="view" value="average" ng-click="clickTopRadioButton('average')">
-      <a class="gt-radio-link"
-         href="transaction/average{{tabQueryString()}}">
-        average
-      </a>
-    </label>
-    <label class="radio-inline">
-      <input type="radio" name="view" value="percentiles" ng-click="clickTopRadioButton('percentiles')">
-      <a class="gt-radio-link"
-         href="transaction/percentiles{{tabQueryString()}}">
-        percentiles
-      </a>
-    </label>
-    <label class="radio-inline">
-      <input type="radio" name="view" value="throughput" ng-click="clickTopRadioButton('throughput')" checked>
-      <a class="gt-radio-link"
-         href="transaction/throughput{{tabQueryString()}}"
-         ng-click="clickActiveTopLink($event)">
-        throughput
-      </a>
-    </label>
+  <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
+  <div class="gt-panel-overlay"
+       ng-if="showChartSpinner"
+       style="right: -20px; pointer-events: none;">
   </div>
-  <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
-  <div class="clearfix" style="position: relative; z-index: 800;">
-    <div class="pull-right gt-response-time-chart-tools" style="margin-bottom: -8px; font-size: 20px;">
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         ng-click="zoomOut()">
-        <span title="Zoom out"
-              class="fas fa-search-minus"></span><!-- lack of space here is significant
-   --></a>
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         ng-click="refresh()">
-        <span title="Refresh"
-              class="fas fa-sync"></span><!-- lack of space here is significant
-   --></a>
-      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-      <a role="button"
-         class="gt-chart-button"
-         href="#"
-         uib-popover-template="'template/help/chart.html'"
-         popover-placement="left"
-         popover-trigger="'outsideClick'">
-        <span title="Help"
-              class="fas fa-question-circle"></span><!-- lack of space here is significant
-   --></a>
+  <div class="gt-chart-container">
+    <div gt-spinner
+         gt-show="showChartSpinner"
+         gt-no-delay="true"
+         id="chartSpinner"
+         class="gt-chart-panel">
     </div>
-  </div>
-  <div style="position: relative;">
-    <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
-    <div class="gt-panel-overlay"
-         ng-show="showChartSpinner"
-         style="right: -20px; pointer-events: none;">
-    </div>
-    <div class="gt-chart-container">
-      <div gt-spinner
-           gt-show="showChartSpinner"
-           gt-no-delay="true"
-           id="chartSpinner"
-           class="gt-chart-panel">
-      </div>
-      <div class="gt-chart-dimensions" id="chart"></div>
-      <div ng-show="chartNoData && !showChartSpinner"
-           class="gt-chart-panel"
-           style="display: table;">
-        <div style="display: table-cell; text-align: center; vertical-align: middle;">
-          <div class="gt-chart-no-data">No data for this time period</div>
-        </div>
+    <div class="gt-chart-dimensions" id="chart"></div>
+    <div ng-if="chartNoData && !showChartSpinner"
+         class="gt-chart-panel"
+         style="display: table;">
+      <div style="display: table-cell; text-align: center; vertical-align: middle;">
+        <div class="gt-chart-no-data">No data for this time period</div>
       </div>
     </div>
-    <div ng-show="transactionCount"
-         class="gt-everything-below-throughput-chart"
-         style="position: relative; padding-top: 30px;">
-      <div style="margin-top: 20px;">
-        <label>Throughput:</label>
+  </div>
+  <div ng-if="transactionCount"
+       class="gt-everything-below-throughput-chart"
+       style="position: relative; padding-top: 30px;">
+    <div style="margin-top: 20px;">
+      <label>Throughput:</label>
 
-        <div class="gt-inline-block" style="vertical-align: top;">
-          {{transactionsPerMin | gtCount}} transactions per minute<br>
-          ({{transactionCount | number}}
-          <span ng-pluralize
-                count="transactionCount"
-                when="{'1':'transaction','other':'transactions'}">
-          </span>
-          in this period)
-        </div>
+      <div class="d-inline-block" style="vertical-align: top;">
+        {{transactionsPerMin | gtCount}} transactions per minute<br>
+        ({{transactionCount | number}}
+        <span ng-pluralize
+              count="transactionCount"
+              when="{'1':'transaction','other':'transactions'}">
+        </span>
+        in this period)
       </div>
     </div>
   </div>

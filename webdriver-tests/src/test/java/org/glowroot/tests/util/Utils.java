@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,20 @@ import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.BrowserType;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
+
+import static org.openqa.selenium.By.className;
+import static org.openqa.selenium.By.xpath;
 
 public class Utils {
 
-    public static WebElement withWait(WebDriver driver, By by) {
-        return withWait(driver, driver, by);
+    public static WebElement getWithWait(WebDriver driver, By by) {
+        return getWithWait(driver, driver, by);
     }
 
-    public static WebElement withWait(WebDriver driver, SearchContext context, By by) {
+    public static WebElement getWithWait(WebDriver driver, SearchContext context, By by) {
         return withWait(driver, context, by, false);
     }
 
@@ -41,7 +46,32 @@ public class Utils {
     }
 
     public static void clickWithWait(WebDriver driver, SearchContext context, By by) {
-        withWait(driver, context, by, true).click();
+        WebElement element = withWait(driver, context, by, true);
+        click(driver, element);
+    }
+
+    public static void click(WebDriver driver, By by) {
+        click(driver, driver.findElement(by));
+    }
+
+    public static void click(WebDriver driver, SearchContext context, By by) {
+        click(driver, context.findElement(by));
+    }
+
+    public static void click(WebDriver driver, WebElement element) {
+        if (isEdgeOrSafari(driver) && element.getTagName().equals("button")) {
+            element.sendKeys(Keys.RETURN);
+        } else {
+            element.click();
+        }
+    }
+
+    public static By linkText(String linkText) {
+        return xpath(".//a[normalize-space()='" + linkText + "']");
+    }
+
+    public static By partialLinkText(String partialLinkText) {
+        return xpath(".//a[starts-with(normalize-space(), '" + partialLinkText + "')]");
     }
 
     public static WebElement withWait(WebDriver driver, final SearchContext context, final By by,
@@ -56,7 +86,9 @@ public class Utils {
                 WebElement foundElement = null;
                 for (WebElement element : elements) {
                     try {
-                        if (element.isDisplayed() && (!waitForEnabled || element.isEnabled())) {
+                        if ((element.isDisplayed()
+                                || element.getAttribute("class").contains("custom-control-input"))
+                                && (!waitForEnabled || element.isEnabled())) {
                             foundElement = element;
                             break;
                         }
@@ -68,7 +100,7 @@ public class Utils {
                     return null;
                 }
                 List<WebElement> overlayElements =
-                        driver.findElements(By.className("gt-panel-overlay"));
+                        driver.findElements(className("gt-panel-overlay"));
                 for (WebElement overlayElement : overlayElements) {
                     try {
                         if (overlayElement.isDisplayed()) {
@@ -89,5 +121,13 @@ public class Utils {
     public static void clearInput(WebElement element) {
         // select text (control-a) then hit backspace key
         element.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.BACK_SPACE);
+    }
+
+    private static boolean isEdgeOrSafari(WebDriver driver) {
+        if (!(driver instanceof RemoteWebDriver)) {
+            return false;
+        }
+        String browserName = ((RemoteWebDriver) driver).getCapabilities().getBrowserName();
+        return BrowserType.EDGE.equals(browserName) || BrowserType.SAFARI.equals(browserName);
     }
 }

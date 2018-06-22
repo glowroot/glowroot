@@ -26,7 +26,7 @@
     <div class="col-sm-8">
       {{capabilities.threadCpuTime.available | gtOnOff}}
       <div class="gt-secondary-text"
-           ng-show="!capabilities.threadCpuTime.available">
+           ng-if="!capabilities.threadCpuTime.available">
         {{capabilities.threadCpuTime.reason}}
       </div>
     </div>
@@ -38,7 +38,7 @@
     <div class="col-sm-8">
       {{capabilities.threadContentionTime.available | gtOnOff}}
       <div class="gt-secondary-text"
-           ng-show="!capabilities.threadContentionTime.available">
+           ng-if="!capabilities.threadContentionTime.available">
         {{capabilities.threadContentionTime.reason}}
       </div>
     </div>
@@ -50,7 +50,7 @@
     <div class="col-sm-8">
       {{capabilities.threadAllocatedBytes.available | gtOnOff}}
       <div class="gt-secondary-text"
-           ng-show="!capabilities.threadAllocatedBytes.available">
+           ng-if="!capabilities.threadAllocatedBytes.available">
         {{capabilities.threadAllocatedBytes.reason}}
       </div>
     </div>

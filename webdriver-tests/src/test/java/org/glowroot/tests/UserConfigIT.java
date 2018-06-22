@@ -24,7 +24,6 @@ import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.xpath;
 
 public class UserConfigIT extends WebDriverIT {
@@ -37,12 +36,12 @@ public class UserConfigIT extends WebDriverIT {
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getUsersLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickUsersLink();
 
         // when
-        Utils.withWait(driver, linkText("<anonymous>")).click();
-        Utils.withWait(driver, linkText("Return to list")).click();
+        clickLinkWithWait("<anonymous>");
+        clickLink("Return to list");
     }
 
     @Test
@@ -53,18 +52,19 @@ public class UserConfigIT extends WebDriverIT {
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getUsersLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickUsersLink();
 
         // when
         createUser();
 
         // then
-        Utils.withWait(driver, linkText("test")).click();
+        clickLinkWithWait("test");
         UserConfigPage userPage = new UserConfigPage(driver);
         assertThat(userPage.getUsernameTextField().getAttribute("value")).isEqualTo("test");
-        assertThat(Utils.withWait(driver, xpath("//input[@ng-model='role.checked']")).isSelected())
-                .isFalse();
+        assertThat(Utils.getWithWait(driver, xpath("//input[@ng-model='role.checked']"))
+                .isSelected())
+                        .isFalse();
     }
 
     @Test
@@ -76,22 +76,23 @@ public class UserConfigIT extends WebDriverIT {
         UserConfigPage userPage = new UserConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getUsersLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickUsersLink();
 
         // when
         createUser();
-        Utils.withWait(driver, linkText("test")).click();
-        Utils.withWait(driver, xpath("//input[@ng-model='role.checked']")).click();
+        clickLinkWithWait("test");
+        clickWithWait(xpath("//input[@ng-model='role.checked']/.."));
         userPage.clickSaveButton();
         // wait for save to finish
         SECONDS.sleep(1);
-        driver.findElement(linkText("Return to list")).click();
+        clickLink("Return to list");
 
         // then
-        Utils.withWait(driver, linkText("test")).click();
-        assertThat(Utils.withWait(driver, xpath("//input[@ng-model='role.checked']")).isSelected())
-                .isTrue();
+        clickLinkWithWait("test");
+        assertThat(Utils.getWithWait(driver, xpath("//input[@ng-model='role.checked']"))
+                .isSelected())
+                        .isTrue();
     }
 
     @Test
@@ -102,21 +103,21 @@ public class UserConfigIT extends WebDriverIT {
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getUsersLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickUsersLink();
 
         // when
         createUser();
-        Utils.withWait(driver, linkText("test")).click();
+        clickLinkWithWait("test");
         UserConfigPage userPage = new UserConfigPage(driver);
-        userPage.getDeleteButton().click();
-        Utils.withWait(driver, xpath("//button[@ng-click='delete()']")).click();
+        userPage.clickDeleteButton();
+        clickWithWait(xpath("//button[@ng-click='delete()']"));
 
         // then
-        Utils.withWait(driver, linkText("<anonymous>"));
+        waitFor(Utils.linkText("<anonymous>"));
         boolean notFound = false;
         try {
-            driver.findElement(linkText("test"));
+            driver.findElement(Utils.linkText("test"));
         } catch (NoSuchElementException e) {
             notFound = true;
         }
@@ -131,13 +132,13 @@ public class UserConfigIT extends WebDriverIT {
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getUsersLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickUsersLink();
 
         createUser();
 
         // when
-        Utils.withWait(driver, xpath("//a[@href='admin/user?new']")).click();
+        clickWithWait(xpath("//a[@href='admin/user?new']"));
         UserConfigPage userPage = new UserConfigPage(driver);
         userPage.getUsernameTextField().sendKeys("test");
         userPage.getPasswordTextField().sendKeys("test");
@@ -148,16 +149,15 @@ public class UserConfigIT extends WebDriverIT {
     }
 
     private void createUser() {
-        Utils.withWait(driver, xpath("//a[@href='admin/user?new']")).click();
+        clickWithWait(xpath("//a[@href='admin/user?new']"));
         UserConfigPage userPage = new UserConfigPage(driver);
         userPage.getUsernameTextField().sendKeys("test");
         userPage.getPasswordTextField().sendKeys("test");
         userPage.getVerifyPasswordTextField().sendKeys("test");
         userPage.clickAddButton();
         userPage.clickSaveWithNoRolesConfirmationButton();
-        // getDeleteButton() waits for the save/redirect
-        // (the delete button does not appear until after the save/redirect)
-        userPage.getDeleteButton();
-        driver.findElement(linkText("Return to list")).click();
+        // the delete button does not appear until after the save/redirect
+        userPage.waitForDeleteButton();
+        clickLink("Return to list");
     }
 }

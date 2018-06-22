@@ -13,18 +13,17 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>
       HTTP Proxy configuration
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
          gt-form-autofocus-on-first-input
-         class="form-horizontal gt-sometimes-legend-padding-smtp"
          name="formCtrl"
          style="padding-top: 15px;">
       <div gt-form-group
@@ -43,23 +42,20 @@
            gt-pattern="pattern.integer"
            gt-disabled="!layout.adminEdit"
            gt-width="7em"
-           gt-placeholder="80"
-           class="gt-form-group-without-help-block">
+           gt-placeholder="80">
       </div>
       <div gt-form-group
            gt-label="Username"
            gt-model="config.username"
            gt-disabled="!layout.adminEdit"
-           gt-width="20em"
-           class="gt-form-group-without-help-block">
+           gt-width="20em">
       </div>
-      <div class="form-group gt-form-group-without-help-block"
-           ng-class="{'has-error': formCtrl.password.$invalid}">
-        <label class="col-lg-3 control-label"
+      <div class="form-group row">
+        <label class="col-xl-3 gt-form-label-xl"
                for="password">
           Password
         </label>
-        <div class="col-lg-9">
+        <div class="col-xl-9">
           <input type="password"
                  class="form-control"
                  ng-model="password"
@@ -71,47 +67,54 @@
                  style="max-width: 20em; display: inline-block">
         </div>
       </div>
-      <div class="form-group gt-form-buttons"
+      <div class="form-group row"
            ng-if="layout.adminEdit">
-        <div class="col-lg-offset-3 col-lg-9">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button
                gt-label="Save changes"
                gt-click="save(deferred)"
-               gt-disabled="formCtrl.$invalid">
+               gt-validate-form="formCtrl">
           </div>
         </div>
       </div>
     </div>
     <div ng-form
-         ng-if="layout.adminEdit"
-         class="form-horizontal"
-         style="padding-top: 30px;">
-      <fieldset class="gt-send-email-fieldset">
-        <legend>Test HTTP proxy</legend>
-        <div class="form-group">
-          <label class="col-lg-3 control-label" for="testUrl">
-            Test url
-          </label>
-          <div class="col-lg-9">
-            <input type="text"
-                   class="form-control"
-                   ng-model="page.testUrl"
-                   id="testUrl"
-                   style="max-width: 25em; float: left; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
-            <div gt-button
-                 gt-btn-class="btn-default"
-                 gt-label="Test"
-                 gt-click="testHttpProxy(deferred)"
-                 gt-disabled="!page.testUrl || !config.host"
-                 style="vertical-align: top; margin-bottom: 10px;">
+         class="pt-3"
+         ng-if="layout.adminEdit">
+      <fieldset class="gt-fieldset">
+        <legend class="gt-legend">
+          Test HTTP proxy
+        </legend>
+        <div class="gt-fieldset-under-normal-form">
+          <div class="form-group row">
+            <label class="col-xl-3 gt-form-label-xl"
+                   for="testUrl">
+              Test url
+            </label>
+            <div class="col-xl-9">
+              <input type="text"
+                     class="form-control"
+                     ng-model="page.testUrl"
+                     id="testUrl"
+                     style="max-width: 25em; float: left; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
             </div>
           </div>
-        </div>
-        <div ng-if="testHttpProxyResponse"
-             style="padding: 0 30px 30px;">
+          <div class="form-group row">
+            <div class="offset-xl-3 col-xl-9">
+              <div gt-button
+                   gt-btn-class="btn-secondary"
+                   gt-label="Test"
+                   gt-click="testHttpProxy(deferred)"
+                   gt-validate-form="formCtrl">
+              </div>
+            </div>
+          </div>
+          <div ng-if="testHttpProxyResponse"
+               style="padding: 0 30px 30px;">
           <textarea ng-model="testHttpProxyResponse"
                     style="width: 100%; height: 400px;">
           </textarea>
+          </div>
         </div>
       </fieldset>
     </div>

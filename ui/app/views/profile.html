@@ -13,15 +13,31 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-header" style="margin-bottom: 6px;">
-  <div class="gt-header-page-name">
-    <h1 class="gt-inline-block">
+<div class="gt-header">
+  <div class="gt-header-lhs"
+       ng-if="!layout.embeddedAgentRollup.display">
+    <h1 class="gt-header-text">
+      Profile
+    </h1>
+  </div>
+  <div class="gt-header-lhs"
+       ng-if="layout.embeddedAgentRollup.display">
+    <div class="gt-header-text">
+      {{layout.embeddedAgentRollup.display}}
+    </div>
+    <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+         while chrome guesses the placement of the border based on default font and then it moves slightly
+         once font is available -->
+    <div class="gt-header-text gt-separator">
+      |
+    </div>
+    <h1 class="gt-header-text">
       Profile
     </h1>
   </div>
 </div>
 <div class="gt-sidebar hidden-print">
-  <div class="panel panel-default">
+  <div class="card">
     <div class="list-group">
       <div gt-sidebar-item
            gt-display="Change my password"

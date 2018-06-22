@@ -13,29 +13,28 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
       Synthetic monitors
-      <span class="gt-inline-block gt-separator">
+      <span class="d-inline-block gt-separator">
         |
       </span>
       <span style="font-size: 24px;">{{heading}}</span>
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <!-- intentionally not using gt-form-autofocus-on-first-input as it doesn't make the most sense on this form -->
     <div ng-form
-         class="form-horizontal"
          name="formCtrl"
          style="padding-top: 15px;">
-      <div class="form-group gt-form-group-without-help-block">
-        <label class="col-lg-3 control-label">
+      <div class="form-group row">
+        <label class="col-xl-3 col-form-label">
           Synthetic monitor type
         </label>
-        <div class="col-lg-9">
+        <div class="col-xl-9">
           <div class="radio">
             <label>
               <input type="radio"
@@ -100,8 +99,7 @@
              gt-required="loaded"
              gt-disabled="!agentRollup.permissions.config.edit.syntheticMonitors"
              id="gtSyntheticJavaSource"
-             class="gt-synthetic-java-source"
-             ng-class="{'has-error': !config.javaSource}">
+             class="gt-synthetic-java-source">
           <div class="help-block">
             A Java class that executes the synthetic monitor.
           </div>
@@ -125,23 +123,22 @@
           </div>
         </div>
       </div>
-      <div class="form-group gt-form-buttons"
+      <div class="form-group row"
            ng-if="agentRollup.permissions.config.edit.syntheticMonitors">
-        <div class="col-lg-offset-3 col-lg-9">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button-group>
             <div gt-button
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"
                  gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid"
-                 class="gt-inline-block">
+                 gt-validate-form="formCtrl"
+                 class="d-inline-block">
             </div>
-            <!-- using ng-show instead of gt-show -->
             <div gt-button
-                 ng-show="config.version"
+                 ng-if="config.version"
                  gt-label="Delete"
                  gt-click="delete(deferred)"
-                 gt-btn-class="btn-default"
-                 class="gt-inline-block">
+                 gt-btn-class="btn-secondary"
+                 class="d-inline-block">
             </div>
           </div>
         </div>

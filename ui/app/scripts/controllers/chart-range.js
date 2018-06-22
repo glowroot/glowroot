@@ -115,37 +115,24 @@ glowroot.controller('ChartRangeCtrl', [
 
     $scope.openCustomRange = function () {
       modals.display('#customDateRangeModal', true);
-
-      var icons = {
-        time: 'fas fa-clock',
-        date: 'fas fa-calendar',
-        up: 'fas fa-chevron-up',
-        down: 'fas fa-chevron-down',
-        previous: 'fas fa-chevron-left',
-        next: 'fas fa-chevron-right'
-      };
       var from = $scope.range.chartFrom;
       var to = $scope.range.chartTo;
       $('#customDateRangeFromDate').datetimepicker({
-        icons: icons,
-        format: 'L'
+        format: 'L',
+        date: moment(from).startOf('day')
       });
       $('#customDateRangeFromTime').datetimepicker({
-        icons: icons,
-        format: 'LT'
+        format: 'LT',
+        date: moment(from)
       });
       $('#customDateRangeToDate').datetimepicker({
-        icons: icons,
-        format: 'L'
+        format: 'L',
+        date: moment(to).startOf('day')
       });
       $('#customDateRangeToTime').datetimepicker({
-        icons: icons,
-        format: 'LT'
+        format: 'LT',
+        date: moment(to)
       });
-      $('#customDateRangeFromDate').data('DateTimePicker').date(moment(from).startOf('day'));
-      $('#customDateRangeFromTime').data('DateTimePicker').date(moment(from));
-      $('#customDateRangeToDate').data('DateTimePicker').date(moment(to).startOf('day'));
-      $('#customDateRangeToTime').data('DateTimePicker').date(moment(to));
       // don't focus on first input as that makes esc not work, plus likely to use date picker anyways
     };
 
@@ -155,12 +142,12 @@ glowroot.controller('ChartRangeCtrl', [
         return dateTime.valueOf() - startOfDay;
       }
 
-      var fromDate = $('#customDateRangeFromDate').data('DateTimePicker').date();
-      var fromTime = $('#customDateRangeFromTime').data('DateTimePicker').date();
-      var toDate = $('#customDateRangeToDate').data('DateTimePicker').date();
-      var toTime = $('#customDateRangeToTime').data('DateTimePicker').date();
-      $scope.range.chartFrom = fromDate + timeComponent(fromTime);
-      $scope.range.chartTo = toDate + timeComponent(toTime);
+      var fromDate = $('#customDateRangeFromDate').datetimepicker('date');
+      var fromTime = $('#customDateRangeFromTime').datetimepicker('date');
+      var toDate = $('#customDateRangeToDate').datetimepicker('date');
+      var toTime = $('#customDateRangeToTime').datetimepicker('date');
+      $scope.range.chartFrom = fromDate.valueOf() + timeComponent(fromTime);
+      $scope.range.chartTo = toDate.valueOf() + timeComponent(toTime);
       $scope.range.last = 0;
       $scope.range.chartRefresh++;
       $('#customDateRangeModal').modal('hide');

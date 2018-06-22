@@ -1,4 +1,17 @@
-<div class="input-group date">
-  <input type="text" class="form-control" id="{{gtId}}" style="width: 10em;">
-  <span class="input-group-addon"><span class="fas fa-calendar"></span></span>
+<div class="input-group date"
+     data-target-input="nearest"
+     style="width: 12em;"
+     id="{{gtId}}">
+  <!-- need dummy ng-model in order to force angular validation (.ng-touched.ng-invalid) -->
+  <input type="text"
+         class="form-control datetimepicker-input"
+         required
+         ng-model="dummy"
+         name="input_{{$id}}"
+         data-target="#{{gtId}}">
+  <div class="input-group-append"
+       data-target="#{{gtId}}"
+       data-toggle="datetimepicker">
+    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+  </div>
 </div>

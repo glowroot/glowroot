@@ -19,13 +19,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assume;
 import org.junit.Test;
-import org.openqa.selenium.By;
 
 import org.glowroot.tests.admin.StorageConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.xpath;
 
 public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
 
@@ -43,8 +43,8 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
         StorageConfigPage storageConfigPage = new StorageConfigPage(driver);
 
         app.open();
-        globalNavbar.getAdminConfigLink().click();
-        configSidebar.getStorageLink().click();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickStorageLink();
         storageConfigPage.clickDeleteAllButton();
         // TODO implement better wait for delete to complete
         SECONDS.sleep(1);
@@ -65,13 +65,13 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
 
         // when
         app.open();
-        Utils.withWait(driver, By.linkText("Slow traces (0)"));
-        Utils.withWait(driver, By.partialLinkText("/jdbcservlet")).click();
+        waitFor(Utils.linkText("Slow traces (0)"));
+        clickPartialLinkWithWait("/jdbcservlet");
         // give time for page to load and tab bar to refresh
         SECONDS.sleep(1);
-        globalNavbar.getErrorsLink().click();
-        Utils.withWait(driver, By.xpath("//a[normalize-space()='Error traces (0)']"));
-        globalNavbar.getJvmLink().click();
+        globalNavbar.clickErrorsLink();
+        Utils.getWithWait(driver, xpath("//a[normalize-space()='Error traces (0)']"));
+        globalNavbar.clickJvmLink();
         // todo wait
     }
 }

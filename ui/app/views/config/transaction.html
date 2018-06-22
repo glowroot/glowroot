@@ -13,19 +13,18 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2>Transactions</h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-hide="hideMainContent()">
       <div ng-include src="'template/gt-loading-overlay.html'"></div>
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-      <div ng-form
-           gt-form-autofocus-on-first-input
-           class="form-horizontal"
-           name="formCtrl"
-           style="padding-top: 15px;">
+      <form gt-form-autofocus-on-first-input
+            name="formCtrl"
+            style="padding-top: 15px;"
+            novalidate>
         <div gt-form-group
              gt-label="Slow threshold"
              gt-model="config.slowThresholdMillis"
@@ -68,82 +67,84 @@
             Capturing this data has some overhead (around 5 microseconds per transaction).
           </div>
         </div>
-        <fieldset ng-repeat="slowThreshold in config.slowThresholds">
-          <legend style="margin-bottom: 20px;">Slow threshold override</legend>
-          <div class="form-group">
-            <label class="col-lg-3 control-label"
-                   for="transactionType{{$index}}">
-              Transaction type
-            </label>
-            <div class="col-lg-9">
-              <select ng-model="slowThreshold.transactionType"
-                      ng-disabled="!agentRollup.permissions.config.edit.transaction"
-                      id="transactionType{{$index}}"
-                      class="form-control"
-                      style="width: auto;">
-                <option ng-repeat="transactionType in allTransactionTypes"
-                        ng-value="transactionType.name"
-                        ng-disabled="transactionType.disabled">
-                  {{transactionType.name}}
-                </option>
-              </select>
-              <div class="help-block">
-                The transaction type this override applies to.
+        <fieldset class="gt-fieldset"
+                  ng-repeat="slowThreshold in config.slowThresholds">
+          <legend class="gt-legend">Slow threshold override</legend>
+          <div class="gt-fieldset-under-normal-form">
+            <div class="form-group row">
+              <label class="col-xl-3 gt-form-label-xl"
+                     for="transactionType{{$index}}">
+                Transaction type
+              </label>
+              <div class="col-xl-9">
+                <select ng-model="slowThreshold.transactionType"
+                        ng-disabled="!agentRollup.permissions.config.edit.transaction"
+                        id="transactionType{{$index}}"
+                        class="custom-select"
+                        style="width: auto;"
+                        required>
+                  <option ng-repeat="transactionType in allTransactionTypes"
+                          ng-value="transactionType.name"
+                          ng-disabled="transactionType.disabled">
+                    {{transactionType.name}}
+                  </option>
+                </select>
+                <div class="help-block">
+                  The transaction type this override applies to.
+                </div>
               </div>
             </div>
-          </div>
-          <div gt-form-group
-               gt-label="Transaction name"
-               gt-model="slowThreshold.transactionName"
-               gt-disabled="!agentRollup.permissions.config.edit.transaction"
-               gt-width="40em">
-            <div class="help-block">
-              The transaction name this override applies to. If empty, this override will apply to all transaction
-              names.
+            <div gt-form-group
+                 gt-label="Transaction name"
+                 gt-model="slowThreshold.transactionName"
+                 gt-disabled="!agentRollup.permissions.config.edit.transaction"
+                 gt-width="40em">
+              <div class="help-block">
+                The transaction name this override applies to. If empty, this override will apply to all transaction
+                names.
+              </div>
             </div>
-          </div>
-          <div gt-form-group
-               gt-label="Slow threshold"
-               gt-model="slowThreshold.thresholdMillis"
-               gt-number="true"
-               gt-pattern="pattern.integer"
-               gt-required="loaded"
-               gt-disabled="!agentRollup.permissions.config.edit.transaction"
-               gt-width="7em"
-               gt-addon="milliseconds"
-               class="gt-form-group-without-help-block">
-          </div>
-          <div class="form-group gt-form-buttons"
-               ng-if="agentRollup.permissions.config.edit.transaction"
-               style="padding-top: 5px;">
-            <div class="col-lg-offset-3 col-lg-9">
-              <button class="btn gt-btn-danger"
-                      ng-click="removeSlowThreshold(slowThreshold)"
-                      style="float: right;">
+            <div gt-form-group
+                 gt-label="Slow threshold"
+                 gt-model="slowThreshold.thresholdMillis"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!agentRollup.permissions.config.edit.transaction"
+                 gt-width="7em"
+                 gt-addon="milliseconds">
+            </div>
+            <div class="float-right pr-xl-4 pb-2"
+                 ng-if="agentRollup.permissions.config.edit.transaction">
+              <button class="btn btn-secondary"
+                      ng-click="removeSlowThreshold(slowThreshold)">
                 Remove this slow threshold override
               </button>
             </div>
           </div>
         </fieldset>
-        <fieldset ng-if="agentRollup.permissions.config.edit.transaction">
-          <legend>Add {{config.slowThresholds.length ? 'another' : 'a'}} slow threshold override</legend>
-          <button class="btn btn-default"
+        <fieldset class="gt-fieldset"
+                  ng-if="agentRollup.permissions.config.edit.transaction">
+          <legend class="gt-legend">
+            Add {{config.slowThresholds.length ? 'another' : 'a'}} threshold override
+          </legend>
+          <button class="btn btn-secondary"
                   ng-click="addSlowThreshold()"
                   style="margin-bottom: 23px; margin-left: 14px;">
             Add
           </button>
         </fieldset>
-        <div class="form-group gt-form-buttons"
+        <div class="form-group row"
              ng-if="agentRollup.permissions.config.edit.transaction">
-          <div class="col-lg-offset-3 col-lg-9">
+          <div class="offset-xl-3 col-xl-9">
             <div gt-button
                  gt-label="Save changes"
                  gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid">
+                 gt-validate-form="formCtrl">
             </div>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 </div>

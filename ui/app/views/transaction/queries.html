@@ -26,10 +26,10 @@
   </div>
   <!-- negative right position is so overlay will cover view flame graph link which sticks slightly beyond container -->
   <div class="gt-panel-overlay"
-       ng-show="showSpinner"
+       ng-if="showSpinner"
        style="right: -20px;">
   </div>
-  <div ng-show="!showSpinner && !showQueries && !httpError"
+  <div ng-if="!showSpinner && !showQueries && !httpError"
        style="display: table; width: 100%; height: 100%; margin-top: 50px;">
     <div style="display: table-cell; text-align: center; vertical-align: middle;">
       <div class="gt-chart-no-data"
@@ -37,7 +37,7 @@
         No data for this time period
       </div>
       <div class="gt-chart-no-data"
-           ng-show="showOverwrittenMessage">
+           ng-if="showOverwrittenMessage">
         There was query data but it has expired, see
         <a href="admin/storage#rollup-capped-database-size">
           Configuration &gt; Storage &gt; Queries, service calls and continuous profiling tab data
@@ -45,16 +45,16 @@
       </div>
     </div>
   </div>
-  <div ng-show="showQueries">
-    <table class="table query-table"
+  <div ng-if="showQueries">
+    <table class="table gt-query-table"
            style="table-layout: fixed;">
       <thead>
       <tr>
         <th style="vertical-align: middle;">
-          <select class="form-control"
+          <select class="custom-select"
                   ng-model="queryType"
                   style="width: inherit;"
-                  ng-show="queryTypes.length > 1">
+                  ng-if="queryTypes.length > 1">
             <option selected value="">(All)</option>
             <option ng-repeat="queryType in queryTypes" ng-value="queryType">{{queryType}}</option>
           </select>
@@ -66,7 +66,7 @@
             Total<br>
             time<br>
             <span ng-class="sortIconClass('total-time')"
-                  ng-show="sortAttribute === 'total-time'">
+                  ng-if="sortAttribute === 'total-time'">
             </span>
             (ms)
           </a>
@@ -75,9 +75,9 @@
             class="gt-query-other-column"
             ng-attr-aria-sort="{{ngAttrAriaSort('execution-count')}}">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('execution-count')}}" class="gt-sortable-table-header">
-            Execution<br>
+            Total<br>
             <span ng-class="sortIconClass('execution-count')"
-                  ng-show="sortAttribute === 'execution-count'">
+                  ng-if="sortAttribute === 'execution-count'">
             </span>
             count
           </a>
@@ -86,10 +86,10 @@
             class="gt-query-other-column"
             ng-attr-aria-sort="{{ngAttrAriaSort('time-per-execution')}}">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('time-per-execution')}}" class="gt-sortable-table-header">
-            Time per<br>
-            execution<br>
+            Avg<br>
+            time<br>
             <span ng-class="sortIconClass('time-per-execution')"
-                  ng-show="sortAttribute === 'time-per-execution'">
+                  ng-if="sortAttribute === 'time-per-execution'">
             </span>
             (ms)
           </a>
@@ -98,11 +98,13 @@
             class="gt-query-rows-column"
             ng-attr-aria-sort="{{ngAttrAriaSort('rows-per-execution')}}">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('rows-per-execution')}}" class="gt-sortable-table-header">
-            Rows per<br>
+            Avg<br>
+            <span style="white-space: nowrap;">
             <span ng-class="sortIconClass('rows-per-execution')"
-                  ng-show="sortAttribute === 'rows-per-execution'">
+                  ng-if="sortAttribute === 'rows-per-execution'">
             </span>
-            execution
+            rows
+              </span>
           </a>
         </th>
       </tr>
@@ -139,21 +141,17 @@
         </td>
       </tr>
       <tr ng-repeat-end>
-        <td style="border-top: none; padding-top: 0;"></td>
-        <td class="gt-query-total-column"
-            style="border-top: none; padding-top: 0;">
+        <td class="border-top-0 pt-0"></td>
+        <td class="gt-query-total-column border-top-0 pt-0">
           {{query.totalDurationNanos / 1000000 | gtMillis}}
         </td>
-        <td class="gt-query-other-column"
-            style="border-top: none; padding-top: 0;">
+        <td class="gt-query-other-column border-top-0 pt-0">
           {{query.executionCount}}
         </td>
-        <td class="gt-query-other-column"
-            style="border-top: none; padding-top: 0;">
+        <td class="gt-query-other-column border-top-0 pt-0">
           {{query.timePerExecution | gtMillis}}
         </td>
-        <td class="gt-query-rows-column"
-            style="border-top: none; padding-top: 0;">
+        <td class="gt-query-rows-column border-top-0 pt-0">
           {{query.rowsPerExecution | gtCount}}
         </td>
       </tr>
@@ -161,47 +159,50 @@
     </table>
   </div>
 </div>
-<div class="modal gt-full-screen-modal" id="queryModal" tabindex="-1">
-  <button type="button"
-          class="close"
-          data-dismiss="modal">
-    &times;
-  </button>
-  <span class="fas fa-clipboard gt-clip hide"></span>
-
-  <div class="modal-dialog">
-    <div class="modal-body">
-      <div gt-spinner
-           gt-show="showModalSpinner"
-           style="position: relative; display: inline-block; padding-left: 40px; padding-top: 60px;">
-      </div>
-      <div ng-if="queryExpired">
-        <strong>
-          The full text for this query has expired
-        </strong>
-      </div>
-      <div ng-if="queryError"
-           class="gt-red">
-        An error occurred retrieving the query
-      </div>
-      <!-- display: inline-block is so that true width can be calculated and modal shrunk to fit if possible -->
-      <!-- not using ng-show/hide here since need it to be visible for size calculation -->
-      <pre class="gt-monospace"
-           id="formattedQuery"
-           style="white-space: pre-wrap; display: inline-block; margin: 0;">
+<div class="modal gt-full-screen-modal"
+     role="dialog"
+     tabindex="-1"
+     id="queryModal">
+  <div class="modal-dialog"
+       role="document">
+    <div class="modal-content">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+      <span class="fas fa-clipboard gt-clip d-none"></span>
+      <div class="modal-body">
+        <div gt-spinner
+             gt-show="showModalSpinner"
+             style="position: relative; display: inline-block; padding-left: 40px; padding-top: 60px;">
+        </div>
+        <div ng-if="queryExpired">
+          <strong>
+            The full text for this query has expired
+          </strong>
+        </div>
+        <div ng-if="queryError"
+             class="gt-red">
+          An error occurred retrieving the query
+        </div>
+        <!-- display: inline-block is so that true width can be calculated and modal shrunk to fit if possible -->
+        <!-- not using ng-if/hide here since need it to be visible for size calculation -->
+        <pre class="gt-monospace"
+             id="formattedQuery"
+             style="white-space: pre-wrap; display: inline-block; margin: 0;">
       </pre>
-      <div class="gt-monospace"
-           id="unformattedQuery"
-           style="padding-bottom: 5px;">
-      </div>
-      <div>
-        <a href="#"
-           id="formattingToggle"
-           ng-show="formattedQuery"
-           ng-click="toggleFormatted()"
-           style="margin: 15px 0 0 20px;">
-          {{ showFormatted ? '(show unformatted)' : '(show formatted)' }}
-        </a>
+        <div class="gt-monospace"
+             id="unformattedQuery"
+             style="padding-bottom: 5px;">
+        </div>
+        <div>
+          <a href="#"
+             id="formattingToggle"
+             ng-if="formattedQuery"
+             ng-click="toggleFormatted()"
+             style="margin: 15px 0 0 20px;">
+            {{ showFormatted ? '(show unformatted)' : '(show formatted)' }}
+          </a>
+        </div>
       </div>
     </div>
   </div>

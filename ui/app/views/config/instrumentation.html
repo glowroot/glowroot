@@ -13,42 +13,42 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-config-return-outer-div">
+<!-- clearfix is needed for smaller screens where gt-config-return-link is floated  -->
+<div class="clearfix">
   <a class="gt-config-return-link"
      href="config/instrumentation-list{{agentQueryString()}}">
     Return to list
   </a>
 </div>
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div class="card">
+  <div class="card-header">
     <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
       Instrumentation
-      <span class="gt-inline-block gt-separator">
+      <span class="d-inline-block gt-separator">
         |
       </span>
       <span style="font-size: 24px; word-wrap: break-word;">{{heading}}</span>
     </h2>
   </div>
-  <div class="panel-body">
+  <div class="card-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-if="agentNotConnected" class="alert alert-warning">
       Limited functionality since agent is not currently connected
     </div>
-    <div ng-form
-         gt-form-autofocus-on-first-input
-         class="form-horizontal"
-         name="formCtrl">
-      <fieldset>
-        <legend>What method(s) to instrument</legend>
-        <div class="form-group"
-             ng-class="{'has-error': loaded && formCtrl.className.$invalid}">
-          <label class="col-lg-3 control-label"
+    <form gt-form-autofocus-on-first-input
+          name="formCtrl"
+          novalidate>
+      <fieldset class="gt-fieldset">
+        <legend class="gt-legend">
+          What method(s) to instrument
+        </legend>
+        <div class="form-group row">
+          <label class="col-xl-3 gt-form-label-xl"
                  for="className{{$id}}">
             Class name
           </label>
-
-          <div class="col-lg-9">
+          <div class="col-xl-9">
             <input type="text"
                    class="form-control"
                    ng-model="config.className"
@@ -56,12 +56,13 @@
                    ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
                    uib-typeahead="suggestion for suggestion in classNames($viewValue)"
                    typeahead-on-select="onSelectClassName()"
-                   typeahead-template-url="template/gt-typeahead-class-match.html"
                    typeahead-wait-ms="5"
                    name="className"
                    id="className{{$id}}"
                    style="max-width: 40em; display: inline-block">
-
+            <div class="gt-invalid-required-feedback">
+              This is required.
+            </div>
             <div gt-spinner
                  gt-spinner-inline="true"
                  gt-show="showClassNameSpinner"
@@ -73,14 +74,12 @@
             </div>
           </div>
         </div>
-        <div class="form-group"
-             ng-class="{'has-error': loaded && formCtrl.methodName.$invalid}">
-          <label class="col-lg-3 control-label"
+        <div class="form-group row">
+          <label class="col-xl-3 gt-form-label-xl"
                  for="methodName{{$id}}">
             Method name
           </label>
-
-          <div class="col-lg-9">
+          <div class="col-xl-9">
             <input type="text"
                    class="form-control"
                    ng-model="config.methodName"
@@ -93,7 +92,9 @@
                    name="methodName"
                    id="methodName{{$id}}"
                    style="max-width: 40em; display: inline-block;">
-
+            <div class="gt-invalid-required-feedback">
+              This is required.
+            </div>
             <div gt-spinner
                  gt-spinner-inline="true"
                  gt-show="showMethodNameSpinner"
@@ -113,105 +114,112 @@
             </div>
           </div>
         </div>
-        <div class="form-group" style="margin-top: -7px;">
-          <label class="col-lg-3 control-label"
-                 id="gtMethodSignatureLabel">
-            Method signature
-          </label>
-          <div class="col-lg-9">
-            <div ng-repeat="methodSignature in methodSignatures">
-              <div class="radio">
-                <label>
+        <fieldset class="form-group">
+          <div class="row">
+            <legend class="col-xl-3 gt-check-legend-xl">
+              Method signature
+            </legend>
+            <div class="col-xl-9">
+              <div class="form-check"
+                   ng-repeat="methodSignature in methodSignatures">
+                <label class="form-check-label">
                   <!-- need $parent.selectedSignature since ng-repeat creates a new scope
                     see https://github.com/angular/angular.js/issues/1100 -->
-                  <input type="radio"
+                  <input class="form-check-input"
+                         type="radio"
                          name="selectedMethodSignature"
                          ng-model="$parent.selectedMethodSignature"
                          ng-value="methodSignature"
-                         ng-required="true"
-                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                         aria-labelledby="gtMethodSignatureLabel">
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation">
                   {{methodSignatureText(methodSignature)}}
                   <div class="gt-red"
-                       ng-show="methodSignature.notAvailable">
+                       ng-if="methodSignature.notAvailable">
                     Warning: this signature could not be found in the runtime classpath
                   </div>
                 </label>
               </div>
-            </div>
-            <div class="help-block">
-              Only the method name and parameter types are used when evaluating what to instrument
-              (the return type and access modifiers are ignored).
+              <div class="help-block">
+                Only the method name and parameter types are used when evaluating what to instrument
+                (the return type and access modifiers are ignored).
+              </div>
             </div>
           </div>
-        </div>
+        </fieldset>
       </fieldset>
-      <fieldset>
-        <legend style="margin-bottom: 15px;">What to capture</legend>
-        <div class="form-group">
-          <label class="col-lg-3 control-label">
-            What to capture
-          </label>
-          <div class="col-lg-9">
-            <div class="radio">
-              <label>
-                <input type="radio"
-                       ng-model="config.captureKind"
-                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                       value="transaction">
-                Transaction
-              </label>
-            </div>
-            <div class="radio">
-              <label>
-                <input type="radio"
-                       ng-model="config.captureKind"
-                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                       value="trace-entry">
-                Trace entry
-              </label>
-            </div>
-            <div class="radio">
-              <label>
-                <input type="radio"
-                       ng-model="config.captureKind"
-                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                       value="timer">
-                Timer
-              </label>
-            </div>
-            <div class="radio">
-              <label>
-                <input type="radio"
-                       ng-model="config.captureKind"
-                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                       value="other">
-                Optional transaction overrides only
-              </label>
-            </div>
-            <div class="help-block">
-              A transaction defines the capture point boundary for a new request or background operation.
-            </div>
-            <div class="help-block">
-              A trace entry is a timer plus it captures a message on each invocation of the above method(s) to produce
-              the data in the <em>trace entries</em> section when viewing an individual trace.
-            </div>
-            <div class="help-block">
-              A timer captures the total time and count of the above method(s) to produce the data in the
-              <em>breakdown</em> section on the <a href="transaction/average{{agentQueryString()}}">average response
-              time page</a>, and the data in the <em>breakdown</em> section when viewing an individual trace (on the
-              <a href="transaction/traces{{agentQueryString()}}">slow traces</a> or
-              <a href="error/traces{{agentQueryString()}}">error traces</a> pages).
+      <fieldset class="gt-fieldset">
+        <legend class="gt-legend">
+          What to capture
+        </legend>
+        <fieldset class="form-group">
+          <div class="row">
+            <legend class="col-xl-3 gt-check-legend-xl">
+              What to capture
+            </legend>
+            <div class="col-xl-9">
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input"
+                         type="radio"
+                         ng-model="config.captureKind"
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                         value="transaction">
+                  Transaction
+                </label>
+              </div>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input"
+                         type="radio"
+                         ng-model="config.captureKind"
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                         value="trace-entry">
+                  Trace entry
+                </label>
+              </div>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input"
+                         type="radio"
+                         ng-model="config.captureKind"
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                         value="timer">
+                  Timer
+                </label>
+              </div>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input"
+                         type="radio"
+                         ng-model="config.captureKind"
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                         value="other">
+                  Optional transaction overrides only
+                </label>
+              </div>
+              <div class="help-block">
+                A transaction defines the capture point boundary for a new request or background operation.
+              </div>
+              <div class="help-block">
+                A trace entry is a timer plus it captures a message on each invocation of the above method(s) to produce
+                the data in the <em>trace entries</em> section when viewing an individual trace.
+              </div>
+              <div class="help-block">
+                A timer captures the total time and count of the above method(s) to produce the data in the
+                <em>breakdown</em> section on the <a href="transaction/average{{agentQueryString()}}">average response
+                time page</a>, and the data in the <em>breakdown</em> section when viewing an individual trace (on the
+                <a href="transaction/traces{{agentQueryString()}}">slow traces</a> or
+                <a href="error/traces{{agentQueryString()}}">error traces</a> pages).
+              </div>
             </div>
           </div>
-        </div>
+        </fieldset>
         <div gt-form-group
              gt-label="Transaction type"
              gt-model="config.transactionType"
              gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="40em"
              gt-required="captureKindTransaction"
-             ng-show="captureKindTransaction">
+             ng-if="captureKindTransaction">
           <div class="help-block">
             The transaction type is used for aggregation and filtering.
           </div>
@@ -226,7 +234,7 @@
              gt-required="captureKindTransaction"
              gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="40em"
-             ng-show="captureKindTransaction">
+             ng-if="captureKindTransaction">
           <div class="help-block">
             The transaction name is used for aggregation and filtering.
           </div>
@@ -245,7 +253,7 @@
              gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="40em"
              gt-rows="2"
-             ng-show="showTraceEntry">
+             ng-if="showTraceEntry">
           <div class="help-block">
 
           </div>
@@ -270,8 +278,8 @@
               </li>
             </ul>
           </div>
-          <div ng-non-bindable
-               class="help-block">
+          <div class="help-block"
+               ng-non-bindable>
             Nested paths are resolved as well, e.g. {{0.size}} and {{this.class.name}}.
             If a path resolves to <code>null</code> at any point,
             then the entire path will resolve to <code>null</code>.
@@ -288,54 +296,59 @@
              gt-required="loaded && showTimer"
              gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="20em"
-             ng-show="showTimer">
+             ng-if="showTimer">
           <div class="help-block">
             Multiple instrumentation definitions can share the same timer name,
             in which case their timers are aggregated together.
           </div>
         </div>
-        <div class="form-group gt-form-group-without-help-block"
-             ng-show="captureKindTransaction">
-          <label class="col-lg-3 control-label">
-            What to do if already in a transaction
-          </label>
-          <div class="col-lg-9">
-            <div class="radio">
-              <label>
-                <input type="radio"
-                       ng-model="config.alreadyInTransactionBehavior"
-                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                       value="capture-trace-entry">
-                Capture a trace entry (as part of the existing transaction)
-              </label>
-            </div>
-            <div class="radio">
-              <label>
-                <input type="radio"
-                       ng-model="config.alreadyInTransactionBehavior"
-                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                       value="capture-new-transaction">
-                Capture a new transaction
-              </label>
-            </div>
-            <div class="radio">
-              <label>
-                <input type="radio"
-                       ng-model="config.alreadyInTransactionBehavior"
-                       ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
-                       value="do-nothing">
-                Do nothing
-              </label>
+        <fieldset class="form-group"
+                  ng-if="captureKindTransaction">
+          <div class="row">
+            <legend class="col-xl-3 gt-check-legend-xl">
+              What to do if already in a transaction
+            </legend>
+            <div class="col-xl-9">
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input"
+                         type="radio"
+                         ng-model="config.alreadyInTransactionBehavior"
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                         value="capture-trace-entry">
+                  Capture a trace entry (as part of the existing transaction)
+                </label>
+              </div>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input"
+                         type="radio"
+                         ng-model="config.alreadyInTransactionBehavior"
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                         value="capture-new-transaction">
+                  Capture a new transaction
+                </label>
+              </div>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input"
+                         type="radio"
+                         ng-model="config.alreadyInTransactionBehavior"
+                         ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                         value="do-nothing">
+                  Do nothing
+                </label>
+              </div>
             </div>
           </div>
-        </div>
+        </fieldset>
         <div gt-form-group
              gt-type="checkbox"
              gt-label="Self nesting"
              gt-checkbox-label="Capture self nested trace entries"
              gt-model="config.traceEntryCaptureSelfNested"
              gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
-             ng-show="showTraceEntryExtra">
+             ng-if="showTraceEntryExtra">
           <div class="help-block">
             If checked, and this custom instrumentation is encountered beneath itself or beneath another pointcut that
             shares the same timer name, a nested trace entry <em>will</em> be captured.
@@ -351,7 +364,7 @@
              gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
              gt-width="7em"
              gt-addon="milliseconds"
-             ng-show="showTraceEntryExtra">
+             ng-if="showTraceEntryExtra">
           <div class="help-block">
             Any trace entry that exceeds this threshold will have a stack trace captured and attached to it
             in order to help identify the source of this trace entry.
@@ -359,8 +372,10 @@
           </div>
         </div>
       </fieldset>
-      <fieldset>
-        <legend>Optional transaction overrides</legend>
+      <fieldset class="gt-fieldset">
+        <legend class="gt-legend">
+          Optional transaction overrides
+        </legend>
         <div gt-form-group
              gt-label="Transaction type"
              gt-model="config.transactionType"
@@ -440,44 +455,56 @@
           </div>
         </div>
       </fieldset>
-      <div class="form-group gt-form-buttons">
-        <div class="col-lg-offset-3 col-lg-9 gt-sometimes-legend-padding">
+      <div class="form-group row gt-form-buttons-below-fieldset">
+        <div class="offset-xl-3 col-xl-9">
           <div gt-button-group>
             <div gt-button
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"
                  gt-click="save(deferred)"
-                 gt-disabled="formCtrl.$invalid"
+                 gt-validate-form="formCtrl"
                  ng-if="agentRollup.permissions.config.edit.instrumentation"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
             <div gt-button
-                 ng-show="config.version"
+                 ng-if="config.version"
                  gt-label="Delete"
                  gt-click="delete(deferred)"
-                 gt-btn-class="gt-btn-danger"
+                 gt-btn-class="btn-danger"
                  ng-if="agentRollup.permissions.config.edit.instrumentation"
-                 class="gt-inline-block">
+                 class="d-inline-block">
             </div>
-            <button ng-disabled="formCtrl.$invalid"
-                    ng-click="exportToJson()"
-                    class="btn btn-default gt-button-spacing">
-              Export to JSON
-            </button>
+            <div gt-button
+                 gt-label="Export to JSON"
+                 gt-click="exportToJson(deferred)"
+                 gt-validate-form="formCtrl"
+                 gt-btn-class="btn-secondary"
+                 class="d-inline-block">
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </form>
   </div>
 </div>
-<div class="modal" id="jsonExportModal" tabindex="-1">
-  <div class="modal-dialog gt-modal-dialog-lg">
+<div class="modal"
+     role="dialog"
+     tabindex="-1"
+     id="jsonExportModal">
+  <div class="modal-dialog gt-modal-dialog-md"
+       role="document">
     <div class="modal-content">
-      <div class="modal-header gt-with-clip">
-        <h3>
+      <div class="modal-header">
+        <h3 class="modal-title">
           Instrumentation JSON
           <span class="fas fa-clipboard gt-clip"
-                style="font-size: 14px; position: inherit; margin-left: 5px;"></span>
+                style="font-size: 14px; vertical-align: 5px; position: inherit; margin-left: 5px;"></span>
         </h3>
+        <button type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
       <div class="modal-body" style="padding-top: 20px;">
         <pre id="jsonExport" style="white-space: pre-wrap; word-wrap: break-word;">{{jsonExport}}</pre>

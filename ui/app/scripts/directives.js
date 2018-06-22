@@ -32,7 +32,7 @@ glowroot.factory('gtButtonGroupControllerFactory', [
             var $buttonMessage = $element.find('.gt-button-message');
             var $buttonSpinner = $element.find('.gt-button-spinner');
             // in case button is clicked again before message fades out
-            $buttonMessage.addClass('hide');
+            $buttonMessage.addClass('d-none');
             var spinner;
             if (!noSpinner) {
               spinner = Glowroot.showSpinner($buttonSpinner);
@@ -58,7 +58,7 @@ glowroot.factory('gtButtonGroupControllerFactory', [
               $buttonMessage.text(message);
               $buttonMessage.removeClass('gt-button-message-success');
               $buttonMessage.addClass('gt-button-message-error');
-              $buttonMessage.removeClass('hide');
+              $buttonMessage.removeClass('d-none');
               alreadyExecuting = false;
             });
 
@@ -80,8 +80,8 @@ glowroot.directive('gtButtonGroup', [
       template: ''
       + '<div class="clearfix">'
       + '  <span ng-transclude style="margin-right: 15px;"></span>'
-      + '  <div class="gt-button-spinner hide"></div>'
-      + '  <div class="gt-button-message hide" style="padding-top: 4px;"></div>'
+      + '  <div class="gt-button-spinner d-none"></div>'
+      + '  <div class="gt-button-message d-none" style="padding-top: 4px;"></div>'
       + '</div>',
       controller: [
         '$element',
@@ -106,7 +106,8 @@ glowroot.directive('gtButton', [
         gtDisabled: '&',
         gtNoSpinner: '@',
         gtConfirmHeader: '@',
-        gtConfirmBody: '@'
+        gtConfirmBody: '@',
+        gtValidateForm: '='
       },
       templateUrl: 'template/gt-button.html',
       require: '^?gtButtonGroup',
@@ -116,9 +117,21 @@ glowroot.directive('gtButton', [
           gtButtonGroup = gtButtonGroupControllerFactory.create(iElement, scope.gtNoSpinner);
         }
         scope.onClick = function () {
+          if (scope.gtValidateForm) {
+            if (scope.gtValidateForm.$invalid) {
+              scope.gtValidateForm.$$element.addClass('was-validated');
+              gtButtonGroup.onClick(function (args) {
+                args.deferred.reject('See validation error(s) above');
+              });
+              return;
+            } else {
+              scope.gtValidateForm.$$element.removeClass('was-validated');
+              // and proceed
+            }
+          }
           if (scope.gtConfirmHeader) {
             var $modal = $('#confirmationModal');
-            $modal.find('.modal-header h3').text(scope.gtConfirmHeader);
+            $modal.find('.modal-title').text(scope.gtConfirmHeader);
             $modal.find('.modal-body p').text(scope.gtConfirmBody);
             modals.display('#confirmationModal', true);
             $('#confirmationModalButton').off('click');
@@ -307,7 +320,7 @@ glowroot.directive('gtSpinner', function () {
   return function (scope, iElement, iAttrs) {
     var spinner;
     var timer;
-    iElement.addClass('hide');
+    iElement.addClass('d-none');
     scope.$watch(iAttrs.gtShow,
         function (newValue) {
           if (newValue) {
@@ -321,7 +334,7 @@ glowroot.directive('gtSpinner', function () {
             // z-index should be less than navbar (which is 1030)
             spinner = new Spinner({lines: 9, radius: 8, width: 5, left: left, zIndex: 1020});
             if (iAttrs.gtNoDelay) {
-              iElement.removeClass('hide');
+              iElement.removeClass('d-none');
               spinner.spin(iElement[0]);
             } else {
               // small delay so that if there is an immediate response the spinner doesn't blink
@@ -330,13 +343,13 @@ glowroot.directive('gtSpinner', function () {
               // inside of 100 milliseconds
               clearTimeout(timer);
               timer = setTimeout(function () {
-                iElement.removeClass('hide');
+                iElement.removeClass('d-none');
                 spinner.spin(iElement[0]);
               }, 100);
             }
           } else if (spinner) {
             clearTimeout(timer);
-            iElement.addClass('hide');
+            iElement.addClass('d-none');
             spinner.stop();
             spinner = undefined;
           }
@@ -414,7 +427,10 @@ glowroot.directive('gtSelectpicker', [
         // set style outside of $timeout to avoid style flicker on loading
         iElement.selectpicker(scope.gtSelectpickerOptions());
         scope.$watch('gtModel', function () {
-          iElement.selectpicker('val', scope.gtModel);
+          // only works inside of $timeout
+          $timeout(function () {
+            iElement.selectpicker('val', scope.gtModel);
+          });
         });
         $timeout(function () {
           // refresh only works inside of $timeout
@@ -428,35 +444,84 @@ glowroot.directive('gtSelectpicker', [
   }
 ]);
 
+glowroot.directive('gtMultiselect', [
+  function () {
+    return {
+      scope: {
+        gtNoneSelectedText: '@'
+      },
+      link: function (scope, iElement) {
+        iElement.multiselect({
+          enableFiltering: true,
+          enableCaseInsensitiveFiltering: true,
+          filterPlaceholder: 'Filter',
+          nonSelectedText: scope.gtNoneSelectedText,
+          maxHeight: 400,
+          numberDisplayed: 2,
+          includeSelectAllOption: true,
+          // mostly for bootstrap 4 compatibility,
+          // and mostly copied from https://github.com/davidstutz/bootstrap-multiselect/pull/1050
+          buttonClass: 'btn btn-secondary',
+          buttonContainer: '<div class="dropdown" />',
+          templates: {
+            button: '<button type="button" class="multiselect dropdown-toggle" data-toggle="dropdown" data-flip="false"><span class="multiselect-selected-text"></span> <b class="caret"></b></button>',
+            ul: '<ul class="multiselect-container dropdown-menu p-1 m-0"></ul>',
+            filter: '<li class="multiselect-item multiselect-filter"><input class="form-control multiselect-search" type="text" /></li>',
+            filterClearBtn: '',
+            li: '<li><a tabIndex="0" class="dropdown-item" style="padding: 2px 0;"><label class="custom-control custom-checkbox" style="padding-left: 36px;"><div class="custom-control-label"></div></label></a></li>',
+          },
+          optionLabel: function (element) {
+            return $(element).data('val').indentedDisplay;
+          },
+          optionFullText: function (element) {
+            return $(element).data('val').display;
+          },
+          onDropdownShown: function() {
+            iElement.parent().find('.multiselect-search').focus();
+          },
+          onDropdownHidden: function() {
+            iElement.removeClass('ng-untouched');
+            iElement.addClass('ng-touched');
+          }
+        });
+        scope.$on('$destroy', function () {
+          iElement.multiselect('destroy');
+        });
+      }
+    };
+  }
+]);
+
 glowroot.directive('gtDatePicker', [
   '$timeout',
   function ($timeout) {
     return {
       scope: {
         gtModel: '=',
-        gtId: '@'
+        gtId: '@',
+        gtForm: '='
       },
       templateUrl: 'template/gt-date-picker.html',
       link: function (scope, iElement) {
         var dateElement = iElement.find('.date');
-        var icons = {
-          time: 'fas fa-clock',
-          date: 'fas fa-calendar',
-          up: 'fas fa-chevron-up',
-          down: 'fas fa-chevron-down',
-          previous: 'fas fa-chevron-left',
-          next: 'fas fa-chevron-right'
-        };
-        var dateElementPicker = dateElement.datetimepicker({
-          icons: icons,
-          format: 'L'
+        dateElement.datetimepicker({
+          format: 'L',
+          keepInvalid: true
         });
         scope.$watch('gtModel', function (newValue) {
-          dateElement.data('DateTimePicker').date(moment(newValue));
+          dateElement.datetimepicker('date', moment(newValue));
         });
-        dateElementPicker.on('dp.change', function (event) {
+        var inputElement = iElement.find('input');
+        dateElement.on('change.datetimepicker', function (event) {
           $timeout(function () {
-            scope.gtModel = event.date.valueOf();
+            if (event.date && event.date.isValid()) {
+              scope.gtModel = event.date.valueOf();
+              scope.gtForm['input_' + scope.$id].$setValidity('required', true);
+              scope.gtForm['input_' + scope.$id].$setValidity('date', true);
+            } else {
+              scope.gtForm['input_' + scope.$id].$setValidity('required', !!inputElement.val());
+              scope.gtForm['input_' + scope.$id].$setValidity('date', !event.date);
+            }
           });
         });
       }

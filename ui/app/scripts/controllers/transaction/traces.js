@@ -61,6 +61,10 @@ glowroot.controller('TracesCtrl', [
     // (see https://github.com/angular/angular.js/pull/12643)
     $scope.$watch('[range.chartFrom, range.chartTo, range.chartRefresh, range.chartAutoRefresh]',
         function (newValues, oldValues) {
+          if ($scope.formCtrl.$invalid) {
+            // TODO display message to user
+            return;
+          }
           appliedFilter.from = $scope.range.chartFrom;
           appliedFilter.to = $scope.range.chartTo;
           updateLocation();
@@ -167,7 +171,10 @@ glowroot.controller('TracesCtrl', [
           });
     }
 
-    $scope.refresh = function () {
+    $scope.refresh = function (deferred) {
+      if (deferred) {
+        deferred.resolve();
+      }
       charts.applyLast($scope);
       angular.extend(appliedFilter, $scope.filter);
       $scope.range.chartRefresh++;

@@ -14,8 +14,26 @@
   limitations under the License.
 -->
 <div class="gt-header">
-  <div class="gt-header-page-name">
-    <h1>Login</h1>
+  <div class="gt-header-lhs"
+       ng-if="!layout.embeddedAgentRollup.display">
+    <h1 class="gt-header-text">
+      Login
+    </h1>
+  </div>
+  <div class="gt-header-lhs"
+       ng-if="layout.embeddedAgentRollup.display">
+    <div class="gt-header-text">
+      {{layout.embeddedAgentRollup.display}}
+    </div>
+    <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+         while chrome guesses the placement of the border based on default font and then it moves slightly
+         once font is available -->
+    <div class="gt-header-text gt-separator">
+      |
+    </div>
+    <h1 class="gt-header-text">
+      Login
+    </h1>
   </div>
 </div>
 <div ng-form
@@ -23,32 +41,30 @@
      gt-form-autofocus-on-first-input
      name="formCtrl">
   <div class="form-group">
-    <input class="form-control gt-inline-block"
+    <input class="form-control d-inline-block"
            ng-model="page.username"
            id="username"
            placeholder="Enter username"
            style="max-width: 20em;"
            aria-label="Username">
     <span class="gt-red"
-          ng-show="message"
+          ng-if="message"
           style="padding-left: 15px;">
       {{message}}
     </span>
   </div>
   <div class="form-group">
     <input type="password"
-           class="form-control gt-inline-block"
+           class="form-control d-inline-block"
            ng-model="page.password"
            id="password"
            placeholder="Enter password"
            style="max-width: 20em;"
            aria-label="Password">
   </div>
-  <div class="form-group gt-form-buttons">
-    <div gt-button
-         gt-label="Login"
-         gt-click="login(deferred)"
-         gt-disabled="!page.password">
-    </div>
+  <div gt-button
+       gt-label="Login"
+       gt-click="login(deferred)"
+       gt-disabled="!page.password">
   </div>
 </div>

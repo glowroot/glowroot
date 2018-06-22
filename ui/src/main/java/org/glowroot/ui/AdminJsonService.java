@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -438,8 +440,7 @@ class AdminJsonService {
                     configRepository.getLazySecretKey(), mailService);
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
-            // using Throwable.toString() to capture exception class as well
-            return createErrorResponse(e.toString());
+            return createErrorResponse(e);
         }
         return "{}";
     }
@@ -464,13 +465,26 @@ class AdminJsonService {
         }
         String testUrl = configDtoWithoutNewPassword.testUrl();
         checkNotNull(testUrl);
+        URI uri;
+        try {
+            uri = new URI(testUrl);
+        } catch (URISyntaxException e) {
+            logger.debug(e.getMessage(), e);
+            return createErrorResponse(e);
+        }
+        if (uri.getScheme() == null) {
+            return createErrorResponse("Invalid url, missing protocol (e.g. http://)");
+        }
+        if (uri.getHost() == null) {
+            return createErrorResponse("Invalid url, missing host");
+        }
         String responseContent;
         try {
             responseContent = httpClient.getWithHttpProxyConfigOverride(testUrl,
                     configDtoWithoutNewPassword.convert(configRepository), passwordOverride);
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
@@ -512,7 +526,7 @@ class AdminJsonService {
                     configRepository.getLazySecretKey());
         } catch (AuthenticationException e) {
             logger.debug(e.getMessage(), e);
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
         Set<String> glowrootRoles = LdapAuthentication.getGlowrootRoles(ldapGroupDns, config);
         StringWriter sw = new StringWriter();
@@ -682,6 +696,16 @@ class AdminJsonService {
         return mapper.writeValueAsString(ImmutableCentralWebConfigResponse.builder()
                 .config(CentralWebConfigDto.create(configRepository.getCentralWebConfig()))
                 .build());
+    }
+
+    private static String createErrorResponse(Exception exception) throws IOException {
+        String message = exception.getLocalizedMessage();
+        String exceptionName = exception.getClass().getSimpleName();
+        if (message == null) {
+            return createErrorResponse(exceptionName);
+        } else {
+            return createErrorResponse(exceptionName + ": " + message);
+        }
     }
 
     private static String createErrorResponse(@Nullable String message) throws IOException {

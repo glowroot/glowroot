@@ -30,21 +30,19 @@
 </div>
 <div
     ng-if="loaded && !agentNotConnected && !agentUnsupportedOperation && !unavailableDueToRunningInJre && !unavailableDueToRunningInIbmJvm">
-  <div class="clearfix">
+  <div class="d-flex justify-content-between pb-4">
     <div gt-button
          gt-label="Refresh"
-         gt-click="refresh(deferred)"
-         style="float: left; margin-bottom: 20px;">
+         gt-click="refresh(deferred)">
     </div>
-    <div style="float: right;">
-      <button class="btn btn-default"
-              ng-click="exportAsCsv()">
-        Export as text
-      </button>
-    </div>
+    <button class="btn btn-secondary"
+            ng-click="exportAsCsv()">
+      Export as text
+    </button>
   </div>
   <div ng-form
-       class="form-horizontal well">
+       class="card p-3"
+       style="background-color: #edeae4;">
     <div class="row">
       <div class="col-md-9">
         <div class="input-group" style="width: 100%;">
@@ -61,7 +59,7 @@
       </div>
       <div class="col-md-3">
         <select ng-model="page.filterLimit"
-                class="heap-histogram-limit form-control inline-block"
+                class="heap-histogram-limit custom-select inline-block"
                 style="max-width: 8em;"
                 aria-label="Display limit">
           <option value="" disabled>Display limit</option>
@@ -76,34 +74,34 @@
       </div>
     </div>
   </div>
-  <table class="table table-sortable" style="table-layout: fixed;">
+  <table class="table gt-heap-histogram-table mt-4" style="table-layout: fixed;">
     <thead>
     <tr>
       <th scope="col"
           ng-attr-aria-sort="{{ngAttrAriaSort('class-name')}}">
         <a ng-href="jvm/heap-histogram{{sortQueryString('class-name')}}" class="gt-sortable-table-header">
           <span ng-class="sortIconClass('class-name')"
-                ng-show="sortAttribute === 'class-name'">
+                ng-if="sortAttribute === 'class-name'">
           </span>
           Class name
         </a>
       </th>
-      <th class="gt-heap-histogram-other-column"
+      <th class="gt-heap-histogram-bytes-column"
           scope="col"
           ng-attr-aria-sort="{{ngAttrAriaSort('bytes')}}">
         <a ng-href="jvm/heap-histogram{{sortQueryString('bytes')}}" class="gt-sortable-table-header">
           <span ng-class="sortIconClass('bytes')"
-                ng-show="sortAttribute === 'bytes'">
+                ng-if="sortAttribute === 'bytes'">
           </span>
           Bytes
         </a>
       </th>
-      <th class="gt-heap-histogram-other-column"
+      <th class="gt-heap-histogram-count-column"
           scope="col"
           ng-attr-aria-sort="{{ngAttrAriaSort('count')}}">
         <a ng-href="jvm/heap-histogram{{sortQueryString('count')}}" class="gt-sortable-table-header">
           <span ng-class="sortIconClass('count')"
-                ng-show="sortAttribute === 'count'">
+                ng-if="sortAttribute === 'count'">
           </span>
           Count
         </a>
@@ -113,8 +111,8 @@
     <tfoot>
     <tr>
       <th scope="row" style="font-weight: normal;">Total</th>
-      <td class="gt-heap-histogram-other-column">{{filteredTotalBytes}}</td>
-      <td class="gt-heap-histogram-other-column">{{filteredTotalCount}}</td>
+      <td class="gt-heap-histogram-bytes-column">{{filteredTotalBytes}}</td>
+      <td class="gt-heap-histogram-count-column">{{filteredTotalCount}}</td>
     </tr>
     </tfoot>
     <tbody ng-if="!smallScreen()">
@@ -128,7 +126,7 @@
           <div style="position: absolute; height: 100%; background-color: #eee;"
                ng-style="{width: classNameBarWidth(item.bytes)}">
           </div>
-          <div style="position: relative; padding: 8px; word-break: break-all;">
+          <div style="position: relative; padding: .625rem; word-break: break-all;">
             {{item.className}}
           </div>
         </div>
@@ -138,10 +136,10 @@
           style="font-weight: normal;">
         {{item.className}}
       </th>
-      <td class="gt-heap-histogram-other-column">{{item.bytes | number}}</td>
-      <td class="gt-heap-histogram-other-column">{{item.count | number}}</td>
+      <td class="gt-heap-histogram-bytes-column">{{item.bytes | number}}</td>
+      <td class="gt-heap-histogram-count-column">{{item.count | number}}</td>
     </tr>
-    <tr ng-show="limitApplied">
+    <tr ng-if="limitApplied">
       <td>... <em>display limit applied</em></td>
       <td></td>
       <td></td>
@@ -157,16 +155,16 @@
     </tr>
     <tr ng-repeat-end>
       <td style="border-top: none; padding-top: 0;"></td>
-      <td class="gt-heap-histogram-other-column"
+      <td class="gt-heap-histogram-bytes-column"
           style="border-top: none; padding-top: 0;">
         {{item.bytes | number}}
       </td>
-      <td class="gt-heap-histogram-other-column"
+      <td class="gt-heap-histogram-count-column"
           style="border-top: none; padding-top: 0;">
         {{item.count | number}}
       </td>
     </tr>
-    <tr ng-show="limitApplied">
+    <tr ng-if="limitApplied">
       <td>... <em>display limit applied</em></td>
       <td></td>
       <td></td>

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2014-2015 the original author or authors.
+  Copyright 2014-2018 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,14 +13,32 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-panel-overlay" ng-show="httpError">
+<div class="gt-header">
+  <div class="gt-header-lhs"
+       ng-if="!layout.embeddedAgentRollup.display">
+    <h1 class="gt-header-text">
+      Flame graph (experimental)
+    </h1>
+  </div>
+  <div class="gt-header-lhs"
+       ng-if="layout.embeddedAgentRollup.display">
+    <div class="gt-header-text">
+      {{layout.embeddedAgentRollup.display}}
+    </div>
+    <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+         while chrome guesses the placement of the border based on default font and then it moves slightly
+         once font is available -->
+    <div class="gt-header-text gt-separator">
+      |
+    </div>
+    <h1 class="gt-header-text">
+      Flame graph (experimental)
+    </h1>
+  </div>
+</div>
+<div class="gt-panel-overlay" ng-if="httpError">
   <!-- need top padding so message is not hidden under navbar -->
   <div ng-include src="'template/gt-http-error.html'" style="padding-top: 50px;"></div>
-</div>
-<div class="gt-header">
-  <div class="gt-header-page-name">
-    Flame graph (experimental)
-  </div>
 </div>
 <div ng-if="filter" style="margin-bottom: 20px;">
   <div style="font-size: 20px; font-weight: bold;">
@@ -40,7 +58,7 @@
      class="gt-left-aligned-spinner"
      style="margin-left: -22px;">
 </div>
-<div ng-show="chartNoData"
+<div ng-if="chartNoData"
      style="display: table; width: 100%; height: 100%; margin-top: 50px;">
   <div style="display: table-cell; text-align: center; vertical-align: middle;">
     <div class="gt-chart-no-data">No data for this time period</div>

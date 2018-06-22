@@ -28,7 +28,7 @@
 <div ng-if="unavailableDueToRunningInIbmJvm" class="alert alert-danger" role="alert">
   This feature is not available when the agent is running in IBM J9 VM.
 </div>
-<!-- ng-show explicitly needed here instead of ng-if because thread-dump.js binds directly to #threadDump -->
+<!-- ng-show needed here instead of ng-if because thread-dump.js binds directly to #threadDump -->
 <div ng-show="loaded && !agentNotConnected && !agentUnsupportedOperation && !unavailableDueToRunningInJre && !unavailableDueToRunningInIbmJvm">
   <div class="clearfix">
     <div gt-button
@@ -37,7 +37,7 @@
          style="float: left; margin-bottom: 20px;">
     </div>
     <div style="float: right;">
-      <button class="btn btn-default"
+      <button class="btn btn-secondary"
               ng-click="exportAsText()">
         Export as text
       </button>

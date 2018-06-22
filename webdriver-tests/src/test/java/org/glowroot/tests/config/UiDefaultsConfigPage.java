@@ -15,35 +15,24 @@
  */
 package org.glowroot.tests.config;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import org.glowroot.tests.util.Utils;
+import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
 
-public class UiDefaultsConfigPage {
-
-    private final WebDriver driver;
+public class UiDefaultsConfigPage extends Page {
 
     public UiDefaultsConfigPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public WebElement getDefaultPercentilesTextField() {
-        return withWait(xpath("//div[@gt-label='Default percentiles']//input"));
+        return getWithWait(xpath("//div[@gt-label='Default percentiles']//input"));
     }
 
     public void clickSaveButton() {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
-    }
-
-    private WebElement withWait(By by) {
-        return Utils.withWait(driver, by);
-    }
-
-    private void clickWithWait(By by) {
-        Utils.clickWithWait(driver, by);
     }
 }

@@ -18,36 +18,36 @@
       {{#ifLongMessage .}}
       {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
         <div class="gt-indent2">
-          <div class="gt-inline-block gt-unexpanded-content gt-monospace">
+          <div class="d-inline-block gt-unexpanded-content gt-monospace">
             {{firstPart .}}&nbsp;<span class="gt-link-color"><strong
               class="gt-opensans gt-dotdotdot">...</strong></span>&nbsp;{{lastPart .}}
           </div>
           <!-- only convert newlines to <br>s for long messages -->
-          <div class="gt-expanded-content hide"
+          <div class="gt-expanded-content d-none"
                style="position: relative; display: inline-block;">
-            <i class="fas fa-clipboard gt-clip hide"></i>
+            <i class="fas fa-clipboard gt-clip d-none"></i>
             <div class="gt-break-word gt-pre-wrap gt-monospace gt-clip-text gt-expanded-trace-entry"
                  data-gt-trace-entry-index="{{index}}"><!--
               lack of space here is significant because of gt-pre-wrap
               -->{{message}}<!--
          --></div>
             <div>
-              <div class="hide gt-trace-detail-spinner"></div>
+              <div class="d-none gt-trace-detail-spinner"></div>
             </div>
           </div>
         </div>
       {{^}}
         <div class="gt-indent2">
-          <div class="gt-inline-block gt-content-padding gt-monospace">
+          <div class="d-inline-block gt-content-padding gt-monospace">
             {{message}}
           </div>
         </div>
       {{/ifLongMessage}}
       {{#ifNonEmptyObject detail}}
         <div class="gt-content-detail">
-          <span class="gt-inline-block gt-unexpanded-content gt-link-color gt-opensans">detail</span>
-          <span class="gt-inline-block gt-expanded-content hide">
-          <span class="gt-inline-block gt-link-color gt-opensans">detail</span>
+          <span class="d-inline-block gt-unexpanded-content gt-link-color gt-opensans">detail</span>
+          <span class="d-inline-block gt-expanded-content d-none">
+          <span class="d-inline-block gt-link-color gt-opensans">detail</span>
             {{{entryDetailHtml detail}}}
         </span>
         </div>
@@ -57,7 +57,7 @@
       <div class="{{{errorIndentClass message}}}">
         <div>
           <strong>
-            <span class="gt-inline-block gt-content-padding gt-break-word gt-pre-wrap"><!--
+            <span class="d-inline-block gt-content-padding gt-break-word gt-pre-wrap"><!--
               lack of space here is significant because of gt-pre-wrap
            -->{{error.message}}<!--
          --></span>
@@ -65,11 +65,11 @@
         </div>
         {{#if error.exception}}
           <div class="{{{exceptionIndentClass message}}}">
-            <div class="gt-inline-block gt-unexpanded-content gt-link-color gt-opensans">exception</div>
+            <div class="d-inline-block gt-unexpanded-content gt-link-color gt-opensans">exception</div>
             {{! using span so background will stretch beyond page border if needed }}
-            <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide"
+            <div class="d-inline-block gt-expanded-content gt-nowrap gt-with-clip d-none"
                  style="overflow-x: auto;">
-              <div class="gt-inline-block gt-link-color gt-opensans">exception</div>
+              <div class="d-inline-block gt-link-color gt-opensans">exception</div>
               <div class="gt-clip-text">
                 {{{exceptionHtml error.exception}}}
               </div>
@@ -81,11 +81,11 @@
     {{/if}}
     {{#if locationStackTraceElements}}
       <div class="gt-indent6">
-        <div class="gt-inline-block gt-unexpanded-content gt-link-color gt-opensans">location stack trace</div>
+        <div class="d-inline-block gt-unexpanded-content gt-link-color gt-opensans">location stack trace</div>
         {{! using span so background will stretch beyond page border if needed }}
-        <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide"
+        <div class="d-inline-block gt-expanded-content gt-nowrap gt-with-clip d-none"
              style="overflow-x: auto;">
-          <div class="gt-inline-block gt-link-color gt-opensans">location stack trace</div>
+          <div class="d-inline-block gt-link-color gt-opensans">location stack trace</div>
           <div class="gt-clip-text">
             {{{locationStackTraceHtml locationStackTraceElements}}}
           </div>
