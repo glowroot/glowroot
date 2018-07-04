@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import org.mockito.Mockito;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.TraceReader;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
 
 import static org.mockito.Mockito.mock;
 

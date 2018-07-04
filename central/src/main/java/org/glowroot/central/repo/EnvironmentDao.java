@@ -24,7 +24,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.repo.EnvironmentRepository;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

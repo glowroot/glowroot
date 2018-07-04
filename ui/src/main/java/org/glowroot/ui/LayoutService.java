@@ -41,7 +41,7 @@ import org.glowroot.common2.repo.TraceAttributeNameRepository;
 import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 

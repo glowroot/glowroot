@@ -30,7 +30,7 @@ import org.glowroot.agent.embedded.util.ImmutableColumn;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.common2.repo.EnvironmentRepository;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;

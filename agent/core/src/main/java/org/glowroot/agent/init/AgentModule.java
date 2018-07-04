@@ -42,7 +42,6 @@ import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.config.PluginDescriptor;
-import org.glowroot.agent.impl.Aggregator;
 import org.glowroot.agent.impl.BytecodeServiceImpl;
 import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.agent.impl.ConfigServiceImpl;
@@ -52,6 +51,7 @@ import org.glowroot.agent.impl.PluginServiceImpl.ConfigServiceFactory;
 import org.glowroot.agent.impl.StackTraceCollector;
 import org.glowroot.agent.impl.TimerNameCache;
 import org.glowroot.agent.impl.TransactionCollector;
+import org.glowroot.agent.impl.TransactionProcessor;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionService;
 import org.glowroot.agent.impl.UserProfileScheduler;
@@ -109,8 +109,8 @@ public class AgentModule {
     private final BytecodeServiceImpl bytecodeService;
 
     private volatile @MonotonicNonNull DeadlockedActiveWeavingRunnable deadlockedActiveWeavingRunnable;
-    private volatile @MonotonicNonNull Aggregator aggregator;
-    private volatile @MonotonicNonNull TransactionCollector transactionCollector;
+    private volatile @MonotonicNonNull TransactionCollector traceCollector;
+    private volatile @MonotonicNonNull TransactionProcessor transactionProcessor;
 
     private volatile @MonotonicNonNull LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
@@ -268,10 +268,10 @@ public class AgentModule {
         userProfileScheduler.setBackgroundExecutor(backgroundExecutor);
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
         transactionService.setThreadAllocatedBytes(threadAllocatedBytes.getService());
-        aggregator = new Aggregator(collector, configService, ROLLUP_0_INTERVAL_MILLIS, clock);
-        transactionCollector =
-                new TransactionCollector(configService, collector, aggregator, clock, ticker);
-        transactionService.setTransactionCollector(transactionCollector);
+        traceCollector = new TransactionCollector(configService, collector, clock, ticker);
+        transactionProcessor = new TransactionProcessor(collector, traceCollector, configService,
+                ROLLUP_0_INTERVAL_MILLIS, clock);
+        transactionService.setTransactionProcessor(transactionProcessor);
 
         lazyPlatformMBeanServer = LazyPlatformMBeanServer.create(mainClass);
         bytecodeService.setOnExitingGetPlatformMBeanServer(new Runnable() {
@@ -302,17 +302,17 @@ public class AgentModule {
         stackTraceCollector = new StackTraceCollector(transactionRegistry, configService, random);
 
         immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(backgroundExecutor,
-                transactionRegistry, transactionCollector, configService, ticker);
+                transactionRegistry, traceCollector, configService, ticker);
         immedateTraceStoreWatcher.scheduleWithFixedDelay(backgroundExecutor,
                 ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
 
-        liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, transactionCollector,
+        liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, traceCollector,
                 clock, ticker);
-        liveAggregateRepository = new LiveAggregateRepositoryImpl(aggregator);
+        liveAggregateRepository = new LiveAggregateRepositoryImpl(transactionProcessor);
         liveWeavingService = new LiveWeavingServiceImpl(analyzedWorld, instrumentation,
                 configService, adviceCache, jvmRetransformClassesSupported);
         liveJvmService = new LiveJvmServiceImpl(lazyPlatformMBeanServer, transactionRegistry,
-                transactionCollector, threadAllocatedBytes.getAvailability(), configService,
+                traceCollector, threadAllocatedBytes.getAvailability(), configService,
                 glowrootJarFile);
     }
 
@@ -466,11 +466,11 @@ public class AgentModule {
         if (lazyPlatformMBeanServer != null) {
             lazyPlatformMBeanServer.close();
         }
-        if (transactionCollector != null) {
-            transactionCollector.close();
+        if (traceCollector != null) {
+            traceCollector.close();
         }
-        if (aggregator != null) {
-            aggregator.close();
+        if (transactionProcessor != null) {
+            transactionProcessor.close();
         }
         if (deadlockedActiveWeavingRunnable != null) {
             deadlockedActiveWeavingRunnable.cancel();

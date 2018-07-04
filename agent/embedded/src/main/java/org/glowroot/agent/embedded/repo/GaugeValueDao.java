@@ -44,7 +44,7 @@ import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.util.Gauges;
 import org.glowroot.common2.repo.util.RollupLevelService;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.glowroot.agent.util.Checkers.castUntainted;

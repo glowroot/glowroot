@@ -53,7 +53,6 @@ public class TransactionCollector {
 
     private final ExecutorService dedicatedExecutor;
     private final Collector collector;
-    private final Aggregator aggregator;
     private final Clock clock;
     private final Ticker ticker;
     private final Set<Transaction> pendingTransactions = Sets.newCopyOnWriteArraySet();
@@ -66,15 +65,14 @@ public class TransactionCollector {
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private long defaultSlowThresholdNanos;
 
-    public TransactionCollector(final ConfigService configService, Collector collector,
-            Aggregator aggregator, Clock clock, Ticker ticker) {
+    public TransactionCollector(final ConfigService configService, Collector collector, Clock clock,
+            Ticker ticker) {
         this.collector = collector;
-        this.aggregator = aggregator;
         this.clock = clock;
         this.ticker = ticker;
         dedicatedExecutor = Executors
                 .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Trace-Collector"));
-        configService.addConfigListener(new UpdateSlowThresholds(configService));
+        configService.addConfigListener(new UpdateLocalConfig(configService));
     }
 
     public boolean shouldStoreSlow(Transaction transaction) {
@@ -124,10 +122,6 @@ public class TransactionCollector {
     }
 
     void onCompletedTransaction(final Transaction transaction) {
-        // capture time is calculated by the aggregator because it depends on monotonically
-        // increasing capture times so it can flush aggregates without concern for new data
-        // arriving with a prior capture time
-        long captureTime = aggregator.add(transaction);
         final boolean slow = shouldStoreSlow(transaction);
         if (!slow && !shouldStoreError(transaction)) {
             return;
@@ -140,12 +134,6 @@ public class TransactionCollector {
             return;
         }
         pendingTransactions.add(transaction);
-
-        // this need to be called inside the transaction thread
-        transaction.onCompleteWillStoreTrace(captureTime);
-
-        // transaction is ended, so Executor Plugin won't tie this async work to the transaction
-        // (which is good)
         dedicatedExecutor.execute(new Runnable() {
             @Override
             public void run() {
@@ -178,11 +166,11 @@ public class TransactionCollector {
         }
     }
 
-    private class UpdateSlowThresholds implements ConfigListener {
+    private class UpdateLocalConfig implements ConfigListener {
 
         private final ConfigService configService;
 
-        private UpdateSlowThresholds(ConfigService configService) {
+        private UpdateLocalConfig(ConfigService configService) {
             this.configService = configService;
         }
 

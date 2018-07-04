@@ -39,7 +39,7 @@ import org.glowroot.agent.config.ImmutableGaugeConfig;
 import org.glowroot.agent.config.ImmutableMBeanAttribute;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.util.Clock;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;

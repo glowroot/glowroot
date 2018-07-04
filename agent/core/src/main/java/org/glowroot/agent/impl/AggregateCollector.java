@@ -43,8 +43,8 @@ import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.ProfileCollector;
-import org.glowroot.common.model.TransactionErrorSummaryCollector;
-import org.glowroot.common.model.TransactionSummaryCollector;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
+import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -179,7 +179,7 @@ class AggregateCollector {
         collector.mergeSummary(totalDurationNanos, transactionCount, 0);
     }
 
-    void mergeTransactionSummariesInto(TransactionSummaryCollector collector) {
+    void mergeTransactionNameSummariesInto(TransactionNameSummaryCollector collector) {
         checkNotNull(transactionName);
         collector.collect(transactionName, totalDurationNanos, transactionCount, 0);
     }
@@ -188,7 +188,7 @@ class AggregateCollector {
         collector.mergeErrorSummary(errorCount, transactionCount, 0);
     }
 
-    void mergeTransactionErrorSummariesInto(TransactionErrorSummaryCollector collector) {
+    void mergeTransactionNameErrorSummariesInto(TransactionNameErrorSummaryCollector collector) {
         checkNotNull(transactionName);
         if (errorCount != 0) {
             collector.collect(transactionName, errorCount, transactionCount, 0);
@@ -295,19 +295,19 @@ class AggregateCollector {
 
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
         private double totalCpuNanos;
-        private double totalBlockedMillis;
-        private double totalWaitedMillis;
+        private long totalBlockedMillis;
+        private long totalWaitedMillis;
         private double totalAllocatedBytes;
 
         @Override
         public void mergeThreadStats(ThreadStats threadStats) {
-            totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
+            totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getCpuNanos());
             totalBlockedMillis =
-                    NotAvailableAware.add(totalBlockedMillis, threadStats.getTotalBlockedMillis());
+                    NotAvailableAware.add(totalBlockedMillis, threadStats.getBlockedMillis());
             totalWaitedMillis =
-                    NotAvailableAware.add(totalWaitedMillis, threadStats.getTotalWaitedMillis());
+                    NotAvailableAware.add(totalWaitedMillis, threadStats.getWaitedMillis());
             totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
-                    threadStats.getTotalAllocatedBytes());
+                    threadStats.getAllocatedBytes());
         }
 
         public Aggregate.ThreadStats toProto() {

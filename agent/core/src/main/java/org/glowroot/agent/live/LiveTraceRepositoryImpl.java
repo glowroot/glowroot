@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.live;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,11 +27,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.collector.Collector.TraceVisitor;
 import org.glowroot.agent.impl.TraceCreator;
 import org.glowroot.agent.impl.Transaction;
+import org.glowroot.agent.impl.Transaction.TraceEntryVisitor;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.ErrorMessage;
@@ -67,7 +66,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     // checks active traces first, then pending traces (and finally caller should check stored
     // traces) to make sure that the trace is not missed if it is in transition between these states
     @Override
-    public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) throws Exception {
+    public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -78,7 +77,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Entries getEntries(String agentId, String traceId) throws Exception {
+    public @Nullable Entries getEntries(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -95,7 +94,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Queries getQueries(String agentId, String traceId) throws Exception {
+    public @Nullable Queries getQueries(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -110,8 +109,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Profile getMainThreadProfile(String agentId, String traceId)
-            throws IOException {
+    public @Nullable Profile getMainThreadProfile(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -122,8 +120,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Profile getAuxThreadProfile(String agentId, String traceId)
-            throws IOException {
+    public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -241,12 +238,12 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         return transactionName == null || transactionName.equals(transaction.getTransactionName());
     }
 
-    private Trace.Header createTraceHeader(Transaction transaction) throws Exception {
+    private Trace.Header createTraceHeader(Transaction transaction) {
         // capture time before checking if complete to guard against condition where partial
         // trace header is created with captureTime > the real (completed) capture time
         long captureTime = clock.currentTimeMillis();
         long captureTick = ticker.read();
-        if (transaction.isCompleted()) {
+        if (transaction.isFullyCompleted()) {
             return TraceCreator.createCompletedTraceHeader(transaction);
         } else {
             return TraceCreator.createPartialTraceHeader(transaction, captureTime, captureTick);
@@ -254,7 +251,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     private TraceReader createTraceReader(Transaction transaction) {
-        if (transaction.isCompleted()) {
+        if (transaction.isFullyCompleted()) {
             return TraceCreator.createTraceReaderForCompleted(transaction, true);
         } else {
             return TraceCreator.createTraceReaderForPartial(transaction, clock.currentTimeMillis(),
@@ -333,7 +330,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         }
     }
 
-    private static class CollectingEntryVisitor implements EntryVisitor {
+    private static class CollectingEntryVisitor implements TraceEntryVisitor {
 
         private final List<Trace.Entry> entries = Lists.newArrayList();
 

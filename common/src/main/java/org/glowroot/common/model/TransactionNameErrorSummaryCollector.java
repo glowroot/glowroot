@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,38 +26,41 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import org.immutables.value.Value;
 
-public class TransactionErrorSummaryCollector {
+public class TransactionNameErrorSummaryCollector {
 
     @VisibleForTesting
-    static final Ordering<TransactionErrorSummary> orderingByErrorCountDesc =
-            new Ordering<TransactionErrorSummary>() {
+    static final Ordering<TransactionNameErrorSummary> orderingByErrorCountDesc =
+            new Ordering<TransactionNameErrorSummary>() {
                 @Override
-                public int compare(TransactionErrorSummary left, TransactionErrorSummary right) {
+                public int compare(TransactionNameErrorSummary left,
+                        TransactionNameErrorSummary right) {
                     return Longs.compare(right.errorCount(), left.errorCount());
                 }
             };
 
     @VisibleForTesting
-    static final Ordering<TransactionErrorSummary> orderingByErrorRateDesc =
-            new Ordering<TransactionErrorSummary>() {
+    static final Ordering<TransactionNameErrorSummary> orderingByErrorRateDesc =
+            new Ordering<TransactionNameErrorSummary>() {
                 @Override
-                public int compare(TransactionErrorSummary left, TransactionErrorSummary right) {
+                public int compare(TransactionNameErrorSummary left,
+                        TransactionNameErrorSummary right) {
                     return Doubles.compare(right.errorCount() / (double) right.transactionCount(),
                             left.errorCount() / (double) left.transactionCount());
                 }
             };
 
-    private final Map<String, MutableTransactionErrorSummary> transactionErrorSummaries =
+    private final Map<String, MutableTransactionNameErrorSummary> transactionNameErrorSummaries =
             Maps.newHashMap();
 
     private long lastCaptureTime;
 
     public void collect(String transactionName, long errorCount, long transactionCount,
             long captureTime) {
-        MutableTransactionErrorSummary mtes = transactionErrorSummaries.get(transactionName);
+        MutableTransactionNameErrorSummary mtes =
+                transactionNameErrorSummaries.get(transactionName);
         if (mtes == null) {
-            mtes = new MutableTransactionErrorSummary();
-            transactionErrorSummaries.put(transactionName, mtes);
+            mtes = new MutableTransactionNameErrorSummary();
+            transactionNameErrorSummaries.put(transactionName, mtes);
         }
         mtes.errorCount += errorCount;
         mtes.transactionCount += transactionCount;
@@ -68,26 +71,27 @@ public class TransactionErrorSummaryCollector {
         return lastCaptureTime;
     }
 
-    public Result<TransactionErrorSummary> getResult(ErrorSummarySortOrder sortOrder, int limit) {
-        List<TransactionErrorSummary> summaries = Lists.newArrayList();
-        for (Map.Entry<String, MutableTransactionErrorSummary> entry : transactionErrorSummaries
+    public Result<TransactionNameErrorSummary> getResult(ErrorSummarySortOrder sortOrder,
+            int limit) {
+        List<TransactionNameErrorSummary> summaries = Lists.newArrayList();
+        for (Map.Entry<String, MutableTransactionNameErrorSummary> entry : transactionNameErrorSummaries
                 .entrySet()) {
-            summaries.add(ImmutableTransactionErrorSummary.builder()
+            summaries.add(ImmutableTransactionNameErrorSummary.builder()
                     .transactionName(entry.getKey())
                     .errorCount(entry.getValue().errorCount)
                     .transactionCount(entry.getValue().transactionCount)
                     .build());
         }
-        summaries = sortTransactionErrorSummaries(summaries, sortOrder);
+        summaries = sortTransactionNameErrorSummaries(summaries, sortOrder);
         if (summaries.size() > limit) {
-            return new Result<TransactionErrorSummary>(summaries.subList(0, limit), true);
+            return new Result<TransactionNameErrorSummary>(summaries.subList(0, limit), true);
         } else {
-            return new Result<TransactionErrorSummary>(summaries, false);
+            return new Result<TransactionNameErrorSummary>(summaries, false);
         }
     }
 
-    private static List<TransactionErrorSummary> sortTransactionErrorSummaries(
-            Iterable<TransactionErrorSummary> errorSummaries,
+    private static List<TransactionNameErrorSummary> sortTransactionNameErrorSummaries(
+            Iterable<TransactionNameErrorSummary> errorSummaries,
             ErrorSummarySortOrder sortOrder) {
         switch (sortOrder) {
             case ERROR_COUNT:
@@ -99,7 +103,7 @@ public class TransactionErrorSummaryCollector {
         }
     }
 
-    private static class MutableTransactionErrorSummary {
+    private static class MutableTransactionNameErrorSummary {
         private long errorCount;
         private long transactionCount;
     }
@@ -109,7 +113,7 @@ public class TransactionErrorSummaryCollector {
     }
 
     @Value.Immutable
-    public interface TransactionErrorSummary {
+    public interface TransactionNameErrorSummary {
         String transactionName();
         long errorCount();
         long transactionCount();

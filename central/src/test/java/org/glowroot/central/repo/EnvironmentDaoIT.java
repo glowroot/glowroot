@@ -22,8 +22,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Session;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.HostInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

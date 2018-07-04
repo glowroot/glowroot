@@ -33,7 +33,7 @@ import org.glowroot.common2.repo.ImmutableTraceCount;
 import org.glowroot.common2.repo.ImmutableTraceCounts;
 import org.glowroot.common2.repo.ImmutableTraceOverallCount;
 import org.glowroot.common2.repo.RepoAdmin;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;

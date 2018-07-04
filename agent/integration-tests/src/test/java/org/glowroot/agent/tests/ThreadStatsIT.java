@@ -58,10 +58,10 @@ public class ThreadStatsIT {
         Trace trace = container.execute(Normal.class);
 
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalAllocatedBytes())
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                 .isNotEqualTo(-1);
     }
 
@@ -72,10 +72,10 @@ public class ThreadStatsIT {
         // when
         Trace trace = container.execute(Normal.class);
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalAllocatedBytes()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes()).isEqualTo(-1);
     }
 
     @Test
@@ -84,10 +84,10 @@ public class ThreadStatsIT {
         Trace trace = container.execute(ThreadCpuTimeDisabled.class);
 
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalAllocatedBytes())
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                 .isNotEqualTo(-1);
     }
 
@@ -97,10 +97,10 @@ public class ThreadStatsIT {
         Trace trace = container.execute(ThreadCpuTimeDisabledMid.class);
 
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalAllocatedBytes())
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                 .isNotEqualTo(-1);
     }
 
@@ -110,10 +110,10 @@ public class ThreadStatsIT {
         Trace trace = container.execute(ThreadCpuTimeEnabledMid.class);
 
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalAllocatedBytes())
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                 .isNotEqualTo(-1);
     }
 
@@ -123,10 +123,10 @@ public class ThreadStatsIT {
         Trace trace = container.execute(ThreadContentionMonitoringDisabled.class);
 
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalAllocatedBytes())
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                 .isNotEqualTo(-1);
     }
 
@@ -136,10 +136,10 @@ public class ThreadStatsIT {
         Trace trace = container.execute(ThreadContentionMonitoringDisabledMid.class);
 
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalAllocatedBytes())
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                 .isNotEqualTo(-1);
     }
 
@@ -149,10 +149,10 @@ public class ThreadStatsIT {
         Trace trace = container.execute(ThreadContentionMonitoringEnabledMid.class);
 
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalAllocatedBytes())
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
                 .isNotEqualTo(-1);
     }
 
@@ -163,10 +163,10 @@ public class ThreadStatsIT {
         // when
         Trace trace = container.execute(BothDisabled.class);
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getTotalAllocatedBytes()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
+        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes()).isEqualTo(-1);
     }
 
     private static void disableCaptureThreadStats() throws Exception {

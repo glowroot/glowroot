@@ -29,15 +29,15 @@ import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
-import org.glowroot.common.live.ImmutableOverallQuery;
-import org.glowroot.common.live.ImmutableTransactionQuery;
-import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.ImmutableAggregateQuery;
+import org.glowroot.common.live.ImmutableSummaryQuery;
+import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
+import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.model.TransactionSummaryCollector;
-import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
-import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
+import org.glowroot.common.model.TransactionNameSummaryCollector;
+import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
+import org.glowroot.common.model.TransactionNameSummaryCollector.TransactionNameSummary;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
@@ -98,24 +98,24 @@ public class AggregateDaoTest {
         populateAggregates();
 
         // when
-        TransactionQuery query = ImmutableTransactionQuery.builder()
+        AggregateQuery aggregateQuery = ImmutableAggregateQuery.builder()
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
                 .rollupLevel(0)
                 .build();
-        OverallQuery query2 = ImmutableOverallQuery.builder()
+        SummaryQuery summaryQuery = ImmutableSummaryQuery.builder()
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
                 .rollupLevel(0)
                 .build();
-        TransactionSummaryCollector collector = new TransactionSummaryCollector();
+        TransactionNameSummaryCollector collector = new TransactionNameSummaryCollector();
         List<OverviewAggregate> overallAggregates =
-                aggregateDao.readOverviewAggregates(AGENT_ID, query);
-        aggregateDao.mergeTransactionSummariesInto(AGENT_ID, query2, SummarySortOrder.TOTAL_TIME,
-                10, collector);
-        Result<TransactionSummary> queryResult =
+                aggregateDao.readOverviewAggregates(AGENT_ID, aggregateQuery);
+        aggregateDao.mergeTransactionNameSummariesInto(AGENT_ID, summaryQuery,
+                SummarySortOrder.TOTAL_TIME, 10, collector);
+        Result<TransactionNameSummary> queryResult =
                 collector.getResult(SummarySortOrder.TOTAL_TIME, 10);
 
         // then

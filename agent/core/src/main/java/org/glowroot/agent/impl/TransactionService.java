@@ -52,7 +52,7 @@ public class TransactionService implements ConfigListener {
     private int maxProfileSamples;
 
     // intentionally not volatile for small optimization
-    private @MonotonicNonNull TransactionCollector transactionCollector;
+    private @MonotonicNonNull TransactionProcessor transactionProcessor;
     // intentionally not volatile for small optimization
     private @Nullable ThreadAllocatedBytes threadAllocatedBytes;
 
@@ -76,8 +76,8 @@ public class TransactionService implements ConfigListener {
         this.ticker = ticker;
     }
 
-    public void setTransactionCollector(TransactionCollector transactionCollector) {
-        this.transactionCollector = transactionCollector;
+    public void setTransactionProcessor(TransactionProcessor transactionProcessor) {
+        this.transactionProcessor = transactionProcessor;
     }
 
     public void setThreadAllocatedBytes(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
@@ -130,12 +130,8 @@ public class TransactionService implements ConfigListener {
 
         @Override
         public void completed(Transaction transaction) {
-            if (transactionCollector != null) {
-                // send to trace collector before removing from trace registry so that trace
-                // collector can cover the gap
-                // (via TransactionCollectorImpl.getPendingCompleteTraces())
-                // between removing the trace from the registry and storing it
-                transactionCollector.onCompletedTransaction(transaction);
+            if (transactionProcessor != null) {
+                transactionProcessor.processOnCompletion(transaction);
             }
         }
     }

@@ -96,7 +96,7 @@ class TraceTestData {
         }
 
         @Override
-        public void accept(TraceVisitor traceVisitor) throws Exception {
+        public void accept(TraceVisitor traceVisitor) {
             traceVisitor.visitHeader(header);
         }
 

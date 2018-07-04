@@ -22,37 +22,34 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class ThreadStatsCollectorImpl implements ThreadStatsCollector {
 
-    private long totalCpuNanos;
-    private long totalBlockedMillis;
-    private long totalWaitedMillis;
-    private long totalAllocatedBytes;
+    private long cpuNanos;
+    private long blockedMillis;
+    private long waitedMillis;
+    private long allocatedBytes;
 
     @Override
     public void mergeThreadStats(ThreadStats threadStats) {
-        totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
-        totalBlockedMillis =
-                NotAvailableAware.add(totalBlockedMillis, threadStats.getTotalBlockedMillis());
-        totalWaitedMillis =
-                NotAvailableAware.add(totalWaitedMillis, threadStats.getTotalWaitedMillis());
-        totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
-                threadStats.getTotalAllocatedBytes());
+        cpuNanos = NotAvailableAware.add(cpuNanos, threadStats.getCpuNanos());
+        blockedMillis = NotAvailableAware.add(blockedMillis, threadStats.getBlockedMillis());
+        waitedMillis = NotAvailableAware.add(waitedMillis, threadStats.getWaitedMillis());
+        allocatedBytes =
+                NotAvailableAware.add(allocatedBytes, threadStats.getAllocatedBytes());
     }
 
     ThreadStats getMergedThreadStats() {
-        return new ThreadStats(totalCpuNanos, totalBlockedMillis, totalWaitedMillis,
-                totalAllocatedBytes);
+        return new ThreadStats(cpuNanos, blockedMillis, waitedMillis, allocatedBytes);
     }
 
-    long getTotalCpuNanos() {
-        return totalCpuNanos;
+    long getCpuNanos() {
+        return cpuNanos;
     }
 
     public Trace.ThreadStats toProto() {
         return Trace.ThreadStats.newBuilder()
-                .setTotalCpuNanos(totalCpuNanos)
-                .setTotalBlockedNanos(NotAvailableAware.millisToNanos(totalBlockedMillis))
-                .setTotalWaitedNanos(NotAvailableAware.millisToNanos(totalWaitedMillis))
-                .setTotalAllocatedBytes(totalAllocatedBytes)
+                .setCpuNanos(cpuNanos)
+                .setBlockedNanos(NotAvailableAware.millisToNanos(blockedMillis))
+                .setWaitedNanos(NotAvailableAware.millisToNanos(waitedMillis))
+                .setAllocatedBytes(allocatedBytes)
                 .build();
     }
 }

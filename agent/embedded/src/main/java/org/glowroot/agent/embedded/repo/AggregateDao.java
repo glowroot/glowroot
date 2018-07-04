@@ -49,21 +49,21 @@ import org.glowroot.common.Constants;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
-import org.glowroot.common.model.TransactionErrorSummaryCollector;
-import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
-import org.glowroot.common.model.TransactionSummaryCollector;
-import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector.ErrorSummarySortOrder;
+import org.glowroot.common.model.TransactionNameSummaryCollector;
+import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.AggregateRepository;
@@ -249,54 +249,54 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeOverallSummaryInto(String agentRollupId, OverallQuery query,
+    public void mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
             OverallSummaryCollector collector) throws Exception {
         dataSource.query(new OverallSummaryQuery(collector, query));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeTransactionSummariesInto(String agentRollupId, OverallQuery query,
-            SummarySortOrder sortOrder, int limit, TransactionSummaryCollector collector)
+    public void mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
+            SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector)
             throws Exception {
-        dataSource.query(
-                new TransactionSummaryQuery(query, sortOrder, limit, collector));
+        dataSource.query(new TransactionNameSummaryQuery(query, sortOrder, limit, collector));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeOverallErrorSummaryInto(String agentRollupId, OverallQuery query,
+    public void mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
             OverallErrorSummaryCollector collector) throws Exception {
         dataSource.query(new OverallErrorSummaryQuery(collector, query));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeTransactionErrorSummariesInto(String agentRollupId, OverallQuery query,
-            ErrorSummarySortOrder sortOrder, int limit, TransactionErrorSummaryCollector collector)
+    public void mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
+            ErrorSummarySortOrder sortOrder, int limit,
+            TransactionNameErrorSummaryCollector collector)
             throws Exception {
-        dataSource.query(new TransactionErrorSummaryQuery(query, sortOrder, limit,
+        dataSource.query(new TransactionNameErrorSummaryQuery(query, sortOrder, limit,
                 collector));
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<OverviewAggregate> readOverviewAggregates(String agentRollupId,
-            TransactionQuery query) throws Exception {
+            AggregateQuery query) throws Exception {
         return dataSource.query(new OverviewAggregateQuery(query));
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<PercentileAggregate> readPercentileAggregates(String agentRollupId,
-            TransactionQuery query) throws Exception {
+            AggregateQuery query) throws Exception {
         return dataSource.query(new PercentileAggregateQuery(query));
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<ThroughputAggregate> readThroughputAggregates(String agentRollupId,
-            TransactionQuery query) throws Exception {
+            AggregateQuery query) throws Exception {
         return dataSource.query(new ThroughputAggregateQuery(query));
     }
 
@@ -308,7 +308,7 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeQueriesInto(String agentRollupId, TransactionQuery query,
+    public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
             QueryCollector collector) throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
@@ -335,7 +335,7 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeServiceCallsInto(String agentRollupId, TransactionQuery query,
+    public void mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
             ServiceCallCollector collector) throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
@@ -362,21 +362,21 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeMainThreadProfilesInto(String agentRollupId, TransactionQuery query,
+    public void mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
             ProfileCollector collector) throws Exception {
         mergeProfilesInto(collector, query, "main_thread_profile_capped_id");
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeAuxThreadProfilesInto(String agentRollupId, TransactionQuery query,
+    public void mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
             ProfileCollector collector) throws Exception {
         mergeProfilesInto(collector, query, "aux_thread_profile_capped_id");
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasMainThreadProfile(String agentRollupId, TransactionQuery query)
+    public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query)
             throws Exception {
         return !dataSource.query(new CappedIdQuery("main_thread_profile_capped_id", query))
                 .isEmpty();
@@ -384,7 +384,7 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasAuxThreadProfile(String agentRollupId, TransactionQuery query)
+    public boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query)
             throws Exception {
         return !dataSource.query(new CappedIdQuery("aux_thread_profile_capped_id", query))
                 .isEmpty();
@@ -392,7 +392,7 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveMainThreadProfile(String agentRollupId, TransactionQuery query)
+    public boolean shouldHaveMainThreadProfile(String agentRollupId, AggregateQuery query)
             throws Exception {
         return dataSource
                 .query(new ShouldHaveSomethingQuery(query, "main_thread_profile_capped_id"));
@@ -400,7 +400,7 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveAuxThreadProfile(String agentRollupId, TransactionQuery query)
+    public boolean shouldHaveAuxThreadProfile(String agentRollupId, AggregateQuery query)
             throws Exception {
         return dataSource
                 .query(new ShouldHaveSomethingQuery(query, "aux_thread_profile_capped_id"));
@@ -408,14 +408,14 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveQueries(String agentRollupId, TransactionQuery query)
+    public boolean shouldHaveQueries(String agentRollupId, AggregateQuery query)
             throws Exception {
         return dataSource.query(new ShouldHaveSomethingQuery(query, "queries_capped_id"));
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveServiceCalls(String agentRollupId, TransactionQuery query)
+    public boolean shouldHaveServiceCalls(String agentRollupId, AggregateQuery query)
             throws Exception {
         return dataSource.query(new ShouldHaveSomethingQuery(query, "service_calls_capped_id"));
     }
@@ -437,7 +437,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private void mergeProfilesInto(ProfileCollector collector, TransactionQuery query,
+    private void mergeProfilesInto(ProfileCollector collector, AggregateQuery query,
             @Untainted String cappedIdColumnName) throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
@@ -567,7 +567,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private static @Untainted String getTableName(TransactionQuery query) {
+    private static @Untainted String getTableName(AggregateQuery query) {
         if (query.transactionName() == null) {
             return "aggregate_tt_rollup_" + castUntainted(query.rollupLevel());
         } else {
@@ -575,7 +575,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private static @Untainted String getTransactionNameCriteria(TransactionQuery query) {
+    private static @Untainted String getTransactionNameCriteria(AggregateQuery query) {
         if (query.transactionName() == null) {
             return "";
         } else {
@@ -583,7 +583,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private static int bindQuery(PreparedStatement preparedStatement, TransactionQuery query)
+    private static int bindQuery(PreparedStatement preparedStatement, AggregateQuery query)
             throws SQLException {
         int i = 1;
         preparedStatement.setString(i++, query.transactionType());
@@ -621,9 +621,9 @@ public class AggregateDao implements AggregateRepository {
     private static class OverallSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
         private final OverallSummaryCollector collector;
-        private final OverallQuery query;
+        private final SummaryQuery query;
 
-        private OverallSummaryQuery(OverallSummaryCollector collector, OverallQuery query) {
+        private OverallSummaryQuery(OverallSummaryCollector collector, SummaryQuery query) {
             this.collector = collector;
             this.query = query;
         }
@@ -665,16 +665,16 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private static class TransactionSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
+    private static class TransactionNameSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
-        private final OverallQuery query;
+        private final SummaryQuery query;
         private final SummarySortOrder sortOrder;
         private final int limit;
 
-        private final TransactionSummaryCollector collector;
+        private final TransactionNameSummaryCollector collector;
 
-        private TransactionSummaryQuery(OverallQuery query, SummarySortOrder sortOrder, int limit,
-                TransactionSummaryCollector collector) {
+        private TransactionNameSummaryQuery(SummaryQuery query, SummarySortOrder sortOrder,
+                int limit, TransactionNameSummaryCollector collector) {
             this.query = query;
             this.sortOrder = sortOrder;
             this.limit = limit;
@@ -742,10 +742,10 @@ public class AggregateDao implements AggregateRepository {
     private static class OverallErrorSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
         private final OverallErrorSummaryCollector collector;
-        private final OverallQuery query;
+        private final SummaryQuery query;
 
         private OverallErrorSummaryQuery(OverallErrorSummaryCollector collector,
-                OverallQuery query) {
+                SummaryQuery query) {
             this.collector = collector;
             this.query = query;
         }
@@ -785,16 +785,17 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private static class TransactionErrorSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
+    private static class TransactionNameErrorSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
-        private final OverallQuery query;
+        private final SummaryQuery query;
         private final ErrorSummarySortOrder sortOrder;
         private final int limit;
 
-        private final TransactionErrorSummaryCollector collector;
+        private final TransactionNameErrorSummaryCollector collector;
 
-        private TransactionErrorSummaryQuery(OverallQuery query, ErrorSummarySortOrder sortOrder,
-                int limit, TransactionErrorSummaryCollector collector) {
+        private TransactionNameErrorSummaryQuery(SummaryQuery query,
+                ErrorSummarySortOrder sortOrder, int limit,
+                TransactionNameErrorSummaryCollector collector) {
             this.query = query;
             this.sortOrder = sortOrder;
             this.limit = limit;
@@ -858,9 +859,9 @@ public class AggregateDao implements AggregateRepository {
 
     private static class OverviewAggregateQuery implements JdbcRowQuery<OverviewAggregate> {
 
-        private final TransactionQuery query;
+        private final AggregateQuery query;
 
-        private OverviewAggregateQuery(TransactionQuery query) {
+        private OverviewAggregateQuery(AggregateQuery query) {
             this.query = query;
         }
 
@@ -924,9 +925,9 @@ public class AggregateDao implements AggregateRepository {
 
     private static class PercentileAggregateQuery implements JdbcRowQuery<PercentileAggregate> {
 
-        private final TransactionQuery query;
+        private final AggregateQuery query;
 
-        private PercentileAggregateQuery(TransactionQuery query) {
+        private PercentileAggregateQuery(AggregateQuery query) {
             this.query = query;
         }
 
@@ -961,9 +962,9 @@ public class AggregateDao implements AggregateRepository {
 
     private static class ThroughputAggregateQuery implements JdbcRowQuery<ThroughputAggregate> {
 
-        private final TransactionQuery query;
+        private final AggregateQuery query;
 
-        private ThroughputAggregateQuery(TransactionQuery query) {
+        private ThroughputAggregateQuery(AggregateQuery query) {
             this.query = query;
         }
 
@@ -1139,10 +1140,10 @@ public class AggregateDao implements AggregateRepository {
     private class CappedIdQuery implements JdbcQuery<List<CappedId>> {
 
         private final @Untainted String cappedIdColumnName;
-        private final TransactionQuery query;
+        private final AggregateQuery query;
         private final long smallestNonExpiredCappedId;
 
-        private CappedIdQuery(@Untainted String cappedIdColumnName, TransactionQuery query) {
+        private CappedIdQuery(@Untainted String cappedIdColumnName, AggregateQuery query) {
             this.cappedIdColumnName = cappedIdColumnName;
             this.query = query;
             smallestNonExpiredCappedId =
@@ -1182,10 +1183,10 @@ public class AggregateDao implements AggregateRepository {
 
     private static class ShouldHaveSomethingQuery implements JdbcQuery<Boolean> {
 
-        private final TransactionQuery query;
+        private final AggregateQuery query;
         private final @Untainted String cappedIdColumnName;
 
-        private ShouldHaveSomethingQuery(TransactionQuery query,
+        private ShouldHaveSomethingQuery(AggregateQuery query,
                 @Untainted String cappedIdColumnName) {
             this.query = query;
             this.cappedIdColumnName = cappedIdColumnName;

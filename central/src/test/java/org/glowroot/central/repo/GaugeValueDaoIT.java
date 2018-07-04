@@ -32,7 +32,7 @@ import org.glowroot.central.util.Session;
 import org.glowroot.central.v09support.GaugeValueDaoWithV09Support;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

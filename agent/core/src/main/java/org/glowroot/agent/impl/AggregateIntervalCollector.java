@@ -39,8 +39,8 @@ import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
-import org.glowroot.common.model.TransactionErrorSummaryCollector;
-import org.glowroot.common.model.TransactionSummaryCollector;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
+import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -58,6 +58,9 @@ public class AggregateIntervalCollector {
     @GuardedBy("lock")
     private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newHashMap();
 
+    // lock is primarily for visibility (there is almost no contention since written via a single
+    // thread and flushed afterwards via a different thread, with potential concurrent access by the
+    // UI for "live" data when running the embedded collector)
     private final Object lock = new Object();
 
     AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
@@ -92,7 +95,7 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public void mergeTransactionSummariesInto(TransactionSummaryCollector collector,
+    public void mergeTransactionNameSummariesInto(TransactionNameSummaryCollector collector,
             String transactionType) {
         synchronized (lock) {
             IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
@@ -101,7 +104,7 @@ public class AggregateIntervalCollector {
             }
             for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
                     .values()) {
-                aggregateCollector.mergeTransactionSummariesInto(collector);
+                aggregateCollector.mergeTransactionNameSummariesInto(collector);
             }
         }
     }
@@ -117,8 +120,8 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public void mergeTransactionErrorSummariesInto(TransactionErrorSummaryCollector collector,
-            String transactionType) {
+    public void mergeTransactionNameErrorSummariesInto(
+            TransactionNameErrorSummaryCollector collector, String transactionType) {
         synchronized (lock) {
             IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
             if (typeCollector == null) {
@@ -126,7 +129,7 @@ public class AggregateIntervalCollector {
             }
             for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
                     .values()) {
-                aggregateCollector.mergeTransactionErrorSummariesInto(collector);
+                aggregateCollector.mergeTransactionNameErrorSummariesInto(collector);
             }
         }
     }
@@ -239,7 +242,7 @@ public class AggregateIntervalCollector {
     }
 
     void flush(Collector collector) throws Exception {
-        collector.collectAggregates(new AggregatesImpl(captureTime));
+        collector.collectAggregates(new AggregateReaderImpl(captureTime));
     }
 
     void clear() {
@@ -344,11 +347,11 @@ public class AggregateIntervalCollector {
         }
     }
 
-    private class AggregatesImpl implements AggregateReader {
+    private class AggregateReaderImpl implements AggregateReader {
 
         private final long captureTime;
 
-        private AggregatesImpl(long captureTime) {
+        private AggregateReaderImpl(long captureTime) {
             this.captureTime = captureTime;
         }
 

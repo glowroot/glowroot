@@ -17,7 +17,7 @@ package org.glowroot.common2.repo;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
 public interface EnvironmentRepository {
 

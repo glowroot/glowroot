@@ -22,9 +22,9 @@ import java.util.List;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -67,15 +67,12 @@ public interface Collector {
                 List<String> sharedQueryTexts, Aggregate transactionAggregate) throws Exception;
     }
 
-    public interface TraceVisitor extends EntryVisitor {
+    public interface TraceVisitor {
+        void visitEntry(Trace.Entry entry);
         void visitQueries(List<Aggregate.Query> queries);
         void visitSharedQueryTexts(List<String> sharedQueryTexts) throws SQLException;
         void visitMainThreadProfile(Profile profile);
         void visitAuxThreadProfile(Profile profile);
         void visitHeader(Trace.Header header);
-    }
-
-    public interface EntryVisitor {
-        void visitEntry(Trace.Entry entry);
     }
 }

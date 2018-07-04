@@ -22,9 +22,9 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.collector.Collector.TraceVisitor;
+import org.glowroot.agent.impl.Transaction.TraceEntryVisitor;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.common.util.Styles;
@@ -52,7 +52,7 @@ public class TraceCreator {
     }
 
     public static Trace.Header createPartialTraceHeader(Transaction transaction, long captureTime,
-            long captureTick) throws Exception {
+            long captureTick) {
         int entryCount = transaction.getEntryCount(captureTick);
         int queryCount = transaction.getQueryCount();
         long mainThreadProfileSampleCount = transaction.getMainThreadProfileSampleCount();
@@ -62,8 +62,7 @@ public class TraceCreator {
                 entryCount, queryCount, mainThreadProfileSampleCount, auxThreadProfileSampleCount);
     }
 
-    public static Trace.Header createCompletedTraceHeader(Transaction transaction)
-            throws Exception {
+    public static Trace.Header createCompletedTraceHeader(Transaction transaction) {
         int entryCount = transaction.getEntryCount(transaction.getEndTick());
         int queryCount = transaction.getQueryCount();
         long mainProfileSampleCount = transaction.getMainThreadProfileSampleCount();
@@ -258,12 +257,12 @@ public class TraceCreator {
         }
     }
 
-    private static class CountingEntryVisitorWrapper implements EntryVisitor {
+    private static class CountingEntryVisitorWrapper implements TraceEntryVisitor {
 
-        private final EntryVisitor delegate;
+        private final TraceVisitor delegate;
         private int count;
 
-        private CountingEntryVisitorWrapper(EntryVisitor delegate) {
+        private CountingEntryVisitorWrapper(TraceVisitor delegate) {
             this.delegate = delegate;
         }
 

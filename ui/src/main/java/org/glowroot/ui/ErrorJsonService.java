@@ -29,15 +29,15 @@ import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
-import org.glowroot.common.live.ImmutableOverallQuery;
-import org.glowroot.common.live.ImmutableTransactionQuery;
-import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.ImmutableAggregateQuery;
+import org.glowroot.common.live.ImmutableSummaryQuery;
+import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
+import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummary;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
-import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErrorSummary;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector.ErrorSummarySortOrder;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector.TransactionNameErrorSummary;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
@@ -91,7 +91,7 @@ class ErrorJsonService {
                 .from(request.from())
                 .to(request.to())
                 .build();
-        TransactionQuery transactionQuery = ImmutableTransactionQuery.builder()
+        AggregateQuery aggregateQuery = ImmutableAggregateQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -105,16 +105,16 @@ class ErrorJsonService {
                 .build();
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates = transactionCommonService
-                .getThroughputAggregates(agentRollupId, transactionQuery, autoRefresh);
+                .getThroughputAggregates(agentRollupId, aggregateQuery, autoRefresh);
         if (throughputAggregates.isEmpty()
-                && transactionQuery.rollupLevel() < getLargestRollupLevel()) {
+                && aggregateQuery.rollupLevel() < getLargestRollupLevel()) {
             // fall back to largest aggregates in case expiration settings have recently changed
-            transactionQuery = withLargestRollupLevel(transactionQuery);
+            aggregateQuery = withLargestRollupLevel(aggregateQuery);
             throughputAggregates = transactionCommonService.getThroughputAggregates(agentRollupId,
-                    transactionQuery, autoRefresh);
+                    aggregateQuery, autoRefresh);
         }
         long dataPointIntervalMillis = configRepository.getRollupConfigs()
-                .get(transactionQuery.rollupLevel()).intervalMillis();
+                .get(aggregateQuery.rollupLevel()).intervalMillis();
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         Map<Long, Long> transactionCountMap = Maps.newHashMap();
@@ -169,7 +169,7 @@ class ErrorJsonService {
     String getSummaries(@BindAgentRollupId String agentRollupId,
             @BindRequest ErrorSummaryRequest request, @BindAutoRefresh boolean autoRefresh)
             throws Exception {
-        OverallQuery query = ImmutableOverallQuery.builder()
+        SummaryQuery query = ImmutableSummaryQuery.builder()
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -180,15 +180,15 @@ class ErrorJsonService {
                 errorCommonService.readOverallErrorSummary(agentRollupId, query, autoRefresh);
         if (overallSummary.transactionCount() == 0) {
             // fall back to largest aggregates in case expiration settings have recently changed
-            query = ImmutableOverallQuery.builder()
+            query = ImmutableSummaryQuery.builder()
                     .copyFrom(query)
                     .rollupLevel(getLargestRollupLevel())
                     .build();
             overallSummary =
                     errorCommonService.readOverallErrorSummary(agentRollupId, query, autoRefresh);
         }
-        Result<TransactionErrorSummary> queryResult =
-                errorCommonService.readTransactionErrorSummaries(agentRollupId, query,
+        Result<TransactionNameErrorSummary> queryResult =
+                errorCommonService.readTransactionNameErrorSummaries(agentRollupId, query,
                         request.sortOrder(), request.limit(), autoRefresh);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -204,8 +204,8 @@ class ErrorJsonService {
         return sb.toString();
     }
 
-    private TransactionQuery withLargestRollupLevel(TransactionQuery query) {
-        return ImmutableTransactionQuery.builder()
+    private AggregateQuery withLargestRollupLevel(AggregateQuery query) {
+        return ImmutableAggregateQuery.builder()
                 .copyFrom(query)
                 .rollupLevel(getLargestRollupLevel())
                 .build();

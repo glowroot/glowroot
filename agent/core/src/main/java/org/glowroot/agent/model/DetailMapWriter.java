@@ -18,6 +18,7 @@ package org.glowroot.agent.model;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -35,14 +36,32 @@ public class DetailMapWriter {
 
     private DetailMapWriter() {}
 
-    public static List<Trace.DetailEntry> toProto(
-            Map<String, ?> detail) {
-        return writeMap(detail);
+    public static List<Trace.DetailEntry> toProto(Map<String, ?> detail) {
+        return mapToProto(detail);
     }
 
-    private static List<Trace.DetailEntry> writeMap(Map<?, ?> detail) {
-        List<Trace.DetailEntry> entries = Lists.newArrayListWithCapacity(detail.size());
-        for (Map.Entry<?, ?> entry : detail.entrySet()) {
+    private static Trace.DetailEntry createDetailEntry(String name, @Nullable Object value) {
+        if (value instanceof Map) {
+            return Trace.DetailEntry.newBuilder()
+                    .setName(name)
+                    .addAllChildEntry(mapToProto((Map<?, ?>) value))
+                    .build();
+        } else if (value instanceof List) {
+            return Trace.DetailEntry.newBuilder()
+                    .setName(name)
+                    .addAllValue(listToProto((List<?>) value))
+                    .build();
+        } else {
+            return Trace.DetailEntry.newBuilder()
+                    .setName(name)
+                    .addAllValue(singleObjectToProto(value))
+                    .build();
+        }
+    }
+
+    private static List<Trace.DetailEntry> mapToProto(Map<?, ?> map) {
+        List<Trace.DetailEntry> entries = Lists.newArrayListWithCapacity(map.size());
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
             Object key = entry.getKey();
             if (key == null) {
                 // skip invalid data
@@ -60,42 +79,46 @@ public class DetailMapWriter {
         return entries;
     }
 
-    private static Trace.DetailEntry createDetailEntry(String name, @Nullable Object value) {
-        if (value instanceof Map) {
-            return Trace.DetailEntry.newBuilder().setName(name)
-                    .addAllChildEntry(writeMap((Map<?, ?>) value)).build();
-        } else if (value instanceof List) {
-            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder().setName(name);
-            for (Object v : (List<?>) value) {
-                addValue(builder, v);
+    private static List<Trace.DetailValue> listToProto(List<?> list) {
+        List<Trace.DetailValue> detailValues = Lists.newArrayListWithCapacity(list.size());
+        for (Object item : (List<?>) list) {
+            Trace.DetailValue detailValue = createValue(item);
+            if (detailValue != null) {
+                detailValues.add(detailValue);
             }
-            return builder.build();
+        }
+        return detailValues;
+    }
+
+    private static List<Trace.DetailValue> singleObjectToProto(@Nullable Object value) {
+        Trace.DetailValue detailValue = createValue(value);
+        if (detailValue == null) {
+            return ImmutableList.of();
         } else {
-            // simple value
-            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder().setName(name);
-            addValue(builder, value);
-            return builder.build();
+            return ImmutableList.of(detailValue);
         }
     }
 
-    private static void addValue(Trace.DetailEntry.Builder builder,
+    private static Trace. /*@Nullable*/ DetailValue createValue(
             @Nullable Object possiblyOptionalValue) {
         Object value = stripOptional(possiblyOptionalValue);
         if (value == null) {
             // add nothing (as a corollary, this will strip null/Optional.absent() items from lists)
+            return null;
         } else if (value instanceof String) {
-            builder.addValueBuilder().setString((String) value).build();
+            return Trace.DetailValue.newBuilder().setString((String) value).build();
         } else if (value instanceof Boolean) {
-            builder.addValueBuilder().setBoolean((Boolean) value).build();
+            return Trace.DetailValue.newBuilder().setBoolean((Boolean) value).build();
         } else if (value instanceof Long) {
-            builder.addValueBuilder().setLong((Long) value).build();
+            return Trace.DetailValue.newBuilder().setLong((Long) value).build();
         } else if (value instanceof Integer) {
-            builder.addValueBuilder().setLong((Integer) value).build();
+            return Trace.DetailValue.newBuilder().setLong((Integer) value).build();
         } else if (value instanceof Number) {
-            builder.addValueBuilder().setDouble(((Number) value).doubleValue()).build();
+            return Trace.DetailValue.newBuilder().setDouble(((Number) value).doubleValue()).build();
         } else {
             logger.warn("detail map has unexpected value type: {}", value.getClass().getName());
-            builder.addValueBuilder().setString(convertToStringAndTruncate(value)).build();
+            return Trace.DetailValue.newBuilder().setString(convertToStringAndTruncate(value))
+                    .build();
         }
     }
 

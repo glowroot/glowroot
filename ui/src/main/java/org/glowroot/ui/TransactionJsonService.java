@@ -33,20 +33,20 @@ import com.google.common.primitives.Doubles;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
-import org.glowroot.common.live.ImmutableOverallQuery;
-import org.glowroot.common.live.ImmutableTransactionQuery;
+import org.glowroot.common.live.ImmutableAggregateQuery;
+import org.glowroot.common.live.ImmutableSummaryQuery;
+import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.MutableQuery;
 import org.glowroot.common.model.MutableServiceCall;
 import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
-import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
+import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
+import org.glowroot.common.model.TransactionNameSummaryCollector.TransactionNameSummary;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
@@ -88,7 +88,7 @@ class TransactionJsonService {
     String getOverview(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
             throws Exception {
-        TransactionQuery query = toChartQuery(request, DataKind.GENERAL);
+        AggregateQuery query = toChartQuery(request, DataKind.GENERAL);
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates =
                 transactionCommonService.getOverviewAggregates(agentRollupId, query, autoRefresh);
@@ -133,7 +133,7 @@ class TransactionJsonService {
     String getPercentiles(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionPercentileRequest request, @BindAutoRefresh boolean autoRefresh)
             throws Exception {
-        TransactionQuery query = toChartQuery(request, DataKind.GENERAL);
+        AggregateQuery query = toChartQuery(request, DataKind.GENERAL);
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates =
                 transactionCommonService.getPercentileAggregates(agentRollupId, query, autoRefresh);
@@ -169,7 +169,7 @@ class TransactionJsonService {
     String getThroughput(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request, @BindAutoRefresh boolean autoRefresh)
             throws Exception {
-        TransactionQuery query = toChartQuery(request, DataKind.GENERAL);
+        AggregateQuery query = toChartQuery(request, DataKind.GENERAL);
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
                 transactionCommonService.getThroughputAggregates(agentRollupId, query, autoRefresh);
@@ -211,7 +211,7 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/queries", permission = "agent:transaction:queries")
     String getQueries(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
-        TransactionQuery query = toQuery(request, DataKind.QUERY);
+        AggregateQuery query = toQuery(request, DataKind.QUERY);
         List<MutableQuery> queries =
                 transactionCommonService.getMergedQueries(agentRollupId, query);
         if (queries.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
@@ -267,7 +267,7 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/service-calls", permission = "agent:transaction:serviceCalls")
     String getServiceCalls(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
-        TransactionQuery query = toQuery(request, DataKind.SERVICE_CALL);
+        AggregateQuery query = toQuery(request, DataKind.SERVICE_CALL);
         List<MutableServiceCall> serviceCalls =
                 transactionCommonService.getMergedServiceCalls(agentRollupId, query);
         if (serviceCalls.isEmpty() && query.rollupLevel() < getLargestRollupLevel()) {
@@ -308,7 +308,7 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/profile", permission = "agent:transaction:threadProfile")
     String getProfile(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionProfileRequest request) throws Exception {
-        TransactionQuery query = toQuery(request, DataKind.PROFILE);
+        AggregateQuery query = toQuery(request, DataKind.PROFILE);
         MutableProfile profile =
                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
                         request.include(), request.exclude(), request.truncateBranchPercentage());
@@ -361,7 +361,7 @@ class TransactionJsonService {
     String getSummaries(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionSummaryRequest request, @BindAutoRefresh boolean autoRefresh)
             throws Exception {
-        ImmutableOverallQuery query = ImmutableOverallQuery.builder()
+        ImmutableSummaryQuery query = ImmutableSummaryQuery.builder()
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -372,15 +372,15 @@ class TransactionJsonService {
                 transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh);
         if (overallSummary.transactionCount() == 0) {
             // fall back to largest aggregates in case expiration settings have recently changed
-            query = ImmutableOverallQuery.builder()
+            query = ImmutableSummaryQuery.builder()
                     .copyFrom(query)
                     .rollupLevel(getLargestRollupLevel())
                     .build();
             overallSummary =
                     transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh);
         }
-        Result<TransactionSummary> queryResult = transactionCommonService
-                .readTransactionSummaries(agentRollupId, query, request.sortOrder(),
+        Result<TransactionNameSummary> queryResult = transactionCommonService
+                .readTransactionNameSummaries(agentRollupId, query, request.sortOrder(),
                         request.limit(), autoRefresh);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -399,7 +399,7 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/flame-graph", permission = "agent:transaction:threadProfile")
     String getFlameGraph(@BindAgentRollupId String agentRollupId,
             @BindRequest FlameGraphRequest request) throws Exception {
-        TransactionQuery query = toQuery(request, DataKind.PROFILE);
+        AggregateQuery query = toQuery(request, DataKind.PROFILE);
         MutableProfile profile =
                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
                         request.include(), request.exclude(), request.truncateBranchPercentage());
@@ -413,7 +413,7 @@ class TransactionJsonService {
         return profile.toFlameGraphJson();
     }
 
-    private TransactionQuery toChartQuery(RequestBase request, DataKind dataKind) throws Exception {
+    private AggregateQuery toChartQuery(RequestBase request, DataKind dataKind) throws Exception {
         int rollupLevel =
                 rollupLevelService.getRollupLevelForView(request.from(), request.to(), dataKind);
         long rollupIntervalMillis =
@@ -422,7 +422,7 @@ class TransactionJsonService {
         // correctly off the chart to the left and right
         long from = RollupLevelService.getFloorRollupTime(request.from(), rollupIntervalMillis);
         long to = RollupLevelService.getCeilRollupTime(request.to(), rollupIntervalMillis);
-        return ImmutableTransactionQuery.builder()
+        return ImmutableAggregateQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(from)
@@ -431,8 +431,8 @@ class TransactionJsonService {
                 .build();
     }
 
-    private TransactionQuery toQuery(RequestBase request, DataKind dataKind) throws Exception {
-        return ImmutableTransactionQuery.builder()
+    private AggregateQuery toQuery(RequestBase request, DataKind dataKind) throws Exception {
+        return ImmutableAggregateQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -442,8 +442,8 @@ class TransactionJsonService {
                 .build();
     }
 
-    private TransactionQuery withLargestRollupLevel(TransactionQuery query) {
-        return ImmutableTransactionQuery.builder()
+    private AggregateQuery withLargestRollupLevel(AggregateQuery query) {
+        return ImmutableAggregateQuery.builder()
                 .copyFrom(query)
                 .rollupLevel(getLargestRollupLevel())
                 .build();
@@ -454,7 +454,7 @@ class TransactionJsonService {
     }
 
     private boolean isProfileOverwritten(TransactionProfileRequest request, String agentRollupId,
-            TransactionQuery query) throws Exception {
+            AggregateQuery query) throws Exception {
         if (request.auxiliary()
                 && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query)) {
             return true;

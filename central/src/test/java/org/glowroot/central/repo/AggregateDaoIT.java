@@ -32,13 +32,13 @@ import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.central.v09support.AggregateDaoWithV09Support;
 import org.glowroot.common.ConfigDefaults;
-import org.glowroot.common.live.ImmutableOverallQuery;
-import org.glowroot.common.live.ImmutableTransactionQuery;
-import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.ImmutableAggregateQuery;
+import org.glowroot.common.live.ImmutableSummaryQuery;
+import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.MutableQuery;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
 import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummary;
@@ -46,12 +46,12 @@ import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.Result;
-import org.glowroot.common.model.TransactionErrorSummaryCollector;
-import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
-import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErrorSummary;
-import org.glowroot.common.model.TransactionSummaryCollector;
-import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
-import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector.ErrorSummarySortOrder;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector.TransactionNameErrorSummary;
+import org.glowroot.common.model.TransactionNameSummaryCollector;
+import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
+import org.glowroot.common.model.TransactionNameSummaryCollector.TransactionNameSummary;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -136,13 +136,13 @@ public class AggregateDaoIT {
         aggregateDao.store("one", 360000, createData(), sharedQueryText);
 
         // check non-rolled up data
-        OverallQuery overallQuery = ImmutableOverallQuery.builder()
+        SummaryQuery summaryQuery = ImmutableSummaryQuery.builder()
                 .transactionType("tt1")
                 .from(0)
                 .to(300000)
                 .rollupLevel(0)
                 .build();
-        TransactionQuery transactionQuery = ImmutableTransactionQuery.builder()
+        AggregateQuery aggregateQuery = ImmutableAggregateQuery.builder()
                 .transactionType("tt1")
                 .from(0)
                 .to(300000)
@@ -150,16 +150,18 @@ public class AggregateDaoIT {
                 .build();
 
         OverallSummaryCollector overallSummaryCollector = new OverallSummaryCollector();
-        aggregateDao.mergeOverallSummaryInto("one", overallQuery, overallSummaryCollector);
+        aggregateDao.mergeOverallSummaryInto("one", summaryQuery, overallSummaryCollector);
         OverallSummary overallSummary = overallSummaryCollector.getOverallSummary();
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        TransactionSummaryCollector transactionSummaryCollector = new TransactionSummaryCollector();
+        TransactionNameSummaryCollector transactionNameSummaryCollector =
+                new TransactionNameSummaryCollector();
         SummarySortOrder sortOrder = SummarySortOrder.TOTAL_TIME;
-        aggregateDao.mergeTransactionSummariesInto("one", overallQuery, sortOrder, 10,
-                transactionSummaryCollector);
-        Result<TransactionSummary> result = transactionSummaryCollector.getResult(sortOrder, 10);
+        aggregateDao.mergeTransactionNameSummariesInto("one", summaryQuery, sortOrder, 10,
+                transactionNameSummaryCollector);
+        Result<TransactionNameSummary> result =
+                transactionNameSummaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -170,19 +172,19 @@ public class AggregateDaoIT {
 
         OverallErrorSummaryCollector overallErrorSummaryCollector =
                 new OverallErrorSummaryCollector();
-        aggregateDao.mergeOverallErrorSummaryInto("one", overallQuery,
+        aggregateDao.mergeOverallErrorSummaryInto("one", summaryQuery,
                 overallErrorSummaryCollector);
         OverallErrorSummary overallErrorSummary =
                 overallErrorSummaryCollector.getOverallErrorSummary();
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 
-        TransactionErrorSummaryCollector errorSummaryCollector =
-                new TransactionErrorSummaryCollector();
+        TransactionNameErrorSummaryCollector errorSummaryCollector =
+                new TransactionNameErrorSummaryCollector();
         ErrorSummarySortOrder errorSortOrder = ErrorSummarySortOrder.ERROR_COUNT;
-        aggregateDao.mergeTransactionErrorSummariesInto("one", overallQuery, errorSortOrder, 10,
+        aggregateDao.mergeTransactionNameErrorSummariesInto("one", summaryQuery, errorSortOrder, 10,
                 errorSummaryCollector);
-        Result<TransactionErrorSummary> errorSummaryResult =
+        Result<TransactionNameErrorSummary> errorSummaryResult =
                 errorSummaryCollector.getResult(errorSortOrder, 10);
         assertThat(errorSummaryResult.records()).hasSize(1);
         assertThat(errorSummaryResult.records().get(0).transactionName()).isEqualTo("tn2");
@@ -190,25 +192,25 @@ public class AggregateDaoIT {
         assertThat(errorSummaryResult.records().get(0).transactionCount()).isEqualTo(4);
 
         List<OverviewAggregate> overviewAggregates =
-                aggregateDao.readOverviewAggregates("one", transactionQuery);
+                aggregateDao.readOverviewAggregates("one", aggregateQuery);
         assertThat(overviewAggregates).hasSize(2);
         assertThat(overviewAggregates.get(0).transactionCount()).isEqualTo(3);
         assertThat(overviewAggregates.get(1).transactionCount()).isEqualTo(3);
 
         List<PercentileAggregate> percentileAggregates =
-                aggregateDao.readPercentileAggregates("one", transactionQuery);
+                aggregateDao.readPercentileAggregates("one", aggregateQuery);
         assertThat(percentileAggregates).hasSize(2);
         assertThat(percentileAggregates.get(0).transactionCount()).isEqualTo(3);
         assertThat(percentileAggregates.get(1).transactionCount()).isEqualTo(3);
 
         List<ThroughputAggregate> throughputAggregates =
-                aggregateDao.readThroughputAggregates("one", transactionQuery);
+                aggregateDao.readThroughputAggregates("one", aggregateQuery);
         assertThat(throughputAggregates).hasSize(2);
         assertThat(throughputAggregates.get(0).transactionCount()).isEqualTo(3);
         assertThat(throughputAggregates.get(1).transactionCount()).isEqualTo(3);
 
         QueryCollector queryCollector = new QueryCollector(1000);
-        aggregateDao.mergeQueriesInto("one", transactionQuery, queryCollector);
+        aggregateDao.mergeQueriesInto("one", aggregateQuery, queryCollector);
         List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         MutableQuery query = queries.get(0);
@@ -224,25 +226,25 @@ public class AggregateDaoIT {
         aggregateDao.rollup("one");
 
         // check rolled-up data after rollup
-        overallQuery = ImmutableOverallQuery.builder()
-                .copyFrom(overallQuery)
+        summaryQuery = ImmutableSummaryQuery.builder()
+                .copyFrom(summaryQuery)
                 .rollupLevel(1)
                 .build();
-        transactionQuery = ImmutableTransactionQuery.builder()
-                .copyFrom(transactionQuery)
+        aggregateQuery = ImmutableAggregateQuery.builder()
+                .copyFrom(aggregateQuery)
                 .rollupLevel(1)
                 .build();
 
         overallSummaryCollector = new OverallSummaryCollector();
-        aggregateDao.mergeOverallSummaryInto("one", overallQuery, overallSummaryCollector);
+        aggregateDao.mergeOverallSummaryInto("one", summaryQuery, overallSummaryCollector);
         overallSummary = overallSummaryCollector.getOverallSummary();
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        transactionSummaryCollector = new TransactionSummaryCollector();
-        aggregateDao.mergeTransactionSummariesInto("one", overallQuery, sortOrder, 10,
-                transactionSummaryCollector);
-        result = transactionSummaryCollector.getResult(sortOrder, 10);
+        transactionNameSummaryCollector = new TransactionNameSummaryCollector();
+        aggregateDao.mergeTransactionNameSummariesInto("one", summaryQuery, sortOrder, 10,
+                transactionNameSummaryCollector);
+        result = transactionNameSummaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -252,14 +254,14 @@ public class AggregateDaoIT {
         assertThat(result.records().get(1).transactionCount()).isEqualTo(2);
 
         overallErrorSummaryCollector = new OverallErrorSummaryCollector();
-        aggregateDao.mergeOverallErrorSummaryInto("one", overallQuery,
+        aggregateDao.mergeOverallErrorSummaryInto("one", summaryQuery,
                 overallErrorSummaryCollector);
         overallErrorSummary = overallErrorSummaryCollector.getOverallErrorSummary();
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 
-        errorSummaryCollector = new TransactionErrorSummaryCollector();
-        aggregateDao.mergeTransactionErrorSummariesInto("one", overallQuery, errorSortOrder, 10,
+        errorSummaryCollector = new TransactionNameErrorSummaryCollector();
+        aggregateDao.mergeTransactionNameErrorSummariesInto("one", summaryQuery, errorSortOrder, 10,
                 errorSummaryCollector);
         errorSummaryResult = errorSummaryCollector.getResult(errorSortOrder, 10);
         assertThat(errorSummaryResult.records()).hasSize(1);
@@ -267,20 +269,20 @@ public class AggregateDaoIT {
         assertThat(errorSummaryResult.records().get(0).errorCount()).isEqualTo(2);
         assertThat(errorSummaryResult.records().get(0).transactionCount()).isEqualTo(4);
 
-        overviewAggregates = aggregateDao.readOverviewAggregates("one", transactionQuery);
+        overviewAggregates = aggregateDao.readOverviewAggregates("one", aggregateQuery);
         assertThat(overviewAggregates).hasSize(1);
         assertThat(overviewAggregates.get(0).transactionCount()).isEqualTo(6);
 
-        percentileAggregates = aggregateDao.readPercentileAggregates("one", transactionQuery);
+        percentileAggregates = aggregateDao.readPercentileAggregates("one", aggregateQuery);
         assertThat(percentileAggregates).hasSize(1);
         assertThat(percentileAggregates.get(0).transactionCount()).isEqualTo(6);
 
-        throughputAggregates = aggregateDao.readThroughputAggregates("one", transactionQuery);
+        throughputAggregates = aggregateDao.readThroughputAggregates("one", aggregateQuery);
         assertThat(throughputAggregates).hasSize(1);
         assertThat(throughputAggregates.get(0).transactionCount()).isEqualTo(6);
 
         queryCollector = new QueryCollector(1000);
-        aggregateDao.mergeQueriesInto("one", transactionQuery, queryCollector);
+        aggregateDao.mergeQueriesInto("one", aggregateQuery, queryCollector);
         queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         query = queries.get(0);
@@ -311,13 +313,13 @@ public class AggregateDaoIT {
         aggregateDao.rollup("the parent::");
 
         // check level-0 rolled up from children data
-        OverallQuery overallQuery = ImmutableOverallQuery.builder()
+        SummaryQuery summaryQuery = ImmutableSummaryQuery.builder()
                 .transactionType("tt1")
                 .from(0)
                 .to(300000)
                 .rollupLevel(0)
                 .build();
-        TransactionQuery transactionQuery = ImmutableTransactionQuery.builder()
+        AggregateQuery aggregateQuery = ImmutableAggregateQuery.builder()
                 .transactionType("tt1")
                 .from(0)
                 .to(300000)
@@ -325,16 +327,18 @@ public class AggregateDaoIT {
                 .build();
 
         OverallSummaryCollector overallSummaryCollector = new OverallSummaryCollector();
-        aggregateDao.mergeOverallSummaryInto("the parent::", overallQuery, overallSummaryCollector);
+        aggregateDao.mergeOverallSummaryInto("the parent::", summaryQuery, overallSummaryCollector);
         OverallSummary overallSummary = overallSummaryCollector.getOverallSummary();
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        TransactionSummaryCollector transactionSummaryCollector = new TransactionSummaryCollector();
+        TransactionNameSummaryCollector transactionNameSummaryCollector =
+                new TransactionNameSummaryCollector();
         SummarySortOrder sortOrder = SummarySortOrder.TOTAL_TIME;
-        aggregateDao.mergeTransactionSummariesInto("the parent::", overallQuery, sortOrder, 10,
-                transactionSummaryCollector);
-        Result<TransactionSummary> result = transactionSummaryCollector.getResult(sortOrder, 10);
+        aggregateDao.mergeTransactionNameSummariesInto("the parent::", summaryQuery, sortOrder, 10,
+                transactionNameSummaryCollector);
+        Result<TransactionNameSummary> result =
+                transactionNameSummaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -345,20 +349,20 @@ public class AggregateDaoIT {
 
         OverallErrorSummaryCollector overallErrorSummaryCollector =
                 new OverallErrorSummaryCollector();
-        aggregateDao.mergeOverallErrorSummaryInto("the parent::", overallQuery,
+        aggregateDao.mergeOverallErrorSummaryInto("the parent::", summaryQuery,
                 overallErrorSummaryCollector);
         OverallErrorSummary overallErrorSummary =
                 overallErrorSummaryCollector.getOverallErrorSummary();
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 
-        TransactionErrorSummaryCollector errorSummaryCollector =
-                new TransactionErrorSummaryCollector();
+        TransactionNameErrorSummaryCollector errorSummaryCollector =
+                new TransactionNameErrorSummaryCollector();
         ErrorSummarySortOrder errorSortOrder = ErrorSummarySortOrder.ERROR_COUNT;
-        aggregateDao.mergeTransactionErrorSummariesInto("the parent::", overallQuery,
+        aggregateDao.mergeTransactionNameErrorSummariesInto("the parent::", summaryQuery,
                 errorSortOrder,
                 10, errorSummaryCollector);
-        Result<TransactionErrorSummary> errorSummaryResult =
+        Result<TransactionNameErrorSummary> errorSummaryResult =
                 errorSummaryCollector.getResult(errorSortOrder, 10);
         assertThat(errorSummaryResult.records()).hasSize(1);
         assertThat(errorSummaryResult.records().get(0).transactionName()).isEqualTo("tn2");
@@ -366,25 +370,25 @@ public class AggregateDaoIT {
         assertThat(errorSummaryResult.records().get(0).transactionCount()).isEqualTo(4);
 
         List<OverviewAggregate> overviewAggregates =
-                aggregateDao.readOverviewAggregates("the parent::", transactionQuery);
+                aggregateDao.readOverviewAggregates("the parent::", aggregateQuery);
         assertThat(overviewAggregates).hasSize(2);
         assertThat(overviewAggregates.get(0).transactionCount()).isEqualTo(3);
         assertThat(overviewAggregates.get(1).transactionCount()).isEqualTo(3);
 
         List<PercentileAggregate> percentileAggregates =
-                aggregateDao.readPercentileAggregates("the parent::", transactionQuery);
+                aggregateDao.readPercentileAggregates("the parent::", aggregateQuery);
         assertThat(percentileAggregates).hasSize(2);
         assertThat(percentileAggregates.get(0).transactionCount()).isEqualTo(3);
         assertThat(percentileAggregates.get(1).transactionCount()).isEqualTo(3);
 
         List<ThroughputAggregate> throughputAggregates =
-                aggregateDao.readThroughputAggregates("the parent::", transactionQuery);
+                aggregateDao.readThroughputAggregates("the parent::", aggregateQuery);
         assertThat(throughputAggregates).hasSize(2);
         assertThat(throughputAggregates.get(0).transactionCount()).isEqualTo(3);
         assertThat(throughputAggregates.get(1).transactionCount()).isEqualTo(3);
 
         QueryCollector queryCollector = new QueryCollector(1000);
-        aggregateDao.mergeQueriesInto("the parent::", transactionQuery, queryCollector);
+        aggregateDao.mergeQueriesInto("the parent::", aggregateQuery, queryCollector);
         List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         MutableQuery query = queries.get(0);
@@ -397,25 +401,25 @@ public class AggregateDaoIT {
         assertThat(query.getExecutionCount()).isEqualTo(4);
 
         // check rolled-up data after rollup
-        overallQuery = ImmutableOverallQuery.builder()
-                .copyFrom(overallQuery)
+        summaryQuery = ImmutableSummaryQuery.builder()
+                .copyFrom(summaryQuery)
                 .rollupLevel(1)
                 .build();
-        transactionQuery = ImmutableTransactionQuery.builder()
-                .copyFrom(transactionQuery)
+        aggregateQuery = ImmutableAggregateQuery.builder()
+                .copyFrom(aggregateQuery)
                 .rollupLevel(1)
                 .build();
 
         overallSummaryCollector = new OverallSummaryCollector();
-        aggregateDao.mergeOverallSummaryInto("the parent::", overallQuery, overallSummaryCollector);
+        aggregateDao.mergeOverallSummaryInto("the parent::", summaryQuery, overallSummaryCollector);
         overallSummary = overallSummaryCollector.getOverallSummary();
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        transactionSummaryCollector = new TransactionSummaryCollector();
-        aggregateDao.mergeTransactionSummariesInto("the parent::", overallQuery, sortOrder, 10,
-                transactionSummaryCollector);
-        result = transactionSummaryCollector.getResult(sortOrder, 10);
+        transactionNameSummaryCollector = new TransactionNameSummaryCollector();
+        aggregateDao.mergeTransactionNameSummariesInto("the parent::", summaryQuery, sortOrder, 10,
+                transactionNameSummaryCollector);
+        result = transactionNameSummaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -425,14 +429,14 @@ public class AggregateDaoIT {
         assertThat(result.records().get(1).transactionCount()).isEqualTo(2);
 
         overallErrorSummaryCollector = new OverallErrorSummaryCollector();
-        aggregateDao.mergeOverallErrorSummaryInto("the parent::", overallQuery,
+        aggregateDao.mergeOverallErrorSummaryInto("the parent::", summaryQuery,
                 overallErrorSummaryCollector);
         overallErrorSummary = overallErrorSummaryCollector.getOverallErrorSummary();
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 
-        errorSummaryCollector = new TransactionErrorSummaryCollector();
-        aggregateDao.mergeTransactionErrorSummariesInto("the parent::", overallQuery,
+        errorSummaryCollector = new TransactionNameErrorSummaryCollector();
+        aggregateDao.mergeTransactionNameErrorSummariesInto("the parent::", summaryQuery,
                 errorSortOrder,
                 10, errorSummaryCollector);
         errorSummaryResult = errorSummaryCollector.getResult(errorSortOrder, 10);
@@ -441,22 +445,22 @@ public class AggregateDaoIT {
         assertThat(errorSummaryResult.records().get(0).errorCount()).isEqualTo(2);
         assertThat(errorSummaryResult.records().get(0).transactionCount()).isEqualTo(4);
 
-        overviewAggregates = aggregateDao.readOverviewAggregates("the parent::", transactionQuery);
+        overviewAggregates = aggregateDao.readOverviewAggregates("the parent::", aggregateQuery);
         assertThat(overviewAggregates).hasSize(1);
         assertThat(overviewAggregates.get(0).transactionCount()).isEqualTo(6);
 
         percentileAggregates =
-                aggregateDao.readPercentileAggregates("the parent::", transactionQuery);
+                aggregateDao.readPercentileAggregates("the parent::", aggregateQuery);
         assertThat(percentileAggregates).hasSize(1);
         assertThat(percentileAggregates.get(0).transactionCount()).isEqualTo(6);
 
         throughputAggregates =
-                aggregateDao.readThroughputAggregates("the parent::", transactionQuery);
+                aggregateDao.readThroughputAggregates("the parent::", aggregateQuery);
         assertThat(throughputAggregates).hasSize(1);
         assertThat(throughputAggregates.get(0).transactionCount()).isEqualTo(6);
 
         queryCollector = new QueryCollector(1000);
-        aggregateDao.mergeQueriesInto("the parent::", transactionQuery, queryCollector);
+        aggregateDao.mergeQueriesInto("the parent::", aggregateQuery, queryCollector);
         queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         query = queries.get(0);
@@ -488,13 +492,13 @@ public class AggregateDaoIT {
         aggregateDao.rollup("the gp::");
 
         // check level-0 rolled up from children data
-        OverallQuery overallQuery = ImmutableOverallQuery.builder()
+        SummaryQuery summaryQuery = ImmutableSummaryQuery.builder()
                 .transactionType("tt1")
                 .from(0)
                 .to(300000)
                 .rollupLevel(0)
                 .build();
-        TransactionQuery transactionQuery = ImmutableTransactionQuery.builder()
+        AggregateQuery aggregateQuery = ImmutableAggregateQuery.builder()
                 .transactionType("tt1")
                 .from(0)
                 .to(300000)
@@ -502,16 +506,18 @@ public class AggregateDaoIT {
                 .build();
 
         OverallSummaryCollector overallSummaryCollector = new OverallSummaryCollector();
-        aggregateDao.mergeOverallSummaryInto("the gp::", overallQuery, overallSummaryCollector);
+        aggregateDao.mergeOverallSummaryInto("the gp::", summaryQuery, overallSummaryCollector);
         OverallSummary overallSummary = overallSummaryCollector.getOverallSummary();
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        TransactionSummaryCollector transactionSummaryCollector = new TransactionSummaryCollector();
+        TransactionNameSummaryCollector transactionNameSummaryCollector =
+                new TransactionNameSummaryCollector();
         SummarySortOrder sortOrder = SummarySortOrder.TOTAL_TIME;
-        aggregateDao.mergeTransactionSummariesInto("the gp::", overallQuery, sortOrder, 10,
-                transactionSummaryCollector);
-        Result<TransactionSummary> result = transactionSummaryCollector.getResult(sortOrder, 10);
+        aggregateDao.mergeTransactionNameSummariesInto("the gp::", summaryQuery, sortOrder, 10,
+                transactionNameSummaryCollector);
+        Result<TransactionNameSummary> result =
+                transactionNameSummaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -522,19 +528,20 @@ public class AggregateDaoIT {
 
         OverallErrorSummaryCollector overallErrorSummaryCollector =
                 new OverallErrorSummaryCollector();
-        aggregateDao.mergeOverallErrorSummaryInto("the gp::", overallQuery,
+        aggregateDao.mergeOverallErrorSummaryInto("the gp::", summaryQuery,
                 overallErrorSummaryCollector);
         OverallErrorSummary overallErrorSummary =
                 overallErrorSummaryCollector.getOverallErrorSummary();
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 
-        TransactionErrorSummaryCollector errorSummaryCollector =
-                new TransactionErrorSummaryCollector();
+        TransactionNameErrorSummaryCollector errorSummaryCollector =
+                new TransactionNameErrorSummaryCollector();
         ErrorSummarySortOrder errorSortOrder = ErrorSummarySortOrder.ERROR_COUNT;
-        aggregateDao.mergeTransactionErrorSummariesInto("the gp::", overallQuery, errorSortOrder,
+        aggregateDao.mergeTransactionNameErrorSummariesInto("the gp::", summaryQuery,
+                errorSortOrder,
                 10, errorSummaryCollector);
-        Result<TransactionErrorSummary> errorSummaryResult =
+        Result<TransactionNameErrorSummary> errorSummaryResult =
                 errorSummaryCollector.getResult(errorSortOrder, 10);
         assertThat(errorSummaryResult.records()).hasSize(1);
         assertThat(errorSummaryResult.records().get(0).transactionName()).isEqualTo("tn2");
@@ -542,25 +549,25 @@ public class AggregateDaoIT {
         assertThat(errorSummaryResult.records().get(0).transactionCount()).isEqualTo(4);
 
         List<OverviewAggregate> overviewAggregates =
-                aggregateDao.readOverviewAggregates("the gp::", transactionQuery);
+                aggregateDao.readOverviewAggregates("the gp::", aggregateQuery);
         assertThat(overviewAggregates).hasSize(2);
         assertThat(overviewAggregates.get(0).transactionCount()).isEqualTo(3);
         assertThat(overviewAggregates.get(1).transactionCount()).isEqualTo(3);
 
         List<PercentileAggregate> percentileAggregates =
-                aggregateDao.readPercentileAggregates("the gp::", transactionQuery);
+                aggregateDao.readPercentileAggregates("the gp::", aggregateQuery);
         assertThat(percentileAggregates).hasSize(2);
         assertThat(percentileAggregates.get(0).transactionCount()).isEqualTo(3);
         assertThat(percentileAggregates.get(1).transactionCount()).isEqualTo(3);
 
         List<ThroughputAggregate> throughputAggregates =
-                aggregateDao.readThroughputAggregates("the gp::", transactionQuery);
+                aggregateDao.readThroughputAggregates("the gp::", aggregateQuery);
         assertThat(throughputAggregates).hasSize(2);
         assertThat(throughputAggregates.get(0).transactionCount()).isEqualTo(3);
         assertThat(throughputAggregates.get(1).transactionCount()).isEqualTo(3);
 
         QueryCollector queryCollector = new QueryCollector(1000);
-        aggregateDao.mergeQueriesInto("the gp::", transactionQuery, queryCollector);
+        aggregateDao.mergeQueriesInto("the gp::", aggregateQuery, queryCollector);
         List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         MutableQuery query = queries.get(0);
@@ -573,25 +580,25 @@ public class AggregateDaoIT {
         assertThat(query.getExecutionCount()).isEqualTo(4);
 
         // check rolled-up data after rollup
-        overallQuery = ImmutableOverallQuery.builder()
-                .copyFrom(overallQuery)
+        summaryQuery = ImmutableSummaryQuery.builder()
+                .copyFrom(summaryQuery)
                 .rollupLevel(1)
                 .build();
-        transactionQuery = ImmutableTransactionQuery.builder()
-                .copyFrom(transactionQuery)
+        aggregateQuery = ImmutableAggregateQuery.builder()
+                .copyFrom(aggregateQuery)
                 .rollupLevel(1)
                 .build();
 
         overallSummaryCollector = new OverallSummaryCollector();
-        aggregateDao.mergeOverallSummaryInto("the gp::", overallQuery, overallSummaryCollector);
+        aggregateDao.mergeOverallSummaryInto("the gp::", summaryQuery, overallSummaryCollector);
         overallSummary = overallSummaryCollector.getOverallSummary();
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        transactionSummaryCollector = new TransactionSummaryCollector();
-        aggregateDao.mergeTransactionSummariesInto("the gp::", overallQuery, sortOrder, 10,
-                transactionSummaryCollector);
-        result = transactionSummaryCollector.getResult(sortOrder, 10);
+        transactionNameSummaryCollector = new TransactionNameSummaryCollector();
+        aggregateDao.mergeTransactionNameSummariesInto("the gp::", summaryQuery, sortOrder, 10,
+                transactionNameSummaryCollector);
+        result = transactionNameSummaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -601,14 +608,15 @@ public class AggregateDaoIT {
         assertThat(result.records().get(1).transactionCount()).isEqualTo(2);
 
         overallErrorSummaryCollector = new OverallErrorSummaryCollector();
-        aggregateDao.mergeOverallErrorSummaryInto("the gp::", overallQuery,
+        aggregateDao.mergeOverallErrorSummaryInto("the gp::", summaryQuery,
                 overallErrorSummaryCollector);
         overallErrorSummary = overallErrorSummaryCollector.getOverallErrorSummary();
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 
-        errorSummaryCollector = new TransactionErrorSummaryCollector();
-        aggregateDao.mergeTransactionErrorSummariesInto("the gp::", overallQuery, errorSortOrder,
+        errorSummaryCollector = new TransactionNameErrorSummaryCollector();
+        aggregateDao.mergeTransactionNameErrorSummariesInto("the gp::", summaryQuery,
+                errorSortOrder,
                 10, errorSummaryCollector);
         errorSummaryResult = errorSummaryCollector.getResult(errorSortOrder, 10);
         assertThat(errorSummaryResult.records()).hasSize(1);
@@ -616,22 +624,22 @@ public class AggregateDaoIT {
         assertThat(errorSummaryResult.records().get(0).errorCount()).isEqualTo(2);
         assertThat(errorSummaryResult.records().get(0).transactionCount()).isEqualTo(4);
 
-        overviewAggregates = aggregateDao.readOverviewAggregates("the gp::", transactionQuery);
+        overviewAggregates = aggregateDao.readOverviewAggregates("the gp::", aggregateQuery);
         assertThat(overviewAggregates).hasSize(1);
         assertThat(overviewAggregates.get(0).transactionCount()).isEqualTo(6);
 
         percentileAggregates =
-                aggregateDao.readPercentileAggregates("the gp::", transactionQuery);
+                aggregateDao.readPercentileAggregates("the gp::", aggregateQuery);
         assertThat(percentileAggregates).hasSize(1);
         assertThat(percentileAggregates.get(0).transactionCount()).isEqualTo(6);
 
         throughputAggregates =
-                aggregateDao.readThroughputAggregates("the gp::", transactionQuery);
+                aggregateDao.readThroughputAggregates("the gp::", aggregateQuery);
         assertThat(throughputAggregates).hasSize(1);
         assertThat(throughputAggregates.get(0).transactionCount()).isEqualTo(6);
 
         queryCollector = new QueryCollector(1000);
-        aggregateDao.mergeQueriesInto("the gp::", transactionQuery, queryCollector);
+        aggregateDao.mergeQueriesInto("the gp::", aggregateQuery, queryCollector);
         queries = queryCollector.getSortedAndTruncatedQueries();
         assertThat(queries).hasSize(1);
         query = queries.get(0);

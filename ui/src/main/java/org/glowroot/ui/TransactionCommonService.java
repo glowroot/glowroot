@@ -23,16 +23,16 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.ConfigDefaults;
-import org.glowroot.common.live.ImmutableOverallQuery;
+import org.glowroot.common.live.ImmutableAggregateQuery;
+import org.glowroot.common.live.ImmutableSummaryQuery;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
-import org.glowroot.common.live.ImmutableTransactionQuery;
 import org.glowroot.common.live.LiveAggregateRepository;
+import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.LiveResult;
-import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.MutableQuery;
 import org.glowroot.common.model.MutableServiceCall;
@@ -42,9 +42,9 @@ import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.ServiceCallCollector;
-import org.glowroot.common.model.TransactionSummaryCollector;
-import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
-import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
+import org.glowroot.common.model.TransactionNameSummaryCollector;
+import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
+import org.glowroot.common.model.TransactionNameSummaryCollector.TransactionNameSummary;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.AggregateRepository;
@@ -70,7 +70,7 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    OverallSummary readOverallSummary(String agentRollupId, OverallQuery query, boolean autoRefresh)
+    OverallSummary readOverallSummary(String agentRollupId, SummaryQuery query, boolean autoRefresh)
             throws Exception {
         OverallSummaryCollector collector = new OverallSummaryCollector();
         long revisedFrom = query.from();
@@ -82,7 +82,7 @@ class TransactionCommonService {
                     liveAggregateRepository.mergeInOverallSummary(agentRollupId, query, collector);
         }
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            OverallQuery revisedQuery = ImmutableOverallQuery.builder()
+            SummaryQuery revisedQuery = ImmutableSummaryQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
                     .to(revisedTo)
@@ -99,25 +99,27 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    Result<TransactionSummary> readTransactionSummaries(String agentRollupId, OverallQuery query,
-            SummarySortOrder sortOrder, int limit, boolean autoRefresh) throws Exception {
-        TransactionSummaryCollector collector = new TransactionSummaryCollector();
+    Result<TransactionNameSummary> readTransactionNameSummaries(String agentRollupId,
+            SummaryQuery query, SummarySortOrder sortOrder, int limit, boolean autoRefresh)
+            throws Exception {
+        TransactionNameSummaryCollector collector = new TransactionNameSummaryCollector();
         long revisedFrom = query.from();
         long revisedTo;
         if (autoRefresh) {
             revisedTo = query.to();
         } else {
-            revisedTo = liveAggregateRepository.mergeInTransactionSummaries(agentRollupId, query,
-                    collector);
+            revisedTo =
+                    liveAggregateRepository.mergeInTransactionNameSummaries(agentRollupId, query,
+                            collector);
         }
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            OverallQuery revisedQuery = ImmutableOverallQuery.builder()
+            SummaryQuery revisedQuery = ImmutableSummaryQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeTransactionSummariesInto(agentRollupId, revisedQuery,
+            aggregateRepository.mergeTransactionNameSummariesInto(agentRollupId, revisedQuery,
                     sortOrder, limit, collector);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
@@ -129,7 +131,7 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<OverviewAggregate> getOverviewAggregates(String agentRollupId, TransactionQuery query,
+    List<OverviewAggregate> getOverviewAggregates(String agentRollupId, AggregateQuery query,
             boolean autoRefresh) throws Exception {
         LiveResult<OverviewAggregate> liveResult;
         long revisedTo;
@@ -140,7 +142,7 @@ class TransactionCommonService {
             liveResult = liveAggregateRepository.getOverviewAggregates(agentRollupId, query);
             revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
         }
-        TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+        AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
                 .copyFrom(query)
                 .to(revisedTo)
                 .build();
@@ -162,7 +164,7 @@ class TransactionCommonService {
         if (nonRolledUpFrom <= revisedTo) {
             orderedNonRolledUpAggregates.addAll(
                     aggregateRepository.readOverviewAggregates(agentRollupId,
-                            ImmutableTransactionQuery.builder()
+                            ImmutableAggregateQuery.builder()
                                     .copyFrom(revisedQuery)
                                     .from(nonRolledUpFrom)
                                     .rollupLevel(0)
@@ -187,7 +189,7 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<PercentileAggregate> getPercentileAggregates(String agentRollupId, TransactionQuery query,
+    List<PercentileAggregate> getPercentileAggregates(String agentRollupId, AggregateQuery query,
             boolean autoRefresh) throws Exception {
         LiveResult<PercentileAggregate> liveResult;
         long revisedTo;
@@ -198,7 +200,7 @@ class TransactionCommonService {
             liveResult = liveAggregateRepository.getPercentileAggregates(agentRollupId, query);
             revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
         }
-        TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+        AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
                 .copyFrom(query)
                 .to(revisedTo)
                 .build();
@@ -220,7 +222,7 @@ class TransactionCommonService {
         if (nonRolledUpFrom <= revisedTo) {
             orderedNonRolledUpAggregates.addAll(
                     aggregateRepository.readPercentileAggregates(agentRollupId,
-                            ImmutableTransactionQuery.builder()
+                            ImmutableAggregateQuery.builder()
                                     .copyFrom(revisedQuery)
                                     .from(nonRolledUpFrom)
                                     .rollupLevel(0)
@@ -245,7 +247,7 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<ThroughputAggregate> getThroughputAggregates(String agentRollupId, TransactionQuery query,
+    List<ThroughputAggregate> getThroughputAggregates(String agentRollupId, AggregateQuery query,
             boolean autoRefresh) throws Exception {
         LiveResult<ThroughputAggregate> liveResult;
         long revisedTo;
@@ -256,7 +258,7 @@ class TransactionCommonService {
             liveResult = liveAggregateRepository.getThroughputAggregates(agentRollupId, query);
             revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
         }
-        TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+        AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
                 .copyFrom(query)
                 .to(revisedTo)
                 .build();
@@ -278,7 +280,7 @@ class TransactionCommonService {
         if (nonRolledUpFrom <= revisedTo) {
             orderedNonRolledUpAggregates.addAll(aggregateRepository
                     .readThroughputAggregates(agentRollupId,
-                            ImmutableTransactionQuery.builder()
+                            ImmutableAggregateQuery.builder()
                                     .copyFrom(revisedQuery)
                                     .from(nonRolledUpFrom)
                                     .rollupLevel(0)
@@ -303,7 +305,7 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    List<MutableQuery> getMergedQueries(String agentRollupId, TransactionQuery query)
+    List<MutableQuery> getMergedQueries(String agentRollupId, AggregateQuery query)
             throws Exception {
         int maxQueryAggregatesPerTransactionAggregate =
                 getMaxQueryAggregatesPerTransactionAggregate(agentRollupId);
@@ -313,7 +315,7 @@ class TransactionCommonService {
         long revisedTo =
                 liveAggregateRepository.mergeInQueries(agentRollupId, query, queryCollector);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+            AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
                     .to(revisedTo)
@@ -342,7 +344,7 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    List<MutableServiceCall> getMergedServiceCalls(String agentRollupId, TransactionQuery query)
+    List<MutableServiceCall> getMergedServiceCalls(String agentRollupId, AggregateQuery query)
             throws Exception {
         int maxServiceCallAggregatesPerTransactionAggregate =
                 getMaxServiceCallAggregatesPerTransactionAggregate(agentRollupId);
@@ -352,7 +354,7 @@ class TransactionCommonService {
         long revisedTo = liveAggregateRepository.mergeInServiceCalls(agentRollupId, query,
                 serviceCallCollector);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+            AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
                     .to(revisedTo)
@@ -370,7 +372,7 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    MutableProfile getMergedProfile(String agentRollupId, TransactionQuery query, boolean auxiliary,
+    MutableProfile getMergedProfile(String agentRollupId, AggregateQuery query, boolean auxiliary,
             List<String> includes, List<String> excludes, double truncateBranchPercentage)
             throws Exception {
         MutableProfile profile = getMergedProfile(agentRollupId, query, auxiliary);
@@ -386,9 +388,9 @@ class TransactionCommonService {
         return profile;
     }
 
-    boolean hasMainThreadProfile(String agentRollupId, TransactionQuery query) throws Exception {
+    boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query) throws Exception {
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+            AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
                     .copyFrom(query)
                     .rollupLevel(rollupLevel)
                     .build();
@@ -399,9 +401,9 @@ class TransactionCommonService {
         return false;
     }
 
-    boolean hasAuxThreadProfile(String agentRollupId, TransactionQuery query) throws Exception {
+    boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query) throws Exception {
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+            AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
                     .copyFrom(query)
                     .rollupLevel(rollupLevel)
                     .build();
@@ -524,7 +526,7 @@ class TransactionCommonService {
         return rolledUpThroughputAggregates;
     }
 
-    private MutableProfile getMergedProfile(String agentRollupId, TransactionQuery query,
+    private MutableProfile getMergedProfile(String agentRollupId, AggregateQuery query,
             boolean auxiliary) throws Exception {
         ProfileCollector collector = new ProfileCollector();
         long revisedFrom = query.from();
@@ -538,7 +540,7 @@ class TransactionCommonService {
                     collector);
         }
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+            AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
                     .to(revisedTo)

@@ -92,7 +92,7 @@ class ThreadDumpService {
             if (transactionThreadInfo == null) {
                 transactionThreadInfo = new TransactionThreadInfo(transaction.getHeadline(),
                         transaction.getTransactionType(), transaction.getTransactionName(),
-                        transaction.getDurationNanos(), transaction.getTotalCpuNanos(),
+                        transaction.getDurationNanos(), transaction.getCpuNanos(),
                         transactionCollector.shouldStoreSlow(transaction));
                 transactionThreadInfos.put(traceId, transactionThreadInfo);
             }
@@ -171,20 +171,20 @@ class ThreadDumpService {
         private final String headline;
         private final String transactionType;
         private final String transactionName;
-        private final long totalDurationNanos;
-        private final long totalCpuNanos;
+        private final long durationNanos;
+        private final long cpuNanos;
         private final boolean shouldStoreSlow;
 
         private final List<ThreadInfo> threadInfos = Lists.newArrayList();
 
         private TransactionThreadInfo(String headline, String transactionType,
-                String transactionName, long totalDurationNanos, long totalCpuNanos,
+                String transactionName, long durationNanos, long cpuNanos,
                 boolean shouldStoreSlow) {
             this.headline = headline;
             this.transactionType = transactionType;
             this.transactionName = transactionName;
-            this.totalDurationNanos = totalDurationNanos;
-            this.totalCpuNanos = totalCpuNanos;
+            this.durationNanos = durationNanos;
+            this.cpuNanos = cpuNanos;
             this.shouldStoreSlow = shouldStoreSlow;
         }
 
@@ -193,9 +193,9 @@ class ThreadDumpService {
                     .setHeadline(headline)
                     .setTransactionType(transactionType)
                     .setTransactionName(transactionName)
-                    .setTotalDurationNanos(totalDurationNanos);
-            if (!NotAvailableAware.isNA(totalCpuNanos)) {
-                builder.setTotalCpuNanos(OptionalInt64.newBuilder().setValue(totalCpuNanos));
+                    .setDurationNanos(durationNanos);
+            if (!NotAvailableAware.isNA(cpuNanos)) {
+                builder.setCpuNanos(OptionalInt64.newBuilder().setValue(cpuNanos));
             }
             if (shouldStoreSlow) {
                 builder.setTraceId(traceId);

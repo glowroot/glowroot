@@ -29,8 +29,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
+import org.glowroot.agent.impl.Transaction.TraceEntryVisitor;
 import org.glowroot.agent.model.AsyncTimerImpl;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
@@ -126,8 +126,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         return errorMessage;
     }
 
-    void accept(int depth, long transactionStartTick, long captureTick, EntryVisitor entryVisitor,
-            SharedQueryTextCollection sharedQueryTextCollection) {
+    void accept(int depth, long transactionStartTick, long captureTick,
+            TraceEntryVisitor entryVisitor, SharedQueryTextCollection sharedQueryTextCollection) {
         long offsetNanos = startTick - transactionStartTick;
         long durationNanos;
         boolean active;

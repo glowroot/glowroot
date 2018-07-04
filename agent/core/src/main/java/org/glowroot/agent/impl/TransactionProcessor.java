@@ -40,7 +40,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class Aggregator {
+public class TransactionProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);
 
@@ -56,6 +56,7 @@ public class Aggregator {
     private final ExecutorService processingExecutor;
     private final ExecutorService flushingExecutor;
     private final Collector collector;
+    private final TransactionCollector traceCollector;
     private final ConfigService configService;
     private final Clock clock;
 
@@ -64,19 +65,21 @@ public class Aggregator {
     // all structural changes to the transaction queue are made under queueLock for simplicity
     // TODO implement lock free structure
     private final PendingTransaction head = new PendingTransaction(null);
-    // tail is non-volatile since only accessed under lock
+    @GuardedBy("queueLock")
     private PendingTransaction tail = head;
-    private final Object queueLock = new Object();
     @GuardedBy("queueLock")
     private int queueLength;
+    private final Object queueLock = new Object();
 
-    private final RateLimitedLogger backPressureLogger = new RateLimitedLogger(Aggregator.class);
+    private final RateLimitedLogger backPressureLogger =
+            new RateLimitedLogger(TransactionProcessor.class);
 
     private volatile boolean closed;
 
-    public Aggregator(Collector collector, ConfigService configService,
-            long aggregateIntervalMillis, Clock clock) {
+    public TransactionProcessor(Collector collector, TransactionCollector traceCollector,
+            ConfigService configService, long aggregateIntervalMillis, Clock clock) {
         this.collector = collector;
+        this.traceCollector = traceCollector;
         this.configService = configService;
         this.clock = clock;
         this.aggregateIntervalMillis = aggregateIntervalMillis;
@@ -89,7 +92,7 @@ public class Aggregator {
                         configService.getAdvancedConfig().maxTransactionAggregates(),
                         configService.getAdvancedConfig().maxQueryAggregates(),
                         configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
-        processingExecutor.execute(new TransactionProcessor());
+        processingExecutor.execute(new TransactionProcessorLoop());
     }
 
     public Set<String> getTransactionTypes() {
@@ -114,31 +117,33 @@ public class Aggregator {
         return intervalCollectors;
     }
 
-    public void clearInMemoryAggregate() {
+    public void clearInMemoryData() {
         activeIntervalCollector.clear();
+        pendingIntervalCollectors.clear();
     }
 
-    long add(Transaction transaction) {
+    void processOnCompletion(Transaction transaction) {
         // this synchronized block is to ensure traces are placed into processing queue in the
         // order of captureTime (so that queue reader can assume if captureTime indicates time to
         // flush, then no new traces will come in with prior captureTime)
         PendingTransaction newTail = new PendingTransaction(transaction);
-        long captureTime;
+        boolean exceededLimit = false;
         synchronized (queueLock) {
-            captureTime = clock.currentTimeMillis();
-            if (queueLength >= TRANSACTION_PENDING_LIMIT) {
-                backPressureLogger.warn("not aggregating a transaction because of an excessive"
-                        + " backlog of {} transactions already waiting to be aggregated",
-                        TRANSACTION_PENDING_LIMIT);
-                transaction.removeFromActiveTransactions();
-            } else {
-                newTail.captureTime = captureTime;
+            if (queueLength < TRANSACTION_PENDING_LIMIT) {
+                newTail.captureTime = clock.currentTimeMillis();
                 tail.next = newTail;
                 tail = newTail;
                 queueLength++;
+            } else {
+                exceededLimit = true;
             }
         }
-        return captureTime;
+        if (exceededLimit) {
+            backPressureLogger.warn("not capturing a transaction because of an excessive backlog of"
+                    + " {} transactions already waiting to be captured", TRANSACTION_PENDING_LIMIT);
+            transaction.setCaptureTime(clock.currentTimeMillis());
+            transaction.removeFromActiveTransactions();
+        }
     }
 
     private List<AggregateIntervalCollector> getOrderedAllIntervalCollectors() {
@@ -170,7 +175,7 @@ public class Aggregator {
         }
     }
 
-    private class TransactionProcessor implements Runnable {
+    private class TransactionProcessorLoop implements Runnable {
 
         @Override
         public void run() {
@@ -199,6 +204,13 @@ public class Aggregator {
             // used to do this at the very end of Transaction.end(), but moved to here to remove the
             // (minor) cost from the transaction main path
             Transaction transaction = checkNotNull(pendingTransaction.transaction);
+            transaction.setCaptureTime(pendingTransaction.captureTime);
+
+            // send to the trace collector before removing from transaction registry so that the
+            // trace collector can cover the gap (via TraceCollector.getPendingTransactions())
+            // between removing the transaction from the registry and storing it
+            traceCollector.onCompletedTransaction(transaction);
+
             transaction.removeFromActiveTransactions();
 
             // remove head
@@ -211,12 +223,7 @@ public class Aggregator {
                 queueLength--;
             }
             if (pendingTransaction.captureTime > activeIntervalCollector.getCaptureTime()) {
-                flushActiveIntervalCollector();
-                activeIntervalCollector = new AggregateIntervalCollector(
-                        pendingTransaction.captureTime, aggregateIntervalMillis,
-                        configService.getAdvancedConfig().maxTransactionAggregates(),
-                        configService.getAdvancedConfig().maxQueryAggregates(),
-                        configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
+                flushAndResetActiveIntervalCollector(pendingTransaction.captureTime);
             }
             activeIntervalCollector.add(transaction);
         }
@@ -237,13 +244,17 @@ public class Aggregator {
             if (safeToFlush) {
                 // safe to flush, no other pending transactions can enter queue with later time
                 // (since the check above was done under same lock used to add to queue)
-                flushActiveIntervalCollector();
-                activeIntervalCollector = new AggregateIntervalCollector(currentTime,
-                        aggregateIntervalMillis,
-                        configService.getAdvancedConfig().maxTransactionAggregates(),
-                        configService.getAdvancedConfig().maxQueryAggregates(),
-                        configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
+                flushAndResetActiveIntervalCollector(currentTime);
             }
+        }
+
+        private void flushAndResetActiveIntervalCollector(long currentTime) {
+            flushActiveIntervalCollector();
+            activeIntervalCollector =
+                    new AggregateIntervalCollector(currentTime, aggregateIntervalMillis,
+                            configService.getAdvancedConfig().maxTransactionAggregates(),
+                            configService.getAdvancedConfig().maxQueryAggregates(),
+                            configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
         }
 
         private void flushActiveIntervalCollector() {

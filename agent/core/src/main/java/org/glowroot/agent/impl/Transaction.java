@@ -51,7 +51,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.collector.Collector.EntryVisitor;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.AsyncQueryData;
@@ -154,7 +153,7 @@ public class Transaction {
 
     private volatile boolean partiallyStored;
 
-    private long captureTime;
+    private volatile long captureTime;
 
     // memory barrier is used to ensure memory visibility of entries and timers at key points,
     // namely after each entry
@@ -266,6 +265,10 @@ public class Transaction {
         return completed;
     }
 
+    public boolean isFullyCompleted() {
+        return completed && captureTime != 0;
+    }
+
     long getEndTick() {
         return endTick;
     }
@@ -362,22 +365,22 @@ public class Transaction {
         return mainThreadContext.getThreadStats();
     }
 
-    public long getTotalCpuNanos() {
-        long totalCpuNanos = mainThreadContext.getTotalCpuNanos();
+    public long getCpuNanos() {
+        long cpuNanos = mainThreadContext.getCpuNanos();
         synchronized (mainThreadContext) {
             if (auxThreadContexts == null) {
-                return totalCpuNanos;
+                return cpuNanos;
             }
             if (alreadyMergedAuxThreadStats != null) {
-                totalCpuNanos = NotAvailableAware.add(totalCpuNanos,
-                        alreadyMergedAuxThreadStats.getTotalCpuNanos());
+                cpuNanos =
+                        NotAvailableAware.add(cpuNanos, alreadyMergedAuxThreadStats.getCpuNanos());
             }
             for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
-                totalCpuNanos =
-                        NotAvailableAware.add(totalCpuNanos, auxThreadContext.getTotalCpuNanos());
+                cpuNanos =
+                        NotAvailableAware.add(cpuNanos, auxThreadContext.getCpuNanos());
             }
-            return totalCpuNanos;
         }
+        return cpuNanos;
     }
 
     void mergeAuxThreadStatsInto(ThreadStatsCollector collector) {
@@ -472,7 +475,7 @@ public class Transaction {
                 || extraErrorEntryLimitCounter++ < maxTraceEntries;
     }
 
-    public void visitEntries(long captureTick, EntryVisitor entryVisitor) throws Exception {
+    public void visitEntries(long captureTick, TraceEntryVisitor entryVisitor) {
         synchronized (sharedQueryTextCollectionLock) {
             if (sharedQueryTextCollection == null) {
                 sharedQueryTextCollection = new SharedQueryTextCollectionImpl();
@@ -481,14 +484,14 @@ public class Transaction {
         }
     }
 
-    int getEntryCount(long captureTick) throws Exception {
+    int getEntryCount(long captureTick) {
         CountingEntryVisitor entryVisitor = new CountingEntryVisitor();
         visitEntriesInternal(captureTick, entryVisitor, new NopSharedQueryTextCollection());
         return entryVisitor.count;
     }
 
-    private void visitEntriesInternal(long captureTick, EntryVisitor entryVisitor,
-            SharedQueryTextCollection sharedQueryTextCollection) throws Exception {
+    private void visitEntriesInternal(long captureTick, TraceEntryVisitor entryVisitor,
+            SharedQueryTextCollection sharedQueryTextCollection) {
         memoryBarrierRead();
         ListMultimap<TraceEntryImpl, ThreadContextImpl> priorEntryChildThreadContextMap =
                 buildPriorEntryChildThreadContextMap();
@@ -824,8 +827,7 @@ public class Transaction {
         completionCallback.completed(this);
     }
 
-    // called by the transaction thread
-    void onCompleteWillStoreTrace(long captureTime) {
+    void setCaptureTime(long captureTime) {
         this.captureTime = captureTime;
     }
 
@@ -961,9 +963,8 @@ public class Transaction {
 
     private static void addProtobufChildEntries(TraceEntryImpl entry,
             ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
-            long captureTick, int depth, EntryVisitor entryVisitor,
-            SharedQueryTextCollection sharedQueryTextCollection, boolean removeSingleAuxEntry)
-            throws Exception {
+            long captureTick, int depth, TraceEntryVisitor entryVisitor,
+            SharedQueryTextCollection sharedQueryTextCollection, boolean removeSingleAuxEntry) {
         if (!parentChildMap.containsKey(entry)) {
             // check containsKey to avoid creating garbage empty list via ListMultimap
             return;
@@ -1018,8 +1019,7 @@ public class Transaction {
             }
             ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
                     .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
-            if (logger.isDebugEnabled() && !isCompleted()
-                    && threadInfo != null) {
+            if (logger.isDebugEnabled() && !isCompleted() && threadInfo != null) {
                 // still not complete and got a valid stack trace from auxiliary thread
                 StringBuilder sb = new StringBuilder();
                 for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
@@ -1027,9 +1027,8 @@ public class Transaction {
                     sb.append(stackTraceElement.toString());
                     sb.append('\n');
                 }
-                logger.debug(
-                        "auxiliary thread extended beyond the transaction which started it\n{}",
-                        sb);
+                logger.debug("auxiliary thread extended beyond the transaction which started it\n"
+                        + "{}", sb);
             }
         }
     }
@@ -1075,6 +1074,10 @@ public class Transaction {
 
     interface ThreadStatsCollector {
         void mergeThreadStats(ThreadStats threadStats);
+    }
+
+    public interface TraceEntryVisitor {
+        void visitEntry(Trace.Entry entry);
     }
 
     private static class AuxThreadRootMessageSupplier extends MessageSupplier {
@@ -1156,7 +1159,7 @@ public class Transaction {
         }
     }
 
-    private static class CountingEntryVisitor implements EntryVisitor {
+    private static class CountingEntryVisitor implements TraceEntryVisitor {
 
         private int count;
 

@@ -38,7 +38,12 @@ public class NotAvailableAware {
         if (isNA(x) || isNA(y)) {
             return NA;
         }
-        return x + y;
+        long sum = x + y;
+        if (sum < 0) {
+            // overflow
+            return Long.MAX_VALUE;
+        }
+        return sum;
     }
 
     public static boolean isNA(double value) {

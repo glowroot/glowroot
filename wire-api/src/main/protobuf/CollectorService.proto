@@ -27,6 +27,33 @@ message InitMessage {
   string v09_agent_rollup_id = 4; // deprecated in 0.10.0, now rollup is incorporated into agent_id
   Environment environment = 2;
   AgentConfig agent_config = 3;
+
+  message Environment {
+    HostInfo host_info = 1;
+    ProcessInfo process_info = 2;
+    JavaInfo java_info = 3;
+
+    message HostInfo {
+      string host_name = 1;
+      int32 available_processors = 2;
+      OptionalInt64 total_physical_memory_bytes = 3;
+      string os_name = 4;
+      string os_version = 5;
+    }
+
+    message ProcessInfo {
+      OptionalInt64 process_id = 1;
+      int64 start_time = 2;
+    }
+
+    message JavaInfo {
+      string version = 1;
+      string vm = 2;
+      repeated string arg = 3;
+      string heap_dump_default_dir = 4;
+      string glowroot_agent_version = 15;
+    }
+  }
 }
 
 message InitResponse {
@@ -50,6 +77,23 @@ message AggregateStreamMessage {
     OverallAggregate overall_aggregate = 3;
     TransactionAggregate transaction_aggregate = 4;
   }
+
+  message AggregateStreamHeader {
+    string agent_id = 1;
+    int64 capture_time = 2;
+    bool post_v09 = 3;
+  }
+
+  message OverallAggregate {
+    string transaction_type = 1;
+    Aggregate aggregate = 2;
+  }
+
+  message TransactionAggregate {
+    string transaction_type = 1;
+    string transaction_name = 2;
+    Aggregate aggregate = 3;
+  }
 }
 
 message AggregateResponseMessage {
@@ -58,8 +102,18 @@ message AggregateResponseMessage {
 
 message GaugeValueMessage {
   string agent_id = 1;
-  repeated GaugeValue gauge_values = 2;
+  repeated GaugeValue gauge_value = 2;
   bool post_v09 = 3;
+
+  message GaugeValue {
+    string gauge_name = 1;
+    int64 capture_time = 2;
+    // for counter gauges, value is the "average delta per second" of the counter, and weight is the
+    // number of nanoseconds over which this average delta was calculated
+    // for non-counter gauges, value is just the gauge value, and weight is 1
+    double value = 3;
+    int64 weight = 4;
+  }
 }
 
 message GaugeValueResponseMessage {
@@ -85,8 +139,20 @@ message TraceStreamMessage {
     TraceStreamCounts stream_counts = 8;
   }
 
+  message TraceStreamHeader {
+    string agent_id = 1;
+    string trace_id = 2;
+    bool update = 3;
+    bool post_v09 = 4;
+  }
+
   message Queries {
     repeated Aggregate.Query query = 1;
+  }
+
+  message TraceStreamCounts {
+    int32 entry_count = 2;
+    int32 shared_query_text_count = 1;
   }
 }
 
@@ -94,89 +160,23 @@ message LogMessage {
   string agent_id = 1;
   LogEvent log_event = 2;
   bool post_v09 = 3;
-}
 
-message Environment {
-  HostInfo host_info = 1;
-  ProcessInfo process_info = 2;
-  JavaInfo java_info = 3;
-}
+  message LogEvent {
 
-message HostInfo {
-  string host_name = 1;
-  int32 available_processors = 2;
-  OptionalInt64 total_physical_memory_bytes = 3;
-  string os_name = 4;
-  string os_version = 5;
-}
+    int64 timestamp = 1;
+    Level level = 2;
+    string logger_name = 3;
+    string message = 4;
+    Throwable throwable = 5;
 
-message ProcessInfo {
-  OptionalInt64 process_id = 1;
-  int64 start_time = 2;
-}
-
-message JavaInfo {
-  string version = 1;
-  string vm = 2;
-  repeated string arg = 3;
-  string heap_dump_default_dir = 4;
-  string glowroot_agent_version = 15;
-}
-
-message AggregateStreamHeader {
-  string agent_id = 1;
-  int64 capture_time = 2;
-  bool post_v09 = 3;
-}
-
-message OverallAggregate {
-  string transaction_type = 1;
-  Aggregate aggregate = 2;
-}
-
-message TransactionAggregate {
-  string transaction_type = 1;
-  string transaction_name = 2;
-  Aggregate aggregate = 3;
-}
-
-message GaugeValue {
-  string gauge_name = 1;
-  int64 capture_time = 2;
-  // for counter gauges, value is the "average delta per second" of the counter, and weight is the
-  // number of nanoseconds over which this average delta was calculated
-  // for non-counter gauges, value is just the gauge value, and weight is 1
-  double value = 3;
-  int64 weight = 4;
-}
-
-message TraceStreamHeader {
-  string agent_id = 1;
-  string trace_id = 2;
-  bool update = 3;
-  bool post_v09 = 4;
-}
-
-message TraceStreamCounts {
-  int32 entry_count = 2;
-  int32 shared_query_text_count = 1;
-}
-
-message LogEvent {
-
-  int64 timestamp = 1;
-  Level level = 2;
-  string logger_name = 3;
-  string message = 4;
-  Throwable throwable = 5;
-
-  enum Level {
-    NONE = 0; // TODO this seems unnecessary
-    TRACE = 1;
-    DEBUG = 2;
-    INFO = 3;
-    WARN = 4;
-    ERROR = 5;
+    enum Level {
+      NONE = 0; // TODO this seems unnecessary
+      TRACE = 1;
+      DEBUG = 2;
+      INFO = 3;
+      WARN = 4;
+      ERROR = 5;
+    }
   }
 }
 

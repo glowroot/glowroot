@@ -35,10 +35,10 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.JvmConfig;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.common.util.SystemProperties;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.JavaInfo;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.HostInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.JavaInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.ProcessInfo;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
 public class EnvironmentCreator {

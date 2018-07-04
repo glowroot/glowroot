@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,43 +25,44 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import org.immutables.value.Value;
 
-public class TransactionSummaryCollector {
+public class TransactionNameSummaryCollector {
 
-    private static final Ordering<TransactionSummary> orderingByTotalTimeDesc =
-            new Ordering<TransactionSummary>() {
+    private static final Ordering<TransactionNameSummary> orderingByTotalTimeDesc =
+            new Ordering<TransactionNameSummary>() {
                 @Override
-                public int compare(TransactionSummary left, TransactionSummary right) {
+                public int compare(TransactionNameSummary left, TransactionNameSummary right) {
                     return Doubles.compare(right.totalDurationNanos(), left.totalDurationNanos());
                 }
             };
 
-    private static final Ordering<TransactionSummary> orderingByAverageTimeDesc =
-            new Ordering<TransactionSummary>() {
+    private static final Ordering<TransactionNameSummary> orderingByAverageTimeDesc =
+            new Ordering<TransactionNameSummary>() {
                 @Override
-                public int compare(TransactionSummary left, TransactionSummary right) {
+                public int compare(TransactionNameSummary left, TransactionNameSummary right) {
                     return Doubles.compare(right.totalDurationNanos() / right.transactionCount(),
                             left.totalDurationNanos() / left.transactionCount());
                 }
             };
 
-    private static final Ordering<TransactionSummary> orderingByTransactionCountDesc =
-            new Ordering<TransactionSummary>() {
+    private static final Ordering<TransactionNameSummary> orderingByTransactionCountDesc =
+            new Ordering<TransactionNameSummary>() {
                 @Override
-                public int compare(TransactionSummary left, TransactionSummary right) {
+                public int compare(TransactionNameSummary left, TransactionNameSummary right) {
                     return Longs.compare(right.transactionCount(), left.transactionCount());
                 }
             };
 
-    private final Map<String, MutableTransactionSummary> transactionSummaries = Maps.newHashMap();
+    private final Map<String, MutableTransactionNameSummary> transactionNameSummaries =
+            Maps.newHashMap();
 
     private long lastCaptureTime;
 
     public void collect(String transactionName, double totalDurationNanos, long transactionCount,
             long captureTime) {
-        MutableTransactionSummary mts = transactionSummaries.get(transactionName);
+        MutableTransactionNameSummary mts = transactionNameSummaries.get(transactionName);
         if (mts == null) {
-            mts = new MutableTransactionSummary();
-            transactionSummaries.put(transactionName, mts);
+            mts = new MutableTransactionNameSummary();
+            transactionNameSummaries.put(transactionName, mts);
         }
         mts.totalDurationNanos += totalDurationNanos;
         mts.transactionCount += transactionCount;
@@ -72,32 +73,33 @@ public class TransactionSummaryCollector {
         return lastCaptureTime;
     }
 
-    public Result<TransactionSummary> getResult(SummarySortOrder sortOrder, int limit) {
-        List<TransactionSummary> summaries = Lists.newArrayList();
-        for (Map.Entry<String, MutableTransactionSummary> entry : transactionSummaries.entrySet()) {
-            summaries.add(ImmutableTransactionSummary.builder()
+    public Result<TransactionNameSummary> getResult(SummarySortOrder sortOrder, int limit) {
+        List<TransactionNameSummary> summaries = Lists.newArrayList();
+        for (Map.Entry<String, MutableTransactionNameSummary> entry : transactionNameSummaries
+                .entrySet()) {
+            summaries.add(ImmutableTransactionNameSummary.builder()
                     .transactionName(entry.getKey())
                     .totalDurationNanos(entry.getValue().totalDurationNanos)
                     .transactionCount(entry.getValue().transactionCount)
                     .build());
         }
-        summaries = sortTransactionSummaries(summaries, sortOrder);
+        summaries = sortTransactionNameSummaries(summaries, sortOrder);
         if (summaries.size() > limit) {
-            return new Result<TransactionSummary>(summaries.subList(0, limit), true);
+            return new Result<TransactionNameSummary>(summaries.subList(0, limit), true);
         } else {
-            return new Result<TransactionSummary>(summaries, false);
+            return new Result<TransactionNameSummary>(summaries, false);
         }
     }
 
-    private static List<TransactionSummary> sortTransactionSummaries(
-            Iterable<TransactionSummary> transactionSummaries, SummarySortOrder sortOrder) {
+    private static List<TransactionNameSummary> sortTransactionNameSummaries(
+            Iterable<TransactionNameSummary> transactionNameSummaries, SummarySortOrder sortOrder) {
         switch (sortOrder) {
             case TOTAL_TIME:
-                return orderingByTotalTimeDesc.immutableSortedCopy(transactionSummaries);
+                return orderingByTotalTimeDesc.immutableSortedCopy(transactionNameSummaries);
             case AVERAGE_TIME:
-                return orderingByAverageTimeDesc.immutableSortedCopy(transactionSummaries);
+                return orderingByAverageTimeDesc.immutableSortedCopy(transactionNameSummaries);
             case THROUGHPUT:
-                return orderingByTransactionCountDesc.immutableSortedCopy(transactionSummaries);
+                return orderingByTransactionCountDesc.immutableSortedCopy(transactionNameSummaries);
             default:
                 throw new AssertionError("Unexpected sort order: " + sortOrder);
         }
@@ -108,14 +110,14 @@ public class TransactionSummaryCollector {
     }
 
     @Value.Immutable
-    public interface TransactionSummary {
+    public interface TransactionNameSummary {
         String transactionName();
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
         double totalDurationNanos();
         long transactionCount();
     }
 
-    private static class MutableTransactionSummary {
+    private static class MutableTransactionNameSummary {
         private double totalDurationNanos;
         private long transactionCount;
     }

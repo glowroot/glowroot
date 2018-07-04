@@ -38,7 +38,7 @@ import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.ImmutableGauge;
 import org.glowroot.common2.repo.util.RollupLevelService;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

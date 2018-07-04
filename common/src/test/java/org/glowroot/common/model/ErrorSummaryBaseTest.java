@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
-import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErrorSummary;
+import org.glowroot.common.model.TransactionNameErrorSummaryCollector.TransactionNameErrorSummary;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,9 +29,10 @@ public class ErrorSummaryBaseTest {
     @Test
     public void shouldSortByErrorRate() {
         // given
-        List<TransactionErrorSummary> elements = buildElements();
+        List<TransactionNameErrorSummary> elements = buildElements();
         // when
-        elements = TransactionErrorSummaryCollector.orderingByErrorRateDesc.sortedCopy(elements);
+        elements =
+                TransactionNameErrorSummaryCollector.orderingByErrorRateDesc.sortedCopy(elements);
         // then
         assertThat(elements.get(0).transactionName()).isEqualTo("b");
         assertThat(elements.get(1).transactionName()).isEqualTo("c");
@@ -41,28 +42,29 @@ public class ErrorSummaryBaseTest {
     @Test
     public void shouldSortByErrorCount() {
         // given
-        List<TransactionErrorSummary> elements = buildElements();
+        List<TransactionNameErrorSummary> elements = buildElements();
         // when
-        elements = TransactionErrorSummaryCollector.orderingByErrorCountDesc.sortedCopy(elements);
+        elements =
+                TransactionNameErrorSummaryCollector.orderingByErrorCountDesc.sortedCopy(elements);
         // then
         assertThat(elements.get(0).transactionName()).isEqualTo("c");
         assertThat(elements.get(1).transactionName()).isEqualTo("a");
         assertThat(elements.get(2).transactionName()).isEqualTo("b");
     }
 
-    private List<TransactionErrorSummary> buildElements() {
-        List<TransactionErrorSummary> elements = Lists.newArrayList();
-        elements.add(ImmutableTransactionErrorSummary.builder()
+    private List<TransactionNameErrorSummary> buildElements() {
+        List<TransactionNameErrorSummary> elements = Lists.newArrayList();
+        elements.add(ImmutableTransactionNameErrorSummary.builder()
                 .transactionName("a")
                 .errorCount(2)
                 .transactionCount(100)
                 .build());
-        elements.add(ImmutableTransactionErrorSummary.builder()
+        elements.add(ImmutableTransactionNameErrorSummary.builder()
                 .transactionName("b")
                 .errorCount(1)
                 .transactionCount(1)
                 .build());
-        elements.add(ImmutableTransactionErrorSummary.builder()
+        elements.add(ImmutableTransactionNameErrorSummary.builder()
                 .transactionName("c")
                 .errorCount(3)
                 .transactionCount(10)

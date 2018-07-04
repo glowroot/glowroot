@@ -735,20 +735,20 @@ class TraceCommonService {
     private static void writeOldThreadStats(Trace.OldThreadStats threadStats, JsonGenerator jg)
             throws IOException {
         jg.writeStartObject();
-        jg.writeNumberField("totalCpuNanos", threadStats.getTotalCpuNanos().getValue());
-        jg.writeNumberField("totalBlockedNanos", threadStats.getTotalBlockedNanos().getValue());
-        jg.writeNumberField("totalWaitedNanos", threadStats.getTotalWaitedNanos().getValue());
-        jg.writeNumberField("totalAllocatedBytes", threadStats.getTotalAllocatedBytes().getValue());
+        jg.writeNumberField("totalCpuNanos", threadStats.getCpuNanos().getValue());
+        jg.writeNumberField("totalBlockedNanos", threadStats.getBlockedNanos().getValue());
+        jg.writeNumberField("totalWaitedNanos", threadStats.getWaitedNanos().getValue());
+        jg.writeNumberField("totalAllocatedBytes", threadStats.getAllocatedBytes().getValue());
         jg.writeEndObject();
     }
 
     private static void writeThreadStats(Trace.ThreadStats threadStats, JsonGenerator jg)
             throws IOException {
         jg.writeStartObject();
-        jg.writeNumberField("totalCpuNanos", threadStats.getTotalCpuNanos());
-        jg.writeNumberField("totalBlockedNanos", threadStats.getTotalBlockedNanos());
-        jg.writeNumberField("totalWaitedNanos", threadStats.getTotalWaitedNanos());
-        jg.writeNumberField("totalAllocatedBytes", threadStats.getTotalAllocatedBytes());
+        jg.writeNumberField("totalCpuNanos", threadStats.getCpuNanos());
+        jg.writeNumberField("totalBlockedNanos", threadStats.getBlockedNanos());
+        jg.writeNumberField("totalWaitedNanos", threadStats.getWaitedNanos());
+        jg.writeNumberField("totalAllocatedBytes", threadStats.getAllocatedBytes());
         jg.writeEndObject();
     }
 

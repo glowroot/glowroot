@@ -26,8 +26,8 @@ import com.google.common.collect.Maps;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.common.live.ImmutableAggregateQuery;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
-import org.glowroot.common.live.ImmutableTransactionQuery;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
@@ -49,7 +49,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -299,7 +299,7 @@ public class AlertingServiceTest {
                 .transactionCount(1)
                 .durationNanosHistogram(lazyHistogram.toProto(new ScratchBuffer()))
                 .build();
-        ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
+        ImmutableAggregateQuery query = ImmutableAggregateQuery.builder()
                 .transactionType("tt")
                 .from(60001)
                 .to(120000)

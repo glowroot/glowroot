@@ -21,7 +21,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.common.live.ImmutableTransactionQuery;
+import org.glowroot.common.live.ImmutableAggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
@@ -30,7 +30,7 @@ import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -86,7 +86,7 @@ class MetricService {
         // startTime + 1 in order to not include the aggregate value at startTime
         List<PercentileAggregate> aggregates =
                 aggregateRepository.readPercentileAggregates(agentRollupId,
-                        ImmutableTransactionQuery.builder()
+                        ImmutableAggregateQuery.builder()
                                 .transactionType(transactionType)
                                 .transactionName(transactionName)
                                 .from(startTime + 1)
@@ -193,7 +193,7 @@ class MetricService {
                 rollupLevelService.getRollupLevelForView(startTime, endTime, DataKind.GENERAL);
         // startTime + 1 in order to not include the aggregate at startTime
         return aggregateRepository.readThroughputAggregates(agentRollupId,
-                ImmutableTransactionQuery.builder()
+                ImmutableAggregateQuery.builder()
                         .transactionType(transactionType)
                         .transactionName(transactionName)
                         .from(startTime + 1)
@@ -209,7 +209,7 @@ class MetricService {
                 rollupLevelService.getRollupLevelForView(startTime, endTime, DataKind.GENERAL);
         // startTime + 1 in order to not include the aggregate at startTime
         return aggregateRepository.readOverviewAggregates(agentRollupId,
-                ImmutableTransactionQuery.builder()
+                ImmutableAggregateQuery.builder()
                         .transactionType(transactionType)
                         .transactionName(transactionName)
                         .from(startTime + 1)

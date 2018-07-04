@@ -196,11 +196,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return threadStatsComponent.getThreadStats();
     }
 
-    long getTotalCpuNanos() {
+    long getCpuNanos() {
         if (threadStatsComponent == null) {
             return NotAvailableAware.NA;
         }
-        return threadStatsComponent.getTotalCpuNanos();
+        return threadStatsComponent.getCpuNanos();
     }
 
     public long getThreadId() {

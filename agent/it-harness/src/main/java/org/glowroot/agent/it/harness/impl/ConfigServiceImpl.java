@@ -120,8 +120,8 @@ class ConfigServiceImpl implements ConfigService {
     void resetConfig() throws Exception {
         AgentConfig.Builder builder = AgentConfig.newBuilder()
                 .setTransactionConfig(getDefaultTransactionConfig())
-                .setAdvancedConfig(getDefaultAdvancedConfig());
-        builder.addAllGaugeConfig(getDefaultGaugeConfigs());
+                .setAdvancedConfig(getDefaultAdvancedConfig())
+                .addAllGaugeConfig(getDefaultGaugeConfigs());
         for (PluginConfig pluginConfig : server.getAgentConfig().getPluginConfigList()) {
             PluginConfig.Builder pluginConfigBuilder = PluginConfig.newBuilder()
                     .setId(pluginConfig.getId());

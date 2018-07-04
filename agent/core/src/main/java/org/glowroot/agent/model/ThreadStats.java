@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,32 +23,32 @@ public class ThreadStats {
     public static final ThreadStats NA = new ThreadStats(NotAvailableAware.NA, NotAvailableAware.NA,
             NotAvailableAware.NA, NotAvailableAware.NA);
 
-    private final long totalCpuNanos;
-    private final long totalBlockedMillis; // not converting to nanos here for micro-opt purposes
-    private final long totalWaitedMillis; // not converting to nanos here for micro-opt purposes
-    private final long totalAllocatedBytes;
+    private final long cpuNanos;
+    private final long blockedMillis; // not converting to nanos here for micro-opt purposes
+    private final long waitedMillis; // not converting to nanos here for micro-opt purposes
+    private final long allocatedBytes;
 
-    public ThreadStats(long totalCpuNanos, long totalBlockedMillis, long totalWaitedMillis,
+    public ThreadStats(long cpuNanos, long blockedMillis, long waitedMillis,
             long totalAllocatedBytes) {
-        this.totalCpuNanos = totalCpuNanos;
-        this.totalBlockedMillis = totalBlockedMillis;
-        this.totalWaitedMillis = totalWaitedMillis;
-        this.totalAllocatedBytes = totalAllocatedBytes;
+        this.cpuNanos = cpuNanos;
+        this.blockedMillis = blockedMillis;
+        this.waitedMillis = waitedMillis;
+        this.allocatedBytes = totalAllocatedBytes;
     }
 
-    public long getTotalCpuNanos() {
-        return totalCpuNanos;
+    public long getCpuNanos() {
+        return cpuNanos;
     }
 
-    public long getTotalBlockedMillis() {
-        return totalBlockedMillis;
+    public long getBlockedMillis() {
+        return blockedMillis;
     }
 
-    public long getTotalWaitedMillis() {
-        return totalWaitedMillis;
+    public long getWaitedMillis() {
+        return waitedMillis;
     }
 
-    public long getTotalAllocatedBytes() {
-        return totalAllocatedBytes;
+    public long getAllocatedBytes() {
+        return allocatedBytes;
     }
 }

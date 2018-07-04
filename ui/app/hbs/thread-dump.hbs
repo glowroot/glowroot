@@ -6,8 +6,8 @@
 {{#each transactions}}{{#if transactionType}}<strong>{{headline}}</strong>{{#if traceId}} <a href="jvm/thread-dump?{{#agentIdQueryString}}{{/agentIdQueryString}}modal-trace-id={{traceId}}&modal-check-live-traces=true" style="padding-left: 5px;">view trace</a>{{/if}}
 <strong>Transaction type: </strong>{{transactionType}}
 <strong>Transaction name:</strong> {{transactionName}}
-<strong>Duration:</strong> {{nanosToMillis totalDurationNanos}} milliseconds{{#ifNotNA totalCpuNanos}}
-<strong>CPU time:</strong> {{nanosToMillis totalCpuNanos}} milliseconds{{/ifNotNA}}
+<strong>Duration:</strong> {{nanosToMillis durationNanos}} milliseconds{{#ifNotNA cpuNanos}}
+<strong>CPU time:</strong> {{nanosToMillis cpuNanos}} milliseconds{{/ifNotNA}}
 {{/if}}{{#each threads}}"{{name}}" #{{id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#each stackTraceElements}}        {{.}}

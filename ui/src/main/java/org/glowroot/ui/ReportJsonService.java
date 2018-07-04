@@ -38,14 +38,14 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
+import org.glowroot.common.live.ImmutableAggregateQuery;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
-import org.glowroot.common.live.ImmutableTransactionQuery;
+import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.ObjectMappers;
@@ -62,7 +62,7 @@ import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.LayoutJsonService.AgentRollupSmall;
 import org.glowroot.ui.LayoutService.FilteredAgentRollup;
 import org.glowroot.ui.LayoutService.Permissions;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -254,7 +254,7 @@ class ReportJsonService {
     private List<DataSeries> getTransactionReport(ReportRequest request, TimeZone timeZone,
             Date from, Date to, int rollupLevel, RollupCaptureTimeFn rollupCaptureTimeFn,
             double gapMillis) throws Exception {
-        TransactionQuery query = ImmutableTransactionQuery.builder()
+        AggregateQuery query = ImmutableAggregateQuery.builder()
                 .transactionType(checkNotNull(request.transactionType()))
                 .transactionName(Strings.emptyToNull(checkNotNull(request.transactionName())))
                 // + 1 to make from non-inclusive, since data points are displayed as midpoint of
@@ -292,7 +292,7 @@ class ReportJsonService {
         return dataSeriesList;
     }
 
-    private DataSeries getDataSeriesForAverage(String agentRollupId, TransactionQuery query,
+    private DataSeries getDataSeriesForAverage(String agentRollupId, AggregateQuery query,
             RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup,
             TimeZone timeZone, double gapMillis) throws Exception {
 
@@ -339,7 +339,7 @@ class ReportJsonService {
         return dataSeries;
     }
 
-    private DataSeries getDataSeriesForPercentile(String agentRollupId, TransactionQuery query,
+    private DataSeries getDataSeriesForPercentile(String agentRollupId, AggregateQuery query,
             double percentile, RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup,
             TimeZone timeZone, double gapMillis) throws Exception {
         DataSeries dataSeries =
@@ -382,7 +382,7 @@ class ReportJsonService {
         return dataSeries;
     }
 
-    private DataSeries getDataSeriesForThroughput(String agentRollupId, TransactionQuery query,
+    private DataSeries getDataSeriesForThroughput(String agentRollupId, AggregateQuery query,
             RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup, TimeZone timeZone,
             double gapMillis, ThroughputAggregateFn throughputAggregateFn) throws Exception {
         DataSeries dataSeries =

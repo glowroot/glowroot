@@ -93,17 +93,17 @@ message Trace {
 
   // deprecated in 0.10.9
   message OldThreadStats {
-    OptionalInt64 total_cpu_nanos = 1;
-    OptionalInt64 total_blocked_nanos = 2;
-    OptionalInt64 total_waited_nanos = 3;
-    OptionalInt64 total_allocated_bytes = 4;
+    OptionalInt64 cpu_nanos = 1;
+    OptionalInt64 blocked_nanos = 2;
+    OptionalInt64 waited_nanos = 3;
+    OptionalInt64 allocated_bytes = 4;
   }
 
   message ThreadStats {
-    sint64 total_cpu_nanos = 1; // -1 means N/A
-    sint64 total_blocked_nanos = 2; // -1 means N/A
-    sint64 total_waited_nanos = 3; // -1 means N/A
-    sint64 total_allocated_bytes = 4; // -1 means N/A
+    sint64 cpu_nanos = 1; // -1 means N/A
+    sint64 blocked_nanos = 2; // -1 means N/A
+    sint64 waited_nanos = 3; // -1 means N/A
+    sint64 allocated_bytes = 4; // -1 means N/A
   }
 
   message Entry {

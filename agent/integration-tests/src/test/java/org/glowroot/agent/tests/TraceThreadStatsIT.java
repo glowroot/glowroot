@@ -64,7 +64,7 @@ public class TraceThreadStatsIT {
         // when
         Trace trace = container.execute(ShouldUseCpu.class);
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos())
+        assertThat(trace.getHeader().getMainThreadStats().getCpuNanos())
                 .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
     }
 
@@ -75,7 +75,7 @@ public class TraceThreadStatsIT {
         // when
         Trace trace = container.execute(ShouldWait.class);
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos())
+        assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos())
                 .isGreaterThanOrEqualTo(5);
     }
 
@@ -86,7 +86,7 @@ public class TraceThreadStatsIT {
         // when
         Trace trace = container.execute(ShouldBlock.class);
         // then
-        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos())
+        assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos())
                 .isGreaterThanOrEqualTo(5);
     }
 

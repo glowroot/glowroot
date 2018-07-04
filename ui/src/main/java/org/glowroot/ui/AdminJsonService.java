@@ -589,7 +589,7 @@ class AdminJsonService {
     @POST(path = "/backend/admin/delete-all-stored-data", permission = "admin:edit:storage")
     void deleteAllData() throws Exception {
         repoAdmin.deleteAllData();
-        liveAggregateRepository.clearInMemoryAggregate();
+        liveAggregateRepository.clearInMemoryData();
     }
 
     @POST(path = "/backend/admin/update-cassandra-twcs-window-sizes",

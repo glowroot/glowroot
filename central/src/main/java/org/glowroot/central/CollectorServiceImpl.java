@@ -51,24 +51,24 @@ import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateResponseMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamHeader;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage.AggregateStreamHeader;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage.OverallAggregate;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage.TransactionAggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent.Level;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent.Level;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldAggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldTraceMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.OverallAggregate;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamCounts;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamHeader;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage.TraceStreamCounts;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage.TraceStreamHeader;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -364,8 +364,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         long maxCaptureTime = 0;
         try {
-            gaugeValueDao.store(postV09AgentId, request.getGaugeValuesList());
-            for (GaugeValue gaugeValue : request.getGaugeValuesList()) {
+            gaugeValueDao.store(postV09AgentId, request.getGaugeValueList());
+            for (GaugeValue gaugeValue : request.getGaugeValueList()) {
                 maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
             }
         } catch (Throwable t) {

@@ -60,10 +60,10 @@ import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.EnvironmentRepository;
 import org.glowroot.common2.repo.util.UsedByJsonSerialization;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.JavaInfo;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.HostInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.JavaInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.ProcessInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
@@ -544,11 +544,11 @@ class JvmJsonService {
         jg.writeStringField("headline", transaction.getHeadline());
         jg.writeStringField("transactionType", transaction.getTransactionType());
         jg.writeStringField("transactionName", transaction.getTransactionName());
-        jg.writeNumberField("totalDurationNanos", transaction.getTotalDurationNanos());
-        if (transaction.hasTotalCpuNanos()) {
-            jg.writeNumberField("totalCpuNanos", transaction.getTotalCpuNanos().getValue());
+        jg.writeNumberField("durationNanos", transaction.getDurationNanos());
+        if (transaction.hasCpuNanos()) {
+            jg.writeNumberField("cpuNanos", transaction.getCpuNanos().getValue());
         } else {
-            jg.writeNumberField("totalCpuNanos", NotAvailableAware.NA);
+            jg.writeNumberField("cpuNanos", NotAvailableAware.NA);
         }
         jg.writeArrayFieldStart("threads");
         for (ThreadDump.Thread thread : transaction.getThreadList()) {
@@ -842,7 +842,7 @@ class JvmJsonService {
             extends Ordering<ThreadDump.Transaction> {
         @Override
         public int compare(ThreadDump.Transaction left, ThreadDump.Transaction right) {
-            return Longs.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
+            return Longs.compare(right.getDurationNanos(), left.getDurationNanos());
         }
     }
 
