@@ -99,5 +99,11 @@ class TraceTestData {
         public void accept(TraceVisitor traceVisitor) throws Exception {
             traceVisitor.visitHeader(header);
         }
+
+        @Override
+        public Trace.Header readHeader() {
+            // this is not used
+            throw new UnsupportedOperationException();
+        }
     }
 }

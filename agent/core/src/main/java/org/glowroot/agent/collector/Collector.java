@@ -58,6 +58,8 @@ public interface Collector {
         boolean partial();
         boolean update();
         void accept(TraceVisitor traceVisitor) throws Exception;
+        // alternate to accept() if only header data may be needed, can still call accept afterwards
+        Trace.Header readHeader();
     }
 
     public interface AggregateVisitor {

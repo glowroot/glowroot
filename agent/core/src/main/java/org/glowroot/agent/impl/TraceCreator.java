@@ -39,29 +39,16 @@ public class TraceCreator {
 
     private TraceCreator() {}
 
-    public static TraceReader createTraceReaderForPartial(final Transaction transaction,
-            final long captureTime, final long captureTick) {
-        final boolean partial = true;
-        return new TraceReaderImpl(captureTime, transaction.getTraceId(), partial,
-                transaction.isPartiallyStored()) {
-            @Override
-            public void accept(TraceVisitor traceVisitor) throws Exception {
-                createFullTrace(transaction, true, partial, captureTime, captureTick, traceVisitor);
-            }
-        };
+    public static TraceReader createTraceReaderForPartial(Transaction transaction, long captureTime,
+            long captureTick) {
+        return new TraceReaderImpl(transaction, true, captureTime, captureTick,
+                transaction.getTraceId(), true, transaction.isPartiallyStored());
     }
 
-    public static TraceReader createTraceReaderForCompleted(final Transaction transaction,
-            final boolean slow) {
-        final boolean partial = false;
-        return new TraceReaderImpl(transaction.getCaptureTime(), transaction.getTraceId(),
-                partial, transaction.isPartiallyStored()) {
-            @Override
-            public void accept(TraceVisitor traceVisitor) throws Exception {
-                createFullTrace(transaction, slow, partial, transaction.getCaptureTime(),
-                        transaction.getEndTick(), traceVisitor);
-            }
-        };
+    public static TraceReader createTraceReaderForCompleted(Transaction transaction, boolean slow) {
+        return new TraceReaderImpl(transaction, slow, transaction.getCaptureTime(),
+                transaction.getEndTick(), transaction.getTraceId(), false,
+                transaction.isPartiallyStored());
     }
 
     public static Trace.Header createPartialTraceHeader(Transaction transaction, long captureTime,
@@ -101,7 +88,8 @@ public class TraceCreator {
     // *attempt* to present a picture of the trace at that exact tick
     // (without using synchronization to block updates to the trace while it is being read)
     private static void createFullTrace(Transaction transaction, boolean slow, boolean partial,
-            long captureTime, long captureTick, TraceVisitor traceVisitor) throws Exception {
+            long captureTime, long captureTick, TraceVisitor traceVisitor,
+            Trace. /*@Nullable*/ Header header) throws Exception {
 
         CountingEntryVisitorWrapper entryVisitorWrapper =
                 new CountingEntryVisitorWrapper(traceVisitor);
@@ -126,15 +114,25 @@ public class TraceCreator {
         long auxThreadProfileSampleCount = getProfileSampleCount(auxThreadProfile);
         // auxThreadProfile can be gc'd at this point
 
-        Trace.Header header = createTraceHeader(transaction, slow, partial, captureTime,
-                captureTick, entryVisitorWrapper.count, queries.size(),
-                mainThreadProfileSampleCount, auxThreadProfileSampleCount);
-        traceVisitor.visitHeader(header);
+        int entryCount = entryVisitorWrapper.count;
+        int queryCount = queries.size();
+
+        if (header == null) {
+            traceVisitor.visitHeader(createTraceHeader(transaction, slow, partial, captureTime,
+                    captureTick, entryCount, queryCount, mainThreadProfileSampleCount,
+                    auxThreadProfileSampleCount));
+        } else {
+            Trace.Header.Builder builder = header.toBuilder();
+            addCounts(builder, transaction, entryCount, queryCount,
+                    mainThreadProfileSampleCount, auxThreadProfileSampleCount);
+            traceVisitor.visitHeader(builder.build());
+
+        }
     }
 
     private static Trace.Header createTraceHeader(Transaction transaction, boolean slow,
             boolean partial, long captureTime, long captureTick, int entryCount,
-            int queryCount, long mainProfileSampleCount, long auxProfileSampleCount) {
+            int queryCount, long mainThreadProfileSampleCount, long auxThreadProfileSampleCount) {
         Trace.Header.Builder builder = Trace.Header.newBuilder();
         builder.setPartial(partial);
         builder.setSlow(slow);
@@ -177,17 +175,24 @@ public class TraceCreator {
         ThreadStatsCollectorImpl auxThreadStats = new ThreadStatsCollectorImpl();
         transaction.mergeAuxThreadStatsInto(auxThreadStats);
         builder.setAuxThreadStats(auxThreadStats.toProto());
+        addCounts(builder, transaction, entryCount, queryCount,
+                mainThreadProfileSampleCount, auxThreadProfileSampleCount);
+        return builder.build();
+    }
+
+    private static void addCounts(Trace.Header.Builder builder, Transaction transaction,
+            int entryCount, int queryCount, long mainThreadProfileSampleCount,
+            long auxThreadProfileSampleCount) {
         builder.setEntryCount(entryCount);
         builder.setEntryLimitExceeded(transaction.isEntryLimitExceeded(entryCount));
         builder.setQueryCount(queryCount);
         builder.setQueryLimitExceeded(transaction.isQueryLimitExceeded(queryCount));
-        builder.setMainThreadProfileSampleCount(mainProfileSampleCount);
+        builder.setMainThreadProfileSampleCount(mainThreadProfileSampleCount);
         builder.setMainThreadProfileSampleLimitExceeded(
-                transaction.isMainThreadProfileSampleLimitExceeded(mainProfileSampleCount));
-        builder.setAuxThreadProfileSampleCount(auxProfileSampleCount);
+                transaction.isMainThreadProfileSampleLimitExceeded(mainThreadProfileSampleCount));
+        builder.setAuxThreadProfileSampleCount(auxThreadProfileSampleCount);
         builder.setAuxThreadProfileSampleLimitExceeded(
-                transaction.isAuxThreadProfileSampleLimitExceeded(auxProfileSampleCount));
-        return builder.build();
+                transaction.isAuxThreadProfileSampleLimitExceeded(auxThreadProfileSampleCount));
     }
 
     private static long getProfileSampleCount(@Nullable Profile profile) {
@@ -203,18 +208,42 @@ public class TraceCreator {
         return profileSampleCount;
     }
 
-    private abstract static class TraceReaderImpl implements TraceReader {
+    private static class TraceReaderImpl implements TraceReader {
 
+        private final Transaction transaction;
+        private final boolean slow;
         private final long captureTime;
+        private final long captureTick;
         private final String traceId;
         private final boolean partial;
         private final boolean update;
 
-        private TraceReaderImpl(long captureTime, String traceId, boolean partial, boolean update) {
+        private Trace. /*@Nullable*/ Header header;
+
+        private TraceReaderImpl(Transaction transaction, boolean slow, long captureTime,
+                long captureTick, String traceId, boolean partial, boolean update) {
+            this.transaction = transaction;
+            this.slow = slow;
             this.captureTime = captureTime;
+            this.captureTick = captureTick;
             this.traceId = traceId;
             this.partial = partial;
             this.update = update;
+        }
+
+        @Override
+        public void accept(TraceVisitor traceVisitor) throws Exception {
+            createFullTrace(transaction, slow, partial, captureTime, captureTick, traceVisitor,
+                    header);
+        }
+
+        @Override
+        public Trace.Header readHeader() {
+            if (header == null) {
+                header = createTraceHeader(transaction, true, partial, captureTime, captureTick, 0,
+                        0, 0, 0);
+            }
+            return header;
         }
 
         @Override
