@@ -27,12 +27,13 @@ public class Reflection {
 
     private Reflection() {}
 
-    public static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName) {
+    public static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
+            Class<?>... parameterTypes) {
         if (clazz == null) {
             return null;
         }
         try {
-            return clazz.getMethod(methodName);
+            return clazz.getMethod(methodName, parameterTypes);
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
             return null;
@@ -54,12 +55,13 @@ public class Reflection {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> /*@Nullable*/ T invoke(@Nullable Method method, Object obj) {
+    public static <T> /*@Nullable*/ T invoke(@Nullable Method method, Object obj,
+            @Nullable Object... args) {
         if (method == null) {
             return null;
         }
         try {
-            return (T) method.invoke(obj);
+            return (T) method.invoke(obj, args);
         } catch (Throwable t) {
             logger.warn("error calling {}.{}()", method.getDeclaringClass().getName(),
                     method.getName(), t);
@@ -68,12 +70,13 @@ public class Reflection {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T invokeWithDefault(@Nullable Method method, Object obj, T defaultValue) {
+    public static <T> T invokeWithDefault(@Nullable Method method, Object obj, T defaultValue,
+            @Nullable Object... args) {
         if (method == null) {
             return defaultValue;
         }
         try {
-            Object value = method.invoke(obj);
+            Object value = method.invoke(obj, args);
             if (value == null) {
                 return defaultValue;
             }

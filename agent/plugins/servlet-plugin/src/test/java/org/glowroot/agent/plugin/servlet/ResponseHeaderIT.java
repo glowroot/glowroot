@@ -235,7 +235,7 @@ public class ResponseHeaderIT {
         return detailEntry == null ? null : detailEntry.getValue(0).getString();
     }
 
-    private static Map<String, Object> getResponseHeaders(Trace trace) {
+    static Map<String, Object> getResponseHeaders(Trace trace) {
         return getDetailMap(trace, "Response headers");
     }
 

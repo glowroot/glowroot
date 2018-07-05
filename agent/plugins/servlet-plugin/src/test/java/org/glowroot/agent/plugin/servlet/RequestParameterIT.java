@@ -107,11 +107,13 @@ public class RequestParameterIT {
         // when
         Trace trace = container.execute(GetParameter.class, "Web");
         // then
-        assertThat(trace.getHeader().getDetailEntryList()).hasSize(2);
+        assertThat(trace.getHeader().getDetailEntryList()).hasSize(3);
         assertThat(trace.getHeader().getDetailEntryList().get(0).getName())
                 .isEqualTo("Request http method");
         assertThat(trace.getHeader().getDetailEntryList().get(1).getName())
                 .isEqualTo("Request query string");
+        assertThat(trace.getHeader().getDetailEntryList().get(2).getName())
+                .isEqualTo("Response code");
     }
 
     @Test

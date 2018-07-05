@@ -89,6 +89,8 @@ public class DetailMapWriter {
             builder.addValueBuilder().setBoolean((Boolean) value).build();
         } else if (value instanceof Long) {
             builder.addValueBuilder().setLong((Long) value).build();
+        } else if (value instanceof Integer) {
+            builder.addValueBuilder().setLong((Integer) value).build();
         } else if (value instanceof Number) {
             builder.addValueBuilder().setDouble(((Number) value).doubleValue()).build();
         } else {

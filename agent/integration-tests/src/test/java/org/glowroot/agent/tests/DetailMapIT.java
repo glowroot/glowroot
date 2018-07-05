@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,7 +195,7 @@ public class DetailMapIT {
         assertThat(details).hasSize(4);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
-        assertThat(details.get(0).getValueList().get(0).getDouble()).isEqualTo(5.0);
+        assertThat(details.get(0).getValueList().get(0).getLong()).isEqualTo(5);
         assertThat(details.get(1).getName()).isEqualTo("arg2");
         assertThat(details.get(1).getValueList()).hasSize(1);
         assertThat(details.get(1).getValueList().get(0).getDouble()).isEqualTo(5.5);
@@ -203,7 +203,7 @@ public class DetailMapIT {
         List<Trace.DetailEntry> nestedDetails = details.get(2).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getDouble()).isEqualTo(5.0);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getLong()).isEqualTo(5);
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey12");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
         assertThat(nestedDetails.get(1).getValueList().get(0).getDouble()).isEqualTo(5.5);
@@ -211,7 +211,7 @@ public class DetailMapIT {
         List<Trace.DetailEntry> subNestedDetails = nestedDetails.get(2).getChildEntryList();
         assertThat(subNestedDetails.get(0).getName()).isEqualTo("subnestedkey1");
         assertThat(subNestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(subNestedDetails.get(0).getValueList().get(0).getDouble()).isEqualTo(5.0);
+        assertThat(subNestedDetails.get(0).getValueList().get(0).getLong()).isEqualTo(5);
         assertThat(subNestedDetails.get(1).getName()).isEqualTo("subnestedkey2");
         assertThat(subNestedDetails.get(1).getValueList()).hasSize(1);
         assertThat(subNestedDetails.get(1).getValueList().get(0).getDouble()).isEqualTo(5.5);
@@ -219,7 +219,7 @@ public class DetailMapIT {
         nestedDetails = details.get(3).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey21");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getDouble()).isEqualTo(5.0);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getLong()).isEqualTo(5);
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey22");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
         assertThat(nestedDetails.get(1).getValueList().get(0).getDouble()).isEqualTo(5.5);

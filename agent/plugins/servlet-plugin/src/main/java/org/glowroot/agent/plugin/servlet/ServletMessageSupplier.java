@@ -52,6 +52,8 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
     private final @Nullable String requestRemoteAddr;
     private final @Nullable String requestRemoteHost;
 
+    private volatile int responseCode;
+
     private final ResponseHeaderComponent responseHeaderComponent = new ResponseHeaderComponent();
 
     // session attributes may not be thread safe, so they must be converted to Strings
@@ -105,6 +107,9 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
         if (requestRemoteHost != null) {
             detail.put("Request remote host", requestRemoteHost);
         }
+        if (responseCode != 0) {
+            detail.put("Response code", responseCode);
+        }
         Map<String, Object> responseHeaderStrings = responseHeaderComponent.getMapOfStrings();
         if (!responseHeaderStrings.isEmpty()) {
             detail.put("Response headers", responseHeaderStrings);
@@ -144,6 +149,10 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
 
     void setCaptureRequestParameters(Map<String, Object> requestParameters) {
         this.requestParameters = requestParameters;
+    }
+
+    void setResponseCode(int responseCode) {
+        this.responseCode = responseCode;
     }
 
     void setResponseHeader(String name, String value) {
