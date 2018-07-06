@@ -43,7 +43,7 @@
         different play versions -->
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.5.5</version>
+      <version>4.5.6</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -112,7 +112,7 @@
     <profile>
       <id>netty-4.x</id>
       <properties>
-        <netty.version>4.1.22.Final</netty.version>
+        <netty.version>4.1.27.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>

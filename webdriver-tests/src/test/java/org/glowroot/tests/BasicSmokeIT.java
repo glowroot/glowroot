@@ -318,6 +318,7 @@ public class BasicSmokeIT extends WebDriverIT {
             adhocPage.getAgentTextField().click();
             adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
             adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:average");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -342,6 +343,7 @@ public class BasicSmokeIT extends WebDriverIT {
             adhocPage.getAgentTextField().click();
             adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
             adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:x-percentile");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -367,6 +369,7 @@ public class BasicSmokeIT extends WebDriverIT {
             adhocPage.getAgentTextField().click();
             adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
             adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:count");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -391,6 +394,7 @@ public class BasicSmokeIT extends WebDriverIT {
             adhocPage.getAgentTextField().click();
             adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
             adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:count");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -415,6 +419,7 @@ public class BasicSmokeIT extends WebDriverIT {
             adhocPage.getAgentTextField().click();
             adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
             adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
         }
         adhocPage.getMetricSelect().selectByValue("string:transaction:count");
         adhocPage.getTransactionTypeSelect().selectByValue("string:Web");
@@ -439,6 +444,7 @@ public class BasicSmokeIT extends WebDriverIT {
             adhocPage.getAgentTextField().click();
             adhocPage.getAgentTextField().sendKeys(InetAddress.getLocalHost().getHostName());
             adhocPage.getAgentTextField().sendKeys(Keys.ENTER);
+            adhocPage.getAgentTextField().sendKeys(Keys.ESCAPE);
         }
         adhocPage.getMetricSelect()
                 .selectByValue("string:gauge:java.lang:type=Memory:HeapMemoryUsage.used");

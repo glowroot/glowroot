@@ -34,9 +34,17 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
+      <!-- this dependency is needed for generating Java 6 compatible classes -->
       <groupId>org.immutables</groupId>
       <artifactId>android-stub</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <!-- this dependency is needed for generating Java 6 compatible classes -->
+      <groupId>org.glowroot.build</groupId>
+      <artifactId>glowroot-build-immutables-jdk6</artifactId>
+      <version>${project.version}</version>
       <!-- immutables is only needed at compile time -->
       <scope>provided</scope>
     </dependency>

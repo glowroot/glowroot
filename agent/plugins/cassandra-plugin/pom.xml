@@ -18,7 +18,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <datastax.driver.version>3.5.0</datastax.driver.version>
+    <datastax.driver.version>3.5.1</datastax.driver.version>
   </properties>
 
   <dependencies>
@@ -52,7 +52,7 @@
     <dependency>
       <groupId>org.rauschig</groupId>
       <artifactId>jarchivelib</artifactId>
-      <version>0.7.1</version>
+      <version>0.8.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

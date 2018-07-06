@@ -47,14 +47,15 @@ public class Hibernate {
         for (int i = 0; i <= 12; i++) {
             runJava7("5.0." + i + ".Final");
         }
-        for (int i = 0; i <= 14; i++) {
+        for (int i = 0; i <= 15; i++) {
             runJava8("5.1." + i + ".Final");
         }
-        for (int i = 0; i <= 16; i++) {
+        for (int i = 0; i <= 17; i++) {
             runJava8("5.2." + i + ".Final");
         }
-        runJava8("5.3.0.Final");
-        runJava8("5.3.1.Final");
+        for (int i = 0; i <= 2; i++) {
+            runJava8("5.3." + i + ".Final");
+        }
     }
 
     private static void run(String version, String annotationsVersion, String... profiles)

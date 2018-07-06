@@ -17,6 +17,7 @@
   <description>Glowroot Agent Core (Unshaded)</description>
 
   <properties>
+    <!-- cannot upgrade to 6.2 due to https://gitlab.ow2.org/asm/asm/merge_requests/184 -->
     <asm.version>6.1.1</asm.version>
   </properties>
 
@@ -53,9 +54,17 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
+      <!-- this dependency is needed for generating Java 6 compatible classes -->
       <groupId>org.immutables</groupId>
       <artifactId>android-stub</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <!-- this dependency is needed for generating Java 6 compatible classes -->
+      <groupId>org.glowroot.build</groupId>
+      <artifactId>glowroot-build-immutables-jdk6</artifactId>
+      <version>${project.version}</version>
       <!-- immutables is only needed at compile time -->
       <scope>provided</scope>
     </dependency>
@@ -187,7 +196,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.17.RELEASE</version>
+      <version>4.3.18.RELEASE</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

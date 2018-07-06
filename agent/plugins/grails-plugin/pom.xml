@@ -115,7 +115,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.17.RELEASE</version>
+      <version>4.3.18.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -123,7 +123,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.17.RELEASE</version>
+      <version>4.3.18.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>

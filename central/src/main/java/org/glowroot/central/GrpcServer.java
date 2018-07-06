@@ -97,7 +97,7 @@ class GrpcServer {
                 .addService(downstreamService.bindService())
                 // need to override default max message size of 4mb until streaming is implemented
                 // for DownstreamService.EntriesResponse and FullTraceResponse
-                .maxMessageSize(64 * 1024 * 1024)
+                .maxInboundMessageSize(64 * 1024 * 1024)
                 // aggressive keep alive is used by agent
                 // (see org.glowroot.agent.central.CentralConnection)
                 .permitKeepAliveTime(20, SECONDS)

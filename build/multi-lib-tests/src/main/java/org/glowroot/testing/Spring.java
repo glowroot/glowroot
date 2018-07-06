@@ -49,10 +49,10 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.2." + i + ".RELEASE", "spring-4.x");
         }
-        for (int i = 0; i <= 17; i++) {
+        for (int i = 0; i <= 18; i++) {
             run("4.3." + i + ".RELEASE", "spring-4.x");
         }
-        for (int i = 0; i <= 6; i++) {
+        for (int i = 0; i <= 7; i++) {
             runJava8("5.0." + i + ".RELEASE", "spring-4.x");
         }
     }

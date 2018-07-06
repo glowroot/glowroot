@@ -95,6 +95,9 @@ public class HttpClient {
         updateLibVersion("apache.httpclient.version", "4.5.5");
         updateLibVersion("apache.httpcore.version", "4.4.9");
         run(test);
+        updateLibVersion("apache.httpclient.version", "4.5.6");
+        updateLibVersion("apache.httpcore.version", "4.4.10");
+        run(test);
     }
 
     private static void apacheHttpAsyncClient() throws Exception {
@@ -290,11 +293,11 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 16; i++) {
+        for (int i = 0; i <= 18; i++) {
             updateLibVersion("spring.version", "4.3." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 5; i++) {
+        for (int i = 0; i <= 7; i++) {
             updateLibVersion("spring.version", "5.0." + i + ".RELEASE");
             runJava8(test);
         }
