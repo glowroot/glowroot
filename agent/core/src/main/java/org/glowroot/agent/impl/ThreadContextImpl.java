@@ -38,7 +38,7 @@ import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.AsyncQueryData;
-import org.glowroot.agent.model.AsyncTimerImpl;
+import org.glowroot.agent.model.AsyncTimer;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.QueryData;
@@ -392,7 +392,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     private TraceEntryImpl startAsyncTraceEntry(long startTick, MessageSupplier messageSupplier,
-            TimerImpl syncTimer, AsyncTimerImpl asyncTimer) {
+            TimerImpl syncTimer, AsyncTimer asyncTimer) {
         TraceEntryImpl entry = traceEntryComponent.pushEntry(startTick, messageSupplier, syncTimer,
                 asyncTimer, null, 0);
         // memory barrier write ensures partial trace capture will see data collected up to now
@@ -403,7 +403,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private TraceEntryImpl startAsyncQueryEntry(long startTick,
             QueryMessageSupplier queryMessageSupplier, TimerImpl syncTimer,
-            AsyncTimerImpl asyncTimer, @Nullable QueryData queryData, long queryExecutionCount) {
+            AsyncTimer asyncTimer, @Nullable QueryData queryData, long queryExecutionCount) {
         TraceEntryImpl entry =
                 traceEntryComponent.pushEntry(startTick, queryMessageSupplier, syncTimer,
                         asyncTimer, queryData, queryExecutionCount);
@@ -414,7 +414,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     private TraceEntryImpl startAsyncServiceCallEntry(long startTick,
-            MessageSupplier messageSupplier, TimerImpl syncTimer, AsyncTimerImpl asyncTimer,
+            MessageSupplier messageSupplier, TimerImpl syncTimer, AsyncTimer asyncTimer,
             @Nullable QueryData queryData) {
         TraceEntryImpl entry = traceEntryComponent.pushEntry(startTick, messageSupplier,
                 syncTimer, asyncTimer, queryData, 1);
@@ -620,7 +620,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         long startTick = ticker.read();
         TimerImpl syncTimer = startTimer(timerName, startTick);
-        AsyncTimerImpl asyncTimer = transaction.startAsyncTimer(timerName, startTick);
+        AsyncTimer asyncTimer = transaction.startAsyncTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
             return startAsyncTraceEntry(startTick, messageSupplier, syncTimer, asyncTimer);
         } else {
@@ -719,7 +719,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         long startTick = ticker.read();
         TimerImpl syncTimer = startTimer(timerName, startTick);
-        AsyncTimerImpl asyncTimer = transaction.startAsyncTimer(timerName, startTick);
+        AsyncTimer asyncTimer = transaction.startAsyncTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
             AsyncQueryData queryData =
                     transaction.getOrCreateAsyncQueryData(queryType, queryText, true);
@@ -791,7 +791,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         long startTick = ticker.read();
         TimerImpl syncTimer = startTimer(timerName, startTick);
-        AsyncTimerImpl asyncTimer = transaction.startAsyncTimer(timerName, startTick);
+        AsyncTimer asyncTimer = transaction.startAsyncTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
             AsyncQueryData queryData = transaction.getOrCreateAsyncServiceCallData(serviceCallType,
                     serviceCallText, true);
@@ -1101,7 +1101,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private class DummyTraceEntryOrQuery extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
         private final TimerImpl syncTimer;
-        private final @Nullable AsyncTimerImpl asyncTimer;
+        private final @Nullable AsyncTimer asyncTimer;
         private final long startTick;
         private final Object messageSupplier;
 
@@ -1112,7 +1112,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
         private boolean initialComplete;
 
-        public DummyTraceEntryOrQuery(TimerImpl syncTimer, @Nullable AsyncTimerImpl asyncTimer,
+        public DummyTraceEntryOrQuery(TimerImpl syncTimer, @Nullable AsyncTimer asyncTimer,
                 long startTick, Object messageSupplier, @Nullable QueryData queryData,
                 long queryExecutionCount) {
             super(queryData, startTick, queryExecutionCount);

@@ -53,15 +53,17 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.model.AggregatedTimer;
 import org.glowroot.agent.model.AsyncQueryData;
-import org.glowroot.agent.model.AsyncTimerImpl;
-import org.glowroot.agent.model.CommonTimerImpl;
+import org.glowroot.agent.model.AsyncTimer;
 import org.glowroot.agent.model.ErrorMessage;
+import org.glowroot.agent.model.MergedThreadTimer;
 import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.ServiceCallCollector;
 import org.glowroot.agent.model.SharedQueryTextCollection;
 import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.agent.model.ThreadStats;
+import org.glowroot.agent.model.TransactionTimer;
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext.ServletRequestInfo;
@@ -338,25 +340,35 @@ public class Transaction {
         return mainThreadContext.getRootTimer();
     }
 
-    void mergeAuxThreadTimersInto(RootTimerCollector rootTimers) {
+    boolean hasAuxThreadContexts() {
+        synchronized (mainThreadContext) {
+            return auxThreadContexts != null;
+        }
+    }
+
+    void mergeAuxThreadTimersInto(AggregatedTimer rootAuxThreadTimer) {
         synchronized (mainThreadContext) {
             if (auxThreadContexts == null) {
                 return;
             }
             if (alreadyMergedAuxThreadTimers != null) {
-                for (CommonTimerImpl rootTimer : alreadyMergedAuxThreadTimers.getRootTimers()) {
-                    rootTimers.mergeRootTimer(rootTimer);
+                for (MergedThreadTimer rootTimer : alreadyMergedAuxThreadTimers.getRootTimers()) {
+                    rootAuxThreadTimer.addDataFrom(rootTimer);
                 }
             }
             for (ThreadContextImpl auxThreadContext : getUnmergedAuxThreadContext()) {
-                rootTimers.mergeRootTimer(auxThreadContext.getRootTimer());
+                rootAuxThreadTimer.addDataFrom(auxThreadContext.getRootTimer());
             }
         }
     }
 
-    void mergeAsyncTimersInto(RootTimerCollector rootTimers) {
+    boolean hasAsyncTimers() {
+        return asyncComponents != null;
+    }
+
+    void mergeAsyncTimersInto(RootTimerCollector asyncTimers) {
         if (asyncComponents != null) {
-            asyncComponents.mergeAsyncTimersInto(rootTimers);
+            asyncComponents.mergeAsyncTimersInto(asyncTimers);
         }
     }
 
@@ -741,7 +753,7 @@ public class Transaction {
         }
     }
 
-    AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
+    AsyncTimer startAsyncTimer(TimerName asyncTimerName, long startTick) {
         return getOrInitAsyncComponents().startAsyncTimer(asyncTimerName, startTick);
     }
 
@@ -1069,7 +1081,7 @@ public class Transaction {
     }
 
     interface RootTimerCollector {
-        void mergeRootTimer(CommonTimerImpl rootTimer);
+        void mergeRootTimer(TransactionTimer rootTimer);
     }
 
     interface ThreadStatsCollector {

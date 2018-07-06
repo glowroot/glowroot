@@ -32,6 +32,10 @@ public class MutableTimer {
     private long count;
     private final List<MutableTimer> childTimers;
 
+    public static MutableTimer createAuxThreadRootTimer() {
+        return createRootTimer("auxiliary thread", false);
+    }
+
     public static MutableTimer createRootTimer(String name, boolean extended) {
         return new MutableTimer(name, extended, 0, 0, new ArrayList<MutableTimer>());
     }

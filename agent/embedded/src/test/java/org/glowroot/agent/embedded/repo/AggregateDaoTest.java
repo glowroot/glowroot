@@ -146,6 +146,7 @@ public class AggregateDaoTest {
                                 .setTotalDurationNanos(1000000)
                                 .setErrorCount(0)
                                 .setTransactionCount(10)
+                                .addMainThreadRootTimer(getFakeRootTimer())
                                 .setDurationNanosHistogram(getFakeHistogram())
                                 .build());
                 aggregateVisitor.visitTransactionAggregate("a type", "one", new ArrayList<String>(),
@@ -153,6 +154,7 @@ public class AggregateDaoTest {
                                 .setTotalDurationNanos(100000)
                                 .setErrorCount(0)
                                 .setTransactionCount(1)
+                                .addMainThreadRootTimer(getFakeRootTimer())
                                 .setDurationNanosHistogram(getFakeHistogram())
                                 .build());
                 aggregateVisitor.visitTransactionAggregate("a type", "two", new ArrayList<String>(),
@@ -160,6 +162,7 @@ public class AggregateDaoTest {
                                 .setTotalDurationNanos(300000)
                                 .setErrorCount(0)
                                 .setTransactionCount(2)
+                                .addMainThreadRootTimer(getFakeRootTimer())
                                 .setDurationNanosHistogram(getFakeHistogram())
                                 .build());
                 aggregateVisitor.visitTransactionAggregate("a type", "seven",
@@ -167,6 +170,7 @@ public class AggregateDaoTest {
                                 .setTotalDurationNanos(1400000)
                                 .setErrorCount(0)
                                 .setTransactionCount(7)
+                                .addMainThreadRootTimer(getFakeRootTimer())
                                 .setDurationNanosHistogram(getFakeHistogram())
                                 .build());
             }
@@ -184,6 +188,10 @@ public class AggregateDaoTest {
                                 .setTotalDurationNanos(1000000)
                                 .setErrorCount(0)
                                 .setTransactionCount(10)
+                                .addMainThreadRootTimer(Aggregate.Timer.newBuilder()
+                                        .setName("top")
+                                        .setTotalNanos(123)
+                                        .setCount(1))
                                 .setDurationNanosHistogram(getFakeHistogram())
                                 .build());
                 aggregateVisitor.visitTransactionAggregate("a type", "one", new ArrayList<String>(),
@@ -191,6 +199,10 @@ public class AggregateDaoTest {
                                 .setTotalDurationNanos(100000)
                                 .setErrorCount(0)
                                 .setTransactionCount(1)
+                                .addMainThreadRootTimer(Aggregate.Timer.newBuilder()
+                                        .setName("top")
+                                        .setTotalNanos(123)
+                                        .setCount(1))
                                 .setDurationNanosHistogram(getFakeHistogram())
                                 .build());
                 aggregateVisitor.visitTransactionAggregate("a type", "two", new ArrayList<String>(),
@@ -198,6 +210,10 @@ public class AggregateDaoTest {
                                 .setTotalDurationNanos(300000)
                                 .setErrorCount(0)
                                 .setTransactionCount(2)
+                                .addMainThreadRootTimer(Aggregate.Timer.newBuilder()
+                                        .setName("top")
+                                        .setTotalNanos(123)
+                                        .setCount(1))
                                 .setDurationNanosHistogram(getFakeHistogram())
                                 .build());
                 aggregateVisitor.visitTransactionAggregate("a type", "seven",
@@ -205,6 +221,10 @@ public class AggregateDaoTest {
                                 .setTotalDurationNanos(1400000)
                                 .setErrorCount(0)
                                 .setTransactionCount(7)
+                                .addMainThreadRootTimer(Aggregate.Timer.newBuilder()
+                                        .setName("top")
+                                        .setTotalNanos(123)
+                                        .setCount(1))
                                 .setDurationNanosHistogram(getFakeHistogram())
                                 .build());
             }
@@ -214,6 +234,14 @@ public class AggregateDaoTest {
     // used by TransactionCommonServiceTest
     public AggregateRepository getAggregateRepository() {
         return aggregateDao;
+    }
+
+    private static Aggregate.Timer getFakeRootTimer() {
+        return Aggregate.Timer.newBuilder()
+                .setName("top")
+                .setTotalNanos(123)
+                .setCount(1)
+                .build();
     }
 
     private static Aggregate.Histogram getFakeHistogram() {

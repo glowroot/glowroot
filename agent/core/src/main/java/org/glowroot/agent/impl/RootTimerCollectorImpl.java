@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,43 +20,43 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import org.glowroot.agent.impl.Transaction.RootTimerCollector;
-import org.glowroot.agent.model.CommonTimerImpl;
-import org.glowroot.agent.model.MutableTraceTimer;
+import org.glowroot.agent.model.TransactionTimer;
+import org.glowroot.agent.model.MergedThreadTimer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class RootTimerCollectorImpl implements RootTimerCollector {
 
-    private final List<MutableTraceTimer> rootMutableTimers = Lists.newArrayList();
+    private final List<MergedThreadTimer> rootMutableTimers = Lists.newArrayList();
 
     @Override
-    public void mergeRootTimer(CommonTimerImpl rootTimer) {
+    public void mergeRootTimer(TransactionTimer rootTimer) {
         mergeRootTimer(rootTimer, rootMutableTimers);
     }
 
     List<Trace.Timer> toProto() {
         List<Trace.Timer> rootTimers = Lists.newArrayList();
-        for (MutableTraceTimer rootMutableTimer : rootMutableTimers) {
+        for (MergedThreadTimer rootMutableTimer : rootMutableTimers) {
             rootTimers.add(rootMutableTimer.toProto());
         }
         return rootTimers;
     }
 
-    List<MutableTraceTimer> getRootTimers() {
+    List<MergedThreadTimer> getRootTimers() {
         return rootMutableTimers;
     }
 
-    private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,
-            List<MutableTraceTimer> rootTimers) {
-        for (MutableTraceTimer rootTimer : rootTimers) {
+    private static void mergeRootTimer(TransactionTimer toBeMergedRootTimer,
+            List<MergedThreadTimer> rootTimers) {
+        for (MergedThreadTimer rootTimer : rootTimers) {
             if (toBeMergedRootTimer.getName().equals(rootTimer.getName())
                     && toBeMergedRootTimer.isExtended() == rootTimer.isExtended()) {
-                rootTimer.merge(toBeMergedRootTimer);
+                rootTimer.addDataFrom(toBeMergedRootTimer);
                 return;
             }
         }
-        MutableTraceTimer rootTimer = MutableTraceTimer.createRootTimer(
-                toBeMergedRootTimer.getName(), toBeMergedRootTimer.isExtended());
-        rootTimer.merge(toBeMergedRootTimer);
+        MergedThreadTimer rootTimer = new MergedThreadTimer(toBeMergedRootTimer.getName(),
+                toBeMergedRootTimer.isExtended());
+        rootTimer.addDataFrom(toBeMergedRootTimer);
         rootTimers.add(rootTimer);
     }
 }

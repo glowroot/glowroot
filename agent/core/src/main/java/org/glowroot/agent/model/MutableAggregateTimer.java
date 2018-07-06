@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 
+import org.glowroot.agent.impl.TimerNameCache;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
-public class MutableAggregateTimer {
+public class MutableAggregateTimer implements AggregatedTimer {
 
     private final String name;
     private final boolean extended;
@@ -31,32 +31,43 @@ public class MutableAggregateTimer {
     private long count;
     private final List<MutableAggregateTimer> childTimers;
 
-    public static MutableAggregateTimer createRootTimer(String name, boolean extended) {
-        return new MutableAggregateTimer(name, extended, 0, 0,
-                new ArrayList<MutableAggregateTimer>());
+    public static MutableAggregateTimer createAuxThreadRootTimer() {
+        return new MutableAggregateTimer(TimerNameCache.AUXILIARY_THREAD_ROOT_TIMER_NAME, false);
     }
 
-    public MutableAggregateTimer(String name, boolean extended, double totalDurationNanos,
-            long count, List<MutableAggregateTimer> nestedTimers) {
+    public MutableAggregateTimer(String name, boolean extended) {
         this.name = name;
         this.extended = extended;
-        this.totalDurationNanos = totalDurationNanos;
-        this.count = count;
-        this.childTimers = Lists.newArrayList(nestedTimers);
+        this.childTimers = Lists.newArrayList();
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public boolean isExtended() {
         return extended;
     }
 
-    public void merge(CommonTimerImpl timer) {
+    @Override
+    public List<? extends AggregatedTimer> getChildTimers() {
+        return childTimers;
+    }
+
+    @Override
+    public AggregatedTimer newChildTimer(String name, boolean extended) {
+        MutableAggregateTimer childTimer = new MutableAggregateTimer(name, extended);
+        childTimers.add(childTimer);
+        return childTimer;
+    }
+
+    @Override
+    public void addDataFrom(TransactionTimer timer) {
         count += timer.getCount();
         totalDurationNanos += timer.getTotalNanos();
-        timer.mergeChildTimersInto2(childTimers);
+        timer.mergeChildTimersInto(this);
     }
 
     public Aggregate.Timer toProto() {

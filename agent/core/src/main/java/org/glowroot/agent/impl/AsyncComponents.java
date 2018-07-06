@@ -27,15 +27,14 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.impl.Transaction.RootTimerCollector;
+import org.glowroot.agent.model.AggregatedTimer;
 import org.glowroot.agent.model.AsyncQueryData;
-import org.glowroot.agent.model.AsyncTimerImpl;
-import org.glowroot.agent.model.CommonTimerImpl;
-import org.glowroot.agent.model.ImmutableTimerImplSnapshot;
-import org.glowroot.agent.model.MutableAggregateTimer;
-import org.glowroot.agent.model.MutableTraceTimer;
+import org.glowroot.agent.model.AsyncTimer;
+import org.glowroot.agent.model.ImmutableTransactionTimerSnapshot;
 import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.ServiceCallCollector;
 import org.glowroot.agent.model.TimerNameImpl;
+import org.glowroot.agent.model.TransactionTimer;
 import org.glowroot.agent.plugin.api.TimerName;
 
 class AsyncComponents {
@@ -46,9 +45,9 @@ class AsyncComponents {
     // (those corresponding to async trace entries)
     private final Object asyncTimerLock = new Object();
     @GuardedBy("asyncTimerLock")
-    private @MonotonicNonNull List<AsyncTimerImpl> asyncTimers;
+    private @MonotonicNonNull List<AsyncTimer> asyncTimers;
     @GuardedBy("asyncTimerLock")
-    private @MonotonicNonNull Map<String, AggregateAsyncTimer> alreadyMergedAsyncTimers;
+    private @MonotonicNonNull Map<String, MergedAsyncTimer> alreadyMergedAsyncTimers;
 
     private final int maxQueryAggregates;
     private final int maxServiceCallAggregates;
@@ -75,14 +74,11 @@ class AsyncComponents {
                 return;
             }
             if (alreadyMergedAsyncTimers != null) {
-                for (Map.Entry<String, AggregateAsyncTimer> entry : alreadyMergedAsyncTimers
-                        .entrySet()) {
-                    AggregateAsyncTimer value = entry.getValue();
-                    rootTimers.mergeRootTimer(
-                            new SimpleTimerImpl(entry.getKey(), value.totalNanos, value.count));
+                for (MergedAsyncTimer alreadyMergedAsyncTimer : alreadyMergedAsyncTimers.values()) {
+                    rootTimers.mergeRootTimer(alreadyMergedAsyncTimer);
                 }
             }
-            for (AsyncTimerImpl asyncTimer : asyncTimers) {
+            for (AsyncTimer asyncTimer : asyncTimers) {
                 rootTimers.mergeRootTimer(asyncTimer);
             }
         }
@@ -112,8 +108,8 @@ class AsyncComponents {
         }
     }
 
-    AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
-        AsyncTimerImpl asyncTimer = new AsyncTimerImpl((TimerNameImpl) asyncTimerName, startTick);
+    AsyncTimer startAsyncTimer(TimerName asyncTimerName, long startTick) {
+        AsyncTimer asyncTimer = new AsyncTimer((TimerNameImpl) asyncTimerName, startTick);
         synchronized (asyncTimerLock) {
             if (asyncTimers == null) {
                 asyncTimers = Lists.newArrayList();
@@ -123,16 +119,16 @@ class AsyncComponents {
                 if (alreadyMergedAsyncTimers == null) {
                     alreadyMergedAsyncTimers = Maps.newHashMap();
                 }
-                List<AsyncTimerImpl> activeAsyncTimers = Lists.newArrayList();
-                for (AsyncTimerImpl loopAsyncTimer : asyncTimers) {
+                List<AsyncTimer> activeAsyncTimers = Lists.newArrayList();
+                for (AsyncTimer loopAsyncTimer : asyncTimers) {
                     if (loopAsyncTimer.active()) {
                         activeAsyncTimers.add(loopAsyncTimer);
                         continue;
                     }
-                    AggregateAsyncTimer aggregateAsyncTimer =
+                    MergedAsyncTimer aggregateAsyncTimer =
                             alreadyMergedAsyncTimers.get(loopAsyncTimer.getName());
                     if (aggregateAsyncTimer == null) {
-                        aggregateAsyncTimer = new AggregateAsyncTimer();
+                        aggregateAsyncTimer = new MergedAsyncTimer(loopAsyncTimer.getName());
                         alreadyMergedAsyncTimers.put(loopAsyncTimer.getName(), aggregateAsyncTimer);
                     }
                     aggregateAsyncTimer.totalNanos += loopAsyncTimer.getTotalNanos();
@@ -231,22 +227,14 @@ class AsyncComponents {
         return serviceCallData;
     }
 
-    private static class AggregateAsyncTimer {
-
-        private long totalNanos;
-        private long count;
-    }
-
-    private static class SimpleTimerImpl implements CommonTimerImpl {
+    private static class MergedAsyncTimer implements TransactionTimer {
 
         private final String name;
-        private final long totalNanos;
-        private final long count;
+        private long totalNanos;
+        private long count;
 
-        private SimpleTimerImpl(String name, long totalNanos, long count) {
+        private MergedAsyncTimer(String name) {
             this.name = name;
-            this.totalNanos = totalNanos;
-            this.count = count;
         }
 
         @Override
@@ -270,18 +258,13 @@ class AsyncComponents {
         }
 
         @Override
-        public void mergeChildTimersInto(List<MutableTraceTimer> childTimers) {
+        public void mergeChildTimersInto(AggregatedTimer timer) {
             // async timers have no child timers
         }
 
         @Override
-        public void mergeChildTimersInto2(List<MutableAggregateTimer> childTimers) {
-            // async timers have no child timers
-        }
-
-        @Override
-        public TimerImplSnapshot getSnapshot() {
-            return ImmutableTimerImplSnapshot.builder()
+        public TransactionTimerSnapshot getSnapshot() {
+            return ImmutableTransactionTimerSnapshot.builder()
                     .totalNanos(totalNanos)
                     .count(count)
                     .active(false)

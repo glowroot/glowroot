@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.executor;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -70,9 +69,8 @@ public class LotsOfNestedAuxThreadContextsIT {
         Trace trace = container.execute(DoSubmitCallable.class);
 
         // then
-        List<Trace.Timer> auxThreadRootTimers = trace.getHeader().getAuxThreadRootTimerList();
-        assertThat(auxThreadRootTimers).hasSize(1);
-        Trace.Timer auxThreadRootTimer = auxThreadRootTimers.get(0);
+        assertThat(trace.getHeader().hasAuxThreadRootTimer()).isTrue();
+        Trace.Timer auxThreadRootTimer = trace.getHeader().getAuxThreadRootTimer();
         assertThat(auxThreadRootTimer.getCount()).isEqualTo(100000);
         assertThat(auxThreadRootTimer.getActive()).isFalse();
         assertThat(auxThreadRootTimer.getChildTimerCount()).isEqualTo(1);

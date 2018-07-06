@@ -31,6 +31,8 @@ import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
 import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Timer;
 
 public interface LiveAggregateRepository {
 
@@ -99,10 +101,16 @@ public interface LiveAggregateRepository {
         long transactionCount();
         boolean asyncTransactions();
         List<Aggregate.Timer> mainThreadRootTimers();
-        List<Aggregate.Timer> auxThreadRootTimers();
-        List<Aggregate.Timer> asyncTimers();
         Aggregate.ThreadStats mainThreadStats();
-        Aggregate.ThreadStats auxThreadStats();
+        // cannot use Aggregate. /*@Nullable*/ Timer because Immutables needs to be able to see the
+        // annotation
+        @Nullable
+        Timer auxThreadRootTimer();
+        // cannot use Aggregate. /*@Nullable*/ ThreadStats because Immutables needs to be able to
+        // see the annotation
+        @Nullable
+        ThreadStats auxThreadStats();
+        List<Aggregate.Timer> asyncTimers();
     }
 
     @Value.Immutable

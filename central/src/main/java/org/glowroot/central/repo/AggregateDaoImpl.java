@@ -126,16 +126,18 @@ public class AggregateDaoImpl implements AggregateDao {
             .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
             .addColumns(ImmutableColumn.of("async_transactions", "boolean"))
             .addColumns(ImmutableColumn.of("main_thread_root_timers", "blob"))
-            .addColumns(ImmutableColumn.of("aux_thread_root_timers", "blob"))
-            .addColumns(ImmutableColumn.of("async_root_timers", "blob"))
             .addColumns(ImmutableColumn.of("main_thread_total_cpu_nanos", "double"))
             .addColumns(ImmutableColumn.of("main_thread_total_blocked_nanos", "double"))
             .addColumns(ImmutableColumn.of("main_thread_total_waited_nanos", "double"))
             .addColumns(ImmutableColumn.of("main_thread_total_allocated_bytes", "double"))
+            // ideally this would be named aux_thread_root_timer (as there is a single root)
+            .addColumns(ImmutableColumn.of("aux_thread_root_timers", "blob"))
             .addColumns(ImmutableColumn.of("aux_thread_total_cpu_nanos", "double"))
             .addColumns(ImmutableColumn.of("aux_thread_total_blocked_nanos", "double"))
             .addColumns(ImmutableColumn.of("aux_thread_total_waited_nanos", "double"))
             .addColumns(ImmutableColumn.of("aux_thread_total_allocated_bytes", "double"))
+            // ideally this would be named async_timers (as they are all root)
+            .addColumns(ImmutableColumn.of("async_root_timers", "blob"))
             .summary(false)
             .fromInclusive(true)
             .build();
@@ -618,31 +620,42 @@ public class AggregateDaoImpl implements AggregateDao {
             boolean asyncTransactions = row.getBool(i++);
             List<Aggregate.Timer> mainThreadRootTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
-            List<Aggregate.Timer> auxThreadRootTimers =
+            Aggregate.ThreadStats mainThreadStats = Aggregate.ThreadStats.newBuilder()
+                    .setTotalCpuNanos(getNextThreadStat(row, i++))
+                    .setTotalBlockedNanos(getNextThreadStat(row, i++))
+                    .setTotalWaitedNanos(getNextThreadStat(row, i++))
+                    .setTotalAllocatedBytes(getNextThreadStat(row, i++))
+                    .build();
+            // reading delimited singleton list for backwards compatibility with data written
+            // prior to 0.12.0
+            List<Aggregate.Timer> list =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+            Aggregate.Timer auxThreadRootTimer = list.isEmpty() ? null : list.get(0);
+            Aggregate.ThreadStats auxThreadStats;
+            if (auxThreadRootTimer == null) {
+                auxThreadStats = null;
+                i += 4;
+            } else {
+                auxThreadStats = Aggregate.ThreadStats.newBuilder()
+                        .setTotalCpuNanos(getNextThreadStat(row, i++))
+                        .setTotalBlockedNanos(getNextThreadStat(row, i++))
+                        .setTotalWaitedNanos(getNextThreadStat(row, i++))
+                        .setTotalAllocatedBytes(getNextThreadStat(row, i++))
+                        .build();
+            }
             List<Aggregate.Timer> asyncTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
-            overviewAggregates.add(ImmutableOverviewAggregate.builder()
+            ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                     .captureTime(captureTime)
                     .totalDurationNanos(totalDurationNanos)
                     .transactionCount(transactionCount)
                     .asyncTransactions(asyncTransactions)
                     .addAllMainThreadRootTimers(mainThreadRootTimers)
-                    .addAllAuxThreadRootTimers(auxThreadRootTimers)
-                    .addAllAsyncTimers(asyncTimers)
-                    .mainThreadStats(Aggregate.ThreadStats.newBuilder()
-                            .setTotalCpuNanos(getNextThreadStat(row, i++))
-                            .setTotalBlockedNanos(getNextThreadStat(row, i++))
-                            .setTotalWaitedNanos(getNextThreadStat(row, i++))
-                            .setTotalAllocatedBytes(getNextThreadStat(row, i++))
-                            .build())
-                    .auxThreadStats(Aggregate.ThreadStats.newBuilder()
-                            .setTotalCpuNanos(getNextThreadStat(row, i++))
-                            .setTotalBlockedNanos(getNextThreadStat(row, i++))
-                            .setTotalWaitedNanos(getNextThreadStat(row, i++))
-                            .setTotalAllocatedBytes(getNextThreadStat(row, i++))
-                            .build())
-                    .build());
+                    .mainThreadStats(mainThreadStats)
+                    .auxThreadRootTimer(auxThreadRootTimer)
+                    .auxThreadStats(auxThreadStats)
+                    .addAllAsyncTimers(asyncTimers);
+            overviewAggregates.add(builder.build());
         }
         return overviewAggregates;
     }
@@ -1250,10 +1263,10 @@ public class AggregateDaoImpl implements AggregateDao {
         long transactionCount = 0;
         boolean asyncTransactions = false;
         List<MutableTimer> mainThreadRootTimers = new ArrayList<>();
-        List<MutableTimer> auxThreadRootTimers = new ArrayList<>();
-        List<MutableTimer> asyncTimers = new ArrayList<>();
         MutableThreadStats mainThreadStats = new MutableThreadStats();
+        MutableTimer auxThreadRootTimer = MutableTimer.createAuxThreadRootTimer();
         MutableThreadStats auxThreadStats = new MutableThreadStats();
+        List<MutableTimer> asyncTimers = new ArrayList<>();
         for (Row row : rows) {
             int i = 0;
             totalDurationNanos += row.getDouble(i++);
@@ -1264,20 +1277,27 @@ public class AggregateDaoImpl implements AggregateDao {
             List<Aggregate.Timer> toBeMergedMainThreadRootTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
             MutableAggregate.mergeRootTimers(toBeMergedMainThreadRootTimers, mainThreadRootTimers);
-            List<Aggregate.Timer> toBeMergedAuxThreadRootTimers =
-                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
-            MutableAggregate.mergeRootTimers(toBeMergedAuxThreadRootTimers, auxThreadRootTimers);
-            List<Aggregate.Timer> toBeMergedAsyncTimers =
-                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
-            MutableAggregate.mergeRootTimers(toBeMergedAsyncTimers, asyncTimers);
             mainThreadStats.addTotalCpuNanos(getNextThreadStat(row, i++));
             mainThreadStats.addTotalBlockedNanos(getNextThreadStat(row, i++));
             mainThreadStats.addTotalWaitedNanos(getNextThreadStat(row, i++));
             mainThreadStats.addTotalAllocatedBytes(getNextThreadStat(row, i++));
-            auxThreadStats.addTotalCpuNanos(getNextThreadStat(row, i++));
-            auxThreadStats.addTotalBlockedNanos(getNextThreadStat(row, i++));
-            auxThreadStats.addTotalWaitedNanos(getNextThreadStat(row, i++));
-            auxThreadStats.addTotalAllocatedBytes(getNextThreadStat(row, i++));
+            // reading delimited singleton list for backwards compatibility with data written
+            // prior to 0.12.0
+            List<Aggregate.Timer> list =
+                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+            Aggregate.Timer toBeMergedAuxThreadRootTimer = list.isEmpty() ? null : list.get(0);
+            if (toBeMergedAuxThreadRootTimer == null) {
+                i += 4;
+            } else {
+                auxThreadRootTimer.merge(toBeMergedAuxThreadRootTimer);
+                auxThreadStats.addTotalCpuNanos(getNextThreadStat(row, i++));
+                auxThreadStats.addTotalBlockedNanos(getNextThreadStat(row, i++));
+                auxThreadStats.addTotalWaitedNanos(getNextThreadStat(row, i++));
+                auxThreadStats.addTotalAllocatedBytes(getNextThreadStat(row, i++));
+            }
+            List<Aggregate.Timer> toBeMergedAsyncTimers =
+                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+            MutableAggregate.mergeRootTimers(toBeMergedAsyncTimers, asyncTimers);
         }
         BoundStatement boundStatement;
         if (query.transactionName() == null) {
@@ -1295,17 +1315,27 @@ public class AggregateDaoImpl implements AggregateDao {
         boundStatement.setDouble(i++, totalDurationNanos);
         boundStatement.setLong(i++, transactionCount);
         boundStatement.setBool(i++, asyncTransactions);
-        if (mainThreadRootTimers.isEmpty()) {
+        boundStatement.setBytes(i++,
+                Messages.toByteBuffer(MutableAggregate.toProto(mainThreadRootTimers)));
+        boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos());
+        boundStatement.setDouble(i++, mainThreadStats.getTotalBlockedNanos());
+        boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos());
+        boundStatement.setDouble(i++, mainThreadStats.getTotalAllocatedBytes());
+        if (auxThreadRootTimer.getCount() == 0) {
+            boundStatement.setToNull(i++);
+            boundStatement.setToNull(i++);
+            boundStatement.setToNull(i++);
+            boundStatement.setToNull(i++);
             boundStatement.setToNull(i++);
         } else {
-            boundStatement.setBytes(i++,
-                    Messages.toByteBuffer(MutableAggregate.toProto(mainThreadRootTimers)));
-        }
-        if (auxThreadRootTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
-        } else {
-            boundStatement.setBytes(i++,
-                    Messages.toByteBuffer(MutableAggregate.toProto(auxThreadRootTimers)));
+            // writing as delimited singleton list for backwards compatibility with data written
+            // prior to 0.12.0
+            boundStatement.setBytes(i++, Messages
+                    .toByteBuffer(MutableAggregate.toProto(ImmutableList.of(auxThreadRootTimer))));
+            boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos());
+            boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos());
+            boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos());
+            boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
         }
         if (asyncTimers.isEmpty()) {
             boundStatement.setToNull(i++);
@@ -1313,14 +1343,6 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement.setBytes(i++,
                     Messages.toByteBuffer(MutableAggregate.toProto(asyncTimers)));
         }
-        boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos());
-        boundStatement.setDouble(i++, mainThreadStats.getTotalBlockedNanos());
-        boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos());
-        boundStatement.setDouble(i++, mainThreadStats.getTotalAllocatedBytes());
-        boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos());
-        boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos());
-        boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos());
-        boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
         boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
         return session.executeAsync(boundStatement);
     }
@@ -2077,24 +2099,7 @@ public class AggregateDaoImpl implements AggregateDao {
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
         boundStatement.setBool(i++, aggregate.getAsyncTransactions());
-        List<Aggregate.Timer> mainThreadRootTimers = aggregate.getMainThreadRootTimerList();
-        if (mainThreadRootTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
-        } else {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(mainThreadRootTimers));
-        }
-        List<Aggregate.Timer> auxThreadRootTimers = aggregate.getAuxThreadRootTimerList();
-        if (auxThreadRootTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
-        } else {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(auxThreadRootTimers));
-        }
-        List<Aggregate.Timer> asyncTimers = aggregate.getAsyncTimerList();
-        if (asyncTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
-        } else {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
-        }
+        boundStatement.setBytes(i++, Messages.toByteBuffer(aggregate.getMainThreadRootTimerList()));
         if (aggregate.hasOldMainThreadStats()) {
             // data from agent prior to 0.10.9
             Aggregate.OldThreadStats mainThreadStats = aggregate.getOldMainThreadStats();
@@ -2109,21 +2114,38 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos());
             boundStatement.setDouble(i++, mainThreadStats.getTotalAllocatedBytes());
         }
-        if (aggregate.hasOldAuxThreadStats()) {
-            Aggregate.OldThreadStats auxThreadStats = aggregate.getOldAuxThreadStats();
-            boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos().getValue());
-            boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos().getValue());
-            boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos().getValue());
-            boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes().getValue());
-            boundStatement.setInt(i++, adjustedTTL.generalTTL());
+        if (aggregate.hasAuxThreadRootTimer()) {
+            // writing as delimited singleton list for backwards compatibility with data written
+            // prior to 0.12.0
+            boundStatement.setBytes(i++,
+                    Messages.toByteBuffer(ImmutableList.of(aggregate.getAuxThreadRootTimer())));
+            if (aggregate.hasOldAuxThreadStats()) {
+                Aggregate.OldThreadStats auxThreadStats = aggregate.getOldAuxThreadStats();
+                boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos().getValue());
+                boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos().getValue());
+                boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos().getValue());
+                boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes().getValue());
+            } else {
+                Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
+                boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos());
+                boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos());
+                boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos());
+                boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
+            }
         } else {
-            Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
-            boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos());
-            boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos());
-            boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos());
-            boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
-            boundStatement.setInt(i++, adjustedTTL.generalTTL());
+            boundStatement.setToNull(i++);
+            boundStatement.setToNull(i++);
+            boundStatement.setToNull(i++);
+            boundStatement.setToNull(i++);
+            boundStatement.setToNull(i++);
         }
+        List<Aggregate.Timer> asyncTimers = aggregate.getAsyncTimerList();
+        if (asyncTimers.isEmpty()) {
+            boundStatement.setToNull(i++);
+        } else {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
+        }
+        boundStatement.setInt(i++, adjustedTTL.generalTTL());
     }
 
     private static void bindQuery(BoundStatement boundStatement, String agentRollupId,

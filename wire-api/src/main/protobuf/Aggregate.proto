@@ -28,7 +28,7 @@ message Aggregate {
   int64 error_count = 3;
   bool async_transactions = 4; // true if there was at least one async transaction in aggregate
   repeated Timer main_thread_root_timer = 5;
-  repeated Timer aux_thread_root_timer = 6;
+  Timer aux_thread_root_timer = 6; // aux thread root timer is always "auxiliary thread"
   repeated Timer async_timer = 7; // async timers have no child timers
   OldThreadStats old_main_thread_stats = 8; // deprecated in 0.10.9
   OldThreadStats old_aux_thread_stats = 9; // deprecated in 0.10.9

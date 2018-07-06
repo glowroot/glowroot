@@ -36,7 +36,7 @@ class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 5;
+    private static final int CURR_SCHEMA_VERSION = 6;
 
     private static final ImmutableList<Column> columns =
             ImmutableList.<Column>of(ImmutableColumn.of("schema_version", ColumnType.BIGINT));
@@ -86,6 +86,11 @@ class SchemaUpgrade {
         } else {
             updateSchemaVersion(5);
         }
+        // upgrade from 0.10.12 to 0.11.0
+        if (initialSchemaVersion < 6) {
+            renameAggregateColumnNames();
+            updateSchemaVersion(6);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded glowroot schema from version {} to version {}",
@@ -125,6 +130,30 @@ class SchemaUpgrade {
                 + captureTimeSql + ", gauge_name from gauge_value_rollup_4, gauge_id where"
                 + " gauge_value_rollup_4.gauge_id = gauge_id.gauge_id");
         startupLogger.info("populating new gauge name history table - complete");
+    }
+
+    private void renameAggregateColumnNames() throws SQLException {
+        for (int i = 0; i < 4; i++) {
+            String overallTableName = "aggregate_tt_rollup_" + castUntainted(i);
+            if (dataSource.columnExists(overallTableName, "aux_thread_root_timers")) {
+                dataSource.renameColumn(overallTableName, "aux_thread_root_timers",
+                        "aux_thread_root_timer");
+            }
+            if (dataSource.columnExists(overallTableName, "async_root_timers")) {
+                dataSource.renameColumn(overallTableName, "async_root_timers",
+                        "async_timers");
+            }
+            String transactionTableName = "aggregate_tn_rollup_" + castUntainted(i);
+            if (dataSource.columnExists(transactionTableName, "aux_thread_root_timers")) {
+                dataSource.renameColumn(transactionTableName, "aux_thread_root_timers",
+                        "aux_thread_root_timer");
+            }
+            if (dataSource.columnExists(transactionTableName, "async_root_timers")) {
+                dataSource.renameColumn(transactionTableName, "async_root_timers",
+                        "async_timers");
+            }
+        }
+
     }
 
     private static @Nullable Integer getSchemaVersion(DataSource dataSource) throws SQLException {

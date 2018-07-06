@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,11 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.List;
-
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
 
-public interface CommonTimerImpl {
+public interface TransactionTimer {
 
     String getName();
 
@@ -31,15 +29,13 @@ public interface CommonTimerImpl {
 
     long getCount();
 
-    void mergeChildTimersInto(List<MutableTraceTimer> childTimers);
+    void mergeChildTimersInto(AggregatedTimer timer);
 
-    void mergeChildTimersInto2(List<MutableAggregateTimer> childTimers);
-
-    TimerImplSnapshot getSnapshot();
+    TransactionTimerSnapshot getSnapshot();
 
     @Value.Immutable
     @Styles.AllParameters
-    interface TimerImplSnapshot {
+    interface TransactionTimerSnapshot {
         long totalNanos();
         long count();
         boolean active();

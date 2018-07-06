@@ -518,29 +518,17 @@ class TraceCommonService {
                 jg.writeFieldName("error");
                 writeError(header.getError(), jg);
             }
-            if (header.hasMainThreadRootTimer()) {
-                jg.writeFieldName("mainThreadRootTimer");
-                writeTimer(header.getMainThreadRootTimer(), jg);
+            jg.writeFieldName("mainThreadRootTimer");
+            writeTimer(header.getMainThreadRootTimer(), jg);
+            jg.writeFieldName("mainThreadStats");
+            if (header.hasOldMainThreadStats()) {
+                writeOldThreadStats(header.getOldMainThreadStats(), jg);
+            } else {
+                writeThreadStats(header.getMainThreadStats(), jg);
             }
-            jg.writeArrayFieldStart("auxThreadRootTimers");
-            for (Trace.Timer rootTimer : header.getAuxThreadRootTimerList()) {
-                writeTimer(rootTimer, jg);
-            }
-            jg.writeEndArray();
-            jg.writeArrayFieldStart("asyncTimers");
-            for (Trace.Timer asyncTimer : header.getAsyncTimerList()) {
-                writeTimer(asyncTimer, jg);
-            }
-            jg.writeEndArray();
-            if (header.hasMainThreadRootTimer()) {
-                jg.writeFieldName("mainThreadStats");
-                if (header.hasOldMainThreadStats()) {
-                    writeOldThreadStats(header.getOldMainThreadStats(), jg);
-                } else {
-                    writeThreadStats(header.getMainThreadStats(), jg);
-                }
-            }
-            if (!header.getAuxThreadRootTimerList().isEmpty()) {
+            if (header.hasAuxThreadRootTimer()) {
+                jg.writeFieldName("auxThreadRootTimer");
+                writeTimer(header.getAuxThreadRootTimer(), jg);
                 jg.writeFieldName("auxThreadStats");
                 if (header.hasOldAuxThreadStats()) {
                     writeOldThreadStats(header.getOldAuxThreadStats(), jg);
@@ -548,6 +536,11 @@ class TraceCommonService {
                     writeThreadStats(header.getAuxThreadStats(), jg);
                 }
             }
+            jg.writeArrayFieldStart("asyncTimers");
+            for (Trace.Timer asyncTimer : header.getAsyncTimerList()) {
+                writeTimer(asyncTimer, jg);
+            }
+            jg.writeEndArray();
             jg.writeNumberField("entryCount", header.getEntryCount());
             boolean entryLimitExceeded = header.getEntryLimitExceeded();
             if (entryLimitExceeded) {

@@ -31,7 +31,7 @@ import org.glowroot.agent.bytecode.api.ThreadContextPlus;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.impl.Transaction.TraceEntryVisitor;
-import org.glowroot.agent.model.AsyncTimerImpl;
+import org.glowroot.agent.model.AsyncTimer;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryData;
@@ -76,7 +76,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
     // only null for trace entries added using addEntryEntry()
     private final @Nullable TimerImpl syncTimer;
-    private final @Nullable AsyncTimerImpl asyncTimer;
+    private final @Nullable AsyncTimer asyncTimer;
     // not volatile, so depends on memory barrier in Transaction for visibility
     private @Nullable ImmutableList<StackTraceElement> locationStackTrace;
 
@@ -104,7 +104,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     TraceEntryImpl(ThreadContextImpl threadContext, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable Object messageSupplier, @Nullable QueryData queryData,
             long queryExecutionCount, long startTick, @Nullable TimerImpl syncTimer,
-            @Nullable AsyncTimerImpl asyncTimer) {
+            @Nullable AsyncTimer asyncTimer) {
         super(queryData, startTick, queryExecutionCount);
         this.threadContext = threadContext;
         this.parentTraceEntry = parentTraceEntry;

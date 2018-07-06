@@ -27,6 +27,7 @@ import org.glowroot.agent.collector.Collector.TraceVisitor;
 import org.glowroot.agent.impl.Transaction.TraceEntryVisitor;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
+import org.glowroot.agent.model.MergedThreadTimer;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
@@ -116,18 +117,20 @@ public class TraceCreator {
         }
         TimerImpl mainThreadRootTimer = transaction.getMainThreadRootTimer();
         builder.setMainThreadRootTimer(mainThreadRootTimer.toProto());
-        RootTimerCollectorImpl auxThreadRootTimers = new RootTimerCollectorImpl();
-        transaction.mergeAuxThreadTimersInto(auxThreadRootTimers);
-        builder.addAllAuxThreadRootTimer(auxThreadRootTimers.toProto());
-        RootTimerCollectorImpl asyncTimers = new RootTimerCollectorImpl();
-        transaction.mergeAsyncTimersInto(asyncTimers);
-        builder.addAllAsyncTimer(asyncTimers.toProto());
         ThreadStatsCollectorImpl mainThreadStats = new ThreadStatsCollectorImpl();
         mainThreadStats.mergeThreadStats(transaction.getMainThreadStats());
         builder.setMainThreadStats(mainThreadStats.toProto());
-        ThreadStatsCollectorImpl auxThreadStats = new ThreadStatsCollectorImpl();
-        transaction.mergeAuxThreadStatsInto(auxThreadStats);
-        builder.setAuxThreadStats(auxThreadStats.toProto());
+        if (transaction.hasAuxThreadContexts()) {
+            MergedThreadTimer auxThreadRootTimer = MergedThreadTimer.createAuxThreadRootTimer();
+            transaction.mergeAuxThreadTimersInto(auxThreadRootTimer);
+            builder.setAuxThreadRootTimer(auxThreadRootTimer.toProto());
+            ThreadStatsCollectorImpl auxThreadStats = new ThreadStatsCollectorImpl();
+            transaction.mergeAuxThreadStatsInto(auxThreadStats);
+            builder.setAuxThreadStats(auxThreadStats.toProto());
+        }
+        RootTimerCollectorImpl asyncTimers = new RootTimerCollectorImpl();
+        transaction.mergeAsyncTimersInto(asyncTimers);
+        builder.addAllAsyncTimer(asyncTimers.toProto());
         addCounts(builder, transaction, entryCount, queryCount,
                 mainThreadProfileSampleCount, auxThreadProfileSampleCount);
         return builder.build();

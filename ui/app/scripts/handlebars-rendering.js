@@ -82,11 +82,7 @@ HandlebarsRendering = (function () {
   }
 
   function initTotalNanosList(breakdown) {
-    if (!breakdown.treeTimers) {
-      // e.g. no auxiliary threads
-      return;
-    }
-    breakdown.treeTotalNanosList = buildTotalNanosList(breakdown.treeTimers);
+    breakdown.treeTotalNanosList = buildTotalNanosList(breakdown.rootTimer);
     breakdown.flattenedTotalNanosList = buildTotalNanosList(breakdown.flattenedTimers);
   }
 
@@ -125,7 +121,7 @@ HandlebarsRendering = (function () {
     breakdown.ftShowMore = breakdown.limit < breakdown.flattenedTimers.length;
     breakdown.ttShowMore = breakdown.limit < breakdown.timers.length;
     breakdown.showLess = breakdown.limit !== 10;
-    initOneLimit(breakdown, breakdown.treeTimers, breakdown.treeTotalNanosList);
+    initOneLimit(breakdown, breakdown.rootTimer, breakdown.treeTotalNanosList);
     initOneLimit(breakdown, breakdown.flattenedTimers, breakdown.flattenedTotalNanosList);
   }
 
@@ -149,7 +145,7 @@ HandlebarsRendering = (function () {
     }
 
     setTimeout(function () {
-      updateOneLimit(breakdown, 'tt', breakdown.treeTimers);
+      updateOneLimit(breakdown, 'tt', breakdown.rootTimer);
       updateOneLimit(breakdown, 'ft', breakdown.flattenedTimers);
 
       $('#' + breakdown.prefix + 'ttShowMore').toggleClass('d-none', !breakdown.ttShowMore);
@@ -169,14 +165,10 @@ HandlebarsRendering = (function () {
   }
 
   function initTimers(breakdown) {
-    if (!breakdown.treeTimers) {
-      // e.g. no auxiliary threads
-      return;
-    }
     var nextId = 0;
     var timers = [];
 
-    traverseTimers(breakdown.treeTimers, function (timer, depth) {
+    traverseTimers(breakdown.rootTimer, function (timer, depth) {
       timer.id = nextId++;
       timer.depth = depth;
       timers.push(timer);
@@ -190,10 +182,6 @@ HandlebarsRendering = (function () {
   }
 
   function initFlattenedTimers(breakdown) {
-    if (!breakdown.treeTimers) {
-      // e.g. no auxiliary threads
-      return;
-    }
     var nextId = 0;
     var flattenedTimerMap = {};
     var flattenedTimers = [];
@@ -224,14 +212,7 @@ HandlebarsRendering = (function () {
       }
     }
 
-    // add the root node(s)
-    if ($.isArray(breakdown.treeTimers)) {
-      $.each(breakdown.treeTimers, function (index, item) {
-        traverse(item, []);
-      });
-    } else {
-      traverse(breakdown.treeTimers, []);
-    }
+    traverse(breakdown.rootTimer, []);
 
     flattenedTimers.sort(function (a, b) {
       return b.totalNanos - a.totalNanos;
@@ -1710,26 +1691,28 @@ HandlebarsRendering = (function () {
     renderTrace: function (traceHeader, agentId, traceId, checkLiveTraces, $selector) {
 
       traceHeader.mainBreakdown = {
-        treeTimers: traceHeader.mainThreadRootTimer,
+        rootTimer: traceHeader.mainThreadRootTimer,
         prefix: 'm',
-        limit: 10
-      };
-      traceHeader.auxBreakdown = {
-        treeTimers: traceHeader.auxThreadRootTimers,
-        prefix: 'a',
         limit: 10
       };
       // initializing timers needs to occur before rendering
       initTimers(traceHeader.mainBreakdown);
-      initTimers(traceHeader.auxBreakdown);
       initFlattenedTimers(traceHeader.mainBreakdown);
-      initFlattenedTimers(traceHeader.auxBreakdown);
-
       initTotalNanosList(traceHeader.mainBreakdown);
-      initTotalNanosList(traceHeader.auxBreakdown);
-
       initLimit(traceHeader.mainBreakdown);
-      initLimit(traceHeader.auxBreakdown);
+
+      if (traceHeader.auxThreadRootTimer) {
+        traceHeader.auxBreakdown = {
+          rootTimer: traceHeader.auxThreadRootTimer,
+          prefix: 'a',
+          limit: 10
+        };
+        // initializing timers needs to occur before rendering
+        initTimers(traceHeader.auxBreakdown);
+        initFlattenedTimers(traceHeader.auxBreakdown);
+        initTotalNanosList(traceHeader.auxBreakdown);
+        initLimit(traceHeader.auxBreakdown);
+      }
 
       var html = JST.trace(traceHeader);
       $selector.html(html);
@@ -1743,13 +1726,14 @@ HandlebarsRendering = (function () {
       traceDurationNanos = traceHeader.durationNanos;
 
       registerShowMoreHandler(traceHeader.mainBreakdown);
-      registerShowMoreHandler(traceHeader.auxBreakdown);
-
       registerShowLessHandler(traceHeader.mainBreakdown);
-      registerShowLessHandler(traceHeader.auxBreakdown);
-
       registerShowAllHandler(traceHeader.mainBreakdown);
-      registerShowAllHandler(traceHeader.auxBreakdown);
+
+      if (traceHeader.auxBreakdown) {
+        registerShowMoreHandler(traceHeader.auxBreakdown);
+        registerShowLessHandler(traceHeader.auxBreakdown);
+        registerShowAllHandler(traceHeader.auxBreakdown);
+      }
     },
     renderTraceFromExport: function (traceHeader, $selector, entries, queries, sharedQueryTexts, mainThreadProfile,
                                      auxThreadProfile) {

@@ -15,13 +15,11 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.List;
-
 import com.google.common.base.Ticker;
 
 import org.glowroot.agent.util.Tickers;
 
-public class AsyncTimerImpl implements CommonTimerImpl {
+public class AsyncTimer implements TransactionTimer {
 
     private static final Ticker ticker = Tickers.getTicker();
 
@@ -32,7 +30,7 @@ public class AsyncTimerImpl implements CommonTimerImpl {
 
     private volatile long totalNanos = 0;
 
-    public AsyncTimerImpl(TimerNameImpl timerName, long startTick) {
+    public AsyncTimer(TimerNameImpl timerName, long startTick) {
         this.timerName = timerName;
         this.startTick = startTick;
         active = true;
@@ -73,12 +71,7 @@ public class AsyncTimerImpl implements CommonTimerImpl {
     }
 
     @Override
-    public void mergeChildTimersInto(List<MutableTraceTimer> childTimers) {
-        // async timers have no child timers
-    }
-
-    @Override
-    public void mergeChildTimersInto2(List<MutableAggregateTimer> childTimers) {
+    public void mergeChildTimersInto(AggregatedTimer timer) {
         // async timers have no child timers
     }
 
@@ -87,8 +80,8 @@ public class AsyncTimerImpl implements CommonTimerImpl {
     }
 
     @Override
-    public TimerImplSnapshot getSnapshot() {
-        return ImmutableTimerImplSnapshot.builder()
+    public TransactionTimerSnapshot getSnapshot() {
+        return ImmutableTransactionTimerSnapshot.builder()
                 .totalNanos(getTotalNanos())
                 .count(1)
                 .active(active)

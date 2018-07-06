@@ -19,7 +19,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.model.AsyncTimerImpl;
+import org.glowroot.agent.model.AsyncTimer;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.plugin.api.MessageSupplier;
@@ -70,7 +70,7 @@ class TraceEntryComponent {
     }
 
     TraceEntryImpl pushEntry(long startTick, Object messageSupplier, TimerImpl syncTimer,
-            @Nullable AsyncTimerImpl asyncTimer, @Nullable QueryData queryData,
+            @Nullable AsyncTimer asyncTimer, @Nullable QueryData queryData,
             long queryExecutionCount) {
         TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier,
                 queryData, queryExecutionCount, startTick, syncTimer, asyncTimer);

@@ -84,13 +84,17 @@ glowroot.controller('TransactionAverageCtrl', [
       $scope.mergedAggregate = data.mergedAggregate;
       if ($scope.mergedAggregate.transactionCount) {
         $scope.mainThreadTreeTimers = createTreeTimers($scope.mergedAggregate.mainThreadRootTimer);
-        $scope.auxThreadTreeTimers = createTreeTimers($scope.mergedAggregate.auxThreadRootTimers);
+        $scope.auxThreadTreeTimers = createTreeTimers($scope.mergedAggregate.auxThreadRootTimer);
         $scope.mainThreadFlattenedTimers = createFlattenedTimers($scope.mergedAggregate.mainThreadRootTimer);
-        $scope.auxThreadFlattenedTimers = createFlattenedTimers($scope.mergedAggregate.auxThreadRootTimers);
+        $scope.auxThreadFlattenedTimers = createFlattenedTimers($scope.mergedAggregate.auxThreadRootTimer);
       }
     }
 
     function createTreeTimers(rootTimer) {
+      if (rootTimer === undefined) {
+        return undefined;
+      }
+
       var treeTimers = [];
 
       // indent1 must be sync'd with $indent1 variable in common-trace.less
@@ -121,6 +125,10 @@ glowroot.controller('TransactionAverageCtrl', [
     }
 
     function createFlattenedTimers(rootTimer) {
+      if (rootTimer === undefined) {
+        return undefined;
+      }
+
       var flattenedTimerMap = {};
       var flattenedTimers = [];
 

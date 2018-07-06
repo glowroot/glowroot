@@ -34,6 +34,8 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @Styles.Private
 public class MutableAggregate {
 
@@ -42,14 +44,14 @@ public class MutableAggregate {
     private long errorCount;
     private boolean asyncTransactions;
     private final List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
-    private final List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
-    private final List<MutableTimer> asyncTimers = Lists.newArrayList();
     private final MutableThreadStats mainThreadStats = new MutableThreadStats();
-    private final MutableThreadStats auxThreadStats = new MutableThreadStats();
+    private final List<MutableTimer> asyncTimers = Lists.newArrayList();
     // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
     // buckets (and memory) required
     private final LazyHistogram durationNanosHistogram = new LazyHistogram();
     // lazy instantiated to reduce memory footprint
+    private @MonotonicNonNull MutableTimer auxThreadRootTimer;
+    private @MonotonicNonNull MutableThreadStats auxThreadStats;
     private @MonotonicNonNull QueryCollector queries;
     private @MonotonicNonNull ServiceCallCollector serviceCalls;
     private @MonotonicNonNull MutableProfile mainThreadProfile;
@@ -83,20 +85,24 @@ public class MutableAggregate {
         return toProto(mainThreadRootTimers);
     }
 
-    public List<Aggregate.Timer> getAuxThreadRootTimersProto() {
-        return toProto(auxThreadRootTimers);
-    }
-
-    public List<Aggregate.Timer> getAsyncTimersProto() {
-        return toProto(asyncTimers);
-    }
-
     public MutableThreadStats getMainThreadStats() {
         return mainThreadStats;
     }
 
-    public MutableThreadStats getAuxThreadStats() {
+    public Aggregate. /*@Nullable*/ Timer getAuxThreadRootTimerProto() {
+        if (auxThreadRootTimer == null) {
+            return null;
+        } else {
+            return auxThreadRootTimer.toProto();
+        }
+    }
+
+    public @Nullable MutableThreadStats getAuxThreadStats() {
         return auxThreadStats;
+    }
+
+    public List<Aggregate.Timer> getAsyncTimersProto() {
+        return toProto(asyncTimers);
     }
 
     public LazyHistogram getDurationNanosHistogram() {
@@ -141,16 +147,12 @@ public class MutableAggregate {
         }
     }
 
-    public void mergeMainThreadRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
-        mergeRootTimers(toBeMergedRootTimers, mainThreadRootTimers);
+    public void mergeMainThreadRootTimers(List<Aggregate.Timer> toBeMergedMainThreadRootTimers) {
+        mergeRootTimers(toBeMergedMainThreadRootTimers, mainThreadRootTimers);
     }
 
-    public void mergeAuxThreadRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
-        mergeRootTimers(toBeMergedRootTimers, auxThreadRootTimers);
-    }
-
-    public void mergeAsyncTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
-        mergeRootTimers(toBeMergedRootTimers, asyncTimers);
+    public void mergeMainThreadStats(Aggregate.ThreadStats threadStats) {
+        mainThreadStats.addThreadStats(threadStats);
     }
 
     public void addMainThreadTotalCpuNanos(double totalCpuNanos) {
@@ -169,28 +171,50 @@ public class MutableAggregate {
         mainThreadStats.addTotalAllocatedBytes(totalAllocatedBytes);
     }
 
+    public void mergeAuxThreadRootTimer(Aggregate.Timer toBeMergedAuxThreadRootTimer) {
+        if (auxThreadRootTimer == null) {
+            auxThreadRootTimer = MutableTimer.createAuxThreadRootTimer();
+        }
+        auxThreadRootTimer.merge(toBeMergedAuxThreadRootTimer);
+    }
+
+    public void mergeAuxThreadStats(Aggregate.ThreadStats threadStats) {
+        if (auxThreadStats == null) {
+            auxThreadStats = new MutableThreadStats();
+        }
+        auxThreadStats.addThreadStats(threadStats);
+    }
+
     public void addAuxThreadTotalCpuNanos(double totalCpuNanos) {
+        if (auxThreadStats == null) {
+            auxThreadStats = new MutableThreadStats();
+        }
         auxThreadStats.addTotalCpuNanos(totalCpuNanos);
     }
 
     public void addAuxThreadTotalBlockedNanos(double totalBlockedNanos) {
+        if (auxThreadStats == null) {
+            auxThreadStats = new MutableThreadStats();
+        }
         auxThreadStats.addTotalBlockedNanos(totalBlockedNanos);
     }
 
     public void addAuxThreadTotalWaitedNanos(double totalWaitedNanos) {
+        if (auxThreadStats == null) {
+            auxThreadStats = new MutableThreadStats();
+        }
         auxThreadStats.addTotalWaitedNanos(totalWaitedNanos);
     }
 
     public void addAuxThreadTotalAllocatedBytes(double totalAllocatedBytes) {
+        if (auxThreadStats == null) {
+            auxThreadStats = new MutableThreadStats();
+        }
         auxThreadStats.addTotalAllocatedBytes(totalAllocatedBytes);
     }
 
-    public void mergeMainThreadStats(Aggregate.ThreadStats threadStats) {
-        mainThreadStats.addThreadStats(threadStats);
-    }
-
-    public void mergeAuxThreadStats(Aggregate.ThreadStats threadStats) {
-        auxThreadStats.addThreadStats(threadStats);
+    public void mergeAsyncTimers(List<Aggregate.Timer> toBeMergedAsyncTimers) {
+        mergeRootTimers(toBeMergedAsyncTimers, asyncTimers);
     }
 
     public void mergeDurationNanosHistogram(Aggregate.Histogram toBeMergedDurationNanosHistogram) {
@@ -198,17 +222,20 @@ public class MutableAggregate {
     }
 
     public OverviewAggregate toOverviewAggregate(long captureTime) {
-        return ImmutableOverviewAggregate.builder()
+        ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                 .captureTime(captureTime)
                 .totalDurationNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
                 .asyncTransactions(asyncTransactions)
                 .mainThreadRootTimers(toProto(mainThreadRootTimers))
-                .auxThreadRootTimers(toProto(auxThreadRootTimers))
-                .asyncTimers(toProto(asyncTimers))
                 .mainThreadStats(mainThreadStats.toProto())
-                .auxThreadStats(auxThreadStats.toProto())
-                .build();
+                .asyncTimers(toProto(asyncTimers));
+        if (auxThreadRootTimer != null) {
+            builder.auxThreadRootTimer(auxThreadRootTimer.toProto());
+            // aux thread stats is non-null when aux thread root timer is non-null
+            builder.auxThreadStats(checkNotNull(auxThreadStats).toProto());
+        }
+        return builder.build();
     }
 
     public PercentileAggregate toPercentileAggregate(long captureTime) {

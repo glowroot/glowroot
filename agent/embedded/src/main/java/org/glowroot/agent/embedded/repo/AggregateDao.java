@@ -94,16 +94,16 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("main_thread_profile_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("aux_thread_profile_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("main_thread_root_timers", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("aux_thread_root_timers", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("async_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("main_thread_total_cpu_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("main_thread_total_blocked_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("main_thread_total_waited_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("main_thread_total_allocated_bytes", ColumnType.DOUBLE),
+                    ImmutableColumn.of("aux_thread_root_timer", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("aux_thread_total_cpu_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("aux_thread_total_blocked_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("aux_thread_total_waited_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("aux_thread_total_allocated_bytes", ColumnType.DOUBLE),
+                    ImmutableColumn.of("async_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("duration_nanos_histogram", ColumnType.VARBINARY)); // protobuf
 
     private static final ImmutableList<Column> transactionAggregateColumns =
@@ -120,16 +120,16 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("main_thread_profile_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("aux_thread_profile_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("main_thread_root_timers", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("aux_thread_root_timers", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("async_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("main_thread_total_cpu_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("main_thread_total_blocked_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("main_thread_total_waited_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("main_thread_total_allocated_bytes", ColumnType.DOUBLE),
+                    ImmutableColumn.of("aux_thread_root_timer", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("aux_thread_total_cpu_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("aux_thread_total_blocked_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("aux_thread_total_waited_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("aux_thread_total_allocated_bytes", ColumnType.DOUBLE),
+                    ImmutableColumn.of("async_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("duration_nanos_histogram", ColumnType.VARBINARY)); // protobuf
 
     // this index includes all columns needed for the overall aggregate query so h2 can return
@@ -466,42 +466,55 @@ public class AggregateDao implements AggregateRepository {
         Long serviceCallsCappedId = RowMappers.getLong(resultSet, i++);
         Long mainThreadProfileCappedId = RowMappers.getLong(resultSet, i++);
         Long auxThreadProfileCappedId = RowMappers.getLong(resultSet, i++);
-        byte[] mainThreadRootTimers = resultSet.getBytes(i++);
-        byte[] auxThreadRootTimers = resultSet.getBytes(i++);
-        byte[] asyncTimers = resultSet.getBytes(i++);
+        byte[] mainThreadRootTimers = checkNotNull(resultSet.getBytes(i++));
         double mainThreadTotalCpuNanos = getNextThreadStat(resultSet, i++);
         double mainThreadTotalBlockedNanos = getNextThreadStat(resultSet, i++);
         double mainThreadTotalWaitedNanos = getNextThreadStat(resultSet, i++);
         double mainThreadTotalAllocatedBytes = getNextThreadStat(resultSet, i++);
-        double auxThreadTotalCpuNanos = getNextThreadStat(resultSet, i++);
-        double auxThreadTotalBlockedNanos = getNextThreadStat(resultSet, i++);
-        double auxThreadTotalWaitedNanos = getNextThreadStat(resultSet, i++);
-        double auxThreadTotalAllocatedBytes = getNextThreadStat(resultSet, i++);
+        byte[] auxThreadRootTimers = resultSet.getBytes(i++);
+        double auxThreadTotalCpuNanos;
+        double auxThreadTotalBlockedNanos;
+        double auxThreadTotalWaitedNanos;
+        double auxThreadTotalAllocatedBytes;
+        if (auxThreadRootTimers == null) {
+            auxThreadTotalCpuNanos = 0;
+            auxThreadTotalBlockedNanos = 0;
+            auxThreadTotalWaitedNanos = 0;
+            auxThreadTotalAllocatedBytes = 0;
+            i += 4;
+        } else {
+            auxThreadTotalCpuNanos = getNextThreadStat(resultSet, i++);
+            auxThreadTotalBlockedNanos = getNextThreadStat(resultSet, i++);
+            auxThreadTotalWaitedNanos = getNextThreadStat(resultSet, i++);
+            auxThreadTotalAllocatedBytes = getNextThreadStat(resultSet, i++);
+        }
+        byte[] asyncTimers = resultSet.getBytes(i++);
         byte[] durationNanosHistogram = checkNotNull(resultSet.getBytes(i++));
 
         mergedAggregate.addTotalDurationNanos(totalDurationNanos);
         mergedAggregate.addTransactionCount(transactionCount);
         mergedAggregate.addErrorCount(errorCount);
         mergedAggregate.addAsyncTransactions(asyncTransactions);
-        if (mainThreadRootTimers != null) {
-            mergedAggregate.mergeMainThreadRootTimers(
-                    readMessages(mainThreadRootTimers, Aggregate.Timer.parser()));
-        }
-        if (auxThreadRootTimers != null) {
-            mergedAggregate.mergeAuxThreadRootTimers(
-                    readMessages(auxThreadRootTimers, Aggregate.Timer.parser()));
-        }
-        if (asyncTimers != null) {
-            mergedAggregate.mergeAsyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
-        }
+        mergedAggregate.mergeMainThreadRootTimers(
+                readMessages(mainThreadRootTimers, Aggregate.Timer.parser()));
         mergedAggregate.addMainThreadTotalCpuNanos(mainThreadTotalCpuNanos);
         mergedAggregate.addMainThreadTotalBlockedNanos(mainThreadTotalBlockedNanos);
         mergedAggregate.addMainThreadTotalWaitedNanos(mainThreadTotalWaitedNanos);
         mergedAggregate.addMainThreadTotalAllocatedBytes(mainThreadTotalAllocatedBytes);
-        mergedAggregate.addAuxThreadTotalCpuNanos(auxThreadTotalCpuNanos);
-        mergedAggregate.addAuxThreadTotalBlockedNanos(auxThreadTotalBlockedNanos);
-        mergedAggregate.addAuxThreadTotalWaitedNanos(auxThreadTotalWaitedNanos);
-        mergedAggregate.addAuxThreadTotalAllocatedBytes(auxThreadTotalAllocatedBytes);
+        if (auxThreadRootTimers != null) {
+            // reading delimited singleton list for backwards compatibility with data written
+            // prior to 0.12.0
+            List<Aggregate.Timer> list =
+                    readMessages(auxThreadRootTimers, Aggregate.Timer.parser());
+            mergedAggregate.mergeAuxThreadRootTimer(list.get(0));
+            mergedAggregate.addAuxThreadTotalCpuNanos(auxThreadTotalCpuNanos);
+            mergedAggregate.addAuxThreadTotalBlockedNanos(auxThreadTotalBlockedNanos);
+            mergedAggregate.addAuxThreadTotalWaitedNanos(auxThreadTotalWaitedNanos);
+            mergedAggregate.addAuxThreadTotalAllocatedBytes(auxThreadTotalAllocatedBytes);
+        }
+        if (asyncTimers != null) {
+            mergedAggregate.mergeAsyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
+        }
         mergedAggregate
                 .mergeDurationNanosHistogram(Aggregate.Histogram.parseFrom(durationNanosHistogram));
         if (queriesCappedId != null) {
@@ -870,14 +883,14 @@ public class AggregateDao implements AggregateRepository {
             String tableName = getTableName(query);
             String transactionNameCriteria = getTransactionNameCriteria(query);
             return "select capture_time, total_duration_nanos, transaction_count,"
-                    + " async_transactions, main_thread_root_timers, aux_thread_root_timers,"
-                    + " async_root_timers, main_thread_total_cpu_nanos,"
+                    + " async_transactions, main_thread_root_timers, main_thread_total_cpu_nanos,"
                     + " main_thread_total_blocked_nanos, main_thread_total_waited_nanos,"
-                    + " main_thread_total_allocated_bytes, aux_thread_total_cpu_nanos,"
-                    + " aux_thread_total_blocked_nanos, aux_thread_total_waited_nanos,"
-                    + " aux_thread_total_allocated_bytes from " + tableName
-                    + " where transaction_type = ?" + transactionNameCriteria
-                    + " and capture_time >= ? and capture_time <= ? order by capture_time";
+                    + " main_thread_total_allocated_bytes, aux_thread_root_timer,"
+                    + " aux_thread_total_cpu_nanos, aux_thread_total_blocked_nanos,"
+                    + " aux_thread_total_waited_nanos, aux_thread_total_allocated_bytes,"
+                    + " async_timers from " + tableName + " where transaction_type = ?"
+                    + transactionNameCriteria + " and capture_time >= ? and capture_time <= ?"
+                    + " order by capture_time";
         }
 
         @Override
@@ -898,27 +911,32 @@ public class AggregateDao implements AggregateRepository {
                 builder.mainThreadRootTimers(
                         readMessages(mainThreadRootTimers, Aggregate.Timer.parser()));
             }
-            byte[] auxThreadRootTimers = resultSet.getBytes(i++);
-            if (auxThreadRootTimers != null) {
-                builder.auxThreadRootTimers(
-                        readMessages(auxThreadRootTimers, Aggregate.Timer.parser()));
-            }
-            byte[] asyncTimers = resultSet.getBytes(i++);
-            if (asyncTimers != null) {
-                builder.asyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
-            }
             builder.mainThreadStats(Aggregate.ThreadStats.newBuilder()
                     .setTotalCpuNanos(getNextThreadStat(resultSet, i++))
                     .setTotalBlockedNanos(getNextThreadStat(resultSet, i++))
                     .setTotalWaitedNanos(getNextThreadStat(resultSet, i++))
                     .setTotalAllocatedBytes(getNextThreadStat(resultSet, i++))
                     .build());
-            builder.auxThreadStats(Aggregate.ThreadStats.newBuilder()
-                    .setTotalCpuNanos(getNextThreadStat(resultSet, i++))
-                    .setTotalBlockedNanos(getNextThreadStat(resultSet, i++))
-                    .setTotalWaitedNanos(getNextThreadStat(resultSet, i++))
-                    .setTotalAllocatedBytes(getNextThreadStat(resultSet, i++))
-                    .build());
+            byte[] auxThreadRootTimers = resultSet.getBytes(i++);
+            if (auxThreadRootTimers == null) {
+                i += 4;
+            } else {
+                // reading delimited singleton list for backwards compatibility with data written
+                // prior to 0.12.0
+                List<Aggregate.Timer> list =
+                        readMessages(auxThreadRootTimers, Aggregate.Timer.parser());
+                builder.auxThreadRootTimer(list.get(0));
+                builder.auxThreadStats(Aggregate.ThreadStats.newBuilder()
+                        .setTotalCpuNanos(getNextThreadStat(resultSet, i++))
+                        .setTotalBlockedNanos(getNextThreadStat(resultSet, i++))
+                        .setTotalWaitedNanos(getNextThreadStat(resultSet, i++))
+                        .setTotalAllocatedBytes(getNextThreadStat(resultSet, i++))
+                        .build());
+            }
+            byte[] asyncTimers = resultSet.getBytes(i++);
+            if (asyncTimers != null) {
+                builder.asyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
+            }
             return builder.build();
         }
     }
@@ -1014,12 +1032,12 @@ public class AggregateDao implements AggregateRepository {
             return "select transaction_type, total_duration_nanos, transaction_count, error_count,"
                     + " async_transactions, queries_capped_id, service_calls_capped_id,"
                     + " main_thread_profile_capped_id, aux_thread_profile_capped_id,"
-                    + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
-                    + " main_thread_total_cpu_nanos, main_thread_total_blocked_nanos,"
-                    + " main_thread_total_waited_nanos, main_thread_total_allocated_bytes,"
+                    + " main_thread_root_timers, main_thread_total_cpu_nanos,"
+                    + " main_thread_total_blocked_nanos, main_thread_total_waited_nanos,"
+                    + " main_thread_total_allocated_bytes, aux_thread_root_timer,"
                     + " aux_thread_total_cpu_nanos, aux_thread_total_blocked_nanos,"
                     + " aux_thread_total_waited_nanos, aux_thread_total_allocated_bytes,"
-                    + " duration_nanos_histogram from aggregate_tt_rollup_"
+                    + " async_timers, duration_nanos_histogram from aggregate_tt_rollup_"
                     + castUntainted(fromRollupLevel) + " where capture_time > ?"
                     + " and capture_time <= ? order by transaction_type";
         }
@@ -1084,11 +1102,11 @@ public class AggregateDao implements AggregateRepository {
                     + " transaction_count, error_count, async_transactions, queries_capped_id,"
                     + " service_calls_capped_id, main_thread_profile_capped_id,"
                     + " aux_thread_profile_capped_id, main_thread_root_timers,"
-                    + " aux_thread_root_timers, async_root_timers, main_thread_total_cpu_nanos,"
-                    + " main_thread_total_blocked_nanos, main_thread_total_waited_nanos,"
-                    + " main_thread_total_allocated_bytes, aux_thread_total_cpu_nanos,"
+                    + " main_thread_total_cpu_nanos, main_thread_total_blocked_nanos,"
+                    + " main_thread_total_waited_nanos, main_thread_total_allocated_bytes,"
+                    + " aux_thread_root_timer, aux_thread_total_cpu_nanos,"
                     + " aux_thread_total_blocked_nanos, aux_thread_total_waited_nanos,"
-                    + " aux_thread_total_allocated_bytes, duration_nanos_histogram"
+                    + " aux_thread_total_allocated_bytes, async_timers, duration_nanos_histogram"
                     + " from aggregate_tn_rollup_" + castUntainted(fromRollupLevel)
                     + " where capture_time > ? and capture_time <= ? order by transaction_type,"
                     + " transaction_name";

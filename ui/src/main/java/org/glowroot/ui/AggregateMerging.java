@@ -27,6 +27,8 @@ import org.glowroot.common2.repo.MutableThreadStats;
 import org.glowroot.common2.repo.MutableTimer;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 class AggregateMerging {
 
     private AggregateMerging() {}
@@ -34,30 +36,32 @@ class AggregateMerging {
     static MergedAggregate getMergedAggregate(List<OverviewAggregate> overviewAggregates) {
         long transactionCount = 0;
         List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
-        List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
-        List<MutableTimer> asyncTimers = Lists.newArrayList();
         MutableThreadStats mainThreadStats = new MutableThreadStats();
+        MutableTimer auxThreadRootTimer = MutableTimer.createAuxThreadRootTimer();
         MutableThreadStats auxThreadStats = new MutableThreadStats();
+        List<MutableTimer> asyncTimers = Lists.newArrayList();
         for (OverviewAggregate aggregate : overviewAggregates) {
             transactionCount += aggregate.transactionCount();
             mergeRootTimers(aggregate.mainThreadRootTimers(), mainThreadRootTimers);
-            mergeRootTimers(aggregate.auxThreadRootTimers(), auxThreadRootTimers);
-            mergeRootTimers(aggregate.asyncTimers(), asyncTimers);
             mainThreadStats.addThreadStats(aggregate.mainThreadStats());
-            auxThreadStats.addThreadStats(aggregate.auxThreadStats());
+            Aggregate.Timer toBeMergedAuxThreadRootTimer = aggregate.auxThreadRootTimer();
+            if (toBeMergedAuxThreadRootTimer != null) {
+                auxThreadRootTimer.merge(toBeMergedAuxThreadRootTimer);
+                // aux thread stats is non-null when aux thread root timer is non-null
+                auxThreadStats.addThreadStats(checkNotNull(aggregate.auxThreadStats()));
+            }
+            mergeRootTimers(aggregate.asyncTimers(), asyncTimers);
         }
         ImmutableMergedAggregate.Builder builder = ImmutableMergedAggregate.builder()
                 .transactionCount(transactionCount)
                 .mainThreadRootTimers(mainThreadRootTimers)
-                .auxThreadRootTimers(auxThreadRootTimers)
-                .asyncTimers(asyncTimers);
-        if (!mainThreadRootTimers.isEmpty()) {
-            builder.mainThreadStats(mainThreadStats);
+                .mainThreadStats(mainThreadStats);
+        if (auxThreadRootTimer.getCount() != 0) {
+            builder.auxThreadRootTimers(auxThreadRootTimer)
+                    .auxThreadStats(auxThreadStats);
         }
-        if (!auxThreadRootTimers.isEmpty()) {
-            builder.auxThreadStats(auxThreadStats);
-        }
-        return builder.build();
+        return builder.asyncTimers(asyncTimers)
+                .build();
     }
 
     private static void mergeRootTimers(List<Aggregate.Timer> toBeMergedRootTimers,
@@ -85,12 +89,12 @@ class AggregateMerging {
     interface MergedAggregate {
         long transactionCount();
         List<MutableTimer> mainThreadRootTimers();
-        List<MutableTimer> auxThreadRootTimers();
-        List<MutableTimer> asyncTimers();
-        @Nullable
         MutableThreadStats mainThreadStats();
         @Nullable
+        MutableTimer auxThreadRootTimers();
+        @Nullable
         MutableThreadStats auxThreadStats();
+        List<MutableTimer> asyncTimers();
     }
 
     @Value.Immutable

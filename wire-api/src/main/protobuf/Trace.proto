@@ -39,7 +39,7 @@ message Trace {
     repeated DetailEntry detail_entry = 12;
     Error error = 13;
     Timer main_thread_root_timer = 14;
-    repeated Timer aux_thread_root_timer = 15;
+    Timer aux_thread_root_timer = 15; // aux thread root timer is always "auxiliary thread"
     repeated Timer async_timer = 16; // async timers have no child timers
     OldThreadStats old_main_thread_stats = 17; // deprecated in 0.10.9
     OldThreadStats old_aux_thread_stats = 18; // deprecated in 0.10.9

@@ -46,6 +46,7 @@ import org.glowroot.common2.repo.MutableThreadStats;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castUntainted;
 
 class AggregateInsert implements JdbcUpdate {
@@ -62,16 +63,16 @@ class AggregateInsert implements JdbcUpdate {
     private final @Nullable Long mainThreadProfileCappedId;
     private final @Nullable Long auxThreadProfileCappedId;
     private final byte /*@Nullable*/ [] mainThreadRootTimers;
-    private final byte /*@Nullable*/ [] auxThreadRootTimers;
-    private final byte /*@Nullable*/ [] asyncTimers;
     private final double mainThreadTotalCpuNanos;
     private final double mainThreadTotalBlockedNanos;
     private final double mainThreadTotalWaitedNanos;
     private final double mainThreadTotalAllocatedBytes;
+    private final byte /*@Nullable*/ [] auxThreadRootTimer;
     private final double auxThreadTotalCpuNanos;
     private final double auxThreadTotalBlockedNanos;
     private final double auxThreadTotalWaitedNanos;
     private final double auxThreadTotalAllocatedBytes;
+    private final byte /*@Nullable*/ [] asyncTimers;
     private final byte[] durationNanosHistogramBytes;
 
     private final int rollupLevel;
@@ -105,18 +106,28 @@ class AggregateInsert implements JdbcUpdate {
             auxThreadProfileCappedId = null;
         }
         mainThreadRootTimers = toByteArray(aggregate.getMainThreadRootTimerList());
-        auxThreadRootTimers = toByteArray(aggregate.getAuxThreadRootTimerList());
-        asyncTimers = toByteArray(aggregate.getAsyncTimerList());
         Aggregate.ThreadStats mainThreadStats = aggregate.getMainThreadStats();
         mainThreadTotalCpuNanos = mainThreadStats.getTotalCpuNanos();
         mainThreadTotalBlockedNanos = mainThreadStats.getTotalBlockedNanos();
         mainThreadTotalWaitedNanos = mainThreadStats.getTotalWaitedNanos();
         mainThreadTotalAllocatedBytes = mainThreadStats.getTotalAllocatedBytes();
-        Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
-        auxThreadTotalCpuNanos = auxThreadStats.getTotalCpuNanos();
-        auxThreadTotalBlockedNanos = auxThreadStats.getTotalBlockedNanos();
-        auxThreadTotalWaitedNanos = auxThreadStats.getTotalWaitedNanos();
-        auxThreadTotalAllocatedBytes = auxThreadStats.getTotalAllocatedBytes();
+        if (aggregate.hasAuxThreadRootTimer()) {
+            // writing as delimited singleton list for backwards compatibility with data written
+            // prior to 0.12.0
+            auxThreadRootTimer = toByteArray(ImmutableList.of(aggregate.getAuxThreadRootTimer()));
+            Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
+            auxThreadTotalCpuNanos = auxThreadStats.getTotalCpuNanos();
+            auxThreadTotalBlockedNanos = auxThreadStats.getTotalBlockedNanos();
+            auxThreadTotalWaitedNanos = auxThreadStats.getTotalWaitedNanos();
+            auxThreadTotalAllocatedBytes = auxThreadStats.getTotalAllocatedBytes();
+        } else {
+            auxThreadRootTimer = null;
+            auxThreadTotalCpuNanos = 0;
+            auxThreadTotalBlockedNanos = 0;
+            auxThreadTotalWaitedNanos = 0;
+            auxThreadTotalAllocatedBytes = 0;
+        }
+        asyncTimers = toByteArray(aggregate.getAsyncTimerList());
         durationNanosHistogramBytes = aggregate.getDurationNanosHistogram().toByteArray();
     }
 
@@ -138,18 +149,30 @@ class AggregateInsert implements JdbcUpdate {
         mainThreadProfileCappedId = writeProfile(cappedDatabase, aggregate.getMainThreadProfile());
         auxThreadProfileCappedId = writeProfile(cappedDatabase, aggregate.getAuxThreadProfile());
         mainThreadRootTimers = toByteArray(aggregate.getMainThreadRootTimersProto());
-        auxThreadRootTimers = toByteArray(aggregate.getAuxThreadRootTimersProto());
-        asyncTimers = toByteArray(aggregate.getAsyncTimersProto());
         MutableThreadStats mainThreadStats = aggregate.getMainThreadStats();
         mainThreadTotalCpuNanos = mainThreadStats.getTotalCpuNanos();
         mainThreadTotalBlockedNanos = mainThreadStats.getTotalBlockedNanos();
         mainThreadTotalWaitedNanos = mainThreadStats.getTotalWaitedNanos();
         mainThreadTotalAllocatedBytes = mainThreadStats.getTotalAllocatedBytes();
-        MutableThreadStats auxThreadStats = aggregate.getAuxThreadStats();
-        auxThreadTotalCpuNanos = auxThreadStats.getTotalCpuNanos();
-        auxThreadTotalBlockedNanos = auxThreadStats.getTotalBlockedNanos();
-        auxThreadTotalWaitedNanos = auxThreadStats.getTotalWaitedNanos();
-        auxThreadTotalAllocatedBytes = auxThreadStats.getTotalAllocatedBytes();
+        Aggregate.Timer auxThreadRootTimer = aggregate.getAuxThreadRootTimerProto();
+        if (auxThreadRootTimer == null) {
+            this.auxThreadRootTimer = null;
+            auxThreadTotalCpuNanos = 0;
+            auxThreadTotalBlockedNanos = 0;
+            auxThreadTotalWaitedNanos = 0;
+            auxThreadTotalAllocatedBytes = 0;
+        } else {
+            // writing as delimited singleton list for backwards compatibility with data written
+            // prior to 0.12.0
+            this.auxThreadRootTimer = toByteArray(ImmutableList.of(auxThreadRootTimer));
+            // aux thread stats is non-null when aux thread root timer is non-null
+            MutableThreadStats auxThreadStats = checkNotNull(aggregate.getAuxThreadStats());
+            auxThreadTotalCpuNanos = auxThreadStats.getTotalCpuNanos();
+            auxThreadTotalBlockedNanos = auxThreadStats.getTotalBlockedNanos();
+            auxThreadTotalWaitedNanos = auxThreadStats.getTotalWaitedNanos();
+            auxThreadTotalAllocatedBytes = auxThreadStats.getTotalAllocatedBytes();
+        }
+        asyncTimers = toByteArray(aggregate.getAsyncTimersProto());
         durationNanosHistogramBytes =
                 aggregate.getDurationNanosHistogram().toProto(scratchBuffer).toByteArray();
     }
@@ -172,11 +195,11 @@ class AggregateInsert implements JdbcUpdate {
         sb.append(" capture_time, total_duration_nanos, transaction_count, error_count,"
                 + " async_transactions, queries_capped_id, service_calls_capped_id,"
                 + " main_thread_profile_capped_id, aux_thread_profile_capped_id,"
-                + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
-                + " main_thread_total_cpu_nanos, main_thread_total_blocked_nanos,"
-                + " main_thread_total_waited_nanos, main_thread_total_allocated_bytes,"
+                + " main_thread_root_timers, main_thread_total_cpu_nanos,"
+                + " main_thread_total_blocked_nanos, main_thread_total_waited_nanos,"
+                + " main_thread_total_allocated_bytes, aux_thread_root_timer,"
                 + " aux_thread_total_cpu_nanos, aux_thread_total_blocked_nanos,"
-                + " aux_thread_total_waited_nanos, aux_thread_total_allocated_bytes,"
+                + " aux_thread_total_waited_nanos, aux_thread_total_allocated_bytes, async_timers,"
                 + " duration_nanos_histogram) key (transaction_type");
         if (transactionName != null) {
             sb.append(", transaction_name");
@@ -208,16 +231,16 @@ class AggregateInsert implements JdbcUpdate {
         RowMappers.setLong(preparedStatement, i++, mainThreadProfileCappedId);
         RowMappers.setLong(preparedStatement, i++, auxThreadProfileCappedId);
         RowMappers.setBytes(preparedStatement, i++, mainThreadRootTimers);
-        RowMappers.setBytes(preparedStatement, i++, auxThreadRootTimers);
-        RowMappers.setBytes(preparedStatement, i++, asyncTimers);
         preparedStatement.setDouble(i++, mainThreadTotalCpuNanos);
         preparedStatement.setDouble(i++, mainThreadTotalBlockedNanos);
         preparedStatement.setDouble(i++, mainThreadTotalWaitedNanos);
         preparedStatement.setDouble(i++, mainThreadTotalAllocatedBytes);
+        RowMappers.setBytes(preparedStatement, i++, auxThreadRootTimer);
         preparedStatement.setDouble(i++, auxThreadTotalCpuNanos);
         preparedStatement.setDouble(i++, auxThreadTotalBlockedNanos);
         preparedStatement.setDouble(i++, auxThreadTotalWaitedNanos);
         preparedStatement.setDouble(i++, auxThreadTotalAllocatedBytes);
+        RowMappers.setBytes(preparedStatement, i++, asyncTimers);
         preparedStatement.setBytes(i++, durationNanosHistogramBytes);
     }
 

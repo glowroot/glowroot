@@ -52,6 +52,9 @@ import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.MutableAggregate;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class TransactionCommonService {
 
@@ -437,12 +440,15 @@ class TransactionCommonService {
             currMergedAggregate
                     .mergeMainThreadRootTimers(nonRolledUpOverviewAggregate.mainThreadRootTimers());
             currMergedAggregate
-                    .mergeAuxThreadRootTimers(nonRolledUpOverviewAggregate.auxThreadRootTimers());
-            currMergedAggregate
-                    .mergeAsyncTimers(nonRolledUpOverviewAggregate.asyncTimers());
-            currMergedAggregate
                     .mergeMainThreadStats(nonRolledUpOverviewAggregate.mainThreadStats());
-            currMergedAggregate.mergeAuxThreadStats(nonRolledUpOverviewAggregate.auxThreadStats());
+            Aggregate.Timer auxThreadRootTimer = nonRolledUpOverviewAggregate.auxThreadRootTimer();
+            if (auxThreadRootTimer != null) {
+                currMergedAggregate.mergeAuxThreadRootTimer(auxThreadRootTimer);
+                // aux thread stats is non-null when aux thread root timer is non-null
+                currMergedAggregate.mergeAuxThreadStats(
+                        checkNotNull(nonRolledUpOverviewAggregate.auxThreadStats()));
+            }
+            currMergedAggregate.mergeAsyncTimers(nonRolledUpOverviewAggregate.asyncTimers());
         }
         if (!currMergedAggregate.isEmpty()) {
             // roll up final one

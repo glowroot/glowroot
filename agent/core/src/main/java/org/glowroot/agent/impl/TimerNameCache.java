@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 // also used to ensure @Pointcut timer name matches the timer name passed to TransactionService
 public class TimerNameCache {
 
+    public static final String AUXILIARY_THREAD_ROOT_TIMER_NAME = "auxiliary thread";
+
     private static final Logger logger = LoggerFactory.getLogger(TimerNameCache.class);
 
     private final LoadingCache<String, TimerNameImpl> names = CacheBuilder.newBuilder()
@@ -43,7 +45,8 @@ public class TimerNameCache {
             });
 
     private final TimerName unknownTimerName = names.getUnchecked("unknown");
-    private final TimerName auxThreadTimerName = names.getUnchecked("auxiliary thread");
+    private final TimerName auxThreadTimerName =
+            names.getUnchecked(AUXILIARY_THREAD_ROOT_TIMER_NAME);
 
     public TimerName getTimerName(Class<?> adviceClass) {
         if (adviceClass == null) {

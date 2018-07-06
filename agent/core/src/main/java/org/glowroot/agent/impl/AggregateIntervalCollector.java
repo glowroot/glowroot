@@ -29,7 +29,6 @@ import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
 import org.glowroot.agent.model.SharedQueryTextCollection;
-import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
@@ -315,21 +314,7 @@ public class AggregateIntervalCollector {
         }
 
         private void merge(Transaction transaction, AggregateCollector aggregateCollector) {
-            aggregateCollector.add(transaction);
-            aggregateCollector.getMainThreadRootTimers()
-                    .mergeRootTimer(transaction.getMainThreadRootTimer());
-            transaction.mergeAuxThreadTimersInto(aggregateCollector.getAuxThreadRootTimers());
-            transaction.mergeAsyncTimersInto(aggregateCollector.getAsyncTimers());
-            transaction.mergeQueriesInto(aggregateCollector.getQueryCollector());
-            transaction.mergeServiceCallsInto(aggregateCollector.getServiceCallCollector());
-            ThreadProfile mainThreadProfile = transaction.getMainThreadProfile();
-            if (mainThreadProfile != null) {
-                aggregateCollector.mergeMainThreadProfile(mainThreadProfile);
-            }
-            ThreadProfile auxThreadProfile = transaction.getAuxThreadProfile();
-            if (auxThreadProfile != null) {
-                aggregateCollector.mergeAuxThreadProfile(auxThreadProfile);
-            }
+            aggregateCollector.mergeDataFrom(transaction);
         }
 
         private @Nullable String getFullQueryText(String fullQueryTextSha1) {
