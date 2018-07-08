@@ -126,7 +126,7 @@ public class AdminIT extends WebDriverIT {
             SECONDS.sleep(1);
             page.clickCompactH2Data();
             // wait for compact to finish
-            SECONDS.sleep(1);
+            SECONDS.sleep(5);
             page.clickAnalyzeH2DiskSpace();
             // wait for analyze to finish
             SECONDS.sleep(1);
