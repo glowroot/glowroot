@@ -17,7 +17,6 @@ package org.glowroot.ui;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -33,6 +32,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Longs;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -286,8 +286,9 @@ class AdminJsonService {
                     SslContextBuilder.forServer(certificateFile, privateKeyFile);
                 } catch (Exception e) {
                     logger.debug(e.getMessage(), e);
-                    StringWriter sw = new StringWriter();
-                    JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+                    StringBuilder sb = new StringBuilder();
+                    JsonGenerator jg =
+                            mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
                     try {
                         jg.writeStartObject();
                         jg.writeStringField("httpsValidationError", e.getMessage());
@@ -295,7 +296,7 @@ class AdminJsonService {
                     } finally {
                         jg.close();
                     }
-                    return sw.toString();
+                    return sb.toString();
                 }
             }
             if (webPortReadOnly && config.port() != checkNotNull(httpServer.getPort())) {
@@ -486,8 +487,8 @@ class AdminJsonService {
             logger.debug(e.getMessage(), e);
             return createErrorResponse(e);
         }
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeStringField("content", responseContent);
@@ -495,7 +496,7 @@ class AdminJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     @POST(path = "/backend/admin/test-ldap", permission = "admin:edit:ldap")
@@ -529,8 +530,8 @@ class AdminJsonService {
             return createErrorResponse(e);
         }
         Set<String> glowrootRoles = LdapAuthentication.getGlowrootRoles(ldapGroupDns, config);
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeObjectField("ldapGroupDns", ldapGroupDns);
@@ -539,7 +540,7 @@ class AdminJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     @POST(path = "/backend/admin/defrag-h2-data", permission = "")
@@ -565,8 +566,8 @@ class AdminJsonService {
         }
         long h2DataFileSize = repoAdmin.getH2DataFileSize();
         List<H2Table> tables = repoAdmin.analyzeH2DiskSpace();
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeNumberField("h2DataFileSize", h2DataFileSize);
@@ -575,7 +576,7 @@ class AdminJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     @POST(path = "/backend/admin/analyze-trace-counts", permission = "")
@@ -709,8 +710,8 @@ class AdminJsonService {
     }
 
     private static String createErrorResponse(@Nullable String message) throws IOException {
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeBooleanField("error", true);
@@ -719,7 +720,7 @@ class AdminJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     @Value.Immutable

@@ -17,7 +17,6 @@ package org.glowroot.ui;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -523,8 +522,8 @@ public class CommonHandler {
 
     private static String getHttpResponseWithStackTrace(Exception e,
             @Nullable String simplifiedMessage) throws IOException {
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
+        StringBuilder stackTrace = new StringBuilder();
+        e.printStackTrace(new PrintWriter(CharStreams.asWriter(stackTrace)));
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
@@ -542,7 +541,7 @@ public class CommonHandler {
                 message = simplifiedMessage;
             }
             jg.writeStringField("message", message);
-            jg.writeStringField("stackTrace", sw.toString());
+            jg.writeStringField("stackTrace", stackTrace.toString());
             jg.writeEndObject();
         } finally {
             jg.close();

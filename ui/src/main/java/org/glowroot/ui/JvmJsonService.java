@@ -17,7 +17,6 @@ package org.glowroot.ui;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -110,8 +109,8 @@ class JvmJsonService {
         ProcessInfo processInfo = environment.getProcessInfo();
         JavaInfo javaInfo = environment.getJavaInfo();
 
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             if (liveJvmService != null) {
@@ -151,7 +150,7 @@ class JvmJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     @GET(path = "/backend/jvm/thread-dump", permission = "agent:jvm:threadDump")
@@ -165,8 +164,8 @@ class JvmJsonService {
             return "{\"agentNotConnected\":true}";
         }
         List<ThreadDump.Thread> allThreads = Lists.newArrayList();
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeArrayFieldStart("transactions");
@@ -215,7 +214,7 @@ class JvmJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     @GET(path = "/backend/jvm/jstack", permission = "agent:jvm:threadDump")
@@ -238,8 +237,8 @@ class JvmJsonService {
             logger.debug(e.getMessage(), e);
             return getAgentUnsupportedOperationResponse(agentId);
         }
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeStringField("jstack", jstack);
@@ -247,7 +246,7 @@ class JvmJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     @GET(path = "/backend/jvm/heap-dump-default-dir", permission = "agent:jvm:heapDump")
@@ -294,8 +293,8 @@ class JvmJsonService {
             logger.debug(e.getMessage(), e);
             return "{\"directoryDoesNotExist\": true}";
         }
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeStringField("filePath", heapDumpFileInfo.getFilePath());
@@ -304,7 +303,7 @@ class JvmJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     @POST(path = "/backend/jvm/heap-histogram", permission = "agent:jvm:heapHistogram")
@@ -327,8 +326,8 @@ class JvmJsonService {
             logger.debug(e.getMessage(), e);
             return getAgentUnsupportedOperationResponse(agentId);
         }
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeArrayFieldStart("items");
@@ -350,7 +349,7 @@ class JvmJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     @GET(path = "/backend/jvm/explicit-gc-disabled", permission = "agent:jvm:forceGC")
@@ -485,8 +484,8 @@ class JvmJsonService {
             logger.debug(e.getMessage(), e);
             return "{\"agentNotConnected\":true}";
         }
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             writeAvailability("threadCpuTime", capabilities.getThreadCpuTime(), jg);
@@ -496,7 +495,7 @@ class JvmJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     private List<String> getJvmMaskSystemProperties(String agentId) throws Exception {
@@ -508,8 +507,8 @@ class JvmJsonService {
     }
 
     private String getAgentUnsupportedOperationResponse(String agentId) throws Exception {
-        StringWriter sw = new StringWriter();
-        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
             jg.writeStringField("agentUnsupportedOperation", getAgentVersion(agentId));
@@ -517,7 +516,7 @@ class JvmJsonService {
         } finally {
             jg.close();
         }
-        return sw.toString();
+        return sb.toString();
     }
 
     private String getAgentVersion(String agentId) throws Exception {
