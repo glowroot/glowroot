@@ -52,6 +52,9 @@ class ServletPluginProperties {
 
     private static List<Pattern> captureResponseHeaders = Collections.emptyList();
     private static boolean captureResponseHeadersNonEmpty;
+    private static boolean captureContentLengthResponseHeader;
+    private static boolean captureContentTypeResponseHeader;
+    private static boolean captureContentLanguageResponseHeader;
 
     private static @Nullable SessionAttributePath userAttributePath;
 
@@ -122,6 +125,18 @@ class ServletPluginProperties {
 
     static boolean captureResponseHeadersNonEmpty() {
         return captureResponseHeadersNonEmpty;
+    }
+
+    static boolean captureContentLengthResponseHeader() {
+        return captureContentLengthResponseHeader;
+    }
+
+    static boolean captureContentTypeResponseHeader() {
+        return captureContentTypeResponseHeader;
+    }
+
+    static boolean captureContentLanguageResponseHeader() {
+        return captureContentLanguageResponseHeader;
     }
 
     static @Nullable SessionAttributePath userAttributePath() {
@@ -226,6 +241,12 @@ class ServletPluginProperties {
                             || captureRequestServerHostname || captureRequestServerPort;
             captureResponseHeaders = buildPatternList("captureResponseHeaders");
             captureResponseHeadersNonEmpty = !captureResponseHeaders.isEmpty();
+            captureContentLengthResponseHeader =
+                    DetailCapture.matchesOneOf("content-length", captureResponseHeaders);
+            captureContentTypeResponseHeader =
+                    DetailCapture.matchesOneOf("content-type", captureResponseHeaders);
+            captureContentLanguageResponseHeader =
+                    DetailCapture.matchesOneOf("content-language", captureResponseHeaders);
             userAttributePath = buildSessionAttributePath(
                     configService.getStringProperty("sessionUserAttribute").value());
             captureSessionAttributePaths = buildSessionAttributePaths(configService

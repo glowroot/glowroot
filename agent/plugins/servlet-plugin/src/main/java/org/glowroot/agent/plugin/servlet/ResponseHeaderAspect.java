@@ -40,7 +40,7 @@ public class ResponseHeaderAspect {
         }
         @OnAfter
         public static void onAfter(ThreadContext context, @BindParameter int value) {
-            if (!captureResponseHeader("Content-Length")) {
+            if (!ServletPluginProperties.captureContentLengthResponseHeader()) {
                 return;
             }
             ServletMessageSupplier messageSupplier =
@@ -61,7 +61,7 @@ public class ResponseHeaderAspect {
         }
         @OnAfter
         public static void onAfter(ThreadContext context, @BindParameter long value) {
-            if (!captureResponseHeader("Content-Length")) {
+            if (!ServletPluginProperties.captureContentLengthResponseHeader()) {
                 return;
             }
             ServletMessageSupplier messageSupplier =
@@ -88,7 +88,7 @@ public class ResponseHeaderAspect {
                 // seems nothing sensible to do here other than ignore
                 return;
             }
-            if (!captureResponseHeader("Content-Type")) {
+            if (!ServletPluginProperties.captureContentTypeResponseHeader()) {
                 return;
             }
             ServletMessageSupplier messageSupplier =
@@ -115,7 +115,7 @@ public class ResponseHeaderAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindReceiver Object response,
                 @BindClassMeta ResponseInvoker responseInvoker) {
-            if (!captureResponseHeader("Content-Type")) {
+            if (!ServletPluginProperties.captureContentTypeResponseHeader()) {
                 return;
             }
             ServletMessageSupplier messageSupplier =
@@ -143,8 +143,9 @@ public class ResponseHeaderAspect {
                 // seems nothing sensible to do here other than ignore
                 return;
             }
-            boolean captureContentLanguage = captureResponseHeader("Content-Language");
-            boolean captureContentType = captureResponseHeader("Content-Type");
+            boolean captureContentLanguage =
+                    ServletPluginProperties.captureContentLanguageResponseHeader();
+            boolean captureContentType = ServletPluginProperties.captureContentTypeResponseHeader();
             if (!captureContentLanguage && !captureContentType) {
                 return;
             }
