@@ -35,18 +35,6 @@
       "description": "Comma-separated list of request headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
     },
     {
-      "name": "captureRequestRemoteAddr",
-      "type": "boolean",
-      "label": "Capture request remote address",
-      "description": "Capture request remote address using ServletRequest.getRemoteAddr()."
-    },
-    {
-      "name": "captureRequestRemoteHost",
-      "type": "boolean",
-      "label": "Capture request remote host",
-      "description": "Capture request remote host using ServletRequest.getRemoteHost()."
-    },
-    {
       "name": "captureResponseHeaders",
       "type": "string",
       "label": "Capture response headers",
@@ -58,6 +46,58 @@
       "label": "Error on 4xx",
       "checkboxLabel": "Mark trace as error on 4xx response code",
       "description": "Mark the trace as an error when a 4xx response code is returned."
+    },
+    {
+      "name": "captureRequestRemoteAddr",
+      "type": "boolean",
+      "label": "Capture request remote address",
+      "checkboxLabel": "Capture request remote address using ServletRequest.getRemoteAddr()"
+    },
+    {
+      "name": "captureRequestRemoteHostname",
+      "type": "boolean",
+      "label": "Capture request remote hostname",
+      "checkboxLabel": "Capture request remote hostname using ServletRequest.getRemoteHost()"
+    },
+    {
+      "name": "captureRequestRemotePort",
+      "type": "boolean",
+      "label": "Capture request remote port",
+      "checkboxLabel": "Capture request remote port using ServletRequest.getRemotePort()",
+      "description": "This only applies to Servlet 3.0+ containers."
+    },
+    {
+      "name": "captureRequestLocalAddr",
+      "type": "boolean",
+      "label": "Capture request local address",
+      "checkboxLabel": "Capture request local address using ServletRequest.getLocalAddr()",
+      "description": "This only applies to Servlet 3.0+ containers."
+    },
+    {
+      "name": "captureRequestLocalHostname",
+      "type": "boolean",
+      "label": "Capture request local hostname",
+      "checkboxLabel": "Capture request local hostname using ServletRequest.getLocalName()",
+      "description": "This only applies to Servlet 3.0+ containers."
+    },
+    {
+      "name": "captureRequestLocalPort",
+      "type": "boolean",
+      "label": "Capture request local port",
+      "checkboxLabel": "Capture request local port using ServletRequest.getLocalPort()",
+      "description": "This only applies to Servlet 3.0+ containers."
+    },
+    {
+      "name": "captureRequestServerHostname",
+      "type": "boolean",
+      "label": "Capture request server hostname",
+      "checkboxLabel": "Capture request server hostname using ServletRequest.getServerName()"
+    },
+    {
+      "name": "captureRequestServerPort",
+      "type": "boolean",
+      "label": "Capture request server port",
+      "checkboxLabel": "Capture request server port using ServletRequest.getServerPort()"
     }
   ],
   "instrumentation": [

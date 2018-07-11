@@ -144,18 +144,37 @@ class DetailCapture {
         return ImmutableMap.copyOf(requestHeaders);
     }
 
-    static @Nullable String captureRequestRemoteAddr(HttpServletRequest request) {
-        if (ServletPluginProperties.captureRequestRemoteAddr()) {
-            return request.getRemoteAddr();
+    static @Nullable RequestHostAndPortDetail captureRequestHostAndPortDetail(
+            HttpServletRequest request, RequestInvoker requestInvoker) {
+        if (ServletPluginProperties.captureSomeRequestHostAndPortDetail()) {
+            RequestHostAndPortDetail requestHostAndPortDetail = new RequestHostAndPortDetail();
+            if (ServletPluginProperties.captureRequestRemoteAddress()) {
+                requestHostAndPortDetail.remoteAddress = request.getRemoteAddr();
+            }
+            if (ServletPluginProperties.captureRequestRemoteHostname()) {
+                requestHostAndPortDetail.remoteHostname = request.getRemoteHost();
+            }
+            if (ServletPluginProperties.captureRequestRemotePort()) {
+                requestHostAndPortDetail.remotePort = requestInvoker.getRemotePort(request);
+            }
+            if (ServletPluginProperties.captureRequestLocalAddress()) {
+                requestHostAndPortDetail.localAddress = requestInvoker.getLocalAddr(request);
+            }
+            if (ServletPluginProperties.captureRequestLocalHostname()) {
+                requestHostAndPortDetail.localHostname = requestInvoker.getLocalName(request);
+            }
+            if (ServletPluginProperties.captureRequestLocalPort()) {
+                requestHostAndPortDetail.localPort = requestInvoker.getLocalPort(request);
+            }
+            if (ServletPluginProperties.captureRequestServerHostname()) {
+                requestHostAndPortDetail.serverHostname = request.getServerName();
+            }
+            if (ServletPluginProperties.captureRequestServerPort()) {
+                requestHostAndPortDetail.serverPort = request.getServerPort();
+            }
+            return requestHostAndPortDetail;
         } else {
-            return null;
-        }
-    }
-
-    static @Nullable String captureRequestRemoteHost(HttpServletRequest request) {
-        if (ServletPluginProperties.captureRequestRemoteHost()) {
-            return request.getRemoteHost();
-        } else {
+            // optimized for common case
             return null;
         }
     }
@@ -186,5 +205,23 @@ class DetailCapture {
                 requestHeaders.put(name, ImmutableList.copyOf(list));
             }
         }
+    }
+
+    static class RequestHostAndPortDetail {
+        // -1 is used as error return value by RequestInvoker.getRemotePort()
+        static final int UNSET = -2;
+        @Nullable
+        String remoteAddress;
+        @Nullable
+        String remoteHostname;
+        int remotePort = UNSET;
+        @Nullable
+        String localAddress;
+        @Nullable
+        String localHostname;
+        int localPort = UNSET;
+        @Nullable
+        String serverHostname;
+        int serverPort = UNSET;
     }
 }

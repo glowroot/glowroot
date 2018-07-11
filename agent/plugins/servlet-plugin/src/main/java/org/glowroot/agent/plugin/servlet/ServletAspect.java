@@ -41,6 +41,7 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
+import org.glowroot.agent.plugin.servlet.DetailCapture.RequestHostAndPortDetail;
 import org.glowroot.agent.plugin.servlet.ServletPluginProperties.SessionAttributePath;
 
 // this plugin is careful not to rely on request or session objects being thread-safe
@@ -103,6 +104,11 @@ public class ServletAspect {
 
         @Nullable
         String getRemoteHost();
+
+        @Nullable
+        String getServerName();
+
+        int getServerPort();
     }
 
     @Shim("javax.servlet.http.HttpServletResponse")
@@ -129,8 +135,8 @@ public class ServletAspect {
         private static final TimerName timerName = Agent.getTimerName(ServiceAdvice.class);
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
-                @BindParameter @Nullable Object req) {
-            return onBeforeCommon(context, req, null);
+                @BindParameter @Nullable Object req, @BindClassMeta RequestInvoker requestInvoker) {
+            return onBeforeCommon(context, req, null, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
@@ -184,7 +190,8 @@ public class ServletAspect {
             context.setServletRequestInfo(null);
         }
         private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
-                @Nullable Object req, @Nullable String transactionTypeOverride) {
+                @Nullable Object req, @Nullable String transactionTypeOverride,
+                RequestInvoker requestInvoker) {
             if (context.getServletRequestInfo() != null) {
                 return null;
             }
@@ -213,18 +220,18 @@ public class ServletAspect {
             String requestServletPath = Strings.nullToEmpty(request.getServletPath());
             String requestPathInfo = request.getPathInfo();
             Map<String, Object> requestHeaders = DetailCapture.captureRequestHeaders(request);
-            String requestRemoteAddr = DetailCapture.captureRequestRemoteAddr(request);
-            String requestRemoteHost = DetailCapture.captureRequestRemoteHost(request);
+            RequestHostAndPortDetail requestHostAndPortDetail =
+                    DetailCapture.captureRequestHostAndPortDetail(request, requestInvoker);
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestContextPath,
                         requestServletPath, requestPathInfo, requestUri, requestQueryString,
-                        requestHeaders, requestRemoteAddr, requestRemoteHost,
+                        requestHeaders, requestHostAndPortDetail,
                         Collections.<String, String>emptyMap());
             } else {
                 Map<String, String> sessionAttributes = HttpSessions.getSessionAttributes(session);
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestContextPath,
                         requestServletPath, requestPathInfo, requestUri, requestQueryString,
-                        requestHeaders, requestRemoteAddr, requestRemoteHost, sessionAttributes);
+                        requestHeaders, requestHostAndPortDetail, sessionAttributes);
             }
             String user = null;
             if (session != null) {
@@ -275,8 +282,8 @@ public class ServletAspect {
     public static class DoFilterAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
-                @BindParameter @Nullable Object req) {
-            return ServiceAdvice.onBeforeCommon(context, req, null);
+                @BindParameter @Nullable Object req, @BindClassMeta RequestInvoker requestInvoker) {
+            return ServiceAdvice.onBeforeCommon(context, req, null, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
@@ -310,8 +317,8 @@ public class ServletAspect {
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @SuppressWarnings("unused") @BindParameter @Nullable String target,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object baseRequest,
-                @BindParameter @Nullable Object req) {
-            return ServiceAdvice.onBeforeCommon(context, req, null);
+                @BindParameter @Nullable Object req, @BindClassMeta RequestInvoker requestInvoker) {
+            return ServiceAdvice.onBeforeCommon(context, req, null, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
@@ -346,8 +353,8 @@ public class ServletAspect {
     public static class WireMockAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
-                @BindParameter @Nullable Object req) {
-            return ServiceAdvice.onBeforeCommon(context, req, "WireMock");
+                @BindParameter @Nullable Object req, @BindClassMeta RequestInvoker requestInvoker) {
+            return ServiceAdvice.onBeforeCommon(context, req, "WireMock", requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,

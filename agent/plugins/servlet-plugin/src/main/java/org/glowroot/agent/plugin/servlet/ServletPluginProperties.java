@@ -34,27 +34,21 @@ class ServletPluginProperties {
 
     static final String HTTP_SESSION_ID_ATTR = "::id";
 
-    private static final String CAPTURE_REQUEST_PARAMS_PROPERTY_NAME = "captureRequestParameters";
-    private static final String MASK_REQUEST_PARAMS_PROPERTY_NAME = "maskRequestParameters";
-    private static final String CAPTURE_REQUEST_HEADER_PROPERTY_NAME = "captureRequestHeaders";
-    private static final String CAPTURE_REQUEST_REMOTE_ADDR_PROPERTY_NAME =
-            "captureRequestRemoteAddr";
-    private static final String CAPTURE_REQUEST_REMOTE_HOST_PROPERTY_NAME =
-            "captureRequestRemoteHost";
-    private static final String CAPTURE_RESPONSE_HEADER_PROPERTY_NAME = "captureResponseHeaders";
-    private static final String SESSION_USER_ATTRIBUTE_PROPERTY_NAME = "sessionUserAttribute";
-    private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
-            "captureSessionAttributes";
-    private static final String TRACE_ERROR_ON_4XX_RESPONSE_CODE = "traceErrorOn4xxResponseCode";
-
     private static final ConfigService configService = Agent.getConfigService("servlet");
 
     private static List<Pattern> captureRequestParameters = Collections.emptyList();
     private static List<Pattern> maskRequestParameters = Collections.emptyList();
     private static List<Pattern> captureRequestHeaders = Collections.emptyList();
 
-    private static boolean captureRequestRemoteAddr;
-    private static boolean captureRequestRemoteHost;
+    private static boolean someRequestHostAndPortDetail;
+    private static boolean captureRequestRemoteAddress;
+    private static boolean captureRequestRemoteHostname;
+    private static boolean captureRequestRemotePort;
+    private static boolean captureRequestLocalAddress;
+    private static boolean captureRequestLocalHostname;
+    private static boolean captureRequestLocalPort;
+    private static boolean captureRequestServerHostname;
+    private static boolean captureRequestServerPort;
 
     private static List<Pattern> captureResponseHeaders = Collections.emptyList();
     private static boolean captureResponseHeadersNonEmpty;
@@ -86,12 +80,40 @@ class ServletPluginProperties {
         return captureRequestHeaders;
     }
 
-    static boolean captureRequestRemoteAddr() {
-        return captureRequestRemoteAddr;
+    static boolean captureSomeRequestHostAndPortDetail() {
+        return someRequestHostAndPortDetail;
     }
 
-    static boolean captureRequestRemoteHost() {
-        return captureRequestRemoteHost;
+    static boolean captureRequestRemoteAddress() {
+        return captureRequestRemoteAddress;
+    }
+
+    static boolean captureRequestRemoteHostname() {
+        return captureRequestRemoteHostname;
+    }
+
+    static boolean captureRequestRemotePort() {
+        return captureRequestRemotePort;
+    }
+
+    static boolean captureRequestLocalAddress() {
+        return captureRequestLocalAddress;
+    }
+
+    static boolean captureRequestLocalHostname() {
+        return captureRequestLocalHostname;
+    }
+
+    static boolean captureRequestLocalPort() {
+        return captureRequestLocalPort;
+    }
+
+    static boolean captureRequestServerHostname() {
+        return captureRequestServerHostname;
+    }
+
+    static boolean captureRequestServerPort() {
+        return captureRequestServerPort;
     }
 
     static List<Pattern> captureResponseHeaders() {
@@ -178,24 +200,41 @@ class ServletPluginProperties {
         }
 
         private static void recalculateProperties() {
-            captureRequestParameters = buildPatternList(CAPTURE_REQUEST_PARAMS_PROPERTY_NAME);
-            maskRequestParameters = buildPatternList(MASK_REQUEST_PARAMS_PROPERTY_NAME);
-            captureRequestHeaders = buildPatternList(CAPTURE_REQUEST_HEADER_PROPERTY_NAME);
-            captureRequestRemoteAddr = configService
-                    .getBooleanProperty(CAPTURE_REQUEST_REMOTE_ADDR_PROPERTY_NAME).value();
-            captureRequestRemoteHost = configService
-                    .getBooleanProperty(CAPTURE_REQUEST_REMOTE_HOST_PROPERTY_NAME).value();
-            captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
+            captureRequestParameters = buildPatternList("captureRequestParameters");
+            maskRequestParameters = buildPatternList("maskRequestParameters");
+            captureRequestHeaders = buildPatternList("captureRequestHeaders");
+            captureRequestRemoteAddress =
+                    configService.getBooleanProperty("captureRequestRemoteAddr").value();
+            captureRequestRemoteHostname =
+                    configService.getBooleanProperty("captureRequestRemoteHostname").value();
+            captureRequestRemotePort =
+                    configService.getBooleanProperty("captureRequestRemotePort").value();
+            captureRequestLocalAddress =
+                    configService.getBooleanProperty("captureRequestLocalAddr").value();
+            captureRequestLocalHostname =
+                    configService.getBooleanProperty("captureRequestLocalHostname").value();
+            captureRequestLocalPort =
+                    configService.getBooleanProperty("captureRequestLocalPort").value();
+            captureRequestServerHostname =
+                    configService.getBooleanProperty("captureRequestServerHostname").value();
+            captureRequestServerPort =
+                    configService.getBooleanProperty("captureRequestServerPort").value();
+            someRequestHostAndPortDetail =
+                    captureRequestRemoteAddress || captureRequestRemoteHostname
+                            || captureRequestRemotePort || captureRequestLocalAddress
+                            || captureRequestLocalHostname || captureRequestLocalPort
+                            || captureRequestServerHostname || captureRequestServerPort;
+            captureResponseHeaders = buildPatternList("captureResponseHeaders");
             captureResponseHeadersNonEmpty = !captureResponseHeaders.isEmpty();
             userAttributePath = buildSessionAttributePath(
-                    configService.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value());
+                    configService.getStringProperty("sessionUserAttribute").value());
             captureSessionAttributePaths = buildSessionAttributePaths(configService
-                    .getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME).value());
+                    .getStringProperty("captureSessionAttributes").value());
             captureSessionAttributeNames = buildCaptureSessionAttributeNames();
             captureSessionAttributeNamesContainsId =
                     captureSessionAttributeNames.contains(HTTP_SESSION_ID_ATTR);
             traceErrorOn4xxResponseCode =
-                    configService.getBooleanProperty(TRACE_ERROR_ON_4XX_RESPONSE_CODE).value();
+                    configService.getBooleanProperty("traceErrorOn4xxResponseCode").value();
         }
 
         private static List<Pattern> buildPatternList(String propertyName) {

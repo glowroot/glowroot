@@ -1,0 +1,82 @@
+/*
+ * Copyright 2018 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.glowroot.agent.plugin.servlet;
+
+import java.lang.reflect.Method;
+
+import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.util.Reflection;
+
+public class RequestInvoker {
+
+    private static final Logger logger = Logger.getLogger(RequestInvoker.class);
+
+    // these ServletRequest methods were introduced in Servlet 3.0
+    private final @Nullable Method getRemotePortMethod;
+    private final @Nullable Method getLocalAddrMethod;
+    private final @Nullable Method getLocalNameMethod;
+    private final @Nullable Method getLocalPortMethod;
+
+    public RequestInvoker(Class<?> clazz) {
+        Class<?> servletRequestClass = getServletRequestClass(clazz);
+        getRemotePortMethod = Reflection.getMethod(servletRequestClass, "getRemotePort");
+        getLocalAddrMethod = Reflection.getMethod(servletRequestClass, "getLocalAddr");
+        getLocalNameMethod = Reflection.getMethod(servletRequestClass, "getLocalName");
+        getLocalPortMethod = Reflection.getMethod(servletRequestClass, "getLocalPort");
+    }
+
+    boolean hasGetRemotePortMethod() {
+        return getRemotePortMethod != null;
+    }
+
+    int getRemotePort(Object request) {
+        return Reflection.invokeWithDefault(getRemotePortMethod, request, -1);
+    }
+
+    boolean hasGetLocalAddrMethod() {
+        return getLocalAddrMethod != null;
+    }
+
+    String getLocalAddr(Object request) {
+        return Reflection.invokeWithDefault(getLocalAddrMethod, request, "");
+    }
+
+    boolean hasGetLocalNameMethod() {
+        return getLocalNameMethod != null;
+    }
+
+    String getLocalName(Object request) {
+        return Reflection.invokeWithDefault(getLocalNameMethod, request, "");
+    }
+
+    boolean hasGetLocalPortMethod() {
+        return getLocalPortMethod != null;
+    }
+
+    int getLocalPort(Object request) {
+        return Reflection.invokeWithDefault(getLocalPortMethod, request, -1);
+    }
+
+    static @Nullable Class<?> getServletRequestClass(Class<?> clazz) {
+        try {
+            return Class.forName("javax.servlet.ServletRequest", false, clazz.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            logger.warn(e.getMessage(), e);
+        }
+        return null;
+    }
+}

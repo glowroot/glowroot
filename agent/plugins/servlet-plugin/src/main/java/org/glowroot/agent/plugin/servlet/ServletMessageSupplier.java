@@ -31,6 +31,7 @@ import org.glowroot.agent.plugin.api.checker.MonotonicNonNull;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.checker.RequiresNonNull;
 import org.glowroot.agent.plugin.api.util.Optional;
+import org.glowroot.agent.plugin.servlet.DetailCapture.RequestHostAndPortDetail;
 
 // this class is thread-safe (unlike other MessageSuppliers) since it gets passed around to
 // auxiliary thread contexts for handling async servlets
@@ -49,8 +50,7 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
 
     private final Map<String, Object> requestHeaders;
 
-    private final @Nullable String requestRemoteAddr;
-    private final @Nullable String requestRemoteHost;
+    private final @Nullable RequestHostAndPortDetail requestHostAndPortDetail;
 
     private volatile int responseCode;
 
@@ -69,7 +69,7 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
     ServletMessageSupplier(String requestMethod, String requestContextPath,
             String requestServletPath, @Nullable String requestPathInfo, String requestUri,
             @Nullable String requestQueryString, Map<String, Object> requestHeaders,
-            @Nullable String requestRemoteAddr, @Nullable String requestRemoteHost,
+            @Nullable RequestHostAndPortDetail requestHostAndPortDetail,
             Map<String, String> sessionAttributeMap) {
         this.requestMethod = requestMethod;
         this.requestContextPath = requestContextPath;
@@ -78,8 +78,7 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
         this.requestUri = requestUri;
         this.requestQueryString = requestQueryString;
         this.requestHeaders = requestHeaders;
-        this.requestRemoteAddr = requestRemoteAddr;
-        this.requestRemoteHost = requestRemoteHost;
+        this.requestHostAndPortDetail = requestHostAndPortDetail;
         this.sessionAttributeInitialValueMap = sessionAttributeMap;
     }
 
@@ -101,11 +100,31 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
         if (!requestHeaders.isEmpty()) {
             detail.put("Request headers", requestHeaders);
         }
-        if (requestRemoteAddr != null) {
-            detail.put("Request remote address", requestRemoteAddr);
-        }
-        if (requestRemoteHost != null) {
-            detail.put("Request remote host", requestRemoteHost);
+        if (requestHostAndPortDetail != null) {
+            if (requestHostAndPortDetail.remoteAddress != null) {
+                detail.put("Request remote address", requestHostAndPortDetail.remoteAddress);
+            }
+            if (requestHostAndPortDetail.remoteHostname != null) {
+                detail.put("Request remote hostname", requestHostAndPortDetail.remoteHostname);
+            }
+            if (requestHostAndPortDetail.remotePort != RequestHostAndPortDetail.UNSET) {
+                detail.put("Request remote port", requestHostAndPortDetail.remotePort);
+            }
+            if (requestHostAndPortDetail.localAddress != null) {
+                detail.put("Request local address", requestHostAndPortDetail.localAddress);
+            }
+            if (requestHostAndPortDetail.localHostname != null) {
+                detail.put("Request local hostname", requestHostAndPortDetail.localHostname);
+            }
+            if (requestHostAndPortDetail.localPort != RequestHostAndPortDetail.UNSET) {
+                detail.put("Request local port", requestHostAndPortDetail.localPort);
+            }
+            if (requestHostAndPortDetail.serverHostname != null) {
+                detail.put("Request server hostname", requestHostAndPortDetail.serverHostname);
+            }
+            if (requestHostAndPortDetail.serverPort != RequestHostAndPortDetail.UNSET) {
+                detail.put("Request server port", requestHostAndPortDetail.serverPort);
+            }
         }
         if (responseCode != 0) {
             detail.put("Response code", responseCode);
