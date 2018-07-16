@@ -264,20 +264,54 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
             if (isAsync()) {
                 extendAsync();
             } else {
-                extendSync(ticker.read());
+                TimerImpl currentTimer = threadContext.getCurrentTimer();
+                if (currentTimer == null) {
+                    // thread context has ended, cannot extend sync timer
+                    // (this is ok, see https://github.com/glowroot/glowroot/issues/418)
+                    selfNestingLevel--;
+                    return NopTimer.INSTANCE;
+                }
+                extendSync(ticker.read(), currentTimer);
             }
         }
         return this;
     }
 
-    private void extendSync(long currTick) {
+    @Override
+    public void rowNavigationAttempted() {
+        // checking ThreadContext complete first because that is non-volatile read and will normally
+        // shortcut the condition without checking the volatile completed field in Transaction
+        if (!threadContext.isCompleted() || !threadContext.getTransaction().isCompleted()) {
+            super.rowNavigationAttempted();
+        }
+    }
+
+    @Override
+    public void incrementCurrRow() {
+        // checking ThreadContext complete first because that is non-volatile read and will normally
+        // shortcut the condition without checking the volatile completed field in Transaction
+        if (!threadContext.isCompleted() || !threadContext.getTransaction().isCompleted()) {
+            super.incrementCurrRow();
+        }
+    }
+
+    @Override
+    public void setCurrRow(long row) {
+        // checking ThreadContext complete first because that is non-volatile read and will normally
+        // shortcut the condition without checking the volatile completed field in Transaction
+        if (!threadContext.isCompleted() || !threadContext.getTransaction().isCompleted()) {
+            super.setCurrRow(row);
+        }
+    }
+
+    private void extendSync(long currTick, TimerImpl currentTimer) {
         // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
         // entries are not returned from plugin api so no way for extend() to be called when
         // syncTimer is null
         checkNotNull(syncTimer);
         long priorDurationNanos = endTick - revisedStartTick;
         revisedStartTick = currTick - priorDurationNanos;
-        extendedTimer = syncTimer.extend(currTick);
+        extendedTimer = syncTimer.extend(currTick, currentTimer);
         extendQueryData(currTick);
     }
 
@@ -288,7 +322,9 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         ThreadContextPlus currThreadContext = holder.get();
         long currTick = ticker.read();
         if (currThreadContext == threadContext) {
-            extendSync(currTick);
+            // thread context was found in ThreadContextThreadLocal.Holder, so it is still
+            // active, and so current timer must be non-null
+            extendSync(currTick, checkNotNull(threadContext.getCurrentTimer()));
         } else {
             // set to null since its value is checked in stopAsync()
             extendedTimer = null;
@@ -467,7 +503,9 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
         // entries are not returned from plugin api so no way for extendSyncTimer() to be called
         checkNotNull(syncTimer);
-        return syncTimer.extend();
+        // thread context was passed in from plugin, so it is still active, and so current timer
+        // must be non-null
+        return syncTimer.extend(checkNotNull(threadContext.getCurrentTimer()));
     }
 
     // this is used for logging, in particular in TraceEntryComponent.popEntryBailout()

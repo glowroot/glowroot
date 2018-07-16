@@ -150,8 +150,8 @@ public class TimerImpl implements Timer, CommonTimerImpl {
         }
     }
 
-    public Timer extend() {
-        return extend(ticker.read());
+    public Timer extend(TimerImpl currentTimer) {
+        return extend(ticker.read(), currentTimer);
     }
 
     void end(long endTick) {
@@ -251,12 +251,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
         return startNestedTimerInternal(timerName, nestedTimerStartTick);
     }
 
-    TimerImpl extend(long startTick) {
-        TimerImpl currentTimer = threadContext.getCurrentTimer();
-        if (currentTimer == null) {
-            logger.warn("extend() transaction currentTimer is null");
-            return this;
-        }
+    TimerImpl extend(long startTick, TimerImpl currentTimer) {
         if (currentTimer == parent) {
             // restarting a previously stopped execution, so need to decrement count
             count--;

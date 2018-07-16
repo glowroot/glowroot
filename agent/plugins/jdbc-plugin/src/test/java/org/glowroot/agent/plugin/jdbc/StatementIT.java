@@ -387,6 +387,38 @@ public class StatementIT {
         assertThat(j.hasNext()).isFalse();
     }
 
+    @Test
+    public void testIteratingOverResultsInAnotherThread() throws Exception {
+        // when
+        Trace trace =
+                container.execute(ExecuteStatementQueryAndIterateOverResultsAfterTransaction.class);
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+
+        assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows().getValue()).isEqualTo(0);
+
+        assertThat(j.hasNext()).isFalse();
+    }
+
     public static class ExecuteStatementAndIterateOverResults
             implements AppUnderTest, TransactionMarker {
         private Connection connection;
@@ -704,6 +736,34 @@ public class StatementIT {
             } finally {
                 statement.close();
             }
+        }
+    }
+
+    public static class ExecuteStatementQueryAndIterateOverResultsAfterTransaction
+            implements AppUnderTest, TransactionMarker {
+
+        private Connection connection;
+        private Statement statement;
+        private ResultSet rs;
+
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            statement = connection.createStatement();
+            try {
+                transactionMarker();
+                while (rs.next()) {
+                    rs.getString(1);
+                }
+            } finally {
+                statement.close();
+                Connections.closeConnection(connection);
+            }
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            rs = statement.executeQuery("select * from employee");
         }
     }
 }

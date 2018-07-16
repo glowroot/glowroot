@@ -1187,14 +1187,21 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 if (isAsync()) {
                     extendAsync();
                 } else {
-                    extendSync(ticker.read());
+                    TimerImpl currentTimerLocal = currentTimer;
+                    if (currentTimerLocal == null) {
+                        // thread context has ended, cannot extend sync timer
+                        // (this is ok, see https://github.com/glowroot/glowroot/issues/418)
+                        selfNestingLevel--;
+                        return NopTimer.INSTANCE;
+                    }
+                    extendSync(ticker.read(), currentTimerLocal);
                 }
             }
             return this;
         }
 
-        private void extendSync(long currTick) {
-            extendedTimer = syncTimer.extend(currTick);
+        private void extendSync(long currTick, TimerImpl currentTimer) {
+            extendedTimer = syncTimer.extend(currTick, currentTimer);
             extendQueryData(currTick);
         }
 
@@ -1205,7 +1212,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
             ThreadContextPlus currThreadContext = holder.get();
             long currTick = ticker.read();
             if (currThreadContext == ThreadContextImpl.this) {
-                extendSync(currTick);
+                // this thread context was found in ThreadContextThreadLocal.Holder, so it is still
+                // active, and so current timer must be non-null
+                extendSync(currTick, checkNotNull(getCurrentTimer()));
             } else {
                 // set to null since its value is checked in stopAsync()
                 extendedTimer = null;
@@ -1262,7 +1271,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
             if (currThreadContext != this) {
                 return NopTimer.INSTANCE;
             }
-            return syncTimer.extend();
+            // this thread context was passed in from plugin, so it is still active, and so current
+            // timer must be non-null
+            return syncTimer.extend(checkNotNull(getCurrentTimer()));
         }
 
         @EnsuresNonNullIf(expression = "asyncTimer", result = true)
