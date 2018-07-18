@@ -499,7 +499,8 @@ public class MainEntryPoint {
         if (osName == null) {
             return null;
         }
-        String lowerOsName = osName.toLowerCase(Locale.ENGLISH);
+        // using logic from https://github.com/trustin/os-maven-plugin#property-osdetectedname
+        String lowerOsName = osName.toLowerCase(Locale.ENGLISH).replaceAll("[^a-z0-9]+", "");
         if (lowerOsName.startsWith("linux")) {
             return "linux";
         } else if (lowerOsName.startsWith("windows")) {
