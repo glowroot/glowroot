@@ -239,8 +239,9 @@ public class LazyPlatformMBeanServer {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
         } catch (NotCompliantMBeanException e) {
-            if (e.getStackTrace()[0].getClassName()
-                    .equals("org.jboss.mx.metadata.MBeanCapability")) {
+            StackTraceElement /*@Nullable*/ [] stackTraceElements = e.getStackTrace();
+            if (stackTraceElements != null && stackTraceElements.length > 0 && stackTraceElements[0]
+                    .getClassName().equals("org.jboss.mx.metadata.MBeanCapability")) {
                 // this happens in jboss 4.2.3 because it doesn't know about Java 6 "MXBean"
                 // naming convention
                 // it's not really that important if glowroot mbeans aren't registered

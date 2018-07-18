@@ -20,26 +20,28 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
-import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.Proto.Throwable;
 
 @Value.Immutable
-@Styles.AllParameters
 public abstract class ErrorMessage {
 
     private static final int TRANSACTION_THROWABLE_FRAME_LIMIT =
             Integer.getInteger("glowroot.transaction.throwable.frame.limit", 100000);
 
+    @Value.Parameter
     public abstract String message();
+
     // cannot use Proto. /*@Nullable*/ Throwable
     // or org.glowroot.wire.api.model.Proto. /*@Nullable*/ Throwable here because Immutables needs
     // to be able to see the annotation
+    @Value.Parameter
     public abstract @Nullable Throwable throwable();
 
     // accepts null values so callers don't have to check if passing it in from elsewhere
@@ -68,40 +70,23 @@ public abstract class ErrorMessage {
     private static Proto.Throwable buildThrowableInfo(java.lang.Throwable t,
             @Nullable List<StackTraceElement> causedStackTrace,
             AtomicInteger transactionThrowableFrameCount, int recursionDepth) {
-        int framesInCommonWithEnclosing = 0;
-        ImmutableList<StackTraceElement> stackTrace = ImmutableList.of();
-        if (transactionThrowableFrameCount.get() < TRANSACTION_THROWABLE_FRAME_LIMIT) {
-            stackTrace = ImmutableList.copyOf(t.getStackTrace());
-            if (causedStackTrace != null) {
-                ListIterator<StackTraceElement> i = stackTrace.listIterator(stackTrace.size());
-                ListIterator<StackTraceElement> j =
-                        causedStackTrace.listIterator(causedStackTrace.size());
-                while (i.hasPrevious() && j.hasPrevious()) {
-                    StackTraceElement element = i.previous();
-                    StackTraceElement causedElement = j.previous();
-                    if (!element.equals(causedElement)) {
-                        break;
-                    }
-                    framesInCommonWithEnclosing++;
-                }
-                if (framesInCommonWithEnclosing > 0) {
-                    // strip off common frames
-                    stackTrace =
-                            stackTrace.subList(0, stackTrace.size() - framesInCommonWithEnclosing);
-                }
-            }
-            transactionThrowableFrameCount.addAndGet(stackTrace.size());
-        }
+        StackTraceElement[] stackTraceElements =
+                MoreObjects.firstNonNull(t.getStackTrace(), new StackTraceElement[0]);
+        StackTraceWithoutCommonFrames stackTraceWithoutCommonFrames =
+                getStackTraceAndFramesInCommon(stackTraceElements, causedStackTrace,
+                        transactionThrowableFrameCount);
+        transactionThrowableFrameCount.addAndGet(stackTraceWithoutCommonFrames.stackTrace().size());
         Proto.Throwable.Builder builder = Proto.Throwable.newBuilder()
                 .setClassName(t.getClass().getName());
         String message = t.getMessage();
         if (message != null) {
             builder.setMessage(message);
         }
-        for (StackTraceElement element : stackTrace) {
+        for (StackTraceElement element : stackTraceWithoutCommonFrames.stackTrace()) {
             builder.addStackTraceElement(toProto(element));
         }
-        builder.setFramesInCommonWithEnclosing(framesInCommonWithEnclosing);
+        builder.setFramesInCommonWithEnclosing(
+                stackTraceWithoutCommonFrames.framesInCommonWithEnclosing());
         java.lang.Throwable cause = t.getCause();
         if (cause == null) {
             return builder.build();
@@ -119,8 +104,8 @@ public abstract class ErrorMessage {
                     .build());
         } else {
             // pass t's original stack trace to construct the nested cause
-            // (not stackTraces, which now has common frames removed)
-            builder.setCause(buildThrowableInfo(cause, Arrays.asList(t.getStackTrace()),
+            // (not stackTraceWithoutCommonFrames, which now has common frames removed)
+            builder.setCause(buildThrowableInfo(cause, Arrays.asList(stackTraceElements),
                     transactionThrowableFrameCount, recursionDepth + 1));
         }
         return builder.build();
@@ -139,5 +124,52 @@ public abstract class ErrorMessage {
         }
         return builder.setLineNumber(ste.getLineNumber())
                 .build();
+    }
+
+    private static StackTraceWithoutCommonFrames getStackTraceAndFramesInCommon(
+            StackTraceElement[] stackTraceElements,
+            @Nullable List<StackTraceElement> causedStackTrace,
+            AtomicInteger transactionThrowableFrameCount) {
+        if (transactionThrowableFrameCount.get() >= TRANSACTION_THROWABLE_FRAME_LIMIT) {
+            return ImmutableStackTraceWithoutCommonFrames.builder()
+                    .build();
+        }
+        if (causedStackTrace == null) {
+            return ImmutableStackTraceWithoutCommonFrames.builder()
+                    .addStackTrace(stackTraceElements)
+                    .build();
+        }
+        ImmutableList<StackTraceElement> stackTrace = ImmutableList.copyOf(stackTraceElements);
+        int framesInCommonWithEnclosing = 0;
+        ListIterator<StackTraceElement> i = stackTrace.listIterator(stackTrace.size());
+        ListIterator<StackTraceElement> j =
+                causedStackTrace.listIterator(causedStackTrace.size());
+        while (i.hasPrevious() && j.hasPrevious()) {
+            StackTraceElement element = i.previous();
+            StackTraceElement causedElement = j.previous();
+            if (!element.equals(causedElement)) {
+                break;
+            }
+            framesInCommonWithEnclosing++;
+        }
+        if (framesInCommonWithEnclosing > 0) {
+            // strip off common frames
+            stackTrace = stackTrace.subList(0, stackTrace.size() - framesInCommonWithEnclosing);
+        }
+        return ImmutableStackTraceWithoutCommonFrames.builder()
+                .stackTrace(stackTrace)
+                .framesInCommonWithEnclosing(framesInCommonWithEnclosing)
+                .build();
+    }
+
+    @Value.Immutable
+    abstract static class StackTraceWithoutCommonFrames {
+
+        abstract List<StackTraceElement> stackTrace();
+
+        @Value.Default
+        public int framesInCommonWithEnclosing() {
+            return 0;
+        }
     }
 }
