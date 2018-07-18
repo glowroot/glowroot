@@ -336,6 +336,11 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             // [ERROR][attach ] OS message: The pipe has been ended (109)
             return false;
         }
+        if (JavaVersion.isOSX()) {
+            // self attach starts throwing IOException at some point
+            // see https://github.com/glowroot/glowroot/issues/424
+            return false;
+        }
         return !JavaVersion.isGreaterThanOrEqualToJava9()
                 || Boolean.getBoolean("jdk.attach.allowAttachSelf");
     }

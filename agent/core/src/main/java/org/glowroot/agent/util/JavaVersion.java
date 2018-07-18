@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.util;
 
+import java.util.Locale;
+
 import com.google.common.annotations.VisibleForTesting;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -27,6 +29,8 @@ public class JavaVersion {
     private static final boolean IBM_JVM;
     private static final boolean JROCKIT_JVM;
 
+    private static final boolean OSX;
+
     static {
         String javaVersion = System.getProperty("java.version");
         IS_JAVA_6 = parseIsJava6(javaVersion);
@@ -35,6 +39,16 @@ public class JavaVersion {
         String javaVmName = System.getProperty("java.vm.name");
         IBM_JVM = "IBM J9 VM".equals(javaVmName);
         JROCKIT_JVM = "Oracle JRockit(R)".equals(javaVmName);
+
+        String osName = System.getProperty("os.name");
+        if (osName == null) {
+            OSX = false;
+        } else {
+            // using logic from https://github.com/trustin/os-maven-plugin#property-osdetectedname
+            String normalizedOsName =
+                    osName.toLowerCase(Locale.ENGLISH).replaceAll("[^a-z0-9]+", "");
+            OSX = normalizedOsName.startsWith("macosx") || normalizedOsName.startsWith("osx");
+        }
     }
 
     private JavaVersion() {}
@@ -53,6 +67,10 @@ public class JavaVersion {
 
     public static boolean isJRockitJvm() {
         return JROCKIT_JVM;
+    }
+
+    public static boolean isOSX() {
+        return OSX;
     }
 
     @VisibleForTesting
