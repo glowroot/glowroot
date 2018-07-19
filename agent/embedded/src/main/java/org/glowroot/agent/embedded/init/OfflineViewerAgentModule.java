@@ -27,9 +27,11 @@ class OfflineViewerAgentModule {
     private final PluginCache pluginCache;
     private final ConfigService configService;
 
-    OfflineViewerAgentModule(@Nullable File pluginsDir, File confDir) throws Exception {
+    OfflineViewerAgentModule(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir)
+            throws Exception {
         pluginCache = PluginCache.create(pluginsDir, true);
-        configService = ConfigService.create(confDir, pluginCache.pluginDescriptors());
+        configService =
+                ConfigService.create(confDir, sharedConfDir, pluginCache.pluginDescriptors());
     }
 
     ConfigService getConfigService() {

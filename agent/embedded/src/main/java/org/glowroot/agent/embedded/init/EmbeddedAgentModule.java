@@ -115,7 +115,8 @@ class EmbeddedAgentModule {
         pluginCache = PluginCache.create(pluginsDir, false);
         if (offlineViewer) {
             agentModule = null;
-            offlineViewerAgentModule = new OfflineViewerAgentModule(pluginsDir, confDir);
+            offlineViewerAgentModule =
+                    new OfflineViewerAgentModule(pluginsDir, confDir, sharedConfDir);
         } else {
             // agent module needs to be started as early as possible, so that weaving will be
             // applied to as many classes as possible
@@ -123,7 +124,7 @@ class EmbeddedAgentModule {
             // which loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
             // services/java.sql.Driver, and those drivers need to be woven
             ConfigService configService =
-                    ConfigService.create(confDir, pluginCache.pluginDescriptors());
+                    ConfigService.create(confDir, sharedConfDir, pluginCache.pluginDescriptors());
             agentModule = new AgentModule(clock, null, pluginCache, configService, instrumentation,
                     glowrootJarFile, tmpDir, preCheckClassFileTransformer);
             offlineViewerAgentModule = null;
@@ -151,7 +152,7 @@ class EmbeddedAgentModule {
 
         if (agentModule == null) {
             checkNotNull(offlineViewerAgentModule);
-            ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDir,
+            ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDir, sharedConfDir,
                     offlineViewerAgentModule.getConfigService(), pluginCache);
             DataSource dataSource = createDataSource(h2MemDb, dataDir);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
@@ -164,8 +165,8 @@ class EmbeddedAgentModule {
             agentModule.onEnteringMain(backgroundExecutor, collectorProxy, instrumentation,
                     glowrootJarFile, mainClass);
 
-            final ConfigRepositoryImpl configRepository =
-                    new ConfigRepositoryImpl(confDir, agentModule.getConfigService(), pluginCache);
+            final ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDir,
+                    sharedConfDir, agentModule.getConfigService(), pluginCache);
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {

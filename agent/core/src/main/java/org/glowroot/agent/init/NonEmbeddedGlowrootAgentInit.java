@@ -89,7 +89,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
         JRebelWorkaround.perform();
         final PluginCache pluginCache = PluginCache.create(pluginsDir, false);
         final ConfigService configService =
-                ConfigService.create(confDir, pluginCache.pluginDescriptors());
+                ConfigService.create(confDir, sharedConfDir, pluginCache.pluginDescriptors());
 
         final CollectorProxy collectorProxy = new CollectorProxy();
 

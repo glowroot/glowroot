@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,13 +46,14 @@ class ConfigFile {
     private final File file;
     private final ObjectNode rootObjectNode;
 
-    ConfigFile(File file) {
-        this.file = file;
+    ConfigFile(File confDir, @Nullable File sharedConfDir) {
+        file = new File(confDir, "config.json");
+        File defaultFile =
+                sharedConfDir == null ? null : new File(sharedConfDir, "config-default.json");
         if (file.exists()) {
-            rootObjectNode = ConfigFileUtil.getRootObjectNode(file);
-            upgradeAlertsIfNeeded(rootObjectNode);
-            upgradeUiIfNeeded(rootObjectNode);
-            upgradeAdvancedIfNeeded(rootObjectNode);
+            rootObjectNode = readRootObjectNode(file);
+        } else if (defaultFile != null && defaultFile.exists()) {
+            rootObjectNode = readRootObjectNode(defaultFile);
         } else {
             rootObjectNode = mapper.createObjectNode();
         }
@@ -82,6 +84,14 @@ class ConfigFile {
         if (!file.delete()) {
             throw new IOException("Could not delete file: " + file.getCanonicalPath());
         }
+    }
+
+    private static ObjectNode readRootObjectNode(File file) {
+        ObjectNode rootObjectNode = ConfigFileUtil.getRootObjectNode(file);
+        upgradeAlertsIfNeeded(rootObjectNode);
+        upgradeUiIfNeeded(rootObjectNode);
+        upgradeAdvancedIfNeeded(rootObjectNode);
+        return rootObjectNode;
     }
 
     private static void upgradeAlertsIfNeeded(ObjectNode configRootObjectNode) {

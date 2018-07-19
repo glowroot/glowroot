@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,8 +67,8 @@ public class AdminConfigService {
     private volatile PagerDutyConfig pagerDutyConfig;
     private volatile HealthchecksIoConfig healthchecksIoConfig;
 
-    public static AdminConfigService create(File confDir) {
-        AdminConfigService configService = new AdminConfigService(confDir);
+    public static AdminConfigService create(File confDir, @Nullable File sharedConfDir) {
+        AdminConfigService configService = new AdminConfigService(confDir, sharedConfDir);
         // it's nice to update config.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
         try {
@@ -78,8 +79,8 @@ public class AdminConfigService {
         return configService;
     }
 
-    private AdminConfigService(File confDir) {
-        adminConfigFile = new AdminConfigFile(new File(confDir, "admin.json"));
+    private AdminConfigService(File confDir, @Nullable File sharedConfDir) {
+        adminConfigFile = new AdminConfigFile(confDir, sharedConfDir);
         EmbeddedAdminGeneralConfig generalConfig =
                 adminConfigFile.getConfig("general", ImmutableEmbeddedAdminGeneralConfig.class);
         if (generalConfig == null) {

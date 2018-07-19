@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.config.ConfigFileUtil;
 import org.glowroot.common.util.ObjectMappers;
@@ -44,12 +45,14 @@ class AdminConfigFile {
     private final File file;
     private final ObjectNode rootObjectNode;
 
-    AdminConfigFile(File file) {
-        this.file = file;
+    AdminConfigFile(File confDir, @Nullable File sharedConfDir) {
+        file = new File(confDir, "admin.json");
+        File defaultFile =
+                sharedConfDir == null ? null : new File(sharedConfDir, "admin-default.json");
         if (file.exists()) {
-            rootObjectNode = ConfigFileUtil.getRootObjectNode(file);
-            upgradeRolesIfNeeded(rootObjectNode);
-            upgradeSmtpIfNeeded(rootObjectNode);
+            rootObjectNode = readRootObjectNode(file);
+        } else if (defaultFile != null && defaultFile.exists()) {
+            rootObjectNode = readRootObjectNode(defaultFile);
         } else {
             rootObjectNode = mapper.createObjectNode();
         }
@@ -73,6 +76,13 @@ class AdminConfigFile {
             rootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
         }
         ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder);
+    }
+
+    private static ObjectNode readRootObjectNode(File file) {
+        ObjectNode rootObjectNode = ConfigFileUtil.getRootObjectNode(file);
+        upgradeRolesIfNeeded(rootObjectNode);
+        upgradeSmtpIfNeeded(rootObjectNode);
+        return rootObjectNode;
     }
 
     private static void upgradeRolesIfNeeded(ObjectNode adminRootObjectNode) {
