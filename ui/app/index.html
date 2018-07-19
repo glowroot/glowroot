@@ -247,7 +247,9 @@
 <footer class="ng-cloak"
         role="contentinfo"
         id="footer">
-  Glowroot version {{layout.glowrootVersion}}
+  <div ng-if="!layout.central">Glowroot version {{layout.glowrootVersion}}</div>
+  <div ng-if="layout.central">Central collector version {{layout.glowrootVersion}}</div>
+  <div ng-if="layout.central && isViewingAgent()">Agent version {{agentRollup.glowrootVersion}}</div>
 </footer>
 
 <!-- build:js({.tmp,.}) scripts/vendor.js -->

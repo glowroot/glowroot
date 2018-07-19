@@ -197,6 +197,10 @@ glowroot.run([
       return $rootScope.agentRollup && $rootScope.isRollup($rootScope.agentRollup.id);
     };
 
+    $rootScope.isViewingAgent = function () {
+      return $location.search()['agent-id'];
+    };
+
     $rootScope.transactionTypes = function () {
       var agentRollup = $rootScope.agentRollup;
       if (!agentRollup) {

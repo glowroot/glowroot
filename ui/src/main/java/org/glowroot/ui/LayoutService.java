@@ -36,10 +36,12 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common2.repo.EnvironmentRepository;
 import org.glowroot.common2.repo.TraceAttributeNameRepository;
 import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -55,11 +57,13 @@ class LayoutService {
     private final ConfigRepository configRepository;
     private final TransactionTypeRepository transactionTypeRepository;
     private final TraceAttributeNameRepository traceAttributeNameRepository;
+    private final EnvironmentRepository environmentRepository;
     private final LiveAggregateRepository liveAggregateRepository;
 
     LayoutService(boolean central, boolean offlineViewer, String version,
             ConfigRepository configRepository, TransactionTypeRepository transactionTypeRepository,
             TraceAttributeNameRepository traceAttributeNameRepository,
+            EnvironmentRepository environmentRepository,
             LiveAggregateRepository liveAggregateRepository) {
         this.central = central;
         this.offlineViewer = offlineViewer;
@@ -67,6 +71,7 @@ class LayoutService {
         this.configRepository = configRepository;
         this.transactionTypeRepository = transactionTypeRepository;
         this.traceAttributeNameRepository = traceAttributeNameRepository;
+        this.environmentRepository = environmentRepository;
         this.liveAggregateRepository = liveAggregateRepository;
     }
 
@@ -129,6 +134,17 @@ class LayoutService {
                     .addAllDefaultGaugeName(ConfigDefaults.UI_DEFAULT_GAUGE_NAMES)
                     .build();
         }
+        String glowrootVersion;
+        if (agentRollup.id().endsWith("::")) {
+            glowrootVersion = "";
+        } else {
+            Environment environment = environmentRepository.read(agentRollup.id());
+            if (environment == null) {
+                glowrootVersion = "unknown";
+            } else {
+                glowrootVersion = environment.getJavaInfo().getGlowrootAgentVersion();
+            }
+        }
         Permissions permissions = agentRollup.permissions();
         String defaultTransactionType = uiConfig.getDefaultTransactionType();
         Set<String> transactionTypesWithDefault = Sets.newTreeSet(transactionTypes);
@@ -136,6 +152,7 @@ class LayoutService {
         return ImmutableAgentRollupLayout.builder()
                 .id(agentRollup.id())
                 .display(agentRollup.display())
+                .glowrootVersion(glowrootVersion)
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypesWithDefault)
                 .putAllTraceAttributeNames(traceAttributeNames)
@@ -183,6 +200,7 @@ class LayoutService {
         AgentRollupLayout embeddedAgentRollup = ImmutableAgentRollupLayout.builder()
                 .id(AGENT_ID)
                 .display(getEmbeddedAgentDisplayName())
+                .glowrootVersion(version)
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypes)
                 .putAllTraceAttributeNames(traceAttributeNameRepository.read(AGENT_ID))
@@ -422,6 +440,7 @@ class LayoutService {
     abstract static class AgentRollupLayout {
         abstract String id();
         abstract String display();
+        abstract String glowrootVersion();
         abstract Permissions permissions();
         abstract List<String> transactionTypes();
         abstract Map<String, List<String>> traceAttributeNames(); // key is transaction type

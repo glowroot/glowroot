@@ -113,7 +113,7 @@ public class UiModule {
 
         LayoutService layoutService = new LayoutService(central, offlineViewer, version,
                 configRepository, transactionTypeRepository, traceAttributeNameRepository,
-                liveAggregateRepository);
+                environmentRepository, liveAggregateRepository);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(new LayoutJsonService(activeAgentRepository, layoutService));
