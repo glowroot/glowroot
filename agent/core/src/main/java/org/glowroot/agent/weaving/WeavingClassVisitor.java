@@ -464,7 +464,7 @@ class WeavingClassVisitor extends ClassVisitor {
             }
         }
         return new WeavingMethodVisitor(mv, frames, access, name, desc, type, matchingAdvisors,
-                metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
+                metaHolderInternalName, methodMetaUniqueNum, loader == null);
     }
 
     @RequiresNonNull("type")
@@ -473,7 +473,7 @@ class WeavingClassVisitor extends ClassVisitor {
         // FIXME remove superseded advisors
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
         return new WeavingMethodVisitor(mv, frames, access, name, desc, type, matchingAdvisors,
-                metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
+                metaHolderInternalName, methodMetaUniqueNum, loader == null);
     }
 
     private @Nullable Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors,

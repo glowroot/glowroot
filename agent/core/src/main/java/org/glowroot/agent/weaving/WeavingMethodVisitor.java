@@ -31,7 +31,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
-import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -90,7 +89,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final boolean bootstrapClassLoader;
     private final boolean needsOnReturn;
     private final boolean needsOnThrow;
-    private final @Nullable MethodVisitor outerMethodVisitor;
     private final Object[] implicitFrameLocals;
 
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
@@ -116,8 +114,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     WeavingMethodVisitor(MethodVisitor mv, boolean frames, int access, String name, String desc,
             Type owner, Iterable<Advice> advisors, @Nullable String metaHolderInternalName,
-            @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader,
-            @Nullable MethodVisitor outerMethodVisitor) {
+            @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader) {
         super(ASM6, new FrameDeduppingMethodVisitor(mv), access, name, desc);
         this.frames = frames;
         this.access = access;
@@ -148,7 +145,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
         this.needsOnReturn = needsOnReturn;
         this.needsOnThrow = needsOnThrow;
-        this.outerMethodVisitor = outerMethodVisitor;
 
         int nImplicitFrameLocals = argumentTypes.length;
         boolean needsReceiver = !Modifier.isStatic(access);
@@ -168,14 +164,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
             implicitFrameLocals[i++] = convert(argumentTypes[j]);
         }
         this.implicitFrameLocals = implicitFrameLocals;
-    }
-
-    @Override
-    public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (outerMethodVisitor != null) {
-            return outerMethodVisitor.visitAnnotation(desc, visible);
-        }
-        return super.visitAnnotation(desc, visible);
     }
 
     @Override
