@@ -42,7 +42,11 @@ glowroot.config([
         return waitForLayout($q, $rootScope).then(function () {
 
           function addTransactionType() {
-            if (needsTransactionType && !$location.search()['transaction-type']) {
+            if (!needsTransactionType) {
+              return;
+            }
+            var currTransactionType = $location.search()['transaction-type'];
+            if (!currTransactionType || $rootScope.agentRollup.transactionTypes.indexOf(currTransactionType) === -1) {
               $location.search('transaction-type', $rootScope.defaultTransactionType());
               $location.replace();
             }
