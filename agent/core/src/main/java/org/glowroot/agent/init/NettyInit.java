@@ -15,13 +15,18 @@
  */
 package org.glowroot.agent.init;
 
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.internal.PlatformDependent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.util.JavaVersion;
 
-public class NettyWorkaround {
+public class NettyInit {
 
-    private NettyWorkaround() {}
+    private static final Logger logger = LoggerFactory.getLogger(NettyInit.class);
+
+    private NettyInit() {}
 
     public static void run() {
         if (JavaVersion.isIbmJvm()) {
@@ -39,6 +44,28 @@ public class NettyWorkaround {
                     System.clearProperty("io.netty.noUnsafe");
                 } else {
                     System.setProperty("io.netty.noUnsafe", prior);
+                }
+            }
+        }
+        String prior = System.getProperty("io.netty.allocator.maxOrder");
+        // check that the property has not been explicitly set at the command line
+        // e.g. -Dorg.glowroot.agent.shaded.io.netty.allocator.maxOrder=9
+        if (prior == null || prior.isEmpty()) {
+            // maxOrder 11 ==> default PoolChunk size 16mb (this is Netty's default)
+            // maxOrder 10 ==> default PoolChunk size 8mb (making this Glowroot's default)
+            // maxOrder 9 ==> default PoolChunk size 4mb (can be set at the command line)
+            // maxOrder 8 ==> default PoolChunk size 2mb (can be set at the command line)
+            System.setProperty("io.netty.allocator.maxOrder", "10");
+            try {
+                if (PooledByteBufAllocator.defaultMaxOrder() != 10) {
+                    logger.warn("Netty property to reduce the default pool chunk size was not set"
+                            + " early enough, please report to the Glowroot project");
+                }
+            } finally {
+                if (prior == null) {
+                    System.clearProperty("io.netty.allocator.maxOrder");
+                } else {
+                    System.setProperty("io.netty.allocator.maxOrder", prior);
                 }
             }
         }

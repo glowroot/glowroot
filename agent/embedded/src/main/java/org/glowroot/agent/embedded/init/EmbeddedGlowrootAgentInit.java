@@ -29,7 +29,7 @@ import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
-import org.glowroot.agent.init.NettyWorkaround;
+import org.glowroot.agent.init.NettyInit;
 import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.common.util.OnlyUsedByTests;
 
@@ -65,7 +65,7 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
         OnEnteringMain onEnteringMain = new OnEnteringMain() {
             @Override
             public void run(@Nullable String mainClass) throws Exception {
-                NettyWorkaround.run();
+                NettyInit.run();
                 // TODO report checker framework issue that occurs without checkNotNull
                 checkNotNull(embeddedAgentModule);
                 embeddedAgentModule.onEnteringMain(confDir, sharedConfDir, dataDir, glowrootJarFile,

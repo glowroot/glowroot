@@ -113,7 +113,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                         glowrootJarFile, mainClass);
                 AgentConfigUpdater agentConfigUpdater =
                         new ConfigUpdateService(configService, pluginCache);
-                NettyWorkaround.run();
+                NettyInit.run();
                 Collector collector;
                 Constructor<? extends Collector> collectorProxyConstructor = null;
                 if (customCollectorClass != null) {
