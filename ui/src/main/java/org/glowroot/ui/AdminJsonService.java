@@ -107,6 +107,7 @@ class AdminJsonService {
 
     private final boolean central;
     private final boolean offlineViewer;
+    private final boolean webPortReadOnly;
     private final File confDir;
     private final @Nullable File sharedConfDir;
     private final ConfigRepository configRepository;
@@ -118,12 +119,13 @@ class AdminJsonService {
     // null when running in servlet container
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    AdminJsonService(boolean central, boolean offlineViewer, File confDir,
-            @Nullable File sharedConfDir, ConfigRepository configRepository, RepoAdmin repoAdmin,
-            LiveAggregateRepository liveAggregateRepository, MailService mailService,
-            HttpClient httpClient) {
+    AdminJsonService(boolean central, boolean offlineViewer, boolean webPortReadOnly,
+            File confDir, @Nullable File sharedConfDir, ConfigRepository configRepository,
+            RepoAdmin repoAdmin, LiveAggregateRepository liveAggregateRepository,
+            MailService mailService, HttpClient httpClient) {
         this.central = central;
         this.offlineViewer = offlineViewer;
+        this.webPortReadOnly = webPortReadOnly;
         this.confDir = confDir;
         this.sharedConfDir = sharedConfDir;
         this.configRepository = configRepository;
@@ -295,6 +297,10 @@ class AdminJsonService {
                     }
                     return sw.toString();
                 }
+            }
+            if (webPortReadOnly && config.port() != checkNotNull(httpServer.getPort())) {
+                throw new JsonServiceException(BAD_REQUEST,
+                        "cannot change port when using -Dglowroot.agent.port");
             }
             try {
                 configRepository.updateEmbeddedWebConfig(config, configDto.version());
@@ -660,6 +666,7 @@ class AdminJsonService {
         EmbeddedWebConfig config = configRepository.getEmbeddedWebConfig();
         ImmutableEmbeddedWebConfigResponse.Builder builder =
                 ImmutableEmbeddedWebConfigResponse.builder()
+                        .portReadOnly(webPortReadOnly)
                         .config(EmbeddedWebConfigDto.create(config))
                         .confDir(confDir.getAbsolutePath())
                         .portChangeFailed(portChangeFailed);
@@ -715,6 +722,7 @@ class AdminJsonService {
         EmbeddedWebConfigDto config();
         int activePort();
         String activeBindAddress();
+        boolean portReadOnly();
         boolean activeHttps();
         @Nullable
         String sharedConfDir();

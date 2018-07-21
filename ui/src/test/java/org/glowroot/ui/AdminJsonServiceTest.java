@@ -48,9 +48,9 @@ public class AdminJsonServiceTest {
         ConfigRepository configRepository = mock(ConfigRepository.class);
         when(configRepository.getEmbeddedAdminGeneralConfig())
                 .thenReturn(ImmutableEmbeddedAdminGeneralConfig.builder().build());
-        adminJsonService = new AdminJsonService(false, false, new File("."), null, configRepository,
-                mock(RepoAdmin.class), mock(LiveAggregateRepository.class), mailService,
-                httpClient);
+        adminJsonService = new AdminJsonService(false, false, false, new File("."), null,
+                configRepository, mock(RepoAdmin.class), mock(LiveAggregateRepository.class),
+                mailService, httpClient);
     }
 
     @Test

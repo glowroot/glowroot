@@ -78,6 +78,11 @@ class EmbeddedAgentModule {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
+    // only look at system property, b/c there doesn't seem any point in setting agent.port in
+    // the glowroot.properties file, since in that case better to set it in the config.json file
+    private static final @Nullable Integer webPortOverride =
+            Integer.getInteger("glowroot.agent.port");
+
     private final File logDir;
     private final File confDir;
     private final @Nullable File sharedConfDir;
@@ -149,11 +154,10 @@ class EmbeddedAgentModule {
 
         // mem db is only used for testing (by glowroot-agent-it-harness)
         final boolean h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
-
         if (agentModule == null) {
             checkNotNull(offlineViewerAgentModule);
             ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDir, sharedConfDir,
-                    offlineViewerAgentModule.getConfigService(), pluginCache);
+                    webPortOverride, offlineViewerAgentModule.getConfigService(), pluginCache);
             DataSource dataSource = createDataSource(h2MemDb, dataDir);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, null);
@@ -166,7 +170,7 @@ class EmbeddedAgentModule {
                     glowrootJarFile, mainClass);
 
             final ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDir,
-                    sharedConfDir, agentModule.getConfigService(), pluginCache);
+                    sharedConfDir, webPortOverride, agentModule.getConfigService(), pluginCache);
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -232,6 +236,7 @@ class EmbeddedAgentModule {
                     .central(false)
                     .servlet(false)
                     .offlineViewer(false)
+                    .webPortReadOnly(webPortOverride != null)
                     .confDir(confDir)
                     .sharedConfDir(sharedConfDir)
                     .logDir(logDir)
@@ -271,6 +276,7 @@ class EmbeddedAgentModule {
                     .central(false)
                     .servlet(false)
                     .offlineViewer(true)
+                    .webPortReadOnly(webPortOverride != null)
                     .confDir(confDir)
                     .sharedConfDir(sharedConfDir)
                     .logDir(logDir)

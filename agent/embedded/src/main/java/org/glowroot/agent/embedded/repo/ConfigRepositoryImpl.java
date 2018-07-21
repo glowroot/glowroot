@@ -77,9 +77,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private final Object writeLock = new Object();
 
     public ConfigRepositoryImpl(File confDir, @Nullable File sharedConfDir,
-            ConfigService configService, PluginCache pluginCache) {
+            @Nullable Integer webPortOverride, ConfigService configService,
+            PluginCache pluginCache) {
         this.configService = configService;
-        this.adminConfigService = AdminConfigService.create(confDir, sharedConfDir);
+        this.adminConfigService =
+                AdminConfigService.create(confDir, sharedConfDir, webPortOverride);
         this.pluginCache = pluginCache;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         lazySecretKey = new LazySecretKeyImpl(new File(confDir, "secret"));

@@ -68,6 +68,7 @@ public class UiModule {
             boolean central,
             boolean servlet,
             boolean offlineViewer,
+            boolean webPortReadOnly, // only used for embedded
             @Nullable String bindAddress, // only used for central
             @Nullable Integer port, // only used for central
             @Nullable Boolean https, // only used for central
@@ -107,9 +108,9 @@ public class UiModule {
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         MailService mailService = new MailService();
 
-        AdminJsonService adminJsonService = new AdminJsonService(central, offlineViewer, confDir,
-                sharedConfDir, configRepository, repoAdmin, liveAggregateRepository, mailService,
-                httpClient);
+        AdminJsonService adminJsonService = new AdminJsonService(central, offlineViewer,
+                webPortReadOnly, confDir, sharedConfDir, configRepository, repoAdmin,
+                liveAggregateRepository, mailService, httpClient);
 
         LayoutService layoutService = new LayoutService(central, offlineViewer, version,
                 configRepository, transactionTypeRepository, traceAttributeNameRepository,

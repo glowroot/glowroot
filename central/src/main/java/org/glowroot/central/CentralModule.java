@@ -221,6 +221,7 @@ public class CentralModule {
                     .central(true)
                     .servlet(servlet)
                     .offlineViewer(false)
+                    .webPortReadOnly(false) // this only applies to embedded ui
                     .bindAddress(centralConfig.uiBindAddress())
                     .port(centralConfig.uiPort())
                     .https(centralConfig.uiHttps())

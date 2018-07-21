@@ -31,7 +31,7 @@
            gt-number="true"
            gt-pattern="pattern.integer"
            gt-required="loaded"
-           gt-disabled="!layout.adminEdit"
+           gt-disabled="!layout.adminEdit || portReadOnly"
            gt-width="7em"
            gt-col-class1="col-lg-4"
            gt-col-class2="col-lg-8"
@@ -43,6 +43,10 @@
             Active value is <code>{{activePort}}</code>.
           </div>
           Port that the user interface listens on.
+          <span ng-if="layout.adminEdit && portReadOnly">
+            The port is read-only because it has been set via the jvm arg
+            <code style="white-space: nowrap;">-Dglowroot.agent.port={{config.port}}</code>.
+          </span>
         </div>
       </div>
       <div gt-form-group
@@ -117,7 +121,7 @@
            gt-col-class2="col-lg-8">
         <div class="help-block">
           <span ng-if="layout.adminEdit && !layout.loginEnabled">
-            Session timeout is disabled because there are no users configured.
+            The session timeout is disabled because there are no users configured.
           </span>
           Session timeout <code>0</code> means sessions do not time out, except on jvm restart at which time all
           sessions time out.
@@ -135,7 +139,7 @@
            ng-class="{'gt-form-group-without-help-block' : !layout.adminEdit || layout.loginEnabled}">
         <div class="help-block">
           <span ng-if="layout.adminEdit && !layout.loginEnabled">
-            Session cookie name is disabled because there are no users configured.
+            The session cookie name is disabled because there are no users configured.
           </span>
         </div>
       </div>
