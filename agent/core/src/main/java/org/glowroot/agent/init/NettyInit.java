@@ -57,7 +57,10 @@ public class NettyInit {
             // maxOrder 8 ==> default PoolChunk size 2mb (can be set at the command line)
             System.setProperty("io.netty.allocator.maxOrder", "10");
             try {
-                if (PooledByteBufAllocator.defaultMaxOrder() != 10) {
+                // the call to PooledByteBufAllocator.defaultMaxOrder() forces it to initialize
+                // only logging warning if shaded, since this is always too late to initialize Netty
+                // when running unshaded tests (which initialize Netty early via GrpcServerWrapper)
+                if (PooledByteBufAllocator.defaultMaxOrder() != 10 && isShaded()) {
                     logger.warn("Netty property to reduce the default pool chunk size was not set"
                             + " early enough, please report to the Glowroot project");
                 }
@@ -68,6 +71,17 @@ public class NettyInit {
                     System.setProperty("io.netty.allocator.maxOrder", prior);
                 }
             }
+        }
+    }
+
+    private static boolean isShaded() {
+        try {
+            Class.forName("org.glowroot.agent.shaded.org.slf4j.Logger");
+            return true;
+        } catch (ClassNotFoundException e) {
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
+            return false;
         }
     }
 }
