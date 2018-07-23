@@ -31,7 +31,7 @@ The usual:
 
     mvn clean install
 
-Binary distribution is built under agent-parent/dist/target.
+Binary distribution is built under agent/dist/target.
 
 Building requires Java 7+ (in order to perform [Immutables](https://immutables.github.io) annotation processing) and Maven 3.1.0+.
 
