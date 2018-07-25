@@ -233,18 +233,25 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
                 traceHeadline = (String) value;
             } else if (name.equals("timer")) {
                 timerName = (String) value;
-            } else if (name.equals("alreadyInTransactionBehavior")) {
+            }
+        }
+
+        @Override
+        public void visitEnum(String name, String descriptor, String value) {
+            if (name.equals("alreadyInTransactionBehavior")) {
                 alreadyInTransactionBehavior = toProto(value);
             }
         }
 
-        private static AlreadyInTransactionBehavior toProto(Object value) {
-            if (value.equals(Instrumentation.AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY)) {
+        private static AlreadyInTransactionBehavior toProto(String value) {
+            if (value.equals(
+                    Instrumentation.AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY.name())) {
                 return AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY;
-            } else if (value
-                    .equals(Instrumentation.AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)) {
+            } else if (value.equals(
+                    Instrumentation.AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION.name())) {
                 return AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION;
-            } else if (value.equals(Instrumentation.AlreadyInTransactionBehavior.DO_NOTHING)) {
+            } else if (value
+                    .equals(Instrumentation.AlreadyInTransactionBehavior.DO_NOTHING.name())) {
                 return AlreadyInTransactionBehavior.DO_NOTHING;
             } else {
                 throw new IllegalStateException(
