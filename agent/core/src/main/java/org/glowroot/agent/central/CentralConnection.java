@@ -326,10 +326,11 @@ class CentralConnection {
         return null;
     }
 
-    private static @Nullable String getRootCauseMessage(Throwable t) {
+    private static String getRootCauseMessage(Throwable t) {
         Throwable cause = t.getCause();
         if (cause == null) {
-            return t.getMessage();
+            // using toString() instead of getMessage() in order to capture exception class name
+            return t.toString();
         } else {
             return getRootCauseMessage(cause);
         }
