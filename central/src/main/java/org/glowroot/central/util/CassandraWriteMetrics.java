@@ -330,7 +330,9 @@ public class CassandraWriteMetrics {
     private static List<CassandraWriteTotals> getCassandraDataWritten(
             Map<String, WriteMetrics> writeMetricsMap, int limit) {
         return writeMetricsMap.values().stream()
-                .sorted(Comparator.comparingLong(WriteMetrics::getBytesWritten).reversed())
+                .sorted(Comparator.comparingLong(WriteMetrics::getBytesWritten)
+                        .thenComparingLong(WriteMetrics::getRowsWritten)
+                        .reversed())
                 .limit(limit)
                 .map(WriteMetrics::toDataWritten)
                 .collect(Collectors.toList());
@@ -361,6 +363,10 @@ public class CassandraWriteMetrics {
 
         long getBytesWritten() {
             return bytesWritten.get();
+        }
+
+        long getRowsWritten() {
+            return rowsWritten.get();
         }
     }
 }
