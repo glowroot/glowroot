@@ -21,8 +21,11 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
+import org.glowroot.agent.weaving.MessageTemplateImpl.PartType;
 import org.glowroot.agent.weaving.MessageTemplateImpl.PathEvaluator;
+import org.glowroot.agent.weaving.MessageTemplateImpl.ValuePathPart;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PathEvaluatorTest {
@@ -121,6 +124,39 @@ public class PathEvaluatorTest {
         assertThat(value).isEqualTo("eeeeee");
     }
 
+    @Test
+    public void shouldFormatByteArrayAsHex() throws Exception {
+        // given
+        ValuePathPart valuePathPart =
+                new ValuePathPart(PartType.THIS_PATH, SomeObject.class, "bytes");
+        // when
+        String value = valuePathPart.evaluatePart(new SomeObject());
+        // then
+        assertThat(value).isEqualTo("0x78797a");
+    }
+
+    @Test
+    public void shouldFormatByteArrayUsingCharset() throws Exception {
+        // given
+        ValuePathPart valuePathPart =
+                new ValuePathPart(PartType.THIS_PATH, SomeObject.class, "bytes|charset:UTF-8");
+        // when
+        String value = valuePathPart.evaluatePart(new SomeObject());
+        // then
+        assertThat(value).isEqualTo("xyz");
+    }
+
+    @Test
+    public void shouldFormatByteArrayUsingDefaultCharset() throws Exception {
+        // given
+        ValuePathPart valuePathPart =
+                new ValuePathPart(PartType.THIS_PATH, SomeObject.class, "bytes|charset:default");
+        // when
+        String value = valuePathPart.evaluatePart(new SomeObject());
+        // then
+        assertThat(value).isEqualTo("xyz");
+    }
+
     @SuppressWarnings("unused")
     private static class SomeObject {
 
@@ -151,6 +187,10 @@ public class PathEvaluatorTest {
 
         public String three() {
             return "3";
+        }
+
+        public byte[] bytes() {
+            return "xyz".getBytes(UTF_8);
         }
     }
 

@@ -275,7 +275,10 @@
             Nested paths are resolved as well, e.g. {{0.size}} and {{this.class.name}}.
             If a path resolves to <code>null</code> at any point,
             then the entire path will resolve to <code>null</code>.
-            Finally, resolved value is rendered into the template using <code>String.valueOf()</code>.
+            The final resolved value is rendered into the template using <code>String.valueOf()</code>.
+            If the final resolved value is a byte array, it will be rendered as hex, or you can specify a charset to
+            decode it, e.g. {{0.someBytes|charset:UTF-8}} or {{0.someBytes|charset:default}} to use the default
+            (platform) charset.
           </div>
         </div>
         <div gt-form-group
@@ -414,7 +417,10 @@
             Nested paths are resolved as well, e.g. {{0.size}} and {{this.class.name}}.
             If a path resolves to <code>null</code> at any point,
             then the entire path will resolve to <code>null</code>.
-            Finally, resolved value is rendered into the template using <code>String.valueOf()</code>.
+            The final resolved value is rendered into the template using <code>String.valueOf()</code>.
+            If the final resolved value is a byte array, it will be rendered as hex, or you can specify a charset to
+            decode it, e.g. {{0.someBytes|charset:UTF-8}} or {{0.someBytes|charset:default}} to use the default
+            (platform) charset.
           </div>
         </div>
         <div gt-form-group

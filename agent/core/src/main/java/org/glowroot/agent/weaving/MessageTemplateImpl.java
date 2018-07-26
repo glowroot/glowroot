@@ -161,9 +161,12 @@ public class MessageTemplateImpl implements MessageTemplate {
 
     static class ValuePathPart extends Part {
 
+        private static final char[] hexDigits = "0123456789abcdef".toCharArray();
+
         private final PathEvaluator pathEvaluator;
 
-        private ValuePathPart(PartType partType, Class<?> valueClass, String propertyPath) {
+        @VisibleForTesting
+        ValuePathPart(PartType partType, Class<?> valueClass, String propertyPath) {
             super(partType);
             this.pathEvaluator = new PathEvaluator(valueClass, propertyPath);
         }
@@ -192,6 +195,8 @@ public class MessageTemplateImpl implements MessageTemplate {
         private static String valueOf(@Nullable Object value) {
             if (value == null) {
                 return String.valueOf(value);
+            } else if (value instanceof byte[]) {
+                return toHex((byte[]) value);
             } else if (value instanceof List || value.getClass().isArray()) {
                 StringBuilder sb = new StringBuilder();
                 appendValue(sb, value);
@@ -238,6 +243,16 @@ public class MessageTemplateImpl implements MessageTemplate {
             }
             sb.append(']');
         }
+
+        private static String toHex(byte[] bytes) {
+            StringBuilder sb = new StringBuilder(2 + 2 * bytes.length);
+            sb.append("0x");
+            for (byte b : bytes) {
+                // this logic copied from com.google.common.hash.HashCode.toString()
+                sb.append(hexDigits[(b >> 4) & 0xf]).append(hexDigits[b & 0xf]);
+            }
+            return sb.toString();
+        }
     }
 
     static class ArgPathPart extends ValuePathPart {
@@ -261,8 +276,29 @@ public class MessageTemplateImpl implements MessageTemplate {
 
         private final Accessor[] accessors;
         private final List<String> remainingPath;
+        private final @Nullable String format;
+        private final @Nullable String formatArg;
 
-        PathEvaluator(Class<?> baseClass, String path) {
+        PathEvaluator(Class<?> baseClass, String pathAndFormat) {
+            String path;
+            int index = pathAndFormat.indexOf('|');
+            if (index == -1) {
+                path = pathAndFormat;
+                format = null;
+                formatArg = null;
+            } else {
+                // trim is to allow spaces on either side of the "|"
+                path = pathAndFormat.substring(0, index).trim();
+                String formatAndArg = pathAndFormat.substring(index + 1).trim();
+                index = formatAndArg.indexOf(':');
+                if (index == -1) {
+                    format = formatAndArg;
+                    formatArg = null;
+                } else {
+                    format = formatAndArg.substring(0, index);
+                    formatArg = formatAndArg.substring(index + 1);
+                }
+            }
             List<String> parts = Lists.newArrayList(splitter.split(path));
             List<Accessor> accessors = Lists.newArrayList();
             Class<?> currClass = baseClass;
@@ -295,7 +331,14 @@ public class MessageTemplateImpl implements MessageTemplate {
             }
             if (!remainingPath.isEmpty()) {
                 // too bad, revert to slow Beans
-                return Beans.value(curr, remainingPath);
+                curr = Beans.value(curr, remainingPath);
+            }
+            if ("charset".equals(format) && formatArg != null && curr instanceof byte[]) {
+                if (formatArg.equals("default")) {
+                    return new String((byte[]) curr);
+                } else {
+                    return new String((byte[]) curr, formatArg);
+                }
             }
             return curr;
         }
