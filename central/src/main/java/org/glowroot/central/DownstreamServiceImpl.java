@@ -479,6 +479,36 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
         @Override
         public void onNext(AgentResponse value) {
+            try {
+                onNextInternal(value);
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                throw t;
+            }
+        }
+
+        @Override
+        @OnlyUsedByTests
+        public void onCompleted() {
+            synchronized (requestObserver) {
+                requestObserver.onCompleted();
+            }
+            if (agentId != null) {
+                connectedAgents.remove(agentId, ConnectedAgent.this);
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            logger.debug("{} - {}", t.getMessage(), t);
+            if (agentId != null) {
+                logger.info("downstream connection lost with agent: {}",
+                        getDisplayForLogging(agentId));
+                connectedAgents.remove(agentId, ConnectedAgent.this);
+            }
+        }
+
+        private void onNextInternal(AgentResponse value) {
             if (value.getMessageCase() == AgentResponse.MessageCase.HELLO) {
                 Hello hello = value.getHello();
                 try {
@@ -518,27 +548,6 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
             } catch (TimeoutException e) {
                 logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
-            }
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            logger.debug("{} - {}", t.getMessage(), t);
-            if (agentId != null) {
-                logger.info("downstream connection lost with agent: {}",
-                        getDisplayForLogging(agentId));
-                connectedAgents.remove(agentId, ConnectedAgent.this);
-            }
-        }
-
-        @Override
-        @OnlyUsedByTests
-        public void onCompleted() {
-            synchronized (requestObserver) {
-                requestObserver.onCompleted();
-            }
-            if (agentId != null) {
-                connectedAgents.remove(agentId, ConnectedAgent.this);
             }
         }
 

@@ -206,6 +206,36 @@ class GrpcServerWrapper {
 
                 @Override
                 public void onNext(TraceStreamMessage value) {
+                    try {
+                        onNextInternal(value);
+                    } catch (RuntimeException t) {
+                        logger.error(t.getMessage(), t);
+                        throw t;
+                    } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
+                        throw new RuntimeException(t);
+                    }
+                }
+
+                @Override
+                public void onCompleted() {
+                    try {
+                        onCompletedInternal(responseObserver);
+                    } catch (RuntimeException t) {
+                        logger.error(t.getMessage(), t);
+                        throw t;
+                    } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
+                        throw new RuntimeException(t);
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    logger.error(t.getMessage(), t);
+                }
+
+                private void onNextInternal(TraceStreamMessage value) {
                     switch (value.getMessageCase()) {
                         case STREAM_HEADER:
                             traceId = value.getStreamHeader().getTraceId();
@@ -238,13 +268,8 @@ class GrpcServerWrapper {
                     }
                 }
 
-                @Override
-                public void onError(Throwable t) {
-                    logger.error(t.getMessage(), t);
-                }
-
-                @Override
-                public void onCompleted() {
+                private void onCompletedInternal(
+                        final StreamObserver<EmptyMessage> responseObserver) {
                     Trace.Builder trace = Trace.newBuilder()
                             .setId(checkNotNull(traceId))
                             .setHeader(checkNotNull(header))
@@ -337,13 +362,13 @@ class GrpcServerWrapper {
                         }
                     }
                     @Override
-                    public void onError(Throwable t) {
-                        logger.error(t.getMessage(), t);
-                    }
-                    @Override
                     public void onCompleted() {
                         checkNotNull(requestObserver).onCompleted();
                         closedByAgent = true;
+                    }
+                    @Override
+                    public void onError(Throwable t) {
+                        logger.error(t.getMessage(), t);
                     }
                 };
 

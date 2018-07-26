@@ -504,6 +504,40 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
         @Override
         public void onNext(AggregateStreamMessage value) {
+            try {
+                onNextInternal(value);
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                throw t;
+            }
+        }
+
+        @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
+                traceHeadline = "Collect aggregates: {{this.streamHeader.agentId}}",
+                timer = "aggregates")
+        @Override
+        public void onCompleted() {
+            try {
+                onCompletedInternal();
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                throw t;
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            if (streamHeader == null) {
+                logger.error(t.getMessage(), t);
+            } else {
+                logger.error("{} - {}",
+                        grpcCommon.getDisplayForLogging(streamHeader.getAgentId(),
+                                streamHeader.getPostV09()),
+                        t.getMessage(), t);
+            }
+        }
+
+        private void onNextInternal(AggregateStreamMessage value) {
             switch (value.getMessageCase()) {
                 case STREAM_HEADER:
                     streamHeader = value.getStreamHeader();
@@ -532,23 +566,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             }
         }
 
-        @Override
-        public void onError(Throwable t) {
-            if (streamHeader == null) {
-                logger.error(t.getMessage(), t);
-            } else {
-                logger.error("{} - {}",
-                        grpcCommon.getDisplayForLogging(streamHeader.getAgentId(),
-                                streamHeader.getPostV09()),
-                        t.getMessage(), t);
-            }
-        }
-
-        @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
-                traceHeadline = "Collect aggregates: {{this.streamHeader.agentId}}",
-                timer = "aggregates")
-        @Override
-        public void onCompleted() {
+        private void onCompletedInternal() {
             checkNotNull(streamHeader);
             List<OldAggregatesByType> aggregatesByTypeList = new ArrayList<>();
             for (OldAggregatesByType.Builder aggregatesByType : aggregatesByTypeMap.values()) {
@@ -579,6 +597,36 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
         @Override
         public void onNext(TraceStreamMessage value) {
+            try {
+                onNextInternal(value);
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                throw t;
+            }
+        }
+
+        @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Trace",
+                traceHeadline = "Collect trace: {{this.streamHeader.agentId}}", timer = "trace")
+        @Override
+        public void onCompleted() {
+            try {
+                onCompletedInternal();
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                throw t;
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            if (streamHeader == null) {
+                logger.error(t.getMessage(), t);
+            } else {
+                logger.error("{} - {}", getDisplayForLogging(), t.getMessage(), t);
+            }
+        }
+
+        private void onNextInternal(TraceStreamMessage value) {
             switch (value.getMessageCase()) {
                 case STREAM_HEADER:
                     streamHeader = value.getStreamHeader();
@@ -613,19 +661,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             }
         }
 
-        @Override
-        public void onError(Throwable t) {
-            if (streamHeader == null) {
-                logger.error(t.getMessage(), t);
-            } else {
-                logger.error("{} - {}", getDisplayForLogging(), t.getMessage(), t);
-            }
-        }
-
-        @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Trace",
-                traceHeadline = "Collect trace: {{this.streamHeader.agentId}}", timer = "trace")
-        @Override
-        public void onCompleted() {
+        private void onCompletedInternal() {
             checkNotNull(streamHeader);
             if (trace == null) {
                 // this is for 0.9.13 and later agents

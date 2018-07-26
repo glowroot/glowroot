@@ -160,6 +160,12 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     }
 
     @Override
+    @OnlyUsedByTests
+    public void onCompleted() {
+        closedByCentralCollector = true;
+    }
+
+    @Override
     public void onError(final Throwable t) {
         if (!inMaybeConnectionFailure.getAndSet(true)) {
             // one free pass
@@ -181,12 +187,6 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         currResponseObserver = null;
         // TODO revisit retry/backoff after next grpc version
         scheduledRetryExecutor.schedule(new RetryAfterError(), 1, SECONDS);
-    }
-
-    @Override
-    @OnlyUsedByTests
-    public void onCompleted() {
-        closedByCentralCollector = true;
     }
 
     void connectAsync() {

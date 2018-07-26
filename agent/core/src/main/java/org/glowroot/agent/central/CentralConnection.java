@@ -368,11 +368,39 @@ class CentralConnection {
 
         @Override
         public void onNext(T value) {
-            grpcCall.doWithResponse(value);
+            try {
+                grpcCall.doWithResponse(value);
+            } catch (RuntimeException t) {
+                logger.error(t.getMessage(), t);
+                throw t;
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                throw new RuntimeException(t);
+            }
         }
 
         @Override
-        public void onError(final Throwable t) {
+        public void onCompleted() {
+            if (init) {
+                initCallSucceeded = true;
+            }
+            decrementPendingRequestCount();
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            try {
+                onErrorInternal(t);
+            } catch (RuntimeException u) {
+                logger.error(u.getMessage(), u);
+                throw u;
+            } catch (Throwable u) {
+                logger.error(u.getMessage(), u);
+                throw new RuntimeException(u);
+            }
+        }
+
+        private void onErrorInternal(final Throwable t) {
             if (closed) {
                 decrementPendingRequestCount();
                 return;
@@ -437,14 +465,6 @@ class CentralConnection {
                     }
                 }
             }, currDelay, SECONDS);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (init) {
-                initCallSucceeded = true;
-            }
-            decrementPendingRequestCount();
         }
 
         private void decrementPendingRequestCount() {
