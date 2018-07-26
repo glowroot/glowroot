@@ -192,6 +192,8 @@ public class MessageTemplateImpl implements MessageTemplate {
         private static String valueOf(@Nullable Object value) {
             if (value == null) {
                 return String.valueOf(value);
+            } else if (value instanceof byte[]){
+                return new String((byte[]) value);
             } else if (value instanceof List || value.getClass().isArray()) {
                 StringBuilder sb = new StringBuilder();
                 appendValue(sb, value);
