@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.embedded.init;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.Serializable;
 import java.lang.instrument.Instrumentation;
@@ -46,7 +45,6 @@ import org.glowroot.agent.embedded.repo.PlatformMBeanServerLifecycle;
 import org.glowroot.agent.embedded.repo.SimpleRepoModule;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
-import org.glowroot.agent.init.AgentDirsLocking;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.EnvironmentCreator;
@@ -89,7 +87,6 @@ class EmbeddedAgentModule {
     private final Ticker ticker;
     private final Clock clock;
 
-    private final Closeable agentDirsLockingCloseable;
     private final PluginCache pluginCache;
 
     private final @Nullable AgentModule agentModule;
@@ -109,8 +106,6 @@ class EmbeddedAgentModule {
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
             @Nullable File glowrootJarFile, String glowrootVersion, boolean offlineViewer)
             throws Exception {
-
-        agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir, false, offlineViewer);
 
         ticker = Ticker.systemTicker();
         clock = Clock.systemClock();
@@ -358,8 +353,6 @@ class EmbeddedAgentModule {
                 throw new IllegalStateException("Could not terminate executor");
             }
         }
-        // and unlock the agent directory
-        agentDirsLockingCloseable.close();
     }
 
     private static DataSource createDataSource(boolean h2MemDb, File dataDir) throws SQLException {
