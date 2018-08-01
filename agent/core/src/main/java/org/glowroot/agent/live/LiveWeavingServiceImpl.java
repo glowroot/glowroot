@@ -20,6 +20,7 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
@@ -38,12 +39,14 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.live.ClasspathCache.UiAnalyzedMethod;
+import org.glowroot.agent.util.MaybePatterns;
 import org.glowroot.agent.weaving.AdviceCache;
 import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
@@ -183,11 +186,11 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     private int reweaveInternal() throws Exception {
         List<InstrumentationConfig> configs = configService.getInstrumentationConfigs();
         adviceCache.updateAdvisors(configs);
-        Set<String> classNames = Sets.newHashSet();
+        Set<PointcutClassName> classNames = Sets.newHashSet();
         for (InstrumentationConfig config : configs) {
             String className = config.className();
             if (!className.isEmpty()) {
-                classNames.add(className);
+                classNames.add(new PointcutClassName(className));
             }
         }
         Set<Class<?>> classes = Sets.newHashSet();
@@ -219,7 +222,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @RequiresNonNull("instrumentation")
-    private List<Class<?>> getExistingSubClasses(Set<String> classNames) {
+    private List<Class<?>> getExistingSubClasses(Set<PointcutClassName> classNames) {
         List<Class<?>> classes = Lists.newArrayList();
         for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
             if (isSubClassOfOneOf(clazz, classNames)) {
@@ -229,9 +232,11 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
         return classes;
     }
 
-    private static boolean isSubClassOfOneOf(Class<?> clazz, Set<String> classNames) {
-        if (classNames.contains(clazz.getName())) {
-            return true;
+    private static boolean isSubClassOfOneOf(Class<?> clazz, Set<PointcutClassName> classNames) {
+        for (PointcutClassName className : classNames) {
+            if (className.matches(clazz.getName())) {
+                return true;
+            }
         }
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != null && isSubClassOfOneOf(superclass, classNames)) {
@@ -268,6 +273,25 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
             } else {
                 // package-private
                 return 3;
+            }
+        }
+    }
+
+    private static class PointcutClassName {
+
+        private @Nullable Pattern pattern;
+        private @Nullable String nonPattern;
+
+        private PointcutClassName(String className) {
+            pattern = MaybePatterns.buildPattern(className);
+            nonPattern = pattern == null ? className : null;
+        }
+
+        private boolean matches(String className) {
+            if (pattern != null) {
+                return pattern.matcher(className).matches();
+            } else {
+                return checkNotNull(nonPattern).equals(className);
             }
         }
     }

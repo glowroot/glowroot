@@ -291,6 +291,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.util.IterableWithSelfRemovableEntries$ElementIterator");
         types.add("org.glowroot.agent.util.IterableWithSelfRemovableEntries$Entry");
         types.add("org.glowroot.agent.util.IterableWithSelfRemovableEntries$SelfRemovableEntry");
+        types.add("org.glowroot.agent.util.MaybePatterns");
         types.add("org.glowroot.agent.util.Tickers");
         types.add("org.glowroot.agent.util.Tickers$DummyTicker");
         types.add("org.glowroot.agent.bytecode.api.Bytecode");

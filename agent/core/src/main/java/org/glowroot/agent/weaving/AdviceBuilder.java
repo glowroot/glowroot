@@ -49,6 +49,7 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.util.MaybePatterns;
 import org.glowroot.agent.weaving.Advice.AdviceParameter;
 import org.glowroot.agent.weaving.Advice.ParameterKind;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
@@ -132,12 +133,16 @@ class AdviceBuilder {
         checkNotNull(pointcut, "Class has no @Pointcut annotation");
         builder.pointcut(pointcut);
         builder.adviceType(Type.getType(adviceClass));
-        builder.pointcutClassNamePattern(buildPattern(pointcut.className()));
-        builder.pointcutClassAnnotationPattern(buildPattern(pointcut.classAnnotation()));
-        builder.pointcutSubTypeRestrictionPattern(buildPattern(pointcut.subTypeRestriction()));
-        builder.pointcutSuperTypeRestrictionPattern(buildPattern(pointcut.superTypeRestriction()));
-        builder.pointcutMethodNamePattern(buildPattern(pointcut.methodName()));
-        builder.pointcutMethodAnnotationPattern(buildPattern(pointcut.methodAnnotation()));
+        builder.pointcutClassNamePattern(MaybePatterns.buildPattern(pointcut.className()));
+        builder.pointcutClassAnnotationPattern(
+                MaybePatterns.buildPattern(pointcut.classAnnotation()));
+        builder.pointcutSubTypeRestrictionPattern(
+                MaybePatterns.buildPattern(pointcut.subTypeRestriction()));
+        builder.pointcutSuperTypeRestrictionPattern(
+                MaybePatterns.buildPattern(pointcut.superTypeRestriction()));
+        builder.pointcutMethodNamePattern(MaybePatterns.buildPattern(pointcut.methodName()));
+        builder.pointcutMethodAnnotationPattern(
+                MaybePatterns.buildPattern(pointcut.methodAnnotation()));
         builder.pointcutMethodParameterTypes(buildPatterns(pointcut.methodParameterTypes()));
 
         // hasBindThreadContext will be overridden below if needed
@@ -292,7 +297,7 @@ class AdviceBuilder {
     private static List<Object> buildPatterns(String[] maybePatterns) {
         List<Object> patterns = Lists.newArrayList();
         for (String maybePattern : maybePatterns) {
-            Pattern pattern = buildPattern(maybePattern);
+            Pattern pattern = MaybePatterns.buildPattern(maybePattern);
             if (pattern == null) {
                 patterns.add(maybePattern);
             } else {
@@ -300,33 +305,6 @@ class AdviceBuilder {
             }
         }
         return patterns;
-    }
-
-    private static @Nullable Pattern buildPattern(String maybePattern) {
-        if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
-            // full regex power
-            return Pattern.compile(maybePattern.substring(1, maybePattern.length() - 1));
-        }
-        // limited regex, | and *, should be used whenever possible over full regex since
-        // . and $ are common in class names
-        if (maybePattern.contains("|")) {
-            String[] parts = maybePattern.split("\\|");
-            for (int i = 0; i < parts.length; i++) {
-                parts[i] = buildSimplePattern(parts[i]);
-            }
-            return Pattern.compile(Joiner.on('|').join(parts));
-        }
-        if (maybePattern.contains("*")) {
-            return Pattern.compile(buildSimplePattern(maybePattern));
-        }
-        return null;
-    }
-
-    private static String buildSimplePattern(String part) {
-        // convert * into .* and quote the rest of the text using \Q...\E
-        String pattern = "\\Q" + part.replace("*", "\\E.*\\Q") + "\\E";
-        // strip off unnecessary \\Q\\E in case * appeared at beginning or end of part
-        return pattern.replace("\\Q\\E", "");
     }
 
     private static List<AdviceParameter> getAdviceParameters(Annotation[][] parameterAnnotations,
