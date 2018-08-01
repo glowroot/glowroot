@@ -21,6 +21,8 @@ import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -63,6 +65,8 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CentralCollector implements Collector {
 
@@ -137,6 +141,12 @@ public class CentralCollector implements Collector {
                 // startup logger info messages are never sent to the central collector
                 startupLogger.info("connected to the central collector {}, version {}",
                         collectorAddress, response.getGlowrootCentralVersion());
+                if (isAgentVersionGreaterThanCentralVersion(
+                        environment.getJavaInfo().getGlowrootAgentVersion(),
+                        response.getGlowrootCentralVersion())) {
+                    startupLogger.warn("the central collector version is older than the agent"
+                            + " version which could cause unpredictable issues");
+                }
                 if (response.hasAgentConfig()) {
                     try {
                         agentConfigUpdater.update(response.getAgentConfig());
@@ -247,6 +257,49 @@ public class CentralCollector implements Collector {
     private static String convertFromV09AgentRollupId(String agentRollupId) {
         // old agent rollup id supported spaces around separator
         return agentRollupId.replaceAll(" */ *", "::").trim() + "::";
+    }
+
+    @VisibleForTesting
+    static boolean isAgentVersionGreaterThanCentralVersion(String agentVersion,
+            String centralVersion) {
+        Pattern pattern = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)\\b.*");
+        Matcher matcher = pattern.matcher(agentVersion);
+        if (!matcher.matches()) {
+            if (!agentVersion.equals("unknown")) {
+                // conditional is to suppress warning when running tests
+                startupLogger.warn("could not parse agent version: {}", agentVersion);
+            }
+            return false;
+        }
+        int agentMajor = Integer.parseInt(checkNotNull(matcher.group(1)));
+        int agentMinor = Integer.parseInt(checkNotNull(matcher.group(2)));
+        int agentPatch = Integer.parseInt(checkNotNull(matcher.group(3)));
+
+        matcher = pattern.matcher(centralVersion);
+        if (!matcher.matches()) {
+            if (!centralVersion.equals("")) {
+                // conditional is to suppress warning when running tests
+                startupLogger.warn("could not parse central version: {}", centralVersion);
+            }
+            return false;
+        }
+        int centralMajor = Integer.parseInt(checkNotNull(matcher.group(1)));
+        int centralMinor = Integer.parseInt(checkNotNull(matcher.group(2)));
+        int centralPatch = Integer.parseInt(checkNotNull(matcher.group(3)));
+
+        if (agentMajor > centralMajor) {
+            return true;
+        }
+        if (agentMajor < centralMajor) {
+            return false;
+        }
+        if (agentMinor > centralMinor) {
+            return true;
+        }
+        if (agentMinor < centralMinor) {
+            return false;
+        }
+        return agentPatch > centralPatch;
     }
 
     private class CollectAggregatesGrpcCall extends GrpcCall<AggregateResponseMessage> {

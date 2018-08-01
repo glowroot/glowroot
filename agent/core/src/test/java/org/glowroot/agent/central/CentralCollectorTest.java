@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,5 +34,29 @@ public class CentralCollectorTest {
         assertThat(CentralCollector.escapeHostName("::::")).isEqualTo("\\:\\:\\:\\:");
 
         assertThat(CentralCollector.escapeHostName("a\\b\\c")).isEqualTo("a\\\\b\\\\c");
+    }
+
+    @Test
+    public void shouldCheckAgentVersionAgainstCentralVersion() {
+        assertThat(CentralCollector.isAgentVersionGreaterThanCentralVersion("1.10.2", "1.10.1"))
+                .isTrue();
+        assertThat(CentralCollector.isAgentVersionGreaterThanCentralVersion("1.10.2", "1.10.2"))
+                .isFalse();
+        assertThat(CentralCollector.isAgentVersionGreaterThanCentralVersion("1.10.2", "1.10.3"))
+                .isFalse();
+
+        assertThat(CentralCollector.isAgentVersionGreaterThanCentralVersion("1.10.2", "1.9.2"))
+                .isTrue();
+        assertThat(CentralCollector.isAgentVersionGreaterThanCentralVersion("1.10.2", "1.10.2"))
+                .isFalse();
+        assertThat(CentralCollector.isAgentVersionGreaterThanCentralVersion("1.10.2", "1.11.2"))
+                .isFalse();
+
+        assertThat(CentralCollector.isAgentVersionGreaterThanCentralVersion("1.10.2", "0.10.2"))
+                .isTrue();
+        assertThat(CentralCollector.isAgentVersionGreaterThanCentralVersion("1.10.2", "1.10.2"))
+                .isFalse();
+        assertThat(CentralCollector.isAgentVersionGreaterThanCentralVersion("1.10.2", "2.10.2"))
+                .isFalse();
     }
 }
