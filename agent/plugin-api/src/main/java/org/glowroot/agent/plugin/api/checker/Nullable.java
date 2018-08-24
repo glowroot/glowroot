@@ -22,5 +22,5 @@ import static java.lang.annotation.ElementType.LOCAL_VARIABLE;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 
-@Target({FIELD, PARAMETER, METHOD, LOCAL_VARIABLE})
+@Target({FIELD, METHOD, PARAMETER, LOCAL_VARIABLE})
 public @interface Nullable {}

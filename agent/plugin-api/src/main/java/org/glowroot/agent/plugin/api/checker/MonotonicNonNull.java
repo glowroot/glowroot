@@ -18,9 +18,6 @@ package org.glowroot.agent.plugin.api.checker;
 import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.LOCAL_VARIABLE;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
 
-@Target({FIELD, PARAMETER, METHOD, LOCAL_VARIABLE})
+@Target(FIELD)
 public @interface MonotonicNonNull {}
