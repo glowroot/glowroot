@@ -17,8 +17,7 @@
   <description>Glowroot Agent Core (Unshaded)</description>
 
   <properties>
-    <!-- cannot upgrade to 6.2 due to https://gitlab.ow2.org/asm/asm/merge_requests/184 -->
-    <asm.version>6.1.1</asm.version>
+    <asm.version>6.2.1</asm.version>
   </properties>
 
   <dependencies>

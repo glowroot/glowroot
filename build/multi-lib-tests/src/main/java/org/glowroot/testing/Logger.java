@@ -188,6 +188,10 @@ public class Logger {
         runJava7(test);
         updateLibVersion("log4j2x.version", "2.10.0");
         runJava7(test);
+        updateLibVersion("log4j2x.version", "2.11.0");
+        runJava7(test);
+        updateLibVersion("log4j2x.version", "2.11.1");
+        runJava7(test);
     }
 
     private static void jbossLogging() throws Exception {
@@ -208,14 +212,14 @@ public class Logger {
             updateLibVersion("jboss.logging.version", "1.5." + i + ".Final");
             runJBossLoggingJava7(test);
         }
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= 10; i++) {
             updateLibVersion("jboss.logging.version", "2.0." + i + ".Final");
             runJBossLoggingJava7(test);
         }
-        updateLibVersion("jboss.logging.version", "2.1.0.Final");
-        runJBossLoggingJava8(test);
-        updateLibVersion("jboss.logging.version", "2.1.1.Final");
-        runJBossLoggingJava8(test);
+        for (int i = 0; i <= 4; i++) {
+            updateLibVersion("jboss.logging.version", "2.1." + i + ".Final");
+            runJBossLoggingJava8(test);
+        }
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {

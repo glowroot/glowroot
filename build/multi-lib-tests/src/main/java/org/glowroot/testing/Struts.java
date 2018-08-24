@@ -150,6 +150,8 @@ public class Struts {
         runJava7(test);
         updateLibVersion("struts2.version", "2.5.16");
         runJava7(test);
+        updateLibVersion("struts2.version", "2.5.17");
+        runJava7(test);
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {

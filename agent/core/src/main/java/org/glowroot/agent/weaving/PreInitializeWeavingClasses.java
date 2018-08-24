@@ -416,8 +416,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Attribute$Set");
         types.add("org.objectweb.asm.ByteVector");
         types.add("org.objectweb.asm.ClassReader");
+        types.add("org.objectweb.asm.ClassTooLargeException");
         types.add("org.objectweb.asm.ClassVisitor");
         types.add("org.objectweb.asm.ClassWriter");
+        types.add("org.objectweb.asm.ConstantDynamic");
         types.add("org.objectweb.asm.Context");
         types.add("org.objectweb.asm.CurrentFrame");
         types.add("org.objectweb.asm.Edge");
@@ -427,6 +429,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Handle");
         types.add("org.objectweb.asm.Handler");
         types.add("org.objectweb.asm.Label");
+        types.add("org.objectweb.asm.MethodTooLargeException");
         types.add("org.objectweb.asm.MethodVisitor");
         types.add("org.objectweb.asm.MethodWriter");
         types.add("org.objectweb.asm.ModuleVisitor");

@@ -24,33 +24,17 @@ public class Grails {
 
     public static void main(String[] args) throws Exception {
         for (int i = 6; i <= 17; i++) {
-            if (i == 7 || i == 8) {
-                // there is no 3.0.7 or 3.0.8 in maven central
-                continue;
-            }
             run("3.0." + i);
         }
         for (int i = 0; i <= 16; i++) {
-            if (i == 1 || i == 8 || i == 14) {
-                // there is no 3.1.1, 3.1.8 or 3.1.14 in maven central
-                continue;
-            }
-            if (i == 15) {
-                // grails-web-url-mappings 3.1.15 (in maven central) depends on
-                // grails-datastore-core 5.0.13.BUILD-SNAPSHOT (which is not in maven central)
-                continue;
-            }
             run("3.1." + i);
         }
-        run("3.2.0");
-        run("3.2.1");
-        for (int i = 4; i <= 12; i++) {
+        for (int i = 0; i <= 13; i++) {
             run("3.2." + i);
         }
-        run("3.3.0");
-        run("3.3.1");
-        run("3.3.2");
-        run("3.3.3");
+        for (int i = 0; i <= 8; i++) {
+            run("3.3." + i);
+        }
     }
 
     private static void run(String version) throws Exception {

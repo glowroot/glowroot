@@ -18,7 +18,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <grails.version>3.3.3</grails.version>
+    <grails.version>3.3.8</grails.version>
   </properties>
 
   <dependencies>
