@@ -517,7 +517,7 @@ glowroot.controller('TracesCtrl', [
           label: 'milliseconds',
           labelPadding: 7,
           tickFormatter: function (val) {
-            return val.toLocaleString(undefined, {maximumFractionDigits: 20});
+            return val.toLocaleString(undefined, {maximumSignificantDigits: 15});
           }
         },
         zoom: {
