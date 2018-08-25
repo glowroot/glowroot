@@ -1133,10 +1133,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
     public void visitFrame(int type, int nLocal, Object /*@Nullable*/ [] local, int nStack,
             Object /*@Nullable*/ [] stack) {
         checkState(type == F_NEW, "Unexpected frame type: " + type);
-        if (nLocal < implicitFrameLocals.length) {
-            super.visitFrame(type, implicitFrameLocals.length, implicitFrameLocals, nStack, stack);
+        int extraLocal = nLocal - implicitFrameLocals.length;
+        if (extraLocal > 0) {
+            Object[] overlay = new Object[nLocal];
+            System.arraycopy(implicitFrameLocals, 0, overlay, 0, implicitFrameLocals.length);
+            System.arraycopy(checkNotNull(local), implicitFrameLocals.length, overlay,
+                    implicitFrameLocals.length, extraLocal);
+            super.visitFrame(type, nLocal, overlay, nStack, stack);
         } else {
-            super.visitFrame(type, nLocal, local, nStack, stack);
+            super.visitFrame(type, implicitFrameLocals.length, implicitFrameLocals, nStack, stack);
         }
     }
 
