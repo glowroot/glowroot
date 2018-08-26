@@ -51,40 +51,78 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 // * clearing stackFrame on GOTO
 abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
-    private static final Object THIS = new Object();
+    /** The "uninitialized this" value. */
+    static final Object UNINITIALIZED_THIS = new Object();
 
     protected static final Object SECOND_WORD = new Object();
 
+    /** Any value other than "uninitialized this". */
     private static final Object OTHER = new Object();
 
+    private static final String INVALID_OPCODE = "Invalid opcode ";
+
+    /** The access flags of the visited method. */
     protected int methodAccess;
 
+    /** The descriptor of the visited method. */
     protected String methodDesc;
 
-    private boolean constructor;
+    /** Whether the visited method is a constructor. */
+    private boolean isConstructor;
 
-    private boolean superInitialized;
+    /**
+     * Whether the super class constructor has been called (if the visited method is a constructor).
+     */
+    private boolean superClassConstructorCalled;
 
+    /**
+     * The values on the current execution stack frame (long and double are represented by two
+     * elements). Each value is either {@link #UNINITIALIZED_THIS} (for the uninitialized this
+     * value), or {@link #OTHER} (for any other value). This field is only maintained for
+     * constructors, in branches where the super class constructor has not been called yet.
+     */
     protected List<Object> stackFrame = new ArrayList<Object>();
 
-    private Map<Label, List<Object>> branches = new HashMap<Label, List<Object>>();
+    /**
+     * The stack map frames corresponding to the labels of the forward jumps made before the super
+     * class constructor has been called (note that the Java Virtual Machine forbids backward jumps
+     * before the super class constructor is called). This field is only maintained for
+     * constructors.
+     */
+    private Map<Label, List<Object>> forwardJumpStackFrames = new HashMap<Label, List<Object>>();
 
     protected boolean stackFrameTracking = true;
 
-    protected AdviceAdapter(final int api, final MethodVisitor mv, final int access,
-            final String name, final String desc) {
-        super(api, mv, access, name, desc);
+    /**
+     * Constructs a new {@link AdviceAdapter}.
+     *
+     * @param api
+     *            the ASM API version implemented by this visitor. Must be one of
+     *            {@link Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link Opcodes#ASM6} or
+     *            {@link Opcodes#ASM7_EXPERIMENTAL}.
+     * @param methodVisitor
+     *            the method visitor to which this adapter delegates calls.
+     * @param access
+     *            the method's access flags (see {@link Opcodes}).
+     * @param name
+     *            the method's name.
+     * @param descriptor
+     *            the method's descriptor (see {@link Type Type}).
+     */
+    protected AdviceAdapter(final int api, final MethodVisitor methodVisitor, final int access,
+            final String name, final String descriptor) {
+        super(api, methodVisitor, access, name, descriptor);
         methodAccess = access;
-        methodDesc = desc;
-        constructor = "<init>".equals(name);
+        methodDesc = descriptor;
+        isConstructor = "<init>".equals(name);
     }
 
     @Override
     public void visitCode() {
         super.visitCode();
         onMethodPreEnter();
-        if (!constructor) {
-            superInitialized = true;
+        if (!isConstructor) {
+            superClassConstructorCalled = true;
             onMethodEnter();
         }
     }
@@ -92,11 +130,12 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitLabel(final Label label) {
         super.visitLabel(label);
-        if (stackFrameTracking && branches != null) {
-            List<Object> frame = branches.get(label);
-            if (frame != null) {
-                stackFrame = frame;
-                branches.remove(label);
+        if (stackFrameTracking && forwardJumpStackFrames != null) {
+            List<Object> labelStackFrame = forwardJumpStackFrames.get(label);
+            if (labelStackFrame != null) {
+                stackFrame = labelStackFrame;
+                superClassConstructorCalled = false;
+                forwardJumpStackFrames.remove(label);
             }
         }
     }
@@ -104,21 +143,24 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitInsn(final int opcode) {
         if (stackFrameTracking) {
-            int s;
+            int stackSize;
             switch (opcode) {
+                case IRETURN:
+                case FRETURN:
+                case ARETURN:
+                    popValue();
+                    onMethodExit(opcode);
+                    break;
+                case LRETURN:
+                case DRETURN:
+                    popValue();
+                    popValue();
+                    onMethodExit(opcode);
+                    break;
                 case RETURN: // empty stack
                     onMethodExit(opcode);
                     break;
-                case IRETURN: // 1 before n/a after
-                case FRETURN: // 1 before n/a after
-                case ARETURN: // 1 before n/a after
                 case ATHROW: // 1 before n/a after
-                    popValue();
-                    onMethodExit(opcode);
-                    break;
-                case LRETURN: // 2 before n/a after
-                case DRETURN: // 2 before n/a after
-                    popValue();
                     popValue();
                     onMethodExit(opcode);
                     break;
@@ -239,33 +281,35 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     pushValue(peekValue());
                     break;
                 case DUP_X1:
-                    s = stackFrame.size();
-                    stackFrame.add(s - 2, stackFrame.get(s - 1));
+                    stackSize = stackFrame.size();
+                    stackFrame.add(stackSize - 2, stackFrame.get(stackSize - 1));
                     break;
                 case DUP_X2:
-                    s = stackFrame.size();
-                    stackFrame.add(s - 3, stackFrame.get(s - 1));
+                    stackSize = stackFrame.size();
+                    stackFrame.add(stackSize - 3, stackFrame.get(stackSize - 1));
                     break;
                 case DUP2:
-                    s = stackFrame.size();
-                    stackFrame.add(s - 2, stackFrame.get(s - 1));
-                    stackFrame.add(s - 2, stackFrame.get(s - 1));
+                    stackSize = stackFrame.size();
+                    stackFrame.add(stackSize - 2, stackFrame.get(stackSize - 1));
+                    stackFrame.add(stackSize - 2, stackFrame.get(stackSize - 1));
                     break;
                 case DUP2_X1:
-                    s = stackFrame.size();
-                    stackFrame.add(s - 3, stackFrame.get(s - 1));
-                    stackFrame.add(s - 3, stackFrame.get(s - 1));
+                    stackSize = stackFrame.size();
+                    stackFrame.add(stackSize - 3, stackFrame.get(stackSize - 1));
+                    stackFrame.add(stackSize - 3, stackFrame.get(stackSize - 1));
                     break;
                 case DUP2_X2:
-                    s = stackFrame.size();
-                    stackFrame.add(s - 4, stackFrame.get(s - 1));
-                    stackFrame.add(s - 4, stackFrame.get(s - 1));
+                    stackSize = stackFrame.size();
+                    stackFrame.add(stackSize - 4, stackFrame.get(stackSize - 1));
+                    stackFrame.add(stackSize - 4, stackFrame.get(stackSize - 1));
                     break;
                 case SWAP:
-                    s = stackFrame.size();
-                    stackFrame.add(s - 2, stackFrame.get(s - 1));
-                    stackFrame.remove(s);
+                    stackSize = stackFrame.size();
+                    stackFrame.add(stackSize - 2, stackFrame.get(stackSize - 1));
+                    stackFrame.remove(stackSize);
                     break;
+                default:
+                    throw new IllegalArgumentException(INVALID_OPCODE + opcode);
             }
         } else {
             switch (opcode) {
@@ -277,6 +321,8 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                 case DRETURN:
                 case ATHROW:
                     onMethodExit(opcode);
+                    break;
+                default:
                     break;
             }
         }
@@ -298,7 +344,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     pushValue(SECOND_WORD);
                     break;
                 case ALOAD:
-                    pushValue(var == 0 ? THIS : OTHER);
+                    pushValue(var == 0 ? UNINITIALIZED_THIS : OTHER);
                     break;
                 case ASTORE:
                 case ISTORE:
@@ -310,17 +356,19 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     popValue();
                     popValue();
                     break;
+                default:
+                    throw new IllegalArgumentException(INVALID_OPCODE + opcode);
             }
         }
     }
 
     @Override
     public void visitFieldInsn(final int opcode, final String owner, final String name,
-            final String desc) {
-        super.visitFieldInsn(opcode, owner, name, desc);
+            final String descriptor) {
+        super.visitFieldInsn(opcode, owner, name, descriptor);
         if (stackFrameTracking) {
-            char c = desc.charAt(0);
-            boolean longOrDouble = c == 'J' || c == 'D';
+            char firstDescriptorChar = descriptor.charAt(0);
+            boolean longOrDouble = firstDescriptorChar == 'J' || firstDescriptorChar == 'D';
             switch (opcode) {
                 case GETSTATIC:
                     pushValue(OTHER);
@@ -341,11 +389,13 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                         popValue();
                     }
                     break;
-                // case GETFIELD:
-                default:
+                case GETFIELD:
                     if (longOrDouble) {
                         pushValue(SECOND_WORD);
                     }
+                    break;
+                default:
+                    throw new IllegalArgumentException(INVALID_OPCODE + opcode);
             }
         }
     }
@@ -359,21 +409,21 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     }
 
     @Override
-    public void visitLdcInsn(final Object cst) {
-        super.visitLdcInsn(cst);
+    public void visitLdcInsn(final Object value) {
+        super.visitLdcInsn(value);
         if (stackFrameTracking) {
             pushValue(OTHER);
-            if (cst instanceof Double || cst instanceof Long) {
+            if (value instanceof Double || value instanceof Long) {
                 pushValue(SECOND_WORD);
             }
         }
     }
 
     @Override
-    public void visitMultiANewArrayInsn(final String desc, final int dims) {
-        super.visitMultiANewArrayInsn(desc, dims);
+    public void visitMultiANewArrayInsn(final String descriptor, final int numDimensions) {
+        super.visitMultiANewArrayInsn(descriptor, numDimensions);
         if (stackFrameTracking) {
-            for (int i = 0; i < dims; i++) {
+            for (int i = 0; i < numDimensions; i++) {
                 popValue();
             }
             pushValue(OTHER);
@@ -383,64 +433,62 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     @Override
     public void visitTypeInsn(final int opcode, final String type) {
         super.visitTypeInsn(opcode, type);
-        // ANEWARRAY, CHECKCAST or INSTANCEOF don't change stack
+        // ANEWARRAY, CHECKCAST or INSTANCEOF don't change stack.
         if (stackFrameTracking && opcode == NEW) {
             pushValue(OTHER);
         }
     }
 
+    /** @deprecated */
     @Deprecated
     @Override
     public void visitMethodInsn(final int opcode, final String owner, final String name,
-            final String desc) {
+            final String descriptor) {
         if (api >= Opcodes.ASM5) {
-            super.visitMethodInsn(opcode, owner, name, desc);
+            super.visitMethodInsn(opcode, owner, name, descriptor);
             return;
         }
-        doVisitMethodInsn(opcode, owner, name, desc, opcode == Opcodes.INVOKEINTERFACE);
+        mv.visitMethodInsn(opcode, owner, name, descriptor, opcode == Opcodes.INVOKEINTERFACE);
+        doVisitMethodInsn(opcode, descriptor);
     }
 
     @Override
     public void visitMethodInsn(final int opcode, final String owner, final String name,
-            final String desc, final boolean itf) {
+            final String descriptor, final boolean isInterface) {
         if (api < Opcodes.ASM5) {
-            super.visitMethodInsn(opcode, owner, name, desc, itf);
+            super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
             return;
         }
-        doVisitMethodInsn(opcode, owner, name, desc, itf);
+        mv.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+        doVisitMethodInsn(opcode, descriptor);
     }
 
-    private void doVisitMethodInsn(int opcode, final String owner, final String name,
-            final String desc, final boolean itf) {
-        mv.visitMethodInsn(opcode, owner, name, desc, itf);
+    private void doVisitMethodInsn(final int opcode, final String descriptor) {
         if (stackFrameTracking) {
-            Type[] types = Type.getArgumentTypes(desc);
-            for (int i = 0; i < types.length; i++) {
+            for (Type argumentType : Type.getArgumentTypes(descriptor)) {
                 popValue();
-                if (types[i].getSize() == 2) {
+                if (argumentType.getSize() == 2) {
                     popValue();
                 }
             }
             switch (opcode) {
-                // case INVOKESTATIC:
-                // break;
                 case INVOKEINTERFACE:
                 case INVOKEVIRTUAL:
-                    popValue(); // objectref
+                    popValue();
                     break;
                 case INVOKESPECIAL:
-                    Object type = popValue(); // objectref
-                    if (constructor && type == THIS && !superInitialized) {
+                    Object value = popValue();
+                    if (isConstructor && value == UNINITIALIZED_THIS
+                            && !superClassConstructorCalled) {
                         onMethodEnter();
-                        superInitialized = true;
-                        // once super has been initialized it is no longer
-                        // necessary to keep track of stack state
-                        constructor = false;
+                        superClassConstructorCalled = true;
                     }
+                    break;
+                default:
                     break;
             }
 
-            Type returnType = Type.getReturnType(desc);
+            Type returnType = Type.getReturnType(descriptor);
             if (returnType != Type.VOID_TYPE) {
                 pushValue(OTHER);
                 if (returnType.getSize() == 2) {
@@ -451,25 +499,11 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     }
 
     @Override
-    public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
-        super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
-        if (stackFrameTracking) {
-            Type[] types = Type.getArgumentTypes(desc);
-            for (int i = 0; i < types.length; i++) {
-                popValue();
-                if (types[i].getSize() == 2) {
-                    popValue();
-                }
-            }
-
-            Type returnType = Type.getReturnType(desc);
-            if (returnType != Type.VOID_TYPE) {
-                pushValue(OTHER);
-                if (returnType.getSize() == 2) {
-                    pushValue(SECOND_WORD);
-                }
-            }
-        }
+    public void visitInvokeDynamicInsn(final String name, final String descriptor,
+            final Handle bootstrapMethodHandle, final Object... bootstrapMethodArguments) {
+        super.visitInvokeDynamicInsn(name, descriptor, bootstrapMethodHandle,
+                bootstrapMethodArguments);
+        doVisitMethodInsn(Opcodes.INVOKEDYNAMIC, descriptor);
     }
 
     @Override
@@ -501,8 +535,10 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                 case JSR:
                     pushValue(OTHER);
                     break;
+                default:
+                    break;
             }
-            addBranch(label);
+            addForwardJump(label);
             if (opcode == GOTO) {
                 stackFrame = new ArrayList<Object>();
             }
@@ -514,7 +550,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         super.visitLookupSwitchInsn(dflt, keys, labels);
         if (stackFrameTracking) {
             popValue();
-            addBranches(dflt, labels);
+            addForwardJumps(dflt, labels);
         }
     }
 
@@ -524,32 +560,32 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         super.visitTableSwitchInsn(min, max, dflt, labels);
         if (stackFrameTracking) {
             popValue();
-            addBranches(dflt, labels);
+            addForwardJumps(dflt, labels);
         }
     }
 
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
         super.visitTryCatchBlock(start, end, handler, type);
-        if (stackFrameTracking && !branches.containsKey(handler)) {
-            List<Object> stackFrame = new ArrayList<Object>();
-            stackFrame.add(OTHER);
-            branches.put(handler, stackFrame);
+        if (stackFrameTracking && !forwardJumpStackFrames.containsKey(handler)) {
+            List<Object> handlerStackFrame = new ArrayList<Object>();
+            handlerStackFrame.add(OTHER);
+            forwardJumpStackFrames.put(handler, handlerStackFrame);
         }
     }
 
-    private void addBranches(final Label dflt, final Label[] labels) {
-        addBranch(dflt);
-        for (int i = 0; i < labels.length; i++) {
-            addBranch(labels[i]);
+    private void addForwardJumps(final Label dflt, final Label[] labels) {
+        addForwardJump(dflt);
+        for (Label label : labels) {
+            addForwardJump(label);
         }
     }
 
-    private void addBranch(final Label label) {
-        if (branches.containsKey(label)) {
+    private void addForwardJump(final Label label) {
+        if (forwardJumpStackFrames.containsKey(label)) {
             return;
         }
-        branches.put(label, new ArrayList<Object>(stackFrame));
+        forwardJumpStackFrames.put(label, new ArrayList<Object>(stackFrame));
     }
 
     private Object popValue() {
@@ -570,13 +606,55 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         return stackFrame.get(stackFrame.size() - 1);
     }
 
-    private void pushValue(final Object o) {
-        stackFrame.add(o);
+    private void pushValue(final Object value) {
+        stackFrame.add(value);
     }
 
     protected void onMethodPreEnter() {}
 
+    /**
+     * Generates the "before" advice for the visited method. The default implementation of this
+     * method does nothing. Subclasses can use or change all the local variables, but should not
+     * change state of the stack. This method is called at the beginning of the method or after
+     * super class constructor has been called (in constructors).
+     */
     protected void onMethodEnter() {}
 
+    /**
+     * Generates the "after" advice for the visited method. The default implementation of this
+     * method does nothing. Subclasses can use or change all the local variables, but should not
+     * change state of the stack. This method is called at the end of the method, just before return
+     * and athrow instructions. The top element on the stack contains the return value or the
+     * exception instance. For example:
+     *
+     * <pre>
+     * public void onMethodExit(final int opcode) {
+     *   if (opcode == RETURN) {
+     *     visitInsn(ACONST_NULL);
+     *   } else if (opcode == ARETURN || opcode == ATHROW) {
+     *     dup();
+     *   } else {
+     *     if (opcode == LRETURN || opcode == DRETURN) {
+     *       dup2();
+     *     } else {
+     *       dup();
+     *     }
+     *     box(Type.getReturnType(this.methodDesc));
+     *   }
+     *   visitIntInsn(SIPUSH, opcode);
+     *   visitMethodInsn(INVOKESTATIC, owner, "onExit", "(Ljava/lang/Object;I)V");
+     * }
+     *
+     * // An actual call back method.
+     * public static void onExit(final Object exitValue, final int opcode) {
+     *   ...
+     * }
+     * </pre>
+     *
+     * @param opcode
+     *            one of {@link Opcodes#RETURN}, {@link Opcodes#IRETURN}, {@link Opcodes#FRETURN},
+     *            {@link Opcodes#ARETURN}, {@link Opcodes#LRETURN}, {@link Opcodes#DRETURN} or
+     *            {@link Opcodes#ATHROW}.
+     */
     protected void onMethodExit(@SuppressWarnings("unused") int opcode) {}
 }

@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
@@ -155,7 +156,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
         int i = 0;
         if (needsReceiver) {
             if (name.equals("<init>")) {
-                implicitFrameLocals[i++] = UNINITIALIZED_THIS;
+                // need explicit import due to same static variable name in super class
+                implicitFrameLocals[i++] = Opcodes.UNINITIALIZED_THIS;
             } else {
                 implicitFrameLocals[i++] = owner.getInternalName();
             }
