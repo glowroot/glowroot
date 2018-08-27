@@ -1133,13 +1133,28 @@ class WeavingMethodVisitor extends AdviceAdapter {
     public void visitFrame(int type, int nLocal, Object /*@Nullable*/ [] local, int nStack,
             Object /*@Nullable*/ [] stack) {
         checkState(type == F_NEW, "Unexpected frame type: " + type);
-        int extraLocal = nLocal - implicitFrameLocals.length;
-        if (extraLocal > 0) {
-            Object[] overlay = new Object[nLocal];
+        int nExtraLocal = nLocal - implicitFrameLocals.length;
+        if (implicitFrameLocals.length >= nLocal) {
+            nExtraLocal = 0;
+        } else {
+            int i = 0;
+            int j = 0;
+            while (i < nLocal && j < implicitFrameLocals.length) {
+                Object currLocal = checkNotNull(local)[i++];
+                Object currImplicitFrameLocal = implicitFrameLocals[j++];
+                if (currLocal == TOP
+                        && (currImplicitFrameLocal == LONG || currImplicitFrameLocal == DOUBLE)) {
+                    i++;
+                }
+            }
+            nExtraLocal = nLocal - i;
+        }
+        if (nExtraLocal > 0) {
+            Object[] overlay = new Object[implicitFrameLocals.length + nExtraLocal];
             System.arraycopy(implicitFrameLocals, 0, overlay, 0, implicitFrameLocals.length);
-            System.arraycopy(checkNotNull(local), implicitFrameLocals.length, overlay,
-                    implicitFrameLocals.length, extraLocal);
-            super.visitFrame(type, nLocal, overlay, nStack, stack);
+            System.arraycopy(checkNotNull(local), nLocal - nExtraLocal, overlay,
+                    implicitFrameLocals.length, nExtraLocal);
+            super.visitFrame(type, overlay.length, overlay, nStack, stack);
         } else {
             super.visitFrame(type, implicitFrameLocals.length, implicitFrameLocals, nStack, stack);
         }
