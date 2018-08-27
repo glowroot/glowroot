@@ -1748,6 +1748,23 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
     }
 
+    @Test
+    public void shouldExecuteAdviceOnMoreHackedConstructorBytecode() throws Exception {
+        // given
+        LazyDefinedClass implClass =
+                GenerateMoreHackedConstructorBytecode.generateMoreHackedConstructorBytecode();
+        newWovenObject(implClass, GenerateMoreHackedConstructorBytecode.Test.class,
+                enhanceConstructorAdviceClass(HackedConstructorBytecodeAdvice.class));
+        // when
+        // (advice is on constructor, so already captured above)
+        // then
+        assertThat(SomeAspectThreadLocals.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
             Class<?> adviceOrShimOrMixinClass, Class<?>... extraBridgeClasses) throws Exception {
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be

@@ -1402,8 +1402,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "HackedConstructorBytecode", methodName = "<init>",
-            methodParameterTypes = {}, timerName = "xyz")
+    @Pointcut(className = "HackedConstructorBytecode|MoreHackedConstructorBytecode",
+            methodName = "<init>", methodParameterTypes = {}, timerName = "xyz")
     public static class HackedConstructorBytecodeAdvice {
         @IsEnabled
         public static boolean isEnabled() {

@@ -173,9 +173,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
         stackFrameTracking = false;
         try {
             onMethodPreEnterInternal();
-            if (name.equals("<init>")) {
-                implicitFrameLocals[0] = owner.getInternalName();
-            }
         } finally {
             stackFrameTracking = true;
         }
@@ -185,6 +182,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
     protected void onMethodEnter() {
         stackFrameTracking = false;
         try {
+            if (name.equals("<init>")) {
+                implicitFrameLocals[0] = owner.getInternalName();
+            }
             onMethodEnterInternal();
         } finally {
             stackFrameTracking = true;

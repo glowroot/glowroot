@@ -16,6 +16,7 @@
 package org.glowroot.agent.weaving;
 
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
@@ -23,44 +24,42 @@ import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
+import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ALOAD;
-import static org.objectweb.asm.Opcodes.ASTORE;
-import static org.objectweb.asm.Opcodes.BASTORE;
+import static org.objectweb.asm.Opcodes.ATHROW;
+import static org.objectweb.asm.Opcodes.F_SAME;
 import static org.objectweb.asm.Opcodes.ICONST_0;
-import static org.objectweb.asm.Opcodes.ICONST_1;
+import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
-import static org.objectweb.asm.Opcodes.NEWARRAY;
 import static org.objectweb.asm.Opcodes.RETURN;
-import static org.objectweb.asm.Opcodes.T_BOOLEAN;
-import static org.objectweb.asm.Opcodes.V1_6;
+import static org.objectweb.asm.Opcodes.V1_7;
 
 // this is valid bytecode, but cannot be generated from valid Java code
-// e.g. jacoco does this
-public class GenerateHackedConstructorBytecode {
+public class GenerateMoreHackedConstructorBytecode {
 
-    static LazyDefinedClass generateHackedConstructorBytecode() throws Exception {
+    static LazyDefinedClass generateMoreHackedConstructorBytecode() throws Exception {
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         MethodVisitor mv;
 
-        cw.visit(V1_6, ACC_PUBLIC + ACC_SUPER, "HackedConstructorBytecode", null,
+        // 1.7+ since testing frames
+        cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, "MoreHackedConstructorBytecode", null,
                 Test.class.getName().replace('.', '/'), new String[] {});
 
         {
             mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
             mv.visitCode();
-            mv.visitInsn(ICONST_1);
-            mv.visitIntInsn(NEWARRAY, T_BOOLEAN);
-            mv.visitVarInsn(ASTORE, 1);
+            Label trueLabel = new Label();
+            mv.visitInsn(ICONST_0);
+            mv.visitJumpInsn(IFEQ, trueLabel);
+            mv.visitInsn(ACONST_NULL);
+            mv.visitInsn(ATHROW);
+            mv.visitLabel(trueLabel);
+            mv.visitFrame(F_SAME, 0, null, 0, null);
 
             mv.visitVarInsn(ALOAD, 0);
             mv.visitMethodInsn(INVOKESPECIAL, Test.class.getName().replace('.', '/'), "<init>",
                     "()V", false);
-
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitInsn(ICONST_0);
-            mv.visitInsn(ICONST_1);
-            mv.visitInsn(BASTORE);
 
             mv.visitInsn(RETURN);
 
@@ -70,7 +69,7 @@ public class GenerateHackedConstructorBytecode {
         cw.visitEnd();
 
         return ImmutableLazyDefinedClass.builder()
-                .type(Type.getObjectType("HackedConstructorBytecode"))
+                .type(Type.getObjectType("MoreHackedConstructorBytecode"))
                 .bytes(cw.toByteArray())
                 .build();
     }
