@@ -94,34 +94,40 @@ class RollupService implements Runnable {
     private void runInternal() throws Exception {
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
-    	CountDownLatch latch = new CountDownLatch(ROLLUP_THREAD_COUNT);
-
-     	List<AgentRollup> activeAgentRollups = shuffle(activeAgentDao.readRecentlyActiveAgentRollups(7));
+    	List<AgentRollup> activeAgentRollups = shuffle(activeAgentDao.readRecentlyActiveAgentRollups(7));
     	
     	logger.debug("ActiveAgentRollups for aggegation = " + activeAgentRollups.size());
     	
     	double agentRollupSize = activeAgentRollups.size();
+   	
+    	if (agentRollupSize > 0) {
     	
-    	int agentGroupCount = (int) Math.round(agentRollupSize / ROLLUP_THREAD_COUNT);
-    	
-    	int startPoint = 0;
-    	int endPoint = (int) agentRollupSize;
-    	
-    	for (int i = 0; i < ROLLUP_THREAD_COUNT; i++) {
-    		if (i != 0)
-    			startPoint = i * agentGroupCount;
-    		endPoint = (i + 1) * agentGroupCount;
-    		if ((endPoint > agentRollupSize) || (i == ROLLUP_THREAD_COUNT - 1 ))
-    			endPoint =  (int) agentRollupSize;
-    		executorChild.execute(new RollupAgentsTask(activeAgentDao, aggregateDao, gaugeValueDao, syntheticResultDao,
-                 centralAlertingService, clock, activeAgentRollups.subList(startPoint, endPoint), latch));
+	    	CountDownLatch latch = new CountDownLatch(ROLLUP_THREAD_COUNT);
+	    	
+	    	int agentGroupCount = (int) Math.round(agentRollupSize / ROLLUP_THREAD_COUNT);
+	    	
+	    	if (agentGroupCount == 0)
+	    		agentGroupCount += 1;
+	    	
+	    	int startRollupPoint = 0;
+	    	int endRollupPoint = 0;
+	    	
+	    	for (int i = 0; i < ROLLUP_THREAD_COUNT && endRollupPoint < agentRollupSize; i++) {
+	    		if (i != 0)
+	    			startRollupPoint = i * agentGroupCount;
+	    		endRollupPoint = (i + 1) * agentGroupCount;
+	    		if ((endRollupPoint > agentRollupSize) || (i == ROLLUP_THREAD_COUNT - 1 ))
+	    			endRollupPoint =  (int) agentRollupSize;
+	    		executorChild.execute(new RollupAgentsTask(activeAgentDao, aggregateDao, gaugeValueDao, syntheticResultDao,
+	                 centralAlertingService, clock, activeAgentRollups.subList(startRollupPoint, endRollupPoint), latch));
+	    	}
+	    	
+	    	latch.await();
     	}
-    	
-    	latch.await();
-    	
         // FIXME keep this here as fallback, but also resolve alerts immediately when they are
         // deleted (or when their condition is updated)
-        centralAlertingService.checkForAllDeletedAlerts();
+
+    	centralAlertingService.checkForAllDeletedAlerts();
     }
     
     @VisibleForTesting
