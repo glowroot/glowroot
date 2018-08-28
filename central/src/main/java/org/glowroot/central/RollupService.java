@@ -18,6 +18,7 @@ package org.glowroot.central;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -47,10 +48,13 @@ class RollupService implements Runnable {
     private final CentralAlertingService centralAlertingService;
     private final Clock clock;
 
-    private final ExecutorService executor;
+    private final ExecutorService executorMain;
+    private final ExecutorService executorChild;
 
     private volatile boolean closed;
 
+    public static int ROLLUP_THREAD_COUNT = 4;
+    
     RollupService(ActiveAgentDao activeAgentDao, AggregateDao aggregateDao,
             GaugeValueDao gaugeValueDao, SyntheticResultDao syntheticResultDao,
             CentralAlertingService centralAlertingService, Clock clock) {
@@ -60,9 +64,13 @@ class RollupService implements Runnable {
         this.syntheticResultDao = syntheticResultDao;
         this.centralAlertingService = centralAlertingService;
         this.clock = clock;
-        executor = Executors.newSingleThreadExecutor();
-        executor.execute(castInitialized(this));
-    }
+//        String countStr = System.getProperty("glowroot.central.aggregateThreadCount");
+//        if (countStr != null)
+//        	ROLLUP_THREAD_COUNT = Integer.parseInt(countStr);
+        executorMain = Executors.newSingleThreadExecutor();
+        executorChild = Executors.newFixedThreadPool(ROLLUP_THREAD_COUNT);
+        executorMain.execute(castInitialized(this));       
+   }
 
     @Override
     public void run() {
@@ -79,116 +87,62 @@ class RollupService implements Runnable {
             }
         }
     }
-
-    void close() throws InterruptedException {
-        closed = true;
-        // shutdownNow() is needed here to send interrupt to RollupService thread
-        executor.shutdownNow();
-        if (!executor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Timed out waiting for rollup thread to terminate");
-        }
-    }
-
+    
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Outer rollup loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
     private void runInternal() throws Exception {
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
-        for (AgentRollup agentRollup : shuffle(activeAgentDao.readRecentlyActiveAgentRollups(7))) {
-            rollupAggregates(agentRollup);
-            rollupGauges(agentRollup);
-            rollupSyntheticMonitors(agentRollup);
-            // checking aggregate and gauge alerts after rollup since their calculation can depend
-            // on rollups depending on time period length (and alerts on rollups are not checked
-            // anywhere else)
-            //
-            // agent (not rollup) alerts are also checked right after receiving the respective data
-            // (aggregate/gauge/heartbeat) from the agent, but need to also check these once a
-            // minute in case no data has been received from the agent recently
-            checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup);
-        }
+    	CountDownLatch latch = new CountDownLatch(ROLLUP_THREAD_COUNT);
+
+     	List<AgentRollup> activeAgentRollups = shuffle(activeAgentDao.readRecentlyActiveAgentRollups(7));
+    	
+    	logger.debug("ActiveAgentRollups for aggegation = " + activeAgentRollups.size());
+    	
+    	double agentRollupSize = activeAgentRollups.size();
+    	
+    	int agentGroupCount = (int) Math.round(agentRollupSize / ROLLUP_THREAD_COUNT);
+    	
+    	int startPoint = 0;
+    	int endPoint = (int) agentRollupSize;
+    	
+    	for (int i = 0; i < ROLLUP_THREAD_COUNT; i++) {
+    		if (i != 0)
+    			startPoint = i * agentGroupCount;
+    		endPoint = (i + 1) * agentGroupCount;
+    		if ((endPoint > agentRollupSize) || (i == ROLLUP_THREAD_COUNT - 1 ))
+    			endPoint =  (int) agentRollupSize;
+    		executorChild.execute(new RollupAgentsTask(activeAgentDao, aggregateDao, gaugeValueDao, syntheticResultDao,
+                 centralAlertingService, clock, activeAgentRollups.subList(startPoint, endPoint), latch));
+    	}
+    	
+    	latch.await();
+    	
         // FIXME keep this here as fallback, but also resolve alerts immediately when they are
         // deleted (or when their condition is updated)
         centralAlertingService.checkForAllDeletedAlerts();
     }
-
-    private void rollupAggregates(AgentRollup agentRollup) throws InterruptedException {
-        // randomize order so that multiple central collector nodes will be less likely to perform
-        // duplicative work
-        for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
-            rollupAggregates(childAgentRollup);
-        }
-        try {
-            aggregateDao.rollup(agentRollup.id());
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-        }
-    }
-
-    // returns true on success, false on failure
-    private boolean rollupGauges(AgentRollup agentRollup) throws InterruptedException {
-        // need to roll up children first, since gauge values initial roll up from children is
-        // done on the 1-min aggregates of the children
-        boolean success = true;
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            boolean childSuccess = rollupGauges(childAgentRollup);
-            success = success && childSuccess;
-        }
-        if (!success) {
-            // need to _not_ roll up parent if exception occurs while rolling up a child, since
-            // gauge values initial roll up from children is done on the 1-min aggregates of the
-            // children
-            return false;
-        }
-        try {
-            gaugeValueDao.rollup(agentRollup.id());
-            return true;
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-            return false;
-        }
-    }
-
-    private void rollupSyntheticMonitors(AgentRollup agentRollup) throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            rollupSyntheticMonitors(childAgentRollup);
-        }
-        try {
-            syntheticResultDao.rollup(agentRollup.id());
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-        }
-    }
-
-    private void checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup)
-            throws InterruptedException {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            checkAggregateAndGaugeAndHeartbeatAlertsAsync(childAgentRollup);
-        }
-        centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup.id(),
-                agentRollup.display(), clock.currentTimeMillis());
-    }
-
-    private static <T> List<T> shuffle(List<T> agentRollups) {
-        List<T> mutable = new ArrayList<>(agentRollups);
-        Collections.shuffle(mutable);
-        return mutable;
-    }
-
+    
     @VisibleForTesting
     static long millisUntilNextRollup(long currentTimeMillis) {
         return 60000 - (currentTimeMillis - 10000) % 60000;
     }
+
+    void close() throws InterruptedException {
+        closed = true;
+        // shutdownNow() is needed here to send interrupt to RollupService thread
+        executorMain.shutdownNow();
+        executorChild.shutdownNow();
+        if (!executorMain.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Timed out waiting for rollup thread to terminate");
+        }
+        
+        if (!executorChild.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Timed out waiting for rollup thread to terminate");
+        }
+    }
+
 
     @SuppressWarnings("return.type.incompatible")
     private static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
@@ -199,4 +153,11 @@ class RollupService implements Runnable {
     interface AgentRollupConsumer {
         void accept(AgentRollup agentRollup) throws Exception;
     }
+    
+    private static <T> List<T> shuffle(List<T> agentRollups) {
+        List<T> mutable = new ArrayList<>(agentRollups);
+        Collections.shuffle(mutable);
+        return mutable;
+    }
+    
 }
