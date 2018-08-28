@@ -128,8 +128,12 @@ glowroot.controller('IncidentsCtrl', [
       });
     }
 
-    function refresh() {
-      $http.get('backend/incidents')
+    function refresh(autoRefresh) {
+      var url = 'backend/incidents';
+      if (autoRefresh) {
+        url += '?auto-refresh=true';
+      }
+      $http.get(url)
           .then(function (response) {
             $scope.loaded = true;
             $scope.openIncidents = response.data.openIncidents;
@@ -140,13 +144,14 @@ glowroot.controller('IncidentsCtrl', [
           });
     }
 
-    refresh();
+    refresh(false);
 
     var timer;
 
     function onVisible() {
       $scope.$apply(function () {
-        refresh();
+        // intentionally not marking this autoRefresh
+        refresh(false);
       });
       document.removeEventListener('visibilitychange', onVisible);
     }
@@ -158,7 +163,7 @@ glowroot.controller('IncidentsCtrl', [
         if (document.hidden) {
           document.addEventListener('visibilitychange', onVisible);
         } else {
-          refresh();
+          refresh(true);
         }
         scheduleNextRefresh();
       }, 30000);

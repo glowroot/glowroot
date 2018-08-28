@@ -462,7 +462,7 @@ glowroot.factory('charts', [
 
       function onVisible() {
         $scope.$apply(function () {
-          $scope.range.chartAutoRefresh++;
+          // intentionally not marking this autoRefresh
           $scope.refresh();
         });
         document.removeEventListener('visibilitychange', onVisible);
