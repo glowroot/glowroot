@@ -299,13 +299,25 @@ class WeavingMethodVisitor extends AdviceAdapter {
             defineEnabledLocalVar(advice);
             defineTravelerLocalVar(advice);
         }
+        if (name.equals("<init>")) {
+            // this is to solve a super special case with advice on constructors that have local
+            // variables defined before calling super (which is only possible in bytecode, e.g.
+            // jacoco does this)
+            // see WeaverTest.shouldExecuteSingleJumpAdviceOnHackedConstructorBytecode()
+            for (Advice advice : advisors) {
+                evaluateEnabledLocalVar(advice);
+            }
+        }
         saveArgsForMethodExit();
     }
 
     private void onMethodEnterInternal() {
         for (int i = 0; i < advisors.size(); i++) {
             Advice advice = advisors.get(i);
-            evaluateEnabledLocalVar(advice);
+            if (!name.equals("<init>")) {
+                // see comment above in onMethodPreEnterInternal() why this is skipped for <init>
+                evaluateEnabledLocalVar(advice);
+            }
             invokeOnBefore(advice, travelerLocals.get(advice));
             if (advice.onAfterAdvice() != null || advice.onThrowAdvice() != null) {
                 Label catchStartLabel = new Label();

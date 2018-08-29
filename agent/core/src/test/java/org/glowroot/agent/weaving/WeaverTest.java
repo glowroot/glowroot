@@ -73,6 +73,7 @@ import org.glowroot.agent.weaving.SomeAspect.ComplexSuperTypeRestrictionAdvice;
 import org.glowroot.agent.weaving.SomeAspect.FinalMethodAdvice;
 import org.glowroot.agent.weaving.SomeAspect.GenericMiscAdvice;
 import org.glowroot.agent.weaving.SomeAspect.HackedConstructorBytecodeAdvice;
+import org.glowroot.agent.weaving.SomeAspect.HackedConstructorBytecodeJumpingAdvice;
 import org.glowroot.agent.weaving.SomeAspect.HasString;
 import org.glowroot.agent.weaving.SomeAspect.HasStringClassMixin;
 import org.glowroot.agent.weaving.SomeAspect.HasStringInterfaceMixin;
@@ -1362,7 +1363,7 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(2);
         assertThat(SomeAspectThreadLocals.orderedEvents.get()).containsExactly("isEnabled",
-                "onBefore", "onReturn", "onAfter", "isEnabled", "onBefore", "onReturn", "onAfter");
+                "isEnabled", "onBefore", "onReturn", "onAfter", "onBefore", "onReturn", "onAfter");
     }
 
     @Test
@@ -1763,6 +1764,27 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldExecuteSingleJumpAdviceOnHackedConstructorBytecode() throws Exception {
+        // given
+        LazyDefinedClass implClass =
+                GenerateHackedConstructorBytecode.generateHackedConstructorBytecode();
+
+        // when
+        Exception exception = null;
+        try {
+            newWovenObject(implClass, GenerateHackedConstructorBytecode.Test.class,
+                    enhanceConstructorAdviceClass(HackedConstructorBytecodeJumpingAdvice.class));
+        } catch (Exception e) {
+            exception = e;
+        }
+
+        // then
+        // this is just to confirm VerifyError is not encountered above due to bad class frames
+        assertThat(exception.getCause().getCause().getMessage())
+                .startsWith("Bytecode service retrieved ");
     }
 
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
