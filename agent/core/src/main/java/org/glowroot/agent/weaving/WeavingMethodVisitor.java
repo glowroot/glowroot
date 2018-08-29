@@ -441,13 +441,13 @@ class WeavingMethodVisitor extends AdviceAdapter {
             storeLocal(threadContextHolderLocal);
             visitMethodInsn(INVOKEVIRTUAL, fastThreadContextThreadLocalHolderType.getInternalName(),
                     "get", "()" + threadContextPlusType.getDescriptor(), false);
-            dup();
             checkNotNull(threadContextLocal);
             storeLocal(threadContextLocal);
             if (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext()) {
                 if (disabledLabel == null) {
                     disabledLabel = new Label();
                 }
+                loadLocal(threadContextLocal);
                 visitJumpInsn(IFNULL, disabledLabel);
                 if (!suppressibleUsingKey.isEmpty()) {
                     checkSuppressibleUsingKey(suppressibleUsingKey, disabledLabel);
@@ -468,6 +468,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     }
                     Label enabledLabel = new Label();
                     // if thread context == null, then not suppressible
+                    loadLocal(threadContextLocal);
                     visitJumpInsn(IFNULL, enabledLabel);
                     checkSuppressibleUsingKey(suppressibleUsingKey, disabledLabel);
                     visitLabel(enabledLabel);
@@ -479,6 +480,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     }
                     Label enabledLabel = new Label();
                     // if thread context == null, then not in nesting group
+                    loadLocal(threadContextLocal);
                     visitJumpInsn(IFNULL, enabledLabel);
                     checkNotNull(prevNestingGroupIdLocal);
                     checkAndUpdateNestingGroupId(prevNestingGroupIdLocal, nestingGroup,
@@ -489,6 +491,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 if (!suppressionKey.isEmpty()) {
                     Label enabledLabel = new Label();
                     // if thread context == null, then not in nesting group
+                    loadLocal(threadContextLocal);
                     visitJumpInsn(IFNULL, enabledLabel);
                     checkNotNull(prevSuppressionKeyIdLocal);
                     updateSuppressionKeyId(prevSuppressionKeyIdLocal, suppressionKey);
