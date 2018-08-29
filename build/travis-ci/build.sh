@@ -343,8 +343,7 @@ case "$1" in
                  mvn clean verify sonar:sonar -pl !build/license-bundle,!build/immutables-jdk6,!build/checker-jdk6,!build/error-prone-jdk6,!build/multi-lib-tests,!agent/shaded/embedded,!agent/shaded/core,!agent/shaded/it-harness,!agent/shaded/central-https-linux,!agent/shaded/central-https-windows,!agent/shaded/central-https-osx,!agent/benchmarks,!agent/ui-sandbox,!agent/dist-maven-plugin,!agent/dist \
                                    -Dsonar.host.url=https://sonarcloud.io \
                                    -Dsonar.organization=glowroot \
-                                   -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
-                                   -Dsonar.jacoco.itReportPath=$PWD/jacoco-combined-it.exec \
+                                   -Dsonar.jacoco.reportPaths=$PWD/jacoco-combined.exec \
                                    -DargLine="$surefire_jvm_args" \
                                    -B
                else
