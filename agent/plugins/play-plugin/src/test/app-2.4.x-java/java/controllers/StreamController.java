@@ -20,6 +20,8 @@ import play.mvc.Result;
 
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class StreamController extends Controller {
 
     public Result stream() {

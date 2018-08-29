@@ -24,6 +24,8 @@ import play.mvc.Results;
 
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class AsyncController extends Controller {
 
     public static Result message() {
