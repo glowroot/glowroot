@@ -102,8 +102,8 @@ public class ExecutorAspect {
         }
     }
 
-    @Pointcut(superTypeRestriction = "java.lang.Thread", methodName = "<init>",
-            methodParameterTypes = {}, nestingGroup = "executor-execute")
+    @Pointcut(className = "java.lang.Thread", methodName = "<init>", methodParameterTypes = {},
+            nestingGroup = "executor-execute")
     public static class ThreadInitAdvice {
         @OnReturn
         public static void onReturn(ThreadContext context, @BindReceiver Thread thread) {
@@ -111,7 +111,7 @@ public class ExecutorAspect {
         }
     }
 
-    @Pointcut(superTypeRestriction = "java.lang.Thread", methodName = "<init>",
+    @Pointcut(className = "java.lang.Thread", methodName = "<init>",
             methodParameterTypes = {"java.lang.String"}, nestingGroup = "executor-execute")
     public static class ThreadInitWithStringAdvice {
         @OnReturn
@@ -120,7 +120,7 @@ public class ExecutorAspect {
         }
     }
 
-    @Pointcut(superTypeRestriction = "java.lang.Thread", methodName = "<init>",
+    @Pointcut(className = "java.lang.Thread", methodName = "<init>",
             methodParameterTypes = {"java.lang.ThreadGroup", "java.lang.String"},
             nestingGroup = "executor-execute")
     public static class ThreadInitWithStringAndThreadGroupAdvice {

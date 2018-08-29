@@ -297,15 +297,18 @@ class ClassAnalyzer {
                 matchingAdvisors.add(adviceMatcher.advice());
             }
         }
-        // look at super types
-        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
-            for (AnalyzedMethod analyzedMethod : superAnalyzedClass.analyzedMethods()) {
-                if (analyzedMethod.isOverriddenBy(thinMethod.name(), parameterTypes)) {
-                    matchingAdvisors.addAll(analyzedMethod.advisors());
-                    for (Advice subTypeRestrictedAdvice : analyzedMethod
-                            .subTypeRestrictedAdvisors()) {
-                        if (isSubTypeRestrictionMatch(subTypeRestrictedAdvice, superClassNames)) {
-                            matchingAdvisors.add(subTypeRestrictedAdvice);
+        if (!thinMethod.name().equals("<init>")) {
+            // look at super types
+            for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+                for (AnalyzedMethod analyzedMethod : superAnalyzedClass.analyzedMethods()) {
+                    if (analyzedMethod.isOverriddenBy(thinMethod.name(), parameterTypes)) {
+                        matchingAdvisors.addAll(analyzedMethod.advisors());
+                        for (Advice subTypeRestrictedAdvice : analyzedMethod
+                                .subTypeRestrictedAdvisors()) {
+                            if (isSubTypeRestrictionMatch(subTypeRestrictedAdvice,
+                                    superClassNames)) {
+                                matchingAdvisors.add(subTypeRestrictedAdvice);
+                            }
                         }
                     }
                 }
