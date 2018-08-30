@@ -330,7 +330,7 @@ public class ServletPluginIT {
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                 throws IOException, ServletException {
-            new TestFilter().doFilter(request, response, chain);
+            new TestServlet().service(request, response);
         }
     }
 

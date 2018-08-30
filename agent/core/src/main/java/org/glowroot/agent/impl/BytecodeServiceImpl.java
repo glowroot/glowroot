@@ -96,8 +96,10 @@ public class BytecodeServiceImpl implements BytecodeService {
 
     @Override
     public ThreadContextPlus createOptionalThreadContext(
-            ThreadContextThreadLocal.Holder threadContextHolder) {
-        return OptionalThreadContextImpl.create(transactionService, threadContextHolder);
+            ThreadContextThreadLocal.Holder threadContextHolder, int currentNestingGroupId,
+            int currentSuppressionKeyId) {
+        return OptionalThreadContextImpl.create(transactionService, threadContextHolder,
+                currentNestingGroupId, currentSuppressionKeyId);
     }
 
     @Override

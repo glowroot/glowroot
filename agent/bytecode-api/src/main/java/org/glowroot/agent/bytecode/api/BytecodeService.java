@@ -34,7 +34,8 @@ public interface BytecodeService {
     ThreadContextThreadLocal.Holder getCurrentThreadContextHolder();
 
     ThreadContextPlus createOptionalThreadContext(
-            ThreadContextThreadLocal.Holder threadContextHolder);
+            ThreadContextThreadLocal.Holder threadContextHolder, int currentNestingGroupId,
+            int currentSuppressionKeyId);
 
     Object getClassMeta(int index) throws Exception;
 

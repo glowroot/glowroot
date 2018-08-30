@@ -45,8 +45,9 @@ public class ThreadContextImplTest {
         Ticker ticker = mock(Ticker.class);
         ThreadContextThreadLocal.Holder threadContextHolder =
                 mock(ThreadContextThreadLocal.Holder.class);
-        threadContext = new ThreadContextImpl(transaction, null, null, messageSupplier,
-                rootTimerName, 0, false, 0, 0, null, false, ticker, threadContextHolder, null);
+        threadContext =
+                new ThreadContextImpl(transaction, null, null, messageSupplier, rootTimerName, 0,
+                        false, 0, 0, null, false, ticker, threadContextHolder, null, 0, 0);
     }
 
     @Test

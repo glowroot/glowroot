@@ -86,7 +86,8 @@ public class TransactionService implements ConfigListener {
 
     TraceEntryImpl startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
+            int rootSuppressionKeyId) {
         // ensure visibility of recent configuration updates
         configService.readMemoryBarrier();
         long startTick = ticker.read();
@@ -94,7 +95,8 @@ public class TransactionService implements ConfigListener {
                 transactionType, transactionName, messageSupplier, timerName, captureThreadStats,
                 maxTraceEntries, maxQueryAggregates, maxServiceCallAggregates, maxProfileSamples,
                 threadAllocatedBytes, transactionCompletionCallback, ticker, transactionRegistry,
-                this, configService, userProfileScheduler, threadContextHolder);
+                this, configService, userProfileScheduler, threadContextHolder, rootNestingGroupId,
+                rootSuppressionKeyId);
         SelfRemovableEntry transactionEntry = transactionRegistry.addTransaction(transaction);
         transaction.setTransactionEntry(transactionEntry);
         threadContextHolder.set(transaction.getMainThreadContext());

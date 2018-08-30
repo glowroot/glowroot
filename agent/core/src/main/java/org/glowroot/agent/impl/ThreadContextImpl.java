@@ -145,7 +145,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             boolean limitExceededAuxThreadContext, Ticker ticker,
             ThreadContextThreadLocal.Holder threadContextHolder,
-            @Nullable ServletRequestInfo servletRequestInfo) {
+            @Nullable ServletRequestInfo servletRequestInfo, int rootNestingGroupId,
+            int rootSuppressionKeyId) {
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
         rootTimer = TimerImpl.createRootTimer(castInitialized(this), (TimerNameImpl) rootTimerName);
@@ -163,6 +164,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.threadContextHolder = threadContextHolder;
         this.servletRequestInfo = servletRequestInfo;
         this.outerTransactionThreadContext = (ThreadContextImpl) threadContextHolder.get();
+        currentNestingGroupId = rootNestingGroupId;
+        currentSuppressionKeyId = rootSuppressionKeyId;
     }
 
     public Transaction getTransaction() {
@@ -570,7 +573,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (transaction.isOuter()
                 || alreadyInTransactionBehavior == AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION) {
             TraceEntryImpl traceEntry = transaction.startInnerTransaction(transactionType,
-                    transactionName, messageSupplier, timerName, threadContextHolder);
+                    transactionName, messageSupplier, timerName, threadContextHolder,
+                    currentNestingGroupId, currentSuppressionKeyId);
             innerTransactionThreadContext =
                     (ThreadContextImpl) checkNotNull(threadContextHolder.get());
             return traceEntry;

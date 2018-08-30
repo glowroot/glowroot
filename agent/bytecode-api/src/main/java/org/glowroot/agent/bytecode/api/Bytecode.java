@@ -48,8 +48,10 @@ public class Bytecode {
     }
 
     public static ThreadContextPlus createOptionalThreadContext(
-            ThreadContextThreadLocal.Holder threadContextHolder) {
-        return service.createOptionalThreadContext(threadContextHolder);
+            ThreadContextThreadLocal.Holder threadContextHolder, int currentNestingGroupId,
+            int currentSuppressionKeyId) {
+        return service.createOptionalThreadContext(threadContextHolder, currentNestingGroupId,
+                currentSuppressionKeyId);
     }
 
     public static Object getClassMeta(int index) throws Exception {

@@ -42,20 +42,28 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
 
     private static final Logger logger = LoggerFactory.getLogger(OptionalThreadContextImpl.class);
 
+    private int rootNestingGroupId;
+    private int rootSuppressionKeyId;
+
     private @MonotonicNonNull ThreadContextPlus threadContext;
 
     private final TransactionService transactionService;
     private final ThreadContextThreadLocal.Holder threadContextHolder;
 
     static OptionalThreadContextImpl create(TransactionService transactionService,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
-        return new OptionalThreadContextImpl(transactionService, threadContextHolder);
+            ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
+            int rootSuppressionKeyId) {
+        return new OptionalThreadContextImpl(transactionService, threadContextHolder,
+                rootNestingGroupId, rootSuppressionKeyId);
     }
 
     private OptionalThreadContextImpl(TransactionService transactionService,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
+            int rootSuppressionKeyId) {
         this.transactionService = transactionService;
         this.threadContextHolder = threadContextHolder;
+        this.rootNestingGroupId = rootNestingGroupId;
+        this.rootSuppressionKeyId = rootSuppressionKeyId;
     }
 
     @Override
@@ -92,7 +100,8 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
         }
         if (threadContext == null) {
             TraceEntry traceEntry = transactionService.startTransaction(transactionType,
-                    transactionName, messageSupplier, timerName, threadContextHolder);
+                    transactionName, messageSupplier, timerName, threadContextHolder,
+                    rootNestingGroupId, rootSuppressionKeyId);
             threadContext = checkNotNull(threadContextHolder.get());
             return traceEntry;
         } else {
@@ -320,13 +329,16 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
     public int getCurrentNestingGroupId() {
         if (threadContext == null) {
             return 0;
+        } else {
+            return threadContext.getCurrentNestingGroupId();
         }
-        return threadContext.getCurrentNestingGroupId();
     }
 
     @Override
     public void setCurrentNestingGroupId(int nestingGroupId) {
-        if (threadContext != null) {
+        if (threadContext == null) {
+            rootNestingGroupId = nestingGroupId;
+        } else {
             threadContext.setCurrentNestingGroupId(nestingGroupId);
         }
     }
@@ -335,13 +347,16 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
     public int getCurrentSuppressionKeyId() {
         if (threadContext == null) {
             return 0;
+        } else {
+            return threadContext.getCurrentSuppressionKeyId();
         }
-        return threadContext.getCurrentSuppressionKeyId();
     }
 
     @Override
     public void setCurrentSuppressionKeyId(int suppressionKeyId) {
-        if (threadContext != null) {
+        if (threadContext == null) {
+            rootSuppressionKeyId = suppressionKeyId;
+        } else {
             threadContext.setCurrentSuppressionKeyId(suppressionKeyId);
         }
     }

@@ -217,7 +217,8 @@ public class Transaction {
             CompletionCallback completionCallback, Ticker ticker,
             TransactionRegistry transactionRegistry, TransactionService transactionService,
             ConfigService configService, UserProfileScheduler userProfileScheduler,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
+            int rootSuppressionKeyId) {
         this.startTime = startTime;
         this.startTick = startTick;
         this.transactionType = transactionType;
@@ -235,7 +236,7 @@ public class Transaction {
         mainThreadContext = new ThreadContextImpl(castInitialized(this), null, null,
                 messageSupplier, timerName, startTick, captureThreadStats, maxQueryAggregates,
                 maxServiceCallAggregates, threadAllocatedBytes, false, ticker, threadContextHolder,
-                null);
+                null, rootNestingGroupId, rootSuppressionKeyId);
     }
 
     long getStartTime() {
@@ -704,14 +705,14 @@ public class Transaction {
                         parentThreadContextPriorEntry, AuxThreadRootMessageSupplier.INSTANCE,
                         auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
                         maxQueryAggregates, maxServiceCallAggregates, threadAllocatedBytes, false,
-                        ticker, threadContextHolder, servletRequestInfo);
+                        ticker, threadContextHolder, servletRequestInfo, 0, 0);
                 auxThreadContexts.add(auxThreadContext);
             } else {
                 auxThreadContext = new ThreadContextImpl(this, mainThreadContext.getRootEntry(),
                         mainThreadContext.getTailEntry(), AuxThreadRootMessageSupplier.INSTANCE,
                         auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
                         maxQueryAggregates, maxServiceCallAggregates, threadAllocatedBytes, true,
-                        ticker, threadContextHolder, servletRequestInfo);
+                        ticker, threadContextHolder, servletRequestInfo, 0, 0);
                 if (unmergedLimitExceededAuxThreadContexts == null) {
                     unmergedLimitExceededAuxThreadContexts = Sets.newHashSet();
                 }
@@ -755,9 +756,11 @@ public class Transaction {
 
     TraceEntryImpl startInnerTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
-            ThreadContextThreadLocal.Holder threadContextHolder) {
+            ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
+            int rootSuppressionKeyId) {
         return transactionService.startTransaction(transactionType, transactionName,
-                messageSupplier, timerName, threadContextHolder);
+                messageSupplier, timerName, threadContextHolder, rootNestingGroupId,
+                rootSuppressionKeyId);
     }
 
     boolean isEntryLimitExceeded(int entryCount) {
