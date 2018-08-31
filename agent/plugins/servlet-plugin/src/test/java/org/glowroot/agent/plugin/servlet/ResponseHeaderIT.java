@@ -214,20 +214,20 @@ public class ResponseHeaderIT {
         if (detailEntry == null) {
             return null;
         }
-        Map<String, Object> responseHeaders = Maps.newLinkedHashMap();
+        Map<String, Object> detailMap = Maps.newLinkedHashMap();
         for (Trace.DetailEntry detail : detailEntry.getChildEntryList()) {
             List<Trace.DetailValue> values = detail.getValueList();
             if (values.size() == 1) {
-                responseHeaders.put(detail.getName(), values.get(0).getString());
+                detailMap.put(detail.getName(), values.get(0).getString());
             } else {
                 List<String> vals = Lists.newArrayList();
                 for (Trace.DetailValue value : values) {
                     vals.add(value.getString());
                 }
-                responseHeaders.put(detail.getName(), vals);
+                detailMap.put(detail.getName(), vals);
             }
         }
-        return responseHeaders;
+        return detailMap;
     }
 
     static String getDetailValue(Trace trace, String name) {

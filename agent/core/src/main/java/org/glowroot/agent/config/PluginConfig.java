@@ -95,7 +95,7 @@ public abstract class PluginConfig {
 
     public boolean getBooleanProperty(String name) {
         Boolean value = booleanProperties().get(name);
-        return value == null ? false : value;
+        return value != null && value;
     }
 
     public @Nullable Double getDoubleProperty(String name) {

@@ -1300,7 +1300,7 @@ public class TraceDaoImpl implements TraceDao {
             String traceId = checkNotNull(row.getString(i++));
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             long durationNanos = row.getLong(i++);
-            boolean error = errorPoints ? true : row.getBool(i++);
+            boolean error = errorPoints || row.getBool(i++);
             // error points are defined by having an error message, so safe to checkNotNull
             String errorMessage = errorPoints ? checkNotNull(row.getString(i++)) : "";
             // headline is null for data inserted prior to 0.9.7

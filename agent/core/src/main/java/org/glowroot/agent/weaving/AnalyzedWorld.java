@@ -509,8 +509,8 @@ public class AnalyzedWorld {
                 break;
             }
         }
-        classBuilder.ejbRemote(ejbRemote);
-        return classBuilder.build();
+        return classBuilder.ejbRemote(ejbRemote)
+                .build();
     }
 
     private static @Nullable Method getTargetMethod(Method bridgeMethod, Class<?> clazz) {

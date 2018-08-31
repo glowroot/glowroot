@@ -22,6 +22,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class MaybePatterns {
 
+    private MaybePatterns() {}
+
     public static @Nullable Pattern buildPattern(String maybePattern) {
         if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
             // full regex power

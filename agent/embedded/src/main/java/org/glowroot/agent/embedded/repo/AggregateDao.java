@@ -725,7 +725,7 @@ public class AggregateDao implements AggregateRepository {
             return null;
         }
 
-        private @Untainted String getSortClause(SummarySortOrder sortOrder) {
+        private static @Untainted String getSortClause(SummarySortOrder sortOrder) {
             switch (sortOrder) {
                 case TOTAL_TIME:
                     return "sum(total_duration_nanos) desc";
@@ -844,7 +844,7 @@ public class AggregateDao implements AggregateRepository {
             return null;
         }
 
-        private @Untainted String getSortClause(ErrorSummarySortOrder sortOrder) {
+        private static @Untainted String getSortClause(ErrorSummarySortOrder sortOrder) {
             switch (sortOrder) {
                 case ERROR_COUNT:
                     return "sum(error_count) desc";

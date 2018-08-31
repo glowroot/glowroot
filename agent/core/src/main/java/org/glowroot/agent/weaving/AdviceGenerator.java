@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.weaving;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +28,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.util.ASMifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -279,13 +277,14 @@ class AdviceGenerator {
             mv.visitLabel(returnTrueLabel);
             mv.visitInsn(ICONST_1);
             mv.visitInsn(IRETURN);
-        } else if (checkPropertyNotEnabled && !checkNotInTransaction) {
+        } else if (!checkNotInTransaction) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "enabled",
                     "Lorg/glowroot/agent/plugin/api/config/BooleanProperty;");
             mv.visitMethodInsn(INVOKEINTERFACE,
                     "org/glowroot/agent/plugin/api/config/BooleanProperty", "value", "()Z", true);
             mv.visitInsn(IRETURN);
         } else {
+            // check both
             mv.visitMethodInsn(INVOKEINTERFACE,
                     "org/glowroot/agent/plugin/api/OptionalThreadContext", "isInTransaction", "()Z",
                     true);
@@ -306,16 +305,6 @@ class AdviceGenerator {
         }
         mv.visitMaxs(0, 0);
         mv.visitEnd();
-    }
-
-    public static class X {
-        public AlreadyInTransactionBehavior test() {
-            return AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION;
-        }
-    }
-
-    public static void main(String[] args) throws IOException {
-        ASMifier.main(new String[] {X.class.getName()});
     }
 
     @RequiresNonNull("methodMetaInternalName")

@@ -204,7 +204,7 @@ public class AgentModule {
                 }
                 instrumentation.removeTransformer(preCheckClassFileTransformer);
             }
-            logJavaClassAlreadyLoadedWarningIfNeeded(instrumentation.getAllLoadedClasses(),
+            logAnyImportantClassLoadedPriorToWeavingInit(instrumentation.getAllLoadedClasses(),
                     glowrootJarFile, false);
             if (instrumentation.isRetransformClassesSupported()
                     && instrumentation.isModifiableClass(Thread.class)) {
@@ -355,10 +355,11 @@ public class AgentModule {
         return liveJvmService;
     }
 
-    public static boolean logJavaClassAlreadyLoadedWarningIfNeeded(Class<?>[] allLoadedClasses,
-            @Nullable File glowrootJarFile, boolean preCheck) {
+    public static boolean logAnyImportantClassLoadedPriorToWeavingInit(
+            Class<?>[] classesLoadedPriorToWeavingInit, @Nullable File glowrootJarFile,
+            boolean preCheck) {
         List<String> loadedImportantClassNames = Lists.newArrayList();
-        for (Class<?> clazz : allLoadedClasses) {
+        for (Class<?> clazz : classesLoadedPriorToWeavingInit) {
             String className = clazz.getName();
             if (PreCheckLoadedClasses.isImportantClass(className, clazz)) {
                 loadedImportantClassNames.add(className);

@@ -313,7 +313,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 String gaugeName = entry.getKey();
                 Collection<String> childAgentRollupIds = entry.getValue();
                 futures.add(rollupOneFromChildren(rollupLevel, agentRollupId, gaugeName,
-                        ImmutableList.copyOf(childAgentRollupIds), captureTime, adjustedTTL));
+                        childAgentRollupIds, captureTime, adjustedTTL));
             }
             // wait for above async work to ensure rollup complete before proceeding
             MoreFutures.waitForAll(futures);
@@ -393,8 +393,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     }
 
     private ListenableFuture<?> rollupOneFromChildren(int rollupLevel, String agentRollupId,
-            String gaugeName, List<String> childAgentRollupIds, long captureTime, int adjustedTTL)
-            throws Exception {
+            String gaugeName, Collection<String> childAgentRollupIds, long captureTime,
+            int adjustedTTL) throws Exception {
         List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (String childAgentRollupId : childAgentRollupIds) {
             BoundStatement boundStatement = readValueForRollupFromChildPS.bind();

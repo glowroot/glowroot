@@ -2455,8 +2455,8 @@ public class SchemaUpgrade {
     }
 
     private void populateActiveAgentTable(int rollupLevel) throws Exception {
-        logger.info("populating active_agent_rollup_" + rollupLevel + " table - this could take"
-                + " several minutes on large data sets...");
+        logger.info("populating active_agent_rollup_{} table - this could take"
+                + " several minutes on large data sets...", rollupLevel);
         CentralStorageConfig storageConfig = getCentralStorageConfig(session);
         dropTableIfExists("active_agent_rollup_" + rollupLevel);
         session.createTableWithTWCS("create table if not exists active_agent_rollup_" + rollupLevel
@@ -2503,7 +2503,7 @@ public class SchemaUpgrade {
             }
         }
         MoreFutures.waitForAll(futures);
-        logger.info("populating active_agent_rollup_" + rollupLevel + " table - complete");
+        logger.info("populating active_agent_rollup_{} table - complete", rollupLevel);
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

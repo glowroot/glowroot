@@ -274,9 +274,8 @@ class LayoutService {
                 .central(central)
                 .offlineViewer(offlineViewer)
                 .glowrootVersion(version)
-                .loginEnabled(offlineViewer ? false
-                        : configRepository.namedUsersExist()
-                                || !configRepository.getLdapConfig().host().isEmpty())
+                .loginEnabled(!offlineViewer && (configRepository.namedUsersExist()
+                        || !configRepository.getLdapConfig().host().isEmpty()))
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
                 .addAllRollupExpirationMillis(rollupExpirationMillis)
                 .gaugeCollectionIntervalMillis(configRepository.getGaugeCollectionIntervalMillis())

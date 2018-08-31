@@ -162,8 +162,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 implicitFrameLocals[i++] = owner.getInternalName();
             }
         }
-        for (int j = 0; j < argumentTypes.length; j++) {
-            implicitFrameLocals[i++] = convert(argumentTypes[j]);
+        for (Type argumentType : argumentTypes) {
+            implicitFrameLocals[i++] = convert(argumentType);
         }
         this.implicitFrameLocals = implicitFrameLocals;
     }
@@ -499,12 +499,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitLabel(label);
             visitImplicitFrame();
         }
-    }
-
-    private boolean hasOtherEnabledFactors(Advice advice, String nestingGroup,
-            String suppressibleUsingKey) {
-        return !nestingGroup.isEmpty() || !suppressibleUsingKey.isEmpty()
-                || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext());
     }
 
     @RequiresNonNull("threadContextLocal")
@@ -1231,6 +1225,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
             default:
                 throw new IllegalStateException("Unexpected type: " + type.getDescriptor());
         }
+    }
+
+    private static boolean hasOtherEnabledFactors(Advice advice, String nestingGroup,
+            String suppressibleUsingKey) {
+        return !nestingGroup.isEmpty() || !suppressibleUsingKey.isEmpty()
+                || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext());
     }
 
     private static int getNestingGroupId(String nestingGroup) {

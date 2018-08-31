@@ -280,8 +280,8 @@ class ClassAnalyzer {
                 i.remove();
             }
         }
-        builder.addAllAdvisors(matchingAdvisors);
-        builder.addAllSubTypeRestrictedAdvisors(subTypeRestrictedAdvisors);
+        builder.addAllAdvisors(matchingAdvisors)
+                .addAllSubTypeRestrictedAdvisors(subTypeRestrictedAdvisors);
         analyzedClassBuilder.addAnalyzedMethods(builder.build());
         return matchingAdvisors;
     }

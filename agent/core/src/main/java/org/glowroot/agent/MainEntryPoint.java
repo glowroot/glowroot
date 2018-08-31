@@ -126,7 +126,7 @@ public class MainEntryPoint {
             return;
         }
         if (PRE_CHECK_LOADED_CLASSES) {
-            if (AgentModule.logJavaClassAlreadyLoadedWarningIfNeeded(allPriorLoadedClasses,
+            if (AgentModule.logAnyImportantClassLoadedPriorToWeavingInit(allPriorLoadedClasses,
                     glowrootJarFile, true)) {
                 List<String> classNames = Lists.newArrayList();
                 for (Class<?> clazz : allPriorLoadedClasses) {

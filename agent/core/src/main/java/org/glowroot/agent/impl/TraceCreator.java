@@ -84,52 +84,6 @@ public class TraceCreator {
         return protos;
     }
 
-    // timings for traces that are still active are normalized to the capture tick in order to
-    // *attempt* to present a picture of the trace at that exact tick
-    // (without using synchronization to block updates to the trace while it is being read)
-    private static void createFullTrace(Transaction transaction, boolean slow, boolean partial,
-            long captureTime, long captureTick, TraceVisitor traceVisitor,
-            Trace. /*@Nullable*/ Header header) throws Exception {
-
-        CountingEntryVisitorWrapper entryVisitorWrapper =
-                new CountingEntryVisitorWrapper(traceVisitor);
-        transaction.visitEntries(captureTick, entryVisitorWrapper);
-
-        List<Aggregate.Query> queries = transaction.getQueries();
-        traceVisitor.visitQueries(queries);
-
-        traceVisitor.visitSharedQueryTexts(transaction.getSharedQueryTexts());
-
-        Profile mainThreadProfile = transaction.getMainThreadProfileProtobuf();
-        if (mainThreadProfile != null) {
-            traceVisitor.visitMainThreadProfile(mainThreadProfile);
-        }
-        long mainThreadProfileSampleCount = getProfileSampleCount(mainThreadProfile);
-        // mainThreadProfile can be gc'd at this point
-
-        Profile auxThreadProfile = transaction.getAuxThreadProfileProtobuf();
-        if (auxThreadProfile != null) {
-            traceVisitor.visitAuxThreadProfile(auxThreadProfile);
-        }
-        long auxThreadProfileSampleCount = getProfileSampleCount(auxThreadProfile);
-        // auxThreadProfile can be gc'd at this point
-
-        int entryCount = entryVisitorWrapper.count;
-        int queryCount = queries.size();
-
-        if (header == null) {
-            traceVisitor.visitHeader(createTraceHeader(transaction, slow, partial, captureTime,
-                    captureTick, entryCount, queryCount, mainThreadProfileSampleCount,
-                    auxThreadProfileSampleCount));
-        } else {
-            Trace.Header.Builder builder = header.toBuilder();
-            addCounts(builder, transaction, entryCount, queryCount,
-                    mainThreadProfileSampleCount, auxThreadProfileSampleCount);
-            traceVisitor.visitHeader(builder.build());
-
-        }
-    }
-
     private static Trace.Header createTraceHeader(Transaction transaction, boolean slow,
             boolean partial, long captureTime, long captureTick, int entryCount,
             int queryCount, long mainThreadProfileSampleCount, long auxThreadProfileSampleCount) {
@@ -195,19 +149,6 @@ public class TraceCreator {
                 transaction.isAuxThreadProfileSampleLimitExceeded(auxThreadProfileSampleCount));
     }
 
-    private static long getProfileSampleCount(@Nullable Profile profile) {
-        if (profile == null) {
-            return 0;
-        }
-        long profileSampleCount = 0;
-        for (ProfileNode node : profile.getNodeList()) {
-            if (node.getDepth() == 0) {
-                profileSampleCount += node.getSampleCount();
-            }
-        }
-        return profileSampleCount;
-    }
-
     private static class TraceReaderImpl implements TraceReader {
 
         private final Transaction transaction;
@@ -233,8 +174,45 @@ public class TraceCreator {
 
         @Override
         public void accept(TraceVisitor traceVisitor) throws Exception {
-            createFullTrace(transaction, slow, partial, captureTime, captureTick, traceVisitor,
-                    header);
+            // timings for traces that are still active are normalized to the capture tick in order
+            // to *attempt* to present a picture of the trace at that exact tick
+            // (without using synchronization to block updates to the trace while it is being read)
+            CountingEntryVisitorWrapper entryVisitorWrapper =
+                    new CountingEntryVisitorWrapper(traceVisitor);
+            transaction.visitEntries(captureTick, entryVisitorWrapper);
+
+            List<Aggregate.Query> queries = transaction.getQueries();
+            traceVisitor.visitQueries(queries);
+
+            traceVisitor.visitSharedQueryTexts(transaction.getSharedQueryTexts());
+
+            Profile mainThreadProfile = transaction.getMainThreadProfileProtobuf();
+            if (mainThreadProfile != null) {
+                traceVisitor.visitMainThreadProfile(mainThreadProfile);
+            }
+            long mainThreadProfileSampleCount = getProfileSampleCount(mainThreadProfile);
+            // mainThreadProfile can be gc'd at this point
+
+            Profile auxThreadProfile = transaction.getAuxThreadProfileProtobuf();
+            if (auxThreadProfile != null) {
+                traceVisitor.visitAuxThreadProfile(auxThreadProfile);
+            }
+            long auxThreadProfileSampleCount = getProfileSampleCount(auxThreadProfile);
+            // auxThreadProfile can be gc'd at this point
+
+            int entryCount = entryVisitorWrapper.count;
+            int queryCount = queries.size();
+
+            if (header == null) {
+                traceVisitor.visitHeader(createTraceHeader(transaction, slow, partial, captureTime,
+                        captureTick, entryCount, queryCount, mainThreadProfileSampleCount,
+                        auxThreadProfileSampleCount));
+            } else {
+                Trace.Header.Builder builder = header.toBuilder();
+                addCounts(builder, transaction, entryCount, queryCount,
+                        mainThreadProfileSampleCount, auxThreadProfileSampleCount);
+                traceVisitor.visitHeader(builder.build());
+            }
         }
 
         @Override
@@ -264,6 +242,19 @@ public class TraceCreator {
         @Override
         public boolean update() {
             return update;
+        }
+
+        private static long getProfileSampleCount(@Nullable Profile profile) {
+            if (profile == null) {
+                return 0;
+            }
+            long profileSampleCount = 0;
+            for (ProfileNode node : profile.getNodeList()) {
+                if (node.getDepth() == 0) {
+                    profileSampleCount += node.getSampleCount();
+                }
+            }
+            return profileSampleCount;
         }
     }
 

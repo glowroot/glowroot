@@ -75,7 +75,7 @@ class LazySecretKeyImpl implements LazySecretKey {
         }
     }
 
-    private static @Nullable File getSecretFile(List<File> confDirs) throws IOException {
+    private static @Nullable File getSecretFile(List<File> confDirs) {
         for (File confDir : confDirs) {
             File secretFile = new File(confDir, SECRET_FILE_NAME);
             if (secretFile.exists()) {

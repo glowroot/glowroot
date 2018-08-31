@@ -161,16 +161,6 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         return futures;
     }
 
-    private long getRollupIntervalMillis(List<RollupConfig> rollupConfigs, int rollupLevel) {
-        long rollupIntervalMillis;
-        if (rollupLevel < 3) {
-            rollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
-        } else {
-            rollupIntervalMillis = DAYS.toMillis(1);
-        }
-        return rollupIntervalMillis;
-    }
-
     private AgentRollup createAgentRollup(String agentRollupId,
             Multimap<String, String> parentChildMap) throws Exception {
         Collection<String> childAgentRollupIds = parentChildMap.get(agentRollupId);
@@ -187,6 +177,16 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         childAgentRollups.sort(Comparator.comparing(AgentRollup::display));
         return builder.addAllChildren(childAgentRollups)
                 .build();
+    }
+
+    private static long getRollupIntervalMillis(List<RollupConfig> rollupConfigs, int rollupLevel) {
+        long rollupIntervalMillis;
+        if (rollupLevel < 3) {
+            rollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
+        } else {
+            rollupIntervalMillis = DAYS.toMillis(1);
+        }
+        return rollupIntervalMillis;
     }
 
     @Value.Immutable

@@ -656,5 +656,5 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
      *            {@link Opcodes#ARETURN}, {@link Opcodes#LRETURN}, {@link Opcodes#DRETURN} or
      *            {@link Opcodes#ATHROW}.
      */
-    protected void onMethodExit(@SuppressWarnings("unused") int opcode) {}
+    protected void onMethodExit(int opcode) {}
 }

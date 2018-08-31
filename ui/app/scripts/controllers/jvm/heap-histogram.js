@@ -40,7 +40,7 @@ glowroot.controller('JvmHeapHistogramCtrl', [
       var width = (bytes / maxBytes) * 100;
       if (width < 0.1) {
         // this avoids thin line on left hand side looking like a border
-        return 0;
+        return '0';
       } else {
         return width + '%';
       }

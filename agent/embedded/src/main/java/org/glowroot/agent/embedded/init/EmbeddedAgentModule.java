@@ -78,7 +78,7 @@ class EmbeddedAgentModule {
 
     // only look at system property, b/c there doesn't seem any point in setting agent.port in
     // the glowroot.properties file, since in that case better to set it in the config.json file
-    private static final @Nullable Integer webPortOverride =
+    private static final @Nullable Integer WEB_PORT_OVERRIDE =
             Integer.getInteger("glowroot.agent.port");
 
     private final File logDir;
@@ -149,7 +149,7 @@ class EmbeddedAgentModule {
         if (agentModule == null) {
             checkNotNull(offlineViewerAgentModule);
             ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDirs,
-                    webPortOverride, offlineViewerAgentModule.getConfigService(), pluginCache);
+                    WEB_PORT_OVERRIDE, offlineViewerAgentModule.getConfigService(), pluginCache);
             DataSource dataSource = createDataSource(h2MemDb, dataDir);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, null);
@@ -162,7 +162,7 @@ class EmbeddedAgentModule {
                     glowrootJarFile, mainClass);
 
             final ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDirs,
-                    webPortOverride, agentModule.getConfigService(), pluginCache);
+                    WEB_PORT_OVERRIDE, agentModule.getConfigService(), pluginCache);
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -228,7 +228,7 @@ class EmbeddedAgentModule {
                     .central(false)
                     .servlet(false)
                     .offlineViewer(false)
-                    .webPortReadOnly(webPortOverride != null)
+                    .webPortReadOnly(WEB_PORT_OVERRIDE != null)
                     .confDirs(confDirs)
                     .logDir(logDir)
                     .logFileNamePattern(Pattern.compile("glowroot.*\\.log"))
@@ -267,7 +267,7 @@ class EmbeddedAgentModule {
                     .central(false)
                     .servlet(false)
                     .offlineViewer(true)
-                    .webPortReadOnly(webPortOverride != null)
+                    .webPortReadOnly(WEB_PORT_OVERRIDE != null)
                     .confDirs(confDirs)
                     .logDir(logDir)
                     .logFileNamePattern(Pattern.compile("glowroot.*\\.log"))
