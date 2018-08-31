@@ -507,7 +507,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             try {
                 onNextInternal(value);
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logError(t);
                 throw t;
             }
         }
@@ -520,21 +520,14 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             try {
                 onCompletedInternal();
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logError(t);
                 throw t;
             }
         }
 
         @Override
         public void onError(Throwable t) {
-            if (streamHeader == null) {
-                logger.error(t.getMessage(), t);
-            } else {
-                logger.error("{} - {}",
-                        grpcCommon.getDisplayForLogging(streamHeader.getAgentId(),
-                                streamHeader.getPostV09()),
-                        t.getMessage(), t);
-            }
+            logError(t);
         }
 
         private void onNextInternal(AggregateStreamMessage value) {
@@ -576,6 +569,15 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                     streamHeader.getCaptureTime(), sharedQueryTexts, aggregatesByTypeList,
                     responseObserver);
         }
+
+        private void logError(Throwable t) {
+            if (streamHeader == null) {
+                logger.error(t.getMessage(), t);
+            } else {
+                logger.error("{} - {}", grpcCommon.getDisplayForLogging(streamHeader.getAgentId(),
+                        streamHeader.getPostV09()), t.getMessage(), t);
+            }
+        }
     }
 
     private final class TraceStreamObserver implements StreamObserver<TraceStreamMessage> {
@@ -600,7 +602,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             try {
                 onNextInternal(value);
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logError(t);
                 throw t;
             }
         }
@@ -612,18 +614,14 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             try {
                 onCompletedInternal();
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logError(t);
                 throw t;
             }
         }
 
         @Override
         public void onError(Throwable t) {
-            if (streamHeader == null) {
-                logger.error(t.getMessage(), t);
-            } else {
-                logger.error("{} - {}", getDisplayForLogging(), t.getMessage(), t);
-            }
+            logError(t);
         }
 
         private void onNextInternal(TraceStreamMessage value) {
@@ -721,6 +719,14 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             checkState(sharedQueryTexts.size() == streamCounts.getSharedQueryTextCount());
             checkState(entries.size() == streamCounts.getEntryCount());
             return true;
+        }
+
+        private void logError(Throwable t) {
+            if (streamHeader == null) {
+                logger.error(t.getMessage(), t);
+            } else {
+                logger.error("{} - {}", getDisplayForLogging(), t.getMessage(), t);
+            }
         }
 
         @RequiresNonNull("streamHeader")
