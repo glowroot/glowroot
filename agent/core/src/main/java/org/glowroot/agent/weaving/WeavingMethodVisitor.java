@@ -296,7 +296,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         // enabled and traveler locals must be defined outside of the try block so they will be
         // accessible in the catch block
         for (Advice advice : advisors) {
-            defineEnabledLocalVar(advice);
+            defineLocalVars(advice);
             defineTravelerLocalVar(advice);
         }
         if (name.equals("<init>")) {
@@ -305,7 +305,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             // jacoco does this)
             // see WeaverTest.shouldExecuteSingleJumpAdviceOnHackedConstructorBytecode()
             for (Advice advice : advisors) {
-                evaluateEnabledLocalVar(advice);
+                evaluateLocalVars(advice);
             }
         }
         saveArgsForMethodExit();
@@ -316,7 +316,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             Advice advice = advisors.get(i);
             if (!name.equals("<init>")) {
                 // see comment above in onMethodPreEnterInternal() why this is skipped for <init>
-                evaluateEnabledLocalVar(advice);
+                evaluateLocalVars(advice);
             }
             invokeOnBefore(advice, travelerLocals.get(advice));
             if (advice.onAfterAdvice() != null || advice.onThrowAdvice() != null) {
@@ -365,22 +365,24 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void defineEnabledLocalVar(Advice advice) {
+    private void defineLocalVars(Advice advice) {
         Integer enabledLocal = null;
         Method isEnabledAdvice = advice.isEnabledAdvice();
-        if (isEnabledAdvice != null) {
+        String nestingGroup = advice.pointcut().nestingGroup();
+        String suppressibleUsingKey = advice.pointcut().suppressibleUsingKey();
+        if (isEnabledAdvice != null
+                || hasOtherEnabledFactors(advice, nestingGroup, suppressibleUsingKey)) {
             enabledLocal = newLocal(Type.BOOLEAN_TYPE);
             enabledLocals.put(advice, enabledLocal);
             // temporary initial value needed for Java 7 stack map frames
             visitInsn(ICONST_0);
             storeLocal(enabledLocal);
         }
-        String nestingGroup = advice.pointcut().nestingGroup();
         String suppressionKey = advice.pointcut().suppressionKey();
-        String suppressibleUsingKey = advice.pointcut().suppressibleUsingKey();
-        if ((!nestingGroup.isEmpty() || !suppressionKey.isEmpty()
-                || advice.hasBindThreadContext() || advice.hasBindOptionalThreadContext())
-                && threadContextHolderLocal == null) {
+        boolean needThreadContextHolderLocal = !nestingGroup.isEmpty() || !suppressionKey.isEmpty()
+                || !suppressibleUsingKey.isEmpty() || advice.hasBindThreadContext()
+                || advice.hasBindOptionalThreadContext();
+        if (needThreadContextHolderLocal && threadContextHolderLocal == null) {
             // need to define thread context local var outside of any branches,
             // but also don't want to load ThreadContext if enabledLocal exists and is false
             threadContextHolderLocal = newLocal(fastThreadContextThreadLocalHolderType);
@@ -408,122 +410,106 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitInsn(ICONST_M1);
             storeLocal(prevSuppressionKeyIdLocal);
         }
-        if (!nestingGroup.isEmpty() || !suppressibleUsingKey.isEmpty() || !suppressionKey.isEmpty()
-                || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext())) {
-            if (enabledLocal == null) {
-                enabledLocal = newLocal(Type.BOOLEAN_TYPE);
-                enabledLocals.put(advice, enabledLocal);
-                // temporary initial value needed for Java 7 stack map frames
-                visitInsn(ICONST_0);
-                storeLocal(enabledLocal);
-            }
-        }
     }
 
-    private void evaluateEnabledLocalVar(Advice advice) {
+    private void evaluateLocalVars(Advice advice) {
         Method isEnabledAdvice = advice.isEnabledAdvice();
-        if (isEnabledAdvice != null) {
-            loadMethodParameters(advice.isEnabledParameters(), 0, null, advice.adviceType(),
-                    IsEnabled.class, false, advice.pointcut().nestingGroup(),
-                    advice.pointcut().suppressionKey());
-            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
-                    isEnabledAdvice.getName(), isEnabledAdvice.getDescriptor(), false);
-            // guaranteed to be non-null via defineEnabledLocalVar() above
-            int enabledLocal = checkNotNull(enabledLocals.get(advice));
-            storeLocal(enabledLocal);
-        }
         String nestingGroup = advice.pointcut().nestingGroup();
         String suppressionKey = advice.pointcut().suppressionKey();
         String suppressibleUsingKey = advice.pointcut().suppressibleUsingKey();
-        Integer prevNestingGroupIdLocal = prevNestingGroupIdLocals.get(advice);
-        Integer prevSuppressionKeyIdLocal = prevSuppressionKeyIdLocals.get(advice);
-        // need to load ThreadContext
-        if (!nestingGroup.isEmpty() || !suppressibleUsingKey.isEmpty() || !suppressionKey.isEmpty()
-                || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext())) {
-            Label disabledLabel = null;
-            // guaranteed to be non-null via defineEnabledLocalVar() above
-            int enabledLocal = checkNotNull(enabledLocals.get(advice));
-            if (isEnabledAdvice != null) {
-                loadLocal(enabledLocal);
-                disabledLabel = new Label();
-                visitJumpInsn(IFEQ, disabledLabel);
+        Label otherEnabledFactorsDisabledEnd = null;
+        if (hasOtherEnabledFactors(advice, nestingGroup, suppressibleUsingKey)) {
+            otherEnabledFactorsDisabledEnd = new Label();
+        }
+        if (isEnabledAdvice != null) {
+            loadMethodParameters(advice.isEnabledParameters(), 0, null, advice.adviceType(),
+                    IsEnabled.class, false, nestingGroup, suppressionKey);
+            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                    isEnabledAdvice.getName(), isEnabledAdvice.getDescriptor(), false);
+            if (otherEnabledFactorsDisabledEnd == null) {
+                // guaranteed to be non-null via defineLocalVars() above
+                int enabledLocal = checkNotNull(enabledLocals.get(advice));
+                storeLocal(enabledLocal);
+            } else {
+                visitJumpInsn(IFEQ, otherEnabledFactorsDisabledEnd);
             }
-            loadThreadContextHolder();
-            dup();
+        }
+        if (otherEnabledFactorsDisabledEnd != null) {
             checkNotNull(threadContextHolderLocal);
-            storeLocal(threadContextHolderLocal);
-            visitMethodInsn(INVOKEVIRTUAL, fastThreadContextThreadLocalHolderType.getInternalName(),
-                    "get", "()" + threadContextPlusType.getDescriptor(), false);
             checkNotNull(threadContextLocal);
-            storeLocal(threadContextLocal);
+            loadMaybeNullThreadContext();
             if (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext()) {
-                if (disabledLabel == null) {
-                    disabledLabel = new Label();
-                }
-                loadLocal(threadContextLocal);
-                visitJumpInsn(IFNULL, disabledLabel);
+                // if thread context == null, then nothing to check or update, go to disabled
+                visitJumpInsn(IFNULL, otherEnabledFactorsDisabledEnd);
                 if (!nestingGroup.isEmpty()) {
-                    checkNotNull(prevNestingGroupIdLocal);
+                    int prevNestingGroupIdLocal =
+                            checkNotNull(prevNestingGroupIdLocals.get(advice));
                     checkAndUpdateNestingGroupId(prevNestingGroupIdLocal, nestingGroup,
-                            disabledLabel);
-                }
-                if (!suppressionKey.isEmpty()) {
-                    checkNotNull(prevSuppressionKeyIdLocal);
-                    updateSuppressionKeyId(prevSuppressionKeyIdLocal, suppressionKey);
+                            otherEnabledFactorsDisabledEnd);
                 }
                 if (!suppressibleUsingKey.isEmpty()) {
-                    checkSuppressibleUsingKey(suppressibleUsingKey, disabledLabel);
+                    checkSuppressibleUsingKey(suppressibleUsingKey, otherEnabledFactorsDisabledEnd);
+                }
+                if (!suppressionKey.isEmpty()) {
+                    int prevSuppressionKeyIdLocal =
+                            checkNotNull(prevSuppressionKeyIdLocals.get(advice));
+                    updateSuppressionKeyId(prevSuppressionKeyIdLocal, suppressionKey);
                 }
             } else {
-                Label enabledLabel = new Label();
-                // if thread context == null, then nothing to check or update
-                loadLocal(threadContextLocal);
-                visitJumpInsn(IFNULL, enabledLabel);
+                Label label = new Label();
+                // if thread context == null, then nothing to check or update, go to enabled
+                visitJumpInsn(IFNULL, label);
                 if (!nestingGroup.isEmpty()) {
-                    if (disabledLabel == null) {
-                        disabledLabel = new Label();
-                    }
-                    checkNotNull(prevNestingGroupIdLocal);
+                    int prevNestingGroupIdLocal =
+                            checkNotNull(prevNestingGroupIdLocals.get(advice));
                     checkAndUpdateNestingGroupId(prevNestingGroupIdLocal, nestingGroup,
-                            disabledLabel);
-                }
-                if (!suppressionKey.isEmpty()) {
-                    checkNotNull(prevSuppressionKeyIdLocal);
-                    updateSuppressionKeyId(prevSuppressionKeyIdLocal, suppressionKey);
+                            otherEnabledFactorsDisabledEnd);
                 }
                 if (!suppressibleUsingKey.isEmpty()) {
-                    if (disabledLabel == null) {
-                        disabledLabel = new Label();
-                    }
-                    checkSuppressibleUsingKey(suppressibleUsingKey, disabledLabel);
+                    checkSuppressibleUsingKey(suppressibleUsingKey, otherEnabledFactorsDisabledEnd);
                 }
-                visitLabel(enabledLabel);
+                if (!suppressionKey.isEmpty()) {
+                    int prevSuppressionKeyIdLocal =
+                            checkNotNull(prevSuppressionKeyIdLocals.get(advice));
+                    updateSuppressionKeyId(prevSuppressionKeyIdLocal, suppressionKey);
+                }
+                visitLabel(label);
                 visitImplicitFrame();
             }
             visitInsn(ICONST_1);
-            if (disabledLabel != null) {
-                Label endLabel = new Label();
-                goTo(endLabel);
-                visitLabel(disabledLabel);
-                visitImplicitFrame();
-                visitInsn(ICONST_0);
-                visitLabel(endLabel);
-                visitImplicitFrame(INTEGER);
-            }
+            Label otherEnabledFactorsStoreLabel = new Label();
+            goTo(otherEnabledFactorsStoreLabel);
+            visitLabel(otherEnabledFactorsDisabledEnd);
+            visitImplicitFrame();
+            visitInsn(ICONST_0);
+            visitLabel(otherEnabledFactorsStoreLabel);
+            visitImplicitFrame(INTEGER);
+            // guaranteed to be non-null via defineLocalVars() above
+            int enabledLocal = checkNotNull(enabledLocals.get(advice));
             storeLocal(enabledLocal);
+        } else if (!suppressionKey.isEmpty()) {
+            checkNotNull(threadContextHolderLocal);
+            checkNotNull(threadContextLocal);
+            loadMaybeNullThreadContext();
+            Label label = new Label();
+            // if thread context == null, then nothing to update
+            visitJumpInsn(IFNULL, label);
+            int prevSuppressionKeyIdLocal = checkNotNull(prevSuppressionKeyIdLocals.get(advice));
+            updateSuppressionKeyId(prevSuppressionKeyIdLocal, suppressionKey);
+            visitLabel(label);
+            visitImplicitFrame();
         }
     }
 
-    private void loadThreadContextHolder() {
-        // TODO optimize, don't need to look up ThreadContext thread local each time
-        visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
-                "getCurrentThreadContextHolder",
-                "()" + fastThreadContextThreadLocalHolderType.getDescriptor(), false);
+    private boolean hasOtherEnabledFactors(Advice advice, String nestingGroup,
+            String suppressibleUsingKey) {
+        return !nestingGroup.isEmpty() || !suppressibleUsingKey.isEmpty()
+                || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext());
     }
 
     @RequiresNonNull("threadContextLocal")
     private void checkAndUpdateNestingGroupId(int prevNestingGroupIdLocal, String nestingGroup,
-            Label disabledLabel) {
+            Label otherEnabledFactorsDisabledEnd) {
         loadLocal(threadContextLocal);
         visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                 "getCurrentNestingGroupId", "()I", true);
@@ -531,7 +517,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         storeLocal(prevNestingGroupIdLocal);
         int nestingGroupId = getNestingGroupId(nestingGroup);
         mv.visitLdcInsn(nestingGroupId);
-        visitJumpInsn(IF_ICMPEQ, disabledLabel);
+        visitJumpInsn(IF_ICMPEQ, otherEnabledFactorsDisabledEnd);
         loadLocal(threadContextLocal);
         mv.visitLdcInsn(nestingGroupId);
         visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
@@ -539,13 +525,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     @RequiresNonNull("threadContextLocal")
-    private void checkSuppressibleUsingKey(String suppressibleUsingKey, Label disabledLabel) {
+    private void checkSuppressibleUsingKey(String suppressibleUsingKey,
+            Label otherEnabledFactorsDisabledEnd) {
         loadLocal(threadContextLocal);
         visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                 "getCurrentSuppressionKeyId", "()I", true);
         int suppressionKeyId = getSuppressionKeyId(suppressibleUsingKey);
         mv.visitLdcInsn(suppressionKeyId);
-        visitJumpInsn(IF_ICMPEQ, disabledLabel);
+        visitJumpInsn(IF_ICMPEQ, otherEnabledFactorsDisabledEnd);
     }
 
     @RequiresNonNull("threadContextLocal")
@@ -1039,20 +1026,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
     @RequiresNonNull({"threadContextHolderLocal", "threadContextLocal"})
     private void loadOptionalThreadContext(String nestingGroup, String suppressionKey,
             Object... stack) {
-        loadLocal(threadContextHolderLocal);
+        loadMaybeNullThreadContext(stack);
         Label label = new Label();
         visitJumpInsn(IFNONNULL, label);
-        loadThreadContextHolder();
-        storeLocal(threadContextHolderLocal);
-        visitLabel(label);
-        visitImplicitFrame(stack);
-        loadLocal(threadContextHolderLocal);
-        visitMethodInsn(INVOKEVIRTUAL, fastThreadContextThreadLocalHolderType.getInternalName(),
-                "get", "()" + threadContextPlusType.getDescriptor(), false);
-        dup();
-        storeLocal(threadContextLocal);
-        Label label2 = new Label();
-        visitJumpInsn(IFNONNULL, label2);
         loadLocal(threadContextHolderLocal);
         if (nestingGroup.isEmpty()) {
             mv.visitLdcInsn(0);
@@ -1069,9 +1045,27 @@ class WeavingMethodVisitor extends AdviceAdapter {
                         + threadContextPlusType.getDescriptor(),
                 false);
         storeLocal(threadContextLocal);
-        visitLabel(label2);
+        visitLabel(label);
         visitImplicitFrame(stack);
         loadLocal(threadContextLocal);
+    }
+
+    @RequiresNonNull({"threadContextHolderLocal", "threadContextLocal"})
+    private void loadMaybeNullThreadContext(Object... stack) {
+        loadLocal(threadContextHolderLocal);
+        Label label = new Label();
+        visitJumpInsn(IFNONNULL, label);
+        visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
+                "getCurrentThreadContextHolder",
+                "()" + fastThreadContextThreadLocalHolderType.getDescriptor(), false);
+        storeLocal(threadContextHolderLocal);
+        visitLabel(label);
+        visitImplicitFrame(stack);
+        loadLocal(threadContextHolderLocal);
+        visitMethodInsn(INVOKEVIRTUAL, fastThreadContextThreadLocalHolderType.getInternalName(),
+                "get", "()" + threadContextPlusType.getDescriptor(), false);
+        dup();
+        storeLocal(threadContextLocal);
     }
 
     private void visitImplicitFrame(Object... stack) {
