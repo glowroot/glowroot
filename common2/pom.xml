@@ -96,6 +96,12 @@
       <version>1.5.6</version>
     </dependency>
     <dependency>
+      <!-- this is no longer included in JDK starting with Java 9 -->
+      <groupId>com.sun.activation</groupId>
+      <artifactId>javax.activation</artifactId>
+      <version>1.2.0</version>
+    </dependency>
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-buffer</artifactId>
     </dependency>

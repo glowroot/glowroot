@@ -60,6 +60,8 @@
               <include>com.ning:compress-lzf</include>
               <include>com.sun.mail:mailapi</include>
               <include>com.sun.mail:smtp</include>
+              <!-- this is no longer included in JDK starting with Java 9 -->
+              <include>com.sun.activation:javax.activation</include>
             </includes>
           </artifactSet>
           <filters>
@@ -90,6 +92,14 @@
                 <exclude>META-INF/LICENSE.txt</exclude>
                 <!-- pom.xml is only present in sources jar -->
                 <exclude>pom.xml</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.sun.activation:javax.activation</artifact>
+              <excludes>
+                <exclude>META-INF/mailcap.default</exclude>
+                <exclude>META-INF/mimetypes.default</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
               </excludes>
             </filter>
           </filters>
@@ -228,6 +238,14 @@
               <rawString>true</rawString>
               <pattern>^META-INF/javamail.providers$</pattern>
               <shadedPattern>META-INF/glowroot.javamail.providers</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>javax.activation</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.javax.activation</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.sun.activation</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.com.sun.activation</shadedPattern>
             </relocation>
           </relocations>
         </configuration>
