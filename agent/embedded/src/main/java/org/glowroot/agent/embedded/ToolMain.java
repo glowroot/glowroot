@@ -50,8 +50,7 @@ public class ToolMain {
 
     public static void main(String[] args, @Nullable File glowrootJarFile) throws Exception {
         Directories directories = new Directories(glowrootJarFile);
-        MainEntryPoint.initLogging(directories.getConfDir(), directories.getSharedConfDir(),
-                directories.getLogDir(), null);
+        MainEntryPoint.initLogging(directories.getConfDirs(), directories.getLogDir(), null);
         startupLogger = LoggerFactory.getLogger("org.glowroot");
 
         if (!directories.hasDataDir()) {

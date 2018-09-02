@@ -28,8 +28,10 @@ import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -115,8 +117,7 @@ public class MainEntryPoint {
         try {
             directories = new Directories(glowrootJarFile);
             // init logger as early as possible
-            initLogging(directories.getConfDir(), directories.getSharedConfDir(),
-                    directories.getLogDir(), instrumentation);
+            initLogging(directories.getConfDirs(), directories.getLogDir(), instrumentation);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             // also, don't use logger since not initialized yet
@@ -169,7 +170,7 @@ public class MainEntryPoint {
                 instrumentation.removeTransformer(transformer);
             }
             ImmutableMap<String, String> properties =
-                    getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
+                    getGlowrootProperties(directories.getConfDirs());
             start(directories, properties, instrumentation, preCheckClassFileTransformer);
         } catch (AgentDirsLockedException e) {
             logAgentDirsLockedException(directories.getConfDir(), e.getLockFile(), e.isCentral(),
@@ -189,12 +190,11 @@ public class MainEntryPoint {
             startupLogger.info("Glowroot version: {}", version);
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
             ImmutableMap<String, String> properties =
-                    getGlowrootProperties(directories.getConfDir(), directories.getSharedConfDir());
+                    getGlowrootProperties(directories.getConfDirs());
             glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), true, null)
-                    .init(directories.getPluginsDir(), directories.getConfDir(),
-                            directories.getSharedConfDir(), directories.getLogDir(),
-                            directories.getTmpDir(), directories.getGlowrootJarFile(), properties,
-                            null, null, version);
+                    .init(directories.getPluginsDir(), directories.getConfDirs(),
+                            directories.getLogDir(), directories.getTmpDir(),
+                            directories.getGlowrootJarFile(), properties, null, null, version);
         } catch (AgentDirsLockedException e) {
             logAgentDirsLockedException(directories.getConfDir(), e.getLockFile(), e.isCentral(),
                     e.isOfflineViewer());
@@ -206,7 +206,7 @@ public class MainEntryPoint {
     }
 
     @EnsuresNonNull("startupLogger")
-    public static void initLogging(File confDir, @Nullable File sharedConfDir, File logDir,
+    public static void initLogging(List<File> confDirs, File logDir,
             @Nullable Instrumentation instrumentation) {
         ClassFileTransformer transformer = null;
         if (JavaVersion.isJava6() && "IBM J9 VM".equals(System.getProperty("java.vm.name"))
@@ -214,15 +214,12 @@ public class MainEntryPoint {
             transformer = new IbmJava6HackClassFileTransformer2();
             instrumentation.addTransformer(transformer);
         }
-        File logbackXmlOverride = new File(confDir, "glowroot.logback.xml");
-        if (logbackXmlOverride.exists()) {
-            System.setProperty("glowroot.logback.configurationFile",
-                    logbackXmlOverride.getAbsolutePath());
-        } else if (sharedConfDir != null) {
-            logbackXmlOverride = new File(sharedConfDir, "glowroot.logback.xml");
+        for (File confDir : confDirs) {
+            File logbackXmlOverride = new File(confDir, "glowroot.logback.xml");
             if (logbackXmlOverride.exists()) {
                 System.setProperty("glowroot.logback.configurationFile",
                         logbackXmlOverride.getAbsolutePath());
+                break;
             }
         }
         String priorProperty = System.getProperty("glowroot.log.dir");
@@ -271,10 +268,9 @@ public class MainEntryPoint {
         startupLogger.info("Glowroot version: {}", version);
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
         glowrootAgentInit = createGlowrootAgentInit(directories, properties, instrumentation);
-        glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDir(),
-                directories.getSharedConfDir(), directories.getLogDir(), directories.getTmpDir(),
-                directories.getGlowrootJarFile(), properties, instrumentation,
-                preCheckClassFileTransformer, version);
+        glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDirs(),
+                directories.getLogDir(), directories.getTmpDir(), directories.getGlowrootJarFile(),
+                properties, instrumentation, preCheckClassFileTransformer, version);
     }
 
     @RequiresNonNull("startupLogger")
@@ -347,13 +343,13 @@ public class MainEntryPoint {
                 customCollectorClass);
     }
 
-    private static ImmutableMap<String, String> getGlowrootProperties(File confDir,
-            @Nullable File sharedConfDir) throws IOException {
+    private static ImmutableMap<String, String> getGlowrootProperties(List<File> confDirs)
+            throws IOException {
         Map<String, String> properties = Maps.newHashMap();
-        if (sharedConfDir == null) {
-            addProperties(confDir, properties);
-        } else {
-            addProperties(sharedConfDir, properties);
+        // iterate in reverse, so more specific conf dirs overlay on top of more general conf dirs
+        ListIterator<File> i = confDirs.listIterator(confDirs.size());
+        while (i.hasPrevious()) {
+            addProperties(i.previous(), properties);
         }
         for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
             if (entry.getKey() instanceof String && entry.getValue() instanceof String
@@ -654,7 +650,7 @@ public class MainEntryPoint {
         checkNotNull(testDirPath);
         File testDir = new File(testDirPath);
         // init logger as early as possible
-        initLogging(testDir, null, testDir, null);
+        initLogging(Arrays.asList(testDir), testDir, null);
         Directories directories = new Directories(testDir, false);
         start(directories, properties, null, null);
     }

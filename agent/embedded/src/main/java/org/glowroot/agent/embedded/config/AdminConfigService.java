@@ -67,10 +67,9 @@ public class AdminConfigService {
     private volatile PagerDutyConfig pagerDutyConfig;
     private volatile HealthchecksIoConfig healthchecksIoConfig;
 
-    public static AdminConfigService create(File confDir, @Nullable File sharedConfDir,
+    public static AdminConfigService create(List<File> confDirs,
             @Nullable Integer webPortOverride) {
-        AdminConfigService configService =
-                new AdminConfigService(confDir, sharedConfDir, webPortOverride);
+        AdminConfigService configService = new AdminConfigService(confDirs, webPortOverride);
         // it's nice to update config.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
         try {
@@ -81,9 +80,8 @@ public class AdminConfigService {
         return configService;
     }
 
-    private AdminConfigService(File confDir, @Nullable File sharedConfDir,
-            @Nullable Integer webPortOverride) {
-        adminConfigFile = new AdminConfigFile(confDir, sharedConfDir);
+    private AdminConfigService(List<File> confDirs, @Nullable Integer webPortOverride) {
+        adminConfigFile = new AdminConfigFile(confDirs);
         EmbeddedAdminGeneralConfig generalConfig =
                 adminConfigFile.getConfig("general", ImmutableEmbeddedAdminGeneralConfig.class);
         if (generalConfig == null) {

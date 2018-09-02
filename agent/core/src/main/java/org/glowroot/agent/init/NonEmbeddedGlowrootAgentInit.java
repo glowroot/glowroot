@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Constructor;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -74,8 +75,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     }
 
     @Override
-    public void init(@Nullable File pluginsDir, final File confDir,
-            final @Nullable File sharedConfDir, File logDir, File tmpDir,
+    public void init(@Nullable File pluginsDir, final List<File> confDirs, File logDir, File tmpDir,
             final @Nullable File glowrootJarFile, final Map<String, String> properties,
             final @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
@@ -89,7 +89,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
         JRebelWorkaround.perform();
         final PluginCache pluginCache = PluginCache.create(pluginsDir, false);
         final ConfigService configService =
-                ConfigService.create(confDir, sharedConfDir, pluginCache.pluginDescriptors());
+                ConfigService.create(confDirs, pluginCache.pluginDescriptors());
 
         final CollectorProxy collectorProxy = new CollectorProxy();
 
@@ -128,9 +128,8 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                     collector = customCollectorClass.newInstance();
                 } else {
                     centralCollector = new CentralCollector(properties,
-                            checkNotNull(collectorAddress), collectorAuthority, confDir,
-                            sharedConfDir, agentModule.getLiveJvmService(),
-                            agentModule.getLiveWeavingService(),
+                            checkNotNull(collectorAddress), collectorAuthority, confDirs,
+                            agentModule.getLiveJvmService(), agentModule.getLiveWeavingService(),
                             agentModule.getLiveTraceRepository(), agentConfigUpdater,
                             configService);
                     if (collectorProxyConstructor == null) {
@@ -142,7 +141,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                     }
                 }
                 collectorProxy.setInstance(collector);
-                collector.init(confDir, sharedConfDir,
+                collector.init(confDirs,
                         EnvironmentCreator.create(glowrootVersion, configService.getJvmConfig()),
                         configService.getAgentConfig(), agentConfigUpdater);
             }

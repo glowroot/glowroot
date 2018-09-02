@@ -17,6 +17,7 @@ package org.glowroot.agent.init;
 
 import java.io.File;
 import java.lang.instrument.Instrumentation;
+import java.util.List;
 import java.util.Map;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -26,8 +27,8 @@ import org.glowroot.common.util.OnlyUsedByTests;
 
 public interface GlowrootAgentInit {
 
-    void init(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir, File logDir,
-            File tmpDir, @Nullable File glowrootJarFile, Map<String, String> properties,
+    void init(@Nullable File pluginsDir, List<File> confDirs, File logDir, File tmpDir,
+            @Nullable File glowrootJarFile, Map<String, String> properties,
             @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
             String glowrootVersion) throws Exception;

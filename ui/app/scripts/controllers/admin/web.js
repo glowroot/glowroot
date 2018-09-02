@@ -39,8 +39,8 @@ glowroot.controller('AdminWebCtrl', [
         $scope.activePort = data.activePort;
         $scope.activeBindAddress = data.activeBindAddress;
         $scope.activeHttps = data.activeHttps;
-        $scope.certificateDir = data.certificateDir;
         $scope.portReadOnly = data.portReadOnly;
+        $scope.confDirs = data.confDirs;
       }
     }
 

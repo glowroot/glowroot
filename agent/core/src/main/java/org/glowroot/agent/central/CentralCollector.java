@@ -84,7 +84,7 @@ public class CentralCollector implements Collector {
     private volatile int nextAggregateDelayMillis;
 
     public CentralCollector(Map<String, String> properties, String collectorAddress,
-            @Nullable String collectorAuthority, File confDir, @Nullable File sharedConfDir,
+            @Nullable String collectorAuthority, List<File> confDirs,
             LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
             LiveTraceRepositoryImpl liveTraceRepository, AgentConfigUpdater agentConfigUpdater,
             ConfigService configService) throws Exception {
@@ -108,8 +108,8 @@ public class CentralCollector implements Collector {
         startupLogger.info("agent id: {}", agentId);
 
         AtomicBoolean inConnectionFailure = new AtomicBoolean();
-        centralConnection = new CentralConnection(collectorAddress, collectorAuthority, confDir,
-                sharedConfDir, inConnectionFailure);
+        centralConnection = new CentralConnection(collectorAddress, collectorAuthority, confDirs,
+                inConnectionFailure);
         collectorServiceStub = CollectorServiceGrpc.newStub(centralConnection.getChannel())
                 .withCompression("gzip");
         downstreamServiceObserver = new DownstreamServiceObserver(centralConnection,
@@ -118,8 +118,8 @@ public class CentralCollector implements Collector {
     }
 
     @Override
-    public void init(File confDir, @Nullable File sharedConfDir, final Environment environment,
-            AgentConfig agentConfig, final AgentConfigUpdater agentConfigUpdater) {
+    public void init(List<File> confDirs, final Environment environment, AgentConfig agentConfig,
+            final AgentConfigUpdater agentConfigUpdater) {
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setAgentId(agentId)
                 .setEnvironment(environment)

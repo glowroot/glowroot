@@ -66,9 +66,9 @@ public class ConfigService {
     // memory barrier is used to ensure memory visibility of config values
     private volatile boolean memoryBarrier;
 
-    public static ConfigService create(File confDir, @Nullable File sharedConfDir,
+    public static ConfigService create(List<File> confDirs,
             List<PluginDescriptor> pluginDescriptors) {
-        ConfigService configService = new ConfigService(confDir, sharedConfDir, pluginDescriptors);
+        ConfigService configService = new ConfigService(confDirs, pluginDescriptors);
         // it's nice to update config.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
         try {
@@ -79,9 +79,8 @@ public class ConfigService {
         return configService;
     }
 
-    private ConfigService(File confDir, @Nullable File sharedConfDir,
-            List<PluginDescriptor> pluginDescriptors) {
-        configFile = new ConfigFile(confDir, sharedConfDir);
+    private ConfigService(List<File> confDirs, List<PluginDescriptor> pluginDescriptors) {
+        configFile = new ConfigFile(confDirs);
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         TransactionConfig transactionConfig =
                 configFile.getConfig("transactions", ImmutableTransactionConfig.class);

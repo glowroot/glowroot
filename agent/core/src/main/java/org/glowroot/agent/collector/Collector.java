@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
@@ -32,8 +30,8 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Collector {
 
-    void init(File confDir, @Nullable File sharedConfDir, Environment environment,
-            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) throws Exception;
+    void init(List<File> confDir, Environment environment, AgentConfig agentConfig,
+            AgentConfigUpdater agentConfigUpdater) throws Exception;
 
     void collectAggregates(AggregateReader aggregateReader) throws Exception;
 

@@ -22,6 +22,7 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.security.CodeSource;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -226,7 +227,7 @@ public class CentralModule {
                     .port(centralConfig.uiPort())
                     .https(centralConfig.uiHttps())
                     .contextPath(centralConfig.uiContextPath())
-                    .confDir(directories.getConfDir())
+                    .confDirs(Arrays.asList(directories.getConfDir()))
                     .logDir(directories.getLogDir())
                     .logFileNamePattern(Pattern.compile("glowroot-central.*\\.log"))
                     .clock(clock)

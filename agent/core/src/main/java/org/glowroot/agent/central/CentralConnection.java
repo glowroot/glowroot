@@ -99,8 +99,8 @@ class CentralConnection {
     private volatile boolean initCallSucceeded;
     private volatile boolean closed;
 
-    CentralConnection(String collectorAddress, @Nullable String collectorAuthority, File confDir,
-            @Nullable File sharedConfDir, AtomicBoolean inConnectionFailure) throws SSLException {
+    CentralConnection(String collectorAddress, @Nullable String collectorAuthority,
+            List<File> confDirs, AtomicBoolean inConnectionFailure) throws SSLException {
         ParsedCollectorAddress parsedCollectorAddress = parseCollectorAddress(collectorAddress);
         eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         channelExecutor =
@@ -129,7 +129,7 @@ class CentralConnection {
                 .keepAliveTime(30, SECONDS);
         if (parsedCollectorAddress.https()) {
             SslContextBuilder sslContext = GrpcSslContexts.forClient();
-            File trustCertCollectionFile = getTrustCertCollectionFile(confDir, sharedConfDir);
+            File trustCertCollectionFile = getTrustCertCollectionFile(confDirs);
             if (trustCertCollectionFile != null) {
                 sslContext.trustManager(trustCertCollectionFile);
             }
@@ -310,18 +310,12 @@ class CentralConnection {
                 .build();
     }
 
-    private static @Nullable File getTrustCertCollectionFile(File confDir,
-            @Nullable File sharedConfDir) {
-        File confFile = new File(confDir, "grpc-trusted-root-certs.pem");
-        if (confFile.exists()) {
-            return confFile;
-        }
-        if (sharedConfDir == null) {
-            return null;
-        }
-        File sharedConfFile = new File(sharedConfDir, "grpc-trusted-root-certs.pem");
-        if (sharedConfFile.exists()) {
-            return sharedConfFile;
+    private static @Nullable File getTrustCertCollectionFile(List<File> confDirs) {
+        for (File confDir : confDirs) {
+            File confFile = new File(confDir, "grpc-trusted-root-certs.pem");
+            if (confFile.exists()) {
+                return confFile;
+            }
         }
         return null;
     }

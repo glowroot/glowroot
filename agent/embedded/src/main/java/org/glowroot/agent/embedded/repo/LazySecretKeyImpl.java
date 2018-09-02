@@ -17,7 +17,9 @@ package org.glowroot.agent.embedded.repo;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
+import javax.annotation.concurrent.GuardedBy;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -30,20 +32,27 @@ import org.glowroot.common2.repo.util.LazySecretKey;
 
 class LazySecretKeyImpl implements LazySecretKey {
 
-    private final File secretFile;
+    private static final String SECRET_FILE_NAME = "secret";
 
-    // volatile not needed as access is guarded by secretFile
+    private final List<File> confDirs;
+
+    private final Object lock = new Object();
+
+    @GuardedBy("lock")
     private @MonotonicNonNull SecretKey secretKey;
 
-    LazySecretKeyImpl(File secretFile) {
-        this.secretFile = secretFile;
+    LazySecretKeyImpl(List<File> confDirs) {
+        this.confDirs = confDirs;
     }
 
     @Override
     public @Nullable SecretKey getExisting() throws Exception {
-        synchronized (secretFile) {
-            if (secretKey == null && secretFile.exists()) {
-                secretKey = loadKey(secretFile);
+        synchronized (lock) {
+            if (secretKey == null) {
+                File secretFile = getSecretFile(confDirs);
+                if (secretFile != null) {
+                    secretKey = loadKey(secretFile);
+                }
             }
             return secretKey;
         }
@@ -51,17 +60,29 @@ class LazySecretKeyImpl implements LazySecretKey {
 
     @Override
     public SecretKey getOrCreate() throws Exception {
-        synchronized (secretFile) {
+        synchronized (lock) {
             if (secretKey == null) {
-                if (secretFile.exists()) {
-                    secretKey = loadKey(secretFile);
-                } else {
+                File secretFile = getSecretFile(confDirs);
+                if (secretFile == null) {
+                    secretFile = new File(confDirs.get(0), SECRET_FILE_NAME);
                     secretKey = Encryption.generateNewKey();
                     Files.write(secretKey.getEncoded(), secretFile);
+                } else {
+                    secretKey = loadKey(secretFile);
                 }
             }
             return secretKey;
         }
+    }
+
+    private static @Nullable File getSecretFile(List<File> confDirs) throws IOException {
+        for (File confDir : confDirs) {
+            File secretFile = new File(confDir, SECRET_FILE_NAME);
+            if (secretFile.exists()) {
+                return secretFile;
+            }
+        }
+        return null;
     }
 
     private static SecretKey loadKey(File secretFile) throws IOException {

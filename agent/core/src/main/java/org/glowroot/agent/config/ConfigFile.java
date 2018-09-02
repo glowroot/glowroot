@@ -46,16 +46,17 @@ class ConfigFile {
     private final File file;
     private final ObjectNode rootObjectNode;
 
-    ConfigFile(File confDir, @Nullable File sharedConfDir) {
-        file = new File(confDir, "config.json");
-        File defaultFile =
-                sharedConfDir == null ? null : new File(sharedConfDir, "config-default.json");
+    ConfigFile(List<File> confDirs) {
+        file = new File(confDirs.get(0), "config.json");
         if (file.exists()) {
             rootObjectNode = readRootObjectNode(file);
-        } else if (defaultFile != null && defaultFile.exists()) {
-            rootObjectNode = readRootObjectNode(defaultFile);
         } else {
-            rootObjectNode = mapper.createObjectNode();
+            File defaultFile = getConfigDefaultFile(confDirs);
+            if (defaultFile == null) {
+                rootObjectNode = mapper.createObjectNode();
+            } else {
+                rootObjectNode = readRootObjectNode(defaultFile);
+            }
         }
     }
 
@@ -92,6 +93,16 @@ class ConfigFile {
         upgradeUiIfNeeded(rootObjectNode);
         upgradeAdvancedIfNeeded(rootObjectNode);
         return rootObjectNode;
+    }
+
+    private static @Nullable File getConfigDefaultFile(List<File> confDirs) {
+        for (File confDir : confDirs) {
+            File defaultFile = new File(confDir, "config-default.json");
+            if (defaultFile.exists()) {
+                return defaultFile;
+            }
+        }
+        return null;
     }
 
     private static void upgradeAlertsIfNeeded(ObjectNode configRootObjectNode) {

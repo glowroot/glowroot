@@ -22,7 +22,6 @@ import java.util.Queue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Queues;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +49,8 @@ public class CollectorProxy implements Collector {
     private final Queue<LogEvent> earlyLogEvents = Queues.newArrayBlockingQueue(100);
 
     @Override
-    public void init(File confDir, @Nullable File sharedConfDir, Environment environment,
-            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) throws Exception {
+    public void init(List<File> confDirs, Environment environment, AgentConfig agentConfig,
+            AgentConfigUpdater agentConfigUpdater) throws Exception {
         // init is called directly on the instantiated collector, never on the proxy itself
         throw new UnsupportedOperationException();
     }

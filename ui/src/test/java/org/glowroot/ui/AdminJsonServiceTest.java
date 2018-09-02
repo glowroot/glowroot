@@ -17,6 +17,7 @@ package org.glowroot.ui;
 
 import java.io.File;
 import java.net.InetAddress;
+import java.util.Arrays;
 
 import javax.mail.Message;
 
@@ -48,7 +49,7 @@ public class AdminJsonServiceTest {
         ConfigRepository configRepository = mock(ConfigRepository.class);
         when(configRepository.getEmbeddedAdminGeneralConfig())
                 .thenReturn(ImmutableEmbeddedAdminGeneralConfig.builder().build());
-        adminJsonService = new AdminJsonService(false, false, false, new File("."), null,
+        adminJsonService = new AdminJsonService(false, false, false, Arrays.asList(new File(".")),
                 configRepository, mock(RepoAdmin.class), mock(LiveAggregateRepository.class),
                 mailService, httpClient);
     }

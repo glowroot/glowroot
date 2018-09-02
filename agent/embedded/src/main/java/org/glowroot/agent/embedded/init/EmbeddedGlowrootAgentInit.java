@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
+import java.util.List;
 import java.util.Map;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -57,26 +58,24 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     private @MonotonicNonNull EmbeddedAgentModule embeddedAgentModule;
 
     @Override
-    public void init(@Nullable File pluginsDir, final File confDir,
-            final @Nullable File sharedConfDir, File logDir, File tmpDir,
+    public void init(@Nullable File pluginsDir, final List<File> confDirs, File logDir, File tmpDir,
             final @Nullable File glowrootJarFile, final Map<String, String> properties,
             final @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
             final String glowrootVersion) throws Exception {
 
         agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir, false, offlineViewer);
-        embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDir, sharedConfDir, logDir,
-                tmpDir, instrumentation, preCheckClassFileTransformer, glowrootJarFile,
-                glowrootVersion, offlineViewer);
+        embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDirs, logDir, tmpDir,
+                instrumentation, preCheckClassFileTransformer, glowrootJarFile, glowrootVersion,
+                offlineViewer);
         OnEnteringMain onEnteringMain = new OnEnteringMain() {
             @Override
             public void run(@Nullable String mainClass) throws Exception {
                 NettyInit.run();
                 // TODO report checker framework issue that occurs without checkNotNull
                 checkNotNull(embeddedAgentModule);
-                embeddedAgentModule.onEnteringMain(confDir, sharedConfDir, dataDir, glowrootJarFile,
-                        properties, instrumentation, collectorProxyClass, glowrootVersion,
-                        mainClass);
+                embeddedAgentModule.onEnteringMain(confDirs, dataDir, glowrootJarFile, properties,
+                        instrumentation, collectorProxyClass, glowrootVersion, mainClass);
                 // starting new thread in order not to block startup
                 Thread thread = new Thread(new Runnable() {
                     @Override

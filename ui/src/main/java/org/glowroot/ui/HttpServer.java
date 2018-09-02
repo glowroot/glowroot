@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
 import com.google.common.base.Supplier;
@@ -60,8 +61,7 @@ class HttpServer {
     private final EventLoopGroup workerGroup;
 
     private final String bindAddress;
-    private final File confDir;
-    private final @Nullable File sharedConfDir;
+    private final List<File> confDirs;
 
     private final boolean offlineViewer;
 
@@ -70,8 +70,8 @@ class HttpServer {
     private volatile @MonotonicNonNull Integer port;
 
     HttpServer(String bindAddress, boolean https, Supplier<String> contextPathSupplier,
-            int numWorkerThreads, CommonHandler commonHandler, File confDir,
-            @Nullable File sharedConfDir, boolean central, boolean offlineViewer) throws Exception {
+            int numWorkerThreads, CommonHandler commonHandler, List<File> confDirs, boolean central,
+            boolean offlineViewer) throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -90,27 +90,24 @@ class HttpServer {
 
         if (https) {
             // upgrade from 0.9.26 to 0.9.27
-            renameHttpsConfFileIfNeeded(confDir, sharedConfDir, "certificate.pem", "ui-cert.pem",
-                    "certificate");
-            renameHttpsConfFileIfNeeded(confDir, sharedConfDir, "private.pem", "ui-key.pem",
-                    "private key");
+            renameHttpsConfFileIfNeeded(confDirs, "certificate.pem", "ui-cert.pem", "certificate");
+            renameHttpsConfFileIfNeeded(confDirs, "private.pem", "ui-key.pem", "private key");
 
             File certificateFile;
             File privateKeyFile;
             if (central) {
-                certificateFile =
-                        getRequiredHttpsConfFile(confDir, "ui-cert.pem", "cert.pem", "certificate");
-                privateKeyFile =
-                        getRequiredHttpsConfFile(confDir, "ui-key.pem", "key.pem", "private key");
+                certificateFile = getRequiredHttpsConfFile(confDirs.get(0), "ui-cert.pem",
+                        "cert.pem", "certificate");
+                privateKeyFile = getRequiredHttpsConfFile(confDirs.get(0), "ui-key.pem", "key.pem",
+                        "private key");
             } else {
-                certificateFile = getRequiredHttpsConfFile(confDir, sharedConfDir, "ui-cert.pem");
-                privateKeyFile = getRequiredHttpsConfFile(confDir, sharedConfDir, "ui-key.pem");
+                certificateFile = getRequiredHttpsConfFile(confDirs, "ui-cert.pem");
+                privateKeyFile = getRequiredHttpsConfFile(confDirs, "ui-key.pem");
             }
             sslContext = SslContextBuilder.forServer(certificateFile, privateKeyFile)
                     .build();
         }
-        this.confDir = confDir;
-        this.sharedConfDir = sharedConfDir;
+        this.confDirs = confDirs;
         this.offlineViewer = offlineViewer;
 
         bootstrap = new ServerBootstrap();
@@ -203,8 +200,8 @@ class HttpServer {
     void changeProtocol(boolean https) throws Exception {
         if (https) {
             sslContext = SslContextBuilder
-                    .forServer(getRequiredHttpsConfFile(confDir, sharedConfDir, "ui-cert.pem"),
-                            getRequiredHttpsConfFile(confDir, sharedConfDir, "ui-key.pem"))
+                    .forServer(getRequiredHttpsConfFile(confDirs, "ui-cert.pem"),
+                            getRequiredHttpsConfFile(confDirs, "ui-key.pem"))
                     .build();
         } else {
             sslContext = null;
@@ -221,12 +218,26 @@ class HttpServer {
     }
 
     // used by embedded agent
-    private static File getRequiredHttpsConfFile(File confDir, @Nullable File sharedConfDir,
-            String fileName) throws FileNotFoundException {
-        File confFile = getHttpsConfFile(confDir, sharedConfDir, fileName);
+    private static File getRequiredHttpsConfFile(List<File> confDirs, String fileName)
+            throws FileNotFoundException {
+        File confFile = getHttpsConfFile(confDirs, fileName);
         if (confFile == null) {
-            throw new FileNotFoundException("HTTPS is enabled, but " + fileName
-                    + " was not found under '" + confDir.getAbsolutePath() + "'");
+            // build and throw nice exception message
+            StringBuilder sb = new StringBuilder("HTTPS is enabled, but " + fileName
+                    + " was not found under ");
+            if (confDirs.size() == 2) {
+                sb.append("either of ");
+            } else if (confDirs.size() > 2) {
+                sb.append("any of ");
+            }
+            for (int i = 0; i < confDirs.size(); i++) {
+                if (i > 0) {
+                    sb.append(", '");
+                }
+                sb.append(confDirs.get(i).getAbsolutePath());
+                sb.append("'");
+            }
+            throw new FileNotFoundException(sb.toString());
         } else {
             return confFile;
         }
@@ -252,43 +263,28 @@ class HttpServer {
                 + " grpc) was not found under '" + confDir.getAbsolutePath() + "'");
     }
 
-    private static @Nullable File getHttpsConfFile(File confDir, @Nullable File sharedConfDir,
-            String fileName) {
-        File confFile = new File(confDir, fileName);
-        if (confFile.exists()) {
-            return confFile;
-        }
-        if (sharedConfDir == null) {
-            return null;
-        }
-        File sharedConfFile = new File(sharedConfDir, fileName);
-        if (sharedConfFile.exists()) {
-            return sharedConfFile;
+    private static @Nullable File getHttpsConfFile(List<File> confDirs, String fileName) {
+        for (File confDir : confDirs) {
+            File confFile = new File(confDir, fileName);
+            if (confFile.exists()) {
+                return confFile;
+            }
         }
         return null;
     }
 
-    private static void renameHttpsConfFileIfNeeded(File confDir, @Nullable File sharedConfDir,
-            String oldFileName, String newFileName, String display) throws IOException {
-        File newConfFile = new File(confDir, newFileName);
-        if (newConfFile.exists()) {
-            return;
-        }
-        if (sharedConfDir == null) {
+    private static void renameHttpsConfFileIfNeeded(List<File> confDirs, String oldFileName,
+            String newFileName, String display) throws IOException {
+        for (File confDir : confDirs) {
+            File newConfFile = new File(confDir, newFileName);
+            if (newConfFile.exists()) {
+                return;
+            }
             File oldConfFile = new File(confDir, oldFileName);
             if (oldConfFile.exists()) {
                 rename(oldConfFile, newConfFile, display);
                 return;
             }
-        }
-        File newSharedConfFile = new File(sharedConfDir, newFileName);
-        if (newSharedConfFile.exists()) {
-            return;
-        }
-        File oldSharedConfFile = new File(sharedConfDir, oldFileName);
-        if (oldSharedConfFile.exists()) {
-            rename(oldSharedConfFile, newSharedConfFile, display);
-            return;
         }
     }
 

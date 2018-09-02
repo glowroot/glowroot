@@ -16,6 +16,7 @@
 package org.glowroot.agent.embedded.repo;
 
 import java.io.File;
+import java.util.Arrays;
 
 import javax.crypto.SecretKey;
 
@@ -33,29 +34,33 @@ public class LazySecretKeyImplTest {
     public void testLoadSecretKey() throws Exception {
         // given
         SecretKey secretKey = Encryption.generateNewKey();
-        File secretKeyFile = File.createTempFile("glowroot-unit-test-", "");
+        File confDir = Files.createTempDir();
+        File secretKeyFile = new File(confDir, "secret");
         byte[] encodedKey = secretKey.getEncoded();
         Files.write(encodedKey, secretKeyFile);
         // when
-        LazySecretKey lazySecretKey = new LazySecretKeyImpl(secretKeyFile);
+        LazySecretKey lazySecretKey = new LazySecretKeyImpl(Arrays.asList(confDir));
         // then
         assertThat(lazySecretKey.getOrCreate().getEncoded()).isEqualTo(encodedKey);
         // cleanup
         secretKeyFile.delete();
+        confDir.delete();
     }
 
     @Test
     public void testLoadSecretKey2() throws Exception {
         // given
         SecretKey secretKey = Encryption.generateNewKey();
-        File secretKeyFile = File.createTempFile("glowroot-unit-test-", "");
+        File confDir = Files.createTempDir();
+        File secretKeyFile = new File(confDir, "secret");
         byte[] encodedKey = secretKey.getEncoded();
         Files.write(encodedKey, secretKeyFile);
         // when
-        LazySecretKey lazySecretKey = new LazySecretKeyImpl(secretKeyFile);
+        LazySecretKey lazySecretKey = new LazySecretKeyImpl(Arrays.asList(confDir));
         // then
         assertThat(lazySecretKey.getExisting().getEncoded()).isEqualTo(encodedKey);
         // cleanup
         secretKeyFile.delete();
+        confDir.delete();
     }
 }

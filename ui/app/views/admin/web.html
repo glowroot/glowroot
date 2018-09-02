@@ -85,8 +85,21 @@
                style="padding-bottom: 5px;">
             Active value is <code>{{activeHttps}}</code>.
           </div>
-          Serve the user interface over HTTPS. The certificate and private key to be used must be placed in the
-          {{certificateDir}} directory with filenames <em>ui-cert.pem</em> and <em>ui-key.pem</em> before enabling
+          Serve the user interface over HTTPS. The certificate and private key to be used must be placed in
+          <span ng-if="confDirs.length === 1">
+            <em>{{confDirs[0]}}</em>,
+          </span>
+          <span ng-if="confDirs.length === 2">
+            either <em>{{confDirs[0]}}</em> or <em>{{confDirs[1]}}</em>,
+          </span>
+          <span ng-if="confDirs.length === 3">
+            either <em>{{confDirs[0]}}</em>, <em>{{confDirs[1]}}</em> or <em>{{confDirs[2]}}</em>,
+          </span>
+          <span ng-if="confDirs.length === 4">
+            either <em>{{confDirs[0]}}</em>, <em>{{confDirs[1]}}</em>, <em>{{confDirs[2]}}</em>
+            or <em>{{confDirs[3]}}</em>,
+          </span>
+          with filenames <em>ui-cert.pem</em> and <em>ui-key.pem</em> before enabling
           HTTPS, where ui-cert.pem is a PEM encoded X.509 certificate chain, and ui-key.pem is a PEM encoded PKCS#8
           private key without a passphrase.
           (for example, a self signed certificate can be generated at the command line meeting the above requirements

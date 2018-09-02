@@ -45,16 +45,17 @@ class AdminConfigFile {
     private final File file;
     private final ObjectNode rootObjectNode;
 
-    AdminConfigFile(File confDir, @Nullable File sharedConfDir) {
-        file = new File(confDir, "admin.json");
-        File defaultFile =
-                sharedConfDir == null ? null : new File(sharedConfDir, "admin-default.json");
+    AdminConfigFile(List<File> confDirs) {
+        file = new File(confDirs.get(0), "admin.json");
         if (file.exists()) {
             rootObjectNode = readRootObjectNode(file);
-        } else if (defaultFile != null && defaultFile.exists()) {
-            rootObjectNode = readRootObjectNode(defaultFile);
         } else {
-            rootObjectNode = mapper.createObjectNode();
+            File defaultFile = getAdminConfigDefaultFile(confDirs);
+            if (defaultFile == null) {
+                rootObjectNode = mapper.createObjectNode();
+            } else {
+                rootObjectNode = readRootObjectNode(defaultFile);
+            }
         }
     }
 
@@ -83,6 +84,16 @@ class AdminConfigFile {
         upgradeRolesIfNeeded(rootObjectNode);
         upgradeSmtpIfNeeded(rootObjectNode);
         return rootObjectNode;
+    }
+
+    private static @Nullable File getAdminConfigDefaultFile(List<File> confDirs) {
+        for (File confDir : confDirs) {
+            File defaultFile = new File(confDir, "admin-default.json");
+            if (defaultFile.exists()) {
+                return defaultFile;
+            }
+        }
+        return null;
     }
 
     private static void upgradeRolesIfNeeded(ObjectNode adminRootObjectNode) {

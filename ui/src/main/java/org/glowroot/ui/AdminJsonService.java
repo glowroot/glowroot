@@ -108,8 +108,7 @@ class AdminJsonService {
     private final boolean central;
     private final boolean offlineViewer;
     private final boolean webPortReadOnly;
-    private final File confDir;
-    private final @Nullable File sharedConfDir;
+    private final List<File> confDirs;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final LiveAggregateRepository liveAggregateRepository;
@@ -120,14 +119,13 @@ class AdminJsonService {
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     AdminJsonService(boolean central, boolean offlineViewer, boolean webPortReadOnly,
-            File confDir, @Nullable File sharedConfDir, ConfigRepository configRepository,
+            List<File> confDirs, ConfigRepository configRepository,
             RepoAdmin repoAdmin, LiveAggregateRepository liveAggregateRepository,
             MailService mailService, HttpClient httpClient) {
         this.central = central;
         this.offlineViewer = offlineViewer;
         this.webPortReadOnly = webPortReadOnly;
-        this.confDir = confDir;
-        this.sharedConfDir = sharedConfDir;
+        this.confDirs = confDirs;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.liveAggregateRepository = liveAggregateRepository;
@@ -608,14 +606,10 @@ class AdminJsonService {
     }
 
     private @Nullable File getConfFile(String fileName) {
-        File confFile = new File(confDir, fileName);
-        if (confFile.exists()) {
-            return confFile;
-        }
-        if (sharedConfDir != null) {
-            File sharedConfFile = new File(sharedConfDir, fileName);
-            if (sharedConfFile.exists()) {
-                return sharedConfFile;
+        for (File confDir : confDirs) {
+            File confFile = new File(confDir, fileName);
+            if (confFile.exists()) {
+                return confFile;
             }
         }
         return null;
@@ -666,13 +660,9 @@ class AdminJsonService {
         EmbeddedWebConfig config = configRepository.getEmbeddedWebConfig();
         ImmutableEmbeddedWebConfigResponse.Builder builder =
                 ImmutableEmbeddedWebConfigResponse.builder()
-                        .portReadOnly(webPortReadOnly)
                         .config(EmbeddedWebConfigDto.create(config))
-                        .confDir(confDir.getAbsolutePath())
+                        .portReadOnly(webPortReadOnly)
                         .portChangeFailed(portChangeFailed);
-        if (sharedConfDir != null) {
-            builder.sharedConfDir(sharedConfDir.getAbsolutePath());
-        }
         if (httpServer == null) {
             builder.activePort(config.port())
                     .activeBindAddress(config.bindAddress())
@@ -681,6 +671,9 @@ class AdminJsonService {
             builder.activePort(checkNotNull(httpServer.getPort()))
                     .activeBindAddress(httpServer.getBindAddress())
                     .activeHttps(httpServer.getHttps());
+        }
+        for (File confDir : confDirs) {
+            builder.addConfDirs(confDir.getAbsolutePath());
         }
         return mapper.writeValueAsString(builder.build());
     }
@@ -722,12 +715,10 @@ class AdminJsonService {
         EmbeddedWebConfigDto config();
         int activePort();
         String activeBindAddress();
-        boolean portReadOnly();
         boolean activeHttps();
-        @Nullable
-        String sharedConfDir();
-        String confDir();
+        boolean portReadOnly();
         boolean portChangeFailed();
+        List<String> confDirs();
     }
 
     @Value.Immutable

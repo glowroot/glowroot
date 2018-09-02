@@ -73,8 +73,7 @@ public class UiModule {
             @Nullable Integer port, // only used for central
             @Nullable Boolean https, // only used for central
             @Nullable String contextPath, // only used for central
-            File confDir,
-            @Nullable File sharedConfDir,
+            List<File> confDirs,
             File logDir,
             Pattern logFileNamePattern,
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
@@ -109,8 +108,8 @@ public class UiModule {
         MailService mailService = new MailService();
 
         AdminJsonService adminJsonService = new AdminJsonService(central, offlineViewer,
-                webPortReadOnly, confDir, sharedConfDir, configRepository, repoAdmin,
-                liveAggregateRepository, mailService, httpClient);
+                webPortReadOnly, confDirs, configRepository, repoAdmin, liveAggregateRepository,
+                mailService, httpClient);
 
         LayoutService layoutService = new LayoutService(central, offlineViewer, version,
                 configRepository, transactionTypeRepository, traceAttributeNameRepository,
@@ -203,7 +202,7 @@ public class UiModule {
             if (central) {
                 httpServer = new HttpServer(checkNotNull(bindAddress), checkNotNull(https),
                         Suppliers.ofInstance(checkNotNull(contextPath)), numWorkerThreads,
-                        commonHandler, confDir, sharedConfDir, central, offlineViewer);
+                        commonHandler, confDirs, central, offlineViewer);
                 initialPort = checkNotNull(port);
             } else {
                 final EmbeddedWebConfig initialWebConfig = configRepository.getEmbeddedWebConfig();
@@ -220,7 +219,7 @@ public class UiModule {
                 };
                 httpServer = new HttpServer(initialWebConfig.bindAddress(),
                         initialWebConfig.https(), contextPathSupplier, numWorkerThreads,
-                        commonHandler, confDir, sharedConfDir, central, offlineViewer);
+                        commonHandler, confDirs, central, offlineViewer);
                 initialPort = initialWebConfig.port();
             }
             adminJsonService.setHttpServer(httpServer);

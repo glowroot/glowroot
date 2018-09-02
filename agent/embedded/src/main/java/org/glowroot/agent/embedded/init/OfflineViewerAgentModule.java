@@ -16,6 +16,7 @@
 package org.glowroot.agent.embedded.init;
 
 import java.io.File;
+import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -27,11 +28,10 @@ class OfflineViewerAgentModule {
     private final PluginCache pluginCache;
     private final ConfigService configService;
 
-    OfflineViewerAgentModule(@Nullable File pluginsDir, File confDir, @Nullable File sharedConfDir)
+    OfflineViewerAgentModule(@Nullable File pluginsDir, List<File> confDirs)
             throws Exception {
         pluginCache = PluginCache.create(pluginsDir, true);
-        configService =
-                ConfigService.create(confDir, sharedConfDir, pluginCache.pluginDescriptors());
+        configService = ConfigService.create(confDirs, pluginCache.pluginDescriptors());
     }
 
     ConfigService getConfigService() {

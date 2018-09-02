@@ -18,7 +18,6 @@ package org.glowroot.agent.impl;
 import java.io.File;
 import java.util.List;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.Test;
 
 import org.glowroot.agent.collector.Collector;
@@ -96,8 +95,8 @@ public class AggregatorTest {
         }
 
         @Override
-        public void init(File confDir, @Nullable File sharedConfDir, Environment environment,
-                AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) {}
+        public void init(List<File> confDirs, Environment environment, AgentConfig agentConfig,
+                AgentConfigUpdater agentConfigUpdater) {}
 
         @Override
         public void collectAggregates(AggregateReader aggregateReader) throws Exception {
