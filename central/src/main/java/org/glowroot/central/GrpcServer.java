@@ -37,6 +37,7 @@ import org.glowroot.central.repo.V09AgentRollupDao;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.util.Clock;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class GrpcServer {
@@ -98,9 +99,12 @@ class GrpcServer {
                 // need to override default max message size of 4mb until streaming is implemented
                 // for DownstreamService.EntriesResponse and FullTraceResponse
                 .maxInboundMessageSize(64 * 1024 * 1024)
-                // aggressive keep alive is used by agent
+                // aggressive keep alive is used by agent to detect silently dropped connections
                 // (see org.glowroot.agent.central.CentralConnection)
                 .permitKeepAliveTime(20, SECONDS)
+                // aggressive max connection age forces agents to re-resolve DNS often for DNS-based
+                // load balancing (e.g. to pick up and spread load across new central collectors)
+                .maxConnectionAge(20, MINUTES)
                 .build()
                 .start();
     }

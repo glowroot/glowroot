@@ -75,6 +75,11 @@ public class InvocationTargetException {
 /* ========================================================================== */
 package java.net;
 
+public class URI {
+    public URI(@Nullable String scheme, @Nullable String host, @Nullable String path,
+            @Nullable String fragment);
+}
+
 public class URL {
     // see https://code.google.com/p/checker-framework/issues/detail?id=371
     public boolean equals(@Nullable Object obj);

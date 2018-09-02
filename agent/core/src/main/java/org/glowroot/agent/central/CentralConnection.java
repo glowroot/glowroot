@@ -16,10 +16,6 @@
 package org.glowroot.agent.central;
 
 import java.io.File;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -33,10 +29,7 @@ import javax.net.ssl.SSLException;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
-import io.grpc.Attributes;
-import io.grpc.EquivalentAddressGroup;
 import io.grpc.ManagedChannel;
-import io.grpc.NameResolver;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
@@ -105,22 +98,29 @@ class CentralConnection {
         eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         channelExecutor =
                 Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-GRPC-Executor"));
-        String authority;
-        if (collectorAuthority != null) {
-            authority = collectorAuthority;
-        } else if (parsedCollectorAddress.addresses().size() == 1) {
-            authority = parsedCollectorAddress.addresses().get(0).getHostName();
-        } else if (!parsedCollectorAddress.https()) {
-            authority = "dummy-service-authority";
+        NettyChannelBuilder builder;
+        if (parsedCollectorAddress.targets().size() == 1) {
+            CollectorTarget target = parsedCollectorAddress.targets().get(0);
+            builder = NettyChannelBuilder.forAddress(target.host(), target.port());
         } else {
-            throw new IllegalStateException("collector.authority is required when using client"
-                    + " side load balancing to connect to a glowroot central cluster over HTTPS");
+            // this connection mechanism may be deprecated in the future in favor resolving a single
+            // address to multiple collectors via DNS (above)
+            String authority;
+            if (collectorAuthority != null) {
+                authority = collectorAuthority;
+            } else if (!parsedCollectorAddress.https()) {
+                authority = "dummy-service-authority";
+            } else {
+                throw new IllegalStateException("collector.authority is required when connecting"
+                        + " over HTTPS to a comma-separated list of glowroot central collectors");
+            }
+            builder = NettyChannelBuilder.forTarget("dummy-target")
+                    .nameResolverFactory(new MultipleAddressNameResolverFactory(
+                            parsedCollectorAddress.targets(), authority));
         }
-        NettyChannelBuilder builder = NettyChannelBuilder
-                .forTarget("dummy-target")
-                .nameResolverFactory(new SimpleNameResolverFactory(
-                        parsedCollectorAddress.addresses(), authority))
-                .loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
+        // single address may resolve to multiple collectors above via DNS, so need to specify round
+        // robin here even if only single address (first part of conditional above)
+        builder.loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
                 .eventLoopGroup(eventLoopGroup)
                 .executor(channelExecutor)
                 // aggressive keep alive, shouldn't even be used since gauge data is sent every
@@ -269,11 +269,11 @@ class CentralConnection {
 
     private static ParsedCollectorAddress parseCollectorAddress(String collectorAddress) {
         boolean https = false;
-        List<InetSocketAddress> collectorAddresses = Lists.newArrayList();
+        List<CollectorTarget> targets = Lists.newArrayList();
         for (String addr : Splitter.on(',').trimResults().omitEmptyStrings()
                 .split(collectorAddress)) {
             if (addr.startsWith("https://")) {
-                if (!collectorAddresses.isEmpty() && !https) {
+                if (!targets.isEmpty() && !https) {
                     throw new IllegalStateException("Cannot mix http and https addresses when using"
                             + " client side load balancing: " + collectorAddress);
                 }
@@ -302,11 +302,14 @@ class CentralConnection {
                 throw new IllegalStateException(
                         "Invalid collector.address (invalid port): " + addr);
             }
-            collectorAddresses.add(new InetSocketAddress(host, port));
+            targets.add(ImmutableCollectorTarget.builder()
+                    .host(host)
+                    .port(port)
+                    .build());
         }
         return ImmutableParsedCollectorAddress.builder()
                 .https(https)
-                .addAllAddresses(collectorAddresses)
+                .addAllTargets(targets)
                 .build();
     }
 
@@ -333,7 +336,13 @@ class CentralConnection {
     @Value.Immutable
     interface ParsedCollectorAddress {
         boolean https();
-        List<InetSocketAddress> addresses();
+        List<CollectorTarget> targets();
+    }
+
+    @Value.Immutable
+    interface CollectorTarget {
+        String host();
+        int port();
     }
 
     abstract static class GrpcCall<T extends /*@NonNull*/ Object> {
@@ -468,57 +477,5 @@ class CentralConnection {
                 }
             }
         }
-    }
-
-    private static class SimpleNameResolverFactory extends NameResolver.Factory {
-
-        private final List<InetSocketAddress> collectorAddresses;
-        private final String collectorAuthority;
-
-        private SimpleNameResolverFactory(List<InetSocketAddress> collectorAddresses,
-                String collectorAuthority) {
-            this.collectorAddresses = collectorAddresses;
-            this.collectorAuthority = collectorAuthority;
-        }
-
-        @Override
-        public NameResolver newNameResolver(URI targetUri, Attributes params) {
-            return new SimpleNameResolver(collectorAddresses, collectorAuthority);
-        }
-
-        @Override
-        public String getDefaultScheme() {
-            return "dummy-scheme";
-        }
-    }
-
-    private static class SimpleNameResolver extends NameResolver {
-
-        private final List<InetSocketAddress> collectorAddresses;
-        private final String collectorAuthority;
-
-        private SimpleNameResolver(List<InetSocketAddress> collectorAddresses,
-                String collectorAuthority) {
-            this.collectorAddresses = collectorAddresses;
-            this.collectorAuthority = collectorAuthority;
-        }
-
-        @Override
-        public String getServiceAuthority() {
-            return collectorAuthority;
-        }
-
-        @Override
-        public void start(Listener listener) {
-            List<EquivalentAddressGroup> servers = Lists.newArrayList();
-            for (SocketAddress collectorAddress : collectorAddresses) {
-                servers.add(new EquivalentAddressGroup(collectorAddress));
-            }
-            Collections.shuffle(servers);
-            listener.onAddresses(servers, Attributes.EMPTY);
-        }
-
-        @Override
-        public void shutdown() {}
     }
 }
