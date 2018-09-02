@@ -17,6 +17,7 @@ package org.glowroot.central.repo;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -53,7 +54,8 @@ public class CentralRepoModule {
     private final V09AgentRollupDao v09AgentRollupDao;
 
     public CentralRepoModule(ClusterManager clusterManager, Session session,
-            String cassandraSymmetricEncryptionKey, Clock clock) throws Exception {
+            String cassandraSymmetricEncryptionKey, ExecutorService asyncExecutor, Clock clock)
+            throws Exception {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
         userDao = new UserDao(session, clusterManager);
@@ -101,13 +103,14 @@ public class CentralRepoModule {
             v09TraceLastExpirationTime = checkNotNull(row.getTimestamp(i++)).getTime();
             v09AggregateLastExpirationTime = checkNotNull(row.getTimestamp(i++)).getTime();
         }
-        FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
+        FullQueryTextDao fullQueryTextDao =
+                new FullQueryTextDao(session, configRepository, asyncExecutor);
         AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, activeAgentDao,
-                transactionTypeDao, fullQueryTextDao, configRepository, clock);
+                transactionTypeDao, fullQueryTextDao, configRepository, asyncExecutor, clock);
         GaugeValueDaoImpl gaugeValueDaoImpl =
-                new GaugeValueDaoImpl(session, configRepository, clock);
-        SyntheticResultDaoImpl syntheticResultDaoImpl =
-                new SyntheticResultDaoImpl(session, configRepository, clock);
+                new GaugeValueDaoImpl(session, configRepository, asyncExecutor, clock);
+        SyntheticResultDaoImpl syntheticResultDaoImpl = new SyntheticResultDaoImpl(session,
+                configRepository, asyncExecutor, clock);
         if (v09AggregateLastExpirationTime < clock.currentTimeMillis()) {
             aggregateDao = aggregateDaoImpl;
             gaugeValueDao = gaugeValueDaoImpl;

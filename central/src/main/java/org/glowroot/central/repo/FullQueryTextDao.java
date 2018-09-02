@@ -16,7 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
@@ -26,16 +26,13 @@ import com.datastax.driver.core.Row;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.MoreFutures;
+import org.glowroot.central.util.MoreFutures.DoWithResults;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
@@ -49,10 +46,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class FullQueryTextDao {
 
-    private static final Logger logger = LoggerFactory.getLogger(FullQueryTextDao.class);
-
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
+    private final ExecutorService asyncExecutor;
 
     private final PreparedStatement insertCheckV2PS;
     private final PreparedStatement readCheckV2PS;
@@ -65,9 +61,11 @@ class FullQueryTextDao {
     private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(100000);
     private final RateLimiter<String> rateLimiterForSha1 = new RateLimiter<>(10000);
 
-    FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository) throws Exception {
+    FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository,
+            ExecutorService asyncExecutor) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
+        this.asyncExecutor = asyncExecutor;
 
         session.createTableWithSTCS("create table if not exists full_query_text_check (agent_rollup"
                 + " varchar, full_query_text_sha1 varchar, primary key (agent_rollup,"
@@ -112,7 +110,7 @@ class FullQueryTextDao {
         if (!rateLimiterForSha1.tryAcquire(fullTextSha1)) {
             return ImmutableList.of(future);
         }
-        CompletableFuture<?> future2;
+        ListenableFuture<?> future2;
         try {
             future2 = storeInternal(rateLimiterKey.fullTextSha1(), fullText);
         } catch (Exception e) {
@@ -136,47 +134,24 @@ class FullQueryTextDao {
         try {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, fullTextSha1);
-            readFuture = session.executeAsync(boundStatement);
+            readFuture = session.executeAsyncFailIfNoRows(boundStatement,
+                    "full query text record not found for sha1: " + fullTextSha1);
         } catch (Exception e) {
             invalidateBoth(rateLimiterKey);
             throw e;
         }
-        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
-        Futures.addCallback(readFuture, new FutureCallback<ResultSet>() {
-            @Override
-            public void onSuccess(ResultSet results) {
-                Row row = results.one();
-                if (row == null) {
-                    // this shouldn't happen any more now that full query text insert futures are
-                    // waited on prior to inserting aggregate/trace records with sha1
-                    logger.warn("full query text record not found for sha1: {}", fullTextSha1);
-                    chainedFuture.complete(null);
-                    return;
-                }
-                String fullText = checkNotNull(row.getString(0));
-                try {
-                    CompletableFuture<?> future =
-                            storeInternal(rateLimiterKey.fullTextSha1(), fullText);
-                    future.whenComplete((result, t) -> {
-                        if (t != null) {
-                            chainedFuture.completeExceptionally(t);
-                        } else {
-                            chainedFuture.complete(null);
-                        }
-                    });
-                } catch (Exception e) {
-                    logger.debug(e.getMessage(), e);
-                    chainedFuture.completeExceptionally(e);
-                }
-            }
-            @Override
-            public void onFailure(Throwable t) {
-                logger.debug(t.getMessage(), t);
-                chainedFuture.completeExceptionally(t);
-            }
-        }, MoreExecutors.directExecutor());
+        ListenableFuture<?> future2 =
+                MoreFutures.transformAsync(readFuture, asyncExecutor, new DoWithResults() {
+                    @Override
+                    public ListenableFuture<?> execute(ResultSet results) throws Exception {
+                        // not null due to calling executeAsyncFailIfNoRows() above
+                        Row row = checkNotNull(results.one());
+                        String fullText = checkNotNull(row.getString(0));
+                        return storeInternal(rateLimiterKey.fullTextSha1(), fullText);
+                    }
+                });
         return ImmutableList.of(future,
-                MoreFutures.onFailure(chainedFuture, () -> invalidateBoth(rateLimiterKey)));
+                MoreFutures.onFailure(future2, () -> invalidateBoth(rateLimiterKey)));
     }
 
     List<Future<?>> updateCheckTTL(String agentRollupId, String fullTextSha1) throws Exception {
@@ -206,69 +181,39 @@ class FullQueryTextDao {
         return row.getString(0);
     }
 
-    private CompletableFuture<?> storeInternal(String fullTextSha1, String fullText)
+    private ListenableFuture<?> storeInternal(String fullTextSha1, String fullText)
             throws Exception {
         BoundStatement boundStatement = readTtlPS.bind();
         boundStatement.setString(0, fullTextSha1);
-        ListenableFuture<ResultSet> future2 = session.executeAsync(boundStatement);
-
-        CompletableFuture</*@Nullable*/ Void> chainedFuture = new CompletableFuture<>();
-
-        Futures.addCallback(future2, new FutureCallback<ResultSet>() {
+        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
+        return MoreFutures.transformAsync(future, asyncExecutor, new DoWithResults() {
             @Override
-            public void onSuccess(ResultSet results) {
-                try {
-                    Row row = results.one();
-                    int ttl = getTTL();
-                    if (row == null) {
-                        insertAndCompleteFuture(ttl);
+            public ListenableFuture<?> execute(ResultSet results) throws Exception {
+                Row row = results.one();
+                int ttl = getTTL();
+                if (row == null) {
+                    return insertAndCompleteFuture(ttl);
+                } else {
+                    int existingTTL = row.getInt(0);
+                    if (existingTTL < ttl && existingTTL != 0) {
+                        return insertAndCompleteFuture(ttl);
                     } else {
-                        int existingTTL = row.getInt(0);
-                        if (existingTTL < ttl && existingTTL != 0) {
-                            insertAndCompleteFuture(ttl);
-                        } else {
-                            chainedFuture.complete(null);
-                        }
+                        return Futures.immediateFuture(null);
                     }
-                } catch (Exception e) {
-                    logger.debug(e.getMessage(), e);
-                    chainedFuture.completeExceptionally(e);
                 }
             }
-            @Override
-            public void onFailure(Throwable t) {
-                logger.debug(t.getMessage(), t);
-                chainedFuture.completeExceptionally(t);
+            private ListenableFuture<ResultSet> insertAndCompleteFuture(int ttl) throws Exception {
+                BoundStatement boundStatement = insertPS.bind();
+                int i = 0;
+                boundStatement.setString(i++, fullTextSha1);
+                boundStatement.setString(i++, fullText);
+                boundStatement.setInt(i++, ttl);
+                return session.executeAsync(boundStatement);
             }
-            private void insertAndCompleteFuture(int ttl) throws Exception {
-                try {
-                    BoundStatement boundStatement = insertPS.bind();
-                    int i = 0;
-                    boundStatement.setString(i++, fullTextSha1);
-                    boundStatement.setString(i++, fullText);
-                    boundStatement.setInt(i++, ttl);
-                    ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
-                    Futures.addCallback(future, new FutureCallback<ResultSet>() {
-                        @Override
-                        public void onSuccess(ResultSet results) {
-                            chainedFuture.complete(null);
-                        }
-                        @Override
-                        public void onFailure(Throwable t) {
-                            logger.debug(t.getMessage(), t);
-                            chainedFuture.completeExceptionally(t);
-                        }
-                    }, MoreExecutors.directExecutor());
-                } catch (Exception e) {
-                    logger.debug(e.getMessage(), e);
-                    chainedFuture.completeExceptionally(e);
-                }
-            }
-        }, MoreExecutors.directExecutor());
-        return chainedFuture;
+        });
     }
 
-    private CompletableFuture<?> storeCheckInternal(FullQueryTextKey rateLimiterKey)
+    private ListenableFuture<?> storeCheckInternal(FullQueryTextKey rateLimiterKey)
             throws Exception {
         try {
             BoundStatement boundStatement = insertCheckV2PS.bind();

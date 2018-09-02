@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,7 @@ import org.glowroot.common2.repo.RepoAdmin.CassandraWriteTotals;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CassandraWriteMetrics {
 
@@ -61,6 +63,11 @@ public class CassandraWriteMetrics {
 
     private final ThreadLocal</*@Nullable*/ String> currTransactionType = new ThreadLocal<>();
     private final ThreadLocal</*@Nullable*/ String> currTransactionName = new ThreadLocal<>();
+
+    private final ScheduledExecutorService scheduledExecutor =
+            Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .build());
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Boolean> partialTrace = new ThreadLocal<Boolean>() {
@@ -78,12 +85,8 @@ public class CassandraWriteMetrics {
         // clear metrics once a day (midnight UTC) to make sure the map of agent rollup ids doesn't
         // grow unbounded, and also so map of transaction names doesn't become stagnant once it
         // reaches limit
-        Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .build())
-                .scheduleAtFixedRate(writeMetrics::clear,
-                        millisUntilNextMidnightUTC, DAYS.toMillis(1), MILLISECONDS);
+        scheduledExecutor.scheduleAtFixedRate(writeMetrics::clear, millisUntilNextMidnightUTC,
+                DAYS.toMillis(1), MILLISECONDS);
     }
 
     public void setCurrTransactionType(@Nullable String transactionType) {
@@ -146,6 +149,15 @@ public class CassandraWriteMetrics {
             recordMetricsInternal(statement);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+        }
+    }
+
+    void close() throws InterruptedException {
+        // this shouldn't require shutdownNow()
+        scheduledExecutor.shutdown();
+        if (!scheduledExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException(
+                    "Timed out waiting for Cassandra write metrics clearing thread to terminate");
         }
     }
 

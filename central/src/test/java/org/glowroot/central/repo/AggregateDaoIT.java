@@ -17,6 +17,8 @@ package org.glowroot.central.repo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
 import com.google.common.collect.ImmutableList;
@@ -71,20 +73,20 @@ public class AggregateDaoIT {
                     .setValue(ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES))
             .build();
 
+    private static ClusterManager clusterManager;
     private static Cluster cluster;
     private static Session session;
-    private static ClusterManager clusterManager;
     private static AgentConfigDao agentConfigDao;
     private static ActiveAgentDao activeAgentDao;
+    private static ExecutorService asyncExecutor;
     private static AggregateDao aggregateDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
+        clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests");
-
-        clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, clusterManager);
@@ -93,21 +95,24 @@ public class AggregateDaoIT {
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
         TransactionTypeDao transactionTypeDao =
                 new TransactionTypeDao(session, configRepository, clusterManager);
-        FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
+        asyncExecutor = Executors.newCachedThreadPool();
+        FullQueryTextDao fullQueryTextDao =
+                new FullQueryTextDao(session, configRepository, asyncExecutor);
         RollupLevelService rollupLevelService =
                 new RollupLevelService(configRepository, Clock.systemClock());
         activeAgentDao = new ActiveAgentDao(session, agentConfigDao, configRepository,
                 rollupLevelService, Clock.systemClock());
         aggregateDao = new AggregateDaoWithV09Support(ImmutableSet.of(), 0, 0, Clock.systemClock(),
                 new AggregateDaoImpl(session, activeAgentDao, transactionTypeDao, fullQueryTextDao,
-                        configRepository, Clock.systemClock()));
+                        configRepository, asyncExecutor, Clock.systemClock()));
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        clusterManager.close();
+        asyncExecutor.shutdown();
         session.close();
         cluster.close();
+        clusterManager.close();
         SharedSetupRunListener.stopCassandra();
     }
 

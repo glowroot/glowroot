@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
@@ -34,18 +35,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.Common.NeedsRollupFromChildren;
-import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.MoreFutures;
+import org.glowroot.central.util.MoreFutures.DoRollup;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
@@ -61,10 +57,9 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class GaugeValueDaoImpl implements GaugeValueDao {
 
-    private static final Logger logger = LoggerFactory.getLogger(GaugeValueDaoImpl.class);
-
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
+    private final ExecutorService asyncExecutor;
     private final Clock clock;
 
     private final GaugeNameDao gaugeNameDao;
@@ -83,10 +78,11 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     private final PreparedStatement readNeedsRollupFromChild;
     private final PreparedStatement deleteNeedsRollupFromChild;
 
-    GaugeValueDaoImpl(Session session, ConfigRepositoryImpl configRepository, Clock clock)
-            throws Exception {
+    GaugeValueDaoImpl(Session session, ConfigRepositoryImpl configRepository,
+            ExecutorService asyncExecutor, Clock clock) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
+        this.asyncExecutor = asyncExecutor;
         this.clock = clock;
 
         gaugeNameDao = new GaugeNameDao(session, configRepository, clock);
@@ -310,7 +306,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
             long captureTime = needsRollupFromChildren.getCaptureTime();
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
-            List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+            List<ListenableFuture<?>> futures = new ArrayList<>();
             for (Map.Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys()
                     .asMap()
                     .entrySet()) {
@@ -354,7 +350,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             long from = captureTime - rollupIntervalMillis;
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
             Set<String> gaugeNames = needsRollup.getKeys();
-            List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+            List<ListenableFuture<?>> futures = new ArrayList<>();
             for (String gaugeName : gaugeNames) {
                 futures.add(rollupOne(rollupLevel, agentRollupId, gaugeName, from, captureTime,
                         adjustedTTL));
@@ -396,7 +392,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         }
     }
 
-    private ListenableFuture<ResultSet> rollupOneFromChildren(int rollupLevel, String agentRollupId,
+    private ListenableFuture<?> rollupOneFromChildren(int rollupLevel, String agentRollupId,
             String gaugeName, List<String> childAgentRollupIds, long captureTime, int adjustedTTL)
             throws Exception {
         List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
@@ -406,46 +402,21 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             boundStatement.setString(i++, childAgentRollupId);
             boundStatement.setString(i++, gaugeName);
             boundStatement.setTimestamp(i++, new Date(captureTime));
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.executeAsyncWarnIfNoRows(boundStatement, "no gauge value table"
+                    + " records found for agentRollupId={}, gaugeName={}, captureTime={}, level={}",
+                    childAgentRollupId, gaugeName, captureTime, rollupLevel));
         }
-        return Futures.transformAsync(
-                Futures.allAsList(futures),
-                new AsyncFunction<List<ResultSet>, ResultSet>() {
-                    @Override
-                    public ListenableFuture<ResultSet> apply(@Nullable List<ResultSet> results)
-                            throws Exception {
-                        checkNotNull(results);
-                        List<Row> rows = new ArrayList<>();
-                        for (int i = 0; i < results.size(); i++) {
-                            Row row = results.get(i).one();
-                            if (row == null) {
-                                // this is unexpected since TTL for "needs rollup" records is
-                                // shorter than TTL for data
-                                logger.warn(
-                                        "no gauge value table records found for agentRollupId={},"
-                                                + " gaugeName={}, captureTime={}, level={}",
-                                        childAgentRollupIds.get(i), gaugeName, captureTime,
-                                        rollupLevel);
-                            } else {
-                                rows.add(row);
-                            }
-                        }
-                        if (rows.isEmpty()) {
-                            // warning(s) already logged above
-                            return Futures.immediateFuture(DummyResultSet.INSTANCE);
-                        }
-                        return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, captureTime,
-                                adjustedTTL, rows);
-                    }
-                },
-                // direct executor will run above AsyncFunction inside cassandra driver thread that
-                // completes the last future, which is ok since the AsyncFunction itself only kicks
-                // off more async work, and should be relatively lightweight itself
-                MoreExecutors.directExecutor());
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new DoRollup() {
+            @Override
+            public ListenableFuture<ResultSet> execute(Iterable<Row> rows) throws Exception {
+                return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, captureTime,
+                        adjustedTTL, rows);
+            }
+        });
     }
 
     // from is non-inclusive
-    private ListenableFuture<ResultSet> rollupOne(int rollupLevel, String agentRollupId,
+    private ListenableFuture<?> rollupOne(int rollupLevel, String agentRollupId,
             String gaugeName, long from, long to, int adjustedTTL) throws Exception {
         BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
@@ -453,29 +424,17 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         boundStatement.setString(i++, gaugeName);
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
-        return Futures.transformAsync(
-                session.executeAsync(boundStatement),
-                new AsyncFunction<ResultSet, ResultSet>() {
-                    @Override
-                    public ListenableFuture<ResultSet> apply(@Nullable ResultSet results)
-                            throws Exception {
-                        checkNotNull(results);
-                        if (results.isExhausted()) {
-                            // this is unexpected since TTL for "needs rollup" records is shorter
-                            // than TTL for data
-                            logger.warn("no gauge value table records found for agentRollupId={},"
-                                    + " gaugeName={}, from={}, to={}, level={}", agentRollupId,
-                                    gaugeName, from, to, rollupLevel);
-                            return Futures.immediateFuture(DummyResultSet.INSTANCE);
-                        }
-                        return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, to,
-                                adjustedTTL, results);
-                    }
-                },
-                // direct executor will run above AsyncFunction inside cassandra driver thread that
-                // completes the last future, which is ok since the AsyncFunction itself only kicks
-                // off more async work, and should be relatively lightweight itself
-                MoreExecutors.directExecutor());
+        ListenableFuture<ResultSet> future = session.executeAsyncWarnIfNoRows(boundStatement,
+                "no gauge value table records found for agentRollupId={}, gaugeName={}, from={},"
+                        + " to={}, level={}",
+                agentRollupId, gaugeName, from, to, rollupLevel);
+        return MoreFutures.rollupAsync(future, asyncExecutor, new DoRollup() {
+            @Override
+            public ListenableFuture<?> execute(Iterable<Row> rows) throws Exception {
+                return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, to, adjustedTTL,
+                        rows);
+            }
+        });
     }
 
     private ListenableFuture<ResultSet> rollupOneFromRows(int rollupLevel, String agentRollupId,

@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 import com.datastax.driver.core.Cluster;
@@ -54,6 +56,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -99,6 +102,7 @@ public class CentralModule {
     private final ClusterManager clusterManager;
     private final Cluster cluster;
     private final Session session;
+    private final ExecutorService repoAsyncExecutor;
     private final AlertingService alertingService;
     private final CentralAlertingService centralAlertingService;
     private final GrpcServer grpcServer;
@@ -124,6 +128,7 @@ public class CentralModule {
         ClusterManager clusterManager = null;
         Cluster cluster = null;
         Session session = null;
+        ExecutorService repoAsyncExecutor = null;
         AlertingService alertingService = null;
         CentralAlertingService centralAlertingService = null;
         GrpcServer grpcServer = null;
@@ -165,8 +170,11 @@ public class CentralModule {
             if (schemaUpgrade.reloadCentralConfiguration()) {
                 centralConfig = getCentralConfiguration(directories.getConfDir());
             }
+            repoAsyncExecutor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .build());
             CentralRepoModule repos = new CentralRepoModule(clusterManager, session,
-                    centralConfig.cassandraSymmetricEncryptionKey(), clock);
+                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, clock);
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
@@ -288,6 +296,9 @@ public class CentralModule {
             if (alertingService != null) {
                 alertingService.close();
             }
+            if (repoAsyncExecutor != null) {
+                repoAsyncExecutor.shutdown();
+            }
             if (session != null) {
                 session.close();
             }
@@ -302,6 +313,7 @@ public class CentralModule {
         this.clusterManager = clusterManager;
         this.cluster = cluster;
         this.session = session;
+        this.repoAsyncExecutor = repoAsyncExecutor;
         this.alertingService = alertingService;
         this.centralAlertingService = centralAlertingService;
         this.grpcServer = grpcServer;
@@ -330,6 +342,7 @@ public class CentralModule {
             grpcServer.close();
             centralAlertingService.close();
             alertingService.close();
+            repoAsyncExecutor.shutdown();
             session.close();
             cluster.close();
             clusterManager.close();
@@ -366,6 +379,7 @@ public class CentralModule {
         CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
         Session session = null;
         Cluster cluster = null;
+        ExecutorService repoAsyncExecutor = null;
         try {
             session = connect(centralConfig);
             cluster = session.getCluster();
@@ -375,10 +389,17 @@ public class CentralModule {
                 return;
             }
             startupLogger.info("creating glowroot central schema...");
+            repoAsyncExecutor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .build());
             new CentralRepoModule(ClusterManager.create(), session,
-                    centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
+                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
+                    Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
         } finally {
+            if (repoAsyncExecutor != null) {
+                repoAsyncExecutor.shutdown();
+            }
             if (session != null) {
                 session.close();
             }
@@ -432,6 +453,7 @@ public class CentralModule {
         CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
         Session session = null;
         Cluster cluster = null;
+        ExecutorService repoAsyncExecutor = null;
         boolean success;
         try {
             session = connect(centralConfig);
@@ -447,8 +469,12 @@ public class CentralModule {
                         schemaUpgrade.getCurrentSchemaVersion(), initialSchemaVersion);
                 return;
             }
+            repoAsyncExecutor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .build());
             CentralRepoModule repos = new CentralRepoModule(ClusterManager.create(), session,
-                    centralConfig.cassandraSymmetricEncryptionKey(), Clock.systemClock());
+                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
+                    Clock.systemClock());
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
                 startupLogger.info("glowroot central schema created");
@@ -456,6 +482,9 @@ public class CentralModule {
             startupLogger.info("running {}", commandName);
             success = command.run(new Tools(session, repos), args);
         } finally {
+            if (repoAsyncExecutor != null) {
+                repoAsyncExecutor.shutdown();
+            }
             if (session != null) {
                 session.close();
             }

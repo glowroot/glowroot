@@ -17,7 +17,6 @@ package org.glowroot.central.repo;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
@@ -96,11 +95,9 @@ class TransactionTypeDao implements TransactionTypeRepository {
                 transactionTypesCache.invalidate(agentRollupId);
                 throw e;
             }
-            CompletableFuture<?> chainedFuture =
-                    MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
-            chainedFuture = chainedFuture.whenComplete(
-                    (result, t) -> transactionTypesCache.invalidate(agentRollupId));
-            futures.add(chainedFuture);
+            futures.add(MoreFutures.onSuccessAndFailure(future,
+                    () -> transactionTypesCache.invalidate(agentRollupId),
+                    () -> rateLimiter.invalidate(rateLimiterKey)));
         }
         return futures;
     }

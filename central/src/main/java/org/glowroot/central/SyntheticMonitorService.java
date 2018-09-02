@@ -72,7 +72,6 @@ import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.MoreFutures;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Version;
@@ -335,7 +334,7 @@ class SyntheticMonitorService implements Runnable {
     }
 
     private CompletableFuture<?> runJava(String javaSource) {
-        return MoreFutures.submitAsync(new Callable</*@Nullable*/ Void>() {
+        return submitAsync(new Callable</*@Nullable*/ Void>() {
             @Override
             public @Nullable Void call() throws Exception {
                 Class<?> syntheticUserTestClass = Compilations.compile(javaSource);
@@ -563,6 +562,19 @@ class SyntheticMonitorService implements Runnable {
             consumeAgentRollups(childAgentRollup, agentRollupConsumer);
         }
         agentRollupConsumer.accept(agentRollup);
+    }
+
+    private static <V> CompletableFuture<V> submitAsync(Callable<V> callable,
+            ExecutorService executor) {
+        CompletableFuture<V> future = new CompletableFuture<>();
+        executor.execute(() -> {
+            try {
+                future.complete(callable.call());
+            } catch (Throwable t) {
+                future.completeExceptionally(t);
+            }
+        });
+        return future;
     }
 
     private static Throwable getRootCause(Throwable t) {

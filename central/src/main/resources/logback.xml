@@ -26,6 +26,10 @@
     </encoder>
   </appender>
   <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator" />
+  <!-- AggregateFuture is used by Futures.allAsList() and it logs all the failures after the first
+    failure (the first failure is reported via the resulting Future.get()), which typically results
+    in lots of spamming of similar errors (e.g. Cassandra timeouts) -->
+  <logger name="com.google.common.util.concurrent.AggregateFuture" level="off" />
   <root level="info">
     <!-- use -Dglowroot.log.consoleOff=true to turn off console logging -->
     <if condition="p(&quot;glowroot.log.consoleOff&quot;).equalsIgnoreCase(&quot;true&quot;)">
@@ -39,8 +43,7 @@
   <!-- use -Dglowroot.log.auditOn=true to turn on audit logging -->
   <if condition="p(&quot;glowroot.log.auditOn&quot;).equalsIgnoreCase(&quot;true&quot;)">
     <then>
-      <appender name="AUDIT"
-        class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
           <fileNamePattern>
             ${glowroot.log.dir}/glowroot-central-audit.%d{yyyy-MM-dd}.log

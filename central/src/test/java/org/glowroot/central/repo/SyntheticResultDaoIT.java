@@ -16,6 +16,8 @@
 package org.glowroot.central.repo;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
 import com.google.common.collect.Lists;
@@ -34,32 +36,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class SyntheticResultDaoIT {
 
+    private static ClusterManager clusterManager;
     private static Cluster cluster;
     private static Session session;
-    private static ClusterManager clusterManager;
+    private static ExecutorService asyncExecutor;
     private static SyntheticResultDaoImpl syntheticResultDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
+        clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests");
-        clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
-        syntheticResultDao =
-                new SyntheticResultDaoImpl(session, configRepository, Clock.systemClock());
+        asyncExecutor = Executors.newCachedThreadPool();
+        syntheticResultDao = new SyntheticResultDaoImpl(session, configRepository, asyncExecutor,
+                Clock.systemClock());
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        clusterManager.close();
+        asyncExecutor.shutdown();
         session.close();
         cluster.close();
+        clusterManager.close();
         SharedSetupRunListener.stopCassandra();
     }
 

@@ -67,6 +67,10 @@ public class Maps {
 /* ========================================================================== */
 package com.google.common.util.concurrent;
 
+public interface AsyncFunction<I, O> {
+  ListenableFuture<O> apply(I input);
+}
+
 public interface FutureCallback<V> {
   void onSuccess(V result);
 }

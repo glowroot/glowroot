@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class LazyHistogram {
     }
 
     public Aggregate.Histogram toProto(ScratchBuffer scratchBuffer) {
-        Aggregate.Histogram.Builder builder = Aggregate.Histogram.newBuilder();
+        final Aggregate.Histogram.Builder builder = Aggregate.Histogram.newBuilder();
         if (histogram == null) {
             if (!sorted) {
                 // sort values before storing so don't have to sort each time later when calculating
@@ -68,18 +68,22 @@ public class LazyHistogram {
                 builder.addOrderedRawValue(values[i]);
             }
         } else {
-            ByteBuffer buffer = scratchBuffer.getBuffer(histogram.getNeededByteBufferCapacity());
-            // this cast is needed in order to avoid
-            // java.lang.NoSuchMethodError: java.nio.ByteBuffer.clear()Ljava/nio/ByteBuffer;
-            // when this code is compiled with Java 9 and run with Java 8 or earlier
-            ((Buffer) buffer).clear();
-            histogram.encodeIntoByteBuffer(buffer);
-            int size = buffer.position();
-            // this cast is needed in order to avoid
-            // java.lang.NoSuchMethodError: java.nio.ByteBuffer.flip()Ljava/nio/ByteBuffer;
-            // when this code is compiled with Java 9 and run with Java 8 or earlier
-            ((Buffer) buffer).flip();
-            builder.setEncodedBytes(ByteString.copyFrom(buffer, size));
+            scratchBuffer.execute(histogram.getNeededByteBufferCapacity(), new DoWithByteBuffer() {
+                @Override
+                public void call(ByteBuffer buffer) {
+                    // this cast is needed in order to avoid
+                    // java.lang.NoSuchMethodError: java.nio.ByteBuffer.clear()Ljava/nio/ByteBuffer;
+                    // when this code is compiled with Java 9 and run with Java 8 or earlier
+                    ((Buffer) buffer).clear();
+                    histogram.encodeIntoByteBuffer(buffer);
+                    int size = buffer.position();
+                    // this cast is needed in order to avoid
+                    // java.lang.NoSuchMethodError: java.nio.ByteBuffer.flip()Ljava/nio/ByteBuffer;
+                    // when this code is compiled with Java 9 and run with Java 8 or earlier
+                    ((Buffer) buffer).flip();
+                    builder.setEncodedBytes(ByteString.copyFrom(buffer, size));
+                }
+            });
         }
         return builder.build();
     }
@@ -176,11 +180,19 @@ public class LazyHistogram {
 
         private @MonotonicNonNull ByteBuffer buffer;
 
-        ByteBuffer getBuffer(int capacity) {
-            if (buffer == null || buffer.capacity() < capacity) {
-                buffer = ByteBuffer.allocate(capacity);
+        private final Object lock = new Object();
+
+        void execute(int requiredCapacity, DoWithByteBuffer doWithBuffer) {
+            synchronized (lock) {
+                if (buffer == null || buffer.capacity() < requiredCapacity) {
+                    buffer = ByteBuffer.allocate(requiredCapacity);
+                }
+                doWithBuffer.call(buffer);
             }
-            return buffer;
         }
+    }
+
+    interface DoWithByteBuffer {
+        void call(ByteBuffer buffer);
     }
 }

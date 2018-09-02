@@ -30,9 +30,11 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.google.common.base.Function;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -104,6 +106,37 @@ public class Session {
         }
     }
 
+    public ListenableFuture<ResultSet> executeAsyncWarnIfNoRows(Statement statement,
+            String warningMessage, Object... warningArguments) throws Exception {
+        return Futures.transform(executeAsync(statement),
+                new Function<ResultSet, ResultSet>() {
+                    @Override
+                    public ResultSet apply(ResultSet results) {
+                        if (results.isExhausted()) {
+                            logger.warn(warningMessage, warningArguments);
+                        }
+                        return results;
+                    }
+                },
+                MoreExecutors.directExecutor());
+    }
+
+    public ListenableFuture<ResultSet> executeAsyncFailIfNoRows(Statement statement,
+            String errorMessage) throws Exception {
+        return Futures.transformAsync(executeAsync(statement),
+                new AsyncFunction<ResultSet, ResultSet>() {
+                    @Override
+                    public ListenableFuture<ResultSet> apply(ResultSet results) {
+                        if (results.isExhausted()) {
+                            return Futures.immediateFailedFuture(new Exception(errorMessage));
+                        } else {
+                            return Futures.immediateFuture(results);
+                        }
+                    }
+                },
+                MoreExecutors.directExecutor());
+    }
+
     public ListenableFuture<ResultSet> executeAsync(Statement statement) throws Exception {
         return throttle(() -> {
             // for now, need to record metrics in the same method because CassandraWriteMetrics
@@ -151,8 +184,9 @@ public class Session {
         return wrappedSession.getCluster().getMetadata().getKeyspace(keyspaceName);
     }
 
-    public void close() {
+    public void close() throws InterruptedException {
         wrappedSession.close();
+        cassandraWriteMetrics.close();
     }
 
     public void createTableWithTWCS(String createTableQuery, int expirationHours)
@@ -248,6 +282,14 @@ public class Session {
                     + " it can be safely retried on timeout");
         }
         updateSchemaWithRetry(createTableQuery);
+    }
+
+    public static Semaphore getPerThreadSemaphore() {
+        return perThreadSemaphores.get();
+    }
+
+    public static void setPerThreadSemaphore(Semaphore semaphore) {
+        perThreadSemaphores.set(semaphore);
     }
 
     private static ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle)

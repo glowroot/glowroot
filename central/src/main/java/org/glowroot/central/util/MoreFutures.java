@@ -15,18 +15,23 @@
  */
 package org.glowroot.central.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.exceptions.DriverException;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +41,6 @@ public class MoreFutures {
 
     private MoreFutures() {}
 
-    // not using guava Futures.allAsList().get() because it logs every error
     public static void waitForAll(Collection<? extends Future<?>> futures) throws Exception {
         Exception exception = null;
         for (Future<?> future : futures) {
@@ -60,60 +64,113 @@ public class MoreFutures {
         throw exception;
     }
 
-    public static <V> CompletableFuture<V> onFailure(ListenableFuture<V> future,
+    public static <V> ListenableFuture<V> onFailure(ListenableFuture<V> future,
             Runnable onFailure) {
-        CompletableFuture<V> chainedFuture = new CompletableFuture<>();
+        SettableFuture<V> outerFuture = SettableFuture.create();
         Futures.addCallback(future, new FutureCallback<V>() {
             @Override
             public void onSuccess(V result) {
-                chainedFuture.complete(result);
+                outerFuture.set(result);
             }
             @Override
             public void onFailure(Throwable t) {
                 logger.debug(t.getMessage(), t);
                 onFailure.run();
-                chainedFuture.completeExceptionally(t);
+                outerFuture.setException(t);
             }
         }, MoreExecutors.directExecutor());
-        return chainedFuture;
+        return outerFuture;
     }
 
-    public static <V> CompletableFuture<V> onFailure(CompletableFuture<V> future,
-            Runnable onFailure) {
-        return future.whenComplete((result, t) -> {
-            if (t != null) {
-                onFailure.run();
-            }
-        });
-    }
-
-    public static <V> CompletableFuture<V> toCompletableFuture(ListenableFuture<V> future) {
-        CompletableFuture<V> chainedFuture = new CompletableFuture<>();
+    public static <V> ListenableFuture<V> onSuccessAndFailure(ListenableFuture<V> future,
+            Runnable onSuccess, Runnable onFailure) {
+        SettableFuture<V> outerFuture = SettableFuture.create();
         Futures.addCallback(future, new FutureCallback<V>() {
             @Override
             public void onSuccess(V result) {
-                chainedFuture.complete(result);
+                onSuccess.run();
+                outerFuture.set(result);
             }
             @Override
             public void onFailure(Throwable t) {
                 logger.debug(t.getMessage(), t);
-                chainedFuture.completeExceptionally(t);
+                onFailure.run();
+                outerFuture.setException(t);
             }
         }, MoreExecutors.directExecutor());
-        return chainedFuture;
+        return outerFuture;
     }
 
-    public static <V> CompletableFuture<V> submitAsync(Callable<V> callable,
-            ExecutorService executor) {
-        CompletableFuture<V> future = new CompletableFuture<>();
-        executor.execute(() -> {
-            try {
-                future.complete(callable.call());
-            } catch (Throwable t) {
-                future.completeExceptionally(t);
-            }
-        });
-        return future;
+    public static ListenableFuture<?> rollupAsync(ListenableFuture<ResultSet> input,
+            ExecutorService asyncExecutor, DoRollup function) {
+        return transformAsync(input, asyncExecutor,
+                new AsyncFunction<ResultSet, /*@Nullable*/ Object>() {
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public ListenableFuture</*@Nullable*/ Object> apply(ResultSet results)
+                            throws Exception {
+                        if (results.isExhausted()) {
+                            return Futures.immediateFuture(null);
+                        }
+                        return (ListenableFuture</*@Nullable*/ Object>) function.execute(results);
+                    }
+                });
+    }
+
+    public static ListenableFuture<?> rollupAsync(Collection<ListenableFuture<ResultSet>> futures,
+            ExecutorService asyncExecutor, DoRollup function) {
+        return transformAsync(Futures.allAsList(futures), asyncExecutor,
+                new AsyncFunction<List<ResultSet>, /*@Nullable*/ Object>() {
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public ListenableFuture</*@Nullable*/ Object> apply(List<ResultSet> list)
+                            throws Exception {
+                        List<Row> rows = new ArrayList<>();
+                        for (ResultSet results : list) {
+                            rows.addAll(results.all());
+                        }
+                        if (rows.isEmpty()) {
+                            return Futures.immediateFuture(null);
+                        }
+                        return (ListenableFuture</*@Nullable*/ Object>) function.execute(rows);
+                    }
+                });
+    }
+
+    public static ListenableFuture<?> transformAsync(ListenableFuture<ResultSet> input,
+            ExecutorService asyncExecutor, DoWithResults function) {
+        return transformAsync(input, asyncExecutor,
+                new AsyncFunction<ResultSet, /*@Nullable*/ Object>() {
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public ListenableFuture</*@Nullable*/ Object> apply(ResultSet results)
+                            throws Exception {
+                        return (ListenableFuture</*@Nullable*/ Object>) function.execute(results);
+                    }
+                });
+    }
+
+    private static <V> ListenableFuture<?> transformAsync(ListenableFuture<V> future,
+            ExecutorService asyncExecutor, AsyncFunction<V, /*@Nullable*/ Object> function) {
+        Semaphore perThreadSemaphore = Session.getPerThreadSemaphore();
+        return Futures.transformAsync(future,
+                new AsyncFunction<V, /*@Nullable*/ Object>() {
+                    @Override
+                    public ListenableFuture</*@Nullable*/ Object> apply(V input) throws Exception {
+                        Semaphore priorPerThreadSemaphore = Session.getPerThreadSemaphore();
+                        Session.setPerThreadSemaphore(perThreadSemaphore);
+                        try {
+                            return function.apply(input);
+                        } finally {
+                            Session.setPerThreadSemaphore(priorPerThreadSemaphore);
+                        }
+                    }
+                },
+                // calls to Session.executeAsync() inside of the function could block due to the
+                // per-thread concurrent limit, so this needs to be executed in its own thread, not
+                // in the cassandra driver thread that completes the last future which will block
+                // the cassandra driver thread pool
+                asyncExecutor);
     }
 
     public static Exception unwrapDriverException(ExecutionException e) {
@@ -124,5 +181,13 @@ public class MoreFutures {
         } else {
             return e;
         }
+    }
+
+    public interface DoWithResults {
+        ListenableFuture<?> execute(ResultSet results) throws Exception;
+    }
+
+    public interface DoRollup {
+        ListenableFuture<?> execute(Iterable<Row> rows) throws Exception;
     }
 }

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -29,19 +30,14 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.model.Stored;
-import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
+import org.glowroot.central.util.MoreFutures.DoRollup;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
@@ -58,10 +54,9 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class SyntheticResultDaoImpl implements SyntheticResultDao {
 
-    private static final Logger logger = LoggerFactory.getLogger(SyntheticResultDaoImpl.class);
-
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
+    private final ExecutorService asyncExecutor;
     private final Clock clock;
 
     // index is rollupLevel
@@ -73,10 +68,11 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     private final List<PreparedStatement> readNeedsRollup;
     private final List<PreparedStatement> deleteNeedsRollup;
 
-    SyntheticResultDaoImpl(Session session, ConfigRepositoryImpl configRepository, Clock clock)
-            throws Exception {
+    SyntheticResultDaoImpl(Session session, ConfigRepositoryImpl configRepository,
+            ExecutorService asyncExecutor, Clock clock) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
+        this.asyncExecutor = asyncExecutor;
         this.clock = clock;
 
         int count = configRepository.getRollupConfigs().size();
@@ -258,7 +254,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             long from = captureTime - rollupIntervalMillis;
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
             Set<String> syntheticMonitorIds = needsRollup.getKeys();
-            List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
+            List<ListenableFuture<?>> futures = new ArrayList<>();
             for (String syntheticMonitorId : syntheticMonitorIds) {
                 futures.add(rollupOne(rollupLevel, agentRollupId, syntheticMonitorId, from,
                         captureTime, adjustedTTL));
@@ -288,7 +284,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     }
 
     // from is non-inclusive
-    private ListenableFuture<ResultSet> rollupOne(int rollupLevel, String agentRollupId,
+    private ListenableFuture<?> rollupOne(int rollupLevel, String agentRollupId,
             String syntheticMonitorId, long from, long to, int adjustedTTL) throws Exception {
         BoundStatement boundStatement = readResultForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
@@ -296,30 +292,17 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         boundStatement.setString(i++, syntheticMonitorId);
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
-        return Futures.transformAsync(
-                session.executeAsync(boundStatement),
-                new AsyncFunction<ResultSet, ResultSet>() {
-                    @Override
-                    public ListenableFuture<ResultSet> apply(@Nullable ResultSet results)
-                            throws Exception {
-                        checkNotNull(results);
-                        if (results.isExhausted()) {
-                            // this is unexpected since TTL for "needs rollup" records is shorter
-                            // than TTL for data
-                            logger.warn("no synthetic result table records found for"
-                                    + " agentRollupId={}, syntheticMonitorId={}, from={}, to={},"
-                                    + " level={}", agentRollupId, syntheticMonitorId, from, to,
-                                    rollupLevel);
-                            return Futures.immediateFuture(DummyResultSet.INSTANCE);
-                        }
-                        return rollupOneFromRows(rollupLevel, agentRollupId, syntheticMonitorId, to,
-                                adjustedTTL, results);
-                    }
-                },
-                // direct executor will run above AsyncFunction inside cassandra driver thread that
-                // completes the last future, which is ok since the AsyncFunction itself only kicks
-                // off more async work, and should be relatively lightweight itself
-                MoreExecutors.directExecutor());
+        ListenableFuture<ResultSet> future = session.executeAsyncWarnIfNoRows(boundStatement,
+                "no synthetic result table records found for agentRollupId={},"
+                        + " syntheticMonitorId={}, from={}, to={}, level={}",
+                agentRollupId, syntheticMonitorId, from, to, rollupLevel);
+        return MoreFutures.rollupAsync(future, asyncExecutor, new DoRollup() {
+            @Override
+            public ListenableFuture<?> execute(Iterable<Row> rows) throws Exception {
+                return rollupOneFromRows(rollupLevel, agentRollupId, syntheticMonitorId, to,
+                        adjustedTTL, rows);
+            }
+        });
     }
 
     private ListenableFuture<ResultSet> rollupOneFromRows(int rollupLevel, String agentRollupId,
