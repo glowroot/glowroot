@@ -57,12 +57,13 @@ case "$1" in
                                  -DargLine="$surefire_jvm_args" \
                                  $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                 -Dglowroot.ui.skip \
                                  -B
                ;;
 
       "test2") mvn clean install -DargLine="$surefire_jvm_args" \
                                  -DskipTests \
-                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                 -Dglowroot.ui.skip \
                                  -B
                if [[ "$TEST_SHADED" == "true" ]]
                then
@@ -88,21 +89,18 @@ case "$1" in
                                 $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
-                                --no-snapshot-updates \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
                                 $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
-                                --no-snapshot-updates \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
                                 $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
-                                --no-snapshot-updates \
                                 -B
                if [[ "$GLOWROOT_HARNESS" == "javaagent" ]]
                then
@@ -114,7 +112,6 @@ case "$1" in
                                   $test_shaded_opt \
                                   -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                   -Dglowroot.test.jdbcConnectionType=HIKARI_CP_WRAPPED \
-                                  --no-snapshot-updates \
                                   -B
                  # GLASSFISH_JDBC_POOL_WRAPPED tests only work with javaagent container because they
                  # depend on weaving bootstrap classes (e.g. java.sql.Statement)
@@ -123,7 +120,6 @@ case "$1" in
                                   $test_shaded_opt \
                                   -Dglowroot.it.harness=javaagent \
                                   -Dglowroot.test.jdbcConnectionType=GLASSFISH_JDBC_POOL_WRAPPED \
-                                  --no-snapshot-updates \
                                   -B
                  if [[ "$TEST_SHADED" == "true" ]]
                  then
@@ -133,7 +129,6 @@ case "$1" in
                                     -Dglowroot.it.harness=javaagent \
                                     -Dglowroot.test.julManager=org.jboss.logmanager.LogManager \
                                     -Dtest.it=JavaLoggingIT \
-                                    --no-snapshot-updates \
                                     -B
                  fi
                fi
@@ -149,14 +144,10 @@ case "$1" in
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
 
-               # --no-snapshot-updates is used in the builds below because maven-remote-resources-plugin uses an old version of
-               # its parent pom that includes the snapshot repository http://repository.apache.org/snapshots, causing maven to
-               # check for glowroot snapshot artifacts in that repository, sometimes causing slowness during travis-ci builds
                mvn clean verify -pl :glowroot-central,:glowroot-webdriver-tests \
                                 -DargLine="$surefire_jvm_args" \
                                 $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                --no-snapshot-updates \
                                 -B
                ;;
 
@@ -169,16 +160,11 @@ case "$1" in
                                  -DskipTests \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
-
-               # --no-snapshot-updates is used in the builds below because maven-remote-resources-plugin uses an old version of
-               # its parent pom that includes the snapshot repository http://repository.apache.org/snapshots, causing maven to
-               # check for glowroot snapshot artifacts in that repository, sometimes causing slowness during travis-ci builds
                mvn clean verify -pl :glowroot-webdriver-tests \
                                 -Dglowroot.internal.webdriver.useCentral=true \
                                 -DargLine="$surefire_jvm_args" \
                                 $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                --no-snapshot-updates \
                                 -B
                ;;
 
@@ -244,7 +230,8 @@ case "$1" in
                                       -P netty-4.x,spring-4.x \
                                       -B
                  # install to run additional tests
-                 mvn clean install -DskipTests -B
+                 mvn clean install -DskipTests \
+                                   -B
                  # run webdriver tests against the central collector
                  rm -rf webdriver-tests/cassandra
                  mvn $common_mvn_args -pl :glowroot-webdriver-tests \
