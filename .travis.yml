@@ -8,7 +8,10 @@ before_install:
     # NewRatio is to leave as much memory as possible to old gen
   - echo "MAVEN_OPTS=\"-Xmx768m -XX:NewRatio=20\"" > ~/.mavenrc
 install: true
-script: build/travis-ci/build.sh $TARGET
+script:
+    # travis ci provides a default settings xml that has lots of unnecessary repositories which slows build down
+  - rm ~/.m2/settings.xml
+  - build/travis-ci/build.sh $TARGET
 cache:
   directories:
   - $HOME/.m2
