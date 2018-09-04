@@ -205,8 +205,8 @@ public class MessageTemplateImpl implements MessageTemplate {
         private static void appendValue(StringBuilder sb, @Nullable Object value) {
             if (value == null) {
                 sb.append(String.valueOf(value));
-            } else if (value instanceof List) {
-                appendList(sb, (List<?>) value);
+            } else if (value instanceof Iterable) {
+                appendIterable(sb, (Iterable<?>) value);
             } else if (value.getClass().isArray()) {
                 appendArray(sb, value);
             } else {
@@ -214,13 +214,15 @@ public class MessageTemplateImpl implements MessageTemplate {
             }
         }
 
-        private static void appendList(StringBuilder sb, List<?> list) {
+        private static void appendIterable(StringBuilder sb, Iterable<?> items) {
             sb.append('[');
-            for (int i = 0; i < list.size(); i++) {
-                if (i > 0) {
+            boolean comma = false;
+            for (Object item : items) {
+                if (comma) {
                     sb.append(", ");
                 }
-                appendValue(sb, list.get(i));
+                appendValue(sb, item);
+                comma = true;
             }
             sb.append(']');
         }
