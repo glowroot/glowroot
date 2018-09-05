@@ -107,7 +107,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             public void run(@Nullable String mainClass) throws Exception {
                 // TODO report checker framework issue that occurs without checkNotNull
                 checkNotNull(agentModule);
-                ScheduledExecutorService backgroundExecutor = Executors.newScheduledThreadPool(2,
+                backgroundExecutor = Executors.newScheduledThreadPool(2,
                         ThreadFactories.create("Glowroot-Background-%d"));
                 agentModule.onEnteringMain(backgroundExecutor, collectorProxy, instrumentation,
                         glowrootJarFile, mainClass);
