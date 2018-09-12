@@ -392,7 +392,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       }
       if (!$scope.showTraceEntry) {
         $scope.config.traceEntryCaptureSelfNested = false;
-        $scope.config.traceEntryStackThresholdMillis = '';
+        $scope.config.traceEntryStackThresholdMillis = null;
       }
       if (!$scope.captureKindTransaction) {
         $scope.config.alreadyInTransactionBehavior = null;
