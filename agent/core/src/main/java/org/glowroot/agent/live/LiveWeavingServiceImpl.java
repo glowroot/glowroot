@@ -93,7 +93,17 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
 
     @Override
     public void preloadClasspathCache(String agentId) {
-        getClasspathCache().updateCache();
+        // run in background and return immediate so as not to block single UI thread (when running
+        // embedded) or single gRPC thread (when reporting to central collector)
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                getClasspathCache().updateCache();
+            }
+        });
+        thread.setName("Glowroot-Preload-Classpath-Cache");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @Override

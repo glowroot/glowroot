@@ -157,7 +157,7 @@ class ClasspathCache {
         return ImmutableList.copyOf(analyzedMethods);
     }
 
-    // using synchronization over concurrent structures in this cache to conserve memory
+    // using synchronization over non-concurrent structures in this cache to conserve memory
     synchronized void updateCache() {
         Multimap<String, Location> newClassNameLocations = HashMultimap.create();
         for (ClassLoader loader : getKnownClassLoaders()) {
