@@ -120,12 +120,12 @@ class HttpServer {
                         if (sslContextLocal != null) {
                             p.addLast(sslContextLocal.newHandler(ch.alloc()));
                         }
-                        // bumping maxInitialLineLength (first arg below) from default 4096 to 32768
-                        // in order to handle long urls on /jvm/gauges view
-                        // bumping maxHeaderSize (second arg below) from default 8192 to 32768 for
+                        // bumping maxInitialLineLength (first arg below) from default 4096 to 65536
+                        // in order to handle long urls on /jvm/gauges and /report/adhoc views
+                        // bumping maxHeaderSize (second arg below) from default 8192 to 65536 for
                         // same reason due to "Referer" header once url becomes huge
                         // leaving maxChunkSize (third arg below) at default 8192
-                        p.addLast(new HttpServerCodec(32768, 32768, 8192));
+                        p.addLast(new HttpServerCodec(65536, 65536, 8192));
                         p.addLast(new HttpObjectAggregator(1048576));
                         p.addLast(new ConditionalHttpContentCompressor());
                         p.addLast(new ChunkedWriteHandler());
