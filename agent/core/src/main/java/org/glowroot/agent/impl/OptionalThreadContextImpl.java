@@ -307,25 +307,6 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    @Deprecated
-    public @Nullable MessageSupplier getServletMessageSupplier() {
-        ServletRequestInfo servletRequestInfo = getServletRequestInfo();
-        if (servletRequestInfo instanceof MessageSupplier) {
-            return (MessageSupplier) servletRequestInfo;
-        } else {
-            return null;
-        }
-    }
-
-    @Override
-    @Deprecated
-    public void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier) {
-        if (messageSupplier instanceof ServletRequestInfo) {
-            setServletRequestInfo((ServletRequestInfo) messageSupplier);
-        }
-    }
-
-    @Override
     public int getCurrentNestingGroupId() {
         if (threadContext == null) {
             return 0;

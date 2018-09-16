@@ -54,12 +54,4 @@ public class Agent {
     public static ConfigService getConfigService(String pluginId) {
         return service.getConfigService(pluginId);
     }
-
-    /**
-     * @deprecated Use {@link Logger#getLogger(Class)} instead.
-     */
-    @Deprecated
-    public static Logger getLogger(Class<?> clazz) {
-        return Logger.getLogger(clazz);
-    }
 }

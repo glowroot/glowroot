@@ -319,19 +319,6 @@ public interface ThreadContext {
      */
     void setServletRequestInfo(@Nullable ServletRequestInfo servletRequestInfo);
 
-    /**
-     * @deprecated Replaced by {@link #getServletRequestInfo()}.
-     */
-    @Deprecated
-    @Nullable
-    MessageSupplier getServletMessageSupplier();
-
-    /**
-     * @deprecated Replaced by {@link #setServletRequestInfo(ServletRequestInfo)}.
-     */
-    @Deprecated
-    void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier);
-
     interface ServletRequestInfo {
         String getMethod();
         String getContextPath();

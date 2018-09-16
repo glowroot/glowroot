@@ -989,25 +989,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.servletRequestInfo = servletRequestInfo;
     }
 
-    @Override
-    @Deprecated
-    public @Nullable MessageSupplier getServletMessageSupplier() {
-        ServletRequestInfo servletRequestInfo = getServletRequestInfo();
-        if (servletRequestInfo instanceof MessageSupplier) {
-            return (MessageSupplier) servletRequestInfo;
-        } else {
-            return null;
-        }
-    }
-
-    @Override
-    @Deprecated
-    public void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier) {
-        if (messageSupplier instanceof ServletRequestInfo) {
-            setServletRequestInfo((ServletRequestInfo) messageSupplier);
-        }
-    }
-
     boolean hasTraceEntries() {
         return !traceEntryComponent.isEmpty();
     }
