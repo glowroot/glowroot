@@ -118,12 +118,14 @@
     </profile>
     <profile>
       <id>elasticsearch-5.x</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
       <properties>
-        <elasticsearch.version>6.2.4</elasticsearch.version>
+        <elasticsearch.version>6.4.0</elasticsearch.version>
         <!-- need to use netty version that is used by elasticsearch.version version above -->
         <netty.version>4.1.16.Final</netty.version>
-        <!-- using log4j 2.9.1 causes tests to fail under LocalContainer -->
-        <log4j.version>2.10.0</log4j.version>
+        <log4j.version>2.11.1</log4j.version>
       </properties>
       <dependencies>
         <dependency>
@@ -148,7 +150,7 @@
           <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
           <groupId>com.fasterxml.jackson.core</groupId>
           <artifactId>jackson-core</artifactId>
-          <version>2.8.6</version> <!-- $NO-MVN-MAN-VER$ -->
+          <version>2.8.10</version> <!-- $NO-MVN-MAN-VER$ -->
           <scope>test</scope>
         </dependency>
       </dependencies>

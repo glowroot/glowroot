@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="bower_components/angular-ui-bootstrap4/src/typeahead/typeahead.css">
   <link rel="stylesheet" href="bower_components/angular-ui-bootstrap4/src/tooltip/tooltip.css">
   <link rel="stylesheet" href="bower_components/bootstrap-multiselect/dist/css/bootstrap-multiselect.css">
-  <link rel="stylesheet" href="bower_components/d3-flame-graph/src/d3.flameGraph.css">
+  <link rel="stylesheet" href="bower_components/d3-flame-graph/dist/d3-flamegraph.css">
   <link rel="stylesheet" href="bower_components/codemirror/lib/codemirror.css">
   <!-- endbuild -->
 
@@ -377,12 +377,12 @@
 
 <!-- build:js(.) scripts/vendor-flame-graph.js -->
 <!-- large d3.js is loaded async since only needed on flame graph page
-     (but can't mark these all async which then causes failures under grunt serve since d3-tip and d3-flame-graph
+     (but can't mark these all async which then causes failures under grunt serve since d3-flame-graph
      can be loaded before d3, see grunt-usemin issue #391, and workaround in Grunfile.js)
      also, the angular route for the flame graph page waits for window.d3 to be present (see routes.js) -->
 <script src="bower_components/d3/d3.js"></script>
-<script src="bower_components/d3-tip/index.js"></script>
-<script src="bower_components/d3-flame-graph/src/d3.flameGraph.js"></script>
+<!-- the non-minified d3-flamegraph uses ES6 "const", which then causes problems for grunt uglify -->
+<script src="bower_components/d3-flame-graph/dist/d3-flamegraph.min.js"></script>
 <!-- endbuild -->
 </body>
 </html>

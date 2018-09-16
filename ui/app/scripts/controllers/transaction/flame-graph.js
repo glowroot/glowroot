@@ -86,7 +86,7 @@ glowroot.controller('TransactionFlameGraphCtrl', [
                 };
                 height++;
               }
-              var flameGraph = d3.flameGraph()
+              var flameGraph = d3.flamegraph()
                   .height(height * 18)
                   .width(960);
               d3.select('#chart')

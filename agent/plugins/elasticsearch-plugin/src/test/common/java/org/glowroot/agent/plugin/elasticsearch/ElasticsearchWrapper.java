@@ -53,7 +53,7 @@ class ElasticsearchWrapper {
         } else if (elasticsearchClientVersion.startsWith("5.")) {
             ELASTICSEARCH_VERSION = "5.6.8";
         } else if (elasticsearchClientVersion.startsWith("6.")) {
-            ELASTICSEARCH_VERSION = "6.2.4";
+            ELASTICSEARCH_VERSION = "6.4.0";
         } else {
             throw new IllegalStateException(
                     "Unexpected elasticsearch client version: " + elasticsearchClientVersion);
