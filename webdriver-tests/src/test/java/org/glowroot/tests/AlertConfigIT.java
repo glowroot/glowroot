@@ -451,7 +451,7 @@ public class AlertConfigIT extends WebDriverIT {
         createTransactionXPercentileAlert();
         clickLinkWithWait("Web - 95th percentile over the last 1 minute is greater than or equal to"
                 + " 1,000 milliseconds");
-        alertPage.getDeleteButton().click();
+        alertPage.clickDeleteButton();
 
         // then
         waitForNewAlertButton();
@@ -480,9 +480,8 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getSeveritySelect().selectByValue("high");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");
         alertPage.clickAddButton();
-        // getDeleteButton() waits for the save/redirect
-        // (the delete button does not appear until after the save/redirect)
-        alertPage.getDeleteButton();
+        // the delete button does not appear until after the save/redirect
+        alertPage.waitForDeleteButton();
         clickLink("Return to list");
     }
 
@@ -505,9 +504,8 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getSeveritySelect().selectByValue("high");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");
         alertPage.clickAddButton();
-        // getDeleteButton() waits for the save/redirect
-        // (the delete button does not appear until after the save/redirect)
-        alertPage.getDeleteButton();
+        // the delete button does not appear until after the save/redirect
+        alertPage.waitForDeleteButton();
         clickLink("Return to list");
     }
 
@@ -525,9 +523,8 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getSeveritySelect().selectByValue("high");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");
         alertPage.clickAddButton();
-        // getDeleteButton() waits for the save/redirect
-        // (the delete button does not appear until after the save/redirect)
-        alertPage.getDeleteButton();
+        // the delete button does not appear until after the save/redirect
+        alertPage.waitForDeleteButton();
         clickLink("Return to list");
     }
 
@@ -547,9 +544,8 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getSeveritySelect().selectByValue("high");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");
         alertPage.clickAddButton();
-        // getDeleteButton() waits for the save/redirect
-        // (the delete button does not appear until after the save/redirect)
-        alertPage.getDeleteButton();
+        // the delete button does not appear until after the save/redirect
+        alertPage.waitForDeleteButton();
         clickLink("Return to list");
     }
 

@@ -98,7 +98,11 @@ public class AlertConfigPage extends Page {
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
     }
 
-    public WebElement getDeleteButton() {
-        return getWithWait(xpath("//button[normalize-space()='Delete']"));
+    public void clickDeleteButton() {
+        clickWithWait(xpath("//button[normalize-space()='Delete']"));
+    }
+
+    public void waitForDeleteButton() {
+        waitFor(xpath("//button[normalize-space()='Delete']"));
     }
 }

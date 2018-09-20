@@ -249,8 +249,8 @@ public class BasicSmokeIT extends WebDriverIT {
             // query failed (tried: /127.0.0.1:9042
             // (com.datastax.driver.core.exceptions.ConnectionException: [/127.0.0.1] Write attempt
             // on defunct connection))
-            click(xpath("//button[normalize-space()='Heap dump']"));
-            click(xpath("//button[normalize-space()='Yes']"));
+            clickWithWait(xpath("//button[normalize-space()='Heap dump']"));
+            clickWithWait(xpath("//button[normalize-space()='Yes']"));
             String heapDumpFileName = Utils
                     .getWithWait(driver,
                             xpath("//div[@ng-if='heapDumpResponse']//table//tr[1]/td[2]"))
@@ -259,13 +259,13 @@ public class BasicSmokeIT extends WebDriverIT {
                 throw new IOException("Could not delete heap dump file: " + heapDumpFileName);
             }
         }
-        click(xpath("//button[normalize-space()='Check disk space']"));
+        clickWithWait(xpath("//button[normalize-space()='Check disk space']"));
         waitFor(xpath("//div[@ng-if='availableDiskSpaceBytes !== undefined']"));
 
         jvmSidebar.clickHeapHistogramLink();
 
         jvmSidebar.clickForceGcLink();
-        click(xpath("//button[normalize-space()='Force GC']"));
+        clickWithWait(xpath("//button[normalize-space()='Force GC']"));
 
         jvmSidebar.clickMBeanTreeLink();
         List<WebElement> elements = new WebDriverWait(driver, 30).until(ExpectedConditions

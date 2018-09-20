@@ -174,8 +174,7 @@ public class RoleConfigIT extends WebDriverIT {
         RoleConfigPage rolePage = new RoleConfigPage(driver);
         rolePage.getNameTextField().sendKeys("Test");
         rolePage.clickAddButton();
-        // getDeleteButton() waits for the save/redirect
-        // (the delete button does not appear until after the save/redirect)
+        // the delete button does not appear until after the save/redirect
         rolePage.waitForDeleteButton();
         clickLink("Return to list");
     }
