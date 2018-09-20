@@ -188,7 +188,6 @@
       <plugin>
         <groupId>com.github.os72</groupId>
         <artifactId>protoc-jar-maven-plugin</artifactId>
-        <version>3.5.1.1</version>
         <configuration>
           <protocVersion>${protoc.version}</protocVersion>
           <outputTargets>
@@ -239,7 +238,7 @@
         <!-- maven-war-plugin needs to execute before maven-jar-plugin, otherwise it messes up the
           jar's manifest -->
         <artifactId>maven-war-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.2.2</version>
         <executions>
           <execution>
             <goals>
@@ -293,7 +292,7 @@
       <plugin>
         <groupId>de.dentrassi.maven</groupId>
         <artifactId>rpm</artifactId>
-        <version>0.10.2</version>
+        <version>1.1.0</version>
         <configuration>
           <skipSigning>true</skipSigning>
         </configuration>
@@ -494,7 +493,7 @@
             <plugin>
               <groupId>de.dentrassi.maven</groupId>
               <artifactId>rpm</artifactId>
-              <version>0.10.2</version>
+              <version>1.1.0</version>
               <configuration>
                 <skipSigning>false</skipSigning>
                 <signature>
