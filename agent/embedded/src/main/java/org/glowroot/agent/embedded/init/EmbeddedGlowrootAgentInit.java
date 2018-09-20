@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
-import org.glowroot.agent.init.AgentDirsLocking;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NettyInit;
@@ -46,7 +45,7 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     private final boolean offlineViewer;
     private final @Nullable Class<? extends Collector> collectorProxyClass;
 
-    private volatile @MonotonicNonNull Closeable agentDirsLockingCloseable;
+    private volatile @MonotonicNonNull Closeable agentDirLockCloseable;
 
     EmbeddedGlowrootAgentInit(File dataDir, boolean offlineViewer,
             @Nullable Class<? extends Collector> collectorProxyClass) {
@@ -62,9 +61,9 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             final @Nullable File glowrootJarFile, final Map<String, String> properties,
             final @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
-            final String glowrootVersion) throws Exception {
+            final String glowrootVersion, Closeable agentDirLockCloseable) throws Exception {
 
-        agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir, false, offlineViewer);
+        this.agentDirLockCloseable = agentDirLockCloseable;
         embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDirs, logDir, tmpDir,
                 instrumentation, preCheckClassFileTransformer, glowrootJarFile, glowrootVersion,
                 offlineViewer);
@@ -127,7 +126,7 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     public void close() throws Exception {
         checkNotNull(embeddedAgentModule).close();
         // and unlock the agent directory
-        checkNotNull(agentDirsLockingCloseable).close();
+        checkNotNull(agentDirLockCloseable).close();
     }
 
     @Override

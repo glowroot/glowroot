@@ -64,7 +64,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
     private volatile @MonotonicNonNull ScheduledExecutorService backgroundExecutor;
 
-    private volatile @MonotonicNonNull Closeable agentDirsLockingCloseable;
+    private volatile @MonotonicNonNull Closeable agentDirLockCloseable;
 
     public NonEmbeddedGlowrootAgentInit(@Nullable String collectorAddress,
             @Nullable String collectorAuthority,
@@ -79,9 +79,9 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             final @Nullable File glowrootJarFile, final Map<String, String> properties,
             final @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
-            final String glowrootVersion) throws Exception {
+            final String glowrootVersion, Closeable agentDirLockCloseable) throws Exception {
 
-        agentDirsLockingCloseable = AgentDirsLocking.lockAgentDirs(tmpDir, true, false);
+        this.agentDirLockCloseable = agentDirLockCloseable;
         Ticker ticker = Tickers.getTicker();
         Clock clock = Clock.systemClock();
 
@@ -182,9 +182,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             }
         }
         // and unlock the agent directory
-        if (agentDirsLockingCloseable != null) {
-            agentDirsLockingCloseable.close();
-        }
+        checkNotNull(agentDirLockCloseable).close();
     }
 
     @Override

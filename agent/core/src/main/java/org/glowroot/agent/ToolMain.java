@@ -29,8 +29,7 @@ public abstract class ToolMain {
         // just to avoid dependencies on other classes (in this case the @Nullable annotation)
         @SuppressWarnings("argument.type.incompatible")
         File glowrootJarFile = AgentPremain.getGlowrootJarFile(codeSource);
-        Directories directories = new Directories(glowrootJarFile);
-        File embeddedCollectorJarFile = directories.getEmbeddedCollectorJarFile();
+        File embeddedCollectorJarFile = Directories.getEmbeddedCollectorJarFile(glowrootJarFile);
         if (embeddedCollectorJarFile == null) {
             System.err.println("missing lib/glowroot-embedded-collector.jar");
             return;

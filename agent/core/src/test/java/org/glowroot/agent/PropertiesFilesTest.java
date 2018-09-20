@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MainEntryPointTest {
+public class PropertiesFilesTest {
 
     @Test
     public void testUpgradeToCollectorAddress() {
         List<String> lines = ImmutableList.of("before=test", "collector.host=localhost",
                 "collector.port=8181", "after=test");
-        List<String> newLines = MainEntryPoint.upgradeToCollectorAddressIfNeeded(lines);
+        List<String> newLines = PropertiesFiles.upgradeToCollectorAddressIfNeeded(lines);
         assertThat(newLines).containsExactly("before=test", "collector.address=localhost:8181",
                 "after=test");
     }
@@ -37,14 +37,14 @@ public class MainEntryPointTest {
     public void testUpgradeToCollectorAddressBothEmpty() {
         List<String> lines =
                 ImmutableList.of("before=test", "collector.host=", "collector.port=", "after=test");
-        List<String> newLines = MainEntryPoint.upgradeToCollectorAddressIfNeeded(lines);
+        List<String> newLines = PropertiesFiles.upgradeToCollectorAddressIfNeeded(lines);
         assertThat(newLines).containsExactly("before=test", "collector.address=", "after=test");
     }
 
     @Test
     public void testUpgradeToCollectorAddressBothMissing() {
         List<String> lines = ImmutableList.of("before=test", "after=test");
-        List<String> newLines = MainEntryPoint.upgradeToCollectorAddressIfNeeded(lines);
+        List<String> newLines = PropertiesFiles.upgradeToCollectorAddressIfNeeded(lines);
         assertThat(newLines).containsExactly("before=test", "after=test");
     }
 
@@ -52,7 +52,7 @@ public class MainEntryPointTest {
     public void testUpgradeToCollectorAddressOnlyHostEmpty() {
         List<String> lines = ImmutableList.of("before=test", "collector.host=",
                 "collector.port=8181", "after=test");
-        List<String> newLines = MainEntryPoint.upgradeToCollectorAddressIfNeeded(lines);
+        List<String> newLines = PropertiesFiles.upgradeToCollectorAddressIfNeeded(lines);
         assertThat(newLines).containsExactly("before=test", "collector.address=", "after=test");
     }
 
@@ -60,7 +60,7 @@ public class MainEntryPointTest {
     public void testUpgradeToCollectorAddressOnlyPortEmpty() {
         List<String> lines = ImmutableList.of("before=test", "collector.host=localhost",
                 "collector.port=", "after=test");
-        List<String> newLines = MainEntryPoint.upgradeToCollectorAddressIfNeeded(lines);
+        List<String> newLines = PropertiesFiles.upgradeToCollectorAddressIfNeeded(lines);
         assertThat(newLines).containsExactly("before=test", "collector.address=localhost:8181",
                 "after=test");
     }
@@ -69,7 +69,7 @@ public class MainEntryPointTest {
     public void testUpgradeToCollectorAddressOnlyHostMissing() {
         List<String> lines =
                 ImmutableList.of("before=test", "collector.port=8181", "after=test");
-        List<String> newLines = MainEntryPoint.upgradeToCollectorAddressIfNeeded(lines);
+        List<String> newLines = PropertiesFiles.upgradeToCollectorAddressIfNeeded(lines);
         assertThat(newLines).containsExactly("before=test", "after=test");
     }
 
@@ -77,7 +77,7 @@ public class MainEntryPointTest {
     public void testUpgradeToCollectorAddressOnlyPortMissing() {
         List<String> lines =
                 ImmutableList.of("before=test", "collector.host=localhost", "after=test");
-        List<String> newLines = MainEntryPoint.upgradeToCollectorAddressIfNeeded(lines);
+        List<String> newLines = PropertiesFiles.upgradeToCollectorAddressIfNeeded(lines);
         assertThat(newLines).containsExactly("before=test", "collector.address=localhost:8181",
                 "after=test");
     }
@@ -86,7 +86,7 @@ public class MainEntryPointTest {
     public void testUpgradeToCollectorAddressNotNeeded() {
         List<String> lines =
                 ImmutableList.of("before=test", "collector.address=xyz:1234", "after=test");
-        List<String> newLines = MainEntryPoint.upgradeToCollectorAddressIfNeeded(lines);
+        List<String> newLines = PropertiesFiles.upgradeToCollectorAddressIfNeeded(lines);
         assertThat(newLines).isEqualTo(lines);
     }
 }

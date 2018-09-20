@@ -52,8 +52,16 @@ public class ToolMain {
         Directories directories = new Directories(glowrootJarFile);
         MainEntryPoint.initLogging(directories.getConfDirs(), directories.getLogDir(), null);
         startupLogger = LoggerFactory.getLogger("org.glowroot");
+        if (directories.getAgentDirLockCloseable() == null) {
+            startupLogger.error(
+                    "Directory in use by another jvm process, unable to obtain lock: {}",
+                    new File(directories.getTmpDir(), ".lock"));
+            return;
+        }
 
         if (!directories.hasDataDir()) {
+            // provide a nice message for first time users trying to run glowroot using
+            // "java -jar glowroot.jar"
             String path = glowrootJarFile == null ? "/path/to/glowroot.jar"
                     : glowrootJarFile.getAbsolutePath();
             startupLogger.info("To run Glowroot, you need to add \"-javaagent:{}\" to your"

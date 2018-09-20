@@ -18,11 +18,9 @@ package org.glowroot.agent;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Constructor;
@@ -34,19 +32,14 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.jar.JarFile;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
-import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -55,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
-import org.glowroot.agent.init.AgentDirsLocking.AgentDirsLockedException;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInitFactory;
@@ -64,10 +56,8 @@ import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransforme
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.weaving.Java9;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
 
-import static com.google.common.base.Charsets.ISO_8859_1;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -118,6 +108,13 @@ public class MainEntryPoint {
             directories = new Directories(glowrootJarFile);
             // init logger as early as possible
             initLogging(directories.getConfDirs(), directories.getLogDir(), instrumentation);
+            if (directories.getAgentDirLockCloseable() == null) {
+                ImmutableMap<String, String> properties =
+                        getGlowrootProperties(directories.getConfDirs());
+                logAgentDirsLockedException(directories.getConfDir(),
+                        new File(directories.getTmpDir(), ".lock"), properties);
+                return;
+            }
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             // also, don't use logger since not initialized yet
@@ -172,9 +169,6 @@ public class MainEntryPoint {
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDirs());
             start(directories, properties, instrumentation, preCheckClassFileTransformer);
-        } catch (AgentDirsLockedException e) {
-            logAgentDirsLockedException(directories.getConfDir(), e.getLockFile(), e.isCentral(),
-                    e.isOfflineViewer());
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
@@ -194,11 +188,8 @@ public class MainEntryPoint {
             glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), true, null)
                     .init(directories.getPluginsDir(), directories.getConfDirs(),
                             directories.getLogDir(), directories.getTmpDir(),
-                            directories.getGlowrootJarFile(), properties, null, null, version);
-        } catch (AgentDirsLockedException e) {
-            logAgentDirsLockedException(directories.getConfDir(), e.getLockFile(), e.isCentral(),
-                    e.isOfflineViewer());
-            return;
+                            directories.getGlowrootJarFile(), properties, null, null, version,
+                            checkNotNull(directories.getAgentDirLockCloseable()));
         } catch (Throwable t) {
             startupLogger.error("Glowroot cannot start: {}", t.getMessage(), t);
             return;
@@ -270,7 +261,8 @@ public class MainEntryPoint {
         glowrootAgentInit = createGlowrootAgentInit(directories, properties, instrumentation);
         glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDirs(),
                 directories.getLogDir(), directories.getTmpDir(), directories.getGlowrootJarFile(),
-                properties, instrumentation, preCheckClassFileTransformer, version);
+                properties, instrumentation, preCheckClassFileTransformer, version,
+                checkNotNull(directories.getAgentDirLockCloseable()));
     }
 
     @RequiresNonNull("startupLogger")
@@ -278,9 +270,6 @@ public class MainEntryPoint {
             Map<String, String> properties, @Nullable Instrumentation instrumentation)
             throws Exception {
         String collectorAddress = properties.get("glowroot.collector.address");
-        if (collectorAddress != null) {
-            collectorAddress = collectorAddress.trim();
-        }
         Class<? extends Collector> customCollectorClass =
                 loadCustomCollectorClass(directories.getGlowrootDir());
         Constructor<? extends Collector> collectorProxyConstructor = null;
@@ -296,7 +285,7 @@ public class MainEntryPoint {
             startupLogger.info("using collector: {}", customCollectorClass.getName());
             return new NonEmbeddedGlowrootAgentInit(null, null, customCollectorClass);
         }
-        if (Strings.isNullOrEmpty(collectorAddress)) {
+        if (collectorAddress == null) {
             File embeddedCollectorJarFile = directories.getEmbeddedCollectorJarFile();
             if (embeddedCollectorJarFile != null && instrumentation != null) {
                 instrumentation
@@ -349,7 +338,7 @@ public class MainEntryPoint {
         // iterate in reverse, so more specific conf dirs overlay on top of more general conf dirs
         ListIterator<File> i = confDirs.listIterator(confDirs.size());
         while (i.hasPrevious()) {
-            addProperties(i.previous(), properties);
+            PropertiesFiles.upgradeIfNeededAndLoadInto(i.previous(), properties);
         }
         for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
             if (entry.getKey() instanceof String && entry.getValue() instanceof String
@@ -361,33 +350,9 @@ public class MainEntryPoint {
         return ImmutableMap.copyOf(properties);
     }
 
-    private static void addProperties(File dir, Map<String, String> properties)
-            throws IOException {
-        File propFile = new File(dir, "glowroot.properties");
-        if (!propFile.exists()) {
-            return;
-        }
-        // upgrade from 0.9.6 to 0.9.7
-        PropertiesFiles.upgradeIfNeeded(propFile,
-                ImmutableMap.of("agent.rollup=", "agent.rollup.id="));
-        // upgrade from 0.9.13 to 0.9.14
-        upgradeToCollectorAddressIfNeeded(propFile);
-        // upgrade from 0.9.26 to 0.9.27
-        addSchemeToCollectorAddressIfNeeded(propFile);
-        // upgrade from 0.9.28 to 0.10.0
-        prependAgentRollupToAgentIdIfNeeded(propFile);
-        Properties props = PropertiesFiles.load(propFile);
-        for (String key : props.stringPropertyNames()) {
-            String value = props.getProperty(key);
-            if (value != null) {
-                properties.put("glowroot." + key, value);
-            }
-        }
-    }
-
     @RequiresNonNull("startupLogger")
-    private static void logAgentDirsLockedException(File confDir, File lockFile, boolean central,
-            boolean offlineViewer) {
+    private static void logAgentDirsLockedException(File confDir, File lockFile,
+            Map<String, String> properties) {
         // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
         // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
         // have been used to specify '-javaagent:glowroot.jar', in which case Glowroot tries
@@ -401,19 +366,15 @@ public class MainEntryPoint {
         // no need for logging in the special (but common) case described above
         if (!isTomcatStop()) {
             String extraExplanation = "";
-            if (!offlineViewer) {
-                extraExplanation = ".  If you are trying to monitor multiple JVM processes on one"
-                        + " box from the same agent installation, please see instructions for how"
-                        + " to do this on the wiki: ";
-                if (central) {
-                    extraExplanation += "https://github.com/glowroot/glowroot/wiki/Agent"
-                            + "-Installation-(for-Central-Collector)#monitoring-multiple-jvm"
-                            + "-processes-on-one-box";
-                } else {
-                    extraExplanation += "https://github.com/glowroot/glowroot/wiki/Agent"
-                            + "-Installation-(with-Embedded-Collector)#monitoring-multiple-jvm"
-                            + "-processes-on-one-box";
-                }
+            extraExplanation = ".  If you are trying to monitor multiple JVM processes on one box"
+                    + " from the same agent installation, please see instructions for how to do"
+                    + " this on the wiki: ";
+            if (properties.containsKey("glowroot.collector.address")) {
+                extraExplanation += "https://github.com/glowroot/glowroot/wiki/Agent-Installation"
+                        + "-(for-Central-Collector)#monitoring-multiple-jvm-processes-on-one-box";
+            } else {
+                extraExplanation += "https://github.com/glowroot/glowroot/wiki/Agent-Installation"
+                        + "-(with-Embedded-Collector)#monitoring-multiple-jvm-processes-on-one-box";
             }
             startupLogger.error("Glowroot not started, directory in use by another jvm process: {}"
                     + " (unable to obtain lock on {}){}", confDir.getAbsolutePath(),
@@ -508,146 +469,9 @@ public class MainEntryPoint {
         }
     }
 
-    private static void upgradeToCollectorAddressIfNeeded(File propFile) throws IOException {
-        List<String> lines = readPropertiesFile(propFile);
-        List<String> newLines = upgradeToCollectorAddressIfNeeded(lines);
-        if (!newLines.equals(lines)) {
-            writePropertiesFile(propFile, newLines);
-        }
-    }
-
-    @VisibleForTesting
-    static List<String> upgradeToCollectorAddressIfNeeded(List<String> lines) {
-        List<String> newLines = Lists.newArrayList();
-        String host = null;
-        String port = null;
-        int indexForAddress = -1;
-        for (String line : lines) {
-            if (line.startsWith("collector.host=")) {
-                host = line.substring("collector.host=".length());
-                if (indexForAddress == -1) {
-                    indexForAddress = newLines.size();
-                }
-            } else if (line.startsWith("collector.port=")) {
-                port = line.substring("collector.port=".length());
-                if (indexForAddress == -1) {
-                    indexForAddress = newLines.size();
-                }
-            } else if (line.startsWith("collector.address=")) {
-                return lines;
-            } else {
-                newLines.add(line);
-            }
-        }
-        if (indexForAddress == -1) {
-            return newLines;
-        }
-        if (host == null) {
-            return newLines;
-        }
-        if (host.isEmpty()) {
-            newLines.add(indexForAddress, "collector.address=");
-            return newLines;
-        }
-        if (port == null || port.isEmpty()) {
-            port = "8181";
-        }
-        newLines.add(indexForAddress, "collector.address=" + host + ":" + port);
-        return newLines;
-    }
-
-    private static void addSchemeToCollectorAddressIfNeeded(File propFile) throws IOException {
-        List<String> lines = readPropertiesFile(propFile);
-        List<String> newLines = addSchemeToCollectorAddressIfNeeded(lines);
-        if (!newLines.equals(lines)) {
-            writePropertiesFile(propFile, newLines);
-        }
-    }
-
-    private static List<String> addSchemeToCollectorAddressIfNeeded(List<String> lines) {
-        List<String> newLines = Lists.newArrayList();
-        for (String line : lines) {
-            if (line.startsWith("collector.address=")) {
-                String collectorAddress = line.substring("collector.address=".length());
-                List<String> addrs = Lists.newArrayList();
-                boolean modified = false;
-                for (String addr : Splitter.on(',').trimResults().omitEmptyStrings()
-                        .split(collectorAddress)) {
-                    // need to check for "http\://" and "https\://" since those are allowed and
-                    // interpreted by Properties.load() as "http://" and "https://"
-                    if (addr.startsWith("http://") || addr.startsWith("https://")
-                            || addr.startsWith("http\\://") || addr.startsWith("https\\://")) {
-                        addrs.add(addr);
-                    } else {
-                        addrs.add("http://" + addr);
-                        modified = true;
-                    }
-                }
-                if (modified) {
-                    newLines.add("collector.address=" + Joiner.on(',').join(addrs));
-                } else {
-                    newLines.add(line);
-                }
-            } else {
-                newLines.add(line);
-            }
-        }
-        return newLines;
-    }
-
-    private static void prependAgentRollupToAgentIdIfNeeded(File propFile) throws IOException {
-        List<String> lines = readPropertiesFile(propFile);
-        List<String> newLines = prependAgentRollupToAgentIdIfNeeded(lines);
-        if (!newLines.equals(lines)) {
-            writePropertiesFile(propFile, newLines);
-        }
-    }
-
-    private static List<String> prependAgentRollupToAgentIdIfNeeded(List<String> lines) {
-        List<String> newLines = Lists.newArrayList();
-        String agentId = null;
-        String agentRollupId = null;
-        int agentIdLineIndex = -1;
-        for (String line : lines) {
-            if (line.startsWith("agent.id=")) {
-                agentId = line.substring("agent.id=".length());
-                agentIdLineIndex = newLines.size();
-                newLines.add(line);
-            } else if (line.startsWith("agent.rollup.id=")) {
-                agentRollupId = line.substring("agent.rollup.id=".length());
-            } else {
-                newLines.add(line);
-            }
-        }
-        if (agentIdLineIndex != -1 && !Strings.isNullOrEmpty(agentRollupId)) {
-            newLines.set(agentIdLineIndex,
-                    "agent.id=" + agentRollupId.replace("/", "::") + "::" + agentId);
-        }
-        return newLines;
-    }
-
-    private static List<String> readPropertiesFile(File propFile) throws IOException {
-        // properties files must be ISO_8859_1
-        return Files.readLines(propFile, ISO_8859_1);
-    }
-
-    private static void writePropertiesFile(File propFile, List<String> newLines)
-            throws FileNotFoundException {
-        // properties files must be ISO_8859_1
-        PrintWriter out = new PrintWriter(Files.newWriter(propFile, ISO_8859_1));
-        try {
-            for (String newLine : newLines) {
-                out.println(newLine);
-            }
-        } finally {
-            out.close();
-        }
-    }
-
     @OnlyUsedByTests
     public static void start(Map<String, String> properties) throws Exception {
-        String testDirPath = properties.get("glowroot.test.dir");
-        checkNotNull(testDirPath);
+        String testDirPath = checkNotNull(properties.get("glowroot.test.dir"));
         File testDir = new File(testDirPath);
         // init logger as early as possible
         initLogging(Arrays.asList(testDir), testDir, null);

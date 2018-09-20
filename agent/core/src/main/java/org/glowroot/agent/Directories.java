@@ -15,14 +15,18 @@
  */
 package org.glowroot.agent;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -37,73 +41,134 @@ public class Directories {
     // cannot use guava CharMatcher as that triggers loading of jul (org.glowroot.agent.jul.Logger)
     private static final String RESERVED_CHARACTERS = "<>:\"/\\|?*";
 
+    private final @Nullable File glowrootJarFile;
     private final File glowrootDir;
     private final @Nullable File pluginsDir;
     private final List<File> confDirs;
+
+    private final @Nullable Closeable agentDirLockCloseable;
+
     private final File logDir;
     private final File tmpDir;
-    private final @Nullable File glowrootJarFile;
 
     // these are needed for getDataDir()
-    private final Properties props;
+    private final Properties rootProperties;
+    private final boolean createSubDirs;
     private final @Nullable String agentId;
-    private final LazyDefaultBaseDir lazyDefaultBaseDir;
+    private final Helper helper;
 
-    public Directories(@Nullable File glowrootJarFile) throws IOException {
+    public Directories(@Nullable File glowrootJarFile) throws Exception {
+        this.glowrootJarFile = glowrootJarFile;
         glowrootDir = getGlowrootDir(glowrootJarFile);
-
-        // check for glowroot.properties file in glowrootDir
-        File propFile = new File(glowrootDir, "glowroot.properties");
-        props = new Properties();
-        if (propFile.exists()) {
-            InputStream in = new FileInputStream(propFile);
-            try {
-                props.load(in);
-            } finally {
-                in.close();
-            }
-        }
 
         File pluginsDir = new File(glowrootDir, "plugins");
         this.pluginsDir = pluginsDir.exists() ? pluginsDir : null;
 
-        // only look at system property, b/c only need agent-specific sub directories if there are
-        // multiple agent.id values for a given installation
-        agentId = System.getProperty("glowroot.agent.id");
-
-        lazyDefaultBaseDir = new LazyDefaultBaseDir(glowrootDir, agentId);
-
-        List<File> confDirs = getConfDirs(props, agentId, glowrootDir);
-        if (confDirs.isEmpty()) {
-            confDirs = lazyDefaultBaseDir.getConfDirs();
-        }
-        File logDir = getAgentExplicitDir("log", props, agentId);
-        if (logDir == null) {
-            logDir = lazyDefaultBaseDir.getDir("logs");
-        }
-        File tmpDir = getAgentExplicitDir("tmp", props, agentId);
-        if (tmpDir == null) {
-            tmpDir = lazyDefaultBaseDir.getDir("tmp");
+        confDirs = new ArrayList<File>();
+        confDirs.add(glowrootDir);
+        rootProperties = new Properties();
+        File propFile = new File(glowrootDir, "glowroot.properties");
+        if (propFile.exists()) {
+            loadInto(propFile, rootProperties);
         }
 
-        this.confDirs = confDirs;
-        this.logDir = logDir;
+        // explicit directories must be configured in the glowroot dir's glowroot.properties or via
+        // system properties
+        File explicitConfDir = getExplicitDir("conf", rootProperties);
+        File explicitLogDir = getExplicitDir("log", rootProperties);
+        File explicitTmpDir = getExplicitDir("tmp", rootProperties);
+
+        if (explicitConfDir != null) {
+            confDirs.add(explicitConfDir);
+        }
+
+        // for now...
+        createSubDirs = !System.getProperty("glowroot.agent.id", "").isEmpty();
+
+        String agentIdTemplate = getProperty("agent.id", rootProperties);
+
+        String agentIdBeforeNumber = null;
+        Integer agentNumber = null;
+        Helper helper = null;
+        File tmpDir = null;
+        Closeable agentDirLockCloseable = null;
+        if (agentIdTemplate != null) {
+            Pattern pattern = Pattern.compile("\\{\\{(\\d+)\\.\\.(\\d+)}}$");
+            Matcher matcher = pattern.matcher(agentIdTemplate);
+            if (matcher.find()) {
+                int from = Integer.parseInt(NotGuava.checkNotNull(matcher.group(1)));
+                int to = Integer.parseInt(NotGuava.checkNotNull(matcher.group(2)));
+                agentIdBeforeNumber = agentIdTemplate.substring(0, matcher.start());
+                for (agentNumber = from; agentNumber <= to; agentNumber++) {
+                    helper = new Helper(glowrootDir, createSubDirs, agentIdBeforeNumber,
+                            agentNumber);
+                    tmpDir = NotGuava.mkdirs(helper.getDir(explicitTmpDir, "tmp"));
+                    agentDirLockCloseable = AgentDirsLocking.tryLockAgentDirs(tmpDir, false);
+                    if (agentDirLockCloseable != null) {
+                        break;
+                    }
+                }
+            }
+        }
+        if (agentNumber == null) {
+            agentId = agentIdTemplate;
+            agentIdBeforeNumber = agentIdTemplate;
+            helper = new Helper(glowrootDir, createSubDirs, agentId, null);
+            tmpDir = NotGuava.mkdirs(helper.getDir(explicitTmpDir, "tmp"));
+            agentDirLockCloseable = AgentDirsLocking.tryLockAgentDirs(tmpDir, true);
+        } else {
+            agentId = agentIdBeforeNumber + agentNumber;
+            NotGuava.checkNotNull(helper);
+            NotGuava.checkNotNull(tmpDir);
+        }
+
+        if (createSubDirs && agentId == null) {
+            // FIXME LOG PROBLEM after constructor is called
+        }
+
+        if (createSubDirs && agentId != null || agentNumber != null) {
+            File confDir;
+            if (explicitConfDir == null) {
+                confDir = helper.getDefaultBaseDir();
+            } else {
+                // checkNotNull is safe because agentNumber != null ==> agentId != null
+                confDir = NotGuava.mkdirs(
+                        new File(explicitConfDir, makeSafeDirName(NotGuava.checkNotNull(agentId))));
+            }
+            if (createSubDirs && agentNumber != null) {
+                confDirs.add(NotGuava.checkNotNull(confDir.getParentFile()));
+            }
+            confDirs.add(confDir);
+        }
+
+        this.helper = helper;
         this.tmpDir = tmpDir;
-        this.glowrootJarFile = glowrootJarFile;
+        this.agentDirLockCloseable = agentDirLockCloseable;
+
+        logDir = NotGuava.mkdirs(helper.getDir(explicitLogDir, "logs"));
+
+        // most specific first, e.g. searching for config-default.json
+        Collections.reverse(confDirs);
     }
 
     @OnlyUsedByTests
-    Directories(File testDir, @SuppressWarnings("unused") boolean dummy) throws IOException {
+    Directories(File testDir, @SuppressWarnings("unused") boolean dummy) throws Exception {
+        glowrootJarFile = null;
         glowrootDir = testDir;
-        props = new Properties();
-        agentId = null;
-        lazyDefaultBaseDir = new LazyDefaultBaseDir(testDir, null);
         pluginsDir = null;
         confDirs = Arrays.asList(testDir);
+        rootProperties = new Properties();
+        createSubDirs = false;
+        agentId = null;
+        helper = new Helper(testDir, false, null, null);
         logDir = testDir;
-        tmpDir = lazyDefaultBaseDir.getDir("tmp");
-        mkdirs(tmpDir);
-        glowrootJarFile = null;
+        tmpDir = NotGuava.mkdirs(helper.getDir(null, "tmp"));
+        agentDirLockCloseable = AgentDirsLocking.tryLockAgentDirs(tmpDir, true);
+    }
+
+    @Nullable
+    File getGlowrootJarFile() {
+        return glowrootJarFile;
     }
 
     File getGlowrootDir() {
@@ -127,26 +192,17 @@ public class Directories {
         return logDir;
     }
 
-    File getTmpDir() {
+    public File getTmpDir() {
         return tmpDir;
     }
 
-    @Nullable
-    File getGlowrootJarFile() {
-        return glowrootJarFile;
+    public @Nullable Closeable getAgentDirLockCloseable() {
+        return agentDirLockCloseable;
     }
 
     @Nullable
     File getEmbeddedCollectorJarFile() {
-        if (glowrootJarFile == null) {
-            return null;
-        }
-        File libDir = new File(glowrootJarFile.getParentFile(), "lib");
-        if (!libDir.exists() || !libDir.isDirectory()) {
-            return null;
-        }
-        File jarFile = new File(libDir, "glowroot-embedded-collector.jar");
-        return jarFile.exists() ? jarFile : null;
+        return getEmbeddedCollectorJarFile(glowrootJarFile);
     }
 
     @Nullable
@@ -165,21 +221,27 @@ public class Directories {
 
     // only used by embedded agent
     public File getDataDir() throws IOException {
-        File dataDir = getAgentExplicitDir("data", props, agentId);
-        if (dataDir == null) {
-            dataDir = lazyDefaultBaseDir.getDir("data");
-        }
-        mkdirs(dataDir);
-        return dataDir;
+        File explicitDataDir = getExplicitDir("data", rootProperties);
+        return NotGuava.mkdirs(helper.getDir(explicitDataDir, "data"));
     }
 
     // only used by offline viewer
     public boolean hasDataDir() throws IOException {
-        File dataDir = getAgentExplicitDir("data", props, agentId);
-        if (dataDir == null) {
-            dataDir = lazyDefaultBaseDir.getDir("data");
-        }
+        File explicitDataDir = getExplicitDir("data", rootProperties);
+        File dataDir = helper.getDir(explicitDataDir, "data");
         return dataDir.exists();
+    }
+
+    static @Nullable File getEmbeddedCollectorJarFile(@Nullable File glowrootJarFile) {
+        if (glowrootJarFile == null) {
+            return null;
+        }
+        File libDir = new File(glowrootJarFile.getParentFile(), "lib");
+        if (!libDir.exists() || !libDir.isDirectory()) {
+            return null;
+        }
+        File jarFile = new File(libDir, "glowroot-embedded-collector.jar");
+        return jarFile.exists() ? jarFile : null;
     }
 
     private static File getGlowrootDir(@Nullable File glowrootJarFile) {
@@ -199,41 +261,25 @@ public class Directories {
         return glowrootDir;
     }
 
-    private static List<File> getConfDirs(Properties props, @Nullable String agentId,
-            File glowrootDir) throws IOException {
-        File explicitDir = getExplicitDir("conf", props);
-        if (explicitDir == null) {
-            return Collections.emptyList();
-        }
-        if (agentId == null || agentId.isEmpty()) {
-            return Arrays.asList(mkdirs(explicitDir), glowrootDir);
-        } else {
-            File subDir = new File(explicitDir, makeSafeDirName(agentId));
-            return Arrays.asList(mkdirs(subDir), explicitDir, glowrootDir);
-        }
-    }
-
-    private static @Nullable File getAgentExplicitDir(String shortName, Properties props,
-            @Nullable String agentId) throws IOException {
-        File explicitDir = getExplicitDir(shortName, props);
-        if (explicitDir == null) {
+    private static @Nullable File getExplicitDir(String shortName, Properties rootProperties) {
+        String explicitDirPath = getProperty(shortName + ".dir", rootProperties);
+        if (explicitDirPath == null) {
             return null;
+        } else {
+            return new File(explicitDirPath);
         }
-        if (agentId == null || agentId.isEmpty()) {
-            return mkdirs(explicitDir);
-        }
-        return mkdirs(new File(explicitDir, makeSafeDirName(agentId)));
     }
 
-    private static @Nullable File getExplicitDir(String shortName, Properties props) {
-        String dirPath = System.getProperty("glowroot." + shortName + ".dir");
-        if (dirPath == null || dirPath.isEmpty()) {
-            dirPath = props.getProperty(shortName + ".dir");
-            if (dirPath == null || dirPath.isEmpty()) {
-                return null;
-            }
+    private static @Nullable String getProperty(String name, Properties rootProperties) {
+        String value = System.getProperty("glowroot." + name);
+        if (value != null && !value.isEmpty()) {
+            return value;
         }
-        return new File(dirPath);
+        value = rootProperties.getProperty(name);
+        if (value != null && !value.isEmpty()) {
+            return value;
+        }
+        return null;
     }
 
     @VisibleForTesting
@@ -258,54 +304,73 @@ public class Directories {
         return safeName.toString();
     }
 
-    private static File mkdirs(File dir) throws IOException {
-        dir.mkdirs();
-        if (!dir.isDirectory()) {
-            throw new IOException("Could not create directory: " + dir.getAbsolutePath());
+    private static void loadInto(File propFile, Properties props) throws IOException {
+        InputStream in = new FileInputStream(propFile);
+        try {
+            props.load(in);
+        } finally {
+            in.close();
         }
-        return dir;
     }
 
-    private static class LazyDefaultBaseDir {
+    private static class Helper {
 
         private final File glowrootDir;
-        private final @Nullable String agentId;
+        private final boolean createSubDirs;
+        private final @Nullable String agentIdBeforeNumber;
+        private final @Nullable Integer agentNumber;
 
-        private @MonotonicNonNull File baseDir;
+        private @MonotonicNonNull File defaultBaseDir;
 
-        private LazyDefaultBaseDir(File glowrootDir, @Nullable String agentId) {
+        private Helper(File glowrootDir, boolean createSubDirs,
+                @Nullable String agentIdBeforeNumber, @Nullable Integer agentNumber) {
             this.glowrootDir = glowrootDir;
-            this.agentId = agentId;
+            this.createSubDirs = createSubDirs;
+            this.agentIdBeforeNumber = agentIdBeforeNumber;
+            this.agentNumber = agentNumber;
         }
 
-        private File getDir(String name) throws IOException {
-            return mkdirs(new File(getBaseDir(), name));
-        }
-
-        private List<File> getConfDirs() throws IOException {
-            File baseDir = getBaseDir();
-            if (agentId == null || agentId.isEmpty()) {
-                return Arrays.asList(baseDir);
+        private File getDir(@Nullable File explicitDir, String name) throws IOException {
+            if (explicitDir == null) {
+                return new File(getDefaultBaseDir(), name);
+            } else if (createSubDirs && agentIdBeforeNumber != null) {
+                File dir = new File(explicitDir, makeSafeDirName(agentIdBeforeNumber));
+                if (agentNumber == null) {
+                    return dir;
+                } else {
+                    return new File(dir, Integer.toString(agentNumber));
+                }
             } else {
-                return Arrays.asList(baseDir, glowrootDir);
+                return explicitDir;
             }
         }
 
-        private File getBaseDir() throws IOException {
-            if (baseDir == null) {
-                baseDir = getBaseDir(glowrootDir, agentId);
+        private File getDefaultBaseDir() throws IOException {
+            if (defaultBaseDir == null) {
+                defaultBaseDir = createDefaultBaseDir();
             }
-            return baseDir;
+            return defaultBaseDir;
         }
 
-        private static File getBaseDir(File glowrootDir, @Nullable String agentId)
-                throws IOException {
-            if (agentId == null || agentId.isEmpty()) {
+        private File createDefaultBaseDir() throws IOException {
+            if (createSubDirs && agentIdBeforeNumber != null) {
+                File dir = getGlowrootSubDir(agentIdBeforeNumber);
+                if (agentNumber == null) {
+                    return dir;
+                } else {
+                    return NotGuava.mkdirs(new File(dir, Integer.toString(agentNumber)));
+                }
+            } else if (agentNumber == null) {
                 return glowrootDir;
+            } else {
+                return NotGuava.mkdirs(getGlowrootSubDir(agentIdBeforeNumber + agentNumber));
             }
+        }
+
+        private File getGlowrootSubDir(String name) {
             // "agent-" prefix is needed to ensure uniqueness
             // (and to be visibly different from tmp and plugins directories)
-            return mkdirs(new File(glowrootDir, "agent-" + makeSafeDirName(agentId)));
+            return new File(glowrootDir, "agent-" + makeSafeDirName(name));
         }
     }
 }

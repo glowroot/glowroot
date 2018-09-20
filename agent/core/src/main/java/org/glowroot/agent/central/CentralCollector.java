@@ -25,7 +25,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -94,14 +93,14 @@ public class CentralCollector implements Collector {
             ConfigService configService) throws Exception {
 
         String agentId = properties.get("glowroot.agent.id");
-        if (Strings.isNullOrEmpty(agentId)) {
+        if (agentId == null) {
             agentId = escapeHostName(InetAddress.getLocalHost().getHostName());
         } else if (agentId.endsWith("::")) {
             agentId += escapeHostName(InetAddress.getLocalHost().getHostName());
         } else if (!agentId.contains("::")) {
             // check for 0.9.x agent rollup id
             String v09AgentRollupId = properties.get("glowroot.agent.rollup.id");
-            if (!Strings.isNullOrEmpty(v09AgentRollupId)) {
+            if (v09AgentRollupId != null) {
                 agentId = convertFromV09AgentRollupId(v09AgentRollupId) + agentId;
             }
         }

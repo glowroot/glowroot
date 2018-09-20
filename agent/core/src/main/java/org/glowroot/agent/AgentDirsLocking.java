@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.init;
+package org.glowroot.agent;
 
 import java.io.Closeable;
 import java.io.File;
@@ -21,36 +21,36 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
 
-import com.google.common.base.Stopwatch;
-import com.google.common.io.Files;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class AgentDirsLocking {
+//LIMIT DEPENDENCY USAGE IN THIS CLASS SO IT DOESN'T TRIGGER ANY CLASS LOADING ON ITS OWN
+class AgentDirsLocking {
 
     private AgentDirsLocking() {}
 
-    public static Closeable lockAgentDirs(File tmpDir, boolean central, boolean offlineViewer)
-            throws Exception {
+    static @Nullable Closeable tryLockAgentDirs(File tmpDir, boolean wait) throws Exception {
+        NotGuava.mkdirs(tmpDir);
         File lockFile = new File(tmpDir, ".lock");
-        Files.createParentDirs(lockFile);
-        Files.touch(lockFile);
+        touch(lockFile);
         final RandomAccessFile openLockFile = new RandomAccessFile(lockFile, "rw");
         FileLock fileLock = openLockFile.getChannel().tryLock();
         if (fileLock == null) {
+            if (!wait) {
+                return null;
+            }
             // try for a short time in case there is O/S lag on releasing prior lock on JVM restart
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            while (stopwatch.elapsed(SECONDS) < 2) {
+            long startTimeMillis = System.currentTimeMillis();
+            do {
+                MILLISECONDS.sleep(100);
                 fileLock = openLockFile.getChannel().tryLock();
                 if (fileLock != null) {
                     break;
                 }
-                MILLISECONDS.sleep(100);
-            }
+            } while (System.currentTimeMillis() < startTimeMillis + 2000);
             if (fileLock == null) {
-                throw new AgentDirsLockedException(lockFile, central, offlineViewer);
+                return null;
             }
         }
         lockFile.deleteOnExit();
@@ -58,36 +58,17 @@ public class AgentDirsLocking {
         return new Closeable() {
             @Override
             public void close() throws IOException {
-                checkNotNull(fileLockFinal);
+                NotGuava.checkNotNull(fileLockFinal);
                 fileLockFinal.release();
                 openLockFile.close();
             }
         };
     }
 
-    @SuppressWarnings("serial")
-    public static class AgentDirsLockedException extends Exception {
-
-        private final File lockFile;
-        private final boolean central;
-        private final boolean offlineViewer;
-
-        private AgentDirsLockedException(File lockFile, boolean central, boolean offlineViewer) {
-            this.lockFile = lockFile;
-            this.central = central;
-            this.offlineViewer = offlineViewer;
-        }
-
-        public File getLockFile() {
-            return lockFile;
-        }
-
-        public boolean isCentral() {
-            return central;
-        }
-
-        public boolean isOfflineViewer() {
-            return offlineViewer;
+    // copied from guava Files.touch()
+    private static void touch(File file) throws IOException {
+        if (!file.createNewFile() && !file.setLastModified(System.currentTimeMillis())) {
+            throw new IOException("Unable to update modification time of " + file);
         }
     }
 }

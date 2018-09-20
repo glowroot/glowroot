@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.init;
 
+import java.io.Closeable;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.List;
@@ -31,7 +32,7 @@ public interface GlowrootAgentInit {
             @Nullable File glowrootJarFile, Map<String, String> properties,
             @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
-            String glowrootVersion) throws Exception;
+            String glowrootVersion, Closeable agentDirLockCloseable) throws Exception;
 
     @OnlyUsedByTests
     void setSlowThresholdToZero() throws Exception;
