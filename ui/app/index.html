@@ -66,6 +66,7 @@
   </script>
 </head>
 <body ng-app="glowroot"
+      ng-class="{'footer-tall': layout.central && isViewingAgent()}"
       id="ng-app">
 <!--[if lt IE 10]>
 <style>
@@ -225,6 +226,7 @@
   <div id="modalContent"></div>
 </main>
 <footer class="ng-cloak"
+        ng-class="{'footer-tall': layout.central && isViewingAgent()}"
         role="contentinfo"
         id="footer">
   <div ng-if="!layout.central">Glowroot version {{layout.glowrootVersion}}</div>
