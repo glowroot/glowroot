@@ -496,7 +496,7 @@
               <artifactId>rpm</artifactId>
               <version>0.10.2</version>
               <configuration>
-                <skipSignature>false</skipSignature>
+                <skipSigning>false</skipSigning>
                 <signature>
                   <keyId>${gpg.keyId}</keyId>
                   <keyringFile>${user.home}/.gnupg/secring.gpg</keyringFile>
