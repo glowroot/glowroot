@@ -37,11 +37,11 @@
 <!-- escape key doesn't close modal in some situations without tabindex="-1"
      in particular, open trace modal, expand trace entries, then expand a concatenated span (one with ...)
      then hit escape key and modal doesn't close (at least not in chrome) -->
-<div class="modal gt-full-screen-modal"
+<div class="modal gt-full-width-modal gt-full-height-modal"
      role="dialog"
      tabindex="-1"
      id="traceModal">
-  <div class="modal-dialog"
+  <div class="modal-dialog modal-dialog-centered"
        role="document">
     <div class="modal-content">
       <button type="button" class="close" data-dismiss="modal" aria-label="Close">

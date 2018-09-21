@@ -14,35 +14,32 @@
  * limitations under the License.
  */
 
-.gt-full-screen-modal .modal-dialog {
-  max-width: inherit;
-  overflow-y: scroll;
-  position: fixed;
-  left: 25px;
-  top: 25px;
-  right: 25px;
-  bottom: 25px;
-  margin: 0;
-  background-color: #fff;
-  border-top-left-radius: 6px;
-  border-bottom-left-radius: 6px;
-  border: 1px solid #aaa;
+// TODO fix modal scrolling on mobile devices, see https://github.com/twbs/bootstrap/issues/24737
+
+.gt-full-width-modal {
+  // this is to override padding-right that bootstrap modal (unnecessarily) adds for scrollbar
+  padding-right: 0 !important;
 }
 
-.gt-full-screen-modal.modal .close {
+.gt-full-width-modal .modal-dialog {
+  width: calc(100% - (1.75rem * 2));
+  max-width: inherit; // override max-width from bootstrap
+}
+
+.gt-full-width-modal.modal .close {
   position: absolute;
   right: 25px;
-  top: 25px;
+  top: 20px;
 }
 
-.gt-full-screen-modal .modal-content {
-  border: none;
+.gt-full-height-modal .modal-dialog {
+  align-items: inherit !important; // override align-items from bootstrap to make it fill available height
 }
 
 #queryModal .gt-clip {
   position: absolute;
-  right: 61px;
-  top: 64px;
+  right: 26px;
+  top: 50px;
   z-index: 100;
   color: #7f7f7f;
 }

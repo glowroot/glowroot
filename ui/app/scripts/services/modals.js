@@ -31,20 +31,7 @@ glowroot.factory('modals', [
         $selector.detach().appendTo($('#modalContent'));
       }
 
-      if (centerVertically) {
-        // see http://stackoverflow.com/questions/18053408/vertically-centering-bootstrap-modal-window/20444744#20444744
-        $selector.off('show.bs.modal');
-        $selector.on('show.bs.modal', function () {
-          $(this).css('display', 'block');
-          var $dialog = $(this).find('.modal-dialog');
-          var offset = Math.max(($(window).height() - $dialog.height()) / 2, 0);
-          $dialog.css('margin-top', offset);
-        });
-      }
       $selector.modal();
-      var $body = $('body');
-      $('.navbar-fixed-top').css('padding-right', $body.css('padding-right'));
-      $('.navbar-fixed-bottom').css('padding-right', $body.css('padding-right'));
       $selector.off('hide.bs.modal');
       $selector.on('hide.bs.modal', function () {
         // using $timeout as this may be reached inside angular digest or not
@@ -58,19 +45,10 @@ glowroot.factory('modals', [
             $location.search(query, null);
           }
         });
-        $('.navbar-fixed-top').css('padding-right', '');
-        $('.navbar-fixed-bottom').css('padding-right', '');
         $('#chart canvas').show();
         $('body > header').removeAttr('aria-hidden');
         $('body > main > :not(#modalContent)').removeAttr('aria-hidden');
         $('body > footer').removeAttr('aria-hidden');
-      });
-      $timeout(function () {
-        // need to focus on something inside the modal, otherwise keyboard events won't be captured,
-        // in particular, page up / page down won't scroll the modal and escape won't close it
-        $selector.find('.modal-body').attr('tabIndex', -1);
-        $selector.find('.modal-body').css('outline', 'none');
-        $selector.find('.modal-body').focus();
       });
       $('body > header').attr('aria-hidden', 'true');
       $('body > main > :not(#modalContent)').attr('aria-hidden', 'true');
