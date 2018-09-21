@@ -248,6 +248,19 @@
 
   <profiles>
     <profile>
+      <id>release</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-central-https-linux-alpine</artifactId>
+          <version>${project.version}</version>
+          <!-- need to mark this as provided since it is still present in the dependency reduced pom
+            which is deployed to maven central -->
+          <scope>provided</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
       <id>javadoc</id>
       <build>
         <plugins>

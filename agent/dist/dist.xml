@@ -32,6 +32,18 @@
     </dependencySet>
     <dependencySet>
       <includes>
+        <!-- only present under release profile since it depends on locally built Alpine Linux
+          artifact -->
+        <include>org.glowroot:glowroot-agent-central-https-linux-alpine</include>
+      </includes>
+      <outputDirectory>lib</outputDirectory>
+      <outputFileNameMapping>
+        glowroot-central-collector-https-linux-alpine.jar
+      </outputFileNameMapping>
+      <scope>provided</scope>
+    </dependencySet>
+    <dependencySet>
+      <includes>
         <include>org.glowroot:glowroot-agent-central-https-windows</include>
       </includes>
       <outputDirectory>lib</outputDirectory>
