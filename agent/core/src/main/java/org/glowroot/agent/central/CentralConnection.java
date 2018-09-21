@@ -102,6 +102,9 @@ class CentralConnection {
         if (parsedCollectorAddress.targets().size() == 1) {
             CollectorTarget target = parsedCollectorAddress.targets().get(0);
             builder = NettyChannelBuilder.forAddress(target.host(), target.port());
+            if (collectorAuthority != null) {
+                builder.overrideAuthority(collectorAuthority);
+            }
         } else {
             // this connection mechanism may be deprecated in the future in favor resolving a single
             // address to multiple collectors via DNS (above)
