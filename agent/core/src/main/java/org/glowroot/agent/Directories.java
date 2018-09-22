@@ -53,7 +53,7 @@ public class Directories {
 
     // these are needed for getDataDir()
     private final Properties rootProperties;
-    private final boolean createSubDirs;
+    private final boolean multiDir;
     private final @Nullable String agentId;
     private final Helper helper;
 
@@ -82,8 +82,10 @@ public class Directories {
             confDirs.add(explicitConfDir);
         }
 
-        // for now...
-        createSubDirs = !System.getProperty("glowroot.agent.id", "").isEmpty();
+        // multi.dir/glowroot.multi.dir must be configured in the glowroot dir's glowroot.properties
+        // or via system properties
+        multiDir = Boolean.getBoolean("glowroot.multi.dir")
+                || Boolean.parseBoolean(rootProperties.getProperty("multi.dir"));
 
         String agentIdTemplate = getProperty("agent.id", rootProperties);
 
@@ -100,7 +102,7 @@ public class Directories {
                 int to = Integer.parseInt(NotGuava.checkNotNull(matcher.group(2)));
                 agentIdBeforeNumber = agentIdTemplate.substring(0, matcher.start());
                 for (agentNumber = from; agentNumber <= to; agentNumber++) {
-                    helper = new Helper(glowrootDir, createSubDirs, agentIdBeforeNumber,
+                    helper = new Helper(glowrootDir, multiDir, agentIdBeforeNumber,
                             agentNumber);
                     tmpDir = NotGuava.mkdirs(helper.getDir(explicitTmpDir, "tmp"));
                     agentDirLockCloseable = AgentDirsLocking.tryLockAgentDirs(tmpDir, false);
@@ -113,7 +115,7 @@ public class Directories {
         if (agentNumber == null) {
             agentId = agentIdTemplate;
             agentIdBeforeNumber = agentIdTemplate;
-            helper = new Helper(glowrootDir, createSubDirs, agentId, null);
+            helper = new Helper(glowrootDir, multiDir, agentId, null);
             tmpDir = NotGuava.mkdirs(helper.getDir(explicitTmpDir, "tmp"));
             agentDirLockCloseable = AgentDirsLocking.tryLockAgentDirs(tmpDir, true);
         } else {
@@ -122,11 +124,7 @@ public class Directories {
             NotGuava.checkNotNull(tmpDir);
         }
 
-        if (createSubDirs && agentId == null) {
-            // FIXME LOG PROBLEM after constructor is called
-        }
-
-        if (createSubDirs && agentId != null || agentNumber != null) {
+        if (multiDir && agentId != null || agentNumber != null) {
             File confDir;
             if (explicitConfDir == null) {
                 confDir = helper.getDefaultBaseDir();
@@ -135,7 +133,7 @@ public class Directories {
                 confDir = NotGuava
                         .mkdirs(safelyNamedDir(explicitConfDir, NotGuava.checkNotNull(agentId)));
             }
-            if (createSubDirs && agentNumber != null) {
+            if (multiDir && agentNumber != null) {
                 confDirs.add(NotGuava.checkNotNull(confDir.getParentFile()));
             }
             confDirs.add(confDir);
@@ -158,12 +156,16 @@ public class Directories {
         pluginsDir = null;
         confDirs = Arrays.asList(testDir);
         rootProperties = new Properties();
-        createSubDirs = false;
+        multiDir = false;
         agentId = null;
         helper = new Helper(testDir, false, null, null);
         logDir = testDir;
         tmpDir = NotGuava.mkdirs(helper.getDir(null, "tmp"));
         agentDirLockCloseable = AgentDirsLocking.tryLockAgentDirs(tmpDir, true);
+    }
+
+    boolean logStartupErrorMultiDirWithMissingAgentId() {
+        return multiDir && agentId == null;
     }
 
     @Nullable
@@ -337,16 +339,16 @@ public class Directories {
     private static class Helper {
 
         private final File glowrootDir;
-        private final boolean createSubDirs;
+        private final boolean multiDir;
         private final @Nullable String agentIdBeforeNumber;
         private final @Nullable Integer agentNumber;
 
         private @MonotonicNonNull File defaultBaseDir;
 
-        private Helper(File glowrootDir, boolean createSubDirs,
-                @Nullable String agentIdBeforeNumber, @Nullable Integer agentNumber) {
+        private Helper(File glowrootDir, boolean multiDir, @Nullable String agentIdBeforeNumber,
+                @Nullable Integer agentNumber) {
             this.glowrootDir = glowrootDir;
-            this.createSubDirs = createSubDirs;
+            this.multiDir = multiDir;
             this.agentIdBeforeNumber = agentIdBeforeNumber;
             this.agentNumber = agentNumber;
         }
@@ -354,7 +356,7 @@ public class Directories {
         private File getDir(@Nullable File explicitDir, String name) throws IOException {
             if (explicitDir == null) {
                 return new File(getDefaultBaseDir(), name);
-            } else if (createSubDirs && agentIdBeforeNumber != null) {
+            } else if (multiDir && agentIdBeforeNumber != null) {
                 File dir = safelyNamedDir(explicitDir, agentIdBeforeNumber);
                 if (agentNumber == null) {
                     return dir;
@@ -374,7 +376,7 @@ public class Directories {
         }
 
         private File createDefaultBaseDir() throws IOException {
-            if (createSubDirs && agentIdBeforeNumber != null) {
+            if (multiDir && agentIdBeforeNumber != null) {
                 File dir = getGlowrootSubDir(agentIdBeforeNumber);
                 if (agentNumber == null) {
                     return dir;

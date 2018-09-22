@@ -108,6 +108,11 @@ public class MainEntryPoint {
             directories = new Directories(glowrootJarFile);
             // init logger as early as possible
             initLogging(directories.getConfDirs(), directories.getLogDir(), instrumentation);
+            if (directories.logStartupErrorMultiDirWithMissingAgentId()) {
+                startupLogger
+                        .error("Glowroot not started: multi.dir is true, but missing agent.id");
+                return;
+            }
             if (directories.getAgentDirLockCloseable() == null) {
                 ImmutableMap<String, String> properties =
                         getGlowrootProperties(directories.getConfDirs());
