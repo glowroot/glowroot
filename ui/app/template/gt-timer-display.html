@@ -109,9 +109,10 @@
     </tr>
     </tbody>
   </table>
+  <!-- need to use $parent since ng-if creates a child scope -->
   <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color"
           ng-if="showTreeView"
-          ng-click="showTreeView = false"
+          ng-click="$parent.showTreeView = false"
           style="vertical-align: top; margin-top: -1px;">
     switch to flattened view
   </button>
