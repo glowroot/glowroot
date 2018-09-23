@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,12 @@ public class GlowrootDirTest {
 
     @Test
     public void testMakeSafeDirName() throws URISyntaxException {
-        assertThat(Directories.makeSafeDirName("ab>c d<ef|")).isEqualTo("abc def");
-        assertThat(Directories.makeSafeDirName("ab.c d.ef.")).isEqualTo("ab.c d.ef");
-        assertThat(Directories.makeSafeDirName("ab.c d.ef....")).isEqualTo("ab.c d.ef");
+        assertThat(Directories.makeSafeDirName("ab>c d<ef|", true)).isEqualTo("ab-c d-ef-");
+        assertThat(Directories.makeSafeDirName("ab.c d.ef.", true)).isEqualTo("ab.c d.ef");
+        assertThat(Directories.makeSafeDirName("ab.c d.ef....", true)).isEqualTo("ab.c d.ef");
+
+        assertThat(Directories.makeSafeDirName("ab>c d<ef|", false)).isEqualTo("abc def");
+        assertThat(Directories.makeSafeDirName("ab.c d.ef.", false)).isEqualTo("ab.c d.ef");
+        assertThat(Directories.makeSafeDirName("ab.c d.ef....", false)).isEqualTo("ab.c d.ef");
     }
 }

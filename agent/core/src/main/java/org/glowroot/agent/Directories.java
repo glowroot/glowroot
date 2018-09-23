@@ -132,8 +132,8 @@ public class Directories {
                 confDir = helper.getDefaultBaseDir();
             } else {
                 // checkNotNull is safe because agentNumber != null ==> agentId != null
-                confDir = NotGuava.mkdirs(
-                        new File(explicitConfDir, makeSafeDirName(NotGuava.checkNotNull(agentId))));
+                confDir = NotGuava
+                        .mkdirs(safelyNamedDir(explicitConfDir, NotGuava.checkNotNull(agentId)));
             }
             if (createSubDirs && agentNumber != null) {
                 confDirs.add(NotGuava.checkNotNull(confDir.getParentFile()));
@@ -283,13 +283,34 @@ public class Directories {
     }
 
     @VisibleForTesting
-    static String makeSafeDirName(String name) {
+    private static File safelyNamedDir(File parentDir, String name) throws IOException {
+        String safeName = makeSafeDirName(name, true);
+        File dir = new File(parentDir, safeName);
+        if (!dir.exists() && !safeName.equals(name)) {
+            String oldFormatSafeName = makeSafeDirName(name, false);
+            File oldFormatDir = new File(parentDir, oldFormatSafeName);
+            if (oldFormatDir.exists()) {
+                // upgrade from 0.10.12 to 0.11.0
+                if (!oldFormatDir.renameTo(dir)) {
+                    throw new IOException("Unable to rename directory '"
+                            + oldFormatDir.getAbsolutePath() + "' to '" + dir.getAbsolutePath()
+                            + "' as part of upgrade to 0.11.0 or later");
+                }
+            }
+        }
+        return dir;
+    }
+
+    @VisibleForTesting
+    static String makeSafeDirName(String name, boolean newFormat) {
         StringBuilder safeName = new StringBuilder(name.length());
         int numTrailingDots = 0;
         for (int i = 0; i < name.length(); i++) {
             char c = name.charAt(i);
             if (RESERVED_CHARACTERS.indexOf(c) == -1) {
                 safeName.append(c);
+            } else if (newFormat) {
+                safeName.append('-');
             }
             if (c == '.') {
                 numTrailingDots++;
@@ -334,7 +355,7 @@ public class Directories {
             if (explicitDir == null) {
                 return new File(getDefaultBaseDir(), name);
             } else if (createSubDirs && agentIdBeforeNumber != null) {
-                File dir = new File(explicitDir, makeSafeDirName(agentIdBeforeNumber));
+                File dir = safelyNamedDir(explicitDir, agentIdBeforeNumber);
                 if (agentNumber == null) {
                     return dir;
                 } else {
@@ -367,10 +388,10 @@ public class Directories {
             }
         }
 
-        private File getGlowrootSubDir(String name) {
+        private File getGlowrootSubDir(String name) throws IOException {
             // "agent-" prefix is needed to ensure uniqueness
             // (and to be visibly different from tmp and plugins directories)
-            return new File(glowrootDir, "agent-" + makeSafeDirName(name));
+            return safelyNamedDir(glowrootDir, "agent-" + name);
         }
     }
 }
