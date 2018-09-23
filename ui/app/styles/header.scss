@@ -15,7 +15,7 @@
  */
 
 .gt-header {
-  padding: 1.75rem 0 2.25rem;
+  padding: 2.75rem 0 3.25rem;
 }
 
 .gt-header-height {
@@ -46,9 +46,12 @@
 }
 
 .gt-header-lhs, .gt-header-rhs {
-  height: 6rem;
   display: flex;
   align-items: center;
+}
+
+.gt-header-rhs {
+  padding-top: .75rem;
 }
 
 .gt-header-lhs .dropdown-item {
@@ -73,7 +76,7 @@
 }
 
 .gt-header .gt-separator {
-  padding-bottom: .75rem;
+  margin-top: -.75rem;
   font-size: 3.25rem;
   font-weight: 400;
   margin-left: .25rem;

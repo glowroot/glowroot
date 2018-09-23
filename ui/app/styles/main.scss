@@ -165,7 +165,6 @@ body {
   font-family: 'Open Sans', sans-serif;
 }
 
-
 .container {
   padding-left: 15px !important;
   padding-right: 15px !important;
@@ -405,4 +404,17 @@ select.form-control {
 .form-check + .form-check {
   // add space in between consecutive checkboxes, e.g. gauge attributes and role permissions
   @extend .pt-1;
+}
+
+.gt-response-time-radios {
+  text-align: center;
+  position: relative;
+  color: #555;
+  padding-bottom: 1.25rem;
+}
+
+@include media-breakpoint-up(lg) {
+  .gt-response-time-radios {
+    padding-bottom: .5rem;
+  }
 }
