@@ -125,7 +125,7 @@ public class UiModule {
         jsonServices.add(new ErrorJsonService(errorCommonService, transactionCommonService,
                 traceRepository, configRepository, rollupLevelService, clock));
         jsonServices.add(new GaugeValueJsonService(gaugeValueRepository, rollupLevelService,
-                configRepository));
+                configRepository, clock));
         jsonServices
                 .add(new JvmJsonService(environmentRepository, configRepository, liveJvmService));
         jsonServices

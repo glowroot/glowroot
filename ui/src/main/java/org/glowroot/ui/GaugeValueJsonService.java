@@ -32,8 +32,10 @@ import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.CaptureTimes;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.ImmutableGauge;
@@ -50,12 +52,14 @@ class GaugeValueJsonService {
     private final GaugeValueRepository gaugeValueRepository;
     private final RollupLevelService rollupLevelService;
     private final ConfigRepository configRepository;
+    private final Clock clock;
 
     GaugeValueJsonService(GaugeValueRepository gaugeValueRepository,
-            RollupLevelService rollupLevelService, ConfigRepository configRepository) {
+            RollupLevelService rollupLevelService, ConfigRepository configRepository, Clock clock) {
         this.gaugeValueRepository = gaugeValueRepository;
         this.rollupLevelService = rollupLevelService;
         this.configRepository = configRepository;
+        this.clock = clock;
     }
 
     @GET(path = "/backend/jvm/gauges", permission = "agent:jvm:gauges")
@@ -70,15 +74,28 @@ class GaugeValueJsonService {
             dataPointIntervalMillis =
                     configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
         }
-        Map<String, List<GaugeValue>> gaugeValues =
+        Map<String, List<GaugeValue>> origGaugeValues =
                 getGaugeValues(agentRollupId, request, rollupLevel, dataPointIntervalMillis);
-        if (isEmpty(gaugeValues)) {
+        Map<String, List<GaugeValue>> gaugeValues = origGaugeValues;
+        if (isEmpty(gaugeValues) && fallBackToLargestAggregate(rollupLevel, request)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             rollupLevel = getLargestRollupLevel();
             dataPointIntervalMillis =
                     configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
             gaugeValues =
                     getGaugeValues(agentRollupId, request, rollupLevel, dataPointIntervalMillis);
+            long lastCaptureTime = 0;
+            for (List<GaugeValue> list : gaugeValues.values()) {
+                if (!list.isEmpty()) {
+                    lastCaptureTime =
+                            Math.max(lastCaptureTime, Iterables.getLast(list).getCaptureTime());
+                }
+            }
+            if (lastCaptureTime != 0 && ignoreFallBackData(request, lastCaptureTime)) {
+                // this is probably data from before the requested time period
+                // (go back to empty gauge values)
+                gaugeValues = origGaugeValues;
+            }
         }
         if (rollupLevel != 0) {
             syncManualRollupCaptureTimes(gaugeValues, rollupLevel);
@@ -189,8 +206,22 @@ class GaugeValueJsonService {
         }
     }
 
+    private boolean fallBackToLargestAggregate(int rollupLevel, GaugeValueRequest request) {
+        return rollupLevel < getLargestRollupLevel() && request.from() < clock.currentTimeMillis()
+                - getLargestRollupIntervalMillis() * 2;
+    }
+
+    private boolean ignoreFallBackData(GaugeValueRequest request, long lastCaptureTime) {
+        return lastCaptureTime < request.from() + getLargestRollupIntervalMillis();
+    }
+
     private int getLargestRollupLevel() {
         return configRepository.getRollupConfigs().size();
+    }
+
+    private long getLargestRollupIntervalMillis() {
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        return rollupConfigs.get(rollupConfigs.size() - 1).intervalMillis();
     }
 
     static List<GaugeValue> rollUpGaugeValues(List<GaugeValue> orderedNonRolledUpGaugeValues,

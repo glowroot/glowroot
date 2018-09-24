@@ -34,6 +34,8 @@ import org.glowroot.common.live.ImmutableSummaryQuery;
 import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
+import org.glowroot.common.model.ImmutableOverallErrorSummary;
+import org.glowroot.common.model.OverallErrorSummaryCollector;
 import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummary;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector.ErrorSummarySortOrder;
@@ -42,6 +44,7 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.ImmutableErrorMessageFilter;
 import org.glowroot.common2.repo.ImmutableTraceQuery;
 import org.glowroot.common2.repo.TraceRepository;
@@ -106,12 +109,16 @@ class ErrorJsonService {
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates = transactionCommonService
                 .getThroughputAggregates(agentRollupId, aggregateQuery, autoRefresh);
-        if (throughputAggregates.isEmpty()
-                && aggregateQuery.rollupLevel() < getLargestRollupLevel()) {
+        if (throughputAggregates.isEmpty() && fallBackToLargestAggregates(aggregateQuery)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             aggregateQuery = withLargestRollupLevel(aggregateQuery);
             throughputAggregates = transactionCommonService.getThroughputAggregates(agentRollupId,
                     aggregateQuery, autoRefresh);
+            if (!throughputAggregates.isEmpty() && ignoreFallBackData(aggregateQuery,
+                    Iterables.getLast(throughputAggregates).captureTime())) {
+                // this is probably data from before the requested time period
+                throughputAggregates = ImmutableList.of();
+            }
         }
         long dataPointIntervalMillis = configRepository.getRollupConfigs()
                 .get(aggregateQuery.rollupLevel()).intervalMillis();
@@ -176,16 +183,22 @@ class ErrorJsonService {
                 .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to(),
                         DataKind.GENERAL))
                 .build();
-        OverallErrorSummary overallSummary =
+        OverallErrorSummaryCollector overallErrorSummaryCollector =
                 errorCommonService.readOverallErrorSummary(agentRollupId, query, autoRefresh);
-        if (overallSummary.transactionCount() == 0) {
+        OverallErrorSummary overallSummary = overallErrorSummaryCollector.getOverallErrorSummary();
+        if (overallSummary.transactionCount() == 0 && fallBackToLargestAggregates(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
-            query = ImmutableSummaryQuery.builder()
-                    .copyFrom(query)
-                    .rollupLevel(getLargestRollupLevel())
-                    .build();
-            overallSummary =
+            query = withLargestRollupLevel(query);
+            overallErrorSummaryCollector =
                     errorCommonService.readOverallErrorSummary(agentRollupId, query, autoRefresh);
+            overallSummary = overallErrorSummaryCollector.getOverallErrorSummary();
+            if (ignoreFallBackData(query, overallErrorSummaryCollector.getLastCaptureTime())) {
+                // this is probably data from before the requested time period
+                overallSummary = ImmutableOverallErrorSummary.builder()
+                        .errorCount(0)
+                        .transactionCount(0)
+                        .build();
+            }
         }
         Result<TransactionNameErrorSummary> queryResult =
                 errorCommonService.readTransactionNameErrorSummaries(agentRollupId, query,
@@ -204,6 +217,16 @@ class ErrorJsonService {
         return sb.toString();
     }
 
+    private boolean fallBackToLargestAggregates(AggregateQuery query) {
+        return query.rollupLevel() < getLargestRollupLevel()
+                && query.from() > clock.currentTimeMillis() - getLargestRollupIntervalMillis() * 2;
+    }
+
+    private boolean fallBackToLargestAggregates(SummaryQuery query) {
+        return query.rollupLevel() < getLargestRollupLevel()
+                && query.from() > clock.currentTimeMillis() - getLargestRollupIntervalMillis() * 2;
+    }
+
     private AggregateQuery withLargestRollupLevel(AggregateQuery query) {
         return ImmutableAggregateQuery.builder()
                 .copyFrom(query)
@@ -211,8 +234,28 @@ class ErrorJsonService {
                 .build();
     }
 
+    private SummaryQuery withLargestRollupLevel(SummaryQuery query) {
+        return ImmutableSummaryQuery.builder()
+                .copyFrom(query)
+                .rollupLevel(getLargestRollupLevel())
+                .build();
+    }
+
+    private boolean ignoreFallBackData(AggregateQuery query, long lastCaptureTime) {
+        return lastCaptureTime < query.from() + getLargestRollupIntervalMillis();
+    }
+
+    private boolean ignoreFallBackData(SummaryQuery query, long lastCaptureTime) {
+        return lastCaptureTime < query.from() + getLargestRollupIntervalMillis();
+    }
+
     private int getLargestRollupLevel() {
         return configRepository.getRollupConfigs().size() - 1;
+    }
+
+    private long getLargestRollupIntervalMillis() {
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        return rollupConfigs.get(rollupConfigs.size() - 1).intervalMillis();
     }
 
     private static void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,

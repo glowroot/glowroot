@@ -19,7 +19,6 @@ import org.glowroot.common.live.ImmutableSummaryQuery;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
-import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummary;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector.ErrorSummarySortOrder;
@@ -38,7 +37,7 @@ class ErrorCommonService {
     }
 
     // from is non-inclusive
-    OverallErrorSummary readOverallErrorSummary(String agentRollupId, SummaryQuery query,
+    OverallErrorSummaryCollector readOverallErrorSummary(String agentRollupId, SummaryQuery query,
             boolean autoRefresh) throws Exception {
         OverallErrorSummaryCollector collector = new OverallErrorSummaryCollector();
         long revisedFrom = query.from();
@@ -64,7 +63,7 @@ class ErrorCommonService {
                 break;
             }
         }
-        return collector.getOverallErrorSummary();
+        return collector;
     }
 
     // query.from() is non-inclusive
