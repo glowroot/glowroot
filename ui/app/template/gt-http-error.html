@@ -1,7 +1,8 @@
 <div class="gt-http-error" ng-if="httpError">
   {{httpError.headline}}<br>
   <div class="gt-http-error-message" ng-if="httpError.message">{{httpError.message}}</div>
-  <a ng-click="showHttpErrorStackTrace = !showHttpErrorStackTrace"
+  <!-- need to use $parent since ng-if creates a child scope -->
+  <a ng-click="$parent.showHttpErrorStackTrace = !showHttpErrorStackTrace"
      ng-if="httpError.stackTrace"
      class="gt-http-error-message"
      href="">
