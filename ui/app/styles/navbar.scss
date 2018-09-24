@@ -25,6 +25,11 @@ $navbar-inverse-link-color: #fff;
   font-weight: 700;
 }
 
+.gt-navbar .navbar-right {
+  // this is needed to prevent wrapping if screen width small (but not small enough to trigger dropdown)
+  flex-wrap: unset;
+}
+
 .gt-navbar .nav-link:hover {
   text-shadow: 0 0 4px #fff;
 }
