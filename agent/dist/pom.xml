@@ -248,7 +248,7 @@
 
   <profiles>
     <profile>
-      <id>release</id>
+      <id>include-central-https-linux-alpine</id>
       <dependencies>
         <dependency>
           <groupId>org.glowroot</groupId>
