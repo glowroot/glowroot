@@ -488,24 +488,20 @@
     <profile>
       <id>release</id>
       <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>de.dentrassi.maven</groupId>
-              <artifactId>rpm</artifactId>
-              <version>1.1.0</version>
-              <configuration>
-                <skipSigning>false</skipSigning>
-                <signature>
-                  <keyId>${gpg.keyId}</keyId>
-                  <keyringFile>${user.home}/.gnupg/secring.gpg</keyringFile>
-                  <passphrase>${gpg.passphrase}</passphrase>
-                </signature>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
         <plugins>
+          <plugin>
+            <groupId>de.dentrassi.maven</groupId>
+            <artifactId>rpm</artifactId>
+            <version>1.1.0</version>
+            <configuration>
+              <skipSigning>false</skipSigning>
+              <signature>
+                <keyId>${gpg.keyId}</keyId>
+                <keyringFile>${user.home}/.gnupg/secring.gpg</keyringFile>
+                <passphrase>${gpg.passphrase}</passphrase>
+              </signature>
+            </configuration>
+          </plugin>
           <plugin>
             <artifactId>maven-resources-plugin</artifactId>
             <executions>
