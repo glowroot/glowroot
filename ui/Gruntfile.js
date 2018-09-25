@@ -380,7 +380,7 @@ module.exports = function (grunt) {
         blockReplacements: {
           // this is workaround for grunt-usemin issue #391
           js: function (block) {
-            if (block.dest === 'scripts/vendor-flame-graph.js') {
+            if (block.dest === 'scripts/vendor-flame-graph.min.js') {
               return '<script async src="' + block.dest + '"><\/script>';
             } else {
               return '<script src="' + block.dest + '"><\/script>';
