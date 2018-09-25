@@ -1408,7 +1408,7 @@ HandlebarsRendering = (function () {
         }
         var samplePercentage = (lastNode.filteredSampleCount / profile.unfilteredSampleCount) * 100;
         $('#gtProfileNodePercent' + lastNode.id).text(formatPercent(samplePercentage) + '%');
-        $('#gtProfileNode' + lastNode.id).show();
+        $('#gtProfileNode' + lastNode.id).removeClass('d-none');
         if (nodes.length > 1) {
           var nodeTextParent = $('#gtProfileNodeText' + lastNode.id).parent();
           var nodeTextParentParent = $('#gtProfileNodeText' + lastNode.id).parent().parent();
