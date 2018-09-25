@@ -48,9 +48,7 @@ public class ToolMain {
 
     private ToolMain() {}
 
-    public static void main(String[] args, @Nullable File glowrootJarFile) throws Exception {
-        Directories directories = new Directories(glowrootJarFile);
-        MainEntryPoint.initLogging(directories.getConfDirs(), directories.getLogDir(), null);
+    public static void main(String[] args, Directories directories) throws Exception {
         startupLogger = LoggerFactory.getLogger("org.glowroot");
         if (directories.getAgentDirLockCloseable() == null) {
             startupLogger.error(
@@ -58,10 +56,10 @@ public class ToolMain {
                     new File(directories.getTmpDir(), ".lock"));
             return;
         }
-
         if (!directories.hasDataDir()) {
             // provide a nice message for first time users trying to run glowroot using
             // "java -jar glowroot.jar"
+            File glowrootJarFile = directories.getGlowrootJarFile();
             String path = glowrootJarFile == null ? "/path/to/glowroot.jar"
                     : glowrootJarFile.getAbsolutePath();
             startupLogger.info("To run Glowroot, you need to add \"-javaagent:{}\" to your"

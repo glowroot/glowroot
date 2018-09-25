@@ -21,6 +21,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 
+import org.glowroot.common.util.Version;
+
 public abstract class ToolMain {
 
     public static void main(String[] args) throws Exception {
@@ -29,6 +31,12 @@ public abstract class ToolMain {
         // just to avoid dependencies on other classes (in this case the @Nullable annotation)
         @SuppressWarnings("argument.type.incompatible")
         File glowrootJarFile = AgentPremain.getGlowrootJarFile(codeSource);
+        Directories directories = new Directories(glowrootJarFile);
+        MainEntryPoint.initLogging(directories.getConfDirs(), directories.getLogDir(), null);
+        if (args.length == 1 && args[0].equals("version")) {
+            System.out.println(Version.getVersion(MainEntryPoint.class));
+            return;
+        }
         File embeddedCollectorJarFile = Directories.getEmbeddedCollectorJarFile(glowrootJarFile);
         if (embeddedCollectorJarFile == null) {
             System.err.println("missing lib/glowroot-embedded-collector.jar");
@@ -37,7 +45,7 @@ public abstract class ToolMain {
         ClassLoader loader =
                 new URLClassLoader(new URL[] {embeddedCollectorJarFile.toURI().toURL()});
         Class<?> clazz = Class.forName("org.glowroot.agent.embedded.ToolMain", true, loader);
-        Method method = clazz.getMethod("main", String[].class, File.class);
-        method.invoke(null, args, glowrootJarFile);
+        Method method = clazz.getMethod("main", String[].class, Directories.class);
+        method.invoke(null, args, directories);
     }
 }

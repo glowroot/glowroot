@@ -168,8 +168,7 @@ public class Directories {
         return multiDir && agentId == null;
     }
 
-    @Nullable
-    File getGlowrootJarFile() {
+    public @Nullable File getGlowrootJarFile() {
         return glowrootJarFile;
     }
 
