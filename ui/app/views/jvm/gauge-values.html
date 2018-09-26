@@ -14,30 +14,32 @@
   limitations under the License.
 -->
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-<div class="gt-not-header pb-3 pl-5">
+<div class="gt-not-header d-inline-block pb-3 pl-5">
   <div ng-controller="ChartRangeCtrl" ng-include="'template/gt-chart-range.html'"></div>
 </div>
-<div class="gt-chart-controls float-right">
-  <button class="gt-chart-button"
-          ng-click="zoomOut()">
-    <span title="Zoom out"
-          class="fas fa-search-minus">
-    </span>
-  </button>
-  <button class="gt-chart-button"
-          ng-click="refresh()">
-    <span title="Refresh"
-          class="fas fa-sync">
-    </span>
-  </button>
-  <button class="gt-chart-button"
-          uib-popover-template="'template/help/chart.html'"
-          popover-placement="left"
-          popover-trigger="'outsideClick'">
-    <span title="Help"
-          class="fas fa-question-circle">
-    </span>
-  </button>
+<div class="clearfix">
+  <div class="gt-chart-controls float-right">
+    <button class="gt-chart-button"
+            ng-click="zoomOut()">
+      <span title="Zoom out"
+            class="fas fa-search-minus">
+      </span>
+    </button>
+    <button class="gt-chart-button"
+            ng-click="refresh()">
+      <span title="Refresh"
+            class="fas fa-sync">
+      </span>
+    </button>
+    <button class="gt-chart-button"
+            uib-popover-template="'template/help/chart.html'"
+            popover-placement="left"
+            popover-trigger="'outsideClick'">
+      <span title="Help"
+            class="fas fa-question-circle">
+      </span>
+    </button>
+  </div>
 </div>
 <div class="gt-chart-container"
      style="margin-left: -10px;">
