@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -106,6 +107,17 @@ public class TraceCreator {
                     .addAllValue(entry.getValue());
         }
         builder.addAllDetailEntry(DetailMapWriter.toProto(transaction.getDetail()));
+        List<StackTraceElement> locationStackTrace = transaction.getLocationStackTrace();
+        if (locationStackTrace != null) {
+            for (StackTraceElement stackTraceElement : locationStackTrace) {
+                builder.addLocationStackTraceElementBuilder()
+                        .setClassName(stackTraceElement.getClassName())
+                        .setMethodName(Strings.nullToEmpty(stackTraceElement.getMethodName()))
+                        .setFileName(Strings.nullToEmpty(stackTraceElement.getFileName()))
+                        .setLineNumber(stackTraceElement.getLineNumber())
+                        .build();
+            }
+        }
         if (errorMessage != null) {
             Trace.Error.Builder errorBuilder = builder.getErrorBuilder();
             errorBuilder.setMessage(errorMessage.message());

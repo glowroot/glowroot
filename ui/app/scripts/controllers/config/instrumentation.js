@@ -382,7 +382,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       $scope.captureKindTransaction = newCaptureKind === 'transaction';
       $scope.showTimer = newCaptureKind === 'timer' || newCaptureKind === 'trace-entry' || newCaptureKind === 'transaction';
       $scope.showTraceEntry = newCaptureKind === 'trace-entry' || newCaptureKind === 'transaction';
-      $scope.showTraceEntryExtra = newCaptureKind === 'trace-entry'
+      $scope.showTraceEntryStackThresholdMillis = newCaptureKind === 'trace-entry'
+          || (newCaptureKind === 'transaction' && newAlreadyInTransactionBehavior !== 'do-nothing');
+      $scope.showTraceEntryCaptureSelfNested = newCaptureKind === 'trace-entry'
           || (newCaptureKind === 'transaction' && newAlreadyInTransactionBehavior === 'capture-trace-entry');
       if (!$scope.showTimer) {
         $scope.config.timerName = '';

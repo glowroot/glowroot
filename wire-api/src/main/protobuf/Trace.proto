@@ -37,6 +37,7 @@ message Trace {
     string user = 10;
     repeated Attribute attribute = 11;
     repeated DetailEntry detail_entry = 12;
+    repeated StackTraceElement location_stack_trace_element = 29;
     Error error = 13;
     Timer main_thread_root_timer = 14;
     Timer aux_thread_root_timer = 15; // aux thread root timer is always "auxiliary thread"

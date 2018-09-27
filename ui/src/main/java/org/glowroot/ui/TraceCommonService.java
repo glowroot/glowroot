@@ -514,6 +514,15 @@ class TraceCommonService {
                 jg.writeFieldName("detail");
                 writeDetailEntries(detailEntries, jg);
             }
+            List<Proto.StackTraceElement> locationStackTraceElements =
+                    header.getLocationStackTraceElementList();
+            if (!locationStackTraceElements.isEmpty()) {
+                jg.writeArrayFieldStart("locationStackTraceElements");
+                for (Proto.StackTraceElement stackTraceElement : locationStackTraceElements) {
+                    writeStackTraceElement(stackTraceElement, jg);
+                }
+                jg.writeEndArray();
+            }
             if (header.hasError()) {
                 jg.writeFieldName("error");
                 writeError(header.getError(), jg);

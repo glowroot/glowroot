@@ -42,6 +42,24 @@
   <div class="gt-trace-attr-name">Transaction name:&nbsp;</div>
   <div class="gt-trace-attr-value">{{transactionName}}</div>
 </div>
+{{#if locationStackTraceElements}}
+  <div>
+    <div class="gt-trace-attr-name">Location stack trace:&nbsp;</div>
+    <div style="display: table-cell; vertical-align: bottom;">
+      <div class="d-inline-block gt-unexpanded-content gt-link-color gt-opensans"
+           style="margin-top: -2px; margin-bottom: -2px;">
+        {{firstLocationStackTraceElementHtml locationStackTraceElements}}</div>
+      {{! using span so background will stretch beyond page border if needed }}
+      <div class="d-inline-block gt-expanded-content gt-nowrap gt-with-clip d-none"
+           style="overflow-x: auto;">
+        <div class="gt-clip-text">
+          {{{locationStackTraceHtml locationStackTraceElements}}}
+        </div>
+        <i class="fas fa-clipboard gt-clip"></i>
+      </div>
+    </div>
+  </div>
+{{/if}}
 {{#if error}}
   <div>
     <div class="gt-trace-attr-name">Error:&nbsp;</div>

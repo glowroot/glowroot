@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.impl;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Strings;
@@ -124,6 +125,11 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     @Nullable
     ErrorMessage getErrorMessage() {
         return errorMessage;
+    }
+
+    @Nullable
+    List<StackTraceElement> getLocationStackTrace() {
+        return locationStackTrace;
     }
 
     void accept(int depth, long transactionStartTick, long captureTick,

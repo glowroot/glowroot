@@ -552,6 +552,10 @@ HandlebarsRendering = (function () {
     return html;
   });
 
+  Handlebars.registerHelper('firstLocationStackTraceElementHtml', function (stackTraceElements) {
+     return escapeHtml(stackTraceElements[0]);
+  });
+
   var mousedownPageX, mousedownPageY;
 
   $(document).on('mousedown', '.gt-unexpanded-content, .gt-expanded-content', function (e) {

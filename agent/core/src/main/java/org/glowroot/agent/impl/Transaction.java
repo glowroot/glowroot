@@ -318,6 +318,11 @@ public class Transaction {
         return ((ReadableMessage) ((MessageSupplier) messageSupplier).get()).getDetail();
     }
 
+    @Nullable
+    List<StackTraceElement> getLocationStackTrace() {
+        return mainThreadContext.getRootEntry().getLocationStackTrace();
+    }
+
     public @Nullable ErrorMessage getErrorMessage() {
         // don't prefer the root entry error message since it is likely a more generic error
         // message, e.g. servlet response sendError(500)
