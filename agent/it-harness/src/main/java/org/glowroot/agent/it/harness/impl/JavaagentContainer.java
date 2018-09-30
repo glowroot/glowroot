@@ -355,7 +355,8 @@ public class JavaagentContainer implements Container {
                     || name.matches("glowroot-wire-api-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-agent-api-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-agent-plugin-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-bytecode-api-[0-9.]+(-SNAPSHOT)?.jar")) {
+                    || name.matches("glowroot-agent-bytecode-api-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-build-error-prone-jdk6-[0-9.]+(-SNAPSHOT)?.jar")) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
             } else if (file.getAbsolutePath().endsWith(File.separator + "common" + targetClasses)
@@ -364,7 +365,9 @@ public class JavaagentContainer implements Container {
                     || file.getAbsolutePath()
                             .endsWith(File.separator + "plugin-api" + targetClasses)
                     || file.getAbsolutePath()
-                            .endsWith(File.separator + "bytecode-api" + targetClasses)) {
+                            .endsWith(File.separator + "bytecode-api" + targetClasses)
+                    || file.getAbsolutePath()
+                            .endsWith(File.separator + "error-prone-jdk6" + targetClasses)) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
             } else if (name.matches("asm-.*\\.jar")
@@ -388,6 +391,9 @@ public class JavaagentContainer implements Container {
                     || name.matches("netty-handler-proxy-.*\\.jar")
                     || name.matches("netty-resolver-.*\\.jar")
                     || name.matches("netty-transport-.*\\.jar")
+                    // optional netty dependency that is required by HttpContentCompressor, need to
+                    // include in bootstrap class loader since netty is
+                    || name.matches("jzlib-.*\\.jar")
                     || name.matches("protobuf-java-.*\\.jar")
                     || name.matches("slf4j-api-.*\\.jar")
                     || name.matches("value-.*\\.jar")
@@ -409,7 +415,6 @@ public class JavaagentContainer implements Container {
                 paths.add(path);
             } else if (name.matches("compress-.*\\.jar")
                     || name.matches("h2-.*\\.jar")
-                    || name.matches("jzlib-.*\\.jar")
                     || name.matches("mailapi-.*\\.jar")
                     || name.matches("smtp-.*\\.jar")) {
                 // these are glowroot-agent-embedded-unshaded transitive dependencies
