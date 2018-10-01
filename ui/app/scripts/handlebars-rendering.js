@@ -887,7 +887,7 @@ HandlebarsRendering = (function () {
   function initTraceEntryMessageLength() {
     monospaceCharWidth = $('#offscreenText').width();
     // -220 for the left margin of the trace entry lines
-    traceEntryMessageLength = ($('#checkThisForWidth').width() - 220) / monospaceCharWidth;
+    traceEntryMessageLength = Math.floor(($('#checkThisForWidth').width() - 220) / monospaceCharWidth);
     // min value of 60, otherwise not enough context provided by the elipsed line
     traceEntryMessageLength = Math.max(traceEntryMessageLength, 60);
     // max value of 240, since long queries are only initially retrieved with first 120 and last 120 characters
