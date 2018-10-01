@@ -86,15 +86,15 @@ glowroot.factory('charts', [
         return;
       }
 
-      var dataPointIntervalMillis =
-          getDataPointIntervalMillis(from, to, $scope.useGaugeViewThresholdMultiplier, tracePoints);
+      var dataPointIntervalMillis = getDataPointIntervalMillis(from, to, $scope.layout.rollupExpirationMillis,
+          $scope.useGaugeViewThresholdMultiplier, tracePoints);
       var revisedFrom;
       var revisedTo;
       if (zoomingOut || selectionNearestLarger) {
         revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
         revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-        var revisedDataPointIntervalMillis =
-            getDataPointIntervalMillis(revisedFrom, revisedTo, $scope.useGaugeViewThresholdMultiplier, tracePoints);
+        var revisedDataPointIntervalMillis = getDataPointIntervalMillis(revisedFrom, revisedTo,
+            $scope.layout.rollupExpirationMillis, $scope.useGaugeViewThresholdMultiplier, tracePoints);
         if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
           // expanded out to larger rollup threshold so need to re-adjust
           // ok to use original from/to instead of revisedFrom/revisedTo
@@ -180,7 +180,8 @@ glowroot.factory('charts', [
       }
     }
 
-    function getDataPointIntervalMillis(from, to, useGaugeViewThresholdMultiplier, tracePoints) {
+    function getDataPointIntervalMillis(from, to, rollupExpirationMillis, useGaugeViewThresholdMultiplier,
+                                        tracePoints) {
       var millis = to - from;
       if (tracePoints && millis < 120000) {
         return 1000;
@@ -195,7 +196,7 @@ glowroot.factory('charts', [
         if (useGaugeViewThresholdMultiplier) {
           viewThresholdMillis *= 4;
         }
-        var expirationMillis = $rootScope.layout.rollupExpirationMillis[i];
+        var expirationMillis = rollupExpirationMillis[i];
         if (millis < viewThresholdMillis && (expirationMillis === 0 || expirationMillis > timeAgoMillis)) {
           return currRollupConfig.intervalMillis;
         }
@@ -499,11 +500,12 @@ glowroot.factory('charts', [
       var now = moment().startOf('second').valueOf();
       var from = now - $scope.range.last;
       var to = now + $scope.range.last / 10;
-      var dataPointIntervalMillis = getDataPointIntervalMillis(from, to, $scope.useGaugeViewThresholdMultiplier);
+      var dataPointIntervalMillis = getDataPointIntervalMillis(from, to, $scope.layout.rollupExpirationMillis,
+          $scope.useGaugeViewThresholdMultiplier);
       var revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
       var revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-      var revisedDataPointIntervalMillis =
-          getDataPointIntervalMillis(revisedFrom, revisedTo, $scope.useGaugeViewThresholdMultiplier);
+      var revisedDataPointIntervalMillis = getDataPointIntervalMillis(revisedFrom, revisedTo,
+          $scope.layout.rollupExpirationMillis, $scope.useGaugeViewThresholdMultiplier);
       if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
         // expanded out to larger rollup threshold so need to re-adjust
         // ok to use original from/to instead of revisedFrom/revisedTo

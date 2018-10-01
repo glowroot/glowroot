@@ -21,10 +21,11 @@ glowroot.controller('TransactionServiceCallsCtrl', [
   '$http',
   '$location',
   'locationChanges',
+  'charts',
   'modals',
   'queryStrings',
   'httpErrors',
-  function ($scope, $http, $location, locationChanges, modals, queryStrings, httpErrors) {
+  function ($scope, $http, $location, locationChanges, charts, modals, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'service-calls';
 
@@ -78,6 +79,18 @@ glowroot.controller('TransactionServiceCallsCtrl', [
       }
       return $scope.sortAsc ? 'ascending' : 'descending';
     };
+
+    var originalFrom = $location.search().from;
+    var originalTo = $location.search().to;
+    if (originalFrom !== undefined && originalTo !== undefined) {
+      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(originalFrom, originalTo,
+          $scope.layout.queryAndServiceCallRollupExpirationMillis);
+      var revisedFrom = Math.floor(originalFrom / dataPointIntervalMillis) * dataPointIntervalMillis;
+      var revisedTo = Math.ceil(originalTo / dataPointIntervalMillis) * dataPointIntervalMillis;
+      $location.search('from', revisedFrom);
+      $location.search('to', revisedTo);
+      $location.replace();
+    }
 
     locationChanges.on($scope, function () {
       $scope.sortAttribute = $location.search()['sort-attribute'] || 'total-time';

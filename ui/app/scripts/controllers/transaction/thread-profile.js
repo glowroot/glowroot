@@ -90,6 +90,18 @@ glowroot.controller('TransactionThreadProfileCtrl', [
       $scope.range.chartRefresh++;
     };
 
+    var originalFrom = $location.search().from;
+    var originalTo = $location.search().to;
+    if (originalFrom !== undefined && originalTo !== undefined) {
+      var dataPointIntervalMillis =
+          charts.getDataPointIntervalMillis(originalFrom, originalTo, $scope.layout.profileRollupExpirationMillis);
+      var revisedFrom = Math.floor(originalFrom / dataPointIntervalMillis) * dataPointIntervalMillis;
+      var revisedTo = Math.ceil(originalTo / dataPointIntervalMillis) * dataPointIntervalMillis;
+      $location.search('from', revisedFrom);
+      $location.search('to', revisedTo);
+      $location.replace();
+    }
+
     locationChanges.on($scope, function () {
       var priorAppliedFilter = appliedFilter;
       appliedFilter = $location.search().filter || '';

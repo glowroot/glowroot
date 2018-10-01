@@ -270,6 +270,15 @@ class LayoutService {
         for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
             rollupExpirationMillis.add(HOURS.toMillis(hours));
         }
+        List<Long> queryAndServiceCallRollupExpirationMillis = Lists.newArrayList();
+        for (long hours : configRepository.getStorageConfig()
+                .queryAndServiceCallRollupExpirationHours()) {
+            queryAndServiceCallRollupExpirationMillis.add(HOURS.toMillis(hours));
+        }
+        List<Long> profileRollupExpirationHours = Lists.newArrayList();
+        for (long hours : configRepository.getStorageConfig().profileRollupExpirationHours()) {
+            profileRollupExpirationHours.add(HOURS.toMillis(hours));
+        }
         return ImmutableLayout.builder()
                 .central(central)
                 .offlineViewer(offlineViewer)
@@ -278,6 +287,9 @@ class LayoutService {
                         || !configRepository.getLdapConfig().host().isEmpty()))
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
                 .addAllRollupExpirationMillis(rollupExpirationMillis)
+                .addAllQueryAndServiceCallRollupExpirationMillis(
+                        queryAndServiceCallRollupExpirationMillis)
+                .addAllProfileRollupExpirationMillis(profileRollupExpirationHours)
                 .gaugeCollectionIntervalMillis(configRepository.getGaugeCollectionIntervalMillis())
                 .showNavbarTransaction(showNavbarTransaction)
                 .showNavbarError(showNavbarError)
@@ -412,6 +424,8 @@ class LayoutService {
         abstract boolean loginEnabled();
         abstract ImmutableList<RollupConfig> rollupConfigs();
         abstract ImmutableList<Long> rollupExpirationMillis();
+        abstract ImmutableList<Long> queryAndServiceCallRollupExpirationMillis();
+        abstract ImmutableList<Long> profileRollupExpirationMillis();
         abstract long gaugeCollectionIntervalMillis();
         abstract boolean showNavbarTransaction();
         abstract boolean showNavbarError();
