@@ -29,32 +29,6 @@
   <!-- build:css(.tmp) styles/export.css -->
   <link rel="stylesheet" href="styles/export.css"/>
   <!-- endbuild -->
-
-  <!-- build:js({.,app,.tmp}) scripts/export.js -->
-  <script src="bower_components/jquery/dist/jquery.js"></script>
-  <script src="bower_components/handlebars/handlebars.runtime.js"></script>
-  <script src="bower_components/moment/moment.js"></script>
-  <!-- tooltip is used by copy to clipboard -->
-  <script src="bower_components/bootstrap/js/tooltip.js"></script>
-  <script src="bower_components/sequeljs/web/js/parser/SqlParser.js"></script>
-  <script src="bower_components/sequeljs/web/js/parser/SqlPrettyPrinter.js"></script>
-  <script src="scripts/trace-export.js"></script>
-  <script src="scripts/handlebars-rendering.js"></script>
-  <script src="scripts/clipboard.js"></script>
-  <script src="scripts/parser.js"></script>
-  <script src="scripts/generated/handlebars-templates.js"></script>
-  <!-- clipboard.js needs to be at the end, otherwise somehow gets mangled by minification
-    and trace export html page will not display -->
-  <script src="bower_components/clipboard/dist/clipboard.js"></script>
-  <!-- endbuild -->
-
-  <!-- placeholders that are dynamically replaced at runtime -->
-  <script type="text/json" id="headerJson"></script>
-  <script type="text/json" id="entriesJson"></script>
-  <script type="text/json" id="queriesJson"></script>
-  <script type="text/json" id="sharedQueryTextsJson"></script>
-  <script type="text/json" id="mainThreadProfileJson"></script>
-  <script type="text/json" id="auxThreadProfileJson"></script>
 </head>
 <!-- export body needs explicit horizontal padding since it does not use the boostrap container
      class like other pages -->
@@ -72,5 +46,32 @@
   <!-- placeholder that is dynamically replaced at runtime -->
   <span id="footerMessage"></span>
 </footer>
+<div class="gt-monospace gt-offscreen" id="offscreenText">x</div>
+
+<!-- build:js({.,app,.tmp}) scripts/export.js -->
+<script src="bower_components/jquery/dist/jquery.js"></script>
+<script src="bower_components/handlebars/handlebars.runtime.js"></script>
+<script src="bower_components/moment/moment.js"></script>
+<!-- tooltip is used by copy to clipboard -->
+<script src="bower_components/bootstrap/js/tooltip.js"></script>
+<script src="bower_components/sequeljs/web/js/parser/SqlParser.js"></script>
+<script src="bower_components/sequeljs/web/js/parser/SqlPrettyPrinter.js"></script>
+<script src="scripts/trace-export.js"></script>
+<script src="scripts/handlebars-rendering.js"></script>
+<script src="scripts/clipboard.js"></script>
+<script src="scripts/parser.js"></script>
+<script src="scripts/generated/handlebars-templates.js"></script>
+<!-- clipboard.js needs to be at the end, otherwise somehow gets mangled by minification
+  and trace export html page will not display -->
+<script src="bower_components/clipboard/dist/clipboard.js"></script>
+<!-- endbuild -->
+
+<!-- placeholders that are dynamically replaced at runtime -->
+<script type="text/json" id="headerJson"></script>
+<script type="text/json" id="entriesJson"></script>
+<script type="text/json" id="queriesJson"></script>
+<script type="text/json" id="sharedQueryTextsJson"></script>
+<script type="text/json" id="mainThreadProfileJson"></script>
+<script type="text/json" id="auxThreadProfileJson"></script>
 </body>
 </html>

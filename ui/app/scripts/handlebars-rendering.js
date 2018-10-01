@@ -37,8 +37,7 @@ HandlebarsRendering = (function () {
   var indent1 = 8.41; // px
   var indent2 = indent1 * 2; // px
 
-  $('body').append('<div class="gt-monospace gt-offscreen" id="offscreenText">x</div>');
-  var monospaceCharWidth = $('#offscreenText').width();
+  var monospaceCharWidth;
 
   var traceEntryMessageLength;
   var traceEntryBarWidth = 50;
@@ -886,6 +885,7 @@ HandlebarsRendering = (function () {
   }
 
   function initTraceEntryMessageLength() {
+    monospaceCharWidth = $('#offscreenText').width();
     // -220 for the left margin of the trace entry lines
     traceEntryMessageLength = ($('#checkThisForWidth').width() - 220) / monospaceCharWidth;
     // min value of 60, otherwise not enough context provided by the elipsed line
@@ -895,6 +895,7 @@ HandlebarsRendering = (function () {
   }
 
   function initQueryTextLength() {
+    monospaceCharWidth = $('#offscreenText').width();
     // -360 for the left margin of the trace entry lines
     queryTextLength = ($('#checkThisForWidth').width() - 400) / monospaceCharWidth;
     // min value of 60, otherwise not enough context provided by the elipsed line
